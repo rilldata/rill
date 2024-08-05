@@ -3989,6 +3989,8 @@ definitions:
     properties:
       id:
         type: string
+      encryptedSecret:
+        type: string
       projectId:
         type: string
       createdOn:

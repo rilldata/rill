@@ -11519,57 +11519,62 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   id = "";
 
   /**
-   * @generated from field: string project_id = 2;
+   * @generated from field: string encrypted_secret = 2;
+   */
+  encryptedSecret = "";
+
+  /**
+   * @generated from field: string project_id = 3;
    */
   projectId = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_on = 3;
+   * @generated from field: google.protobuf.Timestamp created_on = 4;
    */
   createdOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp expires_on = 4;
+   * @generated from field: google.protobuf.Timestamp expires_on = 5;
    */
   expiresOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp used_on = 5;
+   * @generated from field: google.protobuf.Timestamp used_on = 6;
    */
   usedOn?: Timestamp;
 
   /**
-   * @generated from field: string created_by_user_id = 6;
+   * @generated from field: string created_by_user_id = 7;
    */
   createdByUserId = "";
 
   /**
-   * @generated from field: string created_by_user_email = 7;
+   * @generated from field: string created_by_user_email = 8;
    */
   createdByUserEmail = "";
 
   /**
-   * @generated from field: google.protobuf.Struct attributes = 8;
+   * @generated from field: google.protobuf.Struct attributes = 9;
    */
   attributes?: Struct;
 
   /**
-   * @generated from field: string metrics_view = 9;
+   * @generated from field: string metrics_view = 10;
    */
   metricsView = "";
 
   /**
-   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 10;
+   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 11;
    */
   metricsViewFilter?: Expression;
 
   /**
-   * @generated from field: repeated string metrics_view_fields = 11;
+   * @generated from field: repeated string metrics_view_fields = 12;
    */
   metricsViewFields: string[] = [];
 
   /**
-   * @generated from field: string state = 12;
+   * @generated from field: string state = 13;
    */
   state = "";
 
@@ -11582,17 +11587,18 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   static readonly typeName = "rill.admin.v1.MagicAuthToken";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "created_on", kind: "message", T: Timestamp },
-    { no: 4, name: "expires_on", kind: "message", T: Timestamp },
-    { no: 5, name: "used_on", kind: "message", T: Timestamp },
-    { no: 6, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "created_by_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "attributes", kind: "message", T: Struct },
-    { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
-    { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "encrypted_secret", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "created_on", kind: "message", T: Timestamp },
+    { no: 5, name: "expires_on", kind: "message", T: Timestamp },
+    { no: 6, name: "used_on", kind: "message", T: Timestamp },
+    { no: 7, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "created_by_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "attributes", kind: "message", T: Struct },
+    { no: 10, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "metrics_view_filter", kind: "message", T: Expression },
+    { no: 12, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 13, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {

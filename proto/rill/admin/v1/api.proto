@@ -2114,17 +2114,18 @@ message ServiceToken {
 
 message MagicAuthToken {
   string id = 1;
-  string project_id = 2;
-  google.protobuf.Timestamp created_on = 3;
-  google.protobuf.Timestamp expires_on = 4;
-  google.protobuf.Timestamp used_on = 5;
-  string created_by_user_id = 6;
-  string created_by_user_email = 7;
-  google.protobuf.Struct attributes = 8;
-  string metrics_view = 9;
-  rill.runtime.v1.Expression metrics_view_filter = 10;
-  repeated string metrics_view_fields = 11;
-  string state = 12;
+  string encrypted_secret = 2;
+  string project_id = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp expires_on = 5;
+  google.protobuf.Timestamp used_on = 6;
+  string created_by_user_id = 7;
+  string created_by_user_email = 8;
+  google.protobuf.Struct attributes = 9;
+  string metrics_view = 10;
+  rill.runtime.v1.Expression metrics_view_filter = 11;
+  repeated string metrics_view_fields = 12;
+  string state = 13;
 }
 
 message VirtualFile {

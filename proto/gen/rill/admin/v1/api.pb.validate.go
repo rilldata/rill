@@ -31583,6 +31583,8 @@ func (m *MagicAuthToken) validate(all bool) error {
 
 	// no validation rules for Id
 
+	// no validation rules for EncryptedSecret
+
 	// no validation rules for ProjectId
 
 	if all {

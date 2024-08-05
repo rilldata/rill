@@ -776,6 +776,7 @@ export type V1MagicAuthTokenAttributes = { [key: string]: any };
 
 export interface V1MagicAuthToken {
   id?: string;
+  encryptedSecret?: string;
   projectId?: string;
   createdOn?: string;
   expiresOn?: string;
