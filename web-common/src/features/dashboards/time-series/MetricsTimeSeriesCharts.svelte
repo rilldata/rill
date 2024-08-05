@@ -231,8 +231,6 @@
     "timeseries",
   );
 
-  $: minTimeGrain = $timeControlsStore.minTimeGrain;
-
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
 
   let showReplacePivotModal = false;

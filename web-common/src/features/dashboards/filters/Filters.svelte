@@ -49,6 +49,7 @@
     allTimeRange,
     showTimeComparison,
     selectedComparisonTimeRange,
+    minTimeGrain,
   } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
@@ -105,7 +106,7 @@
           showTimeComparison={!!showTimeComparison}
           {selectedComparisonTimeRange}
         />
-        {#if !$showPivot}
+        {#if !$showPivot && minTimeGrain}
           <TimeGrainSelector metricViewName={$metricsViewName} />
         {/if}
       {/if}
