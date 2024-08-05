@@ -38,7 +38,9 @@
   const repoSelectionOpen = githubData.repoSelectionOpen;
 
   function confirmConnectToGithub() {
-    void githubData.startRepoSelection();
+    // prompt reselection repos since a new repo might be created here.
+    repoSelectionOpen.set(true);
+    void githubData.reselectRepos();
     behaviourEvent?.fireGithubIntentEvent(
       BehaviourEventAction.GithubConnectStart,
       {
@@ -68,7 +70,7 @@
     <span
       class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
     >
-      Github
+      GitHub
     </span>
     <div class="flex flex-col gap-x-1">
       {#if isGithubConnected}
@@ -110,7 +112,7 @@
         {/if}
       {:else}
         <span class="mt-1">
-          Unlock the power of BI-as-code with Github-backed collaboration,
+          Unlock the power of BI-as-code with GitHub-backed collaboration,
           version control, and approval workflows.<br />
           <a href="https://docs.rilldata.com" target="_blank">Learn more</a>
         </span>

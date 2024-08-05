@@ -122,9 +122,9 @@
       <div class="flex flex-row gap-x-2 items-center">
         <Github size="40px" />
         <div class="flex flex-col gap-y-1">
-          <DialogTitle>Select Github repository</DialogTitle>
+          <DialogTitle>Select GitHub repository</DialogTitle>
           <DialogDescription>
-            Choose a GitHub repo to house this project.
+            Choose a GitHub repo to push this project to.
           </DialogDescription>
         </div>
       </div>
@@ -144,8 +144,8 @@
           on:change={({ detail: newUrl }) => onSelectedRepoChange(newUrl)}
         />
         <span class="text-gray-500 mt-1">
-          <span class="font-semibold">Note:</span> Contents of this repo will replace
-          your current Rill project.
+          <span class="font-semibold">Note:</span> This current project will replace
+          contents of the selected repo.
         </span>
       {/if}
       <Collapsible bind:open={advancedOpened}>

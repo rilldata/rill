@@ -28,9 +28,7 @@
 
   let open = false;
   function onShowDeploy() {
-    if (isDeployed) {
-      window.open(deployPageUrl);
-    } else {
+    if (!isDeployed) {
       open = true;
     }
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
