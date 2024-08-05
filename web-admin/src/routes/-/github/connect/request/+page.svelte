@@ -24,20 +24,20 @@
 </script>
 
 <svelte:head>
-  <title>Github access requested</title>
+  <title>GitHub access requested</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <Github className="w-10 h-10 text-gray-900" />
-      <CtaHeader>Connect to Github</CtaHeader>
+      <CtaHeader>Connect to GitHub</CtaHeader>
       <CtaMessage>
         You requested access to <GithubRepoInline githubUrl={remote} />. You can
         close this page now.
       </CtaMessage>
       <CtaMessage>
-        The CLI will keep polling until Github access has been granted by an
+        The CLI will keep polling until GitHub access has been granted by an
         admin. You can stop polling by pressing <KeyboardKey label="Control" /> +
         <KeyboardKey label="C" /> and run <CodeBlockInline code="rill deploy" />
         again once access has been granted.
