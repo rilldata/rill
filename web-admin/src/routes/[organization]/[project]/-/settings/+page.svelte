@@ -3,28 +3,17 @@
   import PublicURLsTable from "@rilldata/web-admin/features/public-urls/PublicURLsTable.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { page } from "$app/stores";
+  import { createAdminServiceListMagicAuthTokens } from "@rilldata/web-admin/client";
 
-  // TODO: create a runtime service to get all public urls
-  const resources = createRuntimeServiceListResources(
-    $runtime.instanceId,
-    // All resource "kinds"
-    undefined,
-    {
-      query: {
-        select: (data) => {
-          // Filter out the "ProjectParser" resource
-          return data.resources.filter(
-            (resource) =>
-              resource.meta.name.kind !== "rill.runtime.v1.ProjectParser",
-          );
-        },
-      },
-    },
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+
+  $: magicAuthTokensQuery = createAdminServiceListMagicAuthTokens(
+    organization,
+    project,
   );
-
-  $: console.log("$resources.data: ", $resources.data);
+  $: magicAuthTokens = $magicAuthTokensQuery.data?.tokens ?? [];
 </script>
 
 <ContentContainer>
@@ -39,14 +28,14 @@
     </div>
 
     <div class="mt-6">
-      {#if $resources.isLoading}
+      {#if $magicAuthTokensQuery.isLoading}
         <Spinner status={EntityStatus.Running} size={"16px"} />
-      {:else if $resources.error}
+      {:else if $magicAuthTokensQuery.error}
         <div class="text-red-500">
-          Error loading resources: {$resources.error?.message}
+          Error loading resources: {$magicAuthTokensQuery.error?.message}
         </div>
-      {:else if $resources.data}
-        <PublicURLsTable resources={$resources.data} />
+      {:else if $magicAuthTokensQuery.data}
+        <PublicURLsTable {magicAuthTokens} {organization} {project} />
       {/if}
     </div>
   </div>

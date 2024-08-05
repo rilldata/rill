@@ -2,7 +2,7 @@
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/public-urls/selectors";
+  import { usePublicURLMetricsView } from "@rilldata/web-admin/features/public-urls/selectors";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import LoadingPage from "@rilldata/web-common/components/LoadingPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
@@ -16,7 +16,7 @@
   $: ({ organization, project } = $page.params);
 
   $: ({ instanceId } = $runtime);
-  $: metricsViewQuery = useShareableURLMetricsView(instanceId, true);
+  $: metricsViewQuery = usePublicURLMetricsView(instanceId, true);
   $: ({
     data: resource,
     error: resourceError,
