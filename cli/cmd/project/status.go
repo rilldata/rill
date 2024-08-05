@@ -111,7 +111,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("\nResources\n\n")
 			ch.PrintData(table)
 
-			if parser.State != nil && len(parser.State.ParseErrors) != 0 {
+			if parser != nil && parser.State != nil && len(parser.State.ParseErrors) != 0 {
 				var table []*parseErrorTableRow
 				for _, e := range parser.State.ParseErrors {
 					table = append(table, newParseErrorTableRow(e))
