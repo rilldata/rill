@@ -9,10 +9,30 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type QueryContext struct {
 	QueryID string `json:"queryId,omitempty"`
+}
+
+type NativeSearchQueryRequest struct {
+	Context          QueryContext           `json:"context"`
+	QueryType        string                 `json:"queryType"`
+	DataSource       string                 `json:"dataSource"`
+	SearchDimensions []string               `json:"searchDimensions"`
+	VirtualColumns   []NativeVirtualColumns `json:"virtualColumns"`
+	Limit            int                    `json:"limit"`
+	Query            NativeSearchQuery      `json:"query"`
+	Sort             NativeSearchSort       `json:"sort"`
+	Intervals        []string               `json:"intervals"`
+	Filter           map[string]interface{} `json:"filter"`
+}
+
+type NativeVirtualColumns struct {
+	Type       string `json:"type"`
+	Name       string `json:"name"`
+	Expression string `json:"expression"`
 }
 
 type NativeSearchQuery struct {
@@ -20,19 +40,9 @@ type NativeSearchQuery struct {
 	CaseSensitive bool   `json:"case_sensitive"`
 	Value         string `json:"value"`
 }
+
 type NativeSearchSort struct {
 	Type string `json:"type"`
-}
-type NativeSearchQueryRequest struct {
-	Context          QueryContext           `json:"context"`
-	QueryType        string                 `json:"queryType"`
-	DataSource       string                 `json:"dataSource"`
-	SearchDimensions []string               `json:"searchDimensions"`
-	Limit            int                    `json:"limit"`
-	Query            NativeSearchQuery      `json:"query"`
-	Sort             NativeSearchSort       `json:"sort"`
-	Intervals        []string               `json:"intervals"`
-	Filter           map[string]interface{} `json:"filter"`
 }
 
 type NativeSearchQueryResponse []struct {
@@ -61,12 +71,13 @@ type QueryPlan struct {
 	} `json:"query"`
 }
 
-func (n *NativeQuery) Do(ctx context.Context, dr, res interface{}, queryID string) error {
+func (n *NativeQuery) Do(ctx context.Context, dr, res interface{}, queryID string, logger *zap.Logger) error {
+	logger = logger.With(zap.String("query_id", queryID))
+	logger.Debug("Executing native query", zap.Any("request", dr))
 	b, err := json.Marshal(dr)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Executing native query: %s\n", b)
 
 	bodyReader := bytes.NewReader(b)
 
@@ -96,23 +107,29 @@ func (n *NativeQuery) Do(ctx context.Context, dr, res interface{}, queryID strin
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		logger.Debug("Druid native query failed", zap.Any("response", res))
+		return fmt.Errorf("druid native query failed with status code: %d", resp.StatusCode)
+	}
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&res)
 	if err != nil {
 		resp.Body.Close()
 		return err
 	}
+	logger.Debug("Druid native query successful", zap.Any("response", res))
 	return nil
 }
 
-func NewNativeSearchQueryRequest(source, search string, dimensions []string, limit int, start, end time.Time, filter map[string]interface{}) NativeSearchQueryRequest {
+func NewNativeSearchQueryRequest(source, search string, dims []string, virtualCols []NativeVirtualColumns, limit int, start, end time.Time, filter map[string]interface{}) NativeSearchQueryRequest {
 	return NativeSearchQueryRequest{
 		Context: QueryContext{
 			QueryID: uuid.New().String(),
 		},
 		QueryType:        "search",
 		DataSource:       source,
-		SearchDimensions: dimensions,
+		SearchDimensions: dims,
+		VirtualColumns:   virtualCols,
 		Limit:            limit,
 		Query: NativeSearchQuery{
 			Type:          "contains",

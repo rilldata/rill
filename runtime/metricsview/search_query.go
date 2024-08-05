@@ -10,6 +10,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
+	"go.uber.org/zap"
 )
 
 type SearchQuery struct {
@@ -29,7 +30,12 @@ type SearchResult struct {
 
 var druidSQLDSN = regexp.MustCompile(`/v2/sql/?`)
 
-func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLAPStore, a *AST) ([]SearchResult, error) {
+func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLAPStore, a *AST, logger *zap.Logger) ([]SearchResult, error) {
+	if a.Root.FromSelect != nil {
+		// This means either the dimension uses an unnest or measure filters which are not directly supported by native search.
+		// This can be supported in future using query datasource in future if performance turns out to be a concern.
+		return nil, errDruidNativeSearchUnimplemented
+	}
 	var query map[string]interface{}
 	if a.Root.Where != nil {
 		// NOTE :: this does not work for measure filters.
@@ -90,17 +96,31 @@ func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLA
 	if a.Root.Limit != nil {
 		limit = int(*a.Root.Limit)
 	}
-	dims := make([]string, 0, len(q.Dimensions))
+	dims := make([]string, 0)
+	virtualCols := make([]druid.NativeVirtualColumns, 0)
 	for _, f := range a.Root.DimFields {
-		// TODO handle unnest
-		dims = append(dims, f.Expr)
+		dim, err := a.lookupDimension(f.Name, true)
+		if err != nil {
+			return nil, err
+		}
+		// if the dimension is a expression we need a virtual column that can be scanned in SearchDimensions
+		if dim.Expression != "" {
+			virtualCols = append(virtualCols, druid.NativeVirtualColumns{
+				Type:       "expression",
+				Name:       fmt.Sprintf("%v_virtual_native", f.Name), // The name of the virtual column should not clash with actual column
+				Expression: dim.Expression,
+			})
+			dims = append(dims, fmt.Sprintf("%v_virtual_native", f.Name))
+		} else {
+			dims = append(dims, trimQuotes(f.Expr))
+		}
 	}
-	req := druid.NewNativeSearchQueryRequest(trimQuotes(*a.Root.FromTable), q.Search, dims, limit, q.TimeRange.Start, q.TimeRange.End, query) // TODO: timestamps may be nil!
+	req := druid.NewNativeSearchQueryRequest(trimQuotes(*a.Root.FromTable), q.Search, dims, virtualCols, limit, q.TimeRange.Start, q.TimeRange.End, query) // TODO: timestamps may be nil!
 
 	// Execute the native query
 	var res druid.NativeSearchQueryResponse
 	nq := druid.NewNativeQuery(druidSQLDSN.ReplaceAllString(dsn, "/v2/"))
-	err = nq.Do(ctx, req, &res, req.Context.QueryID)
+	err = nq.Do(ctx, req, &res, req.Context.QueryID, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +130,7 @@ func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLA
 	for _, re := range res {
 		for _, r := range re.Result {
 			result = append(result, SearchResult{
-				Dimension: r.Dimension,
+				Dimension: strings.TrimSuffix(r.Dimension, "_virtual_native"),
 				Value:     r.Value,
 			})
 		}

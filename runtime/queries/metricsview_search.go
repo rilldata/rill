@@ -88,7 +88,7 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	search := searchQuery(q)
 	rows, err := exec.SearchQuery(ctx, search, nil)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	q.Result = &runtimev1.MetricsViewSearchResponse{Results: make([]*runtimev1.MetricsViewSearchResponse_SearchResult, len(rows))}

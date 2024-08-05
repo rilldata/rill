@@ -366,7 +366,7 @@ func (e *Executor) SearchQuery(ctx context.Context, searchQry *SearchQuery, exec
 	}
 
 	if e.olap.Dialect() == drivers.DialectDruid {
-		res, err := searchQry.executeSearchInDruid(ctx, e.olap, ast)
+		res, err := searchQry.executeSearchInDruid(ctx, e.olap, ast, e.rt.Logger)
 		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
 			return res, err
 		}
