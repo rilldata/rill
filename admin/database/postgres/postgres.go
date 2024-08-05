@@ -1110,9 +1110,9 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 
 	res := &magicAuthTokenDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
+		INSERT INTO magic_auth_tokens (id, secret_hash, encrypted_secret, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.EncryptedSecret, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)

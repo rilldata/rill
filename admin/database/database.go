@@ -586,6 +586,7 @@ type InsertDeploymentAuthTokenOptions struct {
 type MagicAuthToken struct {
 	ID                    string
 	SecretHash            []byte         `db:"secret_hash"`
+	EncryptedSecret       []byte         `db:"encrypted_secret"`
 	ProjectID             string         `db:"project_id"`
 	CreatedOn             time.Time      `db:"created_on"`
 	ExpiresOn             *time.Time     `db:"expires_on"`
@@ -608,6 +609,7 @@ type MagicAuthTokenWithUser struct {
 type InsertMagicAuthTokenOptions struct {
 	ID                    string
 	SecretHash            []byte
+	EncryptedSecret       []byte
 	ProjectID             string `validate:"required"`
 	ExpiresOn             *time.Time
 	CreatedByUserID       *string

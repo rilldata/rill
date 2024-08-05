@@ -187,9 +187,17 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 		expiresOn = &t
 	}
 
+	// Encrypt the secret
+	// TODO: revisit this
+	encryptedSecret, err := tkn.EncryptSecret([]byte(tkn.ID.String()))
+	if err != nil {
+		return nil, err
+	}
+
 	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
 		ID:                    tkn.ID.String(),
 		SecretHash:            tkn.SecretHash(),
+		EncryptedSecret:       []byte(encryptedSecret),
 		ProjectID:             opts.ProjectID,
 		ExpiresOn:             expiresOn,
 		CreatedByUserID:       opts.CreatedByUserID,

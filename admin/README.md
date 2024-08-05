@@ -44,7 +44,7 @@ We define our APIs using gRPC and use [gRPC-Gateway](https://grpc-ecosystem.gith
 To add a new endpoint:
 1. Describe the endpoint in `proto/rill/admin/v1/api.proto`
 2. Re-generate gRPC and OpenAPI interfaces by running `make proto.generate`
-3. Copy the new handler signature from the `AdminServiceServer` interface in `proto/gen/rill/admin/v1/api_grpc_pb.go`
+3. Copy the new handler signature from the `AdminServiceServer` interface in `proto/gen/rill/admin/v1/api_grpc.pb.go`
 4. Paste the handler signature and implement it in a relevant file in `admin/server/`
 
 ## Adding a new user preferences field
