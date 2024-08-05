@@ -406,7 +406,7 @@ message AlertExecution {
   google.protobuf.Timestamp started_on = 5;
   google.protobuf.Timestamp finished_on = 6;
   // Stores the last notification time in suppressed alerts
-  google.protobuf.Timestamp supressed_since = 7;
+  google.protobuf.Timestamp suppressed_since = 7;
 }
 
 message AssertionResult {

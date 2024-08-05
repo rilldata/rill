@@ -2711,9 +2711,9 @@ export class AlertExecution extends Message<AlertExecution> {
   /**
    * Stores the last notification time in suppressed alerts
    *
-   * @generated from field: google.protobuf.Timestamp supressed_since = 7;
+   * @generated from field: google.protobuf.Timestamp suppressed_since = 7;
    */
-  supressedSince?: Timestamp;
+  suppressedSince?: Timestamp;
 
   constructor(data?: PartialMessage<AlertExecution>) {
     super();
@@ -2729,7 +2729,7 @@ export class AlertExecution extends Message<AlertExecution> {
     { no: 4, name: "execution_time", kind: "message", T: Timestamp },
     { no: 5, name: "started_on", kind: "message", T: Timestamp },
     { no: 6, name: "finished_on", kind: "message", T: Timestamp },
-    { no: 7, name: "supressed_since", kind: "message", T: Timestamp },
+    { no: 7, name: "suppressed_since", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertExecution {

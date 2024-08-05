@@ -619,7 +619,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				break
 			}
 			if !prev.SentNotifications {
-				// If notifications were not sent we store since when we are supressing
+				// If notifications were not sent we store since when we are suppressing
 				if prev.SupressedSince != nil {
 					lastNotifyTime = prev.SupressedSince.AsTime()
 					v := currT.Sub(lastNotifyTime)
