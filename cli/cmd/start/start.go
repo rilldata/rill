@@ -143,6 +143,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			localURL := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
+			// if olapDriver is clickhouse and no olapDSN is specified, run ClickHouse as a subprocess
+			if olapDriver == "clickhouse" && olapDSN == local.DefaultOLAPDSN {
+				olapDSN, err = startClickHouse(cmd.Context(), projectPath)
+				if err != nil {
+					return err
+				}
+			}
+
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Version:     ch.Version,
 				Verbose:     verbose,
