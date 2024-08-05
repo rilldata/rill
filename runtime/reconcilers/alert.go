@@ -620,8 +620,8 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			}
 			if !prev.SentNotifications {
 				// If notifications were not sent we store since when we are suppressing
-				if prev.SupressedSince != nil {
-					lastNotifyTime = prev.SupressedSince.AsTime()
+				if prev.SuppressedSince != nil {
+					lastNotifyTime = prev.SuppressedSince.AsTime()
 					v := currT.Sub(lastNotifyTime)
 					td = &v
 					break
@@ -658,7 +658,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			// The status has not changed since the last notification and the last notification was sent more than the renotify suppression period ago, so we should notify.
 			notify = true
 		} else {
-			current.SupressedSince = timestamppb.New(lastNotifyTime)
+			current.SuppressedSince = timestamppb.New(lastNotifyTime)
 		}
 	}
 
