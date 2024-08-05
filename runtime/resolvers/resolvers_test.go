@@ -94,7 +94,7 @@ func TestResolvers(t *testing.T) {
 				for testName, test := range r.Tests {
 					t.Run(testName, func(t *testing.T) {
 						t.Log("======================")
-						t.Log("Running ", testName)
+						t.Log("Running ", testName, "with", e.Name(), "and", ct)
 						testruntime.RequireParseErrors(t, rt, instanceID, nil)
 						api, err := rt.APIForName(context.Background(), instanceID, test.Resolver)
 						require.NoError(t, err)
