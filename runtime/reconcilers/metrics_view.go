@@ -65,6 +65,11 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
+	res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Table, Kind: runtime.ResourceKindModel}, false)
+	if err == nil { // ignore error since dashboard can directly reference a table as well
+		mv.Spec.Connector = res.GetModel().State.ResultConnector
+	}
+
 	// NOTE: In other reconcilers, state like spec_hash and refreshed_on is used to avoid redundant reconciles.
 	// We don't do that here because none of the operations below are particularly expensive.
 	// So it doesn't really matter if they run a bit more often than necessary ¯\_(ツ)_/¯.
