@@ -605,12 +605,28 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 
 	// td represents the amount of time since we last sent a notification for the current status AND where all intervening executions have returned the same status.
 	var td *time.Duration
+	var lastNotifyTime time.Time
 	if current.ExecutionTime != nil {
+		var currT time.Time
+		if current.ExecutionTime != nil {
+			currT = current.ExecutionTime.AsTime()
+		} else {
+			currT = current.FinishedOn.AsTime()
+		}
+
 		for _, prev := range a.State.ExecutionHistory {
 			if prev.Result.Status != current.Result.Status {
 				break
 			}
 			if !prev.SentNotifications {
+				// If notifications were not sent we store since when we are supressing
+				if prev.SupressedSince != nil {
+					lastNotifyTime = prev.SupressedSince.AsTime()
+					v := currT.Sub(lastNotifyTime)
+					td = &v
+					break
+				}
+				// backward compatibility since we did not store the supressed time earlier
 				continue
 			}
 
@@ -621,15 +637,10 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				prevT = prev.FinishedOn.AsTime()
 			}
 
-			var currT time.Time
-			if current.ExecutionTime != nil {
-				currT = current.ExecutionTime.AsTime()
-			} else {
-				currT = current.FinishedOn.AsTime()
-			}
-
 			v := currT.Sub(prevT)
 			td = &v
+			lastNotifyTime = prevT
+			break
 		}
 	}
 
@@ -646,6 +657,8 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		} else if int(td.Seconds()) >= int(a.Spec.RenotifyAfterSeconds) {
 			// The status has not changed since the last notification and the last notification was sent more than the renotify suppression period ago, so we should notify.
 			notify = true
+		} else {
+			current.SupressedSince = timestamppb.New(lastNotifyTime)
 		}
 	}
 

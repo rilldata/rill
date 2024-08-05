@@ -3023,6 +3023,10 @@ definitions:
       finishedOn:
         type: string
         format: date-time
+      supressedSince:
+        type: string
+        format: date-time
+        title: Stores the last notification time in suppressed alerts
   v1AlertSpec:
     type: object
     properties:

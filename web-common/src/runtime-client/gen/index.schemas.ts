@@ -2133,6 +2133,7 @@ export interface V1AlertExecution {
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
+  supressedSince?: string;
 }
 
 export interface V1AlertState {
