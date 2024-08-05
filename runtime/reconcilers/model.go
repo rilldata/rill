@@ -1220,6 +1220,13 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 		return nil, nil, err
 	}
 
+	// Acquire the final result manager
+	finalResultManager, ok := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
+	if !ok {
+		finalRelease()
+		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
+	}
+
 	// Wrap the executors
 	wrapped := &wrappedModelExecutor{
 		finalConnector:     finalConnector,
@@ -1229,6 +1236,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 		stage:              stage,
 		stageOpts:          stageOpts,
 		stageResultManager: stageResultManager,
+		finalResultManager: finalResultManager,
 	}
 	release := func() {
 		stageRelease()
