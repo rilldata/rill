@@ -6,6 +6,7 @@ import {
   getAdminServiceListGithubUserReposQueryKey,
   type RpcStatus,
 } from "@rilldata/web-admin/client";
+import { openPopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { getContext, setContext } from "svelte";
@@ -98,11 +99,10 @@ export class GithubData {
       // no-op
     }
     if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
-    this.userPromptWindow = window.open(
+    this.userPromptWindow = openPopupWindow(
       // add `remote` to indicate the callback success dialog should auto close
       `${url}?remote=autoclose`,
       "githubWindow",
-      "width=1024,height=600",
     );
 
     // periodically check if the new window was closed

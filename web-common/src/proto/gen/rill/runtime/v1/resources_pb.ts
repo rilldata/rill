@@ -2436,6 +2436,18 @@ export class AlertSpec extends Message<AlertSpec> {
   timeoutSeconds = 0;
 
   /**
+   * for alerts that have not been edited since resolver and resolver_properties have been added
+   *
+   * @generated from field: string query_name = 9;
+   */
+  queryName = "";
+
+  /**
+   * @generated from field: string query_args_json = 10;
+   */
+  queryArgsJson = "";
+
+  /**
    * @generated from field: string resolver = 22;
    */
   resolver = "";
@@ -2519,6 +2531,8 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 6, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 7, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 23, name: "resolver_properties", kind: "message", T: Struct },
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },

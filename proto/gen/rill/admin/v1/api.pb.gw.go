@@ -7381,6 +7381,7 @@ func local_request_AdminService_DenyProjectAccess_0(ctx context.Context, marshal
 // UnaryRPC     :call AdminServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAdminServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AdminServiceServer) error {
 
 	mux.Handle("GET", pattern_AdminService_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -10296,7 +10297,7 @@ func RegisterAdminServiceHandler(ctx context.Context, mux *runtime.ServeMux, con
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "AdminServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "AdminServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "AdminServiceClient" to call the correct interceptors.
+// "AdminServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client AdminServiceClient) error {
 
 	mux.Handle("GET", pattern_AdminService_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

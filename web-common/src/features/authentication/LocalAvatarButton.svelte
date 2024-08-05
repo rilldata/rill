@@ -17,7 +17,7 @@
   $: loggedIn = $user.isSuccess && $user.data?.user;
 </script>
 
-{#if ($user.isFetching || $deployValidation.isFetching) && !$user.error && !$deployValidation.error}
+{#if ($user.isLoading || $deployValidation.isLoading) && !$user.error && !$deployValidation.error}
   <div class="flex flex-row items-center h-7 mx-1.5">
     <Spinner size="16px" status={EntityStatus.Running} />
   </div>
