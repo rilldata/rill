@@ -66,7 +66,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	}
 
 	res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Table, Kind: runtime.ResourceKindModel}, false)
-	if err == nil { // ignore error since dashboard can directly reference a table as well
+	if err == nil && res.GetModel().State.ResultConnector != "" { // ignore error since dashboard can directly reference a table as well
 		mv.Spec.Connector = res.GetModel().State.ResultConnector
 	}
 
