@@ -240,7 +240,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	}
 	defer writer.Close()
 
-	ticker := time.NewTicker(time.Second * 1)
+	ticker := time.NewTicker(time.Second * 5)
 	defer ticker.Stop()
 
 	limitExceeded := make(chan struct{})
