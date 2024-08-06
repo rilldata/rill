@@ -3,15 +3,12 @@ package druidsqldriver
 import (
 	"bytes"
 	"context"
-	"crypto/x509"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -23,9 +20,6 @@ import (
 
 var (
 	// non-retryable HTTP errors
-	errTooManyRedirects = regexp.MustCompile(`stopped after \d+ redirects\z`)
-	errInvalidProtocol  = regexp.MustCompile(`unsupported protocol scheme`)
-	errTLSCert          = regexp.MustCompile(`certificate is not trusted`)
 	// retryable Druid errors
 	errCoordinatorDown = regexp.MustCompile("A leader node could not be found for") // HTTP 500
 	errBrokerDown      = regexp.MustCompile("There are no available brokers")       // HTTP 500
@@ -76,7 +70,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	re := retrier.NewRetrier(6, 2*time.Second, &coordinatorHTTPCheck{
 		c: c,
 	})
-	return re.RunCtx(ctx, func(ctx2 context.Context) (driver.Rows, retrier.Action, error) {
+	return re.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
 		dr := newDruidRequest(query, args)
 		b, err := json.Marshal(dr)
 		if err != nil {
@@ -108,27 +102,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := c.client.Do(req)
 		if err != nil {
-			var v *url.Error
-			if errors.As(err, &v) {
-				if errTooManyRedirects.MatchString(v.Error()) {
-					return nil, retrier.Fail, v
-				}
-
-				if errInvalidProtocol.MatchString(v.Error()) {
-					return nil, retrier.Fail, v
-				}
-
-				if errTLSCert.MatchString(v.Error()) {
-					return nil, retrier.Fail, v
-				}
-
-				var x509err *x509.UnknownAuthorityError
-				if errors.As(v.Err, x509err) {
-					return nil, retrier.Fail, v
-				}
-			}
-
-			return nil, retrier.Retry, err
+			return nil, retrier.Fail, err
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -377,7 +351,7 @@ var _ retrier.AdditionalTest = &coordinatorHTTPCheck{}
 // If Coordinator is down for a transient reason it's not a hard failure.
 // For example, the previous request can return `no such table 'A'`, then isHardFailure checks
 // a) if the coordinator is OK -> hard-failure - the table 'A' definitely doesn't exist
-// b) if the coordinator has a transient error -> not a hard-failure - the table 'A' still can exist
+// b) if the coordinator has a transient error -> not a hard-failure - the table 'A' can exist
 // c) if the coordinator returns not a transient error (ie access-denied) -> hard-failure - we shouldn't wait until the configuration is changed by someone
 func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error) {
 	dr := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil)
@@ -405,11 +379,6 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 		return false, nil
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return true, fmt.Errorf("Unauthorized request")
-	}
-
-	if resp.StatusCode == http.StatusTooManyRequests {
-		resp.Body.Close()
-		return false, nil
 	}
 
 	// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
