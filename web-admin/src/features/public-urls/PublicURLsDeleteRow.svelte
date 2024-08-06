@@ -1,13 +1,21 @@
 <script lang="ts">
+  import { adminServiceRevokeMagicAuthToken } from "@rilldata/web-admin/client";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
 
-  export let url: string;
+  export let id: string;
 
-  function handleClick(e: PointerEvent) {
+  async function handleClick(e: PointerEvent) {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log("deleting row", url);
+    adminServiceRevokeMagicAuthToken(id);
+
+    eventBus.emit("notification", {
+      message: `Magic auth token deleted`,
+    });
+
+    // TODO: refetch queries
   }
 </script>
 
