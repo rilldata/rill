@@ -308,6 +308,11 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceGetModelSplitsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type RuntimeServiceWatchLogs200 = {
   result?: V1WatchLogsResponse;
   error?: RpcStatus;
@@ -534,6 +539,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -561,12 +572,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -665,6 +670,11 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
+}
+
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -676,11 +686,6 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
-}
-
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -1033,20 +1038,38 @@ export interface V1Notifier {
   properties?: V1NotifierProperties;
 }
 
+/**
+ * incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
+ */
 export type V1ModelStateIncrementalState = { [key: string]: any };
 
+/**
+ * result_properties are returned by the executor and contains metadata about the result.
+ */
 export type V1ModelStateResultProperties = { [key: string]: any };
 
 export interface V1ModelState {
+  /** executor_connector is the ModelExecutor that produced the model's result. */
   executorConnector?: string;
+  /** result_connector is the connector where the model's result is stored. */
   resultConnector?: string;
+  /** result_properties are returned by the executor and contains metadata about the result. */
   resultProperties?: V1ModelStateResultProperties;
+  /** result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties. */
   resultTable?: string;
+  /** spec_hash is a hash of those parts of the spec that affect the model's result. */
   specHash?: string;
+  /** refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed. */
   refsHash?: string;
+  /** refreshed_on is the time the model was last executed. */
   refreshedOn?: string;
+  /** incremental_state contains the result of the most recent invocation of the model's incremental state resolver. */
   incrementalState?: V1ModelStateIncrementalState;
   incrementalStateSchema?: V1StructType;
+  /** splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore. */
+  splitsModelId?: string;
+  /** splits_have_errors is true if one or more splits failed to execute. */
+  splitsHaveErrors?: boolean;
 }
 
 export interface V1ModelV2 {
@@ -1054,11 +1077,24 @@ export interface V1ModelV2 {
   state?: V1ModelState;
 }
 
+export type V1ModelSplitData = { [key: string]: any };
+
+export interface V1ModelSplit {
+  key?: string;
+  data?: V1ModelSplitData;
+  watermark?: string;
+  executedOn?: string;
+  error?: string;
+  elapsedMs?: number;
+}
+
 export type V1ModelSpecOutputProperties = { [key: string]: any };
 
 export type V1ModelSpecStageProperties = { [key: string]: any };
 
 export type V1ModelSpecInputProperties = { [key: string]: any };
+
+export type V1ModelSpecSplitsResolverProperties = { [key: string]: any };
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
   [key: string]: any;
@@ -1070,6 +1106,10 @@ export interface V1ModelSpec {
   incremental?: boolean;
   incrementalStateResolver?: string;
   incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
+  splitsResolver?: string;
+  splitsResolverProperties?: V1ModelSpecSplitsResolverProperties;
+  splitsWatermarkField?: string;
+  splitsConcurrencyLimit?: number;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
   /** stage_connector is optional. */
@@ -1266,6 +1306,13 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1291,13 +1338,6 @@ export const V1MetricsViewComparisonMeasureType = {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
-
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
 
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
@@ -1539,6 +1579,11 @@ export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
 
+export interface V1GetModelSplitsResponse {
+  splits?: V1ModelSplit[];
+  nextPageToken?: string;
+}
+
 export interface V1GetLogsResponse {
   logs?: V1Log[];
 }
@@ -1719,11 +1764,6 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
-export interface V1ConnectorV2 {
-  spec?: V1ConnectorSpec;
-  state?: V1ConnectorState;
-}
-
 /**
  * properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties.
@@ -1738,6 +1778,11 @@ export interface V1ConnectorSpec {
   /** properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
+}
+
+export interface V1ConnectorV2 {
+  spec?: V1ConnectorSpec;
+  state?: V1ConnectorState;
 }
 
 /**
@@ -1938,6 +1983,10 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -1964,10 +2013,6 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -1982,6 +2027,10 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1992,10 +2041,6 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
-}
-
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2070,6 +2115,8 @@ export interface V1AlertSpec {
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
   resolver?: string;
   resolverProperties?: V1AlertSpecResolverProperties;
   queryForUserId?: string;
@@ -2091,6 +2138,7 @@ export interface V1AlertExecution {
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
+  suppressedSince?: string;
 }
 
 export interface V1AlertState {

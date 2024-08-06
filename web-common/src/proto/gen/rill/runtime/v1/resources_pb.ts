@@ -769,6 +769,26 @@ export class ModelSpec extends Message<ModelSpec> {
   incrementalStateResolverProperties?: Struct;
 
   /**
+   * @generated from field: string splits_resolver = 18;
+   */
+  splitsResolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct splits_resolver_properties = 19;
+   */
+  splitsResolverProperties?: Struct;
+
+  /**
+   * @generated from field: string splits_watermark_field = 20;
+   */
+  splitsWatermarkField = "";
+
+  /**
+   * @generated from field: uint32 splits_concurrency_limit = 21;
+   */
+  splitsConcurrencyLimit = 0;
+
+  /**
    * @generated from field: string input_connector = 10;
    */
   inputConnector = "";
@@ -818,6 +838,10 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 13, name: "incremental", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "incremental_state_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "incremental_state_resolver_properties", kind: "message", T: Struct },
+    { no: 18, name: "splits_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "splits_resolver_properties", kind: "message", T: Struct },
+    { no: 20, name: "splits_watermark_field", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "splits_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
     { no: 16, name: "stage_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -849,49 +873,81 @@ export class ModelSpec extends Message<ModelSpec> {
  */
 export class ModelState extends Message<ModelState> {
   /**
+   * executor_connector is the ModelExecutor that produced the model's result.
+   *
    * @generated from field: string executor_connector = 6;
    */
   executorConnector = "";
 
   /**
+   * result_connector is the connector where the model's result is stored.
+   *
    * @generated from field: string result_connector = 1;
    */
   resultConnector = "";
 
   /**
+   * result_properties are returned by the executor and contains metadata about the result.
+   *
    * @generated from field: google.protobuf.Struct result_properties = 5;
    */
   resultProperties?: Struct;
 
   /**
+   * result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties.
+   *
    * @generated from field: string result_table = 2;
    */
   resultTable = "";
 
   /**
+   * spec_hash is a hash of those parts of the spec that affect the model's result.
+   *
    * @generated from field: string spec_hash = 3;
    */
   specHash = "";
 
   /**
+   * refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
+   *
    * @generated from field: string refs_hash = 9;
    */
   refsHash = "";
 
   /**
+   * refreshed_on is the time the model was last executed.
+   *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
    */
   refreshedOn?: Timestamp;
 
   /**
+   * incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
+   *
    * @generated from field: google.protobuf.Struct incremental_state = 7;
    */
   incrementalState?: Struct;
 
   /**
+   * incremental_state_schema contains a schema for the data in incremental_state.
+   *
    * @generated from field: rill.runtime.v1.StructType incremental_state_schema = 8;
    */
   incrementalStateSchema?: StructType;
+
+  /**
+   * splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
+   *
+   * @generated from field: string splits_model_id = 10;
+   */
+  splitsModelId = "";
+
+  /**
+   * splits_have_errors is true if one or more splits failed to execute.
+   *
+   * @generated from field: bool splits_have_errors = 11;
+   */
+  splitsHaveErrors = false;
 
   constructor(data?: PartialMessage<ModelState>) {
     super();
@@ -910,6 +966,8 @@ export class ModelState extends Message<ModelState> {
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
+    { no: 10, name: "splits_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "splits_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {
@@ -2378,6 +2436,18 @@ export class AlertSpec extends Message<AlertSpec> {
   timeoutSeconds = 0;
 
   /**
+   * for alerts that have not been edited since resolver and resolver_properties have been added
+   *
+   * @generated from field: string query_name = 9;
+   */
+  queryName = "";
+
+  /**
+   * @generated from field: string query_args_json = 10;
+   */
+  queryArgsJson = "";
+
+  /**
    * @generated from field: string resolver = 22;
    */
   resolver = "";
@@ -2461,6 +2531,8 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 6, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 7, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 23, name: "resolver_properties", kind: "message", T: Struct },
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
@@ -2636,6 +2708,13 @@ export class AlertExecution extends Message<AlertExecution> {
    */
   finishedOn?: Timestamp;
 
+  /**
+   * Stores the last notification time in suppressed alerts
+   *
+   * @generated from field: google.protobuf.Timestamp suppressed_since = 7;
+   */
+  suppressedSince?: Timestamp;
+
   constructor(data?: PartialMessage<AlertExecution>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2650,6 +2729,7 @@ export class AlertExecution extends Message<AlertExecution> {
     { no: 4, name: "execution_time", kind: "message", T: Timestamp },
     { no: 5, name: "started_on", kind: "message", T: Timestamp },
     { no: 6, name: "finished_on", kind: "message", T: Timestamp },
+    { no: 7, name: "suppressed_since", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertExecution {

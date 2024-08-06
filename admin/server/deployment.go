@@ -192,11 +192,8 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			prodDepl.RuntimeInstanceID: {
-				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
-				runtimeauth.ReadProfiling,
-				runtimeauth.ReadRepo,
 				runtimeauth.ReadAPI,
 			},
 		},
@@ -289,11 +286,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			prodDepl.RuntimeInstanceID: {
-				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
-				runtimeauth.ReadProfiling,
-				runtimeauth.ReadRepo,
 				runtimeauth.ReadAPI,
 			},
 		},

@@ -15,6 +15,8 @@ import (
 type AST struct {
 	// Root of the AST
 	Root *SelectNode
+	// List of CTEs to add to the query
+	CTEs []*SelectNode
 
 	// Cached internal state for building the AST
 	underlyingTable *string
@@ -34,9 +36,10 @@ type AST struct {
 // The from/join clauses are not all compatible. The allowed combinations are:
 //   - FromTable
 //   - FromSelect and optionally SpineSelect and/or LeftJoinSelects
-//   - FromSelect and optionally JoinComparisonSelect
+//   - FromSelect and optionally JoinComparisonSelect (for comparison CTE based optimization, this combination is used, both should be set and one of them will be used as CTE)
 type SelectNode struct {
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
+	IsCTE                bool             // Whether this node is a Common Table Expression
 	DimFields            []FieldNode      // Dimensions fields to select
 	MeasureFields        []FieldNode      // Measure fields to select
 	FromTable            *string          // Underlying table expression to select from (if set, FromSelect must not be set)
@@ -1090,6 +1093,16 @@ func (a *AST) sqlForMember(tbl, name string) string {
 // sqlForAnyInGroup returns a SQL expression for passing through a field in a GROUP BY.
 func (a *AST) sqlForAnyInGroup(expr string) string {
 	return fmt.Sprintf("ANY_VALUE(%s)", expr)
+}
+
+// convertToCTE util func that sets IsCTE and only adds to a.CTEs if IsCTE was false
+func (a *AST) convertToCTE(n *SelectNode) {
+	if n.IsCTE {
+		return
+	}
+
+	n.IsCTE = true
+	a.CTEs = append(a.CTEs, n)
 }
 
 // hasName checks if the given name is present as either a dimension or measure field in the node.

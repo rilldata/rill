@@ -61,6 +61,8 @@ import type {
   RuntimeServiceGetLogsParams,
   RuntimeServiceWatchLogs200,
   RuntimeServiceWatchLogsParams,
+  V1GetModelSplitsResponse,
+  RuntimeServiceGetModelSplitsParams,
   V1GetResourceResponse,
   RuntimeServiceGetResourceParams,
   V1ListResourcesResponse,
@@ -1698,6 +1700,83 @@ export const createRuntimeServiceWatchLogs = <
     queryKey,
     queryFn,
     enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetModelSplits returns the splits of a model
+ */
+export const runtimeServiceGetModelSplits = (
+  instanceId: string,
+  model: string,
+  params?: RuntimeServiceGetModelSplitsParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetModelSplitsResponse>({
+    url: `/v1/instances/${instanceId}/models/${model}/splits`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetModelSplitsQueryKey = (
+  instanceId: string,
+  model: string,
+  params?: RuntimeServiceGetModelSplitsParams,
+) => [
+  `/v1/instances/${instanceId}/models/${model}/splits`,
+  ...(params ? [params] : []),
+];
+
+export type RuntimeServiceGetModelSplitsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>
+>;
+export type RuntimeServiceGetModelSplitsQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGetModelSplits = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  model: string,
+  params?: RuntimeServiceGetModelSplitsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetModelSplitsQueryKey(instanceId, model, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>
+  > = ({ signal }) =>
+    runtimeServiceGetModelSplits(instanceId, model, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && model),
     ...queryOptions,
   }) as CreateQueryResult<TData, TError> & {
     queryKey: QueryKey;
