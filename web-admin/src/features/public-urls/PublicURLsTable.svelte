@@ -43,7 +43,7 @@
       header: "Expires on",
     }),
     table.column({
-      accessor: (token) => token.attributes.email,
+      accessor: (token) => token.attributes.name,
       header: "Created by",
     }),
     table.column({
