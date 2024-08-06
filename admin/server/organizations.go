@@ -360,6 +360,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -1063,6 +1064,9 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		QuotaSlotsPerDeployment:             int(valOrDefault(req.SlotsPerDeployment, int32(org.QuotaSlotsPerDeployment))),
 		QuotaOutstandingInvites:             int(valOrDefault(req.OutstandingInvites, int32(org.QuotaOutstandingInvites))),
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(req.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
 	}
 
 	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -1104,6 +1108,8 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
 		BillingCustomerID:                   req.BillingCustomerId,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
 	}
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)

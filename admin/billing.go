@@ -167,6 +167,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
