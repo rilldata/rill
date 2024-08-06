@@ -240,22 +240,21 @@ func (f *fileIterator) Next() ([]string, error) {
 	}
 	defer writer.Close()
 
-	ticker := time.NewTicker(time.Second * 5)
-	defer ticker.Stop()
-
-	limitExceeded := make(chan struct{})
-	defer close(limitExceeded)
+	limitCtx, cancel := context.WithCancel(f.ctx)
+	defer cancel()
 
 	go func() {
+		ticker := time.NewTicker(time.Second * 5)
+		defer ticker.Stop()
 		for {
 			select {
-			case <-limitExceeded:
+			case <-limitCtx.Done():
 				return
 			case <-ticker.C:
 				fileInfo, err := os.Stat(fw.Name())
 				if err == nil { // ignore error
 					if fileInfo.Size() > f.limitInBytes {
-						limitExceeded <- struct{}{}
+						cancel()
 					}
 				}
 			}
@@ -268,7 +267,7 @@ func (f *fileIterator) Next() ([]string, error) {
 		select {
 		case <-f.ctx.Done():
 			return nil, f.ctx.Err()
-		case <-limitExceeded:
+		case <-limitCtx.Done():
 			return nil, drivers.ErrStorageLimitExceeded
 		default:
 			rec := rdr.Record()
