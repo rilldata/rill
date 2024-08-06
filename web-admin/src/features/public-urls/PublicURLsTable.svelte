@@ -25,10 +25,10 @@
   export let organization: string;
   export let project: string;
 
-  function handleClickRow(row: any) {
+  async function handleClickRow(row: any) {
     // TODO: revisit when token secret is available
     // `/${organization}/${project}/magic-link/${token.id}`
-    goto(`/${organization}/${project}/${row.original.metricsView}`);
+    await goto(`/${organization}/${project}/${row.original.metricsView}`);
   }
 
   const table = createTable(readable(magicAuthTokens));
@@ -37,6 +37,10 @@
     table.column({
       accessor: (token) => token.metricsView,
       header: "Dashboard name",
+    }),
+    table.column({
+      accessor: (token) => token.expiresOn ?? "-",
+      header: "Expires on",
     }),
     table.column({
       accessor: (token) => token.attributes.email,
@@ -84,7 +88,10 @@
     <Table.Body {...$tableBodyAttrs}>
       {#each $pageRows as row (row.id)}
         <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-          <Table.Row {...rowAttrs} on:click={() => handleClickRow(row)}>
+          <Table.Row
+            {...rowAttrs}
+            on:click={async () => await handleClickRow(row)}
+          >
             {#each row.cells as cell (cell.id)}
               <Subscribe attrs={cell.attrs()} let:attrs>
                 <Table.Cell {...attrs}>
