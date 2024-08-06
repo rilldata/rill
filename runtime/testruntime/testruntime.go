@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -236,6 +237,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
+	require.NoError(t, godotenv.Load())
 	dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 
 	inst := &drivers.Instance{
