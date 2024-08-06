@@ -901,9 +901,9 @@ export const getAdminServiceGetPaymentsPortalURLQueryKey = (
   orgName: string,
   params?: AdminServiceGetPaymentsPortalURLParams,
 ) => [
-  `/v1/organizations/${orgName}/billing/payments/portal-url`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${orgName}/billing/payments/portal-url`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceGetPaymentsPortalURLQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>
@@ -1112,7 +1112,7 @@ export const createAdminServiceListOrganizationInvites = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>
   > = ({ signal }) =>
-    adminServiceListOrganizationInvites(organization, params, signal);
+      adminServiceListOrganizationInvites(organization, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
@@ -1179,7 +1179,7 @@ export const createAdminServiceListOrganizationMemberUsers = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>
   > = ({ signal }) =>
-    adminServiceListOrganizationMemberUsers(organization, params, signal);
+      adminServiceListOrganizationMemberUsers(organization, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
@@ -1456,9 +1456,9 @@ export const getAdminServiceListProjectMemberUsergroupsQueryKey = (
   project: string,
   params?: AdminServiceListProjectMemberUsergroupsParams,
 ) => [
-  `/v1/organizations/${organization}/project/${project}/usergroups`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organization}/project/${project}/usergroups`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceListProjectMemberUsergroupsQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>
@@ -1493,12 +1493,12 @@ export const createAdminServiceListProjectMemberUsergroups = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>
   > = ({ signal }) =>
-    adminServiceListProjectMemberUsergroups(
-      organization,
-      project,
-      params,
-      signal,
-    );
+      adminServiceListProjectMemberUsergroups(
+        organization,
+        project,
+        params,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
@@ -1849,8 +1849,8 @@ export const getAdminServiceGetAlertYAMLQueryKey = (
   project: string,
   name: string,
 ) => [
-  `/v1/organizations/${organization}/projects/${project}/alerts/${name}/yaml`,
-];
+    `/v1/organizations/${organization}/projects/${project}/alerts/${name}/yaml`,
+  ];
 
 export type AdminServiceGetAlertYAMLQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetAlertYAML>>
@@ -1881,7 +1881,7 @@ export const createAdminServiceGetAlertYAML = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetAlertYAML>>
   > = ({ signal }) =>
-    adminServiceGetAlertYAML(organization, project, name, signal);
+      adminServiceGetAlertYAML(organization, project, name, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetAlertYAML>>,
@@ -1918,8 +1918,8 @@ export const getAdminServiceGetCloneCredentialsQueryKey = (
   organization: string,
   project: string,
 ) => [
-  `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
-];
+    `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
+  ];
 
 export type AdminServiceGetCloneCredentialsQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>
@@ -1949,7 +1949,7 @@ export const createAdminServiceGetCloneCredentials = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>
   > = ({ signal }) =>
-    adminServiceGetCloneCredentials(organization, project, signal);
+      adminServiceGetCloneCredentials(organization, project, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>,
@@ -2053,9 +2053,9 @@ export const getAdminServiceGetDeploymentCredentialsQueryKey = (
   project: string,
   adminServiceGetDeploymentCredentialsBody: AdminServiceGetDeploymentCredentialsBody,
 ) => [
-  `/v1/organizations/${organization}/projects/${project}/credentials`,
-  adminServiceGetDeploymentCredentialsBody,
-];
+    `/v1/organizations/${organization}/projects/${project}/credentials`,
+    adminServiceGetDeploymentCredentialsBody,
+  ];
 
 export type AdminServiceGetDeploymentCredentialsQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>
@@ -2090,11 +2090,11 @@ export const createAdminServiceGetDeploymentCredentials = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>
   > = () =>
-    adminServiceGetDeploymentCredentials(
-      organization,
-      project,
-      adminServiceGetDeploymentCredentialsBody,
-    );
+      adminServiceGetDeploymentCredentials(
+        organization,
+        project,
+        adminServiceGetDeploymentCredentialsBody,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
@@ -2233,9 +2233,9 @@ export const getAdminServiceListProjectInvitesQueryKey = (
   project: string,
   params?: AdminServiceListProjectInvitesParams,
 ) => [
-  `/v1/organizations/${organization}/projects/${project}/invites`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organization}/projects/${project}/invites`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceListProjectInvitesQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListProjectInvites>>
@@ -2266,7 +2266,7 @@ export const createAdminServiceListProjectInvites = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListProjectInvites>>
   > = ({ signal }) =>
-    adminServiceListProjectInvites(organization, project, params, signal);
+      adminServiceListProjectInvites(organization, project, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListProjectInvites>>,
@@ -2306,9 +2306,9 @@ export const getAdminServiceListProjectMemberUsersQueryKey = (
   project: string,
   params?: AdminServiceListProjectMemberUsersParams,
 ) => [
-  `/v1/organizations/${organization}/projects/${project}/members`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organization}/projects/${project}/members`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceListProjectMemberUsersQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListProjectMemberUsers>>
@@ -2343,7 +2343,7 @@ export const createAdminServiceListProjectMemberUsers = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListProjectMemberUsers>>
   > = ({ signal }) =>
-    adminServiceListProjectMemberUsers(organization, project, params, signal);
+      adminServiceListProjectMemberUsers(organization, project, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListProjectMemberUsers>>,
@@ -2632,9 +2632,9 @@ export const getAdminServiceGenerateReportYAMLQueryKey = (
   project: string,
   adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
 ) => [
-  `/v1/organizations/${organization}/projects/${project}/reports/-/yaml`,
-  adminServiceCreateReportBodyBody,
-];
+    `/v1/organizations/${organization}/projects/${project}/reports/-/yaml`,
+    adminServiceCreateReportBodyBody,
+  ];
 
 export type AdminServiceGenerateReportYAMLQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>
@@ -2669,11 +2669,11 @@ export const createAdminServiceGenerateReportYAML = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>
   > = () =>
-    adminServiceGenerateReportYAML(
-      organization,
-      project,
-      adminServiceCreateReportBodyBody,
-    );
+      adminServiceGenerateReportYAML(
+        organization,
+        project,
+        adminServiceCreateReportBodyBody,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>,
@@ -3027,9 +3027,9 @@ export const getAdminServiceListMagicAuthTokensQueryKey = (
   project: string,
   params?: AdminServiceListMagicAuthTokensParams,
 ) => [
-  `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceListMagicAuthTokensQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
@@ -3060,7 +3060,7 @@ export const createAdminServiceListMagicAuthTokens = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
   > = ({ signal }) =>
-    adminServiceListMagicAuthTokens(organization, project, params, signal);
+      adminServiceListMagicAuthTokens(organization, project, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
@@ -3365,9 +3365,9 @@ export const getAdminServiceSearchProjectUsersQueryKey = (
   project: string,
   params?: AdminServiceSearchProjectUsersParams,
 ) => [
-  `/v1/organizations/${organization}/projects/${project}/users/search`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organization}/projects/${project}/users/search`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceSearchProjectUsersQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>
@@ -3398,7 +3398,7 @@ export const createAdminServiceSearchProjectUsers = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>
   > = ({ signal }) =>
-    adminServiceSearchProjectUsers(organization, project, params, signal);
+      adminServiceSearchProjectUsers(organization, project, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>,
@@ -3464,7 +3464,7 @@ export const createAdminServiceListProjectWhitelistedDomains = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListProjectWhitelistedDomains>>
   > = ({ signal }) =>
-    adminServiceListProjectWhitelistedDomains(organization, project, signal);
+      adminServiceListProjectWhitelistedDomains(organization, project, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListProjectWhitelistedDomains>>,
@@ -3625,9 +3625,9 @@ export const getAdminServiceListOrganizationMemberUsergroupsQueryKey = (
   organization: string,
   params?: AdminServiceListOrganizationMemberUsergroupsParams,
 ) => [
-  `/v1/organizations/${organization}/usergroups`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organization}/usergroups`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceListOrganizationMemberUsergroupsQueryResult =
   NonNullable<
@@ -3663,7 +3663,7 @@ export const createAdminServiceListOrganizationMemberUsergroups = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>
   > = ({ signal }) =>
-    adminServiceListOrganizationMemberUsergroups(organization, params, signal);
+      adminServiceListOrganizationMemberUsergroups(organization, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
@@ -3754,9 +3754,9 @@ export const getAdminServiceGetUsergroupQueryKey = (
   usergroup: string,
   params?: AdminServiceGetUsergroupParams,
 ) => [
-  `/v1/organizations/${organization}/usergroups/${usergroup}`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organization}/usergroups/${usergroup}`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceGetUsergroupQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetUsergroup>>
@@ -3787,7 +3787,7 @@ export const createAdminServiceGetUsergroup = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetUsergroup>>
   > = ({ signal }) =>
-    adminServiceGetUsergroup(organization, usergroup, params, signal);
+      adminServiceGetUsergroup(organization, usergroup, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetUsergroup>>,
@@ -4003,9 +4003,9 @@ export const getAdminServiceListUsergroupMemberUsersQueryKey = (
   usergroup: string,
   params?: AdminServiceListUsergroupMemberUsersParams,
 ) => [
-  `/v1/organizations/${organization}/usergroups/${usergroup}/members`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organization}/usergroups/${usergroup}/members`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceListUsergroupMemberUsersQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListUsergroupMemberUsers>>
@@ -4040,12 +4040,12 @@ export const createAdminServiceListUsergroupMemberUsers = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListUsergroupMemberUsers>>
   > = ({ signal }) =>
-    adminServiceListUsergroupMemberUsers(
-      organization,
-      usergroup,
-      params,
-      signal,
-    );
+      adminServiceListUsergroupMemberUsers(
+        organization,
+        usergroup,
+        params,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListUsergroupMemberUsers>>,
@@ -4621,9 +4621,9 @@ export const getAdminServiceListProjectsForOrganizationQueryKey = (
   organizationName: string,
   params?: AdminServiceListProjectsForOrganizationParams,
 ) => [
-  `/v1/organizations/${organizationName}/projects`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organizationName}/projects`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceListProjectsForOrganizationQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListProjectsForOrganization>>
@@ -4656,7 +4656,7 @@ export const createAdminServiceListProjectsForOrganization = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListProjectsForOrganization>>
   > = ({ signal }) =>
-    adminServiceListProjectsForOrganization(organizationName, params, signal);
+      adminServiceListProjectsForOrganization(organizationName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListProjectsForOrganization>>,
@@ -4747,9 +4747,9 @@ export const getAdminServiceGetProjectQueryKey = (
   name: string,
   params?: AdminServiceGetProjectParams,
 ) => [
-  `/v1/organizations/${organizationName}/projects/${name}`,
-  ...(params ? [params] : []),
-];
+    `/v1/organizations/${organizationName}/projects/${name}`,
+    ...(params ? [params] : []),
+  ];
 
 export type AdminServiceGetProjectQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetProject>>
@@ -4780,7 +4780,7 @@ export const createAdminServiceGetProject = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetProject>>
   > = ({ signal }) =>
-    adminServiceGetProject(organizationName, name, params, signal);
+      adminServiceGetProject(organizationName, name, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetProject>>,
@@ -4958,7 +4958,7 @@ export const createAdminServiceGetProjectVariables = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetProjectVariables>>
   > = ({ signal }) =>
-    adminServiceGetProjectVariables(organizationName, name, signal);
+      adminServiceGetProjectVariables(organizationName, name, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetProjectVariables>>,
@@ -5311,7 +5311,7 @@ export const createAdminServiceListServiceAuthTokens = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>
   > = ({ signal }) =>
-    adminServiceListServiceAuthTokens(organizationName, serviceName, signal);
+      adminServiceListServiceAuthTokens(organizationName, serviceName, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
