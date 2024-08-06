@@ -614,14 +614,14 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
-			if lower != strings.ToLower(tmp.TimeDimension) {
+			if !strings.EqualFold(lower, tmp.TimeDimension) {
 				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 			}
 			// This is to allow users to set a dimension with the same name as the time dimension
 			if dim.Expression != "" {
 				return fmt.Errorf("dimension with same name as time dimension cannot have an expression")
 			}
-			if dim.Column != strings.ToLower(tmp.TimeDimension) {
+			if !strings.EqualFold(dim.Column, tmp.TimeDimension) {
 				return fmt.Errorf("found duplicate dimension %q", dim.Name)
 			}
 		}
