@@ -40,7 +40,7 @@
         {#each settingsNavs as nav (nav.hash)}
           <a
             href={`${nav.hash}`}
-            class="hover:bg-slate-100 rounded p-2 w-full"
+            class="hover:bg-slate-100 rounded px-4 py-2 w-full"
             class:bg-slate-100={$page.url.hash === nav.hash}
             class:active={$page.url.hash === nav.hash}
           >
