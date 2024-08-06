@@ -8,7 +8,7 @@ sidebar_position: 00
 
 ## Overview
 
-Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](explore/dashboard-101), [embed Rill](/integrate/embedding.md) into other applications, and more!
+Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](../../explore/dashboard-101), [embed Rill](/integrate/embedding.md) into other applications, and more!
 
 
 The flow diagram below shows two options for deploying an existing project. 
