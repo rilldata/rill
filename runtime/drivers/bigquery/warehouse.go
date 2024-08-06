@@ -240,21 +240,36 @@ func (f *fileIterator) Next() ([]string, error) {
 	}
 	defer writer.Close()
 
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(time.Second * 1)
 	defer ticker.Stop()
+
+	limitExceeded := make(chan struct{})
+	defer close(limitExceeded)
+
+	go func() {
+		for {
+			select {
+			case <-limitExceeded:
+				return
+			case <-ticker.C:
+				fileInfo, err := os.Stat(fw.Name())
+				if err == nil { // ignore error
+					if fileInfo.Size() > f.limitInBytes {
+						limitExceeded <- struct{}{}
+					}
+				}
+			}
+		}
+	}()
+
+	rows := int64(0)
 	// write arrow records to parquet file
 	for rdr.Next() {
 		select {
 		case <-f.ctx.Done():
 			return nil, f.ctx.Err()
-		case <-ticker.C:
-			fileInfo, err := os.Stat(fw.Name())
-			if err == nil { // ignore error
-				if fileInfo.Size() > f.limitInBytes {
-					return nil, drivers.ErrStorageLimitExceeded
-				}
-			}
-
+		case <-limitExceeded:
+			return nil, drivers.ErrStorageLimitExceeded
 		default:
 			rec := rdr.Record()
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
@@ -263,6 +278,7 @@ func (f *fileIterator) Next() ([]string, error) {
 			if err := writer.WriteBuffered(rec); err != nil {
 				return nil, err
 			}
+			rows += rec.NumRows()
 		}
 	}
 	if rdr.Err() != nil {
@@ -271,11 +287,15 @@ func (f *fileIterator) Next() ([]string, error) {
 	writer.Close()
 	fw.Close()
 
+	if uint64(rows) < f.bqIter.TotalRows {
+		f.logger.Error("not all rows written to parquet file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(f.ctx))
+	}
+
 	fileInfo, err := os.Stat(fw.Name())
 	if err != nil {
 		return nil, err
 	}
-	f.logger.Debug("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
+	f.logger.Debug("parquet file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }
 
@@ -310,7 +330,7 @@ func (f *fileIterator) downloadAsJSONFile() (string, error) {
 	f.downloaded = true
 
 	init := false
-	rows := 0
+	rows := int64(0)
 	enc := json.NewEncoder(fw)
 	enc.SetEscapeHTML(false)
 	bigNumericFields := make([]string, 0)
@@ -324,6 +344,16 @@ func (f *fileIterator) downloadAsJSONFile() (string, error) {
 			if !init {
 				return "", drivers.ErrNoRows
 			}
+			fileInfo, err := os.Stat(fw.Name())
+			if err != nil {
+				return "", fmt.Errorf("bigquery: failed to poll json file size: %w", err)
+			}
+
+			if uint64(rows) < f.bqIter.TotalRows {
+				f.logger.Error("not all rows written to json file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(f.ctx))
+			}
+
+			f.logger.Debug("json file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
 			// all rows written successfully
 			return fw.Name(), nil
 		}
