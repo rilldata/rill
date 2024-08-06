@@ -10,6 +10,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -240,6 +241,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	}
 	defer writer.Close()
 
+	overLimit := atomic.Bool{}
 	limitCtx, cancel := context.WithCancel(f.ctx)
 	defer cancel()
 
@@ -254,6 +256,7 @@ func (f *fileIterator) Next() ([]string, error) {
 				fileInfo, err := os.Stat(fw.Name())
 				if err == nil { // ignore error
 					if fileInfo.Size() > f.limitInBytes {
+						overLimit.Store(true)
 						cancel()
 					}
 				}
@@ -268,7 +271,10 @@ func (f *fileIterator) Next() ([]string, error) {
 		case <-f.ctx.Done():
 			return nil, f.ctx.Err()
 		case <-limitCtx.Done():
-			return nil, drivers.ErrStorageLimitExceeded
+			if overLimit.Load() {
+				return nil, drivers.ErrStorageLimitExceeded
+			}
+			return nil, limitCtx.Err()
 		default:
 			rec := rdr.Record()
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
