@@ -1,8 +1,14 @@
 <script lang="ts">
   import * as Table from "@rilldata/web-common/components/table-shadcn";
-  import { Render, Subscribe, createTable } from "svelte-headless-table";
+  import {
+    Render,
+    Subscribe,
+    createTable,
+    createRender,
+  } from "svelte-headless-table";
   import { readable } from "svelte/store";
   import { goto } from "$app/navigation";
+  import PublicUrLsDeleteRow from "./PublicURLsDeleteRow.svelte";
 
   // TODO: to be added to orval in `web-common/src/runtime-client/gen/index.schemas.ts`
   interface V1MagicAuthToken {
@@ -61,6 +67,11 @@
           minute: "numeric",
         });
       },
+    }),
+    table.column({
+      accessor: (token) => token.id,
+      header: "",
+      cell: ({ value }) => createRender(PublicUrLsDeleteRow, { url: value }),
     }),
   ]);
 
