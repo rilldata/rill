@@ -6,6 +6,7 @@
   import { page } from "$app/stores";
   import { createAdminServiceListMagicAuthTokens } from "@rilldata/web-admin/client";
   import { onMount } from "svelte";
+  import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -60,7 +61,11 @@
               Error loading resources: {$magicAuthTokensQuery.error?.message}
             </div>
           {:else if $magicAuthTokensQuery.data}
-            <PublicURLsTable {magicAuthTokens} {organization} {project} />
+            {#if $magicAuthTokensQuery.data.tokens.length === 0}
+              <NoPublicURLCTA />
+            {:else}
+              <PublicURLsTable {magicAuthTokens} {organization} {project} />
+            {/if}
           {/if}
         {/if}
       </div>
