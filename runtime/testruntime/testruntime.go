@@ -229,6 +229,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 }
 
 func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) {
+	require.NoError(t, godotenv.Load())
 	if os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN") == "" {
 		t.Skip("skipping the test without the test instance")
 	}
@@ -237,7 +238,6 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
-	require.NoError(t, godotenv.Load())
 	dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 
 	inst := &drivers.Instance{
