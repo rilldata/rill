@@ -10,7 +10,6 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
-  import CLICommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
 
   export let open = false;
@@ -27,11 +26,17 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>To update this deployment, use GitHub</AlertDialogTitle>
-      <AlertDialogDescription class="flex flex-col gap-y-2 pt-2">
+      <AlertDialogDescription class="flex flex-col gap-y-4 pt-2">
         <div>
-          This project has already been connected to a GitHub repo. Please use
-          the command line to push changes to GitHub, which will update Rill
-          Cloud.
+          This project has already been connected to a GitHub repo. Please push
+          changes directly to GitHub and the project in Rill Cloud will
+          automatically be updated.
+          <a
+            href="https://docs.rilldata.com/deploy/existing-project/github-101"
+            target="_blank"
+          >
+            Learn more ->
+          </a>
         </div>
         <div class="w-fit mx-auto">
           <div class="flex flex-row gap-x-1 items-center">
@@ -54,7 +59,6 @@
             </div>
           {/if}
         </div>
-        <CLICommandDisplay command="git push" className="w-fit mx-auto" />
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>

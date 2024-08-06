@@ -114,7 +114,12 @@
         <span class="mt-1">
           Unlock the power of BI-as-code with GitHub-backed collaboration,
           version control, and approval workflows.<br />
-          <a href="https://docs.rilldata.com" target="_blank">Learn more</a>
+          <a
+            href="https://docs.rilldata.com/deploy/existing-project/github-101"
+            target="_blank"
+          >
+            Learn more ->
+          </a>
         </span>
         <ConnectToGithubButton
           onContinue={confirmConnectToGithub}
