@@ -4,6 +4,7 @@
   import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import AlertOwnerBullet from "./AlertOwnerBullet.svelte";
+  import { timeAgo } from "../../dashboards/listing/utils";
 
   export let organization: string;
   export let project: string;
@@ -34,8 +35,7 @@
     {#if !lastTrigger}
       <span>Hasn't triggered yet</span>
     {:else}
-      <!-- TODO: format -->
-      <span>Last triggered {lastTrigger}</span>
+      <span>Last triggered {timeAgo(new Date(lastTrigger))}</span>
     {/if}
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
