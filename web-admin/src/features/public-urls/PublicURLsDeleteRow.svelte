@@ -5,7 +5,7 @@
 
   export let id: string;
 
-  async function handleClick(e: PointerEvent) {
+  async function handleClick(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
 
@@ -15,7 +15,7 @@
       message: `Magic auth token deleted`,
     });
 
-    // TODO: refetch queries
+    // TODO: refetch queries of public urls
   }
 </script>
 
