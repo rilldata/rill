@@ -49,8 +49,8 @@
   }
 </script>
 
-<Tooltip distance={8}>
-  {#if isDeployed}
+{#if isDeployed}
+  <Tooltip distance={8}>
     <Button
       loading={$currentProject.isLoading}
       on:click={onShowRedeploy}
@@ -58,7 +58,12 @@
     >
       Update
     </Button>
-  {:else}
+    <TooltipContent slot="tooltip-content">
+      Push changes to Rill Cloud
+    </TooltipContent>
+  </Tooltip>
+{:else}
+  <Tooltip distance={8}>
     <Button
       loading={$currentProject.isLoading}
       on:click={onShowDeploy}
@@ -66,11 +71,11 @@
     >
       Deploy to share
     </Button>
-  {/if}
-  <TooltipContent slot="tooltip-content">
-    Deploy this dashboard to Rill Cloud
-  </TooltipContent>
-</Tooltip>
+    <TooltipContent slot="tooltip-content">
+      Deploy this dashboard to Rill Cloud
+    </TooltipContent>
+  </Tooltip>
+{/if}
 
 <AlertDialog bind:open={deployConfirmOpen}>
   <AlertDialogTrigger asChild>
