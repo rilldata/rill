@@ -5,10 +5,16 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-import type { DeployValidationResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
+import {
+  GetCurrentProjectResponse,
+  GetCurrentUserResponse,
+  GetMetadataResponse,
+} from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import {
   createLocalServiceDeploy,
-  createLocalServiceDeployValidation,
+  createLocalServiceGetCurrentProject,
+  createLocalServiceGetCurrentUser,
+  createLocalServiceGetMetadata,
   createLocalServiceRedeploy,
   getLocalServiceGetCurrentUserQueryKey,
   localServiceGetCurrentUser,
@@ -16,34 +22,42 @@ import {
 import { derived, get, writable } from "svelte/store";
 
 export class ProjectDeployer {
-  public readonly validation = createLocalServiceDeployValidation({
-    query: {
-      refetchOnWindowFocus: true,
-    },
-  });
+  public readonly metadata = createLocalServiceGetMetadata();
+  public readonly user = createLocalServiceGetCurrentUser();
+  public readonly project = createLocalServiceGetCurrentProject();
   public readonly promptOrgSelection = writable(false);
 
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
 
   public get isDeployed() {
-    const validation = get(this.validation).data as DeployValidationResponse;
-    return !!validation?.deployedProjectId;
+    const projectResp = get(this.project).data as GetCurrentProjectResponse;
+    return !!projectResp?.project;
   }
 
   public getStatus() {
     return derived(
-      [this.validation, this.deployMutation, this.redeployMutation],
-      ([validation, deployMutation, redeployMutation]) => {
+      [
+        this.metadata,
+        this.user,
+        this.project,
+        this.deployMutation,
+        this.redeployMutation,
+      ],
+      ([metadata, user, project, deployMutation, redeployMutation]) => {
         if (
-          validation.error ||
+          metadata.error ||
+          user.error ||
+          project.error ||
           deployMutation.error ||
           redeployMutation.error
         ) {
           return {
             isLoading: false,
             error: extractDeployError(
-              (validation.error as ConnectError) ??
+              (metadata.error as ConnectError) ??
+                (user.error as ConnectError) ??
+                (project.error as ConnectError) ??
                 (deployMutation.error as ConnectError) ??
                 (redeployMutation.error as ConnectError),
             ).message,
@@ -61,48 +75,39 @@ export class ProjectDeployer {
     );
   }
 
-  private async validate() {
-    let validation = get(this.validation).data as DeployValidationResponse;
-    if (validation?.deployedProjectId) {
-      return true;
-    }
+  public async loginOrDeploy() {
+    await waitUntil(
+      () => !get(this.metadata).isLoading && !get(this.user).isLoading,
+    );
 
-    await waitUntil(() => !get(this.validation).isFetching);
-    validation = get(this.validation).data as DeployValidationResponse;
-
-    if (!validation.isAuthenticated) {
+    const metadata = get(this.metadata).data as GetMetadataResponse;
+    const userResp = get(this.user).data as GetCurrentUserResponse;
+    if (!userResp.user) {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
       window.open(
-        `${validation.loginUrl}/?redirect=${get(page).url.toString()}`,
+        `${metadata.loginUrl}/?redirect=${get(page).url.toString()}`,
         "_self",
       );
-      return false;
     } else {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
     }
 
-    // Disabling for now. Will support this though "Connect to github"
-    // if (
-    //   validation.isGithubRepo &&
-    //   (!validation.isGithubConnected || !validation.isGithubRepoAccessGranted)
-    // ) {
-    //   // if the project is a github repo and not connected to github then redirect to grant access
-    //   window.open(`${validation.githubGrantAccessUrl}`, "_self");
-    //   return false;
-    // }
-
-    return true;
+    return this.deploy();
   }
 
   public async deploy(org?: string) {
-    // safeguard around deploy
-    if (!(await this.validate())) return;
+    await waitUntil(() => !get(this.project).isLoading);
 
-    const validation = get(this.validation).data as DeployValidationResponse;
-    if (validation.deployedProjectId) {
+    const projectResp = get(this.project).data as GetCurrentProjectResponse;
+    if (projectResp.project) {
+      if (projectResp.project.githubUrl) {
+        // we do not support pushing to a project already connected to github
+        return;
+      }
+
       const resp = await get(this.redeployMutation).mutateAsync({
-        projectId: validation.deployedProjectId,
-        reupload: !validation.isGithubRepo,
+        projectId: projectResp.project.id,
+        reupload: true,
       });
       window.open(resp.frontendUrl, "_self");
       return;
@@ -111,7 +116,7 @@ export class ProjectDeployer {
     let checkNextOrg = false;
     if (!org) {
       const { org: inferredOrg, checkNextOrg: inferredCheckNextOrg } =
-        await this.inferOrg(validation);
+        await this.inferOrg(get(this.user).data?.rillUserOrgs ?? []);
       // no org was inferred. right now this is because we have prompted the user for an org
       if (!inferredOrg) return;
       org = inferredOrg;
@@ -121,19 +126,18 @@ export class ProjectDeployer {
     // hardcoded to upload for now
     const frontendUrl = await this.tryDeployWithOrg(
       org,
-      validation.localProjectName,
-      true,
+      projectResp.localProjectName,
       checkNextOrg,
     );
     window.open(frontendUrl + "/-/invite", "_self");
   }
 
-  private async inferOrg(validation: DeployValidationResponse) {
+  private async inferOrg(rillUserOrgs: string[]) {
     let org: string | undefined;
     let checkNextOrg = false;
-    if (validation.rillUserOrgs.length === 1) {
-      org = validation.rillUserOrgs[0];
-    } else if (validation.rillUserOrgs.length > 1) {
+    if (rillUserOrgs.length === 1) {
+      org = rillUserOrgs[0];
+    } else if (rillUserOrgs.length > 1) {
       this.promptOrgSelection.set(true);
     } else {
       const userResp = await queryClient.fetchQuery({
@@ -149,7 +153,6 @@ export class ProjectDeployer {
   private async tryDeployWithOrg(
     org: string,
     projectName: string,
-    upload: boolean,
     checkNextOrg: boolean,
   ) {
     let i = 0;
@@ -160,7 +163,7 @@ export class ProjectDeployer {
         const resp = await get(this.deployMutation).mutateAsync({
           projectName,
           org: `${org}${i === 0 ? "" : "-" + i}`,
-          upload,
+          upload: true,
         });
         void behaviourEvent?.fireDeployEvent(
           BehaviourEventAction.DeploySuccess,

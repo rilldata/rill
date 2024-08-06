@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
-import { GithubPermission, User } from "../../admin/v1/api_pb.js";
+import { GithubPermission, Project, User } from "../../admin/v1/api_pb.js";
 
 /**
  * @generated from message rill.local.v1.PingRequest
@@ -165,6 +165,11 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
    */
   grpcPort = 0;
 
+  /**
+   * @generated from field: string login_url = 12;
+   */
+  loginUrl = "";
+
   constructor(data?: PartialMessage<GetMetadataResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -184,6 +189,7 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
     { no: 9, name: "analytics_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "readonly", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "grpc_port", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 12, name: "login_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMetadataResponse {
@@ -771,6 +777,11 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
    */
   user?: User;
 
+  /**
+   * @generated from field: repeated string rill_user_orgs = 2;
+   */
+  rillUserOrgs: string[] = [];
+
   constructor(data?: PartialMessage<GetCurrentUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -780,6 +791,7 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
   static readonly typeName = "rill.local.v1.GetCurrentUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user", kind: "message", T: User },
+    { no: 2, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentUserResponse {
@@ -796,6 +808,80 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
 
   static equals(a: GetCurrentUserResponse | PlainMessage<GetCurrentUserResponse> | undefined, b: GetCurrentUserResponse | PlainMessage<GetCurrentUserResponse> | undefined): boolean {
     return proto3.util.equals(GetCurrentUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GetCurrentProjectRequest
+ */
+export class GetCurrentProjectRequest extends Message<GetCurrentProjectRequest> {
+  constructor(data?: PartialMessage<GetCurrentProjectRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GetCurrentProjectRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentProjectRequest {
+    return new GetCurrentProjectRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCurrentProjectRequest {
+    return new GetCurrentProjectRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCurrentProjectRequest {
+    return new GetCurrentProjectRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetCurrentProjectRequest | PlainMessage<GetCurrentProjectRequest> | undefined, b: GetCurrentProjectRequest | PlainMessage<GetCurrentProjectRequest> | undefined): boolean {
+    return proto3.util.equals(GetCurrentProjectRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GetCurrentProjectResponse
+ */
+export class GetCurrentProjectResponse extends Message<GetCurrentProjectResponse> {
+  /**
+   * @generated from field: string local_project_name = 1;
+   */
+  localProjectName = "";
+
+  /**
+   * @generated from field: rill.admin.v1.Project project = 2;
+   */
+  project?: Project;
+
+  constructor(data?: PartialMessage<GetCurrentProjectResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GetCurrentProjectResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "message", T: Project },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentProjectResponse {
+    return new GetCurrentProjectResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCurrentProjectResponse {
+    return new GetCurrentProjectResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCurrentProjectResponse {
+    return new GetCurrentProjectResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetCurrentProjectResponse | PlainMessage<GetCurrentProjectResponse> | undefined, b: GetCurrentProjectResponse | PlainMessage<GetCurrentProjectResponse> | undefined): boolean {
+    return proto3.util.equals(GetCurrentProjectResponse, a, b);
   }
 }
 

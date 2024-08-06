@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
   import {
     AlertDialog,
     AlertDialogContent,

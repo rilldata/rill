@@ -12,25 +12,39 @@
   import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
+  import { createLocalServiceGetCurrentProject } from "@rilldata/web-common/runtime-client/local-service";
+  import { get } from "svelte/store";
   import { Button } from "../../../components/button";
 
-  $: deployValidation = createLocalServiceDeployValidation({
+  $: currentProject = createLocalServiceGetCurrentProject({
     query: {
       refetchOnWindowFocus: true,
     },
   });
-  $: isDeployed = !!$deployValidation.data?.deployedProjectId;
+  $: isDeployed = !!$currentProject.data?.project;
 
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
-  let open = false;
-  function onShowDeploy() {
-    if (!isDeployed) {
-      open = true;
+  let pushThroughGitOpen = false;
+  async function onShowRedeploy() {
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
+
+    await waitUntil(() => !get(currentProject).isFetching);
+    if (get(currentProject).data?.project?.githubUrl) {
+      pushThroughGitOpen = true;
+      return;
     }
+
+    window.open(deployPageUrl, "_target");
+  }
+
+  let deployConfirmOpen = false;
+  function onShowDeploy() {
+    deployConfirmOpen = true;
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
   }
 </script>
@@ -38,17 +52,15 @@
 <Tooltip distance={8}>
   {#if isDeployed}
     <Button
-      loading={$deployValidation.isLoading}
-      on:click={onShowDeploy}
+      loading={$currentProject.isLoading}
+      on:click={onShowRedeploy}
       type="primary"
-      href={deployPageUrl}
-      target="_blank"
     >
-      Redeploy
+      Update
     </Button>
   {:else}
     <Button
-      loading={$deployValidation.isLoading}
+      loading={$currentProject.isLoading}
       on:click={onShowDeploy}
       type="primary"
     >
@@ -60,7 +72,7 @@
   </TooltipContent>
 </Tooltip>
 
-<AlertDialog bind:open>
+<AlertDialog bind:open={deployConfirmOpen}>
   <AlertDialogTrigger asChild>
     <div class="hidden"></div>
   </AlertDialogTrigger>
@@ -79,9 +91,11 @@
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
-          <Button on:click={() => (open = false)} type="secondary">Back</Button>
+          <Button on:click={() => (deployConfirmOpen = false)} type="secondary"
+            >Back</Button
+          >
           <Button
-            on:click={() => (open = false)}
+            on:click={() => (deployConfirmOpen = false)}
             type="primary"
             href={deployPageUrl}
             target="_blank">Continue</Button
@@ -91,3 +105,9 @@
     </div>
   </AlertDialogContent>
 </AlertDialog>
+
+<PushToGitForDeployDialog
+  bind:open={pushThroughGitOpen}
+  githubUrl={$currentProject.data?.project?.githubUrl ?? ""}
+  subpath={$currentProject.data?.project?.subpath ?? ""}
+/>

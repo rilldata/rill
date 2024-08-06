@@ -13,7 +13,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
 
   export let organization: string;
   export let project: string;
