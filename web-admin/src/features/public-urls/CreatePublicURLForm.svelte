@@ -17,6 +17,7 @@
     getSanitizedDashboardStateParam,
     hasDashboardWhereFilter,
   } from "./form-utils";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const {
     dashboardStore,
@@ -86,6 +87,14 @@
             `${window.location.origin}/${organization}/${project}/-/share/${token}`,
             "URL copied to clipboard",
           );
+
+          eventBus.emit("notification", {
+            message: "Public URL created",
+            link: {
+              href: `/${organization}/${project}/-/settings/#public-urls`,
+              text: "Go to public URLs",
+            },
+          });
         } catch (error) {
           const typedError = error as HTTPError;
           apiError = typedError.response?.data?.message ?? typedError.message;
