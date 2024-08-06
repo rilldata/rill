@@ -8,7 +8,7 @@ import ComingSoon from '@site/src/components/ComingSoon';
 
 <ComingSoon />
 
-<div id='contents_to_overlay'>
+<div class='contents_to_overlay'>
 **Welcome to Rill**
 
 

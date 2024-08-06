@@ -8,7 +8,7 @@ import ComingSoon from '@site/src/components/ComingSoon';
 
 <ComingSoon />
 
-<div id='contents_to_overlay'>
+<div class='contents_to_overlay'>
 **Installing Rill [Linux / MacOS]**
 
 Let’s install the Rill binary to your local machine.
