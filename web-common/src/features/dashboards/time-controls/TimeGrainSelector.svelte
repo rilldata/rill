@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -13,7 +12,6 @@
   } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { V1TimeGrain } from "../../../runtime-client";
-
   import {
     metricsExplorerStore,
     useDashboardStore,
@@ -132,16 +130,15 @@
           use:builder.action
           {...builder}
           aria-label="Select a time grain"
-          class="flex items-center gap-x-0.5 px-1.5 text-gray-700 hover:text-inherit"
+          class="pill"
         >
-          <div>
-            by <span class="font-bold">{capitalizedLabel}</span>
+          <span class="ml-1">by</span>
+
+          <span class="font-bold">{capitalizedLabel}</span>
+
+          <div class="flex-none transition-transform" class:-rotate-180={open}>
+            <CaretDownIcon />
           </div>
-          <IconSpaceFixer pullRight>
-            <div class="transition-transform" class:-rotate-180={open}>
-              <CaretDownIcon size="14px" />
-            </div>
-          </IconSpaceFixer>
         </button>
       {/if}
     </DropdownMenu.Trigger>
@@ -159,3 +156,11 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}
+
+<style lang="postcss">
+  .pill {
+    @apply bg-background rounded-full;
+    @apply border overflow-hidden flex gap-x-1.5 w-fit h-7;
+    @apply px-2 items-center justify-center;
+  }
+</style>
