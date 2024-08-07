@@ -35,14 +35,14 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
+  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
-
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
   $: metricsViewSpec = $metricsView.data ?? {};
 

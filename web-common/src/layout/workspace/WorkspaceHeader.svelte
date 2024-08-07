@@ -105,6 +105,7 @@
   input,
   label {
     @apply whitespace-pre rounded border-2 border-transparent;
+    @apply truncate;
   }
 
   input {
@@ -118,7 +119,7 @@
 
   header {
     @apply justify-between;
-    @apply flex items-center pl-4 border-b border-gray-300 overflow-hidden;
+    @apply flex items-center pl-4 py-2 border-b border-gray-300 overflow-hidden;
     height: var(--header-height);
   }
 

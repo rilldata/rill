@@ -1,26 +1,26 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
+  import { fly } from "svelte/transition";
+  import { useModelHasTimeSeries } from "../selectors";
   import { useMetricsView } from "../selectors/index";
   import { getStateManagers } from "../state-managers/state-managers";
-  import FilterButton from "./FilterButton.svelte";
-  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
+  import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
-  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
-  import { fly } from "svelte/transition";
-  import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
-  import { useModelHasTimeSeries } from "../selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
+  import FilterButton from "./FilterButton.svelte";
 
   export let readOnly = false;
 
   /** the height of a row of chips */
-  const ROW_HEIGHT = "26px";
+  const ROW_HEIGHT = "28px";
 
   const StateManagers = getStateManagers();
   const {

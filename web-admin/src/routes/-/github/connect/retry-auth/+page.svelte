@@ -9,8 +9,8 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
-  import GithubRepoInline from "../../../../../features/projects/GithubRepoInline.svelte";
-  import GithubUserInline from "../../../../../features/projects/GithubUserInline.svelte";
+  import GithubRepoInline from "@rilldata/web-admin/features/projects/github/GithubRepoInline.svelte";
+  import GithubUserInline from "@rilldata/web-admin/features/projects/github/GithubUserInline.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
@@ -28,16 +28,16 @@
 </script>
 
 <svelte:head>
-  <title>Could not connect to Github</title>
+  <title>Could not connect to GitHub</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <GithubFail />
-      <CtaHeader>Could not connect to Github</CtaHeader>
+      <CtaHeader>Could not connect to GitHub</CtaHeader>
       <CtaMessage>
-        Your authorized Github account <GithubUserInline {githubUsername} />
+        Your authorized GitHub account <GithubUserInline {githubUsername} />
         does not have access to <GithubRepoInline githubUrl={remote} />.
       </CtaMessage>
       <CtaMessage>
@@ -47,7 +47,7 @@
         variant="primary"
         href={encodeURI(ADMIN_URL + "/github/auth/login?remote=" + remote)}
       >
-        Connect to Github
+        Connect to GitHub
       </CtaButton>
     </CtaContentContainer>
   </CtaLayoutContainer>

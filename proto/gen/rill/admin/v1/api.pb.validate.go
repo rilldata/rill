@@ -19826,6 +19826,8 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for State
+
 	if len(errors) > 0 {
 		return IssueMagicAuthTokenRequestMultiError(errors)
 	}
@@ -20292,6 +20294,243 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListMagicAuthTokensResponseValidationError{}
+
+// Validate checks the field values on GetCurrentMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetCurrentMagicAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetCurrentMagicAuthTokenRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetCurrentMagicAuthTokenRequestMultiError, or nil if none found.
+func (m *GetCurrentMagicAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetCurrentMagicAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return GetCurrentMagicAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetCurrentMagicAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by GetCurrentMagicAuthTokenRequest.ValidateAll()
+// if the designated constraints aren't met.
+type GetCurrentMagicAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetCurrentMagicAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetCurrentMagicAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// GetCurrentMagicAuthTokenRequestValidationError is the validation error
+// returned by GetCurrentMagicAuthTokenRequest.Validate if the designated
+// constraints aren't met.
+type GetCurrentMagicAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetCurrentMagicAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetCurrentMagicAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetCurrentMagicAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetCurrentMagicAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetCurrentMagicAuthTokenRequestValidationError) ErrorName() string {
+	return "GetCurrentMagicAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetCurrentMagicAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetCurrentMagicAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetCurrentMagicAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetCurrentMagicAuthTokenRequestValidationError{}
+
+// Validate checks the field values on GetCurrentMagicAuthTokenResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *GetCurrentMagicAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetCurrentMagicAuthTokenResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetCurrentMagicAuthTokenResponseMultiError, or nil if none found.
+func (m *GetCurrentMagicAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetCurrentMagicAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetToken()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetCurrentMagicAuthTokenResponseValidationError{
+					field:  "Token",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetCurrentMagicAuthTokenResponseValidationError{
+					field:  "Token",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetToken()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetCurrentMagicAuthTokenResponseValidationError{
+				field:  "Token",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetCurrentMagicAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetCurrentMagicAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// GetCurrentMagicAuthTokenResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetCurrentMagicAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetCurrentMagicAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetCurrentMagicAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// GetCurrentMagicAuthTokenResponseValidationError is the validation error
+// returned by GetCurrentMagicAuthTokenResponse.Validate if the designated
+// constraints aren't met.
+type GetCurrentMagicAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetCurrentMagicAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetCurrentMagicAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetCurrentMagicAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetCurrentMagicAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetCurrentMagicAuthTokenResponseValidationError) ErrorName() string {
+	return "GetCurrentMagicAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetCurrentMagicAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetCurrentMagicAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetCurrentMagicAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetCurrentMagicAuthTokenResponseValidationError{}
 
 // Validate checks the field values on RevokeMagicAuthTokenRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -21169,6 +21408,224 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListGithubUserReposResponseValidationError{}
+
+// Validate checks the field values on ConnectProjectToGithubRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConnectProjectToGithubRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectProjectToGithubRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ConnectProjectToGithubRequestMultiError, or nil if none found.
+func (m *ConnectProjectToGithubRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectProjectToGithubRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Repo
+
+	// no validation rules for Branch
+
+	// no validation rules for Subpath
+
+	// no validation rules for Force
+
+	if len(errors) > 0 {
+		return ConnectProjectToGithubRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectProjectToGithubRequestMultiError is an error wrapping multiple
+// validation errors returned by ConnectProjectToGithubRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ConnectProjectToGithubRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectProjectToGithubRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectProjectToGithubRequestMultiError) AllErrors() []error { return m }
+
+// ConnectProjectToGithubRequestValidationError is the validation error
+// returned by ConnectProjectToGithubRequest.Validate if the designated
+// constraints aren't met.
+type ConnectProjectToGithubRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectProjectToGithubRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectProjectToGithubRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectProjectToGithubRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectProjectToGithubRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectProjectToGithubRequestValidationError) ErrorName() string {
+	return "ConnectProjectToGithubRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConnectProjectToGithubRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectProjectToGithubRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectProjectToGithubRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectProjectToGithubRequestValidationError{}
+
+// Validate checks the field values on ConnectProjectToGithubResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConnectProjectToGithubResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectProjectToGithubResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ConnectProjectToGithubResponseMultiError, or nil if none found.
+func (m *ConnectProjectToGithubResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectProjectToGithubResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ConnectProjectToGithubResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectProjectToGithubResponseMultiError is an error wrapping multiple
+// validation errors returned by ConnectProjectToGithubResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ConnectProjectToGithubResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectProjectToGithubResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectProjectToGithubResponseMultiError) AllErrors() []error { return m }
+
+// ConnectProjectToGithubResponseValidationError is the validation error
+// returned by ConnectProjectToGithubResponse.Validate if the designated
+// constraints aren't met.
+type ConnectProjectToGithubResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectProjectToGithubResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectProjectToGithubResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectProjectToGithubResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectProjectToGithubResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectProjectToGithubResponseValidationError) ErrorName() string {
+	return "ConnectProjectToGithubResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConnectProjectToGithubResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectProjectToGithubResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectProjectToGithubResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectProjectToGithubResponseValidationError{}
 
 // Validate checks the field values on GetCloneCredentialsRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -31279,6 +31736,8 @@ func (m *MagicAuthToken) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for State
+
 	if len(errors) > 0 {
 		return MagicAuthTokenMultiError(errors)
 	}
@@ -32364,6 +32823,8 @@ func (m *ListGithubUserReposResponse_Repo) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for Url
+
+	// no validation rules for DefaultBranch
 
 	if len(errors) > 0 {
 		return ListGithubUserReposResponse_RepoMultiError(errors)

@@ -1,6 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
 import type { UserConfig } from "vite";
+import { readPublicEmailDomains } from "./src/features/projects/user-invite/readPublicEmailDomains";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
@@ -15,6 +16,9 @@ const config: UserConfig = {
   server: {
     port: 3000,
     strictPort: true,
+  },
+  define: {
+    RillPublicEmailDomains: readPublicEmailDomains(),
   },
   plugins: [sveltekit()],
   envDir: "../",

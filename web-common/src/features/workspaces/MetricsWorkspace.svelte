@@ -1,8 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/connectors/olap/selectors";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
@@ -14,9 +12,9 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditor.svelte";
-  import MetricsInspector from "@rilldata/web-common/features/metrics-views/workspace/inspector/MetricsInspector.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -28,7 +26,6 @@
 
   export let fileArtifact: FileArtifact;
 
-  let showDeployModal = false;
   let previewStatus: string[] = [];
 
   $: ({ instanceId } = $runtime);
@@ -115,26 +112,20 @@
 
 <WorkspaceContainer inspector={isModelingSupported}>
   <WorkspaceHeader
-    slot="header"
-    showInspectorToggle={isModelingSupported}
-    titleInput={fileName}
     hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
+    showInspectorToggle={isModelingSupported}
+    slot="header"
+    titleInput={fileName}
   >
-    <div slot="cta" class="flex gap-x-2">
-      <Tooltip distance={8}>
-        <Button on:click={() => (showDeployModal = true)} type="secondary">
-          Deploy
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Deploy this dashboard to Rill Cloud
-        </TooltipContent>
-      </Tooltip>
+    <div class="flex gap-x-2" slot="cta">
       <PreviewButton
         dashboardName={metricsViewName}
         status={previewStatus}
         disabled={previewDisabled}
       />
+      <DeployDashboardCta />
+      <LocalAvatarButton />
     </div>
   </WorkspaceHeader>
 
@@ -147,10 +138,5 @@
     metricViewName={metricsViewName}
   />
 
-  <MetricsInspector yaml={$remoteContent ?? ""} slot="inspector" />
+  <MetricsInspector {filePath} slot="inspector" />
 </WorkspaceContainer>
-
-<DeployDashboardCta
-  on:close={() => (showDeployModal = false)}
-  open={showDeployModal}
-/>

@@ -74,11 +74,8 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			TTL:         runtimeAccessTokenDefaultTTL,
 			InstancePermissions: map[string][]runtimeauth.Permission{
 				depl.RuntimeInstanceID: {
-					// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
 					runtimeauth.ReadObjects,
 					runtimeauth.ReadMetrics,
-					runtimeauth.ReadProfiling,
-					runtimeauth.ReadRepo,
 					runtimeauth.ReadAPI,
 				},
 			},

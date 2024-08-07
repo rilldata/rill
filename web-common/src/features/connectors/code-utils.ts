@@ -35,9 +35,9 @@ driver: ${connector.name}`;
       .map((property) => property.key) || [];
 
   // Compile key value pairs
-  const compiledKeyValues = Object.entries(formValues)
-    .map(([key, formValue]) => {
-      const value = formValue as string;
+  const compiledKeyValues = Object.keys(formValues)
+    .map((key) => {
+      const value = formValues[key] as string;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
@@ -63,7 +63,7 @@ driver: ${connector.name}`;
 export async function updateDotEnvWithSecrets(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
-  formValues: Record<string, string>,
+  formValues: Record<string, unknown>,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -105,7 +105,11 @@ export async function updateDotEnvWithSecrets(
       key,
     );
 
-    blob = replaceOrAddEnvVariable(blob, connectorSecretKey, formValues[key]);
+    blob = replaceOrAddEnvVariable(
+      blob,
+      connectorSecretKey,
+      formValues[key] as string,
+    );
   });
 
   return blob;

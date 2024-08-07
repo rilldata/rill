@@ -6860,6 +6860,13 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
    */
   metricsViewFields: string[] = [];
 
+  /**
+   * Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+   *
+   * @generated from field: string state = 7;
+   */
+  state = "";
+
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6874,6 +6881,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 4, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "metrics_view_filter", kind: "message", T: Expression },
     { no: 6, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -7031,6 +7039,74 @@ export class ListMagicAuthTokensResponse extends Message<ListMagicAuthTokensResp
 
   static equals(a: ListMagicAuthTokensResponse | PlainMessage<ListMagicAuthTokensResponse> | undefined, b: ListMagicAuthTokensResponse | PlainMessage<ListMagicAuthTokensResponse> | undefined): boolean {
     return proto3.util.equals(ListMagicAuthTokensResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetCurrentMagicAuthTokenRequest
+ */
+export class GetCurrentMagicAuthTokenRequest extends Message<GetCurrentMagicAuthTokenRequest> {
+  constructor(data?: PartialMessage<GetCurrentMagicAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetCurrentMagicAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentMagicAuthTokenRequest {
+    return new GetCurrentMagicAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCurrentMagicAuthTokenRequest {
+    return new GetCurrentMagicAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCurrentMagicAuthTokenRequest {
+    return new GetCurrentMagicAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetCurrentMagicAuthTokenRequest | PlainMessage<GetCurrentMagicAuthTokenRequest> | undefined, b: GetCurrentMagicAuthTokenRequest | PlainMessage<GetCurrentMagicAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(GetCurrentMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetCurrentMagicAuthTokenResponse
+ */
+export class GetCurrentMagicAuthTokenResponse extends Message<GetCurrentMagicAuthTokenResponse> {
+  /**
+   * @generated from field: rill.admin.v1.MagicAuthToken token = 1;
+   */
+  token?: MagicAuthToken;
+
+  constructor(data?: PartialMessage<GetCurrentMagicAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetCurrentMagicAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "message", T: MagicAuthToken },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentMagicAuthTokenResponse {
+    return new GetCurrentMagicAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCurrentMagicAuthTokenResponse {
+    return new GetCurrentMagicAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCurrentMagicAuthTokenResponse {
+    return new GetCurrentMagicAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetCurrentMagicAuthTokenResponse | PlainMessage<GetCurrentMagicAuthTokenResponse> | undefined, b: GetCurrentMagicAuthTokenResponse | PlainMessage<GetCurrentMagicAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(GetCurrentMagicAuthTokenResponse, a, b);
   }
 }
 
@@ -7387,6 +7463,11 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
    */
   url = "";
 
+  /**
+   * @generated from field: string default_branch = 5;
+   */
+  defaultBranch = "";
+
   constructor(data?: PartialMessage<ListGithubUserReposResponse_Repo>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7399,6 +7480,7 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
     { no: 2, name: "owner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "default_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGithubUserReposResponse_Repo {
@@ -7415,6 +7497,104 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
 
   static equals(a: ListGithubUserReposResponse_Repo | PlainMessage<ListGithubUserReposResponse_Repo> | undefined, b: ListGithubUserReposResponse_Repo | PlainMessage<ListGithubUserReposResponse_Repo> | undefined): boolean {
     return proto3.util.equals(ListGithubUserReposResponse_Repo, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ConnectProjectToGithubRequest
+ */
+export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithubRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string repo = 3;
+   */
+  repo = "";
+
+  /**
+   * @generated from field: string branch = 4;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string subpath = 5;
+   */
+  subpath = "";
+
+  /**
+   * @generated from field: bool force = 6;
+   */
+  force = false;
+
+  constructor(data?: PartialMessage<ConnectProjectToGithubRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ConnectProjectToGithubRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "repo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectProjectToGithubRequest {
+    return new ConnectProjectToGithubRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectProjectToGithubRequest {
+    return new ConnectProjectToGithubRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectProjectToGithubRequest {
+    return new ConnectProjectToGithubRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectProjectToGithubRequest | PlainMessage<ConnectProjectToGithubRequest> | undefined, b: ConnectProjectToGithubRequest | PlainMessage<ConnectProjectToGithubRequest> | undefined): boolean {
+    return proto3.util.equals(ConnectProjectToGithubRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ConnectProjectToGithubResponse
+ */
+export class ConnectProjectToGithubResponse extends Message<ConnectProjectToGithubResponse> {
+  constructor(data?: PartialMessage<ConnectProjectToGithubResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ConnectProjectToGithubResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectProjectToGithubResponse {
+    return new ConnectProjectToGithubResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectProjectToGithubResponse {
+    return new ConnectProjectToGithubResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectProjectToGithubResponse {
+    return new ConnectProjectToGithubResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectProjectToGithubResponse | PlainMessage<ConnectProjectToGithubResponse> | undefined, b: ConnectProjectToGithubResponse | PlainMessage<ConnectProjectToGithubResponse> | undefined): boolean {
+    return proto3.util.equals(ConnectProjectToGithubResponse, a, b);
   }
 }
 
@@ -11388,6 +11568,11 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    */
   metricsViewFields: string[] = [];
 
+  /**
+   * @generated from field: string state = 12;
+   */
+  state = "";
+
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11407,6 +11592,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
     { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
