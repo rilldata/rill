@@ -111,9 +111,9 @@
           </span>
         {/if}
       {:else}
-        <span class="mt-1">
+        <span class="my-1">
           Unlock the power of BI-as-code with GitHub-backed collaboration,
-          version control, and approval workflows.<br />
+          version control, and approval workflows.
           <a
             href="https://docs.rilldata.com/deploy/existing-project/github-101"
             target="_blank"
