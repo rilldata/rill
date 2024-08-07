@@ -184,6 +184,10 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
+	if err := e.rewritePercentOfTotals(ctx, qry, e.metricsView, e.security); err != nil {
+		return nil, err
+	}
+
 	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
@@ -205,6 +209,8 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		if err != nil {
 			return nil, err
 		}
+
+		fmt.Println("Query", sql)
 
 		res, err = e.olap.Execute(ctx, &drivers.Statement{
 			Query:            sql,
@@ -288,6 +294,10 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 	}
 
 	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
+		return "", err
+	}
+
+	if err := e.rewritePercentOfTotals(ctx, qry, e.metricsView, e.security); err != nil {
 		return "", err
 	}
 

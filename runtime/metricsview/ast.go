@@ -380,11 +380,25 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("%s*100/SUM(%s)", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
+			Expression:         fmt.Sprintf("%s*100/%f", a.dialect.EscapeIdentifier(m.Name), qm.Compute.PercentOfTotal.Total),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
-			Window:             &runtimev1.MetricsViewSpec_MeasureWindow{},
 			Label:              fmt.Sprintf("%s (Σ%%)", m.Label),
+		}, nil
+	}
+
+	if qm.Compute.Sum != nil {
+		m, err := a.lookupMeasure(qm.Compute.Sum.Measure, visible)
+		if err != nil {
+			return nil, err
+		}
+
+		return &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:               qm.Name,
+			Expression:         fmt.Sprintf("SUM(%s)", a.dialect.EscapeIdentifier(m.Name)),
+			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+			ReferencedMeasures: []string{qm.Compute.Sum.Measure},
+			Label:              fmt.Sprintf("%s (Σ)", m.Label),
 		}, nil
 	}
 
