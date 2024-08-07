@@ -67,6 +67,7 @@
   $: githubUrl = githubConnectionUpdater.githubUrl;
   $: subpath = githubConnectionUpdater.subpath;
   $: branch = githubConnectionUpdater.branch;
+  $: disableContinue = !$githubUrl || !$branch || $status.isFetching;
 
   function onSelectedRepoChange(newUrl: string) {
     const repo = $userRepos.data?.repos?.find((r) => r.url === newUrl);
@@ -194,6 +195,7 @@
       <Button
         type="primary"
         loading={$connectToGithubMutation.isLoading}
+        disabled={disableContinue}
         on:click={() => updateGithubUrl(false)}>Continue</Button
       >
     </DialogFooter>

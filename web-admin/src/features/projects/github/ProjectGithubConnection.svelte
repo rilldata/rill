@@ -117,6 +117,7 @@
           <a
             href="https://docs.rilldata.com/deploy/existing-project/github-101"
             target="_blank"
+            class="text-primary-600"
           >
             Learn more ->
           </a>

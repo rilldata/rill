@@ -89,22 +89,28 @@
           <AlertDialogTitle>Deploy this project</AlertDialogTitle>
           <AlertDialogDescription>
             You’re about to deploy to Rill Cloud, where you can set alerts,
-            share dashboards, and more. <a
+            share dashboards, and more.
+            <a
               href="https://www.rilldata.com/pricing"
-              target="_blank">See pricing details</a
+              target="_blank"
+              class="text-primary-600"
             >
+              See pricing details
+            </a>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
-          <Button on:click={() => (deployConfirmOpen = false)} type="secondary"
-            >Back</Button
-          >
+          <Button on:click={() => (deployConfirmOpen = false)} type="secondary">
+            Back
+          </Button>
           <Button
             on:click={() => (deployConfirmOpen = false)}
             type="primary"
             href={deployPageUrl}
-            target="_blank">Continue</Button
+            target="_blank"
           >
+            Continue
+          </Button>
         </AlertDialogFooter>
       </div>
     </div>
