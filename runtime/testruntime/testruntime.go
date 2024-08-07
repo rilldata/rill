@@ -2,7 +2,9 @@ package testruntime
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -230,8 +232,9 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 
 func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) {
 	_, err := os.Stat(".env")
-	require.NoError(t, err)
-	require.NoError(t, godotenv.Load())
+	if !errors.Is(err, fs.ErrNotExist) {
+		require.NoError(t, godotenv.Load())
+	}
 	if os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN") == "" {
 		t.Skip("skipping the test without the test instance")
 	}
