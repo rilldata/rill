@@ -182,15 +182,16 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	return res, nil
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
+func (c *connection) estimateSize(includeTemp bool) int64 {
 	path := c.config.DBFilePath
 	if path == "" {
-		return 0, true
+		return 0
 	}
 
-	// Add .wal file path (e.g final size will be sum of *.db and *.db.wal)
-	dbWalPath := fmt.Sprintf("%s.wal", path)
-	paths := []string{path, dbWalPath}
+	paths := []string{path}
+	if includeTemp {
+		paths = append(paths, fmt.Sprintf("%s.wal", path))
+	}
 	if c.config.ExtTableStorage {
 		entries, err := os.ReadDir(c.config.DBStoragePath)
 		if err == nil { // ignore error
@@ -198,16 +199,24 @@ func (c *connection) EstimateSize() (int64, bool) {
 				if !entry.IsDir() {
 					continue
 				}
+				// this is to avoid counting temp tables during source ingestion
+				// in certain cases we only want to compute the size of the serving db files
+				if strings.HasPrefix(entry.Name(), "__rill_tmp_") && !includeTemp {
+					continue
+				}
 				path := filepath.Join(c.config.DBStoragePath, entry.Name())
 				version, exist, err := c.tableVersion(entry.Name())
 				if err != nil || !exist {
 					continue
 				}
-				paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db", version)), filepath.Join(path, fmt.Sprintf("%s.db.wal", version)))
+				paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db", version)))
+				if includeTemp {
+					paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db.wal", version)))
+				}
 			}
 		}
 	}
-	return fileSize(paths), true
+	return fileSize(paths)
 }
 
 // AddTableColumn implements drivers.OLAPStore.
@@ -743,10 +752,8 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 		return c.Exec(parentCtx, stmt)
 	}
 
-	// check current size
-	sz, _ := c.EstimateSize()
 	// current size already exceeds limit
-	if sz >= storageLimit {
+	if c.estimateSize(true) >= storageLimit {
 		return drivers.ErrStorageLimitExceeded
 	}
 
@@ -762,7 +769,7 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if size, ok := c.EstimateSize(); ok && size > storageLimit {
+				if c.estimateSize(true) > storageLimit {
 					limitExceeded.Store(true)
 					cancel()
 					return
