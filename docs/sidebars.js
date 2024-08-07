@@ -120,8 +120,25 @@ const sidebars = {
             label: 'Rill Expert',
             description: 'Rill 300 series: Advanced use cases and beyond',
             items: [
-                'learn/rill_learn_300/301_0',
-                'learn/rill_learn_300/302_0'
+              {
+                type: 'category',
+                label: 'Rill Custom Dashboards',
+                items: [
+                  'learn/rill_learn_300/custom_dashboards/301_0',
+                  'learn/rill_learn_300/custom_dashboards/301_1',
+                  'learn/rill_learn_300/custom_dashboards/301_2',
+                  'learn/rill_learn_300/custom_dashboards/301_3',
+                  
+                ]
+              },
+              {
+                type: 'category',
+                label: 'Incremental Models',
+                items: [
+                  'learn/rill_learn_300/incremental_models/302_0'
+                  
+                ]
+              }
               ]
           },
           {
