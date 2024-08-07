@@ -13,7 +13,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
 
   export let organization: string;
   export let project: string;
@@ -111,10 +111,16 @@
           </span>
         {/if}
       {:else}
-        <span class="mt-1">
+        <span class="my-1">
           Unlock the power of BI-as-code with GitHub-backed collaboration,
-          version control, and approval workflows.<br />
-          <a href="https://docs.rilldata.com" target="_blank">Learn more</a>
+          version control, and approval workflows.
+          <a
+            href="https://docs.rilldata.com/deploy/existing-project/github-101"
+            target="_blank"
+            class="text-primary-600"
+          >
+            Learn more ->
+          </a>
         </span>
         <ConnectToGithubButton
           onContinue={confirmConnectToGithub}
