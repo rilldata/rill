@@ -102,12 +102,19 @@ const sidebars = {
                   'learn/rill_learn_200/advanced_developer/204_2',
                 ]
               },
+              {
+                type: 'category',
+                label: 'Rill Cloud Features',
+                items: [
+                  'learn/rill_learn_200/cloud_components/205_0',
+                  'learn/rill_learn_200/cloud_components/205_1',
+                  'learn/rill_learn_200/cloud_components/205_2',
+                  'learn/rill_learn_200/cloud_components/205_3',
+                  'learn/rill_learn_200/cloud_components/205_4',
+                ]
+              },
 
-              'learn/rill_learn_200/cloud_components/205_0',
-              'learn/rill_learn_200/cloud_components/205_1',
-              'learn/rill_learn_200/cloud_components/205_2',
-              'learn/rill_learn_200/cloud_components/205_3',
-              'learn/rill_learn_200/cloud_components/205_4',
+
 
               'learn/rill_learn_200/206_0',
               
@@ -140,11 +147,44 @@ const sidebars = {
         type: 'category',
         label: 'Guides',
         items: [
-            'learn/guides/all_in_one',
-            'learn/guides/rill_clickhouse',
-            'learn/guides/one_dashboard',
-            'learn/guides/avg_avg',
-            'learn/guides/rill_on_rill',
+          {
+            type: 'doc',
+            id: 'learn/guides/index'  // Main index page
+            //className: 'hidden-page', // Custom className to hide from DocCardList
+          },
+          'learn/guides/use-case/all_in_one',
+ 
+
+          {
+            type: 'category',
+            label: 'Cloud Storage',
+            description: "See our guides specifically catered for cloud storage import",
+            items: [
+              'learn/guides/cloud-storage/ABS-to-Rill',
+              'learn/guides/cloud-storage/GCS-to-Rill',
+              'learn/guides/cloud-storage/S3-to-Rill',              
+            ]
+          },
+          {
+            type: 'category',
+            label: 'OLAP',
+            description: "In-depth into our different OLAP engines",
+            items: [
+              'learn/guides/OLAP/rill_clickhouse',           
+            ]
+          },
+          {
+            type: 'category',
+            label: 'Concepts Explained',
+            description: "Concepts further explained!",
+            items: [
+              'learn/guides/conceptual/avg_avg',  
+              'learn/guides/conceptual/one_dashboard',      
+            ]
+          },
+
+
+            'learn/guides/use-case/rill_on_rill',
             
         ],
   

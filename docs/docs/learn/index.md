@@ -8,6 +8,8 @@ sidebar_label: "Tutorials"
 
 >> Add some changes here from Marianne's input for why this guide matters!
 
+>> put a decription of the 100/200 dataset. Clickhouse commit history of their repository.
+
 We're excited to have you here. These tutorial to help you get started with Rill and empower you to build your own projects. 
 
 These courses are structured to follow along with our documentation and provide you with a working project for reference and to get you started on your Rill Journey!
