@@ -4390,28 +4390,28 @@ func TestMetricsViewAggregation_percent_of_totals(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
+		MetricsViewName: "ad_bids_metrics_view",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
 			{
-				Name: "dom",
+				Name: "domain",
 			},
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name: "m1",
+				Name: "total_records",
 			},
 			{
-				Name: "m1__pt",
+				Name: "total_records__pt",
 				Compute: &runtimev1.MetricsViewAggregationMeasure_PercentOfTotal{
 					PercentOfTotal: &runtimev1.MetricsViewAggregationMeasureComputePercentOfTotal{
-						Measure: "m1",
+						Measure: "total_records",
 					},
 				},
 			},
 		},
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "dom",
+				Name: "domain",
 				Desc: true,
 			},
 		},
@@ -4427,35 +4427,24 @@ func TestMetricsViewAggregation_percent_of_totals(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
-	require.Equal(t, "dom,m1,m1__pt", columnNames(fields))
+	require.Equal(t, "domain,total_records,total_records__pt", columnNames(fields))
 	i := 0
 
-	for _, sf := range q.Result.Schema.Fields {
-		fmt.Printf("%v ", sf.Name)
-	}
-	fmt.Printf("\n")
-
-	for i, row := range q.Result.Data {
-		for _, sf := range q.Result.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-	}
 	rows := q.Result.Data
 	require.Equal(t, 6, len(rows))
 
 	i = 0
-	require.Equal(t, "news.yahoo.com,1.50,11.23", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	require.Equal(t, "news.yahoo.com,77.00,6.90", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "news.google.com,3.59,26.94", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	require.Equal(t, "news.google.com,256.00,22.94", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "msn.com,1.52,11.39", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	require.Equal(t, "msn.com,86.00,7.71", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "instagram.com,3.71,27.81", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	require.Equal(t, "instagram.com,276.00,24.73", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "google.com,1.48,11.10", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	require.Equal(t, "google.com,64.00,5.73", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "facebook.com,1.54,11.53", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	require.Equal(t, "facebook.com,77.00,6.90", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 }
 
 func TestMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T) {
@@ -4463,28 +4452,28 @@ func TestMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T) {
 
 	limit := int64(2)
 	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
+		MetricsViewName: "ad_bids_metrics_view",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
 			{
-				Name: "dom",
+				Name: "domain",
 			},
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name: "m1",
+				Name: "total_records",
 			},
 			{
-				Name: "m1__pt",
+				Name: "total_records__pt",
 				Compute: &runtimev1.MetricsViewAggregationMeasure_PercentOfTotal{
 					PercentOfTotal: &runtimev1.MetricsViewAggregationMeasureComputePercentOfTotal{
-						Measure: "m1",
+						Measure: "total_records",
 					},
 				},
 			},
 		},
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "dom",
+				Name: "domain",
 				Desc: true,
 			},
 		},
@@ -4501,27 +4490,16 @@ func TestMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
-	require.Equal(t, "dom,m1,m1__pt", columnNames(fields))
+	require.Equal(t, "domain,total_records,total_records__pt", columnNames(fields))
 	i := 0
 
-	for _, sf := range q.Result.Schema.Fields {
-		fmt.Printf("%v ", sf.Name)
-	}
-	fmt.Printf("\n")
-
-	for i, row := range q.Result.Data {
-		for _, sf := range q.Result.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-	}
 	rows := q.Result.Data
 	require.Equal(t, 2, len(rows))
 
 	i = 0
-	require.Equal(t, "news.yahoo.com,1.50,11.23", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	require.Equal(t, "news.yahoo.com,77.00,6.90", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "news.google.com,3.59,26.94", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	require.Equal(t, "news.google.com,256.00,22.94", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 }
 
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {

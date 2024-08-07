@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -77,10 +78,16 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query, mv *r
 
 func numberLikeToFloat64(number any) (float64, bool) {
 	switch n := number.(type) {
+	case *big.Float:
+		f, _ := n.Float64()
+		return f, true
 	case float64:
 		return n, true
 	case float32:
 		return float64(n), true
+	case *big.Int:
+		f, _ := n.Float64()
+		return f, true
 	case int64:
 		return float64(n), true
 	case int32:
