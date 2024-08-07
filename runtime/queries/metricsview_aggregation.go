@@ -326,7 +326,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
 	if expr != nil && sql != "" {
-		return nil, fmt.Errorf("both where and where_sql are provided")
+		return nil, fmt.Errorf("both expression and sql are set")
 	}
 	if expr != nil {
 		return metricsview.NewExpressionFromProto(expr), nil
