@@ -34,6 +34,8 @@ const config = defineConfig(({ mode }) => ({
     "import.meta.env.VITE_PLAYWRIGHT_TEST": process.env.PLAYWRIGHT_TEST,
   },
   plugins: [sveltekit()],
+  envDir: "../",
+  envPrefix: "RILL_UI_PUBLIC_",
 }));
 
 export default config;

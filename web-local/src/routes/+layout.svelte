@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import { RillTheme } from "@rilldata/web-common/layout";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
@@ -27,6 +28,7 @@
     error: AxiosError,
     query: Query,
   ) => errorEventHandler?.requestErrorEventHandler(error, query);
+  initPylonWidget();
 
   let removeJavascriptListeners: () => void;
 

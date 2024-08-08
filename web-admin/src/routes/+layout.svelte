@@ -12,7 +12,7 @@
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
-  import { initPylonWidget } from "../features/help/initPylonWidget";
+  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
 
   export let data;

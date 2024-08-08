@@ -3,6 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import NoUser from "@rilldata/web-common/components/icons/NoUser.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { initPylonChat } from "@rilldata/web-common/features/help/initPylonChat";
   import {
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
@@ -15,6 +16,17 @@
   $: loginUrl = `${$metadata.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
   $: logoutUrl = `${$metadata.data?.loginUrl}/logout?redirect=${$page.url.href}`;
   $: loggedIn = $user.isSuccess && $user.data?.user;
+
+  $: if ($user.data?.user) {
+    initPylonChat({
+      email: $user.data.user.email,
+      displayName: $user.data.user.displayName,
+      photoUrl: $user.data.user.photoUrl,
+    });
+  }
+  function handlePylon() {
+    window.Pylon("show");
+  }
 </script>
 
 {#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error}
@@ -52,10 +64,9 @@
       >
         Join us on Discord
       </DropdownMenu.Item>
-      <!-- TODO -->
-      <!-- <DropdownMenu.Item on:click={handlePylon}>-->
-      <!--   Contact Rill support-->
-      <!-- </DropdownMenu.Item>-->
+      <DropdownMenu.Item on:click={handlePylon}>
+        Contact Rill support
+      </DropdownMenu.Item>
       {#if loggedIn}
         <DropdownMenu.Item href={logoutUrl} class="text-gray-800 font-normal">
           Logout

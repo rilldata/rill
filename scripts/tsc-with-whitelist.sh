@@ -9,8 +9,6 @@ web-admin/src/features/dashboards/listing/selectors.ts: error TS2345
 web-admin/src/features/dashboards/listing/selectors.ts: error TS2769
 web-admin/src/features/errors/error-utils.ts: error TS18048
 web-admin/src/features/errors/error-utils.ts: error TS2322
-web-admin/src/features/help/initPylonChat.ts: error TS2322
-web-admin/src/features/help/initPylonWidget.ts: error TS18047
 web-admin/src/features/projects/selectors.ts: error TS18048
 web-admin/src/features/dashboards/query-mappers/mapQueryToDashboard.ts: error TS2322
 web-admin/src/features/dashboards/query-mappers/getDashboardFromAggregationRequest.ts: error TS2322
@@ -91,6 +89,8 @@ web-common/src/features/entity-management/resources-store.ts: error TS2345
 web-common/src/features/entity-management/resources-store.ts: error TS2538
 web-common/src/features/entity-management/watch-files-client.ts: error TS18048
 web-common/src/features/entity-management/watch-files-client.ts: error TS2345
+web-common/src/features/help/initPylonChat.ts: error TS2322
+web-common/src/features/help/initPylonWidget.ts: error TS18047
 web-common/src/features/metrics-views/column-selectors.ts: error TS18048
 web-common/src/features/metrics-views/errors.ts: error TS2322
 web-common/src/features/metrics-views/errors.ts: error TS2345
