@@ -145,7 +145,11 @@ After making changes to your project in Rill Developer, you will need to [push y
 
 
 ## Continuous Deployment 
+Rill will automatically detect changes that you have pushed locally to GitHub. In this case, Rill will detect the changed objects and update accordingly. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or by running:
 
+```
+rill project status
+```
 
 
 :::tip Interested in using Gitlab?
