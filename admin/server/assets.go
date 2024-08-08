@@ -3,14 +3,24 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/bmatcuk/doublestar/v4"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/uuid"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/archive"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -86,6 +96,96 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 	}, nil
 }
 
+func (s *Server) UploadProjectAssets(ctx context.Context, req *adminv1.UploadProjectAssetsRequest) (*adminv1.UploadProjectAssetsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	// Check the request is made by a user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeService {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	// Find parent org
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Check permissions
+	// create asset and create project should be the same permission
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit project")
+	}
+
+	if proj.GithubURL == nil {
+		return nil, status.Error(codes.InvalidArgument, "project is not connected to github")
+	}
+
+	assetResp, err := s.CreateAsset(ctx, &adminv1.CreateAssetRequest{
+		OrganizationName: req.Organization,
+		Type:             "deploy",
+		Name:             fmt.Sprintf("%s__%s", req.Organization, req.Project),
+		Extension:        "tar.gz",
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// refresh token changes after using it for getting a new token
+	// so saving the updated refresh token
+	_, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		GithubRefreshToken:  refreshToken,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	files, err := gitToFilesList(safeStr(proj.GithubURL), proj.ProdBranch, proj.Subpath, token)
+	if err != nil {
+		return nil, err
+	}
+
+	archiveRoot, err := os.MkdirTemp(os.TempDir(), "archives")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(archiveRoot)
+
+	err = archive.Create(ctx, files, archiveRoot, assetResp.SignedUrl, assetResp.SigningHeaders)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+		OrganizationName: req.Organization,
+		Name:             req.Project,
+		ArchiveAssetId:   &assetResp.AssetId,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.UploadProjectAssetsResponse{}, nil
+}
+
 func (s *Server) assetPath(object string) (string, error) {
 	uploadPath, err := url.Parse(s.opts.AssetsBucket)
 	if err != nil {
@@ -95,4 +195,54 @@ func (s *Server) assetPath(object string) (string, error) {
 	uploadPath.Scheme = "gs"
 	uploadPath.Path = object
 	return uploadPath.String(), nil
+}
+
+func gitToFilesList(repo, branch, subpath, token string) ([]drivers.DirEntry, error) {
+	srcGitPath, err := os.MkdirTemp(os.TempDir(), "src_git_repos")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(srcGitPath)
+
+	// srcProjPath is actual path for project including any subpath within the git root
+	srcProjPath := srcGitPath
+	if subpath != "" {
+		srcProjPath = filepath.Join(srcProjPath, subpath)
+	}
+	err = os.MkdirAll(srcProjPath, fs.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = git.PlainClone(srcGitPath, false, &git.CloneOptions{
+		URL:           repo,
+		Auth:          &githttp.BasicAuth{Username: "x-access-token", Password: token},
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to clone source git repo: %w", err)
+	}
+
+	srcProjDir := os.DirFS(srcProjPath)
+	var entries []drivers.DirEntry
+	err = doublestar.GlobWalk(srcProjDir, "**", func(p string, d fs.DirEntry) error {
+		if d.Name() == ".git" {
+			return nil
+		}
+
+		// Track file (p is already relative to the FS root)
+		p = filepath.Join("/", p)
+		entries = append(entries, drivers.DirEntry{
+			Path:  p,
+			IsDir: d.IsDir(),
+		})
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return entries, nil
 }
