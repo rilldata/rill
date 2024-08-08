@@ -4,13 +4,8 @@ sidebar_label: "Launching Rill Developer"
 sidebar_position: 3
 hide_table_of_contents: false
 ---
-import ComingSoon from '@site/src/components/ComingSoon';
 
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-
-**Getting Started**
+## Getting Started
 
 After running the second command, Rill Developer should have automatically opened in your default browser. If not, please run the command again and Rill will create a new directory 'my-rill-project' in the folder you are in.
 
@@ -39,4 +34,3 @@ import DocsRating from '@site/src/components/DocsRating';
 
 ---
 <DocsRating />
-</div>

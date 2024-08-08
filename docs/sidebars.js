@@ -20,12 +20,13 @@ const sidebars = {
       {
         type: 'category',
         label: 'Learn',
+        link: {
+          type: 'doc',
+          id: 'learn/index',
+
+        },
         items: [
-          {
-            type: 'doc',
-            id: 'learn/index'  // Main index page
-            //className: 'hidden-page', // Custom className to hide from DocCardList
-          },
+          
           {
             type: 'category',
             label: 'Rill Basics',
@@ -155,7 +156,11 @@ const sidebars = {
             items: [
                 'learn/rill_clickhouse/r_ch_0',
                 'learn/rill_clickhouse/r_ch_1',
-                'learn/rill_clickhouse/r_ch_2'
+                'learn/rill_clickhouse/r_ch_2',
+                'learn/rill_clickhouse/components/r_ch_3',
+                'learn/rill_clickhouse/components/r_ch_4',
+                'learn/rill_clickhouse/components/r_ch_5',
+                'learn/rill_clickhouse/r_ch_6',
               ]
           },
         ],
@@ -163,12 +168,13 @@ const sidebars = {
       {
         type: 'category',
         label: 'Guides',
+        link: {
+          type: 'doc',
+          id: 'learn/guides/index',
+
+        },
         items: [
-          {
-            type: 'doc',
-            id: 'learn/guides/index'  // Main index page
-            //className: 'hidden-page', // Custom className to hide from DocCardList
-          },
+
           'learn/guides/use-case/all_in_one',
  
 

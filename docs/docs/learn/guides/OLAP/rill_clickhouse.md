@@ -15,4 +15,4 @@ hide_table_of_contents: false
 import DocsRating from '@site/src/components/DocsRating';
 
 ---
-<DocsRating />http://localhost:4003/learn/guides/conceptual/one_dashboard
+<DocsRating />

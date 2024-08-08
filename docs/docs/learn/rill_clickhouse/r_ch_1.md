@@ -4,12 +4,8 @@ sidebar_label: "Installing Rill Developer"
 sidebar_position: 2
 hide_table_of_contents: false
 ---
-import ComingSoon from '@site/src/components/ComingSoon';
 
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-**Installing Rill [Linux / MacOS]**
+## Installing Rill [Linux / MacOS]
 
 Let’s install the Rill binary to your local machine.
 
@@ -66,4 +62,3 @@ import DocsRating from '@site/src/components/DocsRating';
 <DocsRating />
 
 
-</div>
