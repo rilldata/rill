@@ -66,7 +66,7 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	return nil
 }
 
-func Create(ctx context.Context, files []drivers.DirEntry, root string, url string, headers map[string]string) error {
+func Create(ctx context.Context, files []drivers.DirEntry, root, url string, headers map[string]string) error {
 	// generate a tar ball
 	b := &bytes.Buffer{}
 
@@ -104,6 +104,8 @@ func createTar(writer io.Writer, files []drivers.DirEntry, root string) error {
 		if info.Mode()&os.ModeSymlink != 0 {
 			return fmt.Errorf("%s: repo contains symlinks", entry.Path)
 		}
+
+		fmt.Println("createTar", entry.Path)
 
 		header, err := tar.FileInfoHeader(info, "")
 		if err != nil {

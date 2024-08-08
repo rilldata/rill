@@ -11,7 +11,10 @@
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetProject,
+    createAdminServiceUploadProjectAssets,
+  } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
 
@@ -37,6 +40,8 @@
   const userStatus = githubData.userStatus;
   const repoSelectionOpen = githubData.repoSelectionOpen;
 
+  const deleteProjectConnection = createAdminServiceUploadProjectAssets();
+
   function confirmConnectToGithub() {
     // prompt reselection repos since a new repo might be created here.
     repoSelectionOpen.set(true);
@@ -50,13 +55,18 @@
   }
 
   function editGithubConnection() {
-    void githubData.startRepoSelection();
-    behaviourEvent?.fireGithubIntentEvent(
-      BehaviourEventAction.GithubConnectStart,
-      {
-        is_fresh_connection: isGithubConnected,
-      },
-    );
+    // void githubData.startRepoSelection();
+    // behaviourEvent?.fireGithubIntentEvent(
+    //   BehaviourEventAction.GithubConnectStart,
+    //   {
+    //     is_fresh_connection: isGithubConnected,
+    //   },
+    // );
+    void $deleteProjectConnection.mutateAsync({
+      organization,
+      project,
+      data: {},
+    });
   }
 </script>
 

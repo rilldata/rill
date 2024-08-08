@@ -158,16 +158,16 @@ func (s *Server) UploadProjectAssets(ctx context.Context, req *adminv1.UploadPro
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
-	files, err := gitToFilesList(safeStr(proj.GithubURL), proj.ProdBranch, proj.Subpath, token)
-	if err != nil {
-		return nil, err
-	}
-
 	archiveRoot, err := os.MkdirTemp(os.TempDir(), "archives")
 	if err != nil {
 		return nil, err
 	}
 	defer os.RemoveAll(archiveRoot)
+
+	files, err := gitToFilesList(archiveRoot, safeStr(proj.GithubURL), proj.ProdBranch, proj.Subpath, token)
+	if err != nil {
+		return nil, err
+	}
 
 	err = archive.Create(ctx, files, archiveRoot, assetResp.SignedUrl, assetResp.SigningHeaders)
 	if err != nil {
@@ -197,24 +197,18 @@ func (s *Server) assetPath(object string) (string, error) {
 	return uploadPath.String(), nil
 }
 
-func gitToFilesList(repo, branch, subpath, token string) ([]drivers.DirEntry, error) {
-	srcGitPath, err := os.MkdirTemp(os.TempDir(), "src_git_repos")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(srcGitPath)
-
+func gitToFilesList(path, repo, branch, subpath, token string) ([]drivers.DirEntry, error) {
 	// srcProjPath is actual path for project including any subpath within the git root
-	srcProjPath := srcGitPath
+	projPath := path
 	if subpath != "" {
-		srcProjPath = filepath.Join(srcProjPath, subpath)
+		projPath = filepath.Join(projPath, subpath)
 	}
-	err = os.MkdirAll(srcProjPath, fs.ModePerm)
+	err := os.MkdirAll(projPath, fs.ModePerm)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = git.PlainClone(srcGitPath, false, &git.CloneOptions{
+	_, err = git.PlainClone(path, false, &git.CloneOptions{
 		URL:           repo,
 		Auth:          &githttp.BasicAuth{Username: "x-access-token", Password: token},
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
@@ -224,7 +218,7 @@ func gitToFilesList(repo, branch, subpath, token string) ([]drivers.DirEntry, er
 		return nil, fmt.Errorf("failed to clone source git repo: %w", err)
 	}
 
-	srcProjDir := os.DirFS(srcProjPath)
+	srcProjDir := os.DirFS(projPath)
 	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(srcProjDir, "**", func(p string, d fs.DirEntry) error {
 		if d.Name() == ".git" {
