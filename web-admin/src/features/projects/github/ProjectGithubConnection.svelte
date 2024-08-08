@@ -1,5 +1,6 @@
 <script lang="ts">
   import ConnectToGithubButton from "@rilldata/web-admin/features/projects/github/ConnectToGithubButton.svelte";
+  import DisconnectProjectButton from "@rilldata/web-admin/features/projects/github/DisconnectProjectButton.svelte";
   import {
     GithubData,
     setGithubData,
@@ -54,14 +55,13 @@
     );
   }
 
-  function editGithubConnection() {
-    // void githubData.startRepoSelection();
-    // behaviourEvent?.fireGithubIntentEvent(
-    //   BehaviourEventAction.GithubConnectStart,
-    //   {
-    //     is_fresh_connection: isGithubConnected,
-    //   },
-    // );
+  function disconnectGithubConnection() {
+    void behaviourEvent?.fireGithubIntentEvent(
+      BehaviourEventAction.GithubDisconnect,
+      {
+        is_fresh_connection: isGithubConnected,
+      },
+    );
     void $deleteProjectConnection.mutateAsync({
       organization,
       project,
@@ -94,13 +94,11 @@
           >
             {repoName}
           </a>
-          <Button on:click={editGithubConnection} type="ghost" compact>
-            <div class="min-w-4">
-              {#if hovered}
-                <EditIcon size="16px" />
-              {/if}
-            </div>
-          </Button>
+          <DisconnectProjectButton
+            bind:showButton={hovered}
+            loading={$deleteProjectConnection.isLoading}
+            onDisconnect={disconnectGithubConnection}
+          />
         </div>
         {#if subpath}
           <div class="flex items-center">

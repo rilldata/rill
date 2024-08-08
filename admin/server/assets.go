@@ -197,9 +197,9 @@ func (s *Server) assetPath(object string) (string, error) {
 	return uploadPath.String(), nil
 }
 
-func gitToFilesList(path, repo, branch, subpath, token string) ([]drivers.DirEntry, error) {
-	// srcProjPath is actual path for project including any subpath within the git root
-	projPath := path
+func gitToFilesList(gitPath, repo, branch, subpath, token string) ([]drivers.DirEntry, error) {
+	// projPath is actual path for project including any subpath within the git root
+	projPath := gitPath
 	if subpath != "" {
 		projPath = filepath.Join(projPath, subpath)
 	}
@@ -208,7 +208,7 @@ func gitToFilesList(path, repo, branch, subpath, token string) ([]drivers.DirEnt
 		return nil, err
 	}
 
-	_, err = git.PlainClone(path, false, &git.CloneOptions{
+	_, err = git.PlainClone(gitPath, false, &git.CloneOptions{
 		URL:           repo,
 		Auth:          &githttp.BasicAuth{Username: "x-access-token", Password: token},
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
