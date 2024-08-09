@@ -37,6 +37,10 @@
               route: `/${organization}/${project}/-/status`,
               label: "Status",
             },
+            {
+              route: `/${organization}/${project}/-/settings`,
+              label: "Settings",
+            },
           ];
 
           if (data.projectPermissions?.manageProject) {

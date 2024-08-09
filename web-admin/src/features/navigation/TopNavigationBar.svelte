@@ -3,7 +3,7 @@
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
-  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/public-urls/selectors";
+  import { usePublicURLMetricsView } from "@rilldata/web-admin/features/public-urls/selectors";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -135,7 +135,7 @@
 
   // When visiting a magic link, the metrics view name won't be in the URL. However, the URL's token will
   // have access to only one metrics view. So, we can get the metrics view name from the first (and only) metrics view resource.
-  $: metricsViewQuery = useShareableURLMetricsView(instanceId, onMagicLinkPage);
+  $: metricsViewQuery = usePublicURLMetricsView(instanceId, onMagicLinkPage);
   $: dashboard = onMagicLinkPage
     ? $metricsViewQuery.data?.meta?.name?.name
     : dashboardParam;
