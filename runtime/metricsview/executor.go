@@ -180,6 +180,10 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
+	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
+		return nil, err
+	}
+
 	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
 		return nil, err
 	}
@@ -284,6 +288,10 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 	}
 
 	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+		return "", err
+	}
+
+	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
 		return "", err
 	}
 
