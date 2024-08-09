@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployProjectRequest, DeployProjectResponse, DeployValidationRequest, DeployValidationResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { DeployProjectRequest, DeployProjectResponse, DeployValidationRequest, DeployValidationResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -90,7 +90,7 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * User returns the locally logged in user
+     * GetCurrentUser returns the locally logged in user
      *
      * @generated from rpc rill.local.v1.LocalService.GetCurrentUser
      */
@@ -98,6 +98,17 @@ export const LocalService = {
       name: "GetCurrentUser",
       I: GetCurrentUserRequest,
       O: GetCurrentUserResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetCurrentProject returns the rill cloud project connected to the local project
+     *
+     * @generated from rpc rill.local.v1.LocalService.GetCurrentProject
+     */
+    getCurrentProject: {
+      name: "GetCurrentProject",
+      I: GetCurrentProjectRequest,
+      O: GetCurrentProjectResponse,
       kind: MethodKind.Unary,
     },
   }

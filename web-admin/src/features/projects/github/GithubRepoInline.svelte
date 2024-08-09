@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
 
   export let githubUrl: string;
 

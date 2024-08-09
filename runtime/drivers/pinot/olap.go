@@ -52,10 +52,6 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 	return fmt.Errorf("pinot: WithConnection not supported")
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	res, err := c.Execute(ctx, stmt)
 	if err != nil {
