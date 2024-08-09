@@ -1,17 +1,19 @@
 <script lang="ts">
   import ConnectToGithubButton from "@rilldata/web-admin/features/projects/github/ConnectToGithubButton.svelte";
+  import DisconnectProjectButton from "@rilldata/web-admin/features/projects/github/DisconnectProjectButton.svelte";
   import {
     GithubData,
     setGithubData,
   } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetProject,
+    createAdminServiceUploadProjectAssets,
+  } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
 
@@ -37,6 +39,8 @@
   const userStatus = githubData.userStatus;
   const repoSelectionOpen = githubData.repoSelectionOpen;
 
+  const deleteProjectConnection = createAdminServiceUploadProjectAssets();
+
   function confirmConnectToGithub() {
     // prompt reselection repos since a new repo might be created here.
     repoSelectionOpen.set(true);
@@ -49,14 +53,18 @@
     );
   }
 
-  function editGithubConnection() {
-    void githubData.startRepoSelection();
-    behaviourEvent?.fireGithubIntentEvent(
-      BehaviourEventAction.GithubConnectStart,
+  function disconnectGithubConnection() {
+    void behaviourEvent?.fireGithubIntentEvent(
+      BehaviourEventAction.GithubDisconnect,
       {
         is_fresh_connection: isGithubConnected,
       },
     );
+    void $deleteProjectConnection.mutateAsync({
+      organization,
+      project,
+      data: {},
+    });
   }
 </script>
 
@@ -84,13 +92,11 @@
           >
             {repoName}
           </a>
-          <Button on:click={editGithubConnection} type="ghost" compact>
-            <div class="min-w-4">
-              {#if hovered}
-                <EditIcon size="16px" />
-              {/if}
-            </div>
-          </Button>
+          <DisconnectProjectButton
+            bind:showButton={hovered}
+            loading={$deleteProjectConnection.isLoading}
+            onDisconnect={disconnectGithubConnection}
+          />
         </div>
         {#if subpath}
           <div class="flex items-center">

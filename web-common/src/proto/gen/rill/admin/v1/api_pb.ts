@@ -7599,6 +7599,80 @@ export class ConnectProjectToGithubResponse extends Message<ConnectProjectToGith
 }
 
 /**
+ * @generated from message rill.admin.v1.UploadProjectAssetsRequest
+ */
+export class UploadProjectAssetsRequest extends Message<UploadProjectAssetsRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<UploadProjectAssetsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UploadProjectAssetsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UploadProjectAssetsRequest {
+    return new UploadProjectAssetsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UploadProjectAssetsRequest {
+    return new UploadProjectAssetsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UploadProjectAssetsRequest {
+    return new UploadProjectAssetsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UploadProjectAssetsRequest | PlainMessage<UploadProjectAssetsRequest> | undefined, b: UploadProjectAssetsRequest | PlainMessage<UploadProjectAssetsRequest> | undefined): boolean {
+    return proto3.util.equals(UploadProjectAssetsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UploadProjectAssetsResponse
+ */
+export class UploadProjectAssetsResponse extends Message<UploadProjectAssetsResponse> {
+  constructor(data?: PartialMessage<UploadProjectAssetsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UploadProjectAssetsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UploadProjectAssetsResponse {
+    return new UploadProjectAssetsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UploadProjectAssetsResponse {
+    return new UploadProjectAssetsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UploadProjectAssetsResponse {
+    return new UploadProjectAssetsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UploadProjectAssetsResponse | PlainMessage<UploadProjectAssetsResponse> | undefined, b: UploadProjectAssetsResponse | PlainMessage<UploadProjectAssetsResponse> | undefined): boolean {
+    return proto3.util.equals(UploadProjectAssetsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetCloneCredentialsRequest
  */
 export class GetCloneCredentialsRequest extends Message<GetCloneCredentialsRequest> {

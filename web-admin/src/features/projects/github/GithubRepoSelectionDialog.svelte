@@ -85,6 +85,7 @@
   }
 
   async function updateGithubUrl(force: boolean) {
+    let url = $githubUrl;
     const updateSucceeded = await githubConnectionUpdater.update({
       instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
       force,
@@ -92,7 +93,7 @@
     if (!updateSucceeded) return;
 
     eventBus.emit("notification", {
-      message: `Set github repo to ${$githubUrl}`,
+      message: `Set github repo to ${url}`,
       type: "success",
     });
     open = false;

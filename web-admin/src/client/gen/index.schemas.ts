@@ -347,6 +347,10 @@ export interface V1User {
   updatedOn?: string;
 }
 
+export interface V1UploadProjectAssetsResponse {
+  [key: string]: any;
+}
+
 export interface V1UpdateUserPreferencesResponse {
   preferences?: V1UserPreferences;
 }
