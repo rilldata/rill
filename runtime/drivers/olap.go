@@ -240,6 +240,11 @@ func (d Dialect) SupportsILike() bool {
 	return d != DialectDruid && d != DialectPinot
 }
 
+// RequiresCastForLike returns true if the dialect requires an expression used in a LIKE or ILIKE condition to explicitly be cast to type TEXT.
+func (d Dialect) RequiresCastForLike() bool {
+	return d == DialectClickHouse
+}
+
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	var sb strings.Builder
