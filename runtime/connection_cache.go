@@ -118,6 +118,11 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		return nil, err
 	}
 
+	if err = handle.Ping(ctx); err != nil {
+		handle.Close()
+		return nil, err
+	}
+
 	err = handle.Migrate(ctx)
 	if err != nil {
 		handle.Close()

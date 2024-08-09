@@ -38,7 +38,10 @@ type sqlConnection struct {
 	dsn    string
 }
 
-var _ driver.QueryerContext = &sqlConnection{}
+var (
+	_ driver.QueryerContext = &sqlConnection{}
+	_ driver.Pinger         = &sqlConnection{}
+)
 
 func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	dr := newDruidRequest(query, args)
@@ -228,6 +231,15 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		resp.Body.Close()
 		return nil, fmt.Errorf("unexpected response: %v", obj)
 	}
+}
+
+func (c *sqlConnection) Ping(ctx context.Context) error {
+	rows, err := c.QueryContext(ctx, "SELECT 1", nil)
+	if err != nil {
+		return err
+	}
+	rows.Close()
+	return nil
 }
 
 type druidRows struct {
