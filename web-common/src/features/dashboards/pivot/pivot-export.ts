@@ -14,7 +14,14 @@ import {
 import { derived, get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
-import { PivotChipType, PivotColumns, PivotRows } from "./types";
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  PivotChipType,
+  PivotColumns,
+  PivotRows,
+} from "./types";
+import { prepareMeasureForComparison } from "./pivot-utils";
 
 export default async function exportPivot({
   ctx,
@@ -41,13 +48,17 @@ export default async function exportPivot({
     end: selectedTimeRange?.end.toISOString(),
   };
 
-  const request = getPivotAggregationRequest(
+  // TODO: pass in from somewhere
+  const enableComparison = true;
+
+  const pivotAggregationRequest = getPivotAggregationRequest(
     metricsViewName,
     timeDimension ?? "",
     dashboard,
     timeRange,
     rows,
     columns,
+    enableComparison,
   );
 
   const result = await get(query).mutateAsync({
@@ -55,7 +66,7 @@ export default async function exportPivot({
     data: {
       format,
       query: {
-        metricsViewAggregationRequest: request,
+        metricsViewAggregationRequest: pivotAggregationRequest,
       },
     },
   });
@@ -87,6 +98,9 @@ export function getPivotExportArgs(ctx: StateManagers) {
       const timeRange = mapTimeRange(timeControlState, metricsViewSpec);
       if (!timeRange) return undefined;
 
+      // TODO: pass in from somewhere
+      const enableComparison = true;
+
       return getPivotAggregationRequest(
         metricsViewName,
         metricsViewSpec.timeDimension ?? "",
@@ -94,6 +108,7 @@ export function getPivotExportArgs(ctx: StateManagers) {
         timeRange,
         rows,
         columns,
+        enableComparison,
       );
     },
   );
@@ -106,11 +121,20 @@ export function getPivotAggregationRequest(
   timeRange: V1TimeRange,
   rows: PivotRows,
   columns: PivotColumns,
+  enableComparison: boolean, // TODO: pass in from somewhere
 ): undefined | V1MetricsViewAggregationRequest {
-  const measures = columns.measure.map((m) => {
-    return {
-      name: m.id,
-    };
+  const measures = columns.measure.flatMap((m) => {
+    const measureName = m.id;
+    const group = [{ name: measureName }];
+
+    if (enableComparison) {
+      group.push(
+        { name: `${measureName}${COMPARISON_DELTA}` },
+        { name: `${measureName}${COMPARISON_PERCENT}` },
+      );
+    }
+
+    return group;
   });
 
   const allDimensions = [...rows.dimension, ...columns.dimension].map((d) =>
@@ -157,11 +181,30 @@ export function getPivotAggregationRequest(
     };
   });
 
+  let hasComparison = false;
+  const comparisonTime = timeRange;
+  if (
+    measures.some(
+      (m) =>
+        m.name?.endsWith(COMPARISON_PERCENT) ||
+        m.name?.endsWith(COMPARISON_DELTA),
+    )
+  ) {
+    hasComparison = true;
+  }
+
   return {
     instanceId: get(runtime).instanceId,
     metricsView,
     timeRange,
-    measures,
+    comparisonTimeRange:
+      hasComparison && comparisonTime
+        ? {
+            start: comparisonTime.start,
+            end: comparisonTime.end,
+          }
+        : undefined,
+    measures: prepareMeasureForComparison(measures), // TODO: use enableComparison flag
     dimensions: allDimensions,
     where: sanitiseExpression(mergeMeasureFilters(dashboardState), undefined),
     pivotOn,
