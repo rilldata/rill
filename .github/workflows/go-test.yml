@@ -25,3 +25,5 @@ jobs:
       run: test -z $(gofmt -l .)
     - name: Go test
       run: go test -short -v ./...
+      env:
+        RILL_RUNTIME_DRUID_TEST_DSN: ${{ secrets.RILL_RUNTIME_DRUID_TEST_DSN }}

@@ -211,7 +211,7 @@ func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedPa
 	for _, pe := range pp.GetProjectParser().State.ParseErrors {
 		parseErrs[pe.FilePath] = pe.Message
 	}
-	require.Len(t, parseErrs, len(expectedParseErrors))
+	require.Len(t, parseErrs, len(expectedParseErrors), "Should have %d parse errors", len(expectedParseErrors))
 
 	for f, pe := range parseErrs {
 		// Checking parseError using Contains instead of Equal
