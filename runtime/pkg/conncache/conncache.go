@@ -415,7 +415,7 @@ func (c *cacheImpl) releaseEntry(key string, e *entry) {
 	e.refs--
 	if e.refs == 0 {
 		// If open, keep entry and put in LRU. Else remove entirely.
-		if e.status != entryStatusClosing && e.status != entryStatusClosed {
+		if e.status != entryStatusClosing && e.status != entryStatusClosed && e.err == nil {
 			c.lru.Add(key, e)
 			if c.opts.Metrics.SizeLRU != nil {
 				c.opts.Metrics.SizeLRU.Add(c.ctx, 1)

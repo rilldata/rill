@@ -27,6 +27,95 @@ func (c *mockConn) Close() error {
 	return nil
 }
 
+func TestImpl_count_1(t *testing.T) {
+	opens := atomic.Int64{}
+	c := New(Options{
+		MaxIdleConnections: 2,
+		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
+			opens.Add(1)
+			return &mockConn{cfg: cfg.(string)}, nil
+		},
+		KeyFunc: func(cfg any) string {
+			return cfg.(string)
+		},
+	})
+	ci := c.(*cacheImpl)
+	_, r1, err := c.Acquire(context.Background(), "foo")
+	require.NoError(t, err)
+	time.Sleep(time.Second)
+	require.Equal(t, 1, len(ci.entries))
+	require.Equal(t, 1, ci.entries["foo"].refs)
+	require.Equal(t, 0, ci.lru.Len())
+
+	_, r2, err := c.Acquire(context.Background(), "foo")
+	require.Equal(t, 1, len(ci.entries))
+	require.Equal(t, 0, ci.lru.Len())
+	r1()
+	require.Equal(t, 1, len(ci.entries))
+	require.Equal(t, 0, ci.lru.Len())
+	r2()
+	require.Equal(t, 1, len(ci.entries))
+	require.Equal(t, 1, ci.lru.Len())
+
+	require.NoError(t, c.Close(context.Background()))
+}
+
+func TestImpl_err(t *testing.T) {
+	opens := atomic.Int64{}
+	c := New(Options{
+		MaxIdleConnections: 1,
+		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
+			opens.Add(1)
+			return nil, fmt.Errorf("err")
+		},
+		KeyFunc: func(cfg any) string {
+			return cfg.(string)
+		},
+	})
+	ci := c.(*cacheImpl)
+	_, _, err := c.Acquire(context.Background(), "foo")
+	require.Error(t, err)
+	time.Sleep(time.Second)
+	require.Equal(t, 0, len(ci.entries))
+	require.Equal(t, 0, ci.lru.Len())
+
+	_, _, err = c.Acquire(context.Background(), "foo")
+	require.Error(t, err)
+	require.Equal(t, 0, len(ci.entries))
+	require.Equal(t, 0, ci.lru.Len())
+
+	require.NoError(t, c.Close(context.Background()))
+}
+
+func TestImpl_lru(t *testing.T) {
+	opens := atomic.Int64{}
+	c := New(Options{
+		MaxIdleConnections: 1,
+		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
+			opens.Add(1)
+			return &mockConn{cfg: cfg.(string)}, nil
+		},
+		KeyFunc: func(cfg any) string {
+			return cfg.(string)
+		},
+	})
+	ci := c.(*cacheImpl)
+	_, r1, err := c.Acquire(context.Background(), "foo")
+	require.NoError(t, err)
+	_, r2, err := c.Acquire(context.Background(), "foo2")
+	require.Equal(t, 2, len(ci.entries))
+	require.Equal(t, 0, ci.lru.Len())
+	r1()
+	require.Equal(t, 2, len(ci.entries))
+	require.Equal(t, 1, ci.lru.Len())
+	r2()
+	time.Sleep(time.Second)
+	require.Equal(t, 1, len(ci.entries))
+	require.Equal(t, 1, ci.lru.Len())
+
+	require.NoError(t, c.Close(context.Background()))
+}
+
 func TestBasic(t *testing.T) {
 	opens := atomic.Int64{}
 
