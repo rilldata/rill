@@ -17,13 +17,11 @@
   on:click={() => goBackToOverview()}
 >
   {#if isFetching}
-    <div>
-      <Spinner size="16px" status={EntityStatus.Running} />
-    </div>
+    <Spinner size="16px" status={EntityStatus.Running} />
   {:else}
     <span class="ui-copy-icon">
       <Back color="var(--color-primary-600)" size="16px" />
     </span>
-    <span class="text-primary-600 font-medium"> Overview </span>
+    <span class="text-primary-600 font-medium">Overview</span>
   {/if}
 </button>

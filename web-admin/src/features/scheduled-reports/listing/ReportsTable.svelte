@@ -1,6 +1,5 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { type ColumnDef, flexRender } from "@tanstack/svelte-table";
@@ -75,7 +74,7 @@
 
 {#if $reports.isLoading}
   <div class="m-auto mt-20">
-    <Spinner status={EntityStatus.Running} size="24px" />
+    <DelayedSpinner isLoading={$reports.isLoading} size="24px" />
   </div>
 {:else if $reports.isError}
   <ReportsError />
