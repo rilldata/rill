@@ -6,8 +6,6 @@
     setGithubData,
   } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";

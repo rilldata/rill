@@ -105,8 +105,6 @@ func createTar(writer io.Writer, files []drivers.DirEntry, root string) error {
 			return fmt.Errorf("%s: repo contains symlinks", entry.Path)
 		}
 
-		fmt.Println("createTar", entry.Path)
-
 		header, err := tar.FileInfoHeader(info, "")
 		if err != nil {
 			return fmt.Errorf("%s: %w", fullPath, err)
