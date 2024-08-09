@@ -19,7 +19,7 @@ Files that are *nested at any level* under your native `dashboards` directory wi
 
 **`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models.md) _(either **model** or **table** is required)_.
 
-**`table`** - Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards created directly from [sources](/build/connect/connect.md) and/or from [external OLAP tables](build/olap/olap.md#external-olap-tables) _(either **table** or **model** is required)_.
+**`table`** - Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards created directly from [sources](/build/connect/connect.md) and/or from [external OLAP tables](../../concepts/OLAP.md#external-olap-tables) _(either **table** or **model** is required)_.
 
 **`title`** — Refers to the display name for the dashboard _(required)_.
 

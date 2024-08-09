@@ -2,7 +2,7 @@
 title: "Exports & Scheduled Reports"
 description: Downloading and exporting data from Rill
 sidebar_label: "Exports & Scheduled Reports"
-sidebar_position: 35
+sidebar_position: 38
 ---
 
 ## Overview 
