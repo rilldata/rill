@@ -121,7 +121,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		// Add unnest joins. We only and always apply these against FromTable (ensuring they are already unnested when referenced in outer SELECTs).
 		for _, u := range n.Unnests {
 			b.out.WriteString(", ")
-			b.out.WriteString(u)
+			b.out.WriteString(u.Expr)
 		}
 	} else if n.FromSelect != nil {
 		if !n.FromSelect.IsCTE {
