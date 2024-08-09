@@ -602,7 +602,6 @@ func runOLAPStore(t *testing.T) drivers.OLAPStore {
 func mockTransferOptions() *drivers.TransferOptions {
 	return &drivers.TransferOptions{
 		AllowHostAccess: true,
-		Progress:        drivers.NoOpProgress{},
 		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
 			return nil, nil, fmt.Errorf("not found")
 		},
