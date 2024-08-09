@@ -20,6 +20,7 @@ import {
   PivotChipType,
   PivotColumns,
   PivotRows,
+  PivotState,
 } from "./types";
 import { prepareMeasureForComparison } from "./pivot-utils";
 import { getPivotConfig } from "./pivot-data-store";
@@ -48,6 +49,7 @@ export default async function exportPivot({
   const configStore = getPivotConfig(ctx);
   const enableComparison = get(configStore).enableComparison;
   const comparisonTime = get(configStore).comparisonTime;
+  const pivotState = get(configStore).pivot;
 
   const timeRange = {
     start: selectedTimeRange?.start.toISOString(),
@@ -63,6 +65,7 @@ export default async function exportPivot({
     columns,
     enableComparison,
     comparisonTime,
+    pivotState,
   );
 
   const result = await get(query).mutateAsync({
@@ -102,6 +105,7 @@ export function getPivotExportArgs(ctx: StateManagers) {
     ]) => {
       const enableComparison = configStore.enableComparison;
       const comparisonTime = configStore.comparisonTime;
+      const pivotState = configStore.pivot;
 
       const metricsViewSpec = metricsView.data ?? {};
       const timeRange = mapTimeRange(timeControlState, metricsViewSpec);
@@ -116,6 +120,7 @@ export function getPivotExportArgs(ctx: StateManagers) {
         columns,
         enableComparison,
         comparisonTime,
+        pivotState,
       );
     },
   );
@@ -130,6 +135,7 @@ export function getPivotAggregationRequest(
   columns: PivotColumns,
   enableComparison: boolean,
   comparisonTime: TimeRangeString | undefined,
+  pivotState: PivotState,
 ): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
@@ -177,12 +183,21 @@ export function getPivotAggregationRequest(
 
   // Sort by the dimensions in the pivot's rows
   const sort = rowDimensions.map((d) => {
+    // NOTE: This the default sorting in the pivot aggregation query
+    if (!pivotState.sorting.length) {
+      return {
+        name: d.name,
+        desc: true,
+      };
+    }
+
     if (d.alias) {
       return {
         name: d.alias,
         desc: false,
       };
     }
+
     return {
       name: d.name,
       desc: false,
