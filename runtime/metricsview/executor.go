@@ -180,7 +180,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	if err := e.rewritePercentOfTotals(ctx, qry, e.metricsView, e.security); err != nil {
+	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
 		return nil, err
 	}
 
@@ -210,7 +210,6 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 			return nil, err
 		}
 
-		fmt.Println(sql)
 		res, err = e.olap.Execute(ctx, &drivers.Statement{
 			Query:            sql,
 			Args:             args,
@@ -292,7 +291,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	if err := e.rewritePercentOfTotals(ctx, qry, e.metricsView, e.security); err != nil {
+	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
 		return "", err
 	}
 

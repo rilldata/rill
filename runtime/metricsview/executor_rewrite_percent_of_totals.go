@@ -5,12 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query, mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity) error {
+func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error {
 	var measures []Measure
 	var measureIndices []int
 	for i, measure := range qry.Measures {
