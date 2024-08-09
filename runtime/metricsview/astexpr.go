@@ -36,6 +36,8 @@ type sqlExprBuilder struct {
 	args         []any
 }
 
+// writeExpression writes the SQL expression for the given expression.
+// The output is guaranteed to be wrapped in parentheses.
 func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 	if e == nil {
 		return nil
@@ -281,6 +283,8 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 		return fmt.Errorf("invalid binary condition operator %q", op)
 	}
 
+	b.writeString("(")
+
 	if leftOverride != "" {
 		b.writeParenthesizedString(leftOverride)
 	} else {
@@ -289,10 +293,10 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 			return err
 		}
 	}
-	// Special cases:
-	// "dim = NULL" should be written as "dim IS NULL"
-	// dim != NULL" should be written as "dim IS NOT NULL"
 	if hasNilValue(right) {
+		// Special cases:
+		// "dim = NULL" should be written as "dim IS NULL"
+		// "dim != NULL" should be written as "dim IS NOT NULL"
 		if op == OperatorEq {
 			b.writeString(" IS NULL")
 			return nil
@@ -306,13 +310,14 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 	if err != nil {
 		return err
 	}
+
+	b.writeString(")")
+
 	return nil
 }
 
 func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverride string, not bool) error {
-	if not {
-		b.writeByte('(')
-	}
+	b.writeByte('(')
 
 	if b.ast.dialect.SupportsILike() {
 		// Output: <left> [NOT] ILIKE <right>
@@ -326,6 +331,10 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 			}
 		}
 
+		if b.ast.dialect.RequiresCastForLike() {
+			b.writeString("::TEXT")
+		}
+
 		if not {
 			b.writeString(" NOT ILIKE ")
 		} else {
@@ -335,6 +344,10 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		err := b.writeExpression(right)
 		if err != nil {
 			return err
+		}
+
+		if b.ast.dialect.RequiresCastForLike() {
+			b.writeString("::TEXT")
 		}
 	} else {
 		// Output: LOWER(<left>) [NOT] LIKE LOWER(<right>)
@@ -348,6 +361,9 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 				return err
 			}
 		}
+		if b.ast.dialect.RequiresCastForLike() {
+			b.writeString("::TEXT")
+		}
 		b.writeString(")")
 
 		if not {
@@ -360,6 +376,9 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		err := b.writeExpression(right)
 		if err != nil {
 			return err
+		}
+		if b.ast.dialect.RequiresCastForLike() {
+			b.writeString("::TEXT")
 		}
 		b.writeString(")")
 	}
@@ -378,10 +397,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		b.writeString(" IS NULL")
 	}
 
-	// Closes the parens opened at the start
-	if not {
-		b.writeByte(')')
-	}
+	b.writeByte(')')
 
 	return nil
 }
@@ -395,6 +411,8 @@ func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride 
 
 		return b.writeInConditionForValues(left, leftOverride, vals, not)
 	}
+
+	b.writeByte('(')
 
 	if leftOverride != "" {
 		b.writeParenthesizedString(leftOverride)
@@ -415,6 +433,8 @@ func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride 
 	if err != nil {
 		return err
 	}
+
+	b.writeByte(')')
 
 	return nil
 }
@@ -441,10 +461,7 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		return nil
 	}
 
-	wrapParens := not || (hasNull && hasNonNull)
-	if wrapParens {
-		b.writeByte('(')
-	}
+	b.writeByte('(')
 
 	if hasNonNull {
 		if leftOverride != "" {
@@ -518,9 +535,7 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		b.writeString(" IS NULL")
 	}
 
-	if wrapParens {
-		b.writeByte(')')
-	}
+	b.writeByte(')')
 
 	return nil
 }
