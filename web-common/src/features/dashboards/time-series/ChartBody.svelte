@@ -38,6 +38,7 @@
     MainAreaColorGradientLight,
   ];
 
+  $: console.log(dimensionData);
   $: areaGradientColors = (
     hasSubrangeSelected
       ? [AreaMutedColorGradientDark, AreaMutedColorGradientLight]
@@ -101,6 +102,23 @@
           data={d?.data || []}
           {xAccessor}
           {yAccessor}
+        />
+      </g>
+      <g
+        class="transition-opacity comparison-line opacity-40"
+        class:opacity-10={isDimValueHiglighted && !isHighlighted}
+      >
+        <ChunkedLine
+          isComparingDimension
+          lineColor={d?.color}
+          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+          duration={hasSubrangeSelected ||
+          $timeRangeKey !== $previousTimeRangeKey
+            ? 0
+            : 200}
+          data={d?.data || []}
+          {xAccessor}
+          yAccessor="comparison.{yAccessor}"
         />
       </g>
     {/each}
