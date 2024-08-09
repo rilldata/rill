@@ -32,6 +32,7 @@ For detailed instructions on how to run or test the application in development, 
 ## Release a new major or minor version
 
 To release a new version of Rill, first create a release branch named `release-<minor version>`:
+
 ```bash
 git checkout -b release-0.47
 git push
@@ -40,6 +41,7 @@ git push
 This will trigger a rollout of the release branch to the staging environment, which can be used to QA the release. Any subsequent fixes should be contributed to `main` and merged or cherry-picked into the release branch.
 
 When ready to release, create and push a Git tag on the release branch with the new version number:
+
 ```bash
 git checkout release-0.47
 git tag -a v0.47.0 -m "v0.47.0 release"
@@ -59,12 +61,14 @@ You can follow the progress of the release action from the ["Actions" tab](https
 ## Release a patch version
 
 Check out the current release branch and cherry pick the fixes to include in the patch release:
+
 ```bash
 git checkout release-0.47
 git cherry-pick <commit>
 ```
 
 Then when ready to release, create and push a Git tag on the release branch with the new version number:
+
 ```bash
 git checkout release-0.47
 git tag -a v0.47.1 -m "v0.47.1 release"
@@ -114,6 +118,7 @@ Rill is comprised of multiple services that we currently support running in two 
 When running `rill start` locally, the same version of the relevant services are started simultaneously in a single process. However, in cloud deployments, the relevant services are deployed individually for better isolation and scalability (for example, runtimes are provisioned dynamically when new projects are deployed).
 
 This means that during rollout of a release, a newer version of one service may be communicating with an older version of another service, necessitating backwards compatibility. The backwards compatibility requirements are tied to the release rollout sequence, which is:
+
 1. The `admin` service is upgraded first. This means the `admin` service must be backwards compatible with both older runtime and UI versions.
 2. Then the `runtime`s are upgraded. This means the `runtime` service must be backwards compatible only with older UI versions.
 3. Lastly the UI (`web-admin`) is upgraded. This means the UI does not need to worry about backwards compatibility.
