@@ -17,10 +17,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query, mv *r
 	for i, measure := range qry.Measures {
 		if measure.Compute != nil && measure.Compute.PercentOfTotal != nil {
 			measures = append(measures, Measure{
-				Name: measure.Name,
-				Compute: &MeasureCompute{
-					Sum: &MeasureComputeSum{Measure: measure.Compute.PercentOfTotal.Measure},
-				},
+				Name: measure.Compute.PercentOfTotal.Measure,
 			})
 			measureIndices = append(measureIndices, i)
 		}
@@ -67,7 +64,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query, mv *r
 		}
 		tf, ok := numberLikeToFloat64(t)
 		if !ok {
-			return fmt.Errorf("SUM(%q) is not a number", measure.Name)
+			return fmt.Errorf("%q is not a number", measure.Name)
 		}
 
 		qry.Measures[measureIndices[i]].Compute.PercentOfTotal.Total = tf
