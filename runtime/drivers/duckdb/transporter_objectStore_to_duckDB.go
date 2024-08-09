@@ -61,7 +61,6 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		return t.ingestDuckDBSQL(ctx, srcCfg.SQL, iterator, srcCfg, sinkCfg, opts)
 	}
 
-	opts.Progress.Target(size, drivers.ProgressUnitByte)
 	appendToTable := false
 	var format string
 	if srcCfg.Format != "" {
@@ -114,7 +113,6 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 
 		size := fileSize(files)
 		t.logger.Debug("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
-		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
 	// convert to enum
@@ -178,7 +176,6 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 
 		size := fileSize(files)
 		t.logger.Debug("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
-		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
 	// convert to enum
