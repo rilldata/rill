@@ -26,6 +26,10 @@ func (n noop) FindCustomerForOrg(ctx context.Context, organization *database.Org
 	return &Customer{}, nil
 }
 
+func (n noop) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {
+	return nil
+}
+
 func (n noop) DeleteCustomer(ctx context.Context, customerID string) error {
 	return nil
 }

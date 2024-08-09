@@ -482,9 +482,36 @@ func TestAdmin_RBAC(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("test remove admin same as billing email", func(t *testing.T) {
+		_, err := adminClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+			Organization: adminOrg.Organization.Name,
+			Email:        adminUser.Email,
+		})
+
+		require.Error(t, err)
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.ErrorContains(t, err, "this user is the billing email for the organization")
+	})
+
+	t.Run("test leave admin same as billing email", func(t *testing.T) {
+		_, err := adminClient.LeaveOrganization(ctx, &adminv1.LeaveOrganizationRequest{
+			Organization: adminOrg.Organization.Name,
+		})
+
+		require.Error(t, err)
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.ErrorContains(t, err, "this user is the billing email for the organization")
+	})
+
 	// remove last admin tests
 	t.Run("test remove last admin", func(t *testing.T) {
-		_, err := adminClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+		testEmail := "test@example.com"
+		_, err := adminClient.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Name:         adminOrg.Organization.Name,
+			BillingEmail: &testEmail,
+		})
+		require.NoError(t, err)
+		_, err = adminClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        adminUser.Email,
 		})
@@ -493,8 +520,14 @@ func TestAdmin_RBAC(t *testing.T) {
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 		require.ErrorContains(t, err, "cannot remove the last admin member")
 	})
+
 	t.Run("test leave last admin", func(t *testing.T) {
-		_, err := adminClient.LeaveOrganization(ctx, &adminv1.LeaveOrganizationRequest{
+		testEmail := "test@example.com"
+		_, err := adminClient.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Name:         adminOrg.Organization.Name,
+			BillingEmail: &testEmail,
+		})
+		_, err = adminClient.LeaveOrganization(ctx, &adminv1.LeaveOrganizationRequest{
 			Organization: adminOrg.Organization.Name,
 		})
 
