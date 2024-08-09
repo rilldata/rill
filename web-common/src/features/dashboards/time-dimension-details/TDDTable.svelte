@@ -20,12 +20,12 @@
     SelectedCheckmark,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
   import type { TDDComparison, TableData, TablePosition } from "./types";
-  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let dimensionLabel: string;
   export let measureLabel: string;
@@ -185,7 +185,7 @@
     }
     const total =
       value.value !== undefined
-        ? isNaN(Number(value.value))
+        ? isNaN(Number(value.value)) || x == 0
           ? value.value
           : formatter(Number(value.value))
         : "...";
