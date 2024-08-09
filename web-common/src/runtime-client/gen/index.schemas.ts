@@ -183,6 +183,7 @@ export type QueryServiceMetricsViewTotalsBody = {
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
+  whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 };
@@ -196,7 +197,9 @@ export type QueryServiceMetricsViewToplistBody = {
   offset?: string;
   sort?: V1MetricsViewSort[];
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 };
@@ -207,7 +210,9 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
@@ -250,7 +255,9 @@ export type QueryServiceMetricsViewComparisonBody = {
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
@@ -270,7 +277,9 @@ export type QueryServiceMetricsViewAggregationBody = {
   pivotOn?: string[];
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   limit?: string;
   offset?: string;
   priority?: number;
@@ -1154,6 +1163,7 @@ export interface V1MetricsViewTotalsRequest {
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
+  whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 }
@@ -1176,7 +1186,9 @@ export interface V1MetricsViewToplistRequest {
   offset?: string;
   sort?: V1MetricsViewSort[];
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 }
@@ -1194,7 +1206,9 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
@@ -1355,7 +1369,9 @@ export interface V1MetricsViewComparisonRequest {
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
@@ -1434,7 +1450,9 @@ export interface V1MetricsViewAggregationRequest {
   pivotOn?: string[];
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   limit?: string;
   offset?: string;
   priority?: number;

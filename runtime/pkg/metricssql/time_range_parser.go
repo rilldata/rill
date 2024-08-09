@@ -14,7 +14,7 @@ import (
 )
 
 func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
-	d, unit, colName, err := q.parseTimeRangeArgs(node.Args)
+	d, unit, colName, err := parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 }
 
 func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
-	d, unit, colName, err := q.parseTimeRangeArgs(node.Args)
+	d, unit, colName, err := parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -65,54 +65,6 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 	return &metricsview.Expression{
 		Value: end,
 	}, nil
-}
-
-func (q *query) parseTimeRangeArgs(args []ast.ExprNode) (duration.Duration, int, string, error) {
-	if len(args) == 0 {
-		return nil, 0, "", fmt.Errorf("metrics sql: mandatory arg duration missing for time_range_end() function")
-	}
-	if len(args) > 3 {
-		return nil, 0, "", fmt.Errorf("metrics sql: time_range_end() function expects at most 3 arguments")
-	}
-	// identify optional args
-	var (
-		col  string
-		unit int
-		err  error
-	)
-	// identify unit
-	if len(args) == 1 {
-		unit = 1
-	} else {
-		val, err := q.parseValueExpr(args[1])
-		if err != nil {
-			return nil, 0, "", err
-		}
-		i, err := strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			return nil, 0, "", err
-		}
-		unit = int(i)
-	}
-
-	// identify column name
-	if len(args) == 3 {
-		col, _, err = q.parseColumnNameExpr(args[2])
-		if err != nil {
-			return nil, 0, "", err
-		}
-	}
-
-	du, err := q.parseValueExpr(args[0])
-	if err != nil {
-		return nil, 0, "", err
-	}
-
-	d, err := duration.ParseISO8601(strings.TrimSuffix(strings.TrimPrefix(du, "'"), "'"))
-	if err != nil {
-		return nil, 0, "", fmt.Errorf("metrics sql: invalid ISO8601 duration %s", du)
-	}
-	return d, unit, col, nil
 }
 
 func (q *query) getWatermark(ctx context.Context, colName string) (watermark time.Time, err error) {
@@ -149,4 +101,52 @@ func (q *query) getWatermark(ctx context.Context, colName string) (watermark tim
 		return watermark, fmt.Errorf("metrics sql: no watermark or time dimension found in metrics view")
 	}
 	return watermark, nil
+}
+
+func parseTimeRangeArgs(args []ast.ExprNode) (duration.Duration, int, string, error) {
+	if len(args) == 0 {
+		return nil, 0, "", fmt.Errorf("metrics sql: mandatory arg duration missing for time_range_end() function")
+	}
+	if len(args) > 3 {
+		return nil, 0, "", fmt.Errorf("metrics sql: time_range_end() function expects at most 3 arguments")
+	}
+	// identify optional args
+	var (
+		col  string
+		unit int
+		err  error
+	)
+	// identify unit
+	if len(args) == 1 {
+		unit = 1
+	} else {
+		val, err := parseValueExpr(args[1])
+		if err != nil {
+			return nil, 0, "", err
+		}
+		i, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return nil, 0, "", err
+		}
+		unit = int(i)
+	}
+
+	// identify column name
+	if len(args) == 3 {
+		col, err = parseColumnNameExpr(args[2])
+		if err != nil {
+			return nil, 0, "", err
+		}
+	}
+
+	du, err := parseValueExpr(args[0])
+	if err != nil {
+		return nil, 0, "", err
+	}
+
+	d, err := duration.ParseISO8601(strings.TrimSuffix(strings.TrimPrefix(du, "'"), "'"))
+	if err != nil {
+		return nil, 0, "", fmt.Errorf("metrics sql: invalid ISO8601 duration %s", du)
+	}
+	return d, unit, col, nil
 }
