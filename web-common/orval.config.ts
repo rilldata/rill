@@ -96,6 +96,12 @@ export default defineConfig({
               signal: true,
             },
           },
+          QueryService_ResolveComponent: {
+            query: {
+              useQuery: true,
+              signal: true,
+            },
+          },
           RuntimeService_IssueDevJWT: {
             query: {
               useQuery: true,

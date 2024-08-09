@@ -19,6 +19,8 @@ import type {
   QueryServiceColumnCardinalityParams,
   V1TableColumnsResponse,
   QueryServiceTableColumnsParams,
+  V1ResolveComponentResponse,
+  QueryServiceResolveComponentBody,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
   V1ExportResponse,
@@ -217,6 +219,93 @@ export const createQueryServiceTableColumns = <
     queryKey,
     queryFn,
     enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary ResolveComponent resolves the data and renderer for a Component resource.
+ */
+export const queryServiceResolveComponent = (
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ResolveComponentResponse>({
+    url: `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveComponentBody,
+    signal,
+  });
+};
+
+export const getQueryServiceResolveComponentQueryKey = (
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+) => [
+  `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
+  queryServiceResolveComponentBody,
+];
+
+export type QueryServiceResolveComponentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveComponent>>
+>;
+export type QueryServiceResolveComponentQueryError = ErrorType<RpcStatus>;
+
+export const createQueryServiceResolveComponent = <
+  TData = Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceResolveComponentQueryKey(
+      instanceId,
+      component,
+      queryServiceResolveComponentBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceResolveComponent>>
+  > = ({ signal }) =>
+    queryServiceResolveComponent(
+      instanceId,
+      component,
+      queryServiceResolveComponentBody,
+      signal,
+    );
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && component),
     ...queryOptions,
   }) as CreateQueryResult<TData, TError> & {
     queryKey: QueryKey;
