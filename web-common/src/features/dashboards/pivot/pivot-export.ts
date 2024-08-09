@@ -87,6 +87,7 @@ export function getPivotExportArgs(ctx: StateManagers) {
       useMetricsView(ctx),
       useTimeControlStore(ctx),
       ctx.dashboardStore,
+      getPivotConfig(ctx),
       ctx.selectors.pivot.rows,
       ctx.selectors.pivot.columns,
     ],
@@ -95,16 +96,16 @@ export function getPivotExportArgs(ctx: StateManagers) {
       metricsView,
       timeControlState,
       dashboardState,
+      configStore,
       rows,
       columns,
     ]) => {
+      const enableComparison = configStore.enableComparison;
+      const comparisonTime = configStore.comparisonTime;
+
       const metricsViewSpec = metricsView.data ?? {};
       const timeRange = mapTimeRange(timeControlState, metricsViewSpec);
       if (!timeRange) return undefined;
-
-      const configStore = getPivotConfig(ctx);
-      const enableComparison = get(configStore).enableComparison;
-      const comparisonTime = get(configStore).comparisonTime;
 
       return getPivotAggregationRequest(
         metricsViewName,
