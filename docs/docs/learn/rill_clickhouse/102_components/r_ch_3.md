@@ -47,7 +47,7 @@ dsn: "clickhouse://localhost:9000"
 There are a few way to define the credentials within Rill.
 
 <Tabs>
-<TabItem value="KPI" label="via yaml" default>
+<TabItem value="yaml" label="via yaml" default>
 Please create a file called clickhouse.yaml and add the following contents.
 ```yaml
 type: connector
@@ -66,7 +66,7 @@ dsn: "clickhouse://localhost:9000"
 
 
 </TabItem>
-<TabItem value="Bar" label="via variables">
+<TabItem value="variable" label="via variables">
 Navigate back to the Terminal and stop the Rill process. You can run the following to add a variable and use this is within Rill.
 
 ```
@@ -88,7 +88,7 @@ port: '{{ .vars.port }}'
   </TabItem>
 
 
-  <TabItem value="Line" label="via .env">
+  <TabItem value="env" label="via .env">
 There's a few way to generate the .env file. Making a source that requires credentials will automatically generate it. Else, you can create it using `touch .env` in the rill directory.
 
 ```yaml

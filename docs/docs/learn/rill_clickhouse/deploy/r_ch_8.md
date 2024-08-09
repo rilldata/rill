@@ -1,0 +1,27 @@
+---
+title: Deploy to Rill Cloud via UI
+sidebar_label: 'via UI'
+sidebar_position: 9
+hide_table_of_contents: false
+---
+## Deploy via the UI!
+
+Starting from version 0.48, we have introduced an easy way to deploy via the UI.
+
+You'll notice a `Deploy to share` button in the top right corner of a dashboard. Let's select it!
+
+<img src = '/img/tutorials/106/deploy-ui.gif' class='rounded-gif' />
+<br />
+
+Steps to deploy to Rill Cloud:
+1. Select the `Deploy to share` button.
+2. Select `continue` on the free trial [link to article of free trial explanation]
+    - If you have multiple organizaitons, please select Rill_Learn and `continue`.
+3. Select `continue` on user invites.
+4. You will be navigated to the /status page of your deployed project.
+
+
+Take note of the following features in the UI:
+<img src = '/img/tutorials/106/ui-explained.gif' class='rounded-gif' />
+
+

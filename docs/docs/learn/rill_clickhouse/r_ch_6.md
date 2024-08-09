@@ -7,7 +7,7 @@ hide_table_of_contents: false
 
 ## Time to share our dashboard!
 
-At this point, we would normally be ready to ship our dashboard off to Rill Cloud and share the dashboard. Just one problem, and quite a big one if you use a local ClickHouse server to run some testing. Since this binary is locally running on your machine, if you try to deploy as is, you will not be able to connect to the ClickHouse database. 
+At this point, we would normally be ready to ship our dashboard off to Rill Cloud and share the dashboard. Just **one problem**. If you used a local ClickHouse server from the start of this course, we will need to make some changes. Since this binary is locally running on your machine, if you try to deploy to Rill Cloud as is, you will not be able to connect to your ClickHouse database. 
 
 If you're already using ClickHouse Cloud, [skip to the deploy](#now-we-can-deploy)!
 
@@ -28,4 +28,8 @@ You will need to head back to [Conecting to ClickHouse](components/r_ch_4) to re
 
 ### Now we can deploy!
 
-Sorry about that, now we can deploy our project to Rill Cloud!
+Once you can confirm connection to your ClickHouse databse, we can deploy our project to Rill Cloud!
+
+If you prefer deploying via the CLI, [click here](deploy/r_ch_7)!
+
+If you prefer deploying via the UI, [click here](deploy/r_ch_7)!

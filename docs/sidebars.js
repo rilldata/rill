@@ -160,7 +160,20 @@ const sidebars = {
                 'learn/rill_clickhouse/components/r_ch_3',
                 'learn/rill_clickhouse/components/r_ch_4',
                 'learn/rill_clickhouse/components/r_ch_5',
-                'learn/rill_clickhouse/r_ch_6',
+                {
+                  type: 'category',
+                  label: 'Deploy To Cloud',
+                  link: {
+                    type: 'doc',
+                    id: 'learn/rill_clickhouse/r_ch_6',
+          
+                  },
+                  items: [
+                    'learn/rill_clickhouse/deploy/r_ch_7',
+                    'learn/rill_clickhouse/deploy/r_ch_8',        
+                  ]
+                },
+
               ]
           },
         ],
