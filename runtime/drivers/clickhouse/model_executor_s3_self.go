@@ -80,6 +80,22 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 	clone.InputProperties = propsMap
 	newOpts := &clone
 
+	// set output props with defaults
+	out := &ModelOutputProperties{}
+	if err := mapstructure.WeakDecode(newOpts.OutputProperties, out); err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if out.Materialize == nil {
+		materialize := true
+		out.Materialize = &materialize
+	} else if !*out.Materialize {
+		return nil, fmt.Errorf("s3 to clickhouse executor only supports materialized models. Set `materialize` to true")
+	}
+	if err := mapstructure.WeakDecode(out, &newOpts.OutputProperties); err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
+	// execute
 	executor := &selfToSelfExecutor{c: e.c}
 	return executor.Execute(ctx, newOpts)
 }
