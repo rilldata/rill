@@ -99,8 +99,8 @@ type MeasureComputeComparisonRatio struct {
 }
 
 type MeasureComputePercentOfTotal struct {
-	Measure string  `mapstructure:"measure"`
-	Total   float64 `mapstructure:"total"`
+	Measure string   `mapstructure:"measure"`
+	Total   *float64 `mapstructure:"total"`
 }
 
 type Spine struct {
