@@ -198,6 +198,7 @@ type PageMock = Readable<Page> & {
 function createPageMock() {
   const { update, subscribe } = writable<Page>({
     url: new URL("http://localhost/dashboard/AdBids"),
+    params: { name: "AdBids" },
   } as any);
 
   pageMock.subscribe = subscribe;
