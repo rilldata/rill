@@ -248,7 +248,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		if err != nil {
 			return err
 		}
-		b.writeString(")")
+		b.writeByte(')')
 		return nil
 	}
 
@@ -283,7 +283,7 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 		return fmt.Errorf("invalid binary condition operator %q", op)
 	}
 
-	b.writeString("(")
+	b.writeByte('(')
 
 	if leftOverride != "" {
 		b.writeParenthesizedString(leftOverride)
@@ -298,10 +298,10 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 		// "dim = NULL" should be written as "dim IS NULL"
 		// "dim != NULL" should be written as "dim IS NOT NULL"
 		if op == OperatorEq {
-			b.writeString(" IS NULL")
+			b.writeString(" IS NULL)")
 			return nil
 		} else if op == OperatorNeq {
-			b.writeString(" IS NOT NULL")
+			b.writeString(" IS NOT NULL)")
 			return nil
 		}
 	}
@@ -311,7 +311,7 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 		return err
 	}
 
-	b.writeString(")")
+	b.writeByte(')')
 
 	return nil
 }
@@ -364,7 +364,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if b.ast.dialect.RequiresCastForLike() {
 			b.writeString("::TEXT")
 		}
-		b.writeString(")")
+		b.writeByte(')')
 
 		if not {
 			b.writeString(" NOT LIKE ")
@@ -380,7 +380,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if b.ast.dialect.RequiresCastForLike() {
 			b.writeString("::TEXT")
 		}
-		b.writeString(")")
+		b.writeByte(')')
 	}
 
 	// When you have "dim NOT ILIKE <val>", then NULL values are always excluded. We need to explicitly include it.
