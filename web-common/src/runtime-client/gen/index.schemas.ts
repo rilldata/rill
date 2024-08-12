@@ -183,6 +183,7 @@ export type QueryServiceMetricsViewTotalsBody = {
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
+  whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 };
@@ -196,7 +197,9 @@ export type QueryServiceMetricsViewToplistBody = {
   offset?: string;
   sort?: V1MetricsViewSort[];
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 };
@@ -207,7 +210,9 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
@@ -250,7 +255,9 @@ export type QueryServiceMetricsViewComparisonBody = {
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
@@ -270,7 +277,9 @@ export type QueryServiceMetricsViewAggregationBody = {
   pivotOn?: string[];
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   limit?: string;
   offset?: string;
   priority?: number;
@@ -545,12 +554,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -578,6 +581,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -1172,16 +1181,12 @@ export interface V1MetricsViewTotalsRequest {
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
+  whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 }
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
 
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
@@ -1196,7 +1201,9 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
@@ -1279,7 +1286,9 @@ export interface V1MetricsViewToplistRequest {
   offset?: string;
   sort?: V1MetricsViewSort[];
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 }
@@ -1363,10 +1372,36 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  whereSql?: string;
+  having?: V1Expression;
+  havingSql?: string;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1394,12 +1429,18 @@ export interface V1MetricsViewAggregationRequest {
   pivotOn?: string[];
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
+  whereSql?: string;
   having?: V1Expression;
+  havingSql?: string;
   limit?: string;
   offset?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+}
+
+export interface V1MetricsViewAggregationMeasureComputePercentOfTotal {
+  measure?: string;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
@@ -1432,6 +1473,7 @@ export interface V1MetricsViewAggregationMeasure {
   comparisonValue?: V1MetricsViewAggregationMeasureComputeComparisonValue;
   comparisonDelta?: V1MetricsViewAggregationMeasureComputeComparisonDelta;
   comparisonRatio?: V1MetricsViewAggregationMeasureComputeComparisonRatio;
+  percentOfTotal?: V1MetricsViewAggregationMeasureComputePercentOfTotal;
 }
 
 export interface V1MetricsViewAggregationDimension {
@@ -1439,25 +1481,6 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
-}
-
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MapType {
@@ -2128,6 +2151,8 @@ export interface V1AlertSpec {
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
   resolver?: string;
   resolverProperties?: V1AlertSpecResolverProperties;
   queryForUserId?: string;
@@ -2149,6 +2174,7 @@ export interface V1AlertExecution {
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
+  suppressedSince?: string;
 }
 
 export interface V1AlertState {

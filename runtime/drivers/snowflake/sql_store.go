@@ -108,7 +108,6 @@ type fileIterator struct {
 	conn         *sql.Conn
 	rows         sqld.Rows
 	batches      []*sf.ArrowBatch
-	progress     drivers.Progress
 	limitInBytes int64
 	logger       *zap.Logger
 	tempDir      string
@@ -247,7 +246,6 @@ func (f *fileIterator) Next() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.progress.Observe(1, drivers.ProgressUnitFile)
 	f.logger.Debug("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }

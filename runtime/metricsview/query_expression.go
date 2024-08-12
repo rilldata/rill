@@ -140,13 +140,18 @@ func (b exprStrBuilder) writeBinaryCondition(exprs []*Expression, op Operator) e
 
 	switch op {
 	case OperatorEq:
-		/// Special case: "dim = NULL" should be written as "dim IS NULL"
+		// Special case: "dim = NULL" should be written as "dim IS NULL"
 		if hasNilValue(right) {
 			b.writeString(" IS NULL")
 			return nil
 		}
 		b.writeString("=")
 	case OperatorNeq:
+		// Special case: "dim != NULL" should be written as "dim IS NOT NULL"
+		if hasNilValue(right) {
+			b.writeString(" IS NOT NULL")
+			return nil
+		}
 		b.writeString("!=")
 	case OperatorLt:
 		b.writeString("<")

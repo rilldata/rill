@@ -2143,6 +2143,7 @@ func local_request_QueryService_TableRows_0(ctx context.Context, marshaler runti
 // UnaryRPC     :call QueryServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterQueryServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterQueryServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server QueryServiceServer) error {
 
 	mux.Handle("POST", pattern_QueryService_Query_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -2815,7 +2816,7 @@ func RegisterQueryServiceHandler(ctx context.Context, mux *runtime.ServeMux, con
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "QueryServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "QueryServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "QueryServiceClient" to call the correct interceptors.
+// "QueryServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterQueryServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client QueryServiceClient) error {
 
 	mux.Handle("POST", pattern_QueryService_Query_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

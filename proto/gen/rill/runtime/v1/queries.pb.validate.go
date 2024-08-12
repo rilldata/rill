@@ -2956,6 +2956,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -2984,6 +2986,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	if m.GetLimit() < 0 {
 		err := MetricsViewAggregationRequestValidationError{
@@ -3693,6 +3697,47 @@ func (m *MetricsViewAggregationMeasure) validate(all bool) error {
 			}
 		}
 
+	case *MetricsViewAggregationMeasure_PercentOfTotal:
+		if v == nil {
+			err := MetricsViewAggregationMeasureValidationError{
+				field:  "Compute",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetPercentOfTotal()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "PercentOfTotal",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "PercentOfTotal",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPercentOfTotal()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationMeasureValidationError{
+					field:  "PercentOfTotal",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -4347,6 +4392,122 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewAggregationMeasureComputeComparisonRatioValidationError{}
 
+// Validate checks the field values on
+// MetricsViewAggregationMeasureComputePercentOfTotal with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewAggregationMeasureComputePercentOfTotal) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewAggregationMeasureComputePercentOfTotal with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in
+// MetricsViewAggregationMeasureComputePercentOfTotalMultiError, or nil if
+// none found.
+func (m *MetricsViewAggregationMeasureComputePercentOfTotal) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAggregationMeasureComputePercentOfTotal) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Measure
+
+	if len(errors) > 0 {
+		return MetricsViewAggregationMeasureComputePercentOfTotalMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAggregationMeasureComputePercentOfTotalMultiError is an error
+// wrapping multiple validation errors returned by
+// MetricsViewAggregationMeasureComputePercentOfTotal.ValidateAll() if the
+// designated constraints aren't met.
+type MetricsViewAggregationMeasureComputePercentOfTotalMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAggregationMeasureComputePercentOfTotalMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAggregationMeasureComputePercentOfTotalMultiError) AllErrors() []error { return m }
+
+// MetricsViewAggregationMeasureComputePercentOfTotalValidationError is the
+// validation error returned by
+// MetricsViewAggregationMeasureComputePercentOfTotal.Validate if the
+// designated constraints aren't met.
+type MetricsViewAggregationMeasureComputePercentOfTotalValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Field() string {
+	return e.field
+}
+
+// Reason function returns reason value.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Cause() error {
+	return e.cause
+}
+
+// Key function returns key value.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) ErrorName() string {
+	return "MetricsViewAggregationMeasureComputePercentOfTotalValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAggregationMeasureComputePercentOfTotal.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAggregationMeasureComputePercentOfTotalValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAggregationMeasureComputePercentOfTotalValidationError{}
+
 // Validate checks the field values on MetricsViewAggregationSort with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -4642,6 +4803,8 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -4670,6 +4833,8 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	// no validation rules for Priority
 
@@ -5193,6 +5358,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -5221,6 +5388,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	for idx, item := range m.GetAliases() {
 		_, _ = idx, item
@@ -6453,6 +6622,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -6481,6 +6652,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	// no validation rules for TimeZone
 
@@ -6903,6 +7076,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for WhereSql
 
 	// no validation rules for Priority
 

@@ -1285,9 +1285,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               limit:
                 type: string
                 format: int64
@@ -1383,9 +1389,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               aliases:
                 type: array
                 items:
@@ -1657,9 +1669,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               timeZone:
                 type: string
                 title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -1727,8 +1745,12 @@ paths:
                   $ref: '#/definitions/v1MetricsViewSort'
               where:
                 $ref: '#/definitions/v1Expression'
+              whereSql:
+                type: string
               having:
                 $ref: '#/definitions/v1Expression'
+              havingSql:
+                type: string
               priority:
                 type: integer
                 format: int32
@@ -1783,6 +1805,9 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               priority:
                 type: integer
                 format: int32
@@ -3058,6 +3083,10 @@ definitions:
       finishedOn:
         type: string
         format: date-time
+      suppressedSince:
+        type: string
+        format: date-time
+        title: Stores the last notification time in suppressed alerts
   v1AlertSpec:
     type: object
     properties:
@@ -3080,6 +3109,11 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
+      queryName:
+        type: string
+        title: for alerts that have not been edited since resolver and resolver_properties have been added
+      queryArgsJson:
+        type: string
       resolver:
         type: string
       resolverProperties:
@@ -4185,6 +4219,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonDelta'
       comparisonRatio:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
+      percentOfTotal:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -4206,6 +4242,11 @@ definitions:
     type: object
     properties:
       dimension:
+        type: string
+  v1MetricsViewAggregationMeasureComputePercentOfTotal:
+    type: object
+    properties:
+      measure:
         type: string
   v1MetricsViewAggregationRequest:
     type: object
@@ -4261,9 +4302,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       limit:
         type: string
         format: int64
@@ -4370,9 +4417,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       aliases:
         type: array
         items:
@@ -4682,9 +4735,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -4741,8 +4800,12 @@ definitions:
           $ref: '#/definitions/v1MetricsViewSort'
       where:
         $ref: '#/definitions/v1Expression'
+      whereSql:
+        type: string
       having:
         $ref: '#/definitions/v1Expression'
+      havingSql:
+        type: string
       priority:
         type: integer
         format: int32
@@ -4786,6 +4849,9 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       priority:
         type: integer
         format: int32

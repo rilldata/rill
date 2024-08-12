@@ -871,11 +871,25 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   where?: Expression;
 
   /**
+   * Optional. Either where or where_sql should be set
+   *
+   * @generated from field: string where_sql = 19;
+   */
+  whereSql = "";
+
+  /**
    * Optional
    *
    * @generated from field: rill.runtime.v1.Expression having = 13;
    */
   having?: Expression;
+
+  /**
+   * Optional. Either having or having_sql should be set
+   *
+   * @generated from field: string having_sql = 20;
+   */
+  havingSql = "";
 
   /**
    * Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
@@ -932,7 +946,9 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 15, name: "pivot_on", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 18, name: "aliases", kind: "message", T: MetricsViewComparisonMeasureAlias, repeated: true },
     { no: 8, name: "where", kind: "message", T: Expression },
+    { no: 19, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "having", kind: "message", T: Expression },
+    { no: 20, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -1130,6 +1146,12 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
      */
     value: MetricsViewAggregationMeasureComputeComparisonRatio;
     case: "comparisonRatio";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal percent_of_total = 10;
+     */
+    value: MetricsViewAggregationMeasureComputePercentOfTotal;
+    case: "percentOfTotal";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
@@ -1149,6 +1171,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 7, name: "comparison_value", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonValue, oneof: "compute" },
     { no: 8, name: "comparison_delta", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonDelta, oneof: "compute" },
     { no: 9, name: "comparison_ratio", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonRatio, oneof: "compute" },
+    { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1348,6 +1371,43 @@ export class MetricsViewAggregationMeasureComputeComparisonRatio extends Message
 }
 
 /**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal
+ */
+export class MetricsViewAggregationMeasureComputePercentOfTotal extends Message<MetricsViewAggregationMeasureComputePercentOfTotal> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputePercentOfTotal>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputePercentOfTotal | PlainMessage<MetricsViewAggregationMeasureComputePercentOfTotal> | undefined, b: MetricsViewAggregationMeasureComputePercentOfTotal | PlainMessage<MetricsViewAggregationMeasureComputePercentOfTotal> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputePercentOfTotal, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.MetricsViewAggregationSort
  */
 export class MetricsViewAggregationSort extends Message<MetricsViewAggregationSort> {
@@ -1451,9 +1511,19 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
   where?: Expression;
 
   /**
+   * @generated from field: string where_sql = 15;
+   */
+  whereSql = "";
+
+  /**
    * @generated from field: rill.runtime.v1.Expression having = 13;
    */
   having?: Expression;
+
+  /**
+   * @generated from field: string having_sql = 16;
+   */
+  havingSql = "";
 
   /**
    * @generated from field: int32 priority = 11;
@@ -1485,7 +1555,9 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
     { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
     { no: 10, name: "where", kind: "message", T: Expression },
+    { no: 15, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "having", kind: "message", T: Expression },
+    { no: 16, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
@@ -1621,11 +1693,25 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   where?: Expression;
 
   /**
+   * Optional. Either where or where_sql should be set
+   *
+   * @generated from field: string where_sql = 17;
+   */
+  whereSql = "";
+
+  /**
    * Optional
    *
    * @generated from field: rill.runtime.v1.Expression having = 12;
    */
   having?: Expression;
+
+  /**
+   * Optional. Either having or having_sql should be set
+   *
+   * @generated from field: string having_sql = 18;
+   */
+  havingSql = "";
 
   /**
    * Optional
@@ -1688,7 +1774,9 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
     { no: 6, name: "time_range", kind: "message", T: TimeRange },
     { no: 7, name: "comparison_time_range", kind: "message", T: TimeRange },
     { no: 8, name: "where", kind: "message", T: Expression },
+    { no: 17, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "having", kind: "message", T: Expression },
+    { no: 18, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "aliases", kind: "message", T: MetricsViewComparisonMeasureAlias, repeated: true },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -2110,11 +2198,25 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   where?: Expression;
 
   /**
+   * Optional. Either where or where_sql should be set
+   *
+   * @generated from field: string where_sql = 13;
+   */
+  whereSql = "";
+
+  /**
    * Optional
    *
    * @generated from field: rill.runtime.v1.Expression having = 11;
    */
   having?: Expression;
+
+  /**
+   * Optional. Either having or having_sql should be set
+   *
+   * @generated from field: string having_sql = 14;
+   */
+  havingSql = "";
 
   /**
    * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -2150,7 +2252,9 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 13, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "having", kind: "message", T: Expression },
+    { no: 14, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
@@ -2261,6 +2365,13 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   where?: Expression;
 
   /**
+   * Optional. Either where or where_sql should be set
+   *
+   * @generated from field: string where_sql = 11;
+   */
+  whereSql = "";
+
+  /**
    * @generated from field: int32 priority = 8;
    */
   priority = 0;
@@ -2286,6 +2397,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 11, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 10, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
