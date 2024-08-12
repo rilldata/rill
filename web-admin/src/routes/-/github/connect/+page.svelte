@@ -27,16 +27,16 @@
 </script>
 
 <svelte:head>
-  <title>Connect to Github</title>
+  <title>Connect to GitHub</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <Github className="w-10 h-10 text-gray-900" />
-      <CtaHeader>Connect to Github</CtaHeader>
+      <CtaHeader>Connect to GitHub</CtaHeader>
       <CtaMessage>
-        Rill projects deploy continuously when you push changes to Github.
+        Rill projects deploy continuously when you push changes to GitHub.
       </CtaMessage>
       {#if remote}
         <CtaMessage>
@@ -47,7 +47,7 @@
       {/if}
       <div class="mt-4 w-full flex justify-center">
         <CtaButton variant="primary" href={redirectURL}>
-          Connect to Github
+          Connect to GitHub
         </CtaButton>
       </div>
     </CtaContentContainer>

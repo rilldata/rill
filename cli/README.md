@@ -5,7 +5,7 @@
 In production builds, the CLI embeds the SPA in `web-local` and the examples in `examples` (from the root of the repo). To create a production build of the CLI with these embedded, run:
 ```bash
 # Build the binary and output it to ./rill
-make cli
+make
 
 # To output usage:
 ./rill

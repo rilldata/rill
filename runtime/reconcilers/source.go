@@ -370,7 +370,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
 			return r.C.AcquireConn(ctx, name)
 		},
-		Progress: drivers.NoOpProgress{},
 	}
 
 	transferStart := time.Now()

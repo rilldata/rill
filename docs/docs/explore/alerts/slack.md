@@ -25,6 +25,10 @@ Sending notifications to a specific channel (public or private) requires the [`c
 The application will also need to be added to the channel for the notification to be sent.
 :::
 
+:::warning
+Any alert configured to be sent to a Slack channel will be viewable by all project viewers. 
+:::
+
 ### Direct messages
 
 Sending notifications via a direct message requires the [`chat:write`](https://api.slack.com/scopes/chat:write), [`users:read`](https://api.slack.com/scopes/users:read), and [`users:read.email`](https://api.slack.com/scopes/users:read.email) scopes. 

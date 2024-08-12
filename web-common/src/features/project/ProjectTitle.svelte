@@ -64,6 +64,7 @@
   header {
     height: var(--header-height);
   }
+
   .project-square {
     @apply relative;
     @apply h-5 aspect-square grid place-items-center rounded;
@@ -72,7 +73,7 @@
   }
 
   .link-wrapper {
-    @apply flex gap-x-3 items-center flex-none;
+    @apply flex gap-x-3 items-center flex-none w-full;
   }
 
   .project-link {
