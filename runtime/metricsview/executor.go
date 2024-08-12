@@ -325,7 +325,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 }
 
 // SearchQuery executes the provided query against the metrics view.
-func (e *Executor) SearchQuery(ctx context.Context, searchQry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
+func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
