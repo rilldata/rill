@@ -231,7 +231,9 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 }
 
 func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) {
-	_, err := os.Stat(".env")
+	_, currentFile, _, _ := goruntime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", ".env")
+	_, err := os.Stat(envPath)
 	if !errors.Is(err, fs.ErrNotExist) {
 		require.NoError(t, godotenv.Load())
 	}
@@ -241,7 +243,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 
 	rt := New(t)
 
-	_, currentFile, _, _ := goruntime.Caller(0)
+	_, currentFile, _, _ = goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
 	dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 
