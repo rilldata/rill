@@ -234,9 +234,8 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	envPath := filepath.Join(currentFile, "..", "..", ".env")
 	_, err := os.Stat(envPath)
-	if !errors.Is(err, fs.ErrNotExist) {
-		require.NoError(t, godotenv.Load())
-	}
+	require.NoError(t, err)
+	require.NoError(t, godotenv.Load())
 	if os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN") == "" {
 		t.Skip("skipping the test without the test instance")
 	}
