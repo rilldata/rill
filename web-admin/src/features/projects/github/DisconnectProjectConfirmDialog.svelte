@@ -8,43 +8,38 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
-  import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
 
   export let open = false;
   export let loading = false;
-  export let showButton = false;
   export let onDisconnect: () => void;
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild let:builder>
-    <Button builders={[builder]} type="ghost" compact>
-      <div class="min-w-4">
-        {#if showButton}
-          <EditIcon size="16px" />
-        {/if}
-      </div>
-    </Button>
+  <AlertDialogTrigger asChild>
+    <div class="hidden"></div>
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <div class="flex flex-row gap-x-2 items-center">
-        <Github size="40px" />
-        <AlertDialogTitle>Disconnect GitHub</AlertDialogTitle>
-      </div>
-
+      <AlertDialogTitle>Disconnect from GitHub?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          Do you want to disconnect the project from the GitHub repo?
+          This project will be disconnected from GitHub and no longer under
+          version control. Are you sure want to disconnect?
+          <a
+            href="https://docs.rilldata.com/deploy/existing-project/github-101"
+            target="_blank"
+            class="text-primary-600"
+          >
+            Learn more ->
+          </a>
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
-    <AlertDialogFooter class="mt-3">
+    <AlertDialogFooter>
       <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
       <Button type="primary" on:click={onDisconnect} {loading}>
-        Disconnect
+        Yes, disconnect
       </Button>
     </AlertDialogFooter>
   </AlertDialogContent>

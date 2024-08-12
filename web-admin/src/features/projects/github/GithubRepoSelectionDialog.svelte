@@ -6,7 +6,7 @@
   import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
   import { ProjectGithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/ProjectGithubConnectionUpdater";
   import { getGithubData } from "@rilldata/web-admin/features/projects/github/GithubData";
-  import GithubOverwriteConfirmationDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmationDialog.svelte";
+  import GithubOverwriteConfirmDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmDialog.svelte";
   import {
     Dialog,
     DialogContent,
@@ -180,13 +180,6 @@
     </DialogHeader>
     <DialogFooter class="mt-3">
       <Button
-        outline={false}
-        type="link"
-        on:click={() => githubData.reselectRepos()}
-      >
-        Choose other repos
-      </Button>
-      <Button
         type="secondary"
         on:click={() => {
           open = false;
@@ -203,7 +196,7 @@
   </DialogContent>
 </Dialog>
 
-<GithubOverwriteConfirmationDialog
+<GithubOverwriteConfirmDialog
   bind:open={$showOverwriteConfirmation}
   loading={$connectToGithubMutation.isLoading}
   {error}
