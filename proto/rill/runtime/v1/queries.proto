@@ -393,6 +393,7 @@ message MetricsViewAggregationMeasure {
     MetricsViewAggregationMeasureComputeComparisonValue comparison_value = 7;
     MetricsViewAggregationMeasureComputeComparisonDelta comparison_delta = 8;
     MetricsViewAggregationMeasureComputeComparisonRatio comparison_ratio = 9;
+    MetricsViewAggregationMeasureComputePercentOfTotal percent_of_total = 10;
   }
 }
 
@@ -411,6 +412,10 @@ message MetricsViewAggregationMeasureComputeComparisonDelta {
 }
 
 message MetricsViewAggregationMeasureComputeComparisonRatio {
+  string measure = 1;
+}
+
+message MetricsViewAggregationMeasureComputePercentOfTotal {
   string measure = 1;
 }
 

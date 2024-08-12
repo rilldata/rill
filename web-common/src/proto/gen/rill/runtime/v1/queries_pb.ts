@@ -1146,6 +1146,12 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
      */
     value: MetricsViewAggregationMeasureComputeComparisonRatio;
     case: "comparisonRatio";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal percent_of_total = 10;
+     */
+    value: MetricsViewAggregationMeasureComputePercentOfTotal;
+    case: "percentOfTotal";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
@@ -1165,6 +1171,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 7, name: "comparison_value", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonValue, oneof: "compute" },
     { no: 8, name: "comparison_delta", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonDelta, oneof: "compute" },
     { no: 9, name: "comparison_ratio", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonRatio, oneof: "compute" },
+    { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1360,6 +1367,43 @@ export class MetricsViewAggregationMeasureComputeComparisonRatio extends Message
 
   static equals(a: MetricsViewAggregationMeasureComputeComparisonRatio | PlainMessage<MetricsViewAggregationMeasureComputeComparisonRatio> | undefined, b: MetricsViewAggregationMeasureComputeComparisonRatio | PlainMessage<MetricsViewAggregationMeasureComputeComparisonRatio> | undefined): boolean {
     return proto3.util.equals(MetricsViewAggregationMeasureComputeComparisonRatio, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal
+ */
+export class MetricsViewAggregationMeasureComputePercentOfTotal extends Message<MetricsViewAggregationMeasureComputePercentOfTotal> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputePercentOfTotal>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputePercentOfTotal | PlainMessage<MetricsViewAggregationMeasureComputePercentOfTotal> | undefined, b: MetricsViewAggregationMeasureComputePercentOfTotal | PlainMessage<MetricsViewAggregationMeasureComputePercentOfTotal> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputePercentOfTotal, a, b);
   }
 }
 

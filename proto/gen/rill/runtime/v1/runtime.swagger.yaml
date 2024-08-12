@@ -4184,6 +4184,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonDelta'
       comparisonRatio:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
+      percentOfTotal:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -4205,6 +4207,11 @@ definitions:
     type: object
     properties:
       dimension:
+        type: string
+  v1MetricsViewAggregationMeasureComputePercentOfTotal:
+    type: object
+    properties:
+      measure:
         type: string
   v1MetricsViewAggregationRequest:
     type: object

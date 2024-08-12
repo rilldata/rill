@@ -257,10 +257,6 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
 }

@@ -223,6 +223,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 				res.Compute = &metricsview.MeasureCompute{ComparisonRatio: &metricsview.MeasureComputeComparisonRatio{
 					Measure: c.ComparisonRatio.Measure,
 				}}
+			case *runtimev1.MetricsViewAggregationMeasure_PercentOfTotal:
+				res.Compute = &metricsview.MeasureCompute{PercentOfTotal: &metricsview.MeasureComputePercentOfTotal{
+					Measure: c.PercentOfTotal.Measure,
+				}}
 			}
 		}
 
