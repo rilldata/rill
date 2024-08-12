@@ -26,6 +26,21 @@ func (p *inputProps) Validate() error {
 	return nil
 }
 
+type outputProperties struct {
+	ModelOutputProperties `mapstructure:",squash"`
+}
+
+func (p *outputProperties) Validate() error {
+	// set output props with defaults
+	if p.Materialize == nil {
+		materialize := true
+		p.Materialize = &materialize
+	} else if !*p.Materialize {
+		return fmt.Errorf("s3 to clickhouse executor only supports materialized models. Set `materialize` to true")
+	}
+	return nil
+}
+
 type s3ToSelfExecutor struct {
 	s3 drivers.Handle
 	c  *connection
@@ -47,6 +62,14 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
+	}
+
+	outputProps := &outputProperties{}
+	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if err := outputProps.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
 	var glob string
@@ -75,25 +98,17 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 		return nil, err
 	}
 
-	// Build the model executor options with updated input properties
+	// Build the model executor options with updated input and output properties
 	clone := *opts
 	clone.InputProperties = propsMap
 	newOpts := &clone
 
-	// set output props with defaults
-	out := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(newOpts.OutputProperties, out); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	var outputPropsMap map[string]any
+	err = mapstructure.WeakDecode(outputProps, &outputPropsMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set output properties: %w", err)
 	}
-	if out.Materialize == nil {
-		materialize := true
-		out.Materialize = &materialize
-	} else if !*out.Materialize {
-		return nil, fmt.Errorf("s3 to clickhouse executor only supports materialized models. Set `materialize` to true")
-	}
-	if err := mapstructure.WeakDecode(out, &newOpts.OutputProperties); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
-	}
+	newOpts.OutputProperties = outputPropsMap
 
 	// execute
 	executor := &selfToSelfExecutor{c: e.c}
