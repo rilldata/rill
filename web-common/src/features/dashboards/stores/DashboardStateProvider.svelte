@@ -5,9 +5,9 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../entity-management/types";
 
-  export let metricViewName: string;
-
   const dashboardStoreReady = createDashboardStateSync(getStateManagers());
+
+  export let metricViewName: string;
 
   $: initLocalUserPreferenceStore(metricViewName);
 </script>
