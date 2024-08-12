@@ -70,11 +70,7 @@
   </div>
 
   {#if mockUserHasNoAccess}
-    <!-- 
-      Safety fallback for mock users without dashboard access.
-      The no access page is handled in DashboardStateProvider,
-      but we include it here as an additional safeguard.
-    -->
+    <!-- Additional safeguard for mock users without dashboard access. -->
     <ErrorPage
       statusCode={$dashboard.error?.response?.status}
       header="This user can't access this dashboard"
