@@ -2956,6 +2956,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -2984,6 +2986,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	if m.GetLimit() < 0 {
 		err := MetricsViewAggregationRequestValidationError{
@@ -4799,6 +4803,8 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -4827,6 +4833,8 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	// no validation rules for Priority
 
@@ -5350,6 +5358,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -5378,6 +5388,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	for idx, item := range m.GetAliases() {
 		_, _ = idx, item
@@ -6610,6 +6622,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -6638,6 +6652,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	// no validation rules for TimeZone
 
@@ -7060,6 +7076,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for WhereSql
 
 	// no validation rules for Priority
 
