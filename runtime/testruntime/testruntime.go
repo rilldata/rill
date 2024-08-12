@@ -66,10 +66,10 @@ func New(t TestingT) *runtime.Runtime {
 		DataDir:                      t.TempDir(),
 	}
 
-	// logger := zap.NewNop()
+	logger := zap.NewNop()
 	// nolint
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err)
+	// logger, err := zap.NewDevelopment()
+	// require.NoError(t, err)
 
 	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
