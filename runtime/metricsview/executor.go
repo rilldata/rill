@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -331,52 +332,89 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	// Generate a metricsview.Query and build a AST
 	// This is a hacky implementation since both metricsview.Query and AST are designed for aggregate queries.
 	// TODO :: Refactor the code and extract common functionality from metricsview.Query and AST and write SearchQuery to underlying SQL/Native druid query directly.
-	dimensions := make([]Dimension, len(qry.Dimensions))
-	for i, d := range qry.Dimensions {
-		dimensions[i] = Dimension{Name: d}
-	}
-	q := &Query{
-		MetricsView: qry.MetricsView,
-		Dimensions:  dimensions,
-		Where:       qry.Where,
-		Having:      qry.Having,
-		TimeRange:   qry.TimeRange,
-		Limit:       qry.Limit,
-	}
-
-	rowsCap, err := e.rewriteQueryEnforceCaps(q)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
-		return nil, err
-	}
-
-	ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
-	if err != nil {
-		return nil, err
-	}
-
-	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
-		return nil, err
-	}
 
 	if e.olap.Dialect() == drivers.DialectDruid {
+		dimensions := make([]Dimension, len(qry.Dimensions))
+		for i, d := range qry.Dimensions {
+			dimensions[i] = Dimension{Name: d}
+		}
+		q := &Query{
+			MetricsView: qry.MetricsView,
+			Dimensions:  dimensions,
+			Where:       qry.Where,
+			Having:      qry.Having,
+			TimeRange:   qry.TimeRange,
+			Limit:       qry.Limit,
+		}
+
+		if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+			return nil, err
+		}
+
+		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+		if err != nil {
+			return nil, err
+		}
+
+		if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
+			return nil, err
+		}
+
+		// native search
 		res, err := qry.executeSearchInDruid(ctx, e.olap, ast)
 		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
 			return res, err
 		}
 	}
 
-	sql, args, err := searchSQL(ast, qry.Search)
-	if err != nil {
-		return nil, err
+	var (
+		finalSQL  strings.Builder
+		finalArgs []any
+		rowsCap   int64
+		err       error
+	)
+	for i, d := range qry.Dimensions {
+		if i > 0 {
+			finalSQL.WriteString(" UNION ALL ")
+		}
+		q := &Query{
+			MetricsView: qry.MetricsView,
+			Dimensions:  []Dimension{{Name: d}},
+			Having:      qry.Having,
+			TimeRange:   qry.TimeRange,
+			Limit:       qry.Limit,
+		}
+		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
+
+		if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+			return nil, err
+		}
+
+		rowsCap, err = e.rewriteQueryEnforceCaps(q)
+		if err != nil {
+			return nil, err
+		}
+
+		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+		if err != nil {
+			return nil, err
+		}
+
+		if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
+			return nil, err
+		}
+
+		sql, args, err := ast.SQL()
+		if err != nil {
+			return nil, err
+		}
+		finalSQL.WriteString(fmt.Sprintf("SELECT '%s' AS dimension, %s AS value FROM (%s)", d, e.olap.Dialect().EscapeIdentifier(d), sql))
+		finalArgs = append(finalArgs, args...)
 	}
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
+		Query:            finalSQL.String(),
+		Args:             finalArgs,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultInteractiveTimeout,
 	})
@@ -399,4 +437,35 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 		return nil, res.Err()
 	}
 	return searchResult, nil
+}
+
+func whereExprForSearch(where *Expression, dimension, search string) *Expression {
+	if where == nil {
+		return &Expression{
+			Condition: &Condition{
+				Operator: OperatorIlike,
+				Expressions: []*Expression{
+					{Name: dimension},
+					{Value: fmt.Sprintf("%%%s%%", search)},
+				},
+			},
+		}
+	}
+	return &Expression{
+		Condition: &Condition{
+			Operator: OperatorAnd,
+			Expressions: []*Expression{
+				{
+					Condition: &Condition{
+						Operator: OperatorIlike,
+						Expressions: []*Expression{
+							{Name: dimension},
+							{Value: fmt.Sprintf("%%%s%%", search)},
+						},
+					},
+				},
+				where,
+			},
+		},
+	}
 }
