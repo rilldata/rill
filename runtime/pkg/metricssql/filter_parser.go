@@ -179,19 +179,21 @@ func parsePatternIn(ctx context.Context, node *ast.PatternInExpr, q *query) (*me
 	} else {
 		op = metricsview.OperatorIn
 	}
-	exprs := make([]*metricsview.Expression, 0, len(node.List)+1)
-	exprs = append(exprs, expr)
+	values := make([]any, 0, len(node.List))
 	for _, n := range node.List {
-		expr, err = parseFilter(ctx, n, q)
+		val, err := parseValueExpr(n)
 		if err != nil {
 			return nil, err
 		}
-		exprs = append(exprs, expr)
+		values = append(values, val)
 	}
 	return &metricsview.Expression{
 		Condition: &metricsview.Condition{
-			Operator:    op,
-			Expressions: exprs,
+			Operator: op,
+			Expressions: []*metricsview.Expression{
+				expr,
+				{Value: values},
+			},
 		},
 	}, nil
 }
@@ -326,7 +328,6 @@ func parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr, q *query
 			return nil, fmt.Errorf("metrics sql: expected integer value in date_add/date_sub function")
 		}
 
-		// TODO :: check this
 		expr, err = parseTimeUnitValueExpr(node.Args[2]) // handling of DAY
 		if err != nil {
 			return nil, err

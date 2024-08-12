@@ -45,31 +45,7 @@ func TestParseSQLFilter(t *testing.T) {
 							Name: "dim",
 						},
 						{
-							Value: "helllo",
-						},
-						{
-							Value: "world",
-						},
-					},
-				},
-			},
-			false,
-		},
-		{
-			"in expression",
-			"dim IN ('helllo', 'world')",
-			&metricsview.Expression{
-				Condition: &metricsview.Condition{
-					Operator: metricsview.OperatorIn,
-					Expressions: []*metricsview.Expression{
-						{
-							Name: "dim",
-						},
-						{
-							Value: "helllo",
-						},
-						{
-							Value: "world",
+							Value: []any{"helllo", "world"},
 						},
 					},
 				},
