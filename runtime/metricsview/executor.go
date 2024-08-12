@@ -10,8 +10,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
 )
 
 const (
@@ -329,34 +327,33 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
-	logger := e.rt.Logger.With(zap.String("instance_id", e.instanceID))
 
 	// Generate a metricsview.Query and build a AST
 	// This is a hacky implementation since both metricsview.Query and AST are designed for aggregate queries.
 	// TODO :: Refactor the code and extract common functionality from metricsview.Query and AST and write SearchQuery to underlying SQL/Native druid query directly.
-	dimensions := make([]Dimension, len(searchQry.Dimensions))
-	for i, d := range searchQry.Dimensions {
+	dimensions := make([]Dimension, len(qry.Dimensions))
+	for i, d := range qry.Dimensions {
 		dimensions[i] = Dimension{Name: d}
 	}
-	qry := &Query{
-		MetricsView: searchQry.MetricsView,
+	q := &Query{
+		MetricsView: qry.MetricsView,
 		Dimensions:  dimensions,
-		Where:       searchQry.Where,
-		Having:      searchQry.Having,
-		TimeRange:   searchQry.TimeRange,
-		Limit:       searchQry.Limit,
+		Where:       qry.Where,
+		Having:      qry.Having,
+		TimeRange:   qry.TimeRange,
+		Limit:       qry.Limit,
 	}
 
-	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
+	rowsCap, err := e.rewriteQueryEnforceCaps(q)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
 		return nil, err
 	}
 
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -366,17 +363,16 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	}
 
 	if e.olap.Dialect() == drivers.DialectDruid {
-		res, err := searchQry.executeSearchInDruid(ctx, e.olap, ast, e.rt.Logger)
+		res, err := qry.executeSearchInDruid(ctx, e.olap, ast)
 		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
 			return res, err
 		}
 	}
 
-	sql, args, err := searchSQL(ast, searchQry.Search)
+	sql, args, err := searchSQL(ast, qry.Search)
 	if err != nil {
 		return nil, err
 	}
-	logger.Debug("executing search query", zap.String("sql", sql), zap.String("metrics_view", searchQry.MetricsView), zap.String("instance_id", e.instanceID), observability.ZapCtx(ctx))
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
@@ -393,18 +389,11 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	}
 	searchResult := make([]SearchResult, 0)
 	for res.Next() {
-		row := map[string]any{}
-		if err := res.MapScan(row); err != nil {
+		var row SearchResult
+		if err := res.Scan(&row.Dimension, &row.Value); err != nil {
 			return nil, err
 		}
-		dim, ok := row["dimension"].(string)
-		if !ok {
-			return nil, fmt.Errorf("unknown result dimension: %q", dim)
-		}
-		searchResult = append(searchResult, SearchResult{
-			Dimension: dim,
-			Value:     row["value"],
-		})
+		searchResult = append(searchResult, row)
 	}
 	if res.Err() != nil {
 		return nil, res.Err()

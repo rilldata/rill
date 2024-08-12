@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
-	"go.uber.org/zap"
 )
 
 type SearchQuery struct {
@@ -28,9 +26,7 @@ type SearchResult struct {
 	Value     any
 }
 
-var druidSQLDSN = regexp.MustCompile(`/v2/sql/?`)
-
-func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLAPStore, a *AST, logger *zap.Logger) ([]SearchResult, error) {
+func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLAPStore, a *AST) ([]SearchResult, error) {
 	if a.Root.FromSelect != nil {
 		// This means either the dimension uses an unnest or measure filters which are not directly supported by native search.
 		// This can be supported in future using query datasource in future if performance turns out to be a concern.
@@ -51,6 +47,7 @@ func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLA
 		if err != nil {
 			return nil, err
 		}
+		defer rows.Close()
 
 		if !rows.Next() {
 			return nil, fmt.Errorf("failed to parse filter")
@@ -83,13 +80,6 @@ func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLA
 		}
 		query = *plan[0].Query.Filter
 	}
-	dsn, err := druid.GetDSN(olap.(drivers.Handle).Config())
-	if err != nil {
-		return nil, err
-	}
-	if dsn == "" {
-		return nil, fmt.Errorf("druid connector config not found in instance")
-	}
 
 	// Build a native query
 	limit := 100
@@ -118,9 +108,11 @@ func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLA
 	req := druid.NewNativeSearchQueryRequest(trimQuotes(*a.Root.FromTable), q.Search, dims, virtualCols, limit, q.TimeRange.Start, q.TimeRange.End, query) // TODO: timestamps may be nil!
 
 	// Execute the native query
-	var res druid.NativeSearchQueryResponse
-	nq := druid.NewNativeQuery(druidSQLDSN.ReplaceAllString(dsn, "/v2/"))
-	err = nq.Do(ctx, req, &res, req.Context.QueryID, logger)
+	client, err := druid.NewNativeClient(olap)
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.Search(ctx, &req)
 	if err != nil {
 		return nil, err
 	}
