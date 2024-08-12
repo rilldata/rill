@@ -22,7 +22,7 @@ type AST struct {
 	underlyingTable *string
 	underlyingWhere *ExprNode
 	dimFields       []FieldNode
-	unnests         []UnnestNode
+	unnests         []string
 	nextIdentifier  int
 
 	// Contextual info for building the AST
@@ -48,7 +48,7 @@ type SelectNode struct {
 	LeftJoinSelects      []*SelectNode    // Sub-selects to left join onto FromSelect, to enable "per-dimension" measures
 	JoinComparisonSelect *SelectNode      // Sub-select to join onto FromSelect for comparison measures
 	JoinComparisonType   JoinType         // Type of join to use for JoinComparisonSelect
-	Unnests              []UnnestNode     // Unnest expressions to add in the FROM clause
+	Unnests              []string         // Unnest expressions to add in the FROM clause
 	Group                bool             // Whether the SELECT is grouped. If yes, it will group by all DimFields.
 	Where                *ExprNode        // Expression for the WHERE clause
 	TimeWhere            *ExprNode        // Expression for the time range to add to the WHERE clause
@@ -108,11 +108,6 @@ const (
 	JoinTypeRight       JoinType = "RIGHT OUTER"
 )
 
-type UnnestNode struct {
-	DimName string
-	Expr    string
-}
-
 // NewAST builds a new SQL AST based on a metrics query.
 //
 // Dynamic time ranges in the qry must be resolved to static start/end timestamps before calling this function.
@@ -160,10 +155,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			}
 
 			if !auto {
-				ast.unnests = append(ast.unnests, UnnestNode{
-					DimName: f.Name,
-					Expr:    tblWithAlias,
-				})
+				ast.unnests = append(ast.unnests, tblWithAlias)
 				f.Expr = ast.sqlForMember(unnestAlias, f.Name)
 			}
 		}

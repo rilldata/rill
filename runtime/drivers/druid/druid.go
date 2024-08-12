@@ -261,16 +261,6 @@ func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
 }
 
-func GetDSN(config map[string]any) (string, error) {
-	conf := &configProperties{}
-	err := mapstructure.WeakDecode(config, conf)
-	if err != nil {
-		return "", err
-	}
-
-	return dsnFromConfig(conf)
-}
-
 func dsnFromConfig(conf *configProperties) (string, error) {
 	var dsn string
 	var err error
