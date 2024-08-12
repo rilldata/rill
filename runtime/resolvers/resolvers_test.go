@@ -44,14 +44,13 @@ func TestMain(m *testing.M) {
 }
 
 func TestResolvers(t *testing.T) {
-
-	entries, err := os.ReadDir("./")
+	entries, err := os.ReadDir("./testdata")
 	require.NoError(t, err)
 	var reg = regexp.MustCompile(`^(.*)_resolvers_test.yaml$`)
 	for _, e := range entries {
 		if reg.MatchString(e.Name()) {
 			t.Log("Running with", e.Name())
-			yamlFile, err := os.ReadFile(e.Name())
+			yamlFile, err := os.ReadFile(filepath.Join("testdata", e.Name()))
 			require.NoError(t, err)
 			var r Resolvers
 			err = yaml.Unmarshal(yamlFile, &r)
