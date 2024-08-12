@@ -1,9 +1,11 @@
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
+  ComparisonPercentOfTotal,
   mapMeasureFilterToExpr,
   MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { mergeDimensionAndMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -55,6 +57,16 @@ export function getAlertQueryArgsFromFormValues(
             {
               name: formValues.measure + ComparisonDeltaRelativeSuffix,
               comparisonRatio: { measure: formValues.measure },
+            },
+          ]
+        : []),
+      ...(formValues.criteria.some(
+        (c) => c.type === MeasureFilterType.PercentOfTotal,
+      )
+        ? [
+            {
+              name: formValues.measure + ComparisonPercentOfTotal,
+              percentOfTotal: { measure: formValues.measure },
             },
           ]
         : []),

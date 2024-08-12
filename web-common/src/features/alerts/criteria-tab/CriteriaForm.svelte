@@ -7,6 +7,7 @@
   import {
     MeasureFilterBaseTypeOptions,
     MeasureFilterComparisonTypeOptions,
+    MeasureFilterPercentOfTotalOption,
     MeasureFilterType,
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
@@ -35,6 +36,9 @@
       label: measure?.label?.length ? measure.label : measure?.expression,
     },
   ];
+  $: selectedMeasure = $metricsView.data?.measures?.find(
+    (m) => m.name === $form["criteria"][index].measure,
+  );
 
   $: hasComparison =
     $form.comparisonTimeRange?.isoDuration ||
@@ -42,21 +46,26 @@
   $: comparisonLabel = $form.comparisonTimeRange
     ? getComparisonLabel($form.comparisonTimeRange).toLowerCase()
     : "";
-  $: typeOptions = hasComparison
-    ? MeasureFilterComparisonTypeOptions.map((o) => {
-        if (
-          o.value !== MeasureFilterType.AbsoluteChange &&
-          o.value !== MeasureFilterType.PercentChange
-        )
-          return o;
-        return {
-          ...o,
-          label: `${o.label} ${comparisonLabel}`,
-        };
-      })
-    : MeasureFilterBaseTypeOptions;
+  $: typeOptions = [
+    ...(hasComparison
+      ? MeasureFilterComparisonTypeOptions.map((o) => {
+          if (
+            o.value !== MeasureFilterType.AbsoluteChange &&
+            o.value !== MeasureFilterType.PercentChange
+          )
+            return o;
+          return {
+            ...o,
+            label: `${o.label} ${comparisonLabel}`,
+          };
+        })
+      : MeasureFilterBaseTypeOptions),
+    ...(selectedMeasure?.validPercentOfTotal
+      ? [MeasureFilterPercentOfTotalOption]
+      : []),
+  ];
 
-  // Debounce the update of value. This avoid constant refetches
+  // Debounce the update of value. This avoids constant refetches
   let value: string = $form["criteria"][index].value1;
   const valueUpdater = debounce(() => {
     if ($form["criteria"][index]) $form["criteria"][index].value1 = value;
