@@ -1,3 +1,12 @@
+/**
+ * TanStack Query helpers for custom `GetMagicAuthToken` functionality.
+ *
+ * Problem: Generated `GetCurrentMagicAuthToken` functions in `web-admin/src/client`
+ * assume the token is already in the Authorization header.
+ *
+ * Solution: `GetMagicAuthToken` wraps `GetCurrentMagicAuthToken`, adding a `token`
+ * parameter and setting it in the Authorization header explicitly.
+ */
 import type {
   RpcStatus,
   V1GetCurrentMagicAuthTokenResponse,
@@ -29,7 +38,7 @@ export const adminServiceGetMagicAuthToken = (
 };
 
 export const getAdminServiceGetMagicAuthTokenQueryKey = (token: string) => [
-  `/v1/magic-tokens/${token}`,
+  `/v1/magic-tokens/${token}`, // Ensures each token has its own entry in the QueryCache
 ];
 
 export type AdminServiceGetMagicAuthTokenQueryResult = NonNullable<
