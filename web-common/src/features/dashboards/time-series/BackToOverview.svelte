@@ -24,6 +24,6 @@
     <span class="ui-copy-icon">
       <Back color="var(--color-primary-600)" size="16px" />
     </span>
-    <span class="text-primary-600 font-medium"> Overview </span>
+    <span class="text-primary-600 font-medium">Overview</span>
   {/if}
 </button>

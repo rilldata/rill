@@ -147,7 +147,10 @@
 </script>
 
 <div class="flex justify-between items-center p-1 pr-5 h-7">
-  <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
+  <button
+    class="flex flex-row items-center gap-x-1"
+    on:click={() => goBackToLeaderboard()}
+  >
     {#if isFetching}
       <div>
         <Spinner size="16px" status={EntityStatus.Running} />
@@ -156,7 +159,7 @@
       <span class="ui-copy-icon">
         <Back size="16px" />
       </span>
-      <span> All Dimensions </span>
+      <span>All Dimensions</span>
     {/if}
   </button>
 
