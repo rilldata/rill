@@ -65,9 +65,12 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
+	var modelConnector string
 	res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Table, Kind: runtime.ResourceKindModel}, false)
 	if err == nil && res.GetModel().State.ResultConnector != "" { // ignore error since dashboard can directly reference a table as well
-		mv.Spec.Connector = res.GetModel().State.ResultConnector
+		modelConnector = res.GetModel().State.ResultConnector
+	} else {
+		modelConnector = mv.Spec.Connector
 	}
 
 	// NOTE: In other reconcilers, state like spec_hash and refreshed_on is used to avoid redundant reconciles.
@@ -77,7 +80,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// NOTE: Not checking refs for errors since they may still be valid even if they have errors. Instead, we just validate the metrics view against the table name.
 
 	// Validate the metrics view and update ValidSpec
-	validateResult, validateErr := r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec)
+	validateResult, validateErr := r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec, modelConnector)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}
@@ -86,6 +89,9 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	}
 	if validateErr == nil {
 		mv.State.ValidSpec = mv.Spec
+		if modelConnector != "" {
+			mv.State.ValidSpec.Connector = modelConnector
+		}
 	} else {
 		mv.State.ValidSpec = nil
 	}

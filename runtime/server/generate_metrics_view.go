@@ -222,7 +222,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			FormatPreset: measure.FormatPreset,
 		})
 	}
-	validateResult, err := s.runtime.ValidateMetricsView(ctx, instanceID, spec)
+	validateResult, err := s.runtime.ValidateMetricsView(ctx, instanceID, spec, spec.Connector)
 	if err != nil {
 		return nil, err
 	}
