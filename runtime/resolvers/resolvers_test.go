@@ -8,7 +8,6 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -44,113 +43,109 @@ func TestMain(m *testing.M) {
 }
 
 func TestResolvers(t *testing.T) {
-	entries, err := os.ReadDir("./testdata")
+	files, err := filepath.Glob("./testdata/*_resolvers_test.yaml")
 	require.NoError(t, err)
-	var reg = regexp.MustCompile(`^(.*)_resolvers_test.yaml$`)
-	for _, e := range entries {
-		if reg.MatchString(e.Name()) {
-			t.Log("Running with", e.Name())
-			yamlFile, err := os.ReadFile(filepath.Join("testdata", e.Name()))
+	for _, f := range files {
+		t.Log("Running with", f)
+		yamlFile, err := os.ReadFile(f)
+		require.NoError(t, err)
+		var r Resolvers
+		err = yaml.Unmarshal(yamlFile, &r)
+		require.NoError(t, err)
+
+		files := make(map[string]string)
+		for name, node := range r.Project.Sources {
+			abs := filepath.Join("sources", name)
+			bytes, err := yaml.Marshal(&node)
 			require.NoError(t, err)
-			var r Resolvers
-			err = yaml.Unmarshal(yamlFile, &r)
+			files[abs] = string(bytes)
+		}
+		for name, node := range r.Project.Models {
+			abs := filepath.Join("models", name)
+			var bytes []byte
+			bytes, err = yaml.Marshal(&node)
 			require.NoError(t, err)
+			files[abs] = string(bytes)
+		}
+		for name, node := range r.Project.Dashboards {
+			abs := filepath.Join("dashboards", name)
+			bytes, err := yaml.Marshal(&node)
+			require.NoError(t, err)
+			files[abs] = string(bytes)
+		}
+		for name, node := range r.Project.APIs {
+			abs := filepath.Join("apis", name)
+			bytes, err := yaml.Marshal(&node)
+			require.NoError(t, err)
+			files[abs] = string(bytes)
+		}
 
-			files := make(map[string]string)
-			for name, node := range r.Project.Sources {
-				abs := filepath.Join("sources", name)
-				bytes, err := yaml.Marshal(&node)
-				require.NoError(t, err)
-				files[abs] = string(bytes)
+		for connector, opts := range r.Connectors {
+			t.Log("Running with", connector)
+			if opts == nil {
+				opts = &testruntime.InstanceOptionsForResolvers{}
 			}
-			for name, node := range r.Project.Models {
-				abs := filepath.Join("models", name)
-				var bytes []byte
-				bytes, err = yaml.Marshal(&node)
-				require.NoError(t, err)
-				files[abs] = string(bytes)
-			}
-			for name, node := range r.Project.Dashboards {
-				abs := filepath.Join("dashboards", name)
-				bytes, err := yaml.Marshal(&node)
-				require.NoError(t, err)
-				files[abs] = string(bytes)
-			}
-			for name, node := range r.Project.APIs {
-				abs := filepath.Join("apis", name)
-				bytes, err := yaml.Marshal(&node)
-				require.NoError(t, err)
-				files[abs] = string(bytes)
+			if opts.Files == nil {
+				opts.Files = map[string]string{"rill.yaml": ""}
 			}
 
-			for connector, opts := range r.Connectors {
-				t.Log("Running with", connector)
-				if opts == nil {
-					opts = &testruntime.InstanceOptionsForResolvers{}
-				}
-				if opts.Files == nil {
-					opts.Files = map[string]string{"rill.yaml": ""}
-				}
+			switch connector {
+			case "druid":
+				opts.OLAPDriver = "druid"
+			case "clickhouse":
+				opts.OLAPDriver = "clickhouse"
+			}
 
-				switch connector {
-				case "druid":
-					opts.OLAPDriver = "druid"
-				case "clickhouse":
-					opts.OLAPDriver = "clickhouse"
-				}
+			maps.Copy(opts.Files, files)
+			rt, instanceID := testruntime.NewInstanceForResolvers(t, *opts)
+			for testName, test := range r.Tests {
+				t.Run(testName, func(t *testing.T) {
+					t.Log("======================")
+					t.Log("Running ", testName, "with", f, "and", connector)
+					testruntime.RequireParseErrors(t, rt, instanceID, nil)
+					api, err := rt.APIForName(context.Background(), instanceID, test.Resolver)
+					require.NoError(t, err)
 
-				maps.Copy(opts.Files, files)
-				rt, instanceID := testruntime.NewInstanceForResolvers(t, *opts)
-				for testName, test := range r.Tests {
-					t.Run(testName, func(t *testing.T) {
-						t.Log("======================")
-						t.Log("Running ", testName, "with", e.Name(), "and", connector)
-						testruntime.RequireParseErrors(t, rt, instanceID, nil)
-						api, err := rt.APIForName(context.Background(), instanceID, test.Resolver)
-						require.NoError(t, err)
+					o := test.Options
+					o.InstanceID = instanceID
+					o.Resolver = api.Spec.Resolver
+					o.ResolverProperties = api.Spec.ResolverProperties.AsMap()
 
-						o := test.Options
-						o.InstanceID = instanceID
-						o.Resolver = api.Spec.Resolver
-						o.ResolverProperties = api.Spec.ResolverProperties.AsMap()
-
-						res, err := rt.Resolve(context.Background(), &o)
-						require.NoError(t, err)
-						var rows []map[string]interface{}
-						b, err := res.MarshalJSON()
-						require.NoError(t, err)
-						require.NoError(t, json.Unmarshal(b, &rows), string(b))
-						if *update || true {
-							test.Result = rows
-							for _, m := range test.Result {
-								for k, v := range m {
-									node := yaml.Node{}
-									node.Kind = yaml.ScalarNode
-									switch val := v.(type) {
-									case float32:
-										node.Value = strconv.FormatFloat(float64(val), 'f', 2, 32)
-										m[k] = &node
-									case float64:
-										node.Value = strconv.FormatFloat(val, 'f', 2, 64)
-										m[k] = &node
-									}
+					res, err := rt.Resolve(context.Background(), &o)
+					require.NoError(t, err)
+					var rows []map[string]interface{}
+					b, err := res.MarshalJSON()
+					require.NoError(t, err)
+					require.NoError(t, json.Unmarshal(b, &rows), string(b))
+					if *update || true {
+						test.Result = rows
+						for _, m := range test.Result {
+							for k, v := range m {
+								node := yaml.Node{}
+								node.Kind = yaml.ScalarNode
+								switch val := v.(type) {
+								case float32:
+									node.Value = strconv.FormatFloat(float64(val), 'f', 2, 32)
+									m[k] = &node
+								case float64:
+									node.Value = strconv.FormatFloat(val, 'f', 2, 64)
+									m[k] = &node
 								}
 							}
-						} else {
-							require.Equal(t, test.Result, rows)
 						}
-						t.Log("======================")
-					})
-				}
-				if *update || true {
-					buf := bytes.Buffer{}
-					yamlEncoder := yaml.NewEncoder(&buf)
-					yamlEncoder.SetIndent(2)
-					err := yamlEncoder.Encode(r)
-					require.NoError(t, err)
-					require.NoError(t, os.WriteFile(e.Name(), buf.Bytes(), 0644))
-				}
-
+					} else {
+						require.Equal(t, test.Result, rows)
+					}
+					t.Log("======================")
+				})
+			}
+			if *update || true {
+				buf := bytes.Buffer{}
+				yamlEncoder := yaml.NewEncoder(&buf)
+				yamlEncoder.SetIndent(2)
+				err := yamlEncoder.Encode(r)
+				require.NoError(t, err)
+				require.NoError(t, os.WriteFile(f, buf.Bytes(), 0644))
 			}
 		}
 	}
