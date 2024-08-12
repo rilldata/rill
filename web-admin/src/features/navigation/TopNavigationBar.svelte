@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import Banner from "@rilldata/web-admin/features/billing/Banner.svelte";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
@@ -146,6 +147,9 @@
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
+{#if organization}
+  <Banner {organization} />
+{/if}
 <div
   class="flex items-center w-full pr-4 pl-2 py-1"
   class:border-b={!onProjectPage}

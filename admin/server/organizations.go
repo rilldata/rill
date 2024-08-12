@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
@@ -1180,11 +1181,11 @@ func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 		PlanId:                       sub.Plan.ID,
 		PlanName:                     sub.Plan.Name,
 		PlanDisplayName:              sub.Plan.DisplayName,
-		StartDate:                    timestamppb.New(sub.StartDate),
-		EndDate:                      timestamppb.New(sub.EndDate),
-		CurrentBillingCycleStartDate: timestamppb.New(sub.CurrentBillingCycleStartDate),
-		CurrentBillingCycleEndDate:   timestamppb.New(sub.CurrentBillingCycleEndDate),
-		TrialEndDate:                 timestamppb.New(sub.TrialEndDate),
+		StartDate:                    valOrNullTime(sub.StartDate),
+		EndDate:                      valOrNullTime(sub.EndDate),
+		CurrentBillingCycleStartDate: valOrNullTime(sub.CurrentBillingCycleStartDate),
+		CurrentBillingCycleEndDate:   valOrNullTime(sub.CurrentBillingCycleEndDate),
+		TrialEndDate:                 valOrNullTime(sub.TrialEndDate),
 	}
 }
 
@@ -1219,6 +1220,13 @@ func val64OrEmptyString(v *int64) string {
 		return strconv.FormatInt(*v, 10)
 	}
 	return ""
+}
+
+func valOrNullTime(v time.Time) *timestamppb.Timestamp {
+	if v.IsZero() {
+		return nil
+	}
+	return timestamppb.New(v)
 }
 
 func whitelistedDomainToPB(a *database.OrganizationWhitelistedDomainWithJoinedRoleNames) *adminv1.WhitelistedDomain {
