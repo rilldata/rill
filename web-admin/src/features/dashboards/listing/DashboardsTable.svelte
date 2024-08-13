@@ -85,7 +85,7 @@
   const dispatch = createEventDispatcher();
 
   function handleClickRow(e: CustomEvent<Row<DashboardResource>>) {
-    dispatch("select-dashboard", e.detail.original.resource.meta.name.name);
+    dispatch("select-resource", e.detail.original.resource.meta.name);
   }
 </script>
 

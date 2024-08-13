@@ -2,13 +2,15 @@
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
-  import DashboardEmbed from "@rilldata/web-admin/features/embeds/DashboardEmbed.svelte";
+  import CustomDashboardEmbed from "@rilldata/web-admin/features/embeds/CustomDashboardEmbed.svelte";
+  import MetricsExplorerEmbed from "@rilldata/web-admin/features/embeds/MetricsExplorerEmbed.svelte";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
 
   const instanceId = $page.url.searchParams.get("instance_id");
   const initialResourceName = $page.url.searchParams.get("resource");
-  const resourceKind = $page.url.searchParams.get("kind");
+  const initialResourceKind = $page.url.searchParams.get("kind");
   const navigation = $page.url.searchParams.get("navigation");
   // Ignoring state and theme params for now
   // const state = $page.url.searchParams.get("state");
@@ -16,13 +18,16 @@
 
   // Manage active resource
   let activeResourceName = initialResourceName;
+  let activeResourceKind = initialResourceKind;
 
-  function handleSelectDashboard(event: CustomEvent<string>) {
-    activeResourceName = event.detail;
+  function handleSelectResource(event: CustomEvent<V1ResourceName>) {
+    activeResourceName = event.detail.name;
+    activeResourceKind = event.detail.kind;
   }
 
   function handleGoHome() {
     activeResourceName = "";
+    activeResourceKind = "";
   }
 </script>
 
@@ -34,22 +39,22 @@
   <TopNavigationBarEmbed
     {instanceId}
     {activeResourceName}
-    on:select-dashboard={handleSelectDashboard}
+    {activeResourceKind}
+    on:select-resource={handleSelectResource}
     on:go-home={handleGoHome}
   />
-{/if}
-<!-- Metrics Explorers -->
-{#if resourceKind === ResourceKind.MetricsView.toString()}
+
   {#if !activeResourceName}
     <ContentContainer>
       <div class="flex flex-col items-center">
-        <DashboardsTable
-          isEmbedded
-          on:select-dashboard={handleSelectDashboard}
-        />
+        <DashboardsTable isEmbedded on:select-resource={handleSelectResource} />
       </div>
     </ContentContainer>
-  {:else}
-    <DashboardEmbed {instanceId} dashboardName={activeResourceName} />
   {/if}
+{/if}
+
+{#if activeResourceKind === ResourceKind.MetricsView.toString()}
+  <MetricsExplorerEmbed {instanceId} dashboardName={activeResourceName} />
+{:else if activeResourceKind === ResourceKind.Dashboard.toString()}
+  <CustomDashboardEmbed {instanceId} dashboardName={activeResourceName} />
 {/if}
