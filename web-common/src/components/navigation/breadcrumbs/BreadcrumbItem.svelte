@@ -10,6 +10,7 @@
   export let depth: number = 0;
   export let currentPath: (string | undefined)[] = [];
   export let onSelect: undefined | ((id: string) => void) = undefined;
+  export let isEmbedded: boolean = false;
 
   $: selected = options.get(current.toLowerCase());
 
@@ -39,7 +40,7 @@
     {#if selected}
       <a
         on:click={() => {
-          if (isCurrentPage) window.location.reload();
+          if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
         href={linkMaker(currentPath, depth, current, selected)}
         class="text-gray-500 hover:text-gray-600"

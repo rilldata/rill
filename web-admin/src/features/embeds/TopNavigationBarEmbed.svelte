@@ -74,7 +74,8 @@
             options={breadcrumbOptions}
             current={currentResourceName}
             onSelect={onSelectResource}
-            isCurrentPage={true}
+            isCurrentPage
+            isEmbedded
           />
         {/if}
       </ol>
