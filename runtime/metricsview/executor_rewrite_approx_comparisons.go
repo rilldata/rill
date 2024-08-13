@@ -90,19 +90,6 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 	}
 	order := []OrderFieldNode{sortField}
 
-	cteOptimization := true
-	if len(n.FromSelect.DimFields) != len(n.JoinComparisonSelect.DimFields) {
-		// generally this should not happen
-		cteOptimization = false
-	}
-	for i := range n.FromSelect.DimFields {
-		if n.FromSelect.DimFields[i].Name != n.JoinComparisonSelect.DimFields[i].Name {
-			// generally this should not happen
-			cteOptimization = false
-			break
-		}
-	}
-
 	// Note: All these cases are approximations in different ways.
 	if sortBase {
 		// We're sorting by a measure in FromSelect. We do a LEFT JOIN and push down the order/limit to it.
@@ -113,17 +100,15 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		if cteOptimization {
-			// make FromSelect a CTE
-			a.convertToCTE(n.FromSelect)
+		// ---- CTE Optimization ---- //
+		// make FromSelect a CTE
+		a.convertToCTE(n.FromSelect)
 
-			// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
-			// this necessitates that order of dims in from and comparison select are same
-			for i := range n.FromSelect.DimFields {
-				dimName := a.dialect.EscapeIdentifier(n.FromSelect.DimFields[i].Name)
-				dimExpr := "(" + n.JoinComparisonSelect.DimFields[i].Expr + ")" // wrap in parentheses to handle expressions, dimExpr should use JoinComparisonSelect.DimFields to have correct alias if any
-				n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
-			}
+		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
+		for _, dim := range n.JoinComparisonSelect.DimFields {
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
 		}
 	} else if sortComparison {
 		// We're sorting by a measure in JoinComparisonSelect. We can do a RIGHT JOIN and push down the order/limit to it.
@@ -134,17 +119,15 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
 
-		if cteOptimization {
-			// make JoinComparisonSelect a CTE
-			a.convertToCTE(n.JoinComparisonSelect)
+		// ---- CTE Optimization ---- //
+		// make JoinComparisonSelect a CTE
+		a.convertToCTE(n.JoinComparisonSelect)
 
-			// now change the FromSelect WHERE clause to use selected dim values from CTE
-			// this necessitates that order of dims in from and comparison select are same
-			for i := range n.JoinComparisonSelect.DimFields {
-				dimName := a.dialect.EscapeIdentifier(n.JoinComparisonSelect.DimFields[i].Name)
-				dimExpr := "(" + n.FromSelect.DimFields[i].Expr + ")" // wrap in parentheses to handle expressions, dimExpr should use FromSelect.DimFields to have correct alias if any
-				n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.JoinComparisonSelect.Alias, dimName), nil)
-			}
+		// now change the FromSelect WHERE clause to use selected dim values from CTE
+		for _, dim := range n.FromSelect.DimFields {
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.JoinComparisonSelect.Alias, dimName), nil)
 		}
 	} else if sortDim {
 		// We're sorting by a dimension. We do a LEFT JOIN that only returns values present in the base query.
@@ -154,17 +137,15 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		if cteOptimization {
-			// make FromSelect a CTE
-			a.convertToCTE(n.FromSelect)
+		// ---- CTE Optimization ---- //
+		// make FromSelect a CTE
+		a.convertToCTE(n.FromSelect)
 
-			// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
-			// this necessitates that order of dims in from and comparison select are same
-			for i := range n.FromSelect.DimFields {
-				dimName := a.dialect.EscapeIdentifier(n.FromSelect.DimFields[i].Name)
-				dimExpr := "(" + n.JoinComparisonSelect.DimFields[i].Expr + ")" // wrap in parentheses to handle expressions, dimExpr should use JoinComparisonSelect.DimFields to have correct alias if any
-				n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
-			}
+		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
+		for _, dim := range n.JoinComparisonSelect.DimFields {
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
 		}
 	}
 	// TODO: Good ideas for approx delta sorts?
