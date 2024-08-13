@@ -102,7 +102,7 @@ func TestResolvers(t *testing.T) {
 				t.Run(testName, func(t *testing.T) {
 					t.Log("======================")
 					t.Log("Running ", testName, "with", f, "and", connector)
-					testruntime.RequireParseErrors(t, rt, instanceID, nil)
+					testruntime.RequireReconcileState(t, rt, instanceID, -1, 0, 0)
 					api, err := rt.APIForName(context.Background(), instanceID, test.Resolver)
 					require.NoError(t, err)
 

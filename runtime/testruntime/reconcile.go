@@ -118,7 +118,9 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 
 	require.Equal(t, lenParseErrs, len(parseErrs), "parse errors: %s", strings.Join(parseErrs, "\n"))
 	require.Equal(t, lenReconcileErrs, len(reconcileErrs), "reconcile errors: %s", strings.Join(reconcileErrs, "\n"))
-	require.Equal(t, lenResources, len(rs), "resources: %s", strings.Join(names, "\n"))
+	if lenResources != -1 {
+		require.Equal(t, lenResources, len(rs), "resources: %s", strings.Join(names, "\n"))
+	}
 }
 
 func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.Resource) {
