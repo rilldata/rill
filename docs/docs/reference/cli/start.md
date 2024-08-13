@@ -26,7 +26,7 @@ rill start [<path>] [flags]
       --tls-key string            Path to TLS key file
   -e, --env strings               Environment name (default "dev")
   -v, --var strings               Set project variables
-      --allowed-origins strings   add additional allowed-origins
+      --allowed-origins strings   Override allowed origins for CORS
 ```
 
 ### Global flags
