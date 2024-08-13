@@ -986,7 +986,7 @@ func safeSQLName(name string) string {
 	if name == "" {
 		return name
 	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
 }
 
 func safeSQLString(name string) string {

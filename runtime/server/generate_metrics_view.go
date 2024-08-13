@@ -489,5 +489,5 @@ func safeSQLName(name string) string {
 	if alphanumericUnderscoreRegexp.MatchString(name) {
 		return name
 	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
 }

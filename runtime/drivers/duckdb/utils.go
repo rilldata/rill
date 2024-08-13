@@ -246,7 +246,7 @@ func fileSize(paths []string) int64 {
 }
 
 func quoteName(name string) string {
-	return fmt.Sprintf("\"%s\"", name)
+	return fmt.Sprintf("\"%s\"", name) // nolint:gocritic // Because SQL escaping is different
 }
 
 func escapeDoubleQuotes(column string) string {
