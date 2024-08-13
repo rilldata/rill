@@ -57,6 +57,11 @@ export function createMetricsViewTimeSeries(
   measures: string[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
+  // Prevent querying if no measures are selected in security policy
+  if (measures.length === 0) {
+    return derived([], () => undefined);
+  }
+
   return derived(
     [
       ctx.runtime,
@@ -133,6 +138,21 @@ export function createTimeSeriesDataStore(
           ? [...dashboardStore.visibleMeasureKeys]
           : [];
       }
+
+      if (measures.length === 0) {
+        set({
+          isFetching: false,
+          isError: false,
+          error: {},
+          timeSeriesData: [],
+          total: undefined,
+          unfilteredTotal: undefined,
+          comparisonTotal: undefined,
+          dimensionChartData: [],
+        });
+        return;
+      }
+
       const { measures: filteredMeasures } = getFilteredMeasuresAndDimensions({
         dashboard: dashboardStore,
       })(metricsView.data ?? {}, measures);

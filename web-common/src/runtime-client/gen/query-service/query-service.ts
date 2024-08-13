@@ -97,9 +97,9 @@ export const getQueryServiceColumnCardinalityQueryKey = (
   tableName: string,
   params?: QueryServiceColumnCardinalityParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceColumnCardinalityQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnCardinality>>
@@ -132,7 +132,7 @@ export const createQueryServiceColumnCardinality = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnCardinality>>
   > = ({ signal }) =>
-    queryServiceColumnCardinality(instanceId, tableName, params, signal);
+      queryServiceColumnCardinality(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
@@ -174,9 +174,9 @@ export const getQueryServiceTableColumnsQueryKey = (
   tableName: string,
   params?: QueryServiceTableColumnsParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceTableColumnsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceTableColumns>>
@@ -209,7 +209,7 @@ export const createQueryServiceTableColumns = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceTableColumns>>
   > = ({ signal }) =>
-    queryServiceTableColumns(instanceId, tableName, params, signal);
+      queryServiceTableColumns(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceTableColumns>>,
@@ -252,9 +252,9 @@ export const getQueryServiceResolveComponentQueryKey = (
   component: string,
   queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
-  queryServiceResolveComponentBody,
-];
+    `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
+    queryServiceResolveComponentBody,
+  ];
 
 export type QueryServiceResolveComponentQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceResolveComponent>>
@@ -291,12 +291,12 @@ export const createQueryServiceResolveComponent = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceResolveComponent>>
   > = ({ signal }) =>
-    queryServiceResolveComponent(
-      instanceId,
-      component,
-      queryServiceResolveComponentBody,
-      signal,
-    );
+      queryServiceResolveComponent(
+        instanceId,
+        component,
+        queryServiceResolveComponentBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceResolveComponent>>,
@@ -338,9 +338,9 @@ export const getQueryServiceColumnDescriptiveStatisticsQueryKey = (
   tableName: string,
   params?: QueryServiceColumnDescriptiveStatisticsParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceColumnDescriptiveStatisticsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>
@@ -378,12 +378,12 @@ export const createQueryServiceColumnDescriptiveStatistics = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>
   > = ({ signal }) =>
-    queryServiceColumnDescriptiveStatistics(
-      instanceId,
-      tableName,
-      params,
-      signal,
-    );
+      queryServiceColumnDescriptiveStatistics(
+        instanceId,
+        tableName,
+        params,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
@@ -471,6 +471,11 @@ export const queryServiceMetricsViewAggregation = (
   queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
   signal?: AbortSignal,
 ) => {
+  // Only run the request if there are measures
+  if (!queryServiceMetricsViewAggregationBody.measures || queryServiceMetricsViewAggregationBody.measures.length === 0) {
+    return;
+  }
+
   return httpClient<V1MetricsViewAggregationResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
     method: "post",
@@ -485,9 +490,9 @@ export const getQueryServiceMetricsViewAggregationQueryKey = (
   metricsView: string,
   queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
-  queryServiceMetricsViewAggregationBody,
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
+    queryServiceMetricsViewAggregationBody,
+  ];
 
 export type QueryServiceMetricsViewAggregationQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
@@ -524,12 +529,12 @@ export const createQueryServiceMetricsViewAggregation = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
   > = ({ signal }) =>
-    queryServiceMetricsViewAggregation(
-      instanceId,
-      metricsView,
-      queryServiceMetricsViewAggregationBody,
-      signal,
-    );
+      queryServiceMetricsViewAggregation(
+        instanceId,
+        metricsView,
+        queryServiceMetricsViewAggregationBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
@@ -586,9 +591,9 @@ export const getQueryServiceMetricsViewComparisonQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
-  queryServiceMetricsViewComparisonBody,
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
+    queryServiceMetricsViewComparisonBody,
+  ];
 
 export type QueryServiceMetricsViewComparisonQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>
@@ -625,12 +630,12 @@ export const createQueryServiceMetricsViewComparison = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>
   > = ({ signal }) =>
-    queryServiceMetricsViewComparison(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewComparisonBody,
-      signal,
-    );
+      queryServiceMetricsViewComparison(
+        instanceId,
+        metricsViewName,
+        queryServiceMetricsViewComparisonBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
@@ -686,9 +691,9 @@ export const getQueryServiceMetricsViewRowsQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
-  queryServiceMetricsViewRowsBody,
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
+    queryServiceMetricsViewRowsBody,
+  ];
 
 export type QueryServiceMetricsViewRowsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
@@ -725,12 +730,12 @@ export const createQueryServiceMetricsViewRows = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
   > = ({ signal }) =>
-    queryServiceMetricsViewRows(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewRowsBody,
-      signal,
-    );
+      queryServiceMetricsViewRows(
+        instanceId,
+        metricsViewName,
+        queryServiceMetricsViewRowsBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
@@ -772,9 +777,9 @@ export const getQueryServiceMetricsViewSchemaQueryKey = (
   metricsViewName: string,
   params?: QueryServiceMetricsViewSchemaParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/schema`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/schema`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceMetricsViewSchemaQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>
@@ -811,7 +816,7 @@ export const createQueryServiceMetricsViewSchema = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>
   > = ({ signal }) =>
-    queryServiceMetricsViewSchema(instanceId, metricsViewName, params, signal);
+      queryServiceMetricsViewSchema(instanceId, metricsViewName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>,
@@ -854,9 +859,9 @@ export const getQueryServiceMetricsViewSearchQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewSearchBody: QueryServiceMetricsViewSearchBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/search`,
-  queryServiceMetricsViewSearchBody,
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/search`,
+    queryServiceMetricsViewSearchBody,
+  ];
 
 export type QueryServiceMetricsViewSearchQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewSearch>>
@@ -893,12 +898,12 @@ export const createQueryServiceMetricsViewSearch = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewSearch>>
   > = ({ signal }) =>
-    queryServiceMetricsViewSearch(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewSearchBody,
-      signal,
-    );
+      queryServiceMetricsViewSearch(
+        instanceId,
+        metricsViewName,
+        queryServiceMetricsViewSearchBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewSearch>>,
@@ -941,9 +946,9 @@ export const getQueryServiceMetricsViewTimeRangeQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
-  queryServiceMetricsViewTimeRangeBody,
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
+    queryServiceMetricsViewTimeRangeBody,
+  ];
 
 export type QueryServiceMetricsViewTimeRangeQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>
@@ -980,12 +985,12 @@ export const createQueryServiceMetricsViewTimeRange = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>
   > = ({ signal }) =>
-    queryServiceMetricsViewTimeRange(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewTimeRangeBody,
-      signal,
-    );
+      queryServiceMetricsViewTimeRange(
+        instanceId,
+        metricsViewName,
+        queryServiceMetricsViewTimeRangeBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
@@ -1015,6 +1020,11 @@ export const queryServiceMetricsViewTimeSeries = (
   queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody,
   signal?: AbortSignal,
 ) => {
+  // Only run the request if there are measures
+  if (!queryServiceMetricsViewTimeSeriesBody.measureNames || queryServiceMetricsViewTimeSeriesBody.measureNames.length === 0) {
+    return;
+  }
+
   return httpClient<V1MetricsViewTimeSeriesResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/timeseries`,
     method: "post",
@@ -1029,9 +1039,9 @@ export const getQueryServiceMetricsViewTimeSeriesQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/timeseries`,
-  queryServiceMetricsViewTimeSeriesBody,
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/timeseries`,
+    queryServiceMetricsViewTimeSeriesBody,
+  ];
 
 export type QueryServiceMetricsViewTimeSeriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>
@@ -1068,12 +1078,12 @@ export const createQueryServiceMetricsViewTimeSeries = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>
   > = ({ signal }) =>
-    queryServiceMetricsViewTimeSeries(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewTimeSeriesBody,
-      signal,
-    );
+      queryServiceMetricsViewTimeSeries(
+        instanceId,
+        metricsViewName,
+        queryServiceMetricsViewTimeSeriesBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
@@ -1118,9 +1128,9 @@ export const getQueryServiceMetricsViewToplistQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/toplist`,
-  queryServiceMetricsViewToplistBody,
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/toplist`,
+    queryServiceMetricsViewToplistBody,
+  ];
 
 export type QueryServiceMetricsViewToplistQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>
@@ -1157,12 +1167,12 @@ export const createQueryServiceMetricsViewToplist = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>
   > = ({ signal }) =>
-    queryServiceMetricsViewToplist(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewToplistBody,
-      signal,
-    );
+      queryServiceMetricsViewToplist(
+        instanceId,
+        metricsViewName,
+        queryServiceMetricsViewToplistBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
@@ -1206,9 +1216,9 @@ export const getQueryServiceMetricsViewTotalsQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewTotalsBody: QueryServiceMetricsViewTotalsBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/totals`,
-  queryServiceMetricsViewTotalsBody,
-];
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/totals`,
+    queryServiceMetricsViewTotalsBody,
+  ];
 
 export type QueryServiceMetricsViewTotalsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>
@@ -1245,12 +1255,12 @@ export const createQueryServiceMetricsViewTotals = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>
   > = ({ signal }) =>
-    queryServiceMetricsViewTotals(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewTotalsBody,
-      signal,
-    );
+      queryServiceMetricsViewTotals(
+        instanceId,
+        metricsViewName,
+        queryServiceMetricsViewTotalsBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>,
@@ -1292,9 +1302,9 @@ export const getQueryServiceColumnNullCountQueryKey = (
   tableName: string,
   params?: QueryServiceColumnNullCountParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceColumnNullCountQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnNullCount>>
@@ -1327,7 +1337,7 @@ export const createQueryServiceColumnNullCount = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnNullCount>>
   > = ({ signal }) =>
-    queryServiceColumnNullCount(instanceId, tableName, params, signal);
+      queryServiceColumnNullCount(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
@@ -1369,9 +1379,9 @@ export const getQueryServiceColumnNumericHistogramQueryKey = (
   tableName: string,
   params?: QueryServiceColumnNumericHistogramParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceColumnNumericHistogramQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>
@@ -1408,7 +1418,7 @@ export const createQueryServiceColumnNumericHistogram = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>
   > = ({ signal }) =>
-    queryServiceColumnNumericHistogram(instanceId, tableName, params, signal);
+      queryServiceColumnNumericHistogram(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
@@ -1451,9 +1461,9 @@ export const getQueryServiceColumnRollupIntervalQueryKey = (
   tableName: string,
   queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/rollup-interval/tables/${tableName}`,
-  queryServiceColumnRollupIntervalBody,
-];
+    `/v1/instances/${instanceId}/queries/rollup-interval/tables/${tableName}`,
+    queryServiceColumnRollupIntervalBody,
+  ];
 
 export type QueryServiceColumnRollupIntervalQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>
@@ -1490,12 +1500,12 @@ export const createQueryServiceColumnRollupInterval = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>
   > = ({ signal }) =>
-    queryServiceColumnRollupInterval(
-      instanceId,
-      tableName,
-      queryServiceColumnRollupIntervalBody,
-      signal,
-    );
+      queryServiceColumnRollupInterval(
+        instanceId,
+        tableName,
+        queryServiceColumnRollupIntervalBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
@@ -1537,9 +1547,9 @@ export const getQueryServiceTableRowsQueryKey = (
   tableName: string,
   params?: QueryServiceTableRowsParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/rows/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/rows/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceTableRowsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceTableRows>>
@@ -1572,7 +1582,7 @@ export const createQueryServiceTableRows = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceTableRows>>
   > = ({ signal }) =>
-    queryServiceTableRows(instanceId, tableName, params, signal);
+      queryServiceTableRows(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceTableRows>>,
@@ -1614,9 +1624,9 @@ export const getQueryServiceColumnRugHistogramQueryKey = (
   tableName: string,
   params?: QueryServiceColumnRugHistogramParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceColumnRugHistogramQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>
@@ -1649,7 +1659,7 @@ export const createQueryServiceColumnRugHistogram = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>
   > = ({ signal }) =>
-    queryServiceColumnRugHistogram(instanceId, tableName, params, signal);
+      queryServiceColumnRugHistogram(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
@@ -1691,9 +1701,9 @@ export const getQueryServiceColumnTimeGrainQueryKey = (
   tableName: string,
   params?: QueryServiceColumnTimeGrainParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceColumnTimeGrainQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>
@@ -1726,7 +1736,7 @@ export const createQueryServiceColumnTimeGrain = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>
   > = ({ signal }) =>
-    queryServiceColumnTimeGrain(instanceId, tableName, params, signal);
+      queryServiceColumnTimeGrain(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
@@ -1768,9 +1778,9 @@ export const getQueryServiceTableCardinalityQueryKey = (
   tableName: string,
   params?: QueryServiceTableCardinalityParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/table-cardinality/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/table-cardinality/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceTableCardinalityQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceTableCardinality>>
@@ -1803,7 +1813,7 @@ export const createQueryServiceTableCardinality = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceTableCardinality>>
   > = ({ signal }) =>
-    queryServiceTableCardinality(instanceId, tableName, params, signal);
+      queryServiceTableCardinality(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceTableCardinality>>,
@@ -1845,9 +1855,9 @@ export const getQueryServiceColumnTimeRangeQueryKey = (
   tableName: string,
   params?: QueryServiceColumnTimeRangeParams,
 ) => [
-  `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
+    `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}`,
+    ...(params ? [params] : []),
+  ];
 
 export type QueryServiceColumnTimeRangeQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnTimeRange>>
@@ -1880,7 +1890,7 @@ export const createQueryServiceColumnTimeRange = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnTimeRange>>
   > = ({ signal }) =>
-    queryServiceColumnTimeRange(instanceId, tableName, params, signal);
+      queryServiceColumnTimeRange(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
@@ -1923,9 +1933,9 @@ export const getQueryServiceColumnTimeSeriesQueryKey = (
   tableName: string,
   queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
-  queryServiceColumnTimeSeriesBody,
-];
+    `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
+    queryServiceColumnTimeSeriesBody,
+  ];
 
 export type QueryServiceColumnTimeSeriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>
@@ -1962,12 +1972,12 @@ export const createQueryServiceColumnTimeSeries = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>
   > = ({ signal }) =>
-    queryServiceColumnTimeSeries(
-      instanceId,
-      tableName,
-      queryServiceColumnTimeSeriesBody,
-      signal,
-    );
+      queryServiceColumnTimeSeries(
+        instanceId,
+        tableName,
+        queryServiceColumnTimeSeriesBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
@@ -2011,9 +2021,9 @@ export const getQueryServiceColumnTopKQueryKey = (
   tableName: string,
   queryServiceColumnTopKBody: QueryServiceColumnTopKBody,
 ) => [
-  `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
-  queryServiceColumnTopKBody,
-];
+    `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
+    queryServiceColumnTopKBody,
+  ];
 
 export type QueryServiceColumnTopKQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnTopK>>
@@ -2050,12 +2060,12 @@ export const createQueryServiceColumnTopK = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnTopK>>
   > = ({ signal }) =>
-    queryServiceColumnTopK(
-      instanceId,
-      tableName,
-      queryServiceColumnTopKBody,
-      signal,
-    );
+      queryServiceColumnTopK(
+        instanceId,
+        tableName,
+        queryServiceColumnTopKBody,
+        signal,
+      );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnTopK>>,

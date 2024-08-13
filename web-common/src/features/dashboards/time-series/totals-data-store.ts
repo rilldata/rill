@@ -20,6 +20,11 @@ export function createTotalsForMeasure(
   measures: string[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+  // Prevent querying if no measures are selected in security policy
+  if (measures.length === 0) {
+    return derived([], () => undefined);
+  }
+
   return derived(
     [
       ctx.runtime,
