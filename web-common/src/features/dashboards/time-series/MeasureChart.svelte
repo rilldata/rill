@@ -137,25 +137,18 @@
       extent(d?.data || [], (datum) => datum[yAccessor]),
     );
 
-    let comparisonDimExtents = dimensionData.map((d) =>
-      extent(d?.data || [], (datum) => datum[`comparison.${yAccessor}`]),
-    );
-
-    yExtentMin = [
-      ...dimExtents.map((e) => e[0]),
-      ...comparisonDimExtents.map((e) => e[0]),
-    ].reduce(
-      (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
-      Infinity,
-    );
-
-    yExtentMax = [
-      ...dimExtents.map((e) => e[1]),
-      ...comparisonDimExtents.map((e) => e[1]),
-    ].reduce(
-      (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
-      -Infinity,
-    );
+    yExtentMin = dimExtents
+      .map((e) => e[0])
+      .reduce(
+        (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
+        Infinity,
+      );
+    yExtentMax = dimExtents
+      .map((e) => e[1])
+      .reduce(
+        (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
+        -Infinity,
+      );
 
     isFetchingDimensions = dimensionData.some((d) => d?.isFetching);
   }
