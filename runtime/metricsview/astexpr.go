@@ -86,6 +86,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		Dimensions:          []Dimension{sub.Dimension},
 		Measures:            sub.Measures,
 		PivotOn:             nil,
+		Spine:               nil,
 		Sort:                nil,
 		TimeRange:           outer.TimeRange,
 		ComparisonTimeRange: outer.ComparisonTimeRange,
@@ -95,7 +96,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		Offset:              nil,
 		TimeZone:            outer.TimeZone,
 		Label:               false,
-	}
+	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
 	innerAST, err := NewAST(b.ast.metricsView, b.ast.security, inner, b.ast.dialect)

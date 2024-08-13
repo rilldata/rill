@@ -41,6 +41,7 @@ linters:
     - errcheck
     - errname
     - errorlint
+    - exhaustruct
     - gci
     - gocritic
     - gofmt
@@ -75,6 +76,9 @@ linters-settings:
         deny:
           - pkg: "github.com/pkg/errors"
             desc: Should be replaced by standard lib errors package
+  exhaustruct:
+    include:
+      - github.com/rilldata/rill/admin/database\.Update.*
   goconst:
     min-len: 2
     min-occurrences: 3
