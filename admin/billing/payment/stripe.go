@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/rilldata/rill/admin/billing"
@@ -10,15 +11,23 @@ import (
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/billingportal/session"
 	"github.com/stripe/stripe-go/v79/customer"
+	"go.uber.org/zap"
 )
 
 var _ Provider = &Stripe{}
 
-type Stripe struct{}
+type Stripe struct {
+	logger        *zap.Logger
+	webhookSecret string
+	// riverClient   *river.Client[*sql.Tx] // for submitting jobs to the worker
+}
 
-func NewStripe(stripeKey string) *Stripe {
+func NewStripe(logger *zap.Logger, stripeKey, stripeWebhookSecret string) *Stripe {
 	stripe.Key = stripeKey
-	return &Stripe{}
+	return &Stripe{
+		logger:        logger,
+		webhookSecret: stripeWebhookSecret,
+	}
 }
 
 func (s *Stripe) CreateCustomer(ctx context.Context, organization *database.Organization) (*Customer, error) {
@@ -118,4 +127,11 @@ func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL 
 	}
 
 	return sess.URL, nil
+}
+
+func (s *Stripe) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+	if s.webhookSecret == "" {
+		return nil
+	}
+	return s.handleWebhook
 }

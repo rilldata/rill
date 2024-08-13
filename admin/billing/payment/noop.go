@@ -2,6 +2,7 @@ package payment
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/rilldata/rill/admin/database"
 )
@@ -36,4 +37,8 @@ func (n noop) DeleteCustomer(ctx context.Context, customerID string) error {
 
 func (n noop) GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error) {
 	return "", nil
+}
+
+func (n noop) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+	return nil
 }

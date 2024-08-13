@@ -2,13 +2,18 @@ package worker
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/pkg/riverworker"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver"
+	"github.com/riverqueue/river/rivermigrate"
 	"github.com/robfig/cron/v3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -27,19 +32,69 @@ var (
 )
 
 type Worker struct {
-	logger *zap.Logger
-	admin  *admin.Service
+	logger        *zap.Logger
+	admin         *admin.Service
+	riverMigrator *rivermigrate.Migrator[*sql.Tx]
+	riverDBPool   *sql.DB
+	riverClient   *river.Client[*sql.Tx]
 }
 
-func New(logger *zap.Logger, adm *admin.Service) *Worker {
+func New(logger *zap.Logger, adm *admin.Service, driver riverdriver.Driver[*sql.Tx], riverDBPool *sql.DB) *Worker {
+	client, err := river.NewClient[*sql.Tx](driver, &river.Config{
+		Queues: map[string]river.QueueConfig{
+			river.QueueDefault: {MaxWorkers: 10},
+		},
+		Workers:      riverworker.Workers,
+		JobTimeout:   10 * time.Minute,
+		MaxAttempts:  3,
+		ErrorHandler: &riverworker.ErrorHandler{Logger: logger},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	migrator := rivermigrate.New[*sql.Tx](driver, nil)
+
 	return &Worker{
-		logger: logger,
-		admin:  adm,
+		logger:        logger,
+		admin:         adm,
+		riverDBPool:   riverDBPool,
+		riverMigrator: migrator,
+		riverClient:   client,
 	}
 }
 
 func (w *Worker) Run(ctx context.Context) error {
 	group, ctx := errgroup.WithContext(ctx)
+
+	group.Go(func() error {
+		// Migrate the database
+		tx, err := w.riverDBPool.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = tx.Rollback() }()
+		res, err := w.riverMigrator.MigrateTx(ctx, tx, rivermigrate.DirectionUp, nil)
+		if err != nil {
+			return err
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			return err
+		}
+		for _, version := range res.Versions {
+			w.logger.Info("Migrated river database", zap.String("direction", string(res.Direction)), zap.Int("version", version.Version))
+		}
+
+		if err := w.riverClient.Start(ctx); err != nil {
+			panic(err)
+		}
+		<-ctx.Done()
+		_ = w.riverClient.Stop(ctx) // ignore error
+		return nil
+	})
+
 	group.Go(func() error {
 		return w.schedule(ctx, "check_provisioner_capacity", w.checkProvisionerCapacity, 15*time.Minute)
 	})

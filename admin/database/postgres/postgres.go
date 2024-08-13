@@ -13,6 +13,8 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/riverqueue/river/riverdriver"
+	"github.com/riverqueue/river/riverdriver/riverdatabasesql"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	// Load postgres driver
@@ -37,15 +39,23 @@ func (d driver) Open(dsn string) (database.DB, error) {
 	}
 
 	dbx := sqlx.NewDb(db, "pgx")
-	return &connection{db: dbx}, nil
+	return &connection{
+		db:          dbx,
+		riverDriver: riverdatabasesql.New(dbx.DB),
+	}, nil
 }
 
 type connection struct {
-	db *sqlx.DB
+	db          *sqlx.DB
+	riverDriver riverdriver.Driver[*sql.Tx]
 }
 
 func (c *connection) Close() error {
 	return c.db.Close()
+}
+
+func (c *connection) AsRiverDriver() (riverdriver.Driver[*sql.Tx], *sql.DB, bool) {
+	return c.riverDriver, c.db.DB, true
 }
 
 func (c *connection) FindOrganizations(ctx context.Context, afterName string, limit int) ([]*database.Organization, error) {
@@ -1868,13 +1878,94 @@ func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageRepo
 	return checkUpdateRow("billing usage", res, err)
 }
 
-func (c *connection) FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*database.Organization, error) {
+func (c *connection) FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
 	if err != nil {
-		return nil, parseErr("billing orgs without payment id", err)
+		return nil, parseErr("billing orgs without billing id", err)
 	}
 	return res, nil
+}
+
+func (c *connection) FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM orgs WHERE payment_customer_id = $1`, customerID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("billing org for payment id", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindBillingErrors(ctx context.Context, orgID string) ([]*database.BillingError, error) {
+	var res []*database.BillingError
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM billing_errors WHERE org_id = $1`, orgID)
+	if err != nil {
+		return nil, parseErr("billing errors", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindBillingErrorsByType(ctx context.Context, orgID string, errorType database.BillingErrorType) ([]*database.BillingError, error) {
+	var res []*database.BillingError
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM billing_errors WHERE org_id = $1 AND type = $2`, orgID, errorType)
+	if err != nil {
+		return nil, parseErr("billing errors", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertBillingError(ctx context.Context, opts *database.InsertBillingErrorOptions) (*database.BillingError, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.BillingError{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_errors (org_id, type, msg) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.Type, opts.Message).StructScan(res)
+	if err != nil {
+		return nil, parseErr("billing error", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteBillingError(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_errors WHERE id = $1", id)
+	return checkDeleteRow("billing error", res, err)
+}
+
+func (c *connection) FindBillingWarnings(ctx context.Context, orgID string) ([]*database.BillingWarning, error) {
+	var res []*database.BillingWarning
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM billing_warnings WHERE org_id = $1`, orgID)
+	if err != nil {
+		return nil, parseErr("billing warnings", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindBillingWarningsByType(ctx context.Context, orgID string, warningType database.BillingWarningType) ([]*database.BillingWarning, error) {
+	var res []*database.BillingWarning
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM billing_warnings WHERE org_id = $1 AND type = $2`, orgID, warningType)
+	if err != nil {
+		return nil, parseErr("billing warnings", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertBillingWarning(ctx context.Context, opts *database.InsertBillingWarningOptions) (*database.BillingWarning, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.BillingWarning{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_warnings (org_id, type, msg) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.Type, opts.Message).StructScan(res)
+	if err != nil {
+		return nil, parseErr("billing warning", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteBillingWarning(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_warnings WHERE id = $1", id)
+	return checkDeleteRow("billing warning", res, err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

@@ -2,9 +2,12 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/riverqueue/river/riverdriver"
 )
 
 // Drivers is a registry of drivers
@@ -45,6 +48,8 @@ type DB interface {
 
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
+
+	AsRiverDriver() (riverdriver.Driver[*sql.Tx], *sql.DB, bool)
 
 	FindOrganizations(ctx context.Context, afterName string, limit int) ([]*Organization, error)
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
@@ -249,7 +254,19 @@ type DB interface {
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
 
-	FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*Organization, error)
+	FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*Organization, error)
+
+	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
+
+	FindBillingErrors(ctx context.Context, orgID string) ([]*BillingError, error)
+	FindBillingErrorsByType(ctx context.Context, orgID string, errorType BillingErrorType) ([]*BillingError, error)
+	InsertBillingError(ctx context.Context, opts *InsertBillingErrorOptions) (*BillingError, error)
+	DeleteBillingError(ctx context.Context, id string) error
+
+	FindBillingWarnings(ctx context.Context, orgID string) ([]*BillingWarning, error)
+	FindBillingWarningsByType(ctx context.Context, orgID string, warningType BillingWarningType) ([]*BillingWarning, error)
+	InsertBillingWarning(ctx context.Context, opts *InsertBillingWarningOptions) (*BillingWarning, error)
+	DeleteBillingWarning(ctx context.Context, id string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -907,4 +924,49 @@ type Asset struct {
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+type BillingErrorType int
+
+const (
+	BillingErrorTypeUnspecified BillingErrorType = iota
+	BillingErrorTypePaymentFailed
+	BillingErrorTypeNoPaymentMethod // No payment method on file, should be used only after trial end
+	BillingErrorTypeTrailEnded
+)
+
+type BillingError struct {
+	ID        string
+	OrgID     string           `db:"org_id"`
+	Type      BillingErrorType `db:"type"`
+	Message   string           `db:"msg"`
+	CreatedOn time.Time        `db:"created_on"`
+}
+
+type InsertBillingErrorOptions struct {
+	OrgID   string           `validate:"required"`
+	Type    BillingErrorType `validate:"required"`
+	Message string           `validate:"required"`
+}
+
+type BillingWarningType int
+
+const (
+	BillingWarningTypeUnspecified BillingWarningType = iota
+	BillingWarningTypeCardExpiring
+	BillingWarningTypeTrialEnding
+)
+
+type BillingWarning struct {
+	ID        string
+	OrgID     string             `db:"org_id"`
+	Type      BillingWarningType `db:"type"`
+	Message   string             `db:"msg"`
+	CreatedOn time.Time          `db:"created_on"`
+}
+
+type InsertBillingWarningOptions struct {
+	OrgID   string             `validate:"required"`
+	Type    BillingWarningType `validate:"required"`
+	Message string             `validate:"required"`
 }

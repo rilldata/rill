@@ -2,6 +2,7 @@ package payment
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/rilldata/rill/admin/database"
 )
@@ -16,6 +17,9 @@ type Provider interface {
 	DeleteCustomer(ctx context.Context, customerID string) error
 	// GetBillingPortalURL returns the payment portal URL to collect payment information from the customer.
 	GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error)
+
+	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers.
+	WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request)
 }
 
 type Customer struct {

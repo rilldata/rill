@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"net/url"
@@ -17,6 +18,8 @@ import (
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
+	"github.com/rilldata/rill/admin/pkg/riverworker"
+	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -27,6 +30,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"github.com/riverqueue/river"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -88,6 +92,7 @@ type Config struct {
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
+	StripeWebhookSecret               string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -255,6 +260,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				metricsProjectName = parts[1]
 			}
 
+			// this will be initialized after admin service is created as it needs the admin db pool, but it is needed for stripe webhook handler which needs to be initialized before admin service
+			// this client is used only for inserting jobs to river, actual river worker is started in the worker service
+			// var insertOnlyRiverClient *river.Client[*sql.Tx]
+
 			var biller billing.Biller
 			if conf.OrbAPIKey != "" {
 				biller = billing.NewOrb(conf.OrbAPIKey)
@@ -264,7 +273,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var p payment.Provider
 			if conf.StripeAPIKey != "" {
-				p = payment.NewStripe(conf.StripeAPIKey)
+				p = payment.NewStripe(logger, conf.StripeAPIKey, conf.StripeWebhookSecret)
 			} else {
 				p = payment.NewNoop()
 			}
@@ -287,6 +296,24 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
 			defer adm.Close()
+
+			// add the river workers
+			riverworker.AddWorker[riverutils.AddBillingErrorArgs](riverworker.NewAddBillingErrorWorker(adm))
+			riverworker.AddWorker[riverutils.ChargeSuccessArgs](riverworker.NewChargeSuccessWorker(adm))
+
+			// this driver will be shared by both admin and worker river clients, riverDBPool is used for migrations
+			riverDriver, riverDBPool, ok := adm.DB.AsRiverDriver()
+			if !ok {
+				logger.Fatal("database driver does not support river")
+			}
+
+			client, err := river.NewClient[*sql.Tx](riverDriver, &river.Config{
+				Workers: riverworker.Workers,
+			})
+			if err != nil {
+				logger.Fatal("error creating insert only river client", zap.Error(err))
+			}
+			riverutils.InsertOnlyRiverClient = client
 
 			// Parse session keys as hex strings
 			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
@@ -350,7 +377,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init and run worker
 			if runWorker || runJobs {
-				wkr := worker.New(logger, adm)
+				wkr := worker.New(logger, adm, riverDriver, riverDBPool)
 				if runWorker {
 					group.Go(func() error { return wkr.Run(cctx) })
 					if !runServer {
