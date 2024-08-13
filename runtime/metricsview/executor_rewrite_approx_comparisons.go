@@ -46,6 +46,14 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 	}
 	sortField := a.Root.OrderBy[0]
 
+	// if dim does not have explicit unnest, then don't optimize
+	// for example druid fails with join on cte having multi value dimension
+	for _, dim := range n.FromSelect.DimFields {
+		if dim.AutoUnnest {
+			return false
+		}
+	}
+
 	// Find out what we're sorting by
 	var sortDim, sortBase, sortComparison, sortDelta bool
 	var sortUnderlyingMeasure string
