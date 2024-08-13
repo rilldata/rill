@@ -1,6 +1,7 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -47,8 +48,8 @@ export function convertDateToMinutes(date: string) {
 
 /**
  * Returns the serialized *sanitized* `state` for the current dashboard.
- * It removes any filters and any pivot chips that refer to those filters.
- * This ensures we do not leak hidden filters to the URL recipient.
+ * It removes all state that refers to fields that will be hidden, like filters, pivot chips, and visible field keys.
+ * This ensures we do not leak hidden information to the URL recipient.
  */
 export function getSanitizedDashboardStateParam(
   dashboard: MetricsExplorerEntity,
@@ -57,10 +58,55 @@ export function getSanitizedDashboardStateParam(
   // If no metrics view fields are specified, everything is visible, and there's no need to sanitize
   if (!metricsViewFields) return getProtoFromDashboardState(dashboard);
 
+  // Else, explicitly add the sanitized state that we want to remember.
   const sanitizedDashboardState = {
-    ...dashboard,
+    // Remove any measures not specified in the metrics view fields
+    visibleMeasureKeys: new Set(
+      [...dashboard.visibleMeasureKeys].filter((measure) =>
+        metricsViewFields?.includes(measure),
+      ),
+    ),
+    allMeasuresVisible: dashboard.allMeasuresVisible,
+    // Remove any dimensions not specified in the metrics view fields
+    visibleDimensionKeys: new Set(
+      [...dashboard.visibleDimensionKeys].filter((dimension) =>
+        metricsViewFields?.includes(dimension),
+      ),
+    ),
+    allDimensionsVisible: dashboard.allDimensionsVisible,
+    leaderboardMeasureName: dashboard.leaderboardMeasureName,
+    dashboardSortType: dashboard.dashboardSortType,
+    sortDirection: dashboard.sortDirection,
+    // Remove the where filter
     whereFilter: {},
+    havingFilter: dashboard.havingFilter,
+    // Remove the dimension threshold filters
     dimensionThresholdFilters: [],
+    dimensionFilterExcludeMode: dashboard.dimensionFilterExcludeMode,
+    // There's no need to share filters-in-progress
+    // temporaryFilterName: dashboard.temporaryFilterName,
+    selectedTimeRange: dashboard.selectedTimeRange,
+    selectedScrubRange: dashboard.selectedScrubRange,
+    // There's no need to share the user's previous scrub range
+    // lastDefinedScrubRange: dashboard.lastDefinedScrubRange,
+    selectedComparisonTimeRange: dashboard.selectedComparisonTimeRange,
+    // When TDD, we remove the selected comparison dimension (because, if filtered, it's locked & hidden)
+    selectedComparisonDimension:
+      dashboard.activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
+        ? undefined
+        : dashboard.selectedComparisonDimension,
+    // We do not support sharing the dimension table page (because, if filtered, the dimension is locked & hidden)
+    activePage:
+      dashboard.activePage === DashboardState_ActivePage.DIMENSION_TABLE
+        ? DashboardState_ActivePage.DEFAULT
+        : dashboard.activePage,
+    selectedTimezone: dashboard.selectedTimezone,
+    dimensionSearchText: dashboard.dimensionSearchText,
+    showTimeComparison: dashboard.showTimeComparison,
+    leaderboardContextColumn: dashboard.leaderboardContextColumn,
+    contextColumnWidths: dashboard.contextColumnWidths,
+    selectedDimensionName: dashboard.selectedDimensionName,
+    tdd: dashboard.tdd,
     pivot: {
       ...dashboard.pivot,
       rows: {
