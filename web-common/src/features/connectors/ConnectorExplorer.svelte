@@ -12,7 +12,8 @@
   const MIN_HEIGHT = 31; // The height of the "Connectors" header
 
   let showConnectors = true;
-  let sectionHeight = containerHeight / 2; // starting height is half the container height
+  let initialHeight = containerHeight / 2;
+  let sectionHeight = initialHeight;
 
   $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId, {
     query: {
@@ -35,7 +36,7 @@
     direction="NS"
     side="top"
     min={10}
-    basis={showConnectors ? containerHeight / 2 : MIN_HEIGHT}
+    basis={showConnectors ? initialHeight : MIN_HEIGHT}
     max={containerHeight * 0.9}
   />
   <button
