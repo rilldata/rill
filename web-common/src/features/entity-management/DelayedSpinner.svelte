@@ -3,7 +3,7 @@
   This is handy for preventing the spinner from flickering.
 -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { writable } from "svelte/store";
   import Spinner from "./Spinner.svelte";
@@ -25,12 +25,6 @@
       showSpinner.set(false);
     }
   }
-
-  onMount(() => {
-    if (isLoading) {
-      timeoutId = setTimeout(() => showSpinner.set(true), delay);
-    }
-  });
 
   onDestroy(() => {
     clearTimeout(timeoutId);
