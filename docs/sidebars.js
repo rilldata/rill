@@ -136,7 +136,7 @@ const sidebars = {
                   'learn/rill_learn_300/custom_dashboards/301_1',
                   'learn/rill_learn_300/custom_dashboards/301_2',
                   'learn/rill_learn_300/custom_dashboards/301_3',
-                  
+                  'learn/rill_learn_300/custom_dashboards/301_4',       
                 ]
               },
               {
