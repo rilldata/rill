@@ -55,6 +55,7 @@ export function createPivotAggregationRowQuery(
 
   let hasComparison = false;
   const comparisonTime = config.comparisonTime;
+
   if (
     measures.some(
       (m) =>
