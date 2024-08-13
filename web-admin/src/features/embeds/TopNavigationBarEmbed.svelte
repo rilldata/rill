@@ -10,18 +10,15 @@
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
 
+  const dispatch = createEventDispatcher();
+
   export let instanceId: string;
   export let activeResource: V1ResourceName;
-
-  const dispatch = createEventDispatcher();
 
   $: onProjectPage = !activeResource;
   $: onMetricsExplorerPage =
     !!activeResource &&
     activeResource.kind === ResourceKind.MetricsView.toString();
-  // $: onCustomDashboardPage =
-  //   !!activeResourceName &&
-  //   activeResourceKind === ResourceKind.Dashboard.toString();
 
   // Dashboard breadcrumb
   $: visualizationsQuery = useValidVisualizations(instanceId);
