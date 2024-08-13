@@ -28,16 +28,16 @@
 </script>
 
 <svelte:head>
-  <title>Could not connect to Github</title>
+  <title>Could not connect to GitHub</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <GithubFail />
-      <CtaHeader>Could not connect to Github</CtaHeader>
+      <CtaHeader>Could not connect to GitHub</CtaHeader>
       <CtaMessage>
-        Your authorized Github account <GithubUserInline {githubUsername} />
+        Your authorized GitHub account <GithubUserInline {githubUsername} />
         does not have access to <GithubRepoInline githubUrl={remote} />.
       </CtaMessage>
       <CtaMessage>
@@ -47,7 +47,7 @@
         variant="primary"
         href={encodeURI(ADMIN_URL + "/github/auth/login?remote=" + remote)}
       >
-        Connect to Github
+        Connect to GitHub
       </CtaButton>
     </CtaContentContainer>
   </CtaLayoutContainer>

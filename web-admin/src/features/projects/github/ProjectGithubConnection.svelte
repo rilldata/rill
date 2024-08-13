@@ -13,7 +13,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
 
   export let organization: string;
   export let project: string;
@@ -30,13 +30,17 @@
     project,
   );
 
+  let hovered = false;
+
   const githubData = new GithubData();
   setGithubData(githubData);
   const userStatus = githubData.userStatus;
   const repoSelectionOpen = githubData.repoSelectionOpen;
 
   function confirmConnectToGithub() {
-    void githubData.startRepoSelection();
+    // prompt reselection repos since a new repo might be created here.
+    repoSelectionOpen.set(true);
+    void githubData.reselectRepos();
     behaviourEvent?.fireGithubIntentEvent(
       BehaviourEventAction.GithubConnectStart,
       {
@@ -57,11 +61,16 @@
 </script>
 
 {#if $proj.data}
-  <div class="flex flex-col gap-y-1 max-w-[400px]">
+  <div
+    class="flex flex-col gap-y-1 max-w-[400px]"
+    on:mouseenter={() => (hovered = true)}
+    on:mouseleave={() => (hovered = false)}
+    role="region"
+  >
     <span
       class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
     >
-      Github
+      GitHub
     </span>
     <div class="flex flex-col gap-x-1">
       {#if isGithubConnected}
@@ -76,7 +85,11 @@
             {repoName}
           </a>
           <Button on:click={editGithubConnection} type="ghost" compact>
-            <EditIcon size="16px" />
+            <div class="min-w-4">
+              {#if hovered}
+                <EditIcon size="16px" />
+              {/if}
+            </div>
           </Button>
         </div>
         {#if subpath}
@@ -98,10 +111,16 @@
           </span>
         {/if}
       {:else}
-        <span class="mt-1">
-          Unlock the power of BI-as-code with Github-backed collaboration,
-          version control, and approval workflows.<br />
-          <a href="https://docs.rilldata.com" target="_blank">Learn more</a>
+        <span class="my-1">
+          Unlock the power of BI-as-code with GitHub-backed collaboration,
+          version control, and approval workflows.
+          <a
+            href="https://docs.rilldata.com/deploy/existing-project/github-101"
+            target="_blank"
+            class="text-primary-600"
+          >
+            Learn more ->
+          </a>
         </span>
         <ConnectToGithubButton
           onContinue={confirmConnectToGithub}

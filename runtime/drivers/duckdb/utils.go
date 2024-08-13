@@ -266,9 +266,5 @@ func sizeWithinStorageLimits(olap drivers.OLAPStore, size int64) bool {
 		return true
 	}
 
-	dbSizeInBytes, ok := olap.EstimateSize()
-	if ok && dbSizeInBytes+size > limit {
-		return false
-	}
-	return true
+	return olap.(*connection).estimateSize(true)+size <= limit
 }

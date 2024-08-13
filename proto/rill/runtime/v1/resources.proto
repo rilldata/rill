@@ -365,6 +365,9 @@ message AlertSpec {
   int32 intervals_limit = 6;
   bool intervals_check_unclosed = 7;
   uint32 timeout_seconds = 8;
+  // for alerts that have not been edited since resolver and resolver_properties have been added
+  string query_name = 9;
+  string query_args_json = 10;
   string resolver = 22;
   google.protobuf.Struct resolver_properties = 23;
   oneof query_for {
@@ -402,6 +405,8 @@ message AlertExecution {
   google.protobuf.Timestamp execution_time = 4;
   google.protobuf.Timestamp started_on = 5;
   google.protobuf.Timestamp finished_on = 6;
+  // Stores the last notification time in suppressed alerts
+  google.protobuf.Timestamp suppressed_since = 7;
 }
 
 message AssertionResult {

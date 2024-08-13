@@ -10,6 +10,7 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import { openPopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
 
@@ -28,11 +29,7 @@
       },
     );
     // we need a popup window so we cannot use href
-    window.open(
-      "https://github.com/new",
-      "githubNewWindow",
-      "width=1024,height=600",
-    );
+    openPopupWindow("https://github.com/new", "githubNewWindow");
   }
 
   function handleContinue() {
@@ -46,7 +43,7 @@
   <AlertDialogTrigger asChild let:builder>
     <Button builders={[builder]} type="primary" class="w-fit mt-1" {loading}>
       <Github className="w-4 h-4" fill="white" />
-      Connect to Github
+      Connect to GitHub
     </Button>
   </AlertDialogTrigger>
   <AlertDialogContent>
