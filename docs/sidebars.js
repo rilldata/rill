@@ -196,9 +196,20 @@ const sidebars = {
             label: 'Cloud Storage',
             description: "See our guides specifically catered for cloud storage import",
             items: [
-              'learn/guides/cloud-storage/ABS-to-Rill',
+              'learn/guides/cloud-storage/S3-to-Rill',  
               'learn/guides/cloud-storage/GCS-to-Rill',
-              'learn/guides/cloud-storage/S3-to-Rill',              
+              'learn/guides/cloud-storage/ABS-to-Rill',
+              
+                          
+            ]
+          },
+          {
+            type: 'category',
+            label: 'Data Warehouse',
+            description: "See our guides specifically catered for cloud storage import",
+            items: [
+              'learn/guides/data-warehouse/BQ-to-Rill',  
+                     
             ]
           },
           {
