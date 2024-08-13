@@ -2,7 +2,7 @@
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { fly } from "svelte/transition";
   import { EntityStatus } from "../features/entity-management/types";
-  import DelayedSpinner from "../features/entity-management/DelayedSpinner.svelte";
+  import Spinner from "../features/entity-management/Spinner.svelte";
 
   export let bg = "rgba(0,0,0,.6)";
 
@@ -32,10 +32,7 @@
         style:font-size="48px"
       >
         <div class="on" style="--length: {2000 + Math.random() * 5000}ms;">
-          <DelayedSpinner
-            isLoading={status === EntityStatus.Running}
-            duration={300 + Math.random() * 200}
-          />
+          <Spinner {status} duration={300 + Math.random() * 200} />
         </div>
       </div>
       <slot name="title" />
