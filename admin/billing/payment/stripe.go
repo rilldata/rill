@@ -19,7 +19,6 @@ var _ Provider = &Stripe{}
 type Stripe struct {
 	logger        *zap.Logger
 	webhookSecret string
-	// riverClient   *river.Client[*sql.Tx] // for submitting jobs to the worker
 }
 
 func NewStripe(logger *zap.Logger, stripeKey, stripeWebhookSecret string) *Stripe {

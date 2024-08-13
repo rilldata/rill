@@ -260,10 +260,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				metricsProjectName = parts[1]
 			}
 
-			// this will be initialized after admin service is created as it needs the admin db pool, but it is needed for stripe webhook handler which needs to be initialized before admin service
-			// this client is used only for inserting jobs to river, actual river worker is started in the worker service
-			// var insertOnlyRiverClient *river.Client[*sql.Tx]
-
 			var biller billing.Biller
 			if conf.OrbAPIKey != "" {
 				biller = billing.NewOrb(conf.OrbAPIKey)
