@@ -17,34 +17,40 @@
   // const theme = $page.url.searchParams.get("theme");
 
   // Manage active resource
-  let activeResourceName = initialResourceName;
-  let activeResourceKind = initialResourceKind;
+  let activeResource: V1ResourceName | null = null;
+  if (initialResourceName && initialResourceKind) {
+    activeResource = {
+      name: initialResourceName,
+      kind: initialResourceKind,
+    };
+  }
 
   function handleSelectResource(event: CustomEvent<V1ResourceName>) {
-    activeResourceName = event.detail.name;
-    activeResourceKind = event.detail.kind;
+    activeResource = event.detail;
   }
 
   function handleGoHome() {
-    activeResourceName = "";
-    activeResourceKind = "";
+    activeResource = null;
   }
 </script>
 
 <svelte:head>
-  <title>{activeResourceName} - Rill</title>
+  {#if activeResource}
+    <title>{activeResource.name} - Rill</title>
+  {:else}
+    <title>Rill</title>
+  {/if}
 </svelte:head>
 
 {#if navigation}
   <TopNavigationBarEmbed
     {instanceId}
-    {activeResourceName}
-    {activeResourceKind}
+    {activeResource}
     on:select-resource={handleSelectResource}
     on:go-home={handleGoHome}
   />
 
-  {#if !activeResourceName}
+  {#if !activeResource}
     <ContentContainer>
       <div class="flex flex-col items-center">
         <DashboardsTable isEmbedded on:select-resource={handleSelectResource} />
@@ -53,8 +59,8 @@
   {/if}
 {/if}
 
-{#if activeResourceKind === ResourceKind.MetricsView.toString()}
-  <MetricsExplorerEmbed {instanceId} dashboardName={activeResourceName} />
-{:else if activeResourceKind === ResourceKind.Dashboard.toString()}
-  <CustomDashboardEmbed {instanceId} dashboardName={activeResourceName} />
+{#if activeResource?.kind === ResourceKind.MetricsView.toString()}
+  <MetricsExplorerEmbed {instanceId} dashboardName={activeResource.name} />
+{:else if activeResource?.kind === ResourceKind.Dashboard.toString()}
+  <CustomDashboardEmbed {instanceId} dashboardName={activeResource.name} />
 {/if}
