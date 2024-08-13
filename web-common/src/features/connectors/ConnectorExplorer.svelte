@@ -7,12 +7,12 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import ConnectorEntry from "./ConnectorEntry.svelte";
 
-  export let startingHeight: number;
+  export let containerHeight: number;
 
-  const MIN_HEIGHT = 43; // The height of the "Connectors" header
+  const MIN_HEIGHT = 31; // The height of the "Connectors" header
 
   let showConnectors = true;
-  let sectionHeight = startingHeight;
+  let sectionHeight = containerHeight / 2; // starting height is half the container height
 
   $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId, {
     query: {
@@ -35,8 +35,8 @@
     direction="NS"
     side="top"
     min={10}
-    basis={showConnectors ? startingHeight : MIN_HEIGHT}
-    max={2000}
+    basis={showConnectors ? containerHeight / 2 : MIN_HEIGHT}
+    max={containerHeight * 0.9}
   />
   <button
     on:click={() => {
@@ -75,6 +75,7 @@
 
 <style lang="postcss">
   section {
+    @apply shrink-0;
     @apply flex flex-col relative;
     @apply border-t border-t-gray-200;
   }
