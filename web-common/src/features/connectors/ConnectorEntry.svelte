@@ -6,13 +6,15 @@
     createRuntimeServiceGetInstance,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { connectorExplorerStore } from "./connector-explorer-store";
   import { connectorIconMapping } from "./connector-icon-mapping";
   import DatabaseExplorer from "./olap/DatabaseExplorer.svelte";
 
   export let connector: V1AnalyzedConnector;
 
-  let showDatabases = true;
-
+  $: connectorName = connector?.name as string;
+  $: showConnector =
+    $connectorExplorerStore.connectors[connectorName].showConnector;
   $: ({ instanceId } = $runtime);
   $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
@@ -28,10 +30,10 @@
     <li aria-label={connector.name} class="connector-entry">
       <button
         class="connector-entry-header"
-        on:click={() => (showDatabases = !showDatabases)}
+        on:click={() => connectorExplorerStore.toggleConnector(connectorName)}
       >
         <CaretDownIcon
-          className="transform transition-transform text-gray-400 {showDatabases
+          className="transform transition-transform text-gray-400 {showConnector
             ? 'rotate-0'
             : '-rotate-90'}"
           size="14px"
@@ -50,7 +52,7 @@
           <Tag height={16}>OLAP</Tag>
         {/if}
       </button>
-      {#if showDatabases}
+      {#if showConnector}
         <DatabaseExplorer {instanceId} {connector} />
       {/if}
     </li>
