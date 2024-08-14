@@ -118,7 +118,23 @@ export const alertFormValidationSchema = yup.object({
     yup.object().shape({
       measure: yup.string().required("Required"),
       operation: yup.string().required("Required"),
-      value1: yup.number().required("Required"),
+      type: yup.string().required("Required"),
+      value1: yup
+        .number()
+        .required("Required")
+        .test((value, context) => {
+          const criteria = context.parent as MeasureFilterEntry;
+          if (
+            (criteria.type === MeasureFilterType.PercentOfTotal ||
+              criteria.type === MeasureFilterType.PercentChange) &&
+            (value < 0 || value > 100)
+          ) {
+            return context.createError({
+              message: `${context.path} must be a value between 0 and 100.`,
+            });
+          }
+          return true;
+        }),
     }),
   ),
   criteriaOperation: yup.string().required("Required"),
@@ -134,6 +150,14 @@ export const alertFormValidationSchema = yup.object({
     }),
   ),
 });
+function validateMeasureValue(value: number, entry: MeasureFilterEntry) {
+  if (
+    entry.type === MeasureFilterType.PercentOfTotal ||
+    entry.type === MeasureFilterType.PercentChange
+  ) {
+    return value >= 0 && value <= 100;
+  }
+}
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["measure"],
   ["criteria", "criteriaOperation"],
