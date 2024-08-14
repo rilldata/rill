@@ -150,14 +150,6 @@ export const alertFormValidationSchema = yup.object({
     }),
   ),
 });
-function validateMeasureValue(value: number, entry: MeasureFilterEntry) {
-  if (
-    entry.type === MeasureFilterType.PercentOfTotal ||
-    entry.type === MeasureFilterType.PercentChange
-  ) {
-    return value >= 0 && value <= 100;
-  }
-}
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["measure"],
   ["criteria", "criteriaOperation"],
