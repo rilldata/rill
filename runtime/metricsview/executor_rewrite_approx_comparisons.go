@@ -2,6 +2,7 @@ package metricsview
 
 import (
 	"fmt"
+
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
