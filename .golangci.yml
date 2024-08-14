@@ -1,6 +1,6 @@
 run:
   timeout: 10m
-  tests: false # TODO: Change to true
+  tests: false
 
 issues:
   exclude-rules:

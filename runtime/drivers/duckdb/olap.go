@@ -983,17 +983,11 @@ func removeDBFile(dbFile string) {
 
 // safeSQLName returns a quoted SQL identifier.
 func safeSQLName(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
+	return safeName(name)
 }
 
 func safeSQLString(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("'%s'", strings.ReplaceAll(name, "'", "''"))
+	return drivers.DialectDuckDB.EscapeStringValue(name)
 }
 
 func copyFile(src, dst string) error {

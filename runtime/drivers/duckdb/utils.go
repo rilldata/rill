@@ -245,19 +245,8 @@ func fileSize(paths []string) int64 {
 	return size
 }
 
-func quoteName(name string) string {
-	return fmt.Sprintf("\"%s\"", name) // nolint:gocritic // Because SQL escaping is different
-}
-
-func escapeDoubleQuotes(column string) string {
-	return strings.ReplaceAll(column, "\"", "\"\"")
-}
-
 func safeName(name string) string {
-	if name == "" {
-		return name
-	}
-	return quoteName(escapeDoubleQuotes(name))
+	return drivers.DialectDuckDB.EscapeIdentifier(name)
 }
 
 func sizeWithinStorageLimits(olap drivers.OLAPStore, size int64) bool {
