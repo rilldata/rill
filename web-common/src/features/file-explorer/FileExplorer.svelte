@@ -20,9 +20,9 @@
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { eventBus } from "../../lib/event-bus/event-bus";
+  import { fileArtifacts } from "../entity-management/file-artifacts";
   import NavDirectory from "./NavDirectory.svelte";
   import { findDirectory, transformFileList } from "./transform-file-list";
-  import { fileArtifacts } from "../entity-management/file-artifacts";
 
   export let hasUnsaved: boolean;
 
@@ -164,21 +164,19 @@
   on:keydown={saveAll}
 />
 
-<div class="flex flex-col items-start gap-y-2">
-  <!-- File tree -->
-  <ul class="flex flex-col w-full items-start justify-start overflow-auto">
-    {#if fileTree}
-      <NavDirectory
-        directory={fileTree}
-        {onRename}
-        {onDelete}
-        {onGenerateChart}
-        onMouseDown={(e, dragData) =>
-          navEntryDragDropStore.onMouseDown(e, dragData)}
-      />
-    {/if}
-  </ul>
-</div>
+<!-- File tree -->
+<ul class="flex flex-col w-full items-start justify-start overflow-auto">
+  {#if fileTree}
+    <NavDirectory
+      directory={fileTree}
+      {onRename}
+      {onDelete}
+      {onGenerateChart}
+      onMouseDown={(e, dragData) =>
+        navEntryDragDropStore.onMouseDown(e, dragData)}
+    />
+  {/if}
+</ul>
 
 {#if showRenameModelModal}
   <RenameAssetModal

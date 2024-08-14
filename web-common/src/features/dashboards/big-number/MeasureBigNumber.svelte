@@ -17,8 +17,8 @@
     crossfade,
     fly,
   } from "svelte/transition";
-  import Spinner from "../../entity-management/Spinner.svelte";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
@@ -201,7 +201,10 @@
           in:receive={{ key: "spinner" }}
           out:send={{ key: "spinner" }}
         >
-          <Spinner status={EntityStatus.Running} />
+          <DelayedSpinner
+            isLoading={status === EntityStatus.Running}
+            size="24px"
+          />
         </div>
       {:else if value === null}
         <span class="ui-copy-disabled-faint italic text-sm">no data</span>
