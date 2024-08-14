@@ -89,10 +89,10 @@
       {@const isHighlighted = d?.value === dimensionValue}
       <g
         class="transition-opacity"
-        class:opacity-0={isDimValueHiglighted && !isHighlighted}
+        class:opacity-5={isDimValueHiglighted && !isHighlighted}
       >
         <ChunkedLine
-          isComparingDimension
+          lineType="dimension"
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey
@@ -105,10 +105,10 @@
         />
       </g>
       {#if isHighlighted}
-        <g class="transition-opacity opacity-40">
+        <g class="transition-opacity">
           <ChunkedLine
-            isComparingDimension
-            lineColor={TimeComparisonLineColor}
+            lineType="dimension-time-comparison"
+            lineColor={d?.color}
             delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
             duration={hasSubrangeSelected ||
             $timeRangeKey !== $previousTimeRangeKey
@@ -129,6 +129,7 @@
         class:opacity-40={!isHovering}
       >
         <ChunkedLine
+          lineType="time-comparison"
           lineColor={TimeComparisonLineColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
