@@ -169,7 +169,11 @@ func (s *Server) UploadProjectAssets(ctx context.Context, req *adminv1.UploadPro
 		return nil, err
 	}
 
-	err = archive.Create(ctx, files, archiveRoot, assetResp.SignedUrl, assetResp.SigningHeaders)
+	archivePath := archiveRoot
+	if proj.Subpath != "" {
+		archivePath = filepath.Join(archivePath, proj.Subpath)
+	}
+	err = archive.Create(ctx, files, archivePath, assetResp.SignedUrl, assetResp.SigningHeaders)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -225,8 +229,6 @@ func gitToFilesList(gitPath, repo, branch, subpath, token string) ([]drivers.Dir
 			return nil
 		}
 
-		// Track file (p is already relative to the FS root)
-		p = filepath.Join("/", p)
 		entries = append(entries, drivers.DirEntry{
 			Path:  p,
 			IsDir: d.IsDir(),

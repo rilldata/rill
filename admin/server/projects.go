@@ -518,7 +518,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	githubURL := proj.GithubURL
 	githubInstID := proj.GithubInstallationID
 	subpath := valOrDefault(req.Subpath, proj.Subpath)
-	prodBranch := valOrDefault(req.Subpath, proj.Subpath)
+	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo

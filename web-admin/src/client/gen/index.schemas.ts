@@ -980,6 +980,7 @@ export type V1GetGithubUserStatusResponseOrganizationInstallationPermissions = {
 export interface V1GetGithubUserStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;
+  authUrl?: string;
   accessToken?: string;
   account?: string;
   userInstallationPermission?: V1GithubPermission;

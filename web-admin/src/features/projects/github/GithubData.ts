@@ -70,11 +70,11 @@ export class GithubData {
 
     await waitUntil(() => !get(this.userStatus).isFetching);
     const userStatus = get(this.userStatus).data;
-    if (!userStatus || userStatus?.hasAccess || !userStatus.grantAccessUrl) {
+    if (!userStatus || userStatus?.hasAccess || !userStatus.authUrl) {
       return;
     }
 
-    this.openUserGithubConnectWindow(userStatus.grantAccessUrl);
+    this.openUserGithubConnectWindow(userStatus.authUrl);
   }
 
   /**

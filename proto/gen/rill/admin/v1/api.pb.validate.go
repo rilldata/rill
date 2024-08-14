@@ -21147,6 +21147,8 @@ func (m *GetGithubUserStatusResponse) validate(all bool) error {
 
 	// no validation rules for GrantAccessUrl
 
+	// no validation rules for AuthUrl
+
 	// no validation rules for AccessToken
 
 	// no validation rules for Account

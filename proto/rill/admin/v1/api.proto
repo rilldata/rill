@@ -1604,6 +1604,7 @@ message GetGithubUserStatusRequest {}
 message GetGithubUserStatusResponse {
   bool has_access = 1;
   string grant_access_url = 2;
+  string auth_url = 8;
   string access_token = 3;
   string account = 4;
   GithubPermission user_installation_permission = 6;

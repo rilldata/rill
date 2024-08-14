@@ -7316,6 +7316,11 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
   grantAccessUrl = "";
 
   /**
+   * @generated from field: string auth_url = 8;
+   */
+  authUrl = "";
+
+  /**
    * @generated from field: string access_token = 3;
    */
   accessToken = "";
@@ -7353,6 +7358,7 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "has_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "auth_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_installation_permission", kind: "enum", T: proto3.getEnumType(GithubPermission) },

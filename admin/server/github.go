@@ -77,6 +77,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		return &adminv1.GetGithubUserStatusResponse{
 			HasAccess:      false,
 			GrantAccessUrl: grantAccessURL,
+			AuthUrl:        s.urls.authLogin,
 		}, nil
 	}
 	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
@@ -90,6 +91,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		return &adminv1.GetGithubUserStatusResponse{
 			HasAccess:      false,
 			GrantAccessUrl: grantAccessURL,
+			AuthUrl:        s.urls.authLogin,
 		}, nil
 	}
 
@@ -171,6 +173,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	return &adminv1.GetGithubUserStatusResponse{
 		HasAccess:                           true,
 		GrantAccessUrl:                      s.urls.githubConnect,
+		AuthUrl:                             s.urls.authLogin,
 		AccessToken:                         token,
 		Account:                             user.GithubUsername,
 		Organizations:                       allOrgs,
