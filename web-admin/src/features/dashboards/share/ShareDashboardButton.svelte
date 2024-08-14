@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CreateShareableURLForm from "@rilldata/web-admin/features/public-urls/CreateShareableURLForm.svelte";
+  import CreatePublicURLForm from "@rilldata/web-admin/features/public-urls/CreatePublicURLForm.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import {
@@ -45,7 +45,7 @@
         </div>
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
-        <CreateShareableURLForm />
+        <CreatePublicURLForm />
       </TabsContent>
     </Tabs>
   </PopoverContent>
