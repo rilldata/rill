@@ -259,7 +259,7 @@ schema: default
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
-				Table:     "m2",
+				Model:     "m2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
 					{Name: "a", Column: "a"},
 				},
@@ -1437,7 +1437,7 @@ func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 		`rill.yaml`: ``,
 		// dashboard d1
 		`dashboards/d1.yaml`: `
-model: d1
+table: d1
 dimensions:
   - name: a
     column: a

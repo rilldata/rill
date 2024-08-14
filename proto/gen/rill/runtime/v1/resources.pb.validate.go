@@ -3001,6 +3001,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Table
 
+	// no validation rules for Model
+
 	// no validation rules for Title
 
 	// no validation rules for Description

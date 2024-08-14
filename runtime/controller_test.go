@@ -100,7 +100,7 @@ measures:
 	// Verify the metrics view
 	mvSpec := &runtimev1.MetricsViewSpec{
 		Connector:  "duckdb",
-		Table:      "bar",
+		Model:      "bar",
 		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
 		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 	}
@@ -115,7 +115,13 @@ measures:
 			MetricsView: &runtimev1.MetricsViewV2{
 				Spec: mvSpec,
 				State: &runtimev1.MetricsViewState{
-					ValidSpec: mvSpec,
+					ValidSpec: &runtimev1.MetricsViewSpec{
+						Connector:  "duckdb",
+						Model:      "bar",
+						Table:      "bar",
+						Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
+						Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+					},
 				},
 			},
 		},
@@ -1302,11 +1308,11 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 	return model, modelRes
 }
 
-func newMetricsView(name, table string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
+func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsViewV2{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:  "duckdb",
-			Table:      table,
+			Model:      model,
 			Title:      name,
 			Measures:   make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 			Dimensions: make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
@@ -1314,13 +1320,15 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
 				Connector:  "duckdb",
-				Table:      table,
+				Table:      model,
+				Model:      model,
 				Title:      name,
 				Measures:   make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 				Dimensions: make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
 			},
 		},
 	}
+
 	for i, measure := range measures {
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
@@ -1346,7 +1354,7 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 	metricsRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: table}},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: model}},
 			Owner:     runtime.GlobalProjectParserName,
 			FilePaths: []string{fmt.Sprintf("/dashboards/%s.yaml", name)},
 		},

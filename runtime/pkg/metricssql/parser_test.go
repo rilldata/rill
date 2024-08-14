@@ -153,7 +153,7 @@ func TestCompile(t *testing.T) {
 	for _, test := range passTests {
 		q, err := compiler.Rewrite(context.Background(), test.inSQL)
 		require.NoError(t, err, "input = %v", test.inSQL)
-		ast, err := metricsview.NewAST(test.resource.GetMetricsView().Spec, clm, q, olap.Dialect())
+		ast, err := metricsview.NewAST(test.resource.GetMetricsView().State.ValidSpec, clm, q, olap.Dialect())
 		require.NoError(t, err)
 
 		sql, args, err := ast.SQL()

@@ -227,6 +227,8 @@ message MetricsViewSpec {
   string database_schema = 22;
   // Name of the table the metrics view is based on
   string table = 2;
+  // Name of the model the metrics view is based on. Either table or model should be set.
+  string model = 24;
   // User friendly label for the dashboard
   string title = 3;
   // Description of the dashboard

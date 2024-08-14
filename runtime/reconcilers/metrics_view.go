@@ -65,10 +65,18 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
-	if mv.Spec.Connector == "" {
-		res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Table, Kind: runtime.ResourceKindModel}, false)
-		if err == nil && res.GetModel().State.ResultConnector != "" { // ignore error since dashboard can directly reference a table as well
-			mv.Spec.Connector = res.GetModel().State.ResultConnector
+	var validateErr error
+	if mv.Spec.Model != "" {
+		res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Model, Kind: runtime.ResourceKindModel}, false)
+		if err != nil {
+			validateErr = fmt.Errorf("failed to get model %q: %w", mv.Spec.Model, err)
+		} else {
+			if res.GetModel().State.ResultTable != "" {
+				mv.Spec.Table = res.GetModel().State.ResultTable
+				mv.Spec.Connector = res.GetModel().State.ResultConnector
+			} else {
+				mv.Spec.Table = mv.Spec.Model
+			}
 		}
 	}
 
@@ -79,7 +87,10 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// NOTE: Not checking refs for errors since they may still be valid even if they have errors. Instead, we just validate the metrics view against the table name.
 
 	// Validate the metrics view and update ValidSpec
-	validateResult, validateErr := r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec)
+	var validateResult *runtime.ValidateMetricsViewResult
+	if validateErr == nil {
+		validateResult, validateErr = r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec)
+	}
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}
