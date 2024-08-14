@@ -16,37 +16,11 @@
   export let checkSize: $$Props["checkSize"] = "h-4 w-4";
   export let href: $$Props["href"] = undefined;
   export { className as class };
+
+  const iconColor = "#15141A";
 </script>
 
-{#if href}
-  <a {href} rel="noopener noreferrer">
-    <DropdownMenuPrimitive.CheckboxItem
-      bind:checked
-      role="menuitem"
-      class={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:rounded-sm focus:bg-accent focus:rounded-sm",
-        className,
-      )}
-      {...$$restProps}
-      on:click
-      on:keydown
-      on:focusin
-      on:focusout
-      on:pointerdown
-      on:pointerleave
-      on:pointermove
-    >
-      <span
-        class="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center"
-      >
-        <DropdownMenuPrimitive.CheckboxIndicator>
-          <Check class={checkSize} color="#15141A" />
-        </DropdownMenuPrimitive.CheckboxIndicator>
-      </span>
-      <slot />
-    </DropdownMenuPrimitive.CheckboxItem>
-  </a>
-{:else}
+<svelte:element this={href ? "a" : "div"} {href} rel="noopener noreferrer">
   <DropdownMenuPrimitive.CheckboxItem
     bind:checked
     role="menuitem"
@@ -63,11 +37,13 @@
     on:pointerleave
     on:pointermove
   >
-    <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span
+      class="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center"
+    >
       <DropdownMenuPrimitive.CheckboxIndicator>
-        <Check class={checkSize} color="#15141A" />
+        <Check class={checkSize} color={iconColor} />
       </DropdownMenuPrimitive.CheckboxIndicator>
     </span>
     <slot />
   </DropdownMenuPrimitive.CheckboxItem>
-{/if}
+</svelte:element>
