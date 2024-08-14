@@ -62,10 +62,9 @@ type SelectNode struct {
 // The Name must always match a the name of a dimension/measure in the metrics view or a computed field specified in the request.
 // This means that if two columns in different places in the AST have the same Name, they're guaranteed to resolve to the same value.
 type FieldNode struct {
-	Name       string
-	Label      string
-	Expr       string
-	AutoUnnest bool
+	Name  string
+	Label string
+	Expr  string
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -158,8 +157,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			if !auto {
 				ast.unnests = append(ast.unnests, tblWithAlias)
 				f.Expr = ast.sqlForMember(unnestAlias, f.Name)
-			} else {
-				f.AutoUnnest = true
 			}
 		}
 

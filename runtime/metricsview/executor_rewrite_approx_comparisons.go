@@ -46,12 +46,10 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 	}
 	sortField := a.Root.OrderBy[0]
 
-	// if dim does not have explicit unnest, then don't optimize
-	// for example druid fails with join on cte having multi value dimension
-	for _, dim := range n.FromSelect.DimFields {
-		if dim.AutoUnnest {
-			return false
-		}
+	// if there are unnests in the query, we can't rewrite the query
+	// for example druid fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
+	if len(a.unnests) > 0 {
+		return false
 	}
 
 	// Find out what we're sorting by
