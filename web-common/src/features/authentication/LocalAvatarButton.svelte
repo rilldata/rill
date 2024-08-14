@@ -18,11 +18,7 @@
   $: loggedIn = $user.isSuccess && $user.data?.user;
 
   $: if ($user.data?.user) {
-    initPylonChat({
-      email: $user.data.user.email,
-      displayName: $user.data.user.displayName,
-      photoUrl: $user.data.user.photoUrl,
-    });
+    initPylonChat($user.data.user);
   }
   function handlePylon() {
     window.Pylon("show");
@@ -64,10 +60,10 @@
       >
         Join us on Discord
       </DropdownMenu.Item>
-      <DropdownMenu.Item on:click={handlePylon}>
-        Contact Rill support
-      </DropdownMenu.Item>
       {#if loggedIn}
+        <DropdownMenu.Item on:click={handlePylon}>
+          Contact Rill support
+        </DropdownMenu.Item>
         <DropdownMenu.Item href={logoutUrl} class="text-gray-800 font-normal">
           Logout
         </DropdownMenu.Item>
