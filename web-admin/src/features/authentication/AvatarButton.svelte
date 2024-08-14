@@ -3,7 +3,10 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
-  import { initPylonChat } from "@rilldata/web-common/features/help/initPylonChat";
+  import {
+    initPylonChat,
+    type UserLike,
+  } from "@rilldata/web-common/features/help/initPylonChat";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
 
@@ -11,7 +14,7 @@
 
   let subMenuOpen = false;
 
-  $: if ($user.data?.user) initPylonChat($user.data.user);
+  $: if ($user.data?.user) initPylonChat($user.data.user as UserLike);
   $: ({ params } = $page);
 
   function handlePylon() {
