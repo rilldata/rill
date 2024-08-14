@@ -1,4 +1,4 @@
-package metricssqlparser
+package metricssqlparser_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +30,7 @@ func TestCompile(t *testing.T) {
 	require.NoError(t, err)
 
 	claims := &runtime.SecurityClaims{}
-	compiler := New(ctrl, instanceID, claims, 1)
+	compiler := metricssqlparser.New(ctrl, instanceID, claims, 1)
 	passTests := []struct {
 		inSQL    string
 		outSQL   string
@@ -117,7 +118,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"select pub, dom, measure_0 as \"click rate\" from ad_bids_metrics where (pub is not null and dom is null) or (pub = '__default__')",
-			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((((\"publisher\") IS NOT NULL AND (\"domain\") IS NULL) OR (\"publisher\") = ?)) GROUP BY 1, 2",
+			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((((\"publisher\") IS NOT NULL) AND ((\"domain\") IS NULL)) OR ((\"publisher\") = ?)) GROUP BY 1, 2",
 			mv,
 			[]any{"__default__"},
 		},

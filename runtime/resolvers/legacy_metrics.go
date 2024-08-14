@@ -236,6 +236,8 @@ func (r *legacyMetricsResolver) getComparisonMeasureLabelAndFormatter(measureNam
 				effectiveMeasure = v.ComparisonDelta.Measure
 			case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
 				effectiveMeasure = v.ComparisonRatio.Measure
+			case *runtimev1.MetricsViewAggregationMeasure_PercentOfTotal:
+				effectiveMeasure = v.PercentOfTotal.Measure
 			}
 			break
 		}
@@ -270,6 +272,9 @@ func (r *legacyMetricsResolver) getComparisonMeasureLabelAndFormatter(measureNam
 			measureLabel += " (Δ)"
 		case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
 			measureLabel += " (Δ%)"
+			formatPreset = "percentage"
+		case *runtimev1.MetricsViewAggregationMeasure_PercentOfTotal:
+			measureLabel += " (Σ%)"
 			formatPreset = "percentage"
 		}
 	}

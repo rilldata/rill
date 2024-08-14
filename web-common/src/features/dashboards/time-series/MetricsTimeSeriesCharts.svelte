@@ -39,7 +39,6 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
-  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import {
     PivotChipData,
@@ -232,8 +231,6 @@
     "timeseries",
   );
 
-  $: minTimeGrain = $timeControlsStore.minTimeGrain;
-
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
 
   let showReplacePivotModal = false;
@@ -309,9 +306,7 @@
         selectedItems={$showHideMeasures.selectedItems}
         tooltipText="Choose measures to display"
       />
-      {#if minTimeGrain}
-        <TimeGrainSelector {metricViewName} />
-      {/if}
+
       <button
         class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
         on:click={() => {

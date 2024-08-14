@@ -169,10 +169,12 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		if wroteWhere {
 			b.out.WriteString(" AND (")
 		} else {
-			b.out.WriteString(" WHERE (")
+			b.out.WriteString(" WHERE ")
 		}
 		b.out.WriteString(n.Where.Expr)
-		b.out.WriteString(")")
+		if wroteWhere {
+			b.out.WriteString(")")
+		}
 		b.args = append(b.args, n.Where.Args...)
 	}
 

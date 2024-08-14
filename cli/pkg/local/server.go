@@ -94,6 +94,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		AnalyticsEnabled: s.metadata.AnalyticsEnabled,
 		Readonly:         s.metadata.Readonly,
 		GrpcPort:         int32(s.metadata.GRPCPort),
+		LoginUrl:         s.app.localURL + "/auth",
 	}), nil
 }
 
@@ -674,6 +675,17 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 		return nil, errors.New("failed to get current user")
 	}
 
+	// get rill user orgs
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	userOrgs := make([]string, 0, len(resp.Organizations))
+	for _, org := range resp.Organizations {
+		userOrgs = append(userOrgs, org.Name)
+	}
+
 	return connect.NewResponse(&localv1.GetCurrentUserResponse{
 		User: &adminv1.User{
 			Id:          userResp.User.Id,
@@ -681,6 +693,54 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 			DisplayName: userResp.User.DisplayName,
 			PhotoUrl:    userResp.User.PhotoUrl,
 		},
+		RillUserOrgs: userOrgs,
+	}), nil
+}
+
+func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[localv1.GetCurrentProjectRequest]) (*connect.Response[localv1.GetCurrentProjectResponse], error) {
+	localProjectName := filepath.Base(s.app.ProjectPath)
+
+	if !s.app.ch.IsAuthenticated() {
+		// user should be logged in first
+		return connect.NewResponse(&localv1.GetCurrentProjectResponse{
+			LocalProjectName: localProjectName,
+		}), nil
+	}
+	// Get admin client
+	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
+	if err != nil {
+		return nil, err
+	}
+
+	rc, err := dotrillcloud.GetAll(s.app.ProjectPath, s.app.adminURL)
+	if err != nil {
+		return nil, err
+	}
+	if rc == nil {
+		return connect.NewResponse(&localv1.GetCurrentProjectResponse{
+			LocalProjectName: localProjectName,
+		}), nil
+	}
+
+	var project *adminv1.Project
+	proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: rc.ProjectID,
+	})
+	if err != nil {
+		// unset if project doesnt exist
+		if errors.Is(err, database.ErrNotFound) {
+			err = dotrillcloud.Delete(s.app.ProjectPath, s.app.adminURL)
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		project = proj.Project
+	}
+
+	return connect.NewResponse(&localv1.GetCurrentProjectResponse{
+		LocalProjectName: localProjectName,
+		Project:          project,
 	}), nil
 }
 

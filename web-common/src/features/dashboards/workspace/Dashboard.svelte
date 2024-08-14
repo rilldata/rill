@@ -12,12 +12,12 @@
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
-  import MockUserHasNoAccess from "../granular-access-policies/MockUserHasNoAccess.svelte";
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   export let metricViewName: string;
 
@@ -70,7 +70,12 @@
   </div>
 
   {#if mockUserHasNoAccess}
-    <MockUserHasNoAccess />
+    <!-- Additional safeguard for mock users without dashboard access. -->
+    <ErrorPage
+      statusCode={$dashboard.error?.response?.status}
+      header="This user can't access this dashboard"
+      body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
+    />
   {:else if showPivot}
     <PivotDisplay />
   {:else}

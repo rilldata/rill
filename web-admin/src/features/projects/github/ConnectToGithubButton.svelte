@@ -43,7 +43,7 @@
   <AlertDialogTrigger asChild let:builder>
     <Button builders={[builder]} type="primary" class="w-fit mt-1" {loading}>
       <Github className="w-4 h-4" fill="white" />
-      Connect to Github
+      Connect to GitHub
     </Button>
   </AlertDialogTrigger>
   <AlertDialogContent>

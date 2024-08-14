@@ -52,7 +52,7 @@ export function isReportExportPage(page: Page): boolean {
   );
 }
 
-export function isMagicLinkPage(page: Page): boolean {
+export function isPublicURLPage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/share/[token]";
 }
 

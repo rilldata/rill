@@ -3,25 +3,33 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import NoUser from "@rilldata/web-common/components/icons/NoUser.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { initPylonChat } from "@rilldata/web-common/features/help/initPylonChat";
   import {
-    createLocalServiceDeployValidation,
     createLocalServiceGetCurrentUser,
+    createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   $: user = createLocalServiceGetCurrentUser();
-  $: deployValidation = createLocalServiceDeployValidation();
+  $: metadata = createLocalServiceGetMetadata();
 
-  $: loginUrl = `${$deployValidation.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
-  $: logoutUrl = `${$deployValidation.data?.loginUrl}/logout?redirect=${$page.url.href}`;
+  $: loginUrl = `${$metadata.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
+  $: logoutUrl = `${$metadata.data?.loginUrl}/logout?redirect=${$page.url.href}`;
   $: loggedIn = $user.isSuccess && $user.data?.user;
+
+  $: if ($user.data?.user) {
+    initPylonChat($user.data.user);
+  }
+  function handlePylon() {
+    window.Pylon("show");
+  }
 </script>
 
-{#if ($user.isLoading || $deployValidation.isLoading) && !$user.error && !$deployValidation.error}
+{#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error}
   <div class="flex flex-row items-center h-7 mx-1.5">
     <Spinner size="16px" status={EntityStatus.Running} />
   </div>
-{:else if $user.data && $deployValidation.data}
+{:else if $user.data && $metadata.data}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger class="flex-none w-7">
       {#if loggedIn}
@@ -52,11 +60,10 @@
       >
         Join us on Discord
       </DropdownMenu.Item>
-      <!-- TODO -->
-      <!-- <DropdownMenu.Item on:click={handlePylon}>-->
-      <!--   Contact Rill support-->
-      <!-- </DropdownMenu.Item>-->
       {#if loggedIn}
+        <DropdownMenu.Item on:click={handlePylon}>
+          Contact Rill support
+        </DropdownMenu.Item>
         <DropdownMenu.Item href={logoutUrl} class="text-gray-800 font-normal">
           Logout
         </DropdownMenu.Item>
