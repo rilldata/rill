@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewSearch struct {
@@ -62,20 +60,6 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
-	}
-
-	if !isTimeRangeNil(q.TimeRange) {
-		if mv.TimeDimension == "" {
-			return fmt.Errorf("metrics view '%s' does not have a time dimension", mv)
-		}
-		start, end, err := ResolveTimeRange(q.TimeRange, mv)
-		if err != nil {
-			return err
-		}
-		q.TimeRange = &runtimev1.TimeRange{
-			Start: timestamppb.New(start.In(time.UTC)),
-			End:   timestamppb.New(end.In(time.UTC)),
-		}
 	}
 
 	exec, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, sec, priority)

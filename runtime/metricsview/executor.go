@@ -359,42 +359,8 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	// TODO :: Refactor the code and extract common functionality from metricsview.Query and AST and write SearchQuery to underlying SQL/Native druid query directly.
 
 	if e.olap.Dialect() == drivers.DialectDruid {
-		dimensions := make([]Dimension, len(qry.Dimensions))
-		for i, d := range qry.Dimensions {
-			dimensions[i] = Dimension{Name: d}
-		}
-		q := &Query{
-			MetricsView:         qry.MetricsView,
-			Dimensions:          dimensions,
-			Measures:            nil,
-			PivotOn:             nil,
-			Spine:               nil,
-			Sort:                nil,
-			TimeRange:           qry.TimeRange,
-			ComparisonTimeRange: nil,
-			Where:               qry.Where,
-			Having:              qry.Having,
-			Limit:               qry.Limit,
-			Offset:              nil,
-			TimeZone:            "",
-			Label:               false,
-		}
-
-		if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
-			return nil, err
-		}
-
-		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
-		if err != nil {
-			return nil, err
-		}
-
-		if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
-			return nil, err
-		}
-
 		// native search
-		res, err := e.executeSearchInDruid(ctx, e.olap, ast, qry.Search)
+		res, err := e.executeSearchInDruid(ctx, qry, executionTime)
 		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
 			return res, err
 		}
@@ -481,7 +447,44 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	return searchResult, nil
 }
 
-func (e *Executor) executeSearchInDruid(ctx context.Context, olap drivers.OLAPStore, a *AST, search string) ([]SearchResult, error) {
+func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
+	if qry.TimeRange == nil {
+		return nil, errDruidNativeSearchUnimplemented
+	}
+	dimensions := make([]Dimension, len(qry.Dimensions))
+	for i, d := range qry.Dimensions {
+		dimensions[i] = Dimension{Name: d}
+	}
+	q := &Query{
+		MetricsView:         qry.MetricsView,
+		Dimensions:          dimensions,
+		Measures:            nil,
+		PivotOn:             nil,
+		Spine:               nil,
+		Sort:                nil,
+		TimeRange:           qry.TimeRange,
+		ComparisonTimeRange: nil,
+		Where:               qry.Where,
+		Having:              qry.Having,
+		Limit:               qry.Limit,
+		Offset:              nil,
+		TimeZone:            "",
+		Label:               false,
+	}
+
+	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+		return nil, err
+	}
+
+	a, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := e.rewriteLimitsIntoSubqueries(a); err != nil {
+		return nil, err
+	}
+
 	if a.Root.FromSelect != nil {
 		// This means either the dimension uses an unnest or measure filters which are not directly supported by native search.
 		// This can be supported in future using query datasource in future if performance turns out to be a concern.
@@ -491,13 +494,11 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, olap drivers.OLAPSt
 	if a.Root.Where != nil {
 		// NOTE :: this does not work for measure filters.
 		// The query planner resolves them to joins instead of filters.
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		rows, err := e.olap.Execute(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", *a.Root.FromTable, a.Root.Where.Expr),
 			Args:             a.Root.Where.Args,
-			DryRun:           false,
-			Priority:         0,
-			LongRunning:      false,
-			ExecutionTimeout: 0,
+			Priority:         e.priority,
+			ExecutionTimeout: defaultInteractiveTimeout,
 		})
 		if err != nil {
 			return nil, err
@@ -560,10 +561,10 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, olap drivers.OLAPSt
 			dims = append(dims, f.Name)
 		}
 	}
-	req := druid.NewNativeSearchQueryRequest(e.metricsView.Table, search, dims, virtualCols, limit, a.query.TimeRange.Start, a.query.TimeRange.End, query) // TODO: timestamps may be nil!
+	req := druid.NewNativeSearchQueryRequest(e.metricsView.Table, qry.Search, dims, virtualCols, limit, a.query.TimeRange.Start, a.query.TimeRange.End, query)
 
 	// Execute the native query
-	client, err := druid.NewNativeClient(olap)
+	client, err := druid.NewNativeClient(e.olap)
 	if err != nil {
 		return nil, err
 	}
