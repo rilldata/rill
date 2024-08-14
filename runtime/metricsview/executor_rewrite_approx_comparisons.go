@@ -105,7 +105,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		a.convertToCTE(n.FromSelect)
 
 		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
-		for _, dim := range n.FromSelect.DimFields {
+		for _, dim := range n.JoinComparisonSelect.DimFields {
 			dimName := a.dialect.EscapeIdentifier(dim.Name)
 			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
 			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
@@ -124,7 +124,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		a.convertToCTE(n.JoinComparisonSelect)
 
 		// now change the FromSelect WHERE clause to use selected dim values from CTE
-		for _, dim := range n.JoinComparisonSelect.DimFields {
+		for _, dim := range n.FromSelect.DimFields {
 			dimName := a.dialect.EscapeIdentifier(dim.Name)
 			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
 			n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.JoinComparisonSelect.Alias, dimName), nil)
@@ -142,7 +142,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		a.convertToCTE(n.FromSelect)
 
 		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
-		for _, dim := range n.FromSelect.DimFields {
+		for _, dim := range n.JoinComparisonSelect.DimFields {
 			dimName := a.dialect.EscapeIdentifier(dim.Name)
 			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
 			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)

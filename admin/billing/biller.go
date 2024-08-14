@@ -30,6 +30,7 @@ type Biller interface {
 	CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error)
 	FindCustomer(ctx context.Context, customerID string) (*Customer, error)
 	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
+	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
 
 	// CreateSubscription creates a subscription for the given organization.
 	// The subscription starts immediately.
@@ -131,3 +132,10 @@ type PaymentProvider string
 const (
 	PaymentProviderStripe PaymentProvider = "stripe"
 )
+
+func Email(organization *database.Organization) string {
+	if organization.BillingEmail != "" {
+		return organization.BillingEmail
+	}
+	return SupportEmail
+}

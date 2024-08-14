@@ -2,13 +2,17 @@ package metricsview
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/druid"
 )
 
 const (
@@ -328,3 +332,289 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		"args": args,
 	})
 }
+
+type SearchQuery struct {
+	MetricsView string      `mapstructure:"metrics_view"`
+	Dimensions  []string    `mapstructure:"dimensions"`
+	Search      string      `mapstructure:"search"`
+	Where       *Expression `mapstructure:"where"`
+	Having      *Expression `mapstructure:"having"`
+	TimeRange   *TimeRange  `mapstructure:"time_range"`
+	Limit       *int64      `mapstructure:"limit"`
+}
+
+type SearchResult struct {
+	Dimension string
+	Value     any
+}
+
+// SearchQuery executes the provided query against the metrics view.
+func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
+	if !e.security.CanAccess() {
+		return nil, runtime.ErrForbidden
+	}
+
+	// Generate a metricsview.Query and build a AST
+	// This is a hacky implementation since both metricsview.Query and AST are designed for aggregate queries.
+	// TODO :: Refactor the code and extract common functionality from metricsview.Query and AST and write SearchQuery to underlying SQL/Native druid query directly.
+
+	if e.olap.Dialect() == drivers.DialectDruid {
+		// native search
+		res, err := e.executeSearchInDruid(ctx, qry, executionTime)
+		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
+			return res, err
+		}
+	}
+
+	var (
+		finalSQL  strings.Builder
+		finalArgs []any
+		rowsCap   int64
+		err       error
+	)
+	for i, d := range qry.Dimensions {
+		if i > 0 {
+			finalSQL.WriteString(" UNION ALL ")
+		}
+		q := &Query{
+			MetricsView:         qry.MetricsView,
+			Dimensions:          []Dimension{{Name: d}},
+			Measures:            nil,
+			PivotOn:             nil,
+			Spine:               nil,
+			Sort:                nil,
+			TimeRange:           qry.TimeRange,
+			ComparisonTimeRange: nil,
+			Where:               nil,
+			Having:              qry.Having,
+			Limit:               qry.Limit,
+			Offset:              nil,
+			TimeZone:            "",
+			Label:               false,
+		}
+		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
+
+		if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+			return nil, err
+		}
+
+		rowsCap, err = e.rewriteQueryEnforceCaps(q)
+		if err != nil {
+			return nil, err
+		}
+
+		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+		if err != nil {
+			return nil, err
+		}
+
+		if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
+			return nil, err
+		}
+
+		sql, args, err := ast.SQL()
+		if err != nil {
+			return nil, err
+		}
+		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", e.olap.Dialect().EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
+		finalArgs = append(finalArgs, args...)
+	}
+
+	res, err := e.olap.Execute(ctx, &drivers.Statement{
+		Query:            finalSQL.String(),
+		Args:             finalArgs,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultInteractiveTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	if rowsCap > 0 {
+		res.SetCap(rowsCap)
+	}
+	searchResult := make([]SearchResult, 0)
+	for res.Next() {
+		var row SearchResult
+		if err := res.Scan(&row.Dimension, &row.Value); err != nil {
+			return nil, err
+		}
+		searchResult = append(searchResult, row)
+	}
+	if res.Err() != nil {
+		return nil, res.Err()
+	}
+	return searchResult, nil
+}
+
+func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
+	if qry.TimeRange == nil {
+		return nil, errDruidNativeSearchUnimplemented
+	}
+	dimensions := make([]Dimension, len(qry.Dimensions))
+	for i, d := range qry.Dimensions {
+		dimensions[i] = Dimension{Name: d}
+	}
+	q := &Query{
+		MetricsView:         qry.MetricsView,
+		Dimensions:          dimensions,
+		Measures:            nil,
+		PivotOn:             nil,
+		Spine:               nil,
+		Sort:                nil,
+		TimeRange:           qry.TimeRange,
+		ComparisonTimeRange: nil,
+		Where:               qry.Where,
+		Having:              qry.Having,
+		Limit:               qry.Limit,
+		Offset:              nil,
+		TimeZone:            "",
+		Label:               false,
+	}
+
+	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+		return nil, err
+	}
+
+	a, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := e.rewriteLimitsIntoSubqueries(a); err != nil {
+		return nil, err
+	}
+
+	if a.Root.FromSelect != nil {
+		// This means either the dimension uses an unnest or measure filters which are not directly supported by native search.
+		// This can be supported in future using query datasource in future if performance turns out to be a concern.
+		return nil, errDruidNativeSearchUnimplemented
+	}
+	var query map[string]interface{}
+	if a.Root.Where != nil {
+		// NOTE :: this does not work for measure filters.
+		// The query planner resolves them to joins instead of filters.
+		rows, err := e.olap.Execute(ctx, &drivers.Statement{
+			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", *a.Root.FromTable, a.Root.Where.Expr),
+			Args:             a.Root.Where.Args,
+			Priority:         e.priority,
+			ExecutionTimeout: defaultInteractiveTimeout,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		if !rows.Next() {
+			return nil, fmt.Errorf("failed to parse filter")
+		}
+
+		var (
+			planRaw string
+			resRaw  string
+			attrRaw string
+		)
+		err = rows.Scan(&planRaw, &resRaw, &attrRaw)
+		if err != nil {
+			return nil, err
+		}
+
+		var plan []druid.QueryPlan
+		err = json.Unmarshal([]byte(planRaw), &plan)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(plan) == 0 {
+			return nil, fmt.Errorf("failed to parse policy filter")
+		}
+		if plan[0].Query.Filter == nil {
+			// if we failed to parse a filter we return and run UNION query.
+			// this can happen when the row filter is complex
+			// TODO: iterate over this and integrate more parts like joins and subfilter in policy filter
+			return nil, errDruidNativeSearchUnimplemented
+		}
+		query = *plan[0].Query.Filter
+	}
+
+	// Build a native query
+	limit := 100
+	if a.Root.Limit != nil {
+		limit = int(*a.Root.Limit)
+	}
+	dims := make([]string, 0)
+	virtualCols := make([]druid.NativeVirtualColumns, 0)
+	for _, f := range a.Root.DimFields {
+		dim, err := a.lookupDimension(f.Name, true)
+		if err != nil {
+			return nil, err
+		}
+		// if the dimension is a expression we need a virtual column that can be scanned in SearchDimensions
+		if dim.Expression != "" {
+			virtualCols = append(virtualCols, druid.NativeVirtualColumns{
+				Type:       "expression",
+				Name:       fmt.Sprintf("%v_virtual_native", f.Name), // The name of the virtual column should not clash with actual column
+				Expression: dim.Expression,
+			})
+			dims = append(dims, fmt.Sprintf("%v_virtual_native", f.Name))
+		} else {
+			dims = append(dims, f.Name)
+		}
+	}
+	req := druid.NewNativeSearchQueryRequest(e.metricsView.Table, qry.Search, dims, virtualCols, limit, a.query.TimeRange.Start, a.query.TimeRange.End, query)
+
+	// Execute the native query
+	client, err := druid.NewNativeClient(e.olap)
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.Search(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the response to a SearchResult
+	result := make([]SearchResult, 0)
+	for _, re := range res {
+		for _, r := range re.Result {
+			result = append(result, SearchResult{
+				Dimension: strings.TrimSuffix(r.Dimension, "_virtual_native"),
+				Value:     r.Value,
+			})
+		}
+	}
+	return result, nil
+}
+
+func whereExprForSearch(where *Expression, dimension, search string) *Expression {
+	if where == nil {
+		return &Expression{
+			Condition: &Condition{
+				Operator: OperatorIlike,
+				Expressions: []*Expression{
+					{Name: dimension},
+					{Value: fmt.Sprintf("%%%s%%", search)},
+				},
+			},
+		}
+	}
+	return &Expression{
+		Condition: &Condition{
+			Operator: OperatorAnd,
+			Expressions: []*Expression{
+				{
+					Condition: &Condition{
+						Operator: OperatorIlike,
+						Expressions: []*Expression{
+							{Name: dimension},
+							{Value: fmt.Sprintf("%%%s%%", search)},
+						},
+					},
+				},
+				where,
+			},
+		},
+	}
+}
+
+var errDruidNativeSearchUnimplemented = fmt.Errorf("native search is not implemented")
