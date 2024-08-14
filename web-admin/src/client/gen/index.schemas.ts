@@ -262,6 +262,7 @@ export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
+  billingEmail?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -736,6 +737,7 @@ export interface V1Organization {
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
+  billingEmail?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1025,7 +1027,6 @@ export interface V1GetBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
   billingPortalUrl?: string;
-  hasPaymentMethod?: boolean;
 }
 
 export interface V1GetAlertYAMLResponse {
