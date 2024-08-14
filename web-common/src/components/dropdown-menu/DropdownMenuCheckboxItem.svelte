@@ -5,7 +5,6 @@
 
   type $$Props = DropdownMenuPrimitive.CheckboxItemProps & {
     checkSize?: string;
-    href?: string;
   };
   // type $$Events = DropdownMenuPrimitive.CheckboxItemEvents;
 
@@ -33,7 +32,7 @@
 >
   <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
     <DropdownMenuPrimitive.CheckboxIndicator>
-      <Check class={checkSize} />
+      <Check class={checkSize} color="#15141A" />
     </DropdownMenuPrimitive.CheckboxIndicator>
   </span>
   <slot />
