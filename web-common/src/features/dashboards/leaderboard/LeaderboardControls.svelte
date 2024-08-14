@@ -12,6 +12,7 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
+  import { errorStore } from "@rilldata/web-admin/features/errors/error-store";
 
   export let metricViewName: string;
 
@@ -28,6 +29,16 @@
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: measures = $filteredSimpleMeasures();
+
+  // If no measures are mentioned in the security policy, the query will return undefined.
+  // This is so we can gracefully fail and provide a helpful error message.
+  $: if (measures.length === 0) {
+    errorStore.set({
+      statusCode: 404,
+      header: "Measures not found",
+      body: `The measures you requested could not be found. Check the query and try again.`,
+    });
+  }
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
