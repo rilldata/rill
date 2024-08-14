@@ -24,7 +24,7 @@ func TestValidateMetricsView(t *testing.T) {
 			{Name: "invalid_nested_aggregation", Expression: "MAX(COUNT(DISTINCT publisher))", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 			{Name: "invalid_partition", Expression: "AVG(bid_price) OVER (PARTITION BY publisher)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 		},
-	}, "duckdb")
+	})
 	require.NoError(t, err)
 	require.Empty(t, res.TimeDimensionErr)
 	require.Empty(t, res.DimensionErrs)

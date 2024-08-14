@@ -51,13 +51,13 @@ func (r *ValidateMetricsViewResult) Error() error {
 
 // ValidateMetricsView validates a metrics view spec.
 // NOTE: If we need validation for more resources, we should consider moving it to the queries (or a dedicated validation package).
-func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv *runtimev1.MetricsViewSpec, modelConnector string) (*ValidateMetricsViewResult, error) {
+func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv *runtimev1.MetricsViewSpec) (*ValidateMetricsViewResult, error) {
 	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	olap, release, err := ctrl.AcquireOLAP(ctx, modelConnector)
+	olap, release, err := ctrl.AcquireOLAP(ctx, mv.Connector)
 	if err != nil {
 		return nil, err
 	}
