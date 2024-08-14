@@ -179,6 +179,16 @@
       {/if}
     </DialogHeader>
     <DialogFooter class="mt-3">
+      <!-- temporarily show this only during edit. in the long run we will not have edit -->
+      {#if $githubUrl}
+        <Button
+          outline={false}
+          type="link"
+          on:click={() => githubData.reselectRepos()}
+        >
+          Choose other repos
+        </Button>
+      {/if}
       <Button
         type="secondary"
         on:click={() => {

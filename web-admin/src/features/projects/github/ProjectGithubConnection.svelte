@@ -8,6 +8,7 @@
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -20,6 +21,7 @@
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { PencilIcon } from "lucide-svelte";
 
   export let organization: string;
   export let project: string;
@@ -51,6 +53,16 @@
     // prompt reselection repos since a new repo might be created here.
     repoSelectionOpen.set(true);
     void githubData.reselectRepos();
+    behaviourEvent?.fireGithubIntentEvent(
+      BehaviourEventAction.GithubConnectStart,
+      {
+        is_fresh_connection: isGithubConnected,
+      },
+    );
+  }
+
+  function editGithubConnection() {
+    void githubData.startRepoSelection();
     behaviourEvent?.fireGithubIntentEvent(
       BehaviourEventAction.GithubConnectStart,
       {
@@ -107,6 +119,14 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
+              <DropdownMenu.Item class="px-1 py-1">
+                <Button on:click={editGithubConnection} type="text" compact>
+                  <div class="flex flex-row items-center gap-x-2">
+                    <EditIcon size="14px" />
+                    <span class="text-xs">Edit</span>
+                  </div>
+                </Button>
+              </DropdownMenu.Item>
               <DropdownMenu.Item class="px-1 py-1">
                 <Button
                   on:click={() => (disconnectConfirmOpen = true)}
