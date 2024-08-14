@@ -4434,17 +4434,17 @@ func TestMetricsViewAggregation_percent_of_totals(t *testing.T) {
 	require.Equal(t, 6, len(rows))
 
 	i = 0
-	require.Equal(t, "news.yahoo.com,77.00,6.90", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+	require.Equal(t, "news.yahoo.com,77.00,0.07", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "news.google.com,256.00,22.94", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+	require.Equal(t, "news.google.com,256.00,0.23", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "msn.com,86.00,7.71", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+	require.Equal(t, "msn.com,86.00,0.08", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "instagram.com,276.00,24.73", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+	require.Equal(t, "instagram.com,276.00,0.25", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "google.com,64.00,5.73", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+	require.Equal(t, "google.com,64.00,0.06", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "facebook.com,77.00,6.90", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+	require.Equal(t, "facebook.com,77.00,0.07", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 }
 
 func TestMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T) {
@@ -4497,9 +4497,9 @@ func TestMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T) {
 	require.Equal(t, 2, len(rows))
 
 	i = 0
-	require.Equal(t, "news.yahoo.com,77.00,6.90", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+	require.Equal(t, "news.yahoo.com,77.00,0.07", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
-	require.Equal(t, "news.google.com,256.00,22.94", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+	require.Equal(t, "news.google.com,256.00,0.23", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 }
 
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {
