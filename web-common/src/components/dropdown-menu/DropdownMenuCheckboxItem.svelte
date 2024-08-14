@@ -19,7 +19,7 @@
 </script>
 
 {#if href}
-  <a {href} class="no-underline">
+  <a {href} rel="noopener noreferrer">
     <DropdownMenuPrimitive.CheckboxItem
       bind:checked
       role="menuitem"
@@ -37,7 +37,7 @@
       on:pointermove
     >
       <span
-        class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"
+        class="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center"
       >
         <DropdownMenuPrimitive.CheckboxIndicator>
           <Check class={checkSize} color="#15141A" />
