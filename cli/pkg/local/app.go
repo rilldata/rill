@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/file"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -404,6 +405,11 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		})
 	})
 
+	err = a.watchDotRill(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Start debug server on port 6060
 	if a.Debug {
 		group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
@@ -491,6 +497,33 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 	a.activity.RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
 
 	return nil
+}
+
+func (a *App) watchDotRill(ctx context.Context) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	watcher, err := file.NewWatcher(filepath.Join(homeDir, ".rill"), []string{
+		"/rill.log",
+	}, a.BaseLogger)
+	if err != nil {
+		return err
+	}
+
+	return watcher.Subscribe(ctx, func(events []drivers.WatchEvent) {
+		for _, event := range events {
+			if event.Path == "/credentials.yaml" {
+				token, err := dotrill.GetAccessToken()
+				if err != nil {
+					continue
+				}
+
+				a.ch.AdminTokenDefault = token
+			}
+		}
+	})
 }
 
 // IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.

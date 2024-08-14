@@ -23,8 +23,8 @@ const batchInterval = 250 * time.Millisecond
 
 const maxBufferSize = 1000
 
-// watcher implements a recursive, batching file watcher on top of fsnotify.
-type watcher struct {
+// Watcher implements a recursive, batching file watcher on top of fsnotify.
+type Watcher struct {
 	logger           *zap.Logger
 	root             string
 	ignorePaths      []string
@@ -46,15 +46,15 @@ type watchEvent struct {
 	isCreate  bool
 }
 
-// newWatcher creates a new watcher for the given root directory.
+// NewWatcher creates a new watcher for the given root directory.
 // The root directory must be an absolute path.
-func newWatcher(root string, ignorePaths []string, logger *zap.Logger) (*watcher, error) {
+func NewWatcher(root string, ignorePaths []string, logger *zap.Logger) (*Watcher, error) {
 	fsw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 
-	w := &watcher{
+	w := &Watcher{
 		logger:      logger,
 		root:        root,
 		ignorePaths: ignorePaths,
@@ -75,11 +75,11 @@ func newWatcher(root string, ignorePaths []string, logger *zap.Logger) (*watcher
 	return w, nil
 }
 
-func (w *watcher) close() {
+func (w *Watcher) close() {
 	w.closeWithErr(nil)
 }
 
-func (w *watcher) closeWithErr(err error) {
+func (w *Watcher) closeWithErr(err error) {
 	// Support multiple calls, but only actually close once.
 	// Not using w.mu here because someday someone will try to close the watcher from a callback.
 	if w.closed.Swap(true) {
@@ -95,7 +95,7 @@ func (w *watcher) closeWithErr(err error) {
 	close(w.done)
 }
 
-func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error {
+func (w *Watcher) Subscribe(ctx context.Context, fn drivers.WatchCallback) error {
 	w.mu.Lock()
 	if w.err != nil {
 		w.mu.Unlock()
@@ -123,7 +123,7 @@ func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error
 // flush emits buffered events to all subscribers.
 // Note it is called in the event loop in runInner, so new events will not be appended to w.buffer while a flush is running.
 // Calls to flush block until all subscribers have processed the events. This is an acceptable trade-off for now, but we may want to revisit it in the future.
-func (w *watcher) flush() {
+func (w *Watcher) flush() {
 	if len(w.buffer) == 0 {
 		return
 	}
@@ -166,12 +166,12 @@ func (w *watcher) flush() {
 	w.buffer = make(map[string]watchEvent)
 }
 
-func (w *watcher) run() {
+func (w *Watcher) run() {
 	err := w.runInner()
 	w.closeWithErr(err)
 }
 
-func (w *watcher) runInner() error {
+func (w *Watcher) runInner() error {
 	ticker := time.NewTicker(batchInterval)
 	defer ticker.Stop()
 
@@ -237,7 +237,7 @@ func (w *watcher) runInner() error {
 	}
 }
 
-func (w *watcher) addDir(p string, replay, errIfNotExist bool) error {
+func (w *Watcher) addDir(p string, replay, errIfNotExist bool) error {
 	err := w.watcher.Add(p)
 	if err != nil {
 		// Need to check unix.ENOENT (and probably others) since fsnotify doesn't always use cross-platform syscalls.

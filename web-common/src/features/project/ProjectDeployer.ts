@@ -85,7 +85,7 @@ export class ProjectDeployer {
     if (!userResp.user) {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
       window.open(
-        `${metadata.loginUrl}/?redirect=${get(page).url.toString()}`,
+        `${metadata.loginUrl}?redirect=${get(page).url.toString()}`,
         "_self",
       );
     } else {

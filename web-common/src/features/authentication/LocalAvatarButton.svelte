@@ -12,7 +12,7 @@
   $: user = createLocalServiceGetCurrentUser();
   $: metadata = createLocalServiceGetMetadata();
 
-  $: loginUrl = `${$metadata.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
+  $: loginUrl = `${$metadata.data?.loginUrl}?redirect=${window.location.origin}${window.location.pathname}`;
   $: logoutUrl = `${$metadata.data?.loginUrl}/logout?redirect=${$page.url.href}`;
   $: loggedIn = $user.isSuccess && $user.data?.user;
 </script>

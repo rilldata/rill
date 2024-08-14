@@ -140,7 +140,7 @@ type connection struct {
 
 	watcherMu    sync.Mutex
 	watcherCount int
-	watcher      *watcher
+	watcher      *Watcher
 
 	ignorePaths []string
 }
