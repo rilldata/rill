@@ -2,6 +2,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { PathOption, PathOptions } from "./Breadcrumbs.svelte";
+  import { page } from "$app/stores";
+  import { withinProject } from "@rilldata/web-admin/features/navigation/nav-utils";
 
   export let options: PathOptions;
   export let current: string;
@@ -12,6 +14,7 @@
   export let isEmbedded: boolean = false;
 
   $: selected = options.get(current.toLowerCase());
+  $: withinProjectPage = withinProject($page);
 
   function linkMaker(
     current: (string | undefined)[],
@@ -39,7 +42,9 @@
     {#if selected}
       <a
         on:click={() => {
-          if (isCurrentPage && !isEmbedded) window.location.reload();
+          if (isCurrentPage && !isEmbedded && !withinProjectPage) {
+            window.location.reload();
+          }
         }}
         href={linkMaker(currentPath, depth, current, selected)}
         class="text-gray-500 hover:text-gray-600"
