@@ -691,7 +691,7 @@ func (s local) runUI(ctx context.Context) (err error) {
 }
 
 func (s local) awaitUI(ctx context.Context) error {
-	uiURL := "http://localhost:3000"
+	uiURL := "http://localhost:3001"
 	for {
 		resp, err := http.Get(uiURL)
 		if err == nil {
