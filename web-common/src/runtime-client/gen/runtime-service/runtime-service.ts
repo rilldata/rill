@@ -1732,9 +1732,9 @@ export const getRuntimeServiceGetModelSplitsQueryKey = (
   model: string,
   params?: RuntimeServiceGetModelSplitsParams,
 ) => [
-    `/v1/instances/${instanceId}/models/${model}/splits`,
-    ...(params ? [params] : []),
-  ];
+  `/v1/instances/${instanceId}/models/${model}/splits`,
+  ...(params ? [params] : []),
+];
 
 export type RuntimeServiceGetModelSplitsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>
@@ -1767,7 +1767,7 @@ export const createRuntimeServiceGetModelSplits = <
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>
   > = ({ signal }) =>
-      runtimeServiceGetModelSplits(instanceId, model, params, signal);
+    runtimeServiceGetModelSplits(instanceId, model, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
@@ -1947,9 +1947,9 @@ export const getRuntimeServiceWatchResourcesQueryKey = (
   instanceId: string,
   params?: RuntimeServiceWatchResourcesParams,
 ) => [
-    `/v1/instances/${instanceId}/resources/-/watch`,
-    ...(params ? [params] : []),
-  ];
+  `/v1/instances/${instanceId}/resources/-/watch`,
+  ...(params ? [params] : []),
+];
 
 export type RuntimeServiceWatchResourcesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceWatchResources>>
