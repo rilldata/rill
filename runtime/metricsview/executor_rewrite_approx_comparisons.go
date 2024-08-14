@@ -2,6 +2,7 @@ package metricsview
 
 import (
 	"fmt"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // rewriteApproxComparisons rewrites the AST to use a LEFT or RIGHT join instead of a FULL joins for comparisons,
@@ -46,9 +47,9 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 	}
 	sortField := a.Root.OrderBy[0]
 
-	// if there are unnests in the query, we can't rewrite the query
-	// for example druid fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
-	if len(a.unnests) > 0 {
+	// if there are unnests in the query, we can't rewrite the query for Druid
+	// it fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
+	if e.olap.Dialect() == drivers.DialectDruid && len(a.unnests) > 0 {
 		return false
 	}
 
