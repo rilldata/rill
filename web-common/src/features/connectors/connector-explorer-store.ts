@@ -1,30 +1,14 @@
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
+import { derived, type Readable } from "svelte/store";
 
 interface ConnectorExplorerState {
   showConnectors: boolean;
-  connectors: Record<
-    string,
-    {
-      showConnector: boolean;
-      databases: Record<
-        string,
-        {
-          showDatabase: boolean;
-          databaseSchemas: Record<
-            string,
-            {
-              showDatabaseSchema: boolean;
-            }
-          >;
-        }
-      >;
-    }
-  >;
+  expandedItems: Record<string, boolean>;
 }
 
 const initialState: ConnectorExplorerState = {
   showConnectors: true,
-  connectors: {},
+  expandedItems: {},
 };
 
 function createConnectorExplorerStore() {
@@ -33,91 +17,54 @@ function createConnectorExplorerStore() {
     initialState,
   );
 
+  function getItemKey(
+    connector: string,
+    database?: string,
+    schema?: string,
+  ): string {
+    return [connector, database, schema].filter(Boolean).join("|");
+  }
+
+  function getDefaultState(
+    connector: string,
+    database?: string,
+    schema?: string,
+  ): boolean {
+    if (schema) return false; // Database Schema
+    if (database) return true; // Database
+    return true; // Connector
+  }
+
   return {
     subscribe,
     toggleExplorer: () =>
       update((state) => ({ ...state, showConnectors: !state.showConnectors })),
-    toggleConnector: (connectorName: string) =>
+
+    getItemState: (
+      connector: string,
+      database?: string,
+      schema?: string,
+    ): Readable<boolean> => {
+      const key = getItemKey(connector, database, schema);
+      return derived({ subscribe }, ($state) => {
+        if (key in $state.expandedItems) {
+          return $state.expandedItems[key];
+        }
+        return getDefaultState(connector, database, schema);
+      });
+    },
+
+    toggleItem: (connector: string, database?: string, schema?: string) =>
       update((state) => {
-        const connector = state.connectors[connectorName] || {
-          showConnector: true,
-          databases: {},
-        };
+        const key = getItemKey(connector, database, schema);
+        const currentState =
+          state.expandedItems[key] ??
+          getDefaultState(connector, database, schema);
         return {
           ...state,
-          connectors: {
-            ...state.connectors,
-            [connectorName]: {
-              ...connector,
-              showConnector: !connector.showConnector,
-            },
-          },
-        };
-      }),
-    toggleDatabase: (connectorName: string, databaseName: string) =>
-      update((state) => {
-        const connector = state.connectors[connectorName] || {
-          showConnector: true,
-          databases: {},
-        };
-        const database = connector.databases[databaseName] || {
-          showDatabase: true,
-          databaseSchemas: {},
-        };
-        return {
-          ...state,
-          connectors: {
-            ...state.connectors,
-            [connectorName]: {
-              ...connector,
-              databases: {
-                ...connector.databases,
-                [databaseName]: {
-                  ...database,
-                  showDatabase: !database.showDatabase,
-                },
-              },
-            },
-          },
-        };
-      }),
-    toggleSchema: (
-      connectorName: string,
-      databaseName: string,
-      schemaName: string,
-    ) =>
-      update((state) => {
-        const connector = state.connectors[connectorName] || {
-          showConnector: true,
-          databases: {},
-        };
-        const database = connector.databases[databaseName] || {
-          showDatabase: true,
-          databaseSchemas: {},
-        };
-        const schema = database.databaseSchemas[schemaName] || {
-          showDatabaseSchema: true,
-        };
-        return {
-          ...state,
-          connectors: {
-            ...state.connectors,
-            [connectorName]: {
-              ...connector,
-              databases: {
-                ...connector.databases,
-                [databaseName]: {
-                  ...database,
-                  databaseSchemas: {
-                    ...database.databaseSchemas,
-                    [schemaName]: {
-                      ...schema,
-                      showDatabaseSchema: !schema.showDatabaseSchema,
-                    },
-                  },
-                },
-              },
-            },
+          expandedItems: {
+            ...state.expandedItems,
+            [key]: !currentState,
           },
         };
       }),

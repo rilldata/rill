@@ -12,9 +12,11 @@
   export let databaseSchema: string;
 
   $: connectorName = connector?.name as string;
-  $: showDatabaseSchema =
-    $connectorExplorerStore.connectors[connectorName].databases[database]
-      .databaseSchemas[databaseSchema].showDatabaseSchema;
+  $: showDatabaseSchema = connectorExplorerStore.getItemState(
+    connectorName,
+    database,
+    databaseSchema,
+  );
   $: tablesQuery = useTables(
     instanceId,
     connectorName,
@@ -36,16 +38,16 @@
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
   <button
     class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
-    class:open={showDatabaseSchema}
+    class:open={$showDatabaseSchema}
     on:click={() =>
-      connectorExplorerStore.toggleSchema(
+      connectorExplorerStore.toggleItem(
         connectorName,
         database,
         databaseSchema,
       )}
   >
     <CaretDownIcon
-      className="transform transition-transform text-gray-400 {showDatabaseSchema
+      className="transform transition-transform text-gray-400 {$showDatabaseSchema
         ? 'rotate-0'
         : '-rotate-90'}"
       size="14px"
@@ -63,7 +65,7 @@
     </span>
   </button>
 
-  {#if showDatabaseSchema}
+  {#if $showDatabaseSchema}
     {#if connector?.errorMessage}
       <div class="message">{connector.errorMessage}</div>
     {:else if !connector.driver || !connector.driver.name}
