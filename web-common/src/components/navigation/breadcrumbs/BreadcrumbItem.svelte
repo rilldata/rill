@@ -66,20 +66,20 @@
         >
           {#each options as [id, option] (id)}
             {@const selected = id === current}
-            <a
+            <DropdownMenu.CheckboxItem
+              class="cursor-pointer"
+              checked={selected}
+              checkSize={"h-3 w-3"}
               href={linkMaker(currentPath, depth, id, option)}
-              class="no-underline"
+              on:click={() => {
+                if (onSelect) {
+                  onSelect(id);
+                }
+              }}
             >
-              <DropdownMenu.CheckboxItem
-                class="cursor-pointer"
-                checked={selected}
-                checkSize={"h-3 w-3"}
+              <span class="text-xs text-gray-800 flex-grow">{option.label}</span
               >
-                <span class="text-xs text-gray-800 flex-grow"
-                  >{option.label}</span
-                >
-              </DropdownMenu.CheckboxItem>
-            </a>
+            </DropdownMenu.CheckboxItem>
           {/each}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
