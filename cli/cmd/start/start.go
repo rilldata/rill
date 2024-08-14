@@ -226,7 +226,7 @@ func countFilesInDirectory(projectPath string) (int, error) {
 
 	var ignorePaths []string
 	// Read rill.yaml and get `ignore_paths`
-	rawYaml, err := os.ReadFile(filepath.Join(projectPath, "/rill.yaml"))
+	rawYaml, err := os.ReadFile(filepath.Join(projectPath, "rill.yaml"))
 	if err == nil {
 		yml := &rillYAML{}
 		err = yaml.Unmarshal(rawYaml, yml)

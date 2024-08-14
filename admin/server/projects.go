@@ -386,18 +386,23 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	opts := &database.InsertProjectOptions{
-		OrganizationID:  org.ID,
-		Name:            req.Name,
-		Description:     req.Description,
-		Public:          req.Public,
-		CreatedByUserID: userID,
-		Provisioner:     req.Provisioner,
-		ProdVersion:     req.ProdVersion,
-		ProdOLAPDriver:  req.ProdOlapDriver,
-		ProdOLAPDSN:     req.ProdOlapDsn,
-		ProdSlots:       int(req.ProdSlots),
-		ProdVariables:   req.Variables,
-		ProdTTLSeconds:  prodTTL,
+		OrganizationID:       org.ID,
+		Name:                 req.Name,
+		Description:          req.Description,
+		Public:               req.Public,
+		CreatedByUserID:      userID,
+		Provisioner:          req.Provisioner,
+		ArchiveAssetID:       nil,         // Populated below
+		GithubURL:            nil,         // Populated below
+		GithubInstallationID: nil,         // Populated below
+		ProdBranch:           "",          // Populated below
+		Subpath:              req.Subpath, // Populated below
+		ProdVersion:          req.ProdVersion,
+		ProdOLAPDriver:       req.ProdOlapDriver,
+		ProdOLAPDSN:          req.ProdOlapDsn,
+		ProdSlots:            int(req.ProdSlots),
+		ProdVariables:        req.Variables,
+		ProdTTLSeconds:       prodTTL,
 	}
 
 	if req.GithubUrl != "" {

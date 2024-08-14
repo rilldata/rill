@@ -34,13 +34,12 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 		TimeRange:           qry.TimeRange,
 		ComparisonTimeRange: nil,
 		Where:               qry.Where,
-		// 'having' should only apply after totals are calculated
-		Having:   nil,
-		Limit:    nil,
-		Offset:   nil,
-		TimeZone: qry.TimeZone,
-		Label:    false,
-	}
+		Having:              nil, // 'having' should only apply after totals are calculated
+		Limit:               nil,
+		Offset:              nil,
+		TimeZone:            qry.TimeZone,
+		Label:               false,
+	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.
 	ast, err := NewAST(e.metricsView, e.security, totalsQry, e.olap.Dialect())

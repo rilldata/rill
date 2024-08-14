@@ -391,7 +391,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			Offset:              nil,
 			TimeZone:            "",
 			Label:               false,
-		}
+		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
 		if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
@@ -470,7 +470,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		Offset:              nil,
 		TimeZone:            "",
 		Label:               false,
-	}
+	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
 		return nil, err

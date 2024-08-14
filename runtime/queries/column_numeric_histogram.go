@@ -149,11 +149,11 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		return fmt.Errorf("not available for dialect %q", olap.Dialect())
 	}
 
-	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
+	minVal, maxVal, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
 	if err != nil {
 		return err
 	}
-	if min == nil || max == nil || rng == nil {
+	if minVal == nil || maxVal == nil || rng == nil {
 		return nil
 	}
 
@@ -220,8 +220,8 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		sanitizedColumnName,
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		bucketSize,
-		*min,
-		*max,
+		*minVal,
+		*maxVal,
 		*rng,
 	)
 
@@ -267,11 +267,11 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
+	minVal, maxVal, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
 	if err != nil {
 		return err
 	}
-	if min == nil || max == nil || rng == nil {
+	if minVal == nil || maxVal == nil || rng == nil {
 		return nil
 	}
 
@@ -280,7 +280,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		ticks = *rng
 	}
 
-	startTick, endTick, gap := NiceAndStep(*min, *max, ticks)
+	startTick, endTick, gap := NiceAndStep(*minVal, *maxVal, ticks)
 	bucketCount := int(math.Ceil((endTick - startTick) / gap))
 	if gap == 1 {
 		bucketCount++
@@ -415,9 +415,9 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 
 	// clickhouse does not support scanning non null values into sql.Nullx
 	// issue : https://github.com/ClickHouse/clickhouse-go/issues/754
-	var min, max, rng *float64
+	var minVal, maxVal, rng *float64
 	if minMaxRow.Next() {
-		err = minMaxRow.Scan(&min, &max, &rng)
+		err = minMaxRow.Scan(&minVal, &maxVal, &rng)
 		if err != nil {
 			minMaxRow.Close()
 			return nil, nil, nil, err
@@ -426,7 +426,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 
 	minMaxRow.Close()
 
-	return min, max, rng, nil
+	return minVal, maxVal, rng, nil
 }
 
 func isNonNullFinite(d drivers.Dialect, floatCol string) string {
