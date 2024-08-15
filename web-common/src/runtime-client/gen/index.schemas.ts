@@ -1218,6 +1218,8 @@ export interface V1MetricsViewSpec {
   database?: string;
   databaseSchema?: string;
   table?: string;
+  /** Name of the model the metrics view is based on. Either table or model should be set. */
+  model?: string;
   title?: string;
   description?: string;
   timeDimension?: string;

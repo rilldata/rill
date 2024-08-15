@@ -1063,6 +1063,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   table = "";
 
   /**
+   * Name of the model the metrics view is based on. Either table or model should be set.
+   *
+   * @generated from field: string model = 24;
+   */
+  model = "";
+
+  /**
    * User friendly label for the dashboard
    *
    * @generated from field: string title = 3;
@@ -1200,6 +1207,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },

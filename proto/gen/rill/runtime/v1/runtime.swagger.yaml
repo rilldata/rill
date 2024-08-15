@@ -4619,6 +4619,9 @@ definitions:
       table:
         type: string
         title: Name of the table the metrics view is based on
+      model:
+        type: string
+        description: Name of the model the metrics view is based on. Either table or model should be set.
       title:
         type: string
         title: User friendly label for the dashboard
