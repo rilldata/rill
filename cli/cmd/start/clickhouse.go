@@ -44,7 +44,7 @@ func startClickHouse(ctx context.Context, projectPath string) (string, error) {
 
 	// Start ClickHouse server as a subprocess
 	go func() {
-		cmd := newCmd(ctx, binPath, "server", fmt.Sprintf("--config-file=%s", configPath))
+		cmd := newCmd(ctx, binPath, "server", "--config-file", configPath)
 		err = cmd.Run()
 		if err != nil {
 			fmt.Println("Error running clickhouse server", err)
