@@ -103,12 +103,18 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 	clone.InputProperties = propsMap
 	newOpts := &clone
 
-	var outputPropsMap map[string]any
-	err = mapstructure.WeakDecode(outputProps, &outputPropsMap)
+	// Ensure materialize is true because the selfToSelfExecutor is not able to infer it independently.
+	outputProps := &outputProperties{}
+	err = mapstructure.WeakDecode(opts.OutputProperties, &outputProps)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set output properties: %w", err)
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	newOpts.OutputProperties = outputPropsMap
+	truth := true
+	outputProps = &truth
+	err = mapstructure.WeakDecode(outputProps, &newOpts.OutputProperties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
 
 	// execute
 	executor := &selfToSelfExecutor{c: e.c}
