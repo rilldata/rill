@@ -143,12 +143,15 @@ const sidebars = {
                 type: 'category',
                 label: 'Incremental Models',
                 items: [
-                  'learn/rill_learn_300/incremental_models/302_0'
+                  'learn/rill_learn_300/incremental_models/302_0',
+                  'learn/rill_learn_300/incremental_models/303_0'
                   
                 ]
-              }
+              },
+              'learn/rill_learn_300/310_0',
               ]
           },
+          
           {
             type: 'category',
             label: 'Rill and ClickHouse',
@@ -176,6 +179,7 @@ const sidebars = {
 
               ]
           },
+
         ],
       },
       {
