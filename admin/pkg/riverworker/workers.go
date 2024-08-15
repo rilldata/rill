@@ -185,9 +185,10 @@ func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[ri
 	}
 
 	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-		OrgID:   org.ID,
-		Type:    database.BillingErrorTypeNoPaymentMethod,
-		Message: "No payment method attached, please add a payment method by visiting the billing portal",
+		OrgID:     org.ID,
+		Type:      database.BillingErrorTypeNoPaymentMethod,
+		Message:   "No payment method attached, please add a payment method by visiting the billing portal",
+		EventTime: job.Args.EventTime,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add billing error: %w", err)
