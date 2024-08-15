@@ -558,15 +558,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if tmp.Table != "" && tmp.Model != "" {
 		return fmt.Errorf(`cannot set both the "model" field and the "table" field`)
 	}
-	var (
-		table string
-		model string
-	)
-	if tmp.Table != "" {
-		table = tmp.Table
-	} else if tmp.Model != "" {
-		model = tmp.Model
-	} else {
+	if tmp.Table == "" && tmp.Model == "" {
 		return fmt.Errorf(`must set a value for either the "model" field or the "table" field`)
 	}
 
@@ -818,10 +810,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return err
 	}
 
-	if table != "" {
-		node.Refs = append(node.Refs, ResourceName{Name: table})
-	} else {
-		node.Refs = append(node.Refs, ResourceName{Name: model, Kind: ResourceKindModel})
+	if tmp.Model != "" {
+		// Not setting Kind because for backwards compatibility, it may actually be a source or an external table.
+		node.Refs = append(node.Refs, ResourceName{Name: tmp.Model})
 	}
 	if tmp.DefaultTheme != "" {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
@@ -837,8 +828,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Connector = node.Connector
 	spec.Database = tmp.Database
 	spec.DatabaseSchema = tmp.DatabaseSchema
-	spec.Table = table
-	spec.Model = model
+	spec.Table = tmp.Table
+	spec.Model = tmp.Model
 	spec.Title = tmp.Title
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension

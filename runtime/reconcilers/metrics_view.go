@@ -65,18 +65,16 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
-	var validateErr error
+	// If the spec references a model, try resolving it to a table before validating it.
+	// For backwards compatibility, the model may actually be a source or external table. 
+	// So if a model is not found, we optimistically use the model name as the table and proceed to validation
 	if mv.Spec.Model != "" {
 		res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Model, Kind: runtime.ResourceKindModel}, false)
-		if err != nil {
-			validateErr = fmt.Errorf("failed to get model %q: %w", mv.Spec.Model, err)
+		if err == nil && res.GetModel().State.ResultTable != "" {
+			mv.Spec.Table = res.GetModel().State.ResultTable
+			mv.Spec.Connector = res.GetModel().State.ResultConnector
 		} else {
-			if res.GetModel().State.ResultTable != "" {
-				mv.Spec.Table = res.GetModel().State.ResultTable
-				mv.Spec.Connector = res.GetModel().State.ResultConnector
-			} else {
-				mv.Spec.Table = mv.Spec.Model
-			}
+			mv.Spec.Table = mv.Spec.Model
 		}
 	}
 
@@ -87,10 +85,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// NOTE: Not checking refs for errors since they may still be valid even if they have errors. Instead, we just validate the metrics view against the table name.
 
 	// Validate the metrics view and update ValidSpec
-	var validateResult *runtime.ValidateMetricsViewResult
-	if validateErr == nil {
-		validateResult, validateErr = r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec)
-	}
+	validateResult, validateErr := r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}
