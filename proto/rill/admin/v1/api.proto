@@ -466,6 +466,18 @@ service AdminService {
     };
   }
 
+  rpc SudoDeleteOrganizationBillingError(SudoDeleteOrganizationBillingErrorRequest) returns (SudoDeleteOrganizationBillingErrorResponse) {
+    option (google.api.http) = {
+      delete: "/v1/superuser/organizations/{organization}/billing/errors/{type}",
+    };
+  }
+
+  rpc SudoDeleteOrganizationBillingWarning(SudoDeleteOrganizationBillingWarningRequest) returns (SudoDeleteOrganizationBillingWarningResponse) {
+    option (google.api.http) = {
+      delete: "/v1/superuser/organizations/{organization}/billing/warnings/{type}",
+    };
+  }
+
   // CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
   rpc CreateProjectWhitelistedDomain(CreateProjectWhitelistedDomainRequest) returns (CreateProjectWhitelistedDomainResponse) {
     option (google.api.http) = {
@@ -750,6 +762,14 @@ service AdminService {
       post: "/v1/project-access-request/{id}/deny",
       body: "*"
     };
+  }
+
+  rpc ListOrganizationBillingErrors(ListOrganizationBillingErrorsRequest) returns (ListOrganizationBillingErrorsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/errors"};
+  }
+
+  rpc ListOrganizationBillingWarnings(ListOrganizationBillingWarningsRequest) returns (ListOrganizationBillingWarningsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/warnings"};
   }
 }
 
@@ -1209,6 +1229,32 @@ message SudoIssueRuntimeManagerTokenRequest {
 
 message SudoIssueRuntimeManagerTokenResponse {
   string token = 1;
+}
+
+message SudoDeleteOrganizationBillingErrorRequest {
+  string organization = 1;
+  BillingErrorType type = 2;
+}
+
+message SudoDeleteOrganizationBillingErrorResponse {}
+
+enum BillingErrorType {
+  BILLING_ERROR_TYPE_UNSPECIFIED = 0;
+  BILLING_ERROR_TYPE_NO_PAYMENT_METHOD = 1;
+  BILLING_ERROR_TYPE_TRIAL_ENDED = 2;
+  BILLING_ERROR_TYPE_PAYMENT_FAILED = 3;
+}
+
+message SudoDeleteOrganizationBillingWarningRequest {
+  string organization = 1;
+  BillingWarningType type = 2;
+}
+
+message SudoDeleteOrganizationBillingWarningResponse {}
+
+enum BillingWarningType {
+  BILLING_WARNING_TYPE_UNSPECIFIED = 0;
+  BILLING_WARNING_TYPE_TRIAL_ENDING = 1;
 }
 
 message ListProjectMemberUsersRequest {
@@ -1940,6 +1986,22 @@ message DenyProjectAccessRequest {
 
 message DenyProjectAccessResponse {}
 
+message ListOrganizationBillingErrorsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListOrganizationBillingErrorsResponse {
+  repeated BillingError errors = 1;
+}
+
+message ListOrganizationBillingWarningsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListOrganizationBillingWarningsResponse {
+  repeated BillingWarning warnings = 1;
+}
+
 message User {
   string id = 1;
   string email = 2;
@@ -2207,4 +2269,20 @@ message MemberUsergroup {
   string role_name = 3;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
+}
+
+message BillingError {
+  string organization = 1;
+  BillingErrorType type = 2;
+  string message = 3;
+  google.protobuf.Timestamp event_time = 4;
+  google.protobuf.Timestamp created_on = 5;
+}
+
+message BillingWarning {
+  string organization = 1;
+  BillingWarningType type = 2;
+  string message = 3;
+  google.protobuf.Timestamp event_time = 4;
+  google.protobuf.Timestamp created_on = 5;
 }

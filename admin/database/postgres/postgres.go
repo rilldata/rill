@@ -1905,22 +1905,23 @@ func (c *connection) FindBillingErrors(ctx context.Context, orgID string) ([]*da
 	return res, nil
 }
 
-func (c *connection) FindBillingErrorsByType(ctx context.Context, orgID string, errorType database.BillingErrorType) ([]*database.BillingError, error) {
-	var res []*database.BillingError
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM billing_errors WHERE org_id = $1 AND type = $2`, orgID, errorType)
+func (c *connection) FindBillingErrorByType(ctx context.Context, orgID string, errorType database.BillingErrorType) (*database.BillingError, error) {
+	res := &database.BillingError{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM billing_errors WHERE org_id = $1 AND type = $2`, orgID, errorType).StructScan(res)
 	if err != nil {
-		return nil, parseErr("billing errors", err)
+		return nil, parseErr("billing error", err)
 	}
 	return res, nil
 }
 
-func (c *connection) InsertBillingError(ctx context.Context, opts *database.InsertBillingErrorOptions) (*database.BillingError, error) {
+func (c *connection) UpsertBillingError(ctx context.Context, opts *database.UpsertBillingErrorOptions) (*database.BillingError, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
 
 	res := &database.BillingError{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_errors (org_id, type, msg) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.Type, opts.Message).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_errors (org_id, type, msg, event_time) VALUES ($1, $2, $3, $4)
+		ON CONFLICT (org_id, type) DO UPDATE SET msg = $3, event_time = $4 RETURNING *`, opts.OrgID, opts.Type, opts.Message, opts.EventTime).StructScan(res)
 	if err != nil {
 		return nil, parseErr("billing error", err)
 	}
@@ -1929,6 +1930,11 @@ func (c *connection) InsertBillingError(ctx context.Context, opts *database.Inse
 
 func (c *connection) DeleteBillingError(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_errors WHERE id = $1", id)
+	return checkDeleteRow("billing error", res, err)
+}
+
+func (c *connection) DeleteBillingErrorByType(ctx context.Context, orgID string, errorType database.BillingErrorType) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_errors WHERE org_id = $1 AND type = $2", orgID, errorType)
 	return checkDeleteRow("billing error", res, err)
 }
 
@@ -1941,22 +1947,23 @@ func (c *connection) FindBillingWarnings(ctx context.Context, orgID string) ([]*
 	return res, nil
 }
 
-func (c *connection) FindBillingWarningsByType(ctx context.Context, orgID string, warningType database.BillingWarningType) ([]*database.BillingWarning, error) {
-	var res []*database.BillingWarning
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM billing_warnings WHERE org_id = $1 AND type = $2`, orgID, warningType)
+func (c *connection) FindBillingWarningByType(ctx context.Context, orgID string, warningType database.BillingWarningType) (*database.BillingWarning, error) {
+	res := &database.BillingWarning{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM billing_warnings WHERE org_id = $1 AND type = $2`, orgID, warningType).StructScan(res)
 	if err != nil {
-		return nil, parseErr("billing warnings", err)
+		return nil, parseErr("billing warning", err)
 	}
 	return res, nil
 }
 
-func (c *connection) InsertBillingWarning(ctx context.Context, opts *database.InsertBillingWarningOptions) (*database.BillingWarning, error) {
+func (c *connection) UpsertBillingWarning(ctx context.Context, opts *database.UpsertBillingWarningOptions) (*database.BillingWarning, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
 
 	res := &database.BillingWarning{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_warnings (org_id, type, msg) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.Type, opts.Message).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_warnings (org_id, type, msg, event_time) VALUES ($1, $2, $3, $4)
+		ON CONFLICT (org_id, type) DO UPDATE SET msg = $3, event_time = $4 RETURNING *`, opts.OrgID, opts.Type, opts.Message, opts.EventTime).StructScan(res)
 	if err != nil {
 		return nil, parseErr("billing warning", err)
 	}
@@ -1966,6 +1973,40 @@ func (c *connection) InsertBillingWarning(ctx context.Context, opts *database.In
 func (c *connection) DeleteBillingWarning(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_warnings WHERE id = $1", id)
 	return checkDeleteRow("billing warning", res, err)
+}
+
+func (c *connection) DeleteBillingWarningByType(ctx context.Context, orgID string, warningType database.BillingWarningType) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_warnings WHERE org_id = $1 AND type = $2", orgID, warningType)
+	return checkDeleteRow("billing warning", res, err)
+}
+
+func (c *connection) UpsertWebhookEventWatermark(ctx context.Context, opts *database.UpsertWebhookEventOptions) (*database.WebhookEventWatermark, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.WebhookEventWatermark{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO webhook_event_watermarks (org_id, type, last_occurrence)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (org_id, type) DO UPDATE SET last_occurrence = EXCLUDED.last_occurrence
+		RETURNING *
+	`, opts.OrgID, opts.Type, opts.LastOccurrence).StructScan(res)
+	if err != nil {
+		return nil, parseErr("webhook event watermark", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindWebhookEventWatermark(ctx context.Context, orgID string, eventType database.WebhookEventType) (*database.WebhookEventWatermark, error) {
+	res := &database.WebhookEventWatermark{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT * FROM webhook_event_watermarks WHERE org_id = $1 AND type = $2
+	`, orgID, eventType).StructScan(res)
+	if err != nil {
+		return nil, parseErr("webhook event watermark", err)
+	}
+	return res, nil
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

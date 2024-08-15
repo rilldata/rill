@@ -9,6 +9,58 @@ import { Expression } from "../../runtime/v1/expression_pb.js";
 import { ExportFormat } from "../../runtime/v1/export_format_pb.js";
 
 /**
+ * @generated from enum rill.admin.v1.BillingErrorType
+ */
+export enum BillingErrorType {
+  /**
+   * @generated from enum value: BILLING_ERROR_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: BILLING_ERROR_TYPE_NO_PAYMENT_METHOD = 1;
+   */
+  NO_PAYMENT_METHOD = 1,
+
+  /**
+   * @generated from enum value: BILLING_ERROR_TYPE_TRIAL_ENDED = 2;
+   */
+  TRIAL_ENDED = 2,
+
+  /**
+   * @generated from enum value: BILLING_ERROR_TYPE_PAYMENT_FAILED = 3;
+   */
+  PAYMENT_FAILED = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(BillingErrorType)
+proto3.util.setEnumType(BillingErrorType, "rill.admin.v1.BillingErrorType", [
+  { no: 0, name: "BILLING_ERROR_TYPE_UNSPECIFIED" },
+  { no: 1, name: "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD" },
+  { no: 2, name: "BILLING_ERROR_TYPE_TRIAL_ENDED" },
+  { no: 3, name: "BILLING_ERROR_TYPE_PAYMENT_FAILED" },
+]);
+
+/**
+ * @generated from enum rill.admin.v1.BillingWarningType
+ */
+export enum BillingWarningType {
+  /**
+   * @generated from enum value: BILLING_WARNING_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: BILLING_WARNING_TYPE_TRIAL_ENDING = 1;
+   */
+  TRIAL_ENDING = 1,
+}
+// Retrieve enum metadata with: proto3.getEnumType(BillingWarningType)
+proto3.util.setEnumType(BillingWarningType, "rill.admin.v1.BillingWarningType", [
+  { no: 0, name: "BILLING_WARNING_TYPE_UNSPECIFIED" },
+  { no: 1, name: "BILLING_WARNING_TYPE_TRIAL_ENDING" },
+]);
+
+/**
  * @generated from enum rill.admin.v1.GithubPermission
  */
 export enum GithubPermission {
@@ -3853,6 +3905,154 @@ export class SudoIssueRuntimeManagerTokenResponse extends Message<SudoIssueRunti
 
   static equals(a: SudoIssueRuntimeManagerTokenResponse | PlainMessage<SudoIssueRuntimeManagerTokenResponse> | undefined, b: SudoIssueRuntimeManagerTokenResponse | PlainMessage<SudoIssueRuntimeManagerTokenResponse> | undefined): boolean {
     return proto3.util.equals(SudoIssueRuntimeManagerTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoDeleteOrganizationBillingErrorRequest
+ */
+export class SudoDeleteOrganizationBillingErrorRequest extends Message<SudoDeleteOrganizationBillingErrorRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: rill.admin.v1.BillingErrorType type = 2;
+   */
+  type = BillingErrorType.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<SudoDeleteOrganizationBillingErrorRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoDeleteOrganizationBillingErrorRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(BillingErrorType) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoDeleteOrganizationBillingErrorRequest {
+    return new SudoDeleteOrganizationBillingErrorRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoDeleteOrganizationBillingErrorRequest {
+    return new SudoDeleteOrganizationBillingErrorRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoDeleteOrganizationBillingErrorRequest {
+    return new SudoDeleteOrganizationBillingErrorRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoDeleteOrganizationBillingErrorRequest | PlainMessage<SudoDeleteOrganizationBillingErrorRequest> | undefined, b: SudoDeleteOrganizationBillingErrorRequest | PlainMessage<SudoDeleteOrganizationBillingErrorRequest> | undefined): boolean {
+    return proto3.util.equals(SudoDeleteOrganizationBillingErrorRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoDeleteOrganizationBillingErrorResponse
+ */
+export class SudoDeleteOrganizationBillingErrorResponse extends Message<SudoDeleteOrganizationBillingErrorResponse> {
+  constructor(data?: PartialMessage<SudoDeleteOrganizationBillingErrorResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoDeleteOrganizationBillingErrorResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoDeleteOrganizationBillingErrorResponse {
+    return new SudoDeleteOrganizationBillingErrorResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoDeleteOrganizationBillingErrorResponse {
+    return new SudoDeleteOrganizationBillingErrorResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoDeleteOrganizationBillingErrorResponse {
+    return new SudoDeleteOrganizationBillingErrorResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoDeleteOrganizationBillingErrorResponse | PlainMessage<SudoDeleteOrganizationBillingErrorResponse> | undefined, b: SudoDeleteOrganizationBillingErrorResponse | PlainMessage<SudoDeleteOrganizationBillingErrorResponse> | undefined): boolean {
+    return proto3.util.equals(SudoDeleteOrganizationBillingErrorResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoDeleteOrganizationBillingWarningRequest
+ */
+export class SudoDeleteOrganizationBillingWarningRequest extends Message<SudoDeleteOrganizationBillingWarningRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: rill.admin.v1.BillingWarningType type = 2;
+   */
+  type = BillingWarningType.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<SudoDeleteOrganizationBillingWarningRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoDeleteOrganizationBillingWarningRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(BillingWarningType) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoDeleteOrganizationBillingWarningRequest {
+    return new SudoDeleteOrganizationBillingWarningRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoDeleteOrganizationBillingWarningRequest {
+    return new SudoDeleteOrganizationBillingWarningRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoDeleteOrganizationBillingWarningRequest {
+    return new SudoDeleteOrganizationBillingWarningRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoDeleteOrganizationBillingWarningRequest | PlainMessage<SudoDeleteOrganizationBillingWarningRequest> | undefined, b: SudoDeleteOrganizationBillingWarningRequest | PlainMessage<SudoDeleteOrganizationBillingWarningRequest> | undefined): boolean {
+    return proto3.util.equals(SudoDeleteOrganizationBillingWarningRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoDeleteOrganizationBillingWarningResponse
+ */
+export class SudoDeleteOrganizationBillingWarningResponse extends Message<SudoDeleteOrganizationBillingWarningResponse> {
+  constructor(data?: PartialMessage<SudoDeleteOrganizationBillingWarningResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoDeleteOrganizationBillingWarningResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoDeleteOrganizationBillingWarningResponse {
+    return new SudoDeleteOrganizationBillingWarningResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoDeleteOrganizationBillingWarningResponse {
+    return new SudoDeleteOrganizationBillingWarningResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoDeleteOrganizationBillingWarningResponse {
+    return new SudoDeleteOrganizationBillingWarningResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoDeleteOrganizationBillingWarningResponse | PlainMessage<SudoDeleteOrganizationBillingWarningResponse> | undefined, b: SudoDeleteOrganizationBillingWarningResponse | PlainMessage<SudoDeleteOrganizationBillingWarningResponse> | undefined): boolean {
+    return proto3.util.equals(SudoDeleteOrganizationBillingWarningResponse, a, b);
   }
 }
 
@@ -10321,6 +10521,154 @@ export class DenyProjectAccessResponse extends Message<DenyProjectAccessResponse
 }
 
 /**
+ * @generated from message rill.admin.v1.ListOrganizationBillingErrorsRequest
+ */
+export class ListOrganizationBillingErrorsRequest extends Message<ListOrganizationBillingErrorsRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  constructor(data?: PartialMessage<ListOrganizationBillingErrorsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListOrganizationBillingErrorsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationBillingErrorsRequest {
+    return new ListOrganizationBillingErrorsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationBillingErrorsRequest {
+    return new ListOrganizationBillingErrorsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationBillingErrorsRequest {
+    return new ListOrganizationBillingErrorsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListOrganizationBillingErrorsRequest | PlainMessage<ListOrganizationBillingErrorsRequest> | undefined, b: ListOrganizationBillingErrorsRequest | PlainMessage<ListOrganizationBillingErrorsRequest> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationBillingErrorsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListOrganizationBillingErrorsResponse
+ */
+export class ListOrganizationBillingErrorsResponse extends Message<ListOrganizationBillingErrorsResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.BillingError errors = 1;
+   */
+  errors: BillingError[] = [];
+
+  constructor(data?: PartialMessage<ListOrganizationBillingErrorsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListOrganizationBillingErrorsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "errors", kind: "message", T: BillingError, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationBillingErrorsResponse {
+    return new ListOrganizationBillingErrorsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationBillingErrorsResponse {
+    return new ListOrganizationBillingErrorsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationBillingErrorsResponse {
+    return new ListOrganizationBillingErrorsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListOrganizationBillingErrorsResponse | PlainMessage<ListOrganizationBillingErrorsResponse> | undefined, b: ListOrganizationBillingErrorsResponse | PlainMessage<ListOrganizationBillingErrorsResponse> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationBillingErrorsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListOrganizationBillingWarningsRequest
+ */
+export class ListOrganizationBillingWarningsRequest extends Message<ListOrganizationBillingWarningsRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  constructor(data?: PartialMessage<ListOrganizationBillingWarningsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListOrganizationBillingWarningsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationBillingWarningsRequest {
+    return new ListOrganizationBillingWarningsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationBillingWarningsRequest {
+    return new ListOrganizationBillingWarningsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationBillingWarningsRequest {
+    return new ListOrganizationBillingWarningsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListOrganizationBillingWarningsRequest | PlainMessage<ListOrganizationBillingWarningsRequest> | undefined, b: ListOrganizationBillingWarningsRequest | PlainMessage<ListOrganizationBillingWarningsRequest> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationBillingWarningsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListOrganizationBillingWarningsResponse
+ */
+export class ListOrganizationBillingWarningsResponse extends Message<ListOrganizationBillingWarningsResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.BillingWarning warnings = 1;
+   */
+  warnings: BillingWarning[] = [];
+
+  constructor(data?: PartialMessage<ListOrganizationBillingWarningsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListOrganizationBillingWarningsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "warnings", kind: "message", T: BillingWarning, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationBillingWarningsResponse {
+    return new ListOrganizationBillingWarningsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationBillingWarningsResponse {
+    return new ListOrganizationBillingWarningsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationBillingWarningsResponse {
+    return new ListOrganizationBillingWarningsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListOrganizationBillingWarningsResponse | PlainMessage<ListOrganizationBillingWarningsResponse> | undefined, b: ListOrganizationBillingWarningsResponse | PlainMessage<ListOrganizationBillingWarningsResponse> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationBillingWarningsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.User
  */
 export class User extends Message<User> {
@@ -12172,6 +12520,128 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
 
   static equals(a: MemberUsergroup | PlainMessage<MemberUsergroup> | undefined, b: MemberUsergroup | PlainMessage<MemberUsergroup> | undefined): boolean {
     return proto3.util.equals(MemberUsergroup, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingError
+ */
+export class BillingError extends Message<BillingError> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: rill.admin.v1.BillingErrorType type = 2;
+   */
+  type = BillingErrorType.UNSPECIFIED;
+
+  /**
+   * @generated from field: string message = 3;
+   */
+  message = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp event_time = 4;
+   */
+  eventTime?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 5;
+   */
+  createdOn?: Timestamp;
+
+  constructor(data?: PartialMessage<BillingError>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingError";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(BillingErrorType) },
+    { no: 3, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "event_time", kind: "message", T: Timestamp },
+    { no: 5, name: "created_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingError {
+    return new BillingError().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingError {
+    return new BillingError().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingError {
+    return new BillingError().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingError | PlainMessage<BillingError> | undefined, b: BillingError | PlainMessage<BillingError> | undefined): boolean {
+    return proto3.util.equals(BillingError, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingWarning
+ */
+export class BillingWarning extends Message<BillingWarning> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: rill.admin.v1.BillingWarningType type = 2;
+   */
+  type = BillingWarningType.UNSPECIFIED;
+
+  /**
+   * @generated from field: string message = 3;
+   */
+  message = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp event_time = 4;
+   */
+  eventTime?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 5;
+   */
+  createdOn?: Timestamp;
+
+  constructor(data?: PartialMessage<BillingWarning>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingWarning";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(BillingWarningType) },
+    { no: 3, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "event_time", kind: "message", T: Timestamp },
+    { no: 5, name: "created_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingWarning {
+    return new BillingWarning().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingWarning {
+    return new BillingWarning().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingWarning {
+    return new BillingWarning().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingWarning | PlainMessage<BillingWarning> | undefined, b: BillingWarning | PlainMessage<BillingWarning> | undefined): boolean {
+    return proto3.util.equals(BillingWarning, a, b);
   }
 }
 

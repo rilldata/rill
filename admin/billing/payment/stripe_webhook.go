@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
@@ -38,14 +39,13 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Handle the event based on its type
 	switch event.Type {
-	case "charge.succeeded":
+	case stripe.EventType(database.StripeWebhookEventTypeChargeSucceeded):
 		var charge stripe.Charge
 		if err := json.Unmarshal(event.Data.Raw, &charge); err != nil {
 			s.logger.Error(fmt.Sprintf("Error parsing charge data: %v", err))
 			http.Error(w, "Error parsing charge data", http.StatusBadRequest)
 			return
 		}
-		charge.Customer = &stripe.Customer{ID: "cus_QeIXiyS2fAGoDx"}
 		if charge.Customer == nil {
 			s.logger.Error(fmt.Sprintf("No customer info sent for charge %s", charge.ID))
 			http.Error(w, "Error parsing charge data", http.StatusBadRequest)
@@ -57,14 +57,13 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error handling charge.succeeded event", http.StatusInternalServerError)
 			return
 		}
-	case "charge.failed":
+	case stripe.EventType(database.StripeWebhookEventTypeChargeFailed):
 		var charge stripe.Charge
 		if err := json.Unmarshal(event.Data.Raw, &charge); err != nil {
 			s.logger.Error(fmt.Sprintf("Error parsing charge data: %v", err))
 			http.Error(w, "Error parsing charge data", http.StatusBadRequest)
 			return
 		}
-		charge.Customer = &stripe.Customer{ID: "cus_QeIXiyS2fAGoDx"}
 		if charge.Customer == nil {
 			s.logger.Error(fmt.Sprintf("No customer info sent for charge %s", charge.ID))
 			http.Error(w, "Error parsing charge data", http.StatusBadRequest)
@@ -76,6 +75,42 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error handling charge.failed event", http.StatusInternalServerError)
 			return
 		}
+	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodAttached):
+		var paymentMethod stripe.PaymentMethod
+		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
+			s.logger.Error(fmt.Sprintf("Error parsing payment method data: %v", err))
+			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
+			return
+		}
+		if paymentMethod.Customer == nil {
+			s.logger.Error(fmt.Sprintf("No customer info sent for payment method %s", paymentMethod.ID))
+			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
+			return
+		}
+		err = s.handlePaymentMethodAdded(r.Context(), &paymentMethod)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Error handling payment_method.attached event: %v", err))
+			http.Error(w, "Error handling payment_method.attached event", http.StatusInternalServerError)
+			return
+		}
+	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodDetached):
+		var paymentMethod stripe.PaymentMethod
+		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
+			s.logger.Error(fmt.Sprintf("Error parsing payment method data: %v", err))
+			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
+			return
+		}
+		if paymentMethod.Customer == nil {
+			s.logger.Error(fmt.Sprintf("No customer info sent for payment method %s", paymentMethod.ID))
+			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
+			return
+		}
+		err = s.handlePaymentMethodRemoved(r.Context(), &paymentMethod)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Error handling payment_method.detached event: %v", err))
+			http.Error(w, "Error handling payment_method.detached event", http.StatusInternalServerError)
+			return
+		}
 	default:
 		s.logger.Warn(fmt.Sprintf("Unhandled event type: %s\n", event.Type))
 	}
@@ -85,13 +120,12 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Stripe) handleChargeSucceeded(ctx context.Context, charge *stripe.Charge) error {
-	metadata := map[string]string{"charge_id": charge.ID}
-	if charge.Amount != 0 { // being defensive
-		metadata["amount"] = fmt.Sprintf("%s %d", charge.Currency, charge.Amount)
-	}
 	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.ChargeSuccessArgs{
+		ID:         charge.ID,
 		CustomerID: charge.Customer.ID,
-		Metadata:   metadata,
+		Amount:     charge.Amount,
+		Currency:   string(charge.Currency),
+		EventTime:  time.UnixMilli(charge.Created),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -101,22 +135,19 @@ func (s *Stripe) handleChargeSucceeded(ctx context.Context, charge *stripe.Charg
 		return fmt.Errorf("failed to add charge success: %w", err)
 	}
 	if res.UniqueSkippedAsDuplicate {
-		// TODO change to debug
-		s.logger.Info("Duplicate charge success event", zap.String("customer_id", charge.Customer.ID), zap.String("customer_name", charge.Customer.Name), zap.String("customer_email", charge.Customer.Email))
+		s.logger.Debug("Duplicate charge success event", zap.String("customer_id", charge.Customer.ID), zap.String("customer_name", charge.Customer.Name), zap.String("customer_email", charge.Customer.Email))
 		return nil
 	}
 	return nil
 }
 
 func (s *Stripe) handleChargeFailed(ctx context.Context, charge *stripe.Charge) error {
-	metadata := map[string]string{"charge_id": charge.ID}
-	if charge.Amount != 0 { // being defensive
-		metadata["amount"] = fmt.Sprintf("%s %d", charge.Currency, charge.Amount)
-	}
-	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.AddBillingErrorArgs{
+	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.ChargeFailedArgs{
+		ID:         charge.ID,
 		CustomerID: charge.Customer.ID,
-		ErrorType:  database.BillingErrorTypePaymentFailed,
-		Metadata:   metadata,
+		Currency:   string(charge.Currency),
+		Amount:     charge.Amount,
+		EventTime:  time.UnixMilli(charge.Created),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -126,8 +157,49 @@ func (s *Stripe) handleChargeFailed(ctx context.Context, charge *stripe.Charge) 
 		return fmt.Errorf("failed to add billing error: %w", err)
 	}
 	if res.UniqueSkippedAsDuplicate {
-		// TODO change to debug
-		s.logger.Info("Duplicate billing error event", zap.String("customer_id", charge.Customer.ID), zap.String("customer_name", charge.Customer.Name), zap.String("customer_email", charge.Customer.Email))
+		s.logger.Debug("Duplicate billing error event", zap.String("customer_id", charge.Customer.ID), zap.String("customer_name", charge.Customer.Name), zap.String("customer_email", charge.Customer.Email))
+		return nil
+	}
+	return nil
+}
+
+func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.PaymentMethod) error {
+	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAdded{
+		ID:          method.ID,
+		CustomerID:  method.Customer.ID,
+		PaymentType: string(method.Type),
+		EventTime:   time.UnixMilli(method.Created),
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add payment method added: %w", err)
+	}
+	if res.UniqueSkippedAsDuplicate {
+		s.logger.Debug("Duplicate payment method added event", zap.String("customer_id", method.Customer.ID), zap.String("customer_name", method.Customer.Name), zap.String("customer_email", method.Customer.Email))
+		return nil
+	}
+	return nil
+}
+
+func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, method *stripe.PaymentMethod) error {
+	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAdded{
+		ID:          method.ID,
+		CustomerID:  method.Customer.ID,
+		PaymentType: string(method.Type),
+		EventTime:   time.UnixMilli(method.Created),
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add payment method added: %w", err)
+	}
+	if res.UniqueSkippedAsDuplicate {
+		s.logger.Debug("Duplicate payment method added event", zap.String("customer_id", method.Customer.ID), zap.String("customer_name", method.Customer.Name), zap.String("customer_email", method.Customer.Email))
 		return nil
 	}
 	return nil

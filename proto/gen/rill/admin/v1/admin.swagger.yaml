@@ -376,6 +376,44 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/billing/errors:
+    get:
+      operationId: AdminService_ListOrganizationBillingErrors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationBillingErrorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/billing/warnings:
+    get:
+      operationId: AdminService_ListOrganizationBillingWarnings
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationBillingWarningsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -2862,6 +2900,60 @@ paths:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
       tags:
         - AdminService
+  /v1/superuser/organizations/{organization}/billing/errors/{type}:
+    delete:
+      operationId: AdminService_SudoDeleteOrganizationBillingError
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoDeleteOrganizationBillingErrorResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: path
+          required: true
+          type: string
+          enum:
+            - BILLING_ERROR_TYPE_UNSPECIFIED
+            - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
+            - BILLING_ERROR_TYPE_TRIAL_ENDED
+            - BILLING_ERROR_TYPE_PAYMENT_FAILED
+      tags:
+        - AdminService
+  /v1/superuser/organizations/{organization}/billing/warnings/{type}:
+    delete:
+      operationId: AdminService_SudoDeleteOrganizationBillingWarning
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoDeleteOrganizationBillingWarningResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: path
+          required: true
+          type: string
+          enum:
+            - BILLING_WARNING_TYPE_UNSPECIFIED
+            - BILLING_WARNING_TYPE_TRIAL_ENDING
+      tags:
+        - AdminService
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -3352,6 +3444,29 @@ definitions:
         title: base64 state url of the dashboard when it was created
   v1ApproveProjectAccessResponse:
     type: object
+  v1BillingError:
+    type: object
+    properties:
+      organization:
+        type: string
+      type:
+        $ref: '#/definitions/v1BillingErrorType'
+      message:
+        type: string
+      eventTime:
+        type: string
+        format: date-time
+      createdOn:
+        type: string
+        format: date-time
+  v1BillingErrorType:
+    type: string
+    enum:
+      - BILLING_ERROR_TYPE_UNSPECIFIED
+      - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
+      - BILLING_ERROR_TYPE_TRIAL_ENDED
+      - BILLING_ERROR_TYPE_PAYMENT_FAILED
+    default: BILLING_ERROR_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
     properties:
@@ -3371,6 +3486,27 @@ definitions:
       quotas:
         $ref: '#/definitions/v1Quotas'
         title: TODO expose pricing information
+  v1BillingWarning:
+    type: object
+    properties:
+      organization:
+        type: string
+      type:
+        $ref: '#/definitions/v1BillingWarningType'
+      message:
+        type: string
+      eventTime:
+        type: string
+        format: date-time
+      createdOn:
+        type: string
+        format: date-time
+  v1BillingWarningType:
+    type: string
+    enum:
+      - BILLING_WARNING_TYPE_UNSPECIFIED
+      - BILLING_WARNING_TYPE_TRIAL_ENDING
+    default: BILLING_WARNING_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object
     properties:
@@ -3846,6 +3982,22 @@ definitions:
           $ref: '#/definitions/v1MagicAuthToken'
       nextPageToken:
         type: string
+  v1ListOrganizationBillingErrorsResponse:
+    type: object
+    properties:
+      errors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1BillingError'
+  v1ListOrganizationBillingWarningsResponse:
+    type: object
+    properties:
+      warnings:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1BillingWarning'
   v1ListOrganizationInvitesResponse:
     type: object
     properties:
@@ -4445,6 +4597,10 @@ definitions:
       trialEndDate:
         type: string
         format: date-time
+  v1SudoDeleteOrganizationBillingErrorResponse:
+    type: object
+  v1SudoDeleteOrganizationBillingWarningResponse:
+    type: object
   v1SudoGetResourceResponse:
     type: object
     properties:

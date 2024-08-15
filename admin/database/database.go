@@ -259,14 +259,19 @@ type DB interface {
 	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
 
 	FindBillingErrors(ctx context.Context, orgID string) ([]*BillingError, error)
-	FindBillingErrorsByType(ctx context.Context, orgID string, errorType BillingErrorType) ([]*BillingError, error)
-	InsertBillingError(ctx context.Context, opts *InsertBillingErrorOptions) (*BillingError, error)
+	FindBillingErrorByType(ctx context.Context, orgID string, errorType BillingErrorType) (*BillingError, error)
+	UpsertBillingError(ctx context.Context, opts *UpsertBillingErrorOptions) (*BillingError, error)
 	DeleteBillingError(ctx context.Context, id string) error
+	DeleteBillingErrorByType(ctx context.Context, orgID string, errorType BillingErrorType) error
 
 	FindBillingWarnings(ctx context.Context, orgID string) ([]*BillingWarning, error)
-	FindBillingWarningsByType(ctx context.Context, orgID string, warningType BillingWarningType) ([]*BillingWarning, error)
-	InsertBillingWarning(ctx context.Context, opts *InsertBillingWarningOptions) (*BillingWarning, error)
+	FindBillingWarningByType(ctx context.Context, orgID string, warningType BillingWarningType) (*BillingWarning, error)
+	UpsertBillingWarning(ctx context.Context, opts *UpsertBillingWarningOptions) (*BillingWarning, error)
 	DeleteBillingWarning(ctx context.Context, id string) error
+	DeleteBillingWarningByType(ctx context.Context, orgID string, warningType BillingWarningType) error
+
+	UpsertWebhookEventWatermark(ctx context.Context, opts *UpsertWebhookEventOptions) (*WebhookEventWatermark, error)
+	FindWebhookEventWatermark(ctx context.Context, orgID string, eventType WebhookEventType) (*WebhookEventWatermark, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -930,9 +935,9 @@ type BillingErrorType int
 
 const (
 	BillingErrorTypeUnspecified BillingErrorType = iota
+	BillingErrorTypeNoPaymentMethod
+	BillingErrorTypeTrialEnded
 	BillingErrorTypePaymentFailed
-	BillingErrorTypeNoPaymentMethod // No payment method on file, should be used only after trial end
-	BillingErrorTypeTrailEnded
 )
 
 type BillingError struct {
@@ -940,20 +945,21 @@ type BillingError struct {
 	OrgID     string           `db:"org_id"`
 	Type      BillingErrorType `db:"type"`
 	Message   string           `db:"msg"`
+	EventTime time.Time        `db:"event_time"`
 	CreatedOn time.Time        `db:"created_on"`
 }
 
-type InsertBillingErrorOptions struct {
-	OrgID   string           `validate:"required"`
-	Type    BillingErrorType `validate:"required"`
-	Message string           `validate:"required"`
+type UpsertBillingErrorOptions struct {
+	OrgID     string           `validate:"required"`
+	Type      BillingErrorType `validate:"required"`
+	Message   string           `validate:"required"`
+	EventTime time.Time        `validate:"required"`
 }
 
 type BillingWarningType int
 
 const (
 	BillingWarningTypeUnspecified BillingWarningType = iota
-	BillingWarningTypeCardExpiring
 	BillingWarningTypeTrialEnding
 )
 
@@ -962,11 +968,36 @@ type BillingWarning struct {
 	OrgID     string             `db:"org_id"`
 	Type      BillingWarningType `db:"type"`
 	Message   string             `db:"msg"`
+	EventTime time.Time          `db:"event_time"`
 	CreatedOn time.Time          `db:"created_on"`
 }
 
-type InsertBillingWarningOptions struct {
-	OrgID   string             `validate:"required"`
-	Type    BillingWarningType `validate:"required"`
-	Message string             `validate:"required"`
+type UpsertBillingWarningOptions struct {
+	OrgID     string             `validate:"required"`
+	Type      BillingWarningType `validate:"required"`
+	Message   string             `validate:"required"`
+	EventTime time.Time          `validate:"required"`
 }
+
+type WebhookEventWatermark struct {
+	ID             string
+	OrgID          string           `db:"org_id"`
+	Type           WebhookEventType `db:"type"`
+	LastOccurrence time.Time        `db:"last_occurrence"`
+	CreatedOn      time.Time        `db:"created_on"`
+}
+
+type UpsertWebhookEventOptions struct {
+	OrgID          string           `validate:"required"`
+	Type           WebhookEventType `validate:"required"`
+	LastOccurrence time.Time        `validate:"required"`
+}
+
+type WebhookEventType string
+
+const (
+	StripeWebhookEventTypeChargeSucceeded       WebhookEventType = "charge.succeeded"
+	StripeWebhookEventTypeChargeFailed          WebhookEventType = "charge.failed"
+	StripeWebhookEventTypePaymentMethodAttached WebhookEventType = "payment_method.attached"
+	StripeWebhookEventTypePaymentMethodDetached WebhookEventType = "payment_method.detached"
+)

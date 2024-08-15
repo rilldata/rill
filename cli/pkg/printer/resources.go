@@ -503,3 +503,71 @@ type modelSplit struct {
 	Elapsed    string `header:"elapsed" json:"elapsed"`
 	Error      string `header:"error" json:"error"`
 }
+
+func (p *Printer) PrintBillingErrors(errs []*adminv1.BillingError) {
+	if len(errs) == 0 {
+		return
+	}
+
+	p.PrintData(toBillingErrorsTable(errs))
+}
+
+func toBillingErrorsTable(errs []*adminv1.BillingError) []*billingError {
+	res := make([]*billingError, 0, len(errs))
+	for _, e := range errs {
+		res = append(res, toBillingErrorRow(e))
+	}
+	return res
+}
+
+func toBillingErrorRow(e *adminv1.BillingError) *billingError {
+	return &billingError{
+		Organization: e.Organization,
+		Type:         e.Type.String(),
+		Message:      e.Message,
+		EventTime:    e.EventTime.AsTime().Local().Format(time.DateTime),
+		CreatedAt:    e.CreatedOn.AsTime().Local().Format(time.DateTime),
+	}
+}
+
+type billingError struct {
+	Organization string `header:"organization" json:"organization"`
+	Type         string `header:"type" json:"type"`
+	Message      string `header:"message" json:"message"`
+	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
+	CreatedAt    string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
+}
+
+func (p *Printer) PrintBillingWarnings(warns []*adminv1.BillingWarning) {
+	if len(warns) == 0 {
+		return
+	}
+
+	p.PrintData(toBillingWarningsTable(warns))
+}
+
+func toBillingWarningsTable(warns []*adminv1.BillingWarning) []*billingWarning {
+	res := make([]*billingWarning, 0, len(warns))
+	for _, w := range warns {
+		res = append(res, toBillingWarningRow(w))
+	}
+	return res
+}
+
+func toBillingWarningRow(w *adminv1.BillingWarning) *billingWarning {
+	return &billingWarning{
+		Organization: w.Organization,
+		Type:         w.Type.String(),
+		Message:      w.Message,
+		EventTime:    w.EventTime.AsTime().Local().Format(time.DateTime),
+		CreatedAt:    w.CreatedOn.AsTime().Local().Format(time.DateTime),
+	}
+}
+
+type billingWarning struct {
+	Organization string `header:"organization" json:"organization"`
+	Type         string `header:"type" json:"type"`
+	Message      string `header:"message" json:"message"`
+	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
+	CreatedAt    string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
+}

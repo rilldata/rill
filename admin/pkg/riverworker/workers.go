@@ -3,7 +3,10 @@ package riverworker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
@@ -16,41 +19,6 @@ var Workers = river.NewWorkers()
 
 func AddWorker[T river.JobArgs](worker river.Worker[T]) {
 	river.AddWorker[T](Workers, worker)
-}
-
-func NewAddBillingErrorWorker(adm *admin.Service) *AddBillingErrorWorker {
-	return &AddBillingErrorWorker{admin: adm}
-}
-
-// AddBillingErrorWorker worker to add billing error of payment failed in the billing_error table for an org
-type AddBillingErrorWorker struct {
-	river.WorkerDefaults[riverutils.AddBillingErrorArgs]
-	admin *admin.Service
-}
-
-func (w *AddBillingErrorWorker) Work(ctx context.Context, job *river.Job[riverutils.AddBillingErrorArgs]) error {
-	org, err := w.admin.DB.FindOrganizationForPaymentCustomerID(ctx, job.Args.CustomerID)
-	if err != nil {
-		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
-	}
-	message := "Recent payment failed, please fix your payment method by visiting the billing portal."
-	// check if there is charge id and amount in the metadata and add it to the message
-	if chargeID, ok := job.Args.Metadata["charge_id"]; ok {
-		message += fmt.Sprintf(" Charge ID: %s", chargeID)
-	}
-	if amount, ok := job.Args.Metadata["amount"]; ok {
-		message += fmt.Sprintf(" Amount: %s", amount)
-	}
-
-	_, err = w.admin.DB.InsertBillingError(ctx, &database.InsertBillingErrorOptions{
-		OrgID:   org.ID,
-		Type:    job.Args.ErrorType,
-		Message: message,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to add billing error: %w", err)
-	}
-	return nil
 }
 
 func NewChargeSuccessWorker(adm *admin.Service) *ChargeSuccessWorker {
@@ -67,19 +35,173 @@ func (w *ChargeSuccessWorker) Work(ctx context.Context, job *river.Job[riverutil
 	if err != nil {
 		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
 	}
-	// check for billing errors and delete them
-	errs, err := w.admin.DB.FindBillingErrorsByType(ctx, org.ID, database.BillingErrorTypePaymentFailed)
+
+	// check for existing billing error and delete if it is older than the event time
+	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypePaymentFailed)
 	if err != nil {
-		return fmt.Errorf("failed to find billing errors: %w", err)
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
 	}
-	// for now delete all the payment failed errors, this should be ok as we don't expect payment failures across subsequent billing cycles, and we don't insert duplicates
-	// but if we want to be more specific then we can use charge amount to compare and delete
-	for _, e := range errs {
-		err = w.admin.DB.DeleteBillingError(ctx, e.ID)
+
+	// TODO may be do updates in a transaction
+	// delete the payment failed error that are older than the event time
+	if be != nil && job.Args.EventTime.After(be.EventTime) {
+		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete billing error: %w", err)
 		}
 	}
+
+	// update latest event time for the org
+	_, err = w.admin.DB.UpsertWebhookEventWatermark(ctx, &database.UpsertWebhookEventOptions{
+		OrgID:          org.ID,
+		Type:           database.StripeWebhookEventTypeChargeSucceeded,
+		LastOccurrence: job.Args.EventTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update webhook event watermark: %w", err)
+	}
+
+	return nil
+}
+
+func NewChargeFailedWorker(adm *admin.Service) *ChargeFailedWorker {
+	return &ChargeFailedWorker{admin: adm}
+}
+
+// ChargeFailedWorker worker to add billing error of payment failed in the billing_error table for an org
+type ChargeFailedWorker struct {
+	river.WorkerDefaults[riverutils.ChargeFailedArgs]
+	admin *admin.Service
+}
+
+func (w *ChargeFailedWorker) Work(ctx context.Context, job *river.Job[riverutils.ChargeFailedArgs]) error {
+	org, err := w.admin.DB.FindOrganizationForPaymentCustomerID(ctx, job.Args.CustomerID)
+	if err != nil {
+		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
+	}
+	// check if there is any charge success event after this charge failed event, if yes then ignore this charge failed event
+	event, err := w.admin.DB.FindWebhookEventWatermark(ctx, org.ID, database.StripeWebhookEventTypeChargeSucceeded)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find webhook event watermark: %w", err)
+		}
+	}
+	if event != nil && event.LastOccurrence.After(job.Args.EventTime) {
+		return nil
+	}
+
+	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+		OrgID:     org.ID,
+		Type:      database.BillingErrorTypePaymentFailed,
+		Message:   fmt.Sprintf("Recent payment of %s %d failed, please fix by visiting the billing portal. Charge id:%s", strings.ToUpper(job.Args.Currency), job.Args.Amount, job.Args.ID),
+		EventTime: job.Args.EventTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add billing error: %w", err)
+	}
+
+	_, err = w.admin.DB.UpsertWebhookEventWatermark(ctx, &database.UpsertWebhookEventOptions{
+		OrgID:          org.ID,
+		Type:           database.StripeWebhookEventTypeChargeFailed,
+		LastOccurrence: job.Args.EventTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update webhook event watermark: %w", err)
+	}
+
+	return nil
+}
+
+func NewPaymentMethodAddedWorker(adm *admin.Service) *PaymentMethodAddedWorker {
+	return &PaymentMethodAddedWorker{admin: adm}
+}
+
+type PaymentMethodAddedWorker struct {
+	river.WorkerDefaults[riverutils.PaymentMethodAdded]
+	admin *admin.Service
+}
+
+func (w *PaymentMethodAddedWorker) Work(ctx context.Context, job *river.Job[riverutils.PaymentMethodAdded]) error {
+	org, err := w.admin.DB.FindOrganizationForPaymentCustomerID(ctx, job.Args.CustomerID)
+	if err != nil {
+		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
+	}
+
+	// check for no payment method billing error and delete if it is older than the event time
+	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeNoPaymentMethod)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	// delete the no payment method error if older than the event time
+	if be != nil && job.Args.EventTime.After(be.EventTime) {
+		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	}
+
+	// update latest event time for the org
+	_, err = w.admin.DB.UpsertWebhookEventWatermark(ctx, &database.UpsertWebhookEventOptions{
+		OrgID:          org.ID,
+		Type:           database.StripeWebhookEventTypePaymentMethodAttached,
+		LastOccurrence: job.Args.EventTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update webhook event watermark: %w", err)
+	}
+
+	return nil
+}
+
+func NewPaymentMethodRemovedWorker(adm *admin.Service) *PaymentMethodRemovedWorker {
+	return &PaymentMethodRemovedWorker{admin: adm}
+}
+
+type PaymentMethodRemovedWorker struct {
+	river.WorkerDefaults[riverutils.PaymentMethodRemoved]
+	admin *admin.Service
+}
+
+func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[riverutils.PaymentMethodRemoved]) error {
+	org, err := w.admin.DB.FindOrganizationForPaymentCustomerID(ctx, job.Args.CustomerID)
+	if err != nil {
+		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
+	}
+
+	// check if there is any payment added event after this event, if yes then ignore this event
+	event, err := w.admin.DB.FindWebhookEventWatermark(ctx, org.ID, database.StripeWebhookEventTypePaymentMethodAttached)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find webhook event watermark: %w", err)
+		}
+	}
+	if event != nil && event.LastOccurrence.After(job.Args.EventTime) {
+		return nil
+	}
+
+	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+		OrgID:   org.ID,
+		Type:    database.BillingErrorTypeNoPaymentMethod,
+		Message: "No payment method attached, please add a payment method by visiting the billing portal",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add billing error: %w", err)
+	}
+
+	_, err = w.admin.DB.UpsertWebhookEventWatermark(ctx, &database.UpsertWebhookEventOptions{
+		OrgID:          org.ID,
+		Type:           database.StripeWebhookEventTypePaymentMethodDetached,
+		LastOccurrence: job.Args.EventTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update webhook event watermark: %w", err)
+	}
+
 	return nil
 }
 

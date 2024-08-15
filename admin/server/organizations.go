@@ -1153,6 +1153,184 @@ func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPu
 	}, nil
 }
 
+func (s *Server) ListOrganizationBillingErrors(ctx context.Context, req *adminv1.ListOrganizationBillingErrorsRequest) (*adminv1.ListOrganizationBillingErrorsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org billing errors")
+	}
+
+	errs, err := s.admin.DB.FindBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	var dtos []*adminv1.BillingError
+	for _, e := range errs {
+		dtos = append(dtos, &adminv1.BillingError{
+			Organization: org.Name,
+			Type:         billingErrorTypeToDTO(e.Type),
+			Message:      e.Message,
+			EventTime:    timestamppb.New(e.EventTime),
+			CreatedOn:    timestamppb.New(e.CreatedOn),
+		})
+	}
+
+	return &adminv1.ListOrganizationBillingErrorsResponse{
+		Errors: dtos,
+	}, nil
+}
+
+func (s *Server) ListOrganizationBillingWarnings(ctx context.Context, req *adminv1.ListOrganizationBillingWarningsRequest) (*adminv1.ListOrganizationBillingWarningsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org billing warnings")
+	}
+
+	warnings, err := s.admin.DB.FindBillingWarnings(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	var dtos []*adminv1.BillingWarning
+	for _, w := range warnings {
+		dtos = append(dtos, &adminv1.BillingWarning{
+			Organization: org.Name,
+			Type:         billingWarningTypeToDTO(w.Type),
+			Message:      w.Message,
+			EventTime:    timestamppb.New(w.EventTime),
+			CreatedOn:    timestamppb.New(w.CreatedOn),
+		})
+	}
+
+	return &adminv1.ListOrganizationBillingWarningsResponse{
+		Warnings: dtos,
+	}, nil
+}
+
+func (s *Server) SudoDeleteOrganizationBillingError(ctx context.Context, req *adminv1.SudoDeleteOrganizationBillingErrorRequest) (*adminv1.SudoDeleteOrganizationBillingErrorResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization), attribute.String("args.type", req.Type.String()))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can delete billing errors")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	t, err := dtoBillingErrorTypeToDB(req.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.admin.DB.DeleteBillingErrorByType(ctx, org.ID, t)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.SudoDeleteOrganizationBillingErrorResponse{}, nil
+}
+
+func (s *Server) SudoDeleteOrganizationBillingWarning(ctx context.Context, req *adminv1.SudoDeleteOrganizationBillingWarningRequest) (*adminv1.SudoDeleteOrganizationBillingWarningResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization), attribute.String("args.type", req.Type.String()))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can delete billing warnings")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	t, err := dtoBillingWarningTypeToDB(req.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.admin.DB.DeleteBillingWarningByType(ctx, org.ID, t)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.SudoDeleteOrganizationBillingWarningResponse{}, nil
+}
+
+func billingErrorTypeToDTO(t database.BillingErrorType) adminv1.BillingErrorType {
+	switch t {
+	case database.BillingErrorTypeUnspecified:
+		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_UNSPECIFIED
+	case database.BillingErrorTypeNoPaymentMethod:
+		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
+	case database.BillingErrorTypeTrialEnded:
+		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED
+	case database.BillingErrorTypePaymentFailed:
+		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_PAYMENT_FAILED
+	default:
+		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_UNSPECIFIED
+	}
+}
+
+func dtoBillingErrorTypeToDB(t adminv1.BillingErrorType) (database.BillingErrorType, error) {
+	switch t {
+	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_UNSPECIFIED:
+		return database.BillingErrorTypeUnspecified, nil
+	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_PAYMENT_METHOD:
+		return database.BillingErrorTypeNoPaymentMethod, nil
+	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED:
+		return database.BillingErrorTypeTrialEnded, nil
+	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_PAYMENT_FAILED:
+		return database.BillingErrorTypePaymentFailed, nil
+	default:
+		return database.BillingErrorTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
+	}
+}
+
+func billingWarningTypeToDTO(t database.BillingWarningType) adminv1.BillingWarningType {
+	switch t {
+	case database.BillingWarningTypeUnspecified:
+		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED
+	case database.BillingWarningTypeTrialEnding:
+		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_TRIAL_ENDING
+	default:
+		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED
+	}
+}
+
+func dtoBillingWarningTypeToDB(t adminv1.BillingWarningType) (database.BillingWarningType, error) {
+	switch t {
+	case adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED:
+		return database.BillingWarningTypeUnspecified, nil
+	case adminv1.BillingWarningType_BILLING_WARNING_TYPE_TRIAL_ENDING:
+		return database.BillingWarningTypeTrialEnding, nil
+	default:
+		return database.BillingWarningTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing warning type")
+	}
+}
+
 func organizationToDTO(o *database.Organization) *adminv1.Organization {
 	return &adminv1.Organization{
 		Id:          o.ID,

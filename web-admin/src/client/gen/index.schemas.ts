@@ -447,11 +447,6 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -487,6 +482,14 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
+export interface V1SudoDeleteOrganizationBillingWarningResponse {
+  [key: string]: any;
+}
+
+export interface V1SudoDeleteOrganizationBillingErrorResponse {
+  [key: string]: any;
+}
+
 export interface V1Subscription {
   id?: string;
   planId?: string;
@@ -497,6 +500,11 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -858,6 +866,14 @@ export interface V1ListOrganizationMemberUsergroupsResponse {
 export interface V1ListOrganizationInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
+}
+
+export interface V1ListOrganizationBillingWarningsResponse {
+  warnings?: V1BillingWarning[];
+}
+
+export interface V1ListOrganizationBillingErrorsResponse {
+  errors?: V1BillingError[];
 }
 
 export interface V1ListMagicAuthTokensResponse {
@@ -1224,6 +1240,23 @@ export interface V1Bookmark {
   updatedOn?: string;
 }
 
+export type V1BillingWarningType =
+  (typeof V1BillingWarningType)[keyof typeof V1BillingWarningType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingWarningType = {
+  BILLING_WARNING_TYPE_UNSPECIFIED: "BILLING_WARNING_TYPE_UNSPECIFIED",
+  BILLING_WARNING_TYPE_TRIAL_ENDING: "BILLING_WARNING_TYPE_TRIAL_ENDING",
+} as const;
+
+export interface V1BillingWarning {
+  organization?: string;
+  type?: V1BillingWarningType;
+  message?: string;
+  eventTime?: string;
+  createdOn?: string;
+}
+
 export interface V1BillingPlan {
   id?: string;
   name?: string;
@@ -1232,6 +1265,25 @@ export interface V1BillingPlan {
   trialPeriodDays?: number;
   default?: boolean;
   quotas?: V1Quotas;
+}
+
+export type V1BillingErrorType =
+  (typeof V1BillingErrorType)[keyof typeof V1BillingErrorType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingErrorType = {
+  BILLING_ERROR_TYPE_UNSPECIFIED: "BILLING_ERROR_TYPE_UNSPECIFIED",
+  BILLING_ERROR_TYPE_NO_PAYMENT_METHOD: "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD",
+  BILLING_ERROR_TYPE_TRIAL_ENDED: "BILLING_ERROR_TYPE_TRIAL_ENDED",
+  BILLING_ERROR_TYPE_PAYMENT_FAILED: "BILLING_ERROR_TYPE_PAYMENT_FAILED",
+} as const;
+
+export interface V1BillingError {
+  organization?: string;
+  type?: V1BillingErrorType;
+  message?: string;
+  eventTime?: string;
+  createdOn?: string;
 }
 
 export interface V1ApproveProjectAccessResponse {

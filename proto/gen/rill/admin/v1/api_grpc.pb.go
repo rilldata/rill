@@ -90,6 +90,8 @@ const (
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
 	AdminService_SudoUpdateAnnotations_FullMethodName                 = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_SudoIssueRuntimeManagerToken_FullMethodName          = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
+	AdminService_SudoDeleteOrganizationBillingError_FullMethodName    = "/rill.admin.v1.AdminService/SudoDeleteOrganizationBillingError"
+	AdminService_SudoDeleteOrganizationBillingWarning_FullMethodName  = "/rill.admin.v1.AdminService/SudoDeleteOrganizationBillingWarning"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
 	AdminService_ListProjectWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
@@ -134,6 +136,8 @@ const (
 	AdminService_GetProjectAccessRequest_FullMethodName               = "/rill.admin.v1.AdminService/GetProjectAccessRequest"
 	AdminService_ApproveProjectAccess_FullMethodName                  = "/rill.admin.v1.AdminService/ApproveProjectAccess"
 	AdminService_DenyProjectAccess_FullMethodName                     = "/rill.admin.v1.AdminService/DenyProjectAccess"
+	AdminService_ListOrganizationBillingErrors_FullMethodName         = "/rill.admin.v1.AdminService/ListOrganizationBillingErrors"
+	AdminService_ListOrganizationBillingWarnings_FullMethodName       = "/rill.admin.v1.AdminService/ListOrganizationBillingWarnings"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -284,6 +288,8 @@ type AdminServiceClient interface {
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
 	SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error)
+	SudoDeleteOrganizationBillingError(ctx context.Context, in *SudoDeleteOrganizationBillingErrorRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingErrorResponse, error)
+	SudoDeleteOrganizationBillingWarning(ctx context.Context, in *SudoDeleteOrganizationBillingWarningRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingWarningResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error)
 	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -368,6 +374,8 @@ type AdminServiceClient interface {
 	GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error)
 	DenyProjectAccess(ctx context.Context, in *DenyProjectAccessRequest, opts ...grpc.CallOption) (*DenyProjectAccessResponse, error)
+	ListOrganizationBillingErrors(ctx context.Context, in *ListOrganizationBillingErrorsRequest, opts ...grpc.CallOption) (*ListOrganizationBillingErrorsResponse, error)
+	ListOrganizationBillingWarnings(ctx context.Context, in *ListOrganizationBillingWarningsRequest, opts ...grpc.CallOption) (*ListOrganizationBillingWarningsResponse, error)
 }
 
 type adminServiceClient struct {
@@ -1088,6 +1096,26 @@ func (c *adminServiceClient) SudoIssueRuntimeManagerToken(ctx context.Context, i
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoDeleteOrganizationBillingError(ctx context.Context, in *SudoDeleteOrganizationBillingErrorRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingErrorResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoDeleteOrganizationBillingErrorResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoDeleteOrganizationBillingError_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoDeleteOrganizationBillingWarning(ctx context.Context, in *SudoDeleteOrganizationBillingWarningRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingWarningResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoDeleteOrganizationBillingWarningResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoDeleteOrganizationBillingWarning_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateProjectWhitelistedDomainResponse)
@@ -1528,6 +1556,26 @@ func (c *adminServiceClient) DenyProjectAccess(ctx context.Context, in *DenyProj
 	return out, nil
 }
 
+func (c *adminServiceClient) ListOrganizationBillingErrors(ctx context.Context, in *ListOrganizationBillingErrorsRequest, opts ...grpc.CallOption) (*ListOrganizationBillingErrorsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListOrganizationBillingErrorsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListOrganizationBillingErrors_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListOrganizationBillingWarnings(ctx context.Context, in *ListOrganizationBillingWarningsRequest, opts ...grpc.CallOption) (*ListOrganizationBillingWarningsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListOrganizationBillingWarningsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListOrganizationBillingWarnings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -1676,6 +1724,8 @@ type AdminServiceServer interface {
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
 	SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error)
+	SudoDeleteOrganizationBillingError(context.Context, *SudoDeleteOrganizationBillingErrorRequest) (*SudoDeleteOrganizationBillingErrorResponse, error)
+	SudoDeleteOrganizationBillingWarning(context.Context, *SudoDeleteOrganizationBillingWarningRequest) (*SudoDeleteOrganizationBillingWarningResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error)
 	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -1760,6 +1810,8 @@ type AdminServiceServer interface {
 	GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error)
 	DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error)
+	ListOrganizationBillingErrors(context.Context, *ListOrganizationBillingErrorsRequest) (*ListOrganizationBillingErrorsResponse, error)
+	ListOrganizationBillingWarnings(context.Context, *ListOrganizationBillingWarningsRequest) (*ListOrganizationBillingWarningsResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1983,6 +2035,12 @@ func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *S
 func (UnimplementedAdminServiceServer) SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoIssueRuntimeManagerToken not implemented")
 }
+func (UnimplementedAdminServiceServer) SudoDeleteOrganizationBillingError(context.Context, *SudoDeleteOrganizationBillingErrorRequest) (*SudoDeleteOrganizationBillingErrorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoDeleteOrganizationBillingError not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoDeleteOrganizationBillingWarning(context.Context, *SudoDeleteOrganizationBillingWarningRequest) (*SudoDeleteOrganizationBillingWarningResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoDeleteOrganizationBillingWarning not implemented")
+}
 func (UnimplementedAdminServiceServer) CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProjectWhitelistedDomain not implemented")
 }
@@ -2114,6 +2172,12 @@ func (UnimplementedAdminServiceServer) ApproveProjectAccess(context.Context, *Ap
 }
 func (UnimplementedAdminServiceServer) DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DenyProjectAccess not implemented")
+}
+func (UnimplementedAdminServiceServer) ListOrganizationBillingErrors(context.Context, *ListOrganizationBillingErrorsRequest) (*ListOrganizationBillingErrorsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationBillingErrors not implemented")
+}
+func (UnimplementedAdminServiceServer) ListOrganizationBillingWarnings(context.Context, *ListOrganizationBillingWarningsRequest) (*ListOrganizationBillingWarningsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationBillingWarnings not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -3414,6 +3478,42 @@ func _AdminService_SudoIssueRuntimeManagerToken_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoDeleteOrganizationBillingError_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoDeleteOrganizationBillingErrorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingError(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoDeleteOrganizationBillingError_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingError(ctx, req.(*SudoDeleteOrganizationBillingErrorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoDeleteOrganizationBillingWarning_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoDeleteOrganizationBillingWarningRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingWarning(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoDeleteOrganizationBillingWarning_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingWarning(ctx, req.(*SudoDeleteOrganizationBillingWarningRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateProjectWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateProjectWhitelistedDomainRequest)
 	if err := dec(in); err != nil {
@@ -4206,6 +4306,42 @@ func _AdminService_DenyProjectAccess_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListOrganizationBillingErrors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationBillingErrorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListOrganizationBillingErrors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListOrganizationBillingErrors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListOrganizationBillingErrors(ctx, req.(*ListOrganizationBillingErrorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListOrganizationBillingWarnings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationBillingWarningsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListOrganizationBillingWarnings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListOrganizationBillingWarnings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListOrganizationBillingWarnings(ctx, req.(*ListOrganizationBillingWarningsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -4498,6 +4634,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SudoIssueRuntimeManagerToken_Handler,
 		},
 		{
+			MethodName: "SudoDeleteOrganizationBillingError",
+			Handler:    _AdminService_SudoDeleteOrganizationBillingError_Handler,
+		},
+		{
+			MethodName: "SudoDeleteOrganizationBillingWarning",
+			Handler:    _AdminService_SudoDeleteOrganizationBillingWarning_Handler,
+		},
+		{
 			MethodName: "CreateProjectWhitelistedDomain",
 			Handler:    _AdminService_CreateProjectWhitelistedDomain_Handler,
 		},
@@ -4672,6 +4816,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DenyProjectAccess",
 			Handler:    _AdminService_DenyProjectAccess_Handler,
+		},
+		{
+			MethodName: "ListOrganizationBillingErrors",
+			Handler:    _AdminService_ListOrganizationBillingErrors_Handler,
+		},
+		{
+			MethodName: "ListOrganizationBillingWarnings",
+			Handler:    _AdminService_ListOrganizationBillingWarnings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

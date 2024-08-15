@@ -294,8 +294,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer adm.Close()
 
 			// add the river workers
-			riverworker.AddWorker[riverutils.AddBillingErrorArgs](riverworker.NewAddBillingErrorWorker(adm))
+			riverworker.AddWorker[riverutils.ChargeFailedArgs](riverworker.NewChargeFailedWorker(adm))
 			riverworker.AddWorker[riverutils.ChargeSuccessArgs](riverworker.NewChargeSuccessWorker(adm))
+			riverworker.AddWorker[riverutils.PaymentMethodAdded](riverworker.NewPaymentMethodAddedWorker(adm))
+			riverworker.AddWorker[riverutils.PaymentMethodRemoved](riverworker.NewPaymentMethodRemovedWorker(adm))
 
 			// this driver will be shared by both admin and worker river clients, riverDBPool is used for migrations
 			riverDriver, riverDBPool, ok := adm.DB.AsRiverDriver()

@@ -39,6 +39,8 @@ import type {
   V1GetBillingSubscriptionResponse,
   V1UpdateBillingSubscriptionResponse,
   AdminServiceUpdateBillingSubscriptionBody,
+  V1ListOrganizationBillingErrorsResponse,
+  V1ListOrganizationBillingWarningsResponse,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMemberUsersResponse,
@@ -160,6 +162,8 @@ import type {
   V1SetSuperuserRequest,
   V1SudoUpdateOrganizationBillingCustomerResponse,
   V1SudoUpdateOrganizationBillingCustomerRequest,
+  V1SudoDeleteOrganizationBillingErrorResponse,
+  V1SudoDeleteOrganizationBillingWarningResponse,
   V1SudoUpdateAnnotationsResponse,
   V1SudoUpdateAnnotationsRequest,
   V1SearchProjectNamesResponse,
@@ -1063,6 +1067,129 @@ export const createAdminServiceUpdateBillingSubscription = <
     TContext
   >(mutationFn, mutationOptions);
 };
+export const adminServiceListOrganizationBillingErrors = (
+  organization: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListOrganizationBillingErrorsResponse>({
+    url: `/v1/organizations/${organization}/billing/errors`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListOrganizationBillingErrorsQueryKey = (
+  organization: string,
+) => [`/v1/organizations/${organization}/billing/errors`];
+
+export type AdminServiceListOrganizationBillingErrorsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListOrganizationBillingErrors>>
+>;
+export type AdminServiceListOrganizationBillingErrorsQueryError = RpcStatus;
+
+export const createAdminServiceListOrganizationBillingErrors = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizationBillingErrors>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationBillingErrors>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListOrganizationBillingErrorsQueryKey(organization);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListOrganizationBillingErrors>>
+  > = ({ signal }) =>
+    adminServiceListOrganizationBillingErrors(organization, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListOrganizationBillingErrors>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organization,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+export const adminServiceListOrganizationBillingWarnings = (
+  organization: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListOrganizationBillingWarningsResponse>({
+    url: `/v1/organizations/${organization}/billing/warnings`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListOrganizationBillingWarningsQueryKey = (
+  organization: string,
+) => [`/v1/organizations/${organization}/billing/warnings`];
+
+export type AdminServiceListOrganizationBillingWarningsQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceListOrganizationBillingWarnings>>
+  >;
+export type AdminServiceListOrganizationBillingWarningsQueryError = RpcStatus;
+
+export const createAdminServiceListOrganizationBillingWarnings = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceListOrganizationBillingWarnings>
+  >,
+  TError = RpcStatus,
+>(
+  organization: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationBillingWarnings>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListOrganizationBillingWarningsQueryKey(organization);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListOrganizationBillingWarnings>>
+  > = ({ signal }) =>
+    adminServiceListOrganizationBillingWarnings(organization, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListOrganizationBillingWarnings>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organization,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListOrganizationInvites lists all the org invites
  */
@@ -6192,6 +6319,148 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
     >,
     TError,
     { data: V1SudoUpdateOrganizationBillingCustomerRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const adminServiceSudoDeleteOrganizationBillingError = (
+  organization: string,
+  type:
+    | "BILLING_ERROR_TYPE_UNSPECIFIED"
+    | "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD"
+    | "BILLING_ERROR_TYPE_TRIAL_ENDED"
+    | "BILLING_ERROR_TYPE_PAYMENT_FAILED",
+) => {
+  return httpClient<V1SudoDeleteOrganizationBillingErrorResponse>({
+    url: `/v1/superuser/organizations/${organization}/billing/errors/${type}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceSudoDeleteOrganizationBillingErrorMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingError>>
+  >;
+
+export type AdminServiceSudoDeleteOrganizationBillingErrorMutationError =
+  RpcStatus;
+
+export const createAdminServiceSudoDeleteOrganizationBillingError = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingError>>,
+    TError,
+    {
+      organization: string;
+      type:
+        | "BILLING_ERROR_TYPE_UNSPECIFIED"
+        | "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD"
+        | "BILLING_ERROR_TYPE_TRIAL_ENDED"
+        | "BILLING_ERROR_TYPE_PAYMENT_FAILED";
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingError>>,
+    {
+      organization: string;
+      type:
+        | "BILLING_ERROR_TYPE_UNSPECIFIED"
+        | "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD"
+        | "BILLING_ERROR_TYPE_TRIAL_ENDED"
+        | "BILLING_ERROR_TYPE_PAYMENT_FAILED";
+    }
+  > = (props) => {
+    const { organization, type } = props ?? {};
+
+    return adminServiceSudoDeleteOrganizationBillingError(organization, type);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingError>>,
+    TError,
+    {
+      organization: string;
+      type:
+        | "BILLING_ERROR_TYPE_UNSPECIFIED"
+        | "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD"
+        | "BILLING_ERROR_TYPE_TRIAL_ENDED"
+        | "BILLING_ERROR_TYPE_PAYMENT_FAILED";
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const adminServiceSudoDeleteOrganizationBillingWarning = (
+  organization: string,
+  type:
+    | "BILLING_WARNING_TYPE_UNSPECIFIED"
+    | "BILLING_WARNING_TYPE_TRIAL_ENDING",
+) => {
+  return httpClient<V1SudoDeleteOrganizationBillingWarningResponse>({
+    url: `/v1/superuser/organizations/${organization}/billing/warnings/${type}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceSudoDeleteOrganizationBillingWarningMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoDeleteOrganizationBillingWarning>>
+  >;
+
+export type AdminServiceSudoDeleteOrganizationBillingWarningMutationError =
+  RpcStatus;
+
+export const createAdminServiceSudoDeleteOrganizationBillingWarning = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceSudoDeleteOrganizationBillingWarning>
+    >,
+    TError,
+    {
+      organization: string;
+      type:
+        | "BILLING_WARNING_TYPE_UNSPECIFIED"
+        | "BILLING_WARNING_TYPE_TRIAL_ENDING";
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<
+      ReturnType<typeof adminServiceSudoDeleteOrganizationBillingWarning>
+    >,
+    {
+      organization: string;
+      type:
+        | "BILLING_WARNING_TYPE_UNSPECIFIED"
+        | "BILLING_WARNING_TYPE_TRIAL_ENDING";
+    }
+  > = (props) => {
+    const { organization, type } = props ?? {};
+
+    return adminServiceSudoDeleteOrganizationBillingWarning(organization, type);
+  };
+
+  return createMutation<
+    Awaited<
+      ReturnType<typeof adminServiceSudoDeleteOrganizationBillingWarning>
+    >,
+    TError,
+    {
+      organization: string;
+      type:
+        | "BILLING_WARNING_TYPE_UNSPECIFIED"
+        | "BILLING_WARNING_TYPE_TRIAL_ENDING";
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
