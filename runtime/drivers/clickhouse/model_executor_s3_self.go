@@ -26,21 +26,6 @@ func (p *inputProps) Validate() error {
 	return nil
 }
 
-type outputProperties struct {
-	ModelOutputProperties `mapstructure:",squash"`
-}
-
-func (p *outputProperties) Validate() error {
-	// set output props with defaults
-	if p.Materialize == nil {
-		materialize := true
-		p.Materialize = &materialize
-	} else if !*p.Materialize {
-		return fmt.Errorf("s3 to clickhouse executor only supports materialized models. Set `materialize` to true")
-	}
-	return nil
-}
-
 type s3ToSelfExecutor struct {
 	s3 drivers.Handle
 	c  *connection
@@ -62,14 +47,6 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
-	}
-
-	outputProps := &outputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
-	}
-	if err := outputProps.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
 	var glob string
@@ -104,13 +81,16 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 	newOpts := &clone
 
 	// Ensure materialize is true because the selfToSelfExecutor is not able to infer it independently.
-	outputProps := &outputProperties{}
+	outputProps := &ModelOutputProperties{}
 	err = mapstructure.WeakDecode(opts.OutputProperties, &outputProps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	truth := true
-	outputProps = &truth
+
+	if outputProps.Materialize != nil && !*outputProps.Materialize {
+		return nil, fmt.Errorf("models must be materialized when fetching data from s3")
+	}
+	outputProps.Materialize = boolPtr(true)
 	err = mapstructure.WeakDecode(outputProps, &newOpts.OutputProperties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
