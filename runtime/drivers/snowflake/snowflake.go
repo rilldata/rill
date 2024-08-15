@@ -172,7 +172,6 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			return &selfToObjectStoreExecutor{
 				c:     c,
 				store: store,
-				opts:  opts,
 			}, true
 		}
 	}

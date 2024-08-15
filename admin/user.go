@@ -179,7 +179,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	return user, nil
 }
 
-func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string) (*database.Organization, error) {
+func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, orgName, description string) (*database.Organization, error) {
 	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
 		return nil, err
@@ -202,6 +202,9 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             quotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
+		BillingEmail:                        email,
+		BillingCustomerID:                   "", // Populated later
+		PaymentCustomerID:                   "", // Populated later
 	})
 	if err != nil {
 		return nil, err

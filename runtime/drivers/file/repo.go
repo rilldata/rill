@@ -39,7 +39,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 	}
 
 	fsRoot := os.DirFS(c.root)
-	glob = filepath.Clean(filepath.Join("./", glob))
+	glob = filepath.Clean(filepath.Join(".", glob))
 
 	var entries []drivers.DirEntry
 	err := doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
@@ -53,7 +53,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 		}
 
 		// Track file (p is already relative to the FS root)
-		p = filepath.Join("/", p)
+		p = filepath.Join(string(filepath.Separator), p)
 		// Do not send files for ignored paths
 		if drivers.IsIgnored(p, c.ignorePaths) {
 			return nil

@@ -1,40 +1,124 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { page } from "$app/stores";
+  import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@rilldata/web-common/components/alert-dialog";
+  import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import { createLocalServiceGetCurrentProject } from "@rilldata/web-common/runtime-client/local-service";
+  import { get } from "svelte/store";
   import { Button } from "../../../components/button";
-  import CliCommandDisplay from "../../../components/commands/CLICommandDisplay.svelte";
-  import Dialog from "../../../components/dialog/Dialog.svelte";
 
-  export let open: boolean;
+  $: currentProject = createLocalServiceGetCurrentProject({
+    query: {
+      refetchOnWindowFocus: true,
+    },
+  });
+  $: isDeployed = !!$currentProject.data?.project;
 
-  const dispatch = createEventDispatcher();
+  $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
-  function close() {
-    dispatch("close");
+  let pushThroughGitOpen = false;
+  async function onShowRedeploy() {
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
+
+    await waitUntil(() => !get(currentProject).isFetching);
+    if (get(currentProject).data?.project?.githubUrl) {
+      pushThroughGitOpen = true;
+      return;
+    }
+
+    window.open(deployPageUrl, "_target");
+  }
+
+  let deployConfirmOpen = false;
+  function onShowDeploy() {
+    deployConfirmOpen = true;
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
   }
 </script>
 
-<Dialog titleMarginBottomOverride="mb-4" on:close {open}>
-  <svelte:fragment slot="title">
-    Deploy your project to Rill Cloud
-  </svelte:fragment>
+{#if isDeployed}
+  <Tooltip distance={8}>
+    <Button
+      loading={$currentProject.isLoading}
+      on:click={onShowRedeploy}
+      type="primary"
+    >
+      Update
+    </Button>
+    <TooltipContent slot="tooltip-content">
+      Push changes to Rill Cloud
+    </TooltipContent>
+  </Tooltip>
+{:else}
+  <Tooltip distance={8}>
+    <Button
+      loading={$currentProject.isLoading}
+      on:click={onShowDeploy}
+      type="primary"
+    >
+      Deploy to share
+    </Button>
+    <TooltipContent slot="tooltip-content">
+      Deploy this dashboard to Rill Cloud
+    </TooltipContent>
+  </Tooltip>
+{/if}
 
-  <div class="flex flex-col items-center" slot="body">
-    <div class="text-left text-sm text-gray-500 w-full">
-      Run this command from your project directory. <a
-        href="https://docs.rilldata.com/deploy/existing-project"
-        target="_blank"
-        rel="noreferrer noopener">See docs</a
-      >
+<AlertDialog bind:open={deployConfirmOpen}>
+  <AlertDialogTrigger asChild>
+    <div class="hidden"></div>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <div class="flex flex-row">
+      <DeployIcon size="150px" />
+      <div class="flex flex-col">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Deploy this project</AlertDialogTitle>
+          <AlertDialogDescription>
+            You’re about to deploy to Rill Cloud, where you can set alerts,
+            share dashboards, and more.
+            <a
+              href="https://www.rilldata.com/pricing"
+              target="_blank"
+              class="text-primary-600"
+            >
+              See pricing details
+            </a>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter class="mt-5">
+          <Button on:click={() => (deployConfirmOpen = false)} type="secondary">
+            Back
+          </Button>
+          <Button
+            on:click={() => (deployConfirmOpen = false)}
+            type="primary"
+            href={deployPageUrl}
+            target="_blank"
+          >
+            Continue
+          </Button>
+        </AlertDialogFooter>
+      </div>
     </div>
-    <div class="pt-4 pb-2">
-      <CliCommandDisplay command="rill deploy" />
-    </div>
-  </div>
+  </AlertDialogContent>
+</AlertDialog>
 
-  <svelte:fragment slot="footer">
-    <div class="flex">
-      <div class="grow" />
-      <Button type="secondary" on:click={close}>Close</Button>
-    </div>
-  </svelte:fragment>
-</Dialog>
+<PushToGitForDeployDialog
+  bind:open={pushThroughGitOpen}
+  githubUrl={$currentProject.data?.project?.githubUrl ?? ""}
+  subpath={$currentProject.data?.project?.subpath ?? ""}
+/>

@@ -440,21 +440,21 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c, opts}, true
+		return &selfToSelfExecutor{c}, true
 	}
 	if opts.OutputHandle == c {
 		if w, ok := opts.InputHandle.AsWarehouse(); ok {
-			return &warehouseToSelfExecutor{c, w, opts}, true
+			return &warehouseToSelfExecutor{c, w}, true
 		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
 			outputProps := &file.ModelOutputProperties{}
-			if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
 				return nil, false
 			}
 			if supportsExportFormat(outputProps.Format) {
-				return &selfToFileExecutor{c, opts}, true
+				return &selfToFileExecutor{c}, true
 			}
 		}
 	}
@@ -840,7 +840,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 	for {
 		select {
 		case <-statTicker.C:
-			estimatedDBSize, _ := c.EstimateSize()
+			estimatedDBSize := c.estimateSize(false)
 			c.activity.RecordMetric(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
 			// NOTE :: running CALL pragma_database_size() while duckdb is ingesting data is causing the WAL file to explode.

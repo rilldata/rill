@@ -412,6 +412,8 @@ func (m *GetMetadataResponse) validate(all bool) error {
 
 	// no validation rules for GrpcPort
 
+	// no validation rules for LoginUrl
+
 	if len(errors) > 0 {
 		return GetMetadataResponseMultiError(errors)
 	}
@@ -1496,6 +1498,8 @@ func (m *RedeployProjectResponse) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for FrontendUrl
+
 	if len(errors) > 0 {
 		return RedeployProjectResponseMultiError(errors)
 	}
@@ -1808,3 +1812,238 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetCurrentUserResponseValidationError{}
+
+// Validate checks the field values on GetCurrentProjectRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetCurrentProjectRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetCurrentProjectRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetCurrentProjectRequestMultiError, or nil if none found.
+func (m *GetCurrentProjectRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetCurrentProjectRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return GetCurrentProjectRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetCurrentProjectRequestMultiError is an error wrapping multiple validation
+// errors returned by GetCurrentProjectRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetCurrentProjectRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetCurrentProjectRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetCurrentProjectRequestMultiError) AllErrors() []error { return m }
+
+// GetCurrentProjectRequestValidationError is the validation error returned by
+// GetCurrentProjectRequest.Validate if the designated constraints aren't met.
+type GetCurrentProjectRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetCurrentProjectRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetCurrentProjectRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetCurrentProjectRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetCurrentProjectRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetCurrentProjectRequestValidationError) ErrorName() string {
+	return "GetCurrentProjectRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetCurrentProjectRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetCurrentProjectRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetCurrentProjectRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetCurrentProjectRequestValidationError{}
+
+// Validate checks the field values on GetCurrentProjectResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetCurrentProjectResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetCurrentProjectResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetCurrentProjectResponseMultiError, or nil if none found.
+func (m *GetCurrentProjectResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetCurrentProjectResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for LocalProjectName
+
+	if all {
+		switch v := interface{}(m.GetProject()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetCurrentProjectResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetCurrentProjectResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProject()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetCurrentProjectResponseValidationError{
+				field:  "Project",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetCurrentProjectResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetCurrentProjectResponseMultiError is an error wrapping multiple validation
+// errors returned by GetCurrentProjectResponse.ValidateAll() if the
+// designated constraints aren't met.
+type GetCurrentProjectResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetCurrentProjectResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetCurrentProjectResponseMultiError) AllErrors() []error { return m }
+
+// GetCurrentProjectResponseValidationError is the validation error returned by
+// GetCurrentProjectResponse.Validate if the designated constraints aren't met.
+type GetCurrentProjectResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetCurrentProjectResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetCurrentProjectResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetCurrentProjectResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetCurrentProjectResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetCurrentProjectResponseValidationError) ErrorName() string {
+	return "GetCurrentProjectResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetCurrentProjectResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetCurrentProjectResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetCurrentProjectResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetCurrentProjectResponseValidationError{}

@@ -72,24 +72,26 @@ type App struct {
 	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
 	ch                    *cmdutil.Helper
 	localURL              string
+	allowedOrigins        []string
 }
 
 type AppOptions struct {
-	Version     cmdutil.Version
-	Verbose     bool
-	Debug       bool
-	Reset       bool
-	Environment string
-	OlapDriver  string
-	OlapDSN     string
-	ProjectPath string
-	LogFormat   LogFormat
-	Variables   map[string]string
-	Activity    *activity.Client
-	AdminURL    string
-	AdminToken  string
-	CMDHelper   *cmdutil.Helper
-	LocalURL    string
+	Version        cmdutil.Version
+	Verbose        bool
+	Debug          bool
+	Reset          bool
+	Environment    string
+	OlapDriver     string
+	OlapDSN        string
+	ProjectPath    string
+	LogFormat      LogFormat
+	Variables      map[string]string
+	Activity       *activity.Client
+	AdminURL       string
+	AdminToken     string
+	CMDHelper      *cmdutil.Helper
+	LocalURL       string
+	AllowedOrigins []string
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -304,6 +306,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		pkceAuthenticators:    make(map[string]*pkce.Authenticator),
 		ch:                    opts.CMDHelper,
 		localURL:              opts.LocalURL,
+		allowedOrigins:        opts.AllowedOrigins,
 	}
 
 	// Collect and emit information about connectors at start time
@@ -381,7 +384,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		GRPCPort:        grpcPort,
 		TLSCertPath:     tlsCertPath,
 		TLSKeyPath:      tlsKeyPath,
-		AllowedOrigins:  []string{"*"},
+		AllowedOrigins:  a.allowedOrigins,
 		ServePrometheus: true,
 	}
 	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.activity)

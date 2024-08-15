@@ -1282,11 +1282,77 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for NewName
 	}
 
+	if m.BillingEmail != nil {
+
+		if err := m._validateEmail(m.GetBillingEmail()); err != nil {
+			err = UpdateOrganizationRequestValidationError{
+				field:  "BillingEmail",
+				reason: "value must be a valid email address",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return UpdateOrganizationRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *UpdateOrganizationRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *UpdateOrganizationRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // UpdateOrganizationRequestMultiError is an error wrapping multiple validation
@@ -21409,6 +21475,224 @@ var _ interface {
 	ErrorName() string
 } = ListGithubUserReposResponseValidationError{}
 
+// Validate checks the field values on ConnectProjectToGithubRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConnectProjectToGithubRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectProjectToGithubRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ConnectProjectToGithubRequestMultiError, or nil if none found.
+func (m *ConnectProjectToGithubRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectProjectToGithubRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Repo
+
+	// no validation rules for Branch
+
+	// no validation rules for Subpath
+
+	// no validation rules for Force
+
+	if len(errors) > 0 {
+		return ConnectProjectToGithubRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectProjectToGithubRequestMultiError is an error wrapping multiple
+// validation errors returned by ConnectProjectToGithubRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ConnectProjectToGithubRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectProjectToGithubRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectProjectToGithubRequestMultiError) AllErrors() []error { return m }
+
+// ConnectProjectToGithubRequestValidationError is the validation error
+// returned by ConnectProjectToGithubRequest.Validate if the designated
+// constraints aren't met.
+type ConnectProjectToGithubRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectProjectToGithubRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectProjectToGithubRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectProjectToGithubRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectProjectToGithubRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectProjectToGithubRequestValidationError) ErrorName() string {
+	return "ConnectProjectToGithubRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConnectProjectToGithubRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectProjectToGithubRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectProjectToGithubRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectProjectToGithubRequestValidationError{}
+
+// Validate checks the field values on ConnectProjectToGithubResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConnectProjectToGithubResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectProjectToGithubResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ConnectProjectToGithubResponseMultiError, or nil if none found.
+func (m *ConnectProjectToGithubResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectProjectToGithubResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ConnectProjectToGithubResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectProjectToGithubResponseMultiError is an error wrapping multiple
+// validation errors returned by ConnectProjectToGithubResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ConnectProjectToGithubResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectProjectToGithubResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectProjectToGithubResponseMultiError) AllErrors() []error { return m }
+
+// ConnectProjectToGithubResponseValidationError is the validation error
+// returned by ConnectProjectToGithubResponse.Validate if the designated
+// constraints aren't met.
+type ConnectProjectToGithubResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectProjectToGithubResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectProjectToGithubResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectProjectToGithubResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectProjectToGithubResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectProjectToGithubResponseValidationError) ErrorName() string {
+	return "ConnectProjectToGithubResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConnectProjectToGithubResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectProjectToGithubResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectProjectToGithubResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectProjectToGithubResponseValidationError{}
+
 // Validate checks the field values on GetCloneCredentialsRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -27103,8 +27387,6 @@ func (m *GetBillingSubscriptionResponse) validate(all bool) error {
 
 	// no validation rules for BillingPortalUrl
 
-	// no validation rules for HasPaymentMethod
-
 	if len(errors) > 0 {
 		return GetBillingSubscriptionResponseMultiError(errors)
 	}
@@ -29403,6 +29685,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for BillingCustomerId
 
 	// no validation rules for PaymentCustomerId
+
+	// no validation rules for BillingEmail
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
@@ -32605,6 +32889,8 @@ func (m *ListGithubUserReposResponse_Repo) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for Url
+
+	// no validation rules for DefaultBranch
 
 	if len(errors) > 0 {
 		return ListGithubUserReposResponse_RepoMultiError(errors)

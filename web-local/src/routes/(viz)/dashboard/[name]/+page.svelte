@@ -10,6 +10,8 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 
   const queryClient = useQueryClient();
 
@@ -27,6 +29,10 @@
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
+
+  $: dashboard = useDashboard(instanceId, metricsViewName);
+  $: mockUserHasNoAccess =
+    $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 </script>
 
 <svelte:head>
@@ -38,6 +44,12 @@
   <ErrorPage
     header="Error parsing dashboard"
     body="Please check your dashboard's YAML file for errors."
+  />
+{:else if mockUserHasNoAccess}
+  <ErrorPage
+    statusCode={$dashboard.error?.response?.status}
+    header="This user can't access this dashboard"
+    body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
   />
 {:else}
   {#key metricsViewName}

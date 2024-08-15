@@ -98,9 +98,9 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 
 	stats := new(runtimev1.NumericStatistics)
 	// clickhouse driver can't scan into sql.Nullx when value is not a null
-	var min, q25, q50, q75, max, mean, sd *float64
+	var minVal, q25, q50, q75, maxVal, mean, sd *float64
 	if rows.Next() {
-		err = rows.Scan(&min, &q25, &q50, &q75, &max, &mean, &sd)
+		err = rows.Scan(&minVal, &q25, &q50, &q75, &maxVal, &mean, &sd)
 		if err != nil {
 			return err
 		}
@@ -111,9 +111,9 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 		return err
 	}
 
-	if min != nil {
-		stats.Min = *min
-		stats.Max = *max
+	if minVal != nil {
+		stats.Min = *minVal
+		stats.Max = *maxVal
 		stats.Q25 = *q25
 		stats.Q50 = *q50
 		stats.Q75 = *q75

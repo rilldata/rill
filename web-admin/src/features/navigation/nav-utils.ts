@@ -52,7 +52,7 @@ export function isReportExportPage(page: Page): boolean {
   );
 }
 
-export function isMagicLinkPage(page: Page): boolean {
+export function isPublicURLPage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/share/[token]";
 }
 
@@ -60,6 +60,10 @@ export function isProjectRequestAccessPage(page: Page): boolean {
   return !!page.route.id?.startsWith(
     "/[organization]/[project]/-/request-access",
   );
+}
+
+export function isProjectInvitePage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/invite";
 }
 
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {

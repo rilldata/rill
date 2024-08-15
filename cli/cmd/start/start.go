@@ -36,6 +36,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var logFormat string
 	var env []string
 	var vars []string
+	var allowedOrigins []string
 	var tlsCertPath string
 	var tlsKeyPath string
 
@@ -143,30 +144,25 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			localURL := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
-			// if olapDriver is clickhouse and no olapDSN is specified, run ClickHouse as a subprocess
-			if olapDriver == "clickhouse" && olapDSN == local.DefaultOLAPDSN {
-				olapDSN, err = startClickHouse(cmd.Context(), projectPath)
-				if err != nil {
-					return err
-				}
-			}
+			allowedOrigins = append(allowedOrigins, localURL)
 
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
-				Version:     ch.Version,
-				Verbose:     verbose,
-				Debug:       debug,
-				Reset:       reset,
-				Environment: environment,
-				OlapDriver:  olapDriver,
-				OlapDSN:     olapDSN,
-				ProjectPath: projectPath,
-				LogFormat:   parsedLogFormat,
-				Variables:   varsMap,
-				Activity:    ch.Telemetry(cmd.Context()),
-				AdminURL:    ch.AdminURL,
-				AdminToken:  ch.AdminToken(),
-				CMDHelper:   ch,
-				LocalURL:    localURL,
+				Version:        ch.Version,
+				Verbose:        verbose,
+				Debug:          debug,
+				Reset:          reset,
+				Environment:    environment,
+				OlapDriver:     olapDriver,
+				OlapDSN:        olapDSN,
+				ProjectPath:    projectPath,
+				LogFormat:      parsedLogFormat,
+				Variables:      varsMap,
+				Activity:       ch.Telemetry(cmd.Context()),
+				AdminURL:       ch.AdminURL,
+				AdminToken:     ch.AdminToken(),
+				CMDHelper:      ch,
+				LocalURL:       localURL,
+				AllowedOrigins: allowedOrigins,
 			})
 			if err != nil {
 				return err
@@ -200,6 +196,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
 	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
 	startCmd.Flags().StringSliceVarP(&vars, "var", "v", []string{}, "Set project variables")
+	startCmd.Flags().StringSliceVarP(&allowedOrigins, "allowed-origins", "", []string{}, "add additional allowed-origins")
 
 	// We have deprecated the ability configure the OLAP database via the CLI. This should now be done via rill.yaml.
 	// Keeping these for backwards compatibility for a while.
@@ -229,7 +226,7 @@ func countFilesInDirectory(projectPath string) (int, error) {
 
 	var ignorePaths []string
 	// Read rill.yaml and get `ignore_paths`
-	rawYaml, err := os.ReadFile(filepath.Join(projectPath, "/rill.yaml"))
+	rawYaml, err := os.ReadFile(filepath.Join(projectPath, "rill.yaml"))
 	if err == nil {
 		yml := &rillYAML{}
 		err = yaml.Unmarshal(rawYaml, yml)

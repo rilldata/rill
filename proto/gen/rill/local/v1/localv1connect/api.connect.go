@@ -55,19 +55,23 @@ const (
 	// LocalServiceGetCurrentUserProcedure is the fully-qualified name of the LocalService's
 	// GetCurrentUser RPC.
 	LocalServiceGetCurrentUserProcedure = "/rill.local.v1.LocalService/GetCurrentUser"
+	// LocalServiceGetCurrentProjectProcedure is the fully-qualified name of the LocalService's
+	// GetCurrentProject RPC.
+	LocalServiceGetCurrentProjectProcedure = "/rill.local.v1.LocalService/GetCurrentProject"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	localServiceServiceDescriptor                = v1.File_rill_local_v1_api_proto.Services().ByName("LocalService")
-	localServicePingMethodDescriptor             = localServiceServiceDescriptor.Methods().ByName("Ping")
-	localServiceGetMetadataMethodDescriptor      = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
-	localServiceGetVersionMethodDescriptor       = localServiceServiceDescriptor.Methods().ByName("GetVersion")
-	localServiceDeployValidationMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("DeployValidation")
-	localServicePushToGithubMethodDescriptor     = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
-	localServiceDeployProjectMethodDescriptor    = localServiceServiceDescriptor.Methods().ByName("DeployProject")
-	localServiceRedeployProjectMethodDescriptor  = localServiceServiceDescriptor.Methods().ByName("RedeployProject")
-	localServiceGetCurrentUserMethodDescriptor   = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
+	localServiceServiceDescriptor                 = v1.File_rill_local_v1_api_proto.Services().ByName("LocalService")
+	localServicePingMethodDescriptor              = localServiceServiceDescriptor.Methods().ByName("Ping")
+	localServiceGetMetadataMethodDescriptor       = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
+	localServiceGetVersionMethodDescriptor        = localServiceServiceDescriptor.Methods().ByName("GetVersion")
+	localServiceDeployValidationMethodDescriptor  = localServiceServiceDescriptor.Methods().ByName("DeployValidation")
+	localServicePushToGithubMethodDescriptor      = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
+	localServiceDeployProjectMethodDescriptor     = localServiceServiceDescriptor.Methods().ByName("DeployProject")
+	localServiceRedeployProjectMethodDescriptor   = localServiceServiceDescriptor.Methods().ByName("RedeployProject")
+	localServiceGetCurrentUserMethodDescriptor    = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
+	localServiceGetCurrentProjectMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("GetCurrentProject")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -86,8 +90,10 @@ type LocalServiceClient interface {
 	DeployProject(context.Context, *connect.Request[v1.DeployProjectRequest]) (*connect.Response[v1.DeployProjectResponse], error)
 	// RedeployProject updates a deployed project.
 	RedeployProject(context.Context, *connect.Request[v1.RedeployProjectRequest]) (*connect.Response[v1.RedeployProjectResponse], error)
-	// User returns the locally logged in user
+	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
+	// GetCurrentProject returns the rill cloud project connected to the local project
+	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -148,19 +154,26 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetCurrentUserMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getCurrentProject: connect.NewClient[v1.GetCurrentProjectRequest, v1.GetCurrentProjectResponse](
+			httpClient,
+			baseURL+LocalServiceGetCurrentProjectProcedure,
+			connect.WithSchema(localServiceGetCurrentProjectMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // localServiceClient implements LocalServiceClient.
 type localServiceClient struct {
-	ping             *connect.Client[v1.PingRequest, v1.PingResponse]
-	getMetadata      *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
-	getVersion       *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
-	deployValidation *connect.Client[v1.DeployValidationRequest, v1.DeployValidationResponse]
-	pushToGithub     *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
-	deployProject    *connect.Client[v1.DeployProjectRequest, v1.DeployProjectResponse]
-	redeployProject  *connect.Client[v1.RedeployProjectRequest, v1.RedeployProjectResponse]
-	getCurrentUser   *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
+	ping              *connect.Client[v1.PingRequest, v1.PingResponse]
+	getMetadata       *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
+	getVersion        *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
+	deployValidation  *connect.Client[v1.DeployValidationRequest, v1.DeployValidationResponse]
+	pushToGithub      *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
+	deployProject     *connect.Client[v1.DeployProjectRequest, v1.DeployProjectResponse]
+	redeployProject   *connect.Client[v1.RedeployProjectRequest, v1.RedeployProjectResponse]
+	getCurrentUser    *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
+	getCurrentProject *connect.Client[v1.GetCurrentProjectRequest, v1.GetCurrentProjectResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -203,6 +216,11 @@ func (c *localServiceClient) GetCurrentUser(ctx context.Context, req *connect.Re
 	return c.getCurrentUser.CallUnary(ctx, req)
 }
 
+// GetCurrentProject calls rill.local.v1.LocalService.GetCurrentProject.
+func (c *localServiceClient) GetCurrentProject(ctx context.Context, req *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error) {
+	return c.getCurrentProject.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -219,8 +237,10 @@ type LocalServiceHandler interface {
 	DeployProject(context.Context, *connect.Request[v1.DeployProjectRequest]) (*connect.Response[v1.DeployProjectResponse], error)
 	// RedeployProject updates a deployed project.
 	RedeployProject(context.Context, *connect.Request[v1.RedeployProjectRequest]) (*connect.Response[v1.RedeployProjectResponse], error)
-	// User returns the locally logged in user
+	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
+	// GetCurrentProject returns the rill cloud project connected to the local project
+	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -277,6 +297,12 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetCurrentUserMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceGetCurrentProjectHandler := connect.NewUnaryHandler(
+		LocalServiceGetCurrentProjectProcedure,
+		svc.GetCurrentProject,
+		connect.WithSchema(localServiceGetCurrentProjectMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -295,6 +321,8 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceRedeployProjectHandler.ServeHTTP(w, r)
 		case LocalServiceGetCurrentUserProcedure:
 			localServiceGetCurrentUserHandler.ServeHTTP(w, r)
+		case LocalServiceGetCurrentProjectProcedure:
+			localServiceGetCurrentProjectHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -334,4 +362,8 @@ func (UnimplementedLocalServiceHandler) RedeployProject(context.Context, *connec
 
 func (UnimplementedLocalServiceHandler) GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetCurrentUser is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetCurrentProject is not implemented"))
 }
