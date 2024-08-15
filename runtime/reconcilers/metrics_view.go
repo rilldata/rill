@@ -66,7 +66,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	}
 
 	// If the spec references a model, try resolving it to a table before validating it.
-	// For backwards compatibility, the model may actually be a source or external table. 
+	// For backwards compatibility, the model may actually be a source or external table.
 	// So if a model is not found, we optimistically use the model name as the table and proceed to validation
 	if mv.Spec.Model != "" {
 		res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Model, Kind: runtime.ResourceKindModel}, false)
