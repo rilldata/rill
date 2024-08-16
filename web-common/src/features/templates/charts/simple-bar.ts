@@ -45,6 +45,13 @@ export function buildSimpleBar(
         encodings: ["x"],
       },
     },
+    {
+      name: "brush",
+      select: {
+        type: "interval",
+        encodings: ["x"],
+      },
+    },
   ];
 
   return baseSpec;
