@@ -5,6 +5,11 @@
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
+  import {
+    PivotChipData,
+    PivotChipType,
+  } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -26,8 +31,8 @@
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
-    TimeRangePreset,
     AvailableTimeGrain,
+    TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -39,11 +44,6 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
-  import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
-  import {
-    PivotChipData,
-    PivotChipType,
-  } from "@rilldata/web-common/features/dashboards/pivot/types";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -319,7 +319,7 @@
   </div>
 
   {#if tddChartType == TDDChart.DEFAULT || !expandedMeasureName}
-    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
+    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="110px">
       <div class="relative w-full">
         <ChartInteractions
           {metricViewName}
@@ -363,7 +363,7 @@
           ? $isMeasureValidPercentOfTotal(measure.name)
           : false}
 
-        <div class="flex flex-row gap-x-7">
+        <div class="flex flex-row gap-x-4">
           <MeasureBigNumber
             {measure}
             value={bigNum}
