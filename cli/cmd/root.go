@@ -86,6 +86,13 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		return err
 	}
 
+	// Load default org
+	defaultOrg, err := dotrill.GetDefaultOrg()
+	if err != nil {
+		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
+	}
+	ch.Org = defaultOrg
+
 	// Check version
 	err = update.CheckVersion(ctx, ver.Number)
 	if err != nil {

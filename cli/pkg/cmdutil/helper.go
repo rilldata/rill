@@ -34,11 +34,11 @@ type Helper struct {
 	*printer.Printer
 	Version            Version
 	Interactive        bool
+	Org                string
 	AdminURLDefault    string
 	AdminURLOverride   string
 	AdminTokenDefault  string
 	AdminTokenOverride string
-	Org                string
 
 	adminClient        *client.Client
 	adminClientHash    string
@@ -92,14 +92,8 @@ func (h *Helper) ReloadAdminConfig() error {
 		adminURL = defaultAdminURL
 	}
 
-	org, err := dotrill.GetDefaultOrg()
-	if err != nil {
-		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
-	}
-
 	h.AdminURLDefault = adminURL
 	h.AdminTokenDefault = adminToken
-	h.Org = org
 
 	return nil
 }

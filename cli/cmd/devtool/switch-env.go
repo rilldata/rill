@@ -130,8 +130,10 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 	} else {
 		// Since dev environments are frequently reset, clear the token if it's invalid
 		_ = dotrill.SetAccessToken("")
-		_ = dotrill.SetDefaultOrg("")
 		_ = ch.ReloadAdminConfig()
+
+		_ = dotrill.SetDefaultOrg("")
+		ch.Org = ""
 	}
 
 	// Wait for ctx cancellation, then switch back to the previous environment before returning.
