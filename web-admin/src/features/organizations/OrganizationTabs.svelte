@@ -1,0 +1,69 @@
+<script lang="ts">
+  import { page } from "$app/stores";
+  import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
+
+  $: ({
+    url: { pathname },
+    params: { organization },
+  } = $page);
+
+  // Get the list of tabs to display, depending on the user's permissions
+  $: tabsQuery = createAdminServiceGetOrganization(organization, {
+    query: {
+      select: (data) => {
+        let tabs = [
+          {
+            route: `/${organization}`,
+            label: "Projects",
+          },
+        ];
+
+        if (data.permissions.manageOrgMembers) {
+          // TODO: users page
+        }
+
+        if (data.permissions.manageOrg) {
+          tabs.push({
+            route: `/${organization}/-/settings`,
+            label: "Status",
+          });
+        }
+
+        return tabs;
+      },
+    },
+  });
+
+  $: tabs = $tabsQuery.data;
+</script>
+
+<!-- Hide the tabs when there is only one entry -->
+{#if tabs?.length && tabs?.length > 1}
+  <nav>
+    {#each tabs as tab (tab.route)}
+      <a href={tab.route} class:selected={pathname === tab.route}>
+        {tab.label}
+      </a>
+    {/each}
+  </nav>
+{/if}
+
+<style lang="postcss">
+  a {
+    @apply p-2 flex gap-x-1 items-center;
+    @apply rounded-sm text-gray-500;
+    @apply text-xs font-medium justify-center;
+  }
+
+  .selected {
+    @apply text-gray-900;
+  }
+
+  a:hover {
+    @apply bg-slate-100 text-gray-700;
+  }
+
+  nav {
+    @apply flex gap-x-6 px-[17px] border-b pt-1 pb-[3px];
+  }
+</style>

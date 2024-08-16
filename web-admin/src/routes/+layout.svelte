@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { isProjectInvitePage } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import OrganizationTabs from "@rilldata/web-admin/features/organizations/OrganizationTabs.svelte";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
@@ -60,6 +61,8 @@
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           manageProjectMembers={projectPermissions?.manageProjectMembers}
         />
+
+        <OrganizationTabs />
       {/if}
       <ErrorBoundary>
         <slot />
