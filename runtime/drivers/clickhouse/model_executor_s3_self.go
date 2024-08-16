@@ -75,11 +75,28 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 		return nil, err
 	}
 
-	// Build the model executor options with updated input properties
+	// Build the model executor options with updated input and output properties
 	clone := *opts
 	clone.InputProperties = propsMap
 	newOpts := &clone
 
+	// Ensure materialize is true because the selfToSelfExecutor is not able to infer it independently.
+	outputProps := &ModelOutputProperties{}
+	err = mapstructure.WeakDecode(opts.OutputProperties, &outputProps)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
+	if outputProps.Materialize != nil && !*outputProps.Materialize {
+		return nil, fmt.Errorf("models must be materialized when fetching data from s3")
+	}
+	outputProps.Materialize = boolPtr(true)
+	err = mapstructure.WeakDecode(outputProps, &newOpts.OutputProperties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
+	// execute
 	executor := &selfToSelfExecutor{c: e.c}
 	return executor.Execute(ctx, newOpts)
 }
