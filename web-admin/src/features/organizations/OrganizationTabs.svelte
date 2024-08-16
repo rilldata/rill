@@ -23,10 +23,11 @@
         }
 
         if (data.permissions.manageOrg) {
-          tabs.push({
-            route: `/${organization}/-/settings`,
-            label: "Status",
-          });
+          // TODO: once settings page is filled in we add these
+          // tabs.push({
+          //   route: `/${organization}/-/settings`,
+          //   label: "Status",
+          // });
         }
 
         return tabs;
