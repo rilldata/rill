@@ -21,6 +21,8 @@ import {
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
 
+const nameSanitiserRegex = /[^\w-]/g;
+
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
   public readonly user = createLocalServiceGetCurrentUser();
@@ -144,7 +146,7 @@ export class ProjectDeployer {
         queryKey: getLocalServiceGetCurrentUserQueryKey(),
         queryFn: localServiceGetCurrentUser,
       });
-      org = userResp.user!.displayName.replace(/ /g, "");
+      org = userResp.user!.email.replace(nameSanitiserRegex, "-");
       checkNextOrg = true;
     }
     return { org, checkNextOrg };
