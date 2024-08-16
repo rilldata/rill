@@ -12,6 +12,9 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
+  import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors";
+  import { page } from "$app/stores";
+  import { selectedMockUserStore } from "../granular-access-policies/stores";
 
   export let metricViewName: string;
 
@@ -39,6 +42,19 @@
   //     body: `The measures you requested could not be found. Check the query and try again.`,
   //   });
   // }
+
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+  $: projectPermissions = getProjectPermissions(organization, project);
+  $: manageProject = $projectPermissions.data?.manageProject;
+
+  $: console.log("isProjectAdmin: ", manageProject);
+
+  $: console.log("$selectedMockUserStore: ", $selectedMockUserStore);
+
+  $: console.log(
+    "Error parsing dashboard – you are viewing your last valid dashboard specification",
+  );
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
