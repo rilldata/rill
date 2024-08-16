@@ -64,8 +64,8 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	go func() {
 		err := e.startAndWaitUntilReady()
 		ready <- err
-		if err != nil {
-			_ = e.cmd.Cancel()
+		if err != nil && e.cmd != nil && e.cmd.Process != nil {
+			_ = e.cmd.Process.Kill()
 			return
 		}
 
@@ -97,7 +97,7 @@ func (e *embedClickHouse) stop() error {
 		return nil
 	}
 
-	err := e.cmd.Process.Kill()
+	err := e.cmd.Process.Signal(os.Interrupt)
 	if err != nil {
 		return err
 	}
