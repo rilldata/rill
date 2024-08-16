@@ -13,7 +13,7 @@ Deploying dashboards from Rill Developer allows you to share dashboards with oth
 
 The flow diagram below shows two options for deploying an existing project. 
 
-via the UI: 
+**Deploy via the UI**: 
 ```mermaid
 graph LR;
     A(Local code files);
@@ -22,7 +22,7 @@ graph LR;
 
 ```
 ---
-via the CLI:
+**Deploy via the CLI**:
 ```mermaid
 graph LR;
     A(Local code files);
@@ -35,8 +35,8 @@ graph LR;
     A--2. Push changes to GitHub-->C;
 ```
     
-## Deploy project via the UI
-Starting from v0.48, we are introduced the possibility to push dashboards directly from Rill Developer's UI to Rill Cloud. On the dashboard page, you can select the `deploy to share` button and follow the steps to deploy to Rill Cloud.
+## Deploying a project via the UI
+Starting from **v0.48**, we have introduced the possibility to push dashboards _directly from Rill Developer's UI to Rill Cloud_. On the dashboard page, you can select the `deploy to share` button and follow the steps to deploy to Rill Cloud.
 
 <img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br />
@@ -46,8 +46,21 @@ Now that you project has been deployed to Rill Cloud, you will need to ensure th
 <img src = '/img/deploy/existing-project/redeploy.gif' class='rounded-gif' />
 <br />
 
+:::tip On an older version of Rill?
 
-## 1. Push the project to Rill Cloud via the CLI
+You can easily check the version of Rill that you are using in Rill Developer by running the following command:
+
+```bash
+rill --version
+```
+
+If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade) to the latest version.
+
+:::
+
+
+## Deploying a project via the CLI
+### Step 1 - Push the project to Rill Cloud via the CLI
 
 When deploying to Rill Cloud via the CLI, you will have a choice to user a single upload or connect to a GitHub repository.
 
@@ -58,15 +71,15 @@ $rill deploy
     ? Do you want to use one-time uploads? (Y/n) 
 ```
 
-### One-time uploads
+#### One-time uploads
 If you select a one-time upload, we will deploy your project to your default organization without connecting a GitHub repository. You will have the option later, via the UI, to connect to a GitHub Repo if desired. Once connected to a repository, you will need to push changes directly to Github as the changes when selecting re-deploy will not push to your repository.
 
 ![img](/img/deploy/existing-project/status.png)
 
-### Deploying with a GitHub Repository
+#### Syncing your GitHub Repository
 In the case of deploying to Rill Cloud with a GitHub repository synced, you have two options:
 
-#### Automated repository creation
+##### Option 1 - Automated repository creation
 
 If you'd like Rill Cloud to automaticaly create the Git repository for a Rill project that you deploy, you can skip to the [next step](#deploy-to-rill-cloud).
 
@@ -76,7 +89,7 @@ This assumes that the installed Github app in your organization has write access
 
 :::
 
-#### Manual repository creation
+##### Option 2 - Manual repository creation
 
 If you'd like to create the Git repository manually, the project must be on Github <u>before</u> you deploy it to Rill.
 - If your project is not yet on Github, you can follow the steps on Github [here](https://github.com/new) to create a new repository and push your project files to it.
@@ -88,11 +101,9 @@ When Rill attempts to create a Git repository on your behalf, _the new repositor
 
 :::
 
+#### Deploy to Rill Cloud
 
-
-### Deploy to Rill Cloud
-
-To deploy a project to Rill Cloud, from the directory containing your project, it's as simple as running and selecting No for one-time upload.
+Finally, to deploy a project to Rill Cloud, from the local directory containing your Rill project, it's as simple as running the following command (after selecting `No` for the one-time upload option).
 
 ```
 rill deploy
@@ -105,7 +116,7 @@ Cloud datastores will typically require service keys to access data. Make sure t
 
 :::
 
-### First deployment
+#### First deployment
 
 If this is your first deployment to Rill Cloud, you will get prompted to either sign up or log in (if you have an existing account on [Rill Cloud](https://ui.rilldata.com/)). Proceed with the sign up and email verification process for new users or authorization process for existing users. As a new user, you can expect to see the following page:
 
@@ -139,18 +150,17 @@ Rill Cloud will automatically attempt to create a Git repository using the <u>sa
 
 :::
 
-## 2. Pushing changes to GitHub and updating Rill Cloud
+### Step 2 - Continue pushing changes to GitHub in order to update Rill Cloud
 After making changes to your project in Rill Developer, you will need to [push your changes to GitHub](github-101.md#pushing-changes). Whether you decide to use a UI like GitHub Desktop or via the CLI using `git`, you will need to manage the objects to push to your repository.
 
 
 
 ## Continuous Deployment 
-Rill will automatically detect changes that you have pushed locally to GitHub. In this case, Rill will detect the changed objects and update accordingly. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or by running:
+Rill should automatically detect changes that you have pushed locally to GitHub and update your deployed project accordingly. Depending on the changes, this may results in a project reconcile to occur. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or you can run via the CLI:
 
 ```
 rill project status
 ```
-
 
 :::tip Interested in using Gitlab?
 

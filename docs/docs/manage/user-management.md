@@ -1,12 +1,22 @@
 ---
 title: User Management
-sidebar_label: User Management
+sidebar_label: Users
 sidebar_position: 20
 ---
 
-In Rill Cloud, access can be granted at the organization, project level, or group level using the Rill CLI. Note that the permission vary from each level, please review the [Roles and Permissions](roles-permissions.md) page for more information
+In Rill Cloud, access can be granted at the organization, project, or group level using the Rill CLI. 
 
-We have begun releasing new features around user managment via the UI. Stay tuned! 
+:::info
+
+Note that the permissions may vary from each level, please review the [Roles and Permissions](roles-permissions.md) page for more information!
+
+:::
+
+:::tip More UI-based workflows coming
+
+We have begun releasing new features around user managment via the UI. If you'd like to learn more, please feel free to [reach out](contact.md)!
+
+:::
 
 ## Install and authenticate the Rill CLI
 
@@ -31,23 +41,37 @@ rill user add
 ```
 You will then be prompted for details about the user.
 
+:::tip Check your inbox (or spam)
+
 If you add a user who has not yet signed up for Rill, they will receive an email inviting them to sign up and join.
+
+:::
 
 ### Automatically add members by email domain
 
 You can automatically add users to your organization by their email domain. For example, if you whitelist `yourdomain.com`, new and existing users with an email address ending on `@yourdomain.com` will automatically be added to your organization.
 
+:::info Interested in whitelisting a domain?
+
 The feature currently requires manual action by a support representative at Rill. Just [reach out here](https://www.rilldata.com/contact) and ask us to whitelist your domain.
+
+:::
 
 ### Other actions
 
 Run `rill user --help` to show commands for listing members or changing access.
 
 ## Adding a member to a specific project
-> Starting from version 0.48, you can add a user to a specific project via the UI.
+
+:::tip Did you know?
+
+Starting from version 0.48, you can add a user to a specific project via the UI!
+
+:::
+
 ### Via the UI
 
-**1. Admin invites user**
+#### Step 1 - Admin invites user
 
 From the project's splash screen, please select share and type the email[s] along with the type of permissions.
 
@@ -57,9 +81,9 @@ Once sent, your invited users will receive this email and will need to accept it
 
 ![img](/img/manage/user-management/email-invite.png)
 
-**2. User requests access**
+#### Step 2 - User requests access
 
-Alternatively, if you provide the project URL to your users, they can request access to the admin of the group. Your user would request access via the page below:
+Alternatively, if you provide the project URL to your users, they can request access to the group admin. Users can request access via the page below:
 
 ![img](/img/manage/user-management/request-access.png)
 
@@ -75,7 +99,7 @@ By default, adding a user to an organization grants them access to all its proje
 - **Viewers** can view the project's dashboards
 - **Admins** can additionally edit the project, and view and edit project members
 
-### Add a member
+#### Add a member
 
 To add a member to a project, run the following command:
 ```
@@ -85,7 +109,7 @@ You will then be prompted for details about the user. HINT: Run `rill project li
 
 If you add a user who has not yet signed up for Rill, they will receive an email inviting them to join.
 
-### Other actions
+#### Other actions
 
 Run `rill user --help` to show commands for listing members or changing access.
 
@@ -126,7 +150,7 @@ Run `rill usergroup --help` to show commands for listing usergroups or changing 
 
 ## Which privilege wins?
 
-Rill uses a logical OR operand to define the winning privilege. In other words, whichever has the higher privilege will be applied. See below for some example situations that may arise.
+Rill uses a logical **OR** operand to define the winning privilege. In other words, whichever has the higher privilege will be applied. See below for some example situations that may arise.
 <div>
 | # | Organization | Project (*not required*)   | Group  (*not required*)| Resulting privilege |
 |---|:--------------|:--------------|--------|---------------------:|

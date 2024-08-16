@@ -46,8 +46,8 @@ For more details about additional capabilities and/or how to utilize more advanc
 
 ## Reference
 
-- **[Filters & Comparisons](filters/filters.md)**
-- **[Bookmarks & Sharing](bookmarks.md)**
-- **[Exports & Scheduled Reports](exports.md)**
-- **[Public URL](share-url.md)**
-- **[Alerts](/explore/alerts/alerts.md)**
+- [Filters & Comparisons](filters/filters.md)
+- [Bookmarks & Sharing](bookmarks.md)
+- [Exports & Scheduled Reports](exports.md)
+- [Public URL](share-url.md)
+- [Alerts](/explore/alerts/alerts.md)

@@ -1,7 +1,7 @@
 ---
 title: What is an OLAP Engine?
 sidebar_label: What is an OLAP Engine?
-sidebar_position: 13
+sidebar_position: 12
 hide_table_of_contents: true
 ---
 
@@ -22,7 +22,7 @@ Check [here](https://www.rilldata.com/case-studies) to see examples of use cases
 
 ## External OLAP tables
 
-Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](../reference/olap-engines/olap-engines.md) that have been configured in a particular project. These tables are not managed by Rill, hence external, but allow users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need of unnecessarily ingesting this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allowing Rill to connect to the data directly (and submit analytical queries).
+Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](../reference/olap-engines/olap-engines.md) that have been configured in a particular project. These tables are not managed by Rill, hence external, but allows users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need of unnecessarily ingesting this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allows Rill to connect to the data directly (and submit analytical queries).
 
 <div className="center-content">
 ![Connecting to an external table](/img/build/connect/external-tables/external-olap-db.png)
@@ -38,5 +38,6 @@ Rill currently supports the following OLAP engines! Please refer to our [Build S
 - Druid
 - Pinot 
 
-Our team is continually evaluating new OLAP engines to support.
- If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](contact.md)!
+:::tip Don't see an OLAP engine?
+Our team is continually evaluating new OLAP engines to support. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](contact.md). We'd love to hear from you!
+:::

@@ -31,7 +31,13 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ## DuckDB
 
-DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck.md) and [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB though, rather than use an external table, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read the table and ingest the data into Rill. 
+DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck.md) and [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB though, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
+
+:::warning
+
+Rill will use DuckDB by default as an embedded OLAP engine but it is **not** currently possible to "bring your own DuckDB database" to be used as an alternative OLAP Engine. The internal DuckDB that Rill uses is hardcoded and not configurable (necessary for Rill Cloud consistency).
+
+:::
 
 ## Druid
 

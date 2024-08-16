@@ -5,7 +5,7 @@ sidebar_label: Roles and Permissions
 sidebar_position: 30
 ---
 
-Access permissions in Rill Cloud are organized into roles at the organization and project level. It is usually sufficient to grant access at the organization-level because those permissions are inherited for projects by default. 
+Access permissions in Rill Cloud are organized into roles at the project and organization level. In most cases, it should be sufficient to grant access at the organization level because those permissions are _inherited_ for projects by default. 
 
 ## Role inheritance
 

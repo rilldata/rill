@@ -1,6 +1,6 @@
 ---
 title: User Group Management
-sidebar_label: User Group Management
+sidebar_label: User Groups
 sidebar_position: 22
 ---
 
@@ -34,7 +34,7 @@ rill login
 
 ## Creating the User group
 
-You can create a usergroup by running the following and following the CLI instructions:
+You can create a new user group by running the following and following the CLI instructions:
 
 ```
 rill usergroup create

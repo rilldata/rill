@@ -121,7 +121,7 @@ Don't forget the leading `/` when specifying the path for `ignore_paths` and thi
 
 ## Testing access policies 
 
-During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
 
 ```yaml
 mock_users:
@@ -140,6 +140,6 @@ mock_users:
 
 :::info The View as selector is not visible in my dashboard, why?
 
-This feature is only enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by all.
+This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by every user.
 
 :::
