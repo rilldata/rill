@@ -522,6 +522,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	githubURL := proj.GithubURL
 	githubInstID := proj.GithubInstallationID
+	subpath := valOrDefault(req.Subpath, proj.Subpath)
+	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
@@ -550,6 +552,10 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		if !s.hasAssetUsagePermission(ctx, *archiveAssetID, org.ID, claims.OwnerID()) {
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
+		githubURL = nil
+		githubInstID = nil
+		subpath = ""
+		prodBranch = ""
 	}
 
 	prodTTLSeconds := proj.ProdTTLSeconds
@@ -568,9 +574,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: githubInstID,
-		Subpath:              valOrDefault(req.Subpath, proj.Subpath),
+		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
-		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
+		ProdBranch:           prodBranch,
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
