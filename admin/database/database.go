@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -743,10 +744,11 @@ type MemberUsergroup struct {
 type OrganizationInvite struct {
 	ID              string
 	Email           string
-	OrgID           string    `db:"org_id"`
-	OrgRoleID       string    `db:"org_role_id"`
-	InvitedByUserID string    `db:"invited_by_user_id"`
-	CreatedOn       time.Time `db:"created_on"`
+	OrgID           string         `db:"org_id"`
+	OrgRoleID       sql.NullString `db:"org_role_id"`
+	UsergroupID     sql.NullString `db:"usergroup_id"`
+	InvitedByUserID string         `db:"invited_by_user_id"`
+	CreatedOn       time.Time      `db:"created_on"`
 }
 
 // ProjectInvite represents an outstanding invitation to join a project.
@@ -823,10 +825,11 @@ const (
 )
 
 type InsertOrganizationInviteOptions struct {
-	Email     string `validate:"email"`
-	InviterID string
-	OrgID     string `validate:"required"`
-	RoleID    string `validate:"required"`
+	Email       string `validate:"email"`
+	InviterID   string
+	OrgID       string `validate:"required"`
+	RoleID      string
+	UsergroupID string
 }
 
 type InsertProjectInviteOptions struct {

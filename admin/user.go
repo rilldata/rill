@@ -9,6 +9,8 @@ import (
 
 	"github.com/rilldata/rill/admin/database"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, error) {
@@ -78,10 +80,28 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID)
-		if err != nil {
-			return nil, err
+		if invite.OrgRoleID.Valid {
+			err = s.DB.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID.String)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			role, err := s.DB.FindOrganizationRole(ctx, "viewer")
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			// add user to org as viewer
+			err = s.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+
+			err = s.DB.InsertUsergroupMemberUser(ctx, invite.UsergroupID.String, user.ID)
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err

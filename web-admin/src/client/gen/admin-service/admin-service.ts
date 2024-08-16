@@ -109,6 +109,7 @@ import type {
   AdminServiceListUsergroupMemberUsersParams,
   V1RemoveUsergroupMemberUserResponse,
   V1AddUsergroupMemberUserResponse,
+  AdminServiceAddUsergroupMemberUserBody,
   V1RemoveOrganizationMemberUsergroupResponse,
   V1AddOrganizationMemberUsergroupResponse,
   V1SetOrganizationMemberUsergroupRoleResponse,
@@ -4123,13 +4124,13 @@ export const adminServiceAddUsergroupMemberUser = (
   organization: string,
   usergroup: string,
   email: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceAddUsergroupMemberUserBody: AdminServiceAddUsergroupMemberUserBody,
 ) => {
   return httpClient<V1AddUsergroupMemberUserResponse>({
     url: `/v1/organizations/${organization}/usergroups/${usergroup}/members/${email}`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceAddUsergroupMemberUserBody,
   });
 };
 
@@ -4137,7 +4138,7 @@ export type AdminServiceAddUsergroupMemberUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceAddUsergroupMemberUser>>
 >;
 export type AdminServiceAddUsergroupMemberUserMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceAddUsergroupMemberUserBody;
 export type AdminServiceAddUsergroupMemberUserMutationError = RpcStatus;
 
 export const createAdminServiceAddUsergroupMemberUser = <
@@ -4151,7 +4152,7 @@ export const createAdminServiceAddUsergroupMemberUser = <
       organization: string;
       usergroup: string;
       email: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceAddUsergroupMemberUserBody;
     },
     TContext
   >;
@@ -4164,7 +4165,7 @@ export const createAdminServiceAddUsergroupMemberUser = <
       organization: string;
       usergroup: string;
       email: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceAddUsergroupMemberUserBody;
     }
   > = (props) => {
     const { organization, usergroup, email, data } = props ?? {};
@@ -4184,7 +4185,7 @@ export const createAdminServiceAddUsergroupMemberUser = <
       organization: string;
       usergroup: string;
       email: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceAddUsergroupMemberUserBody;
     },
     TContext
   >(mutationFn, mutationOptions);

@@ -1519,7 +1519,20 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return err
 	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.OrgID, opts.RoleID)
+	var roleID, usergroupID interface{}
+	if opts.RoleID == "" {
+		roleID = nil
+	} else {
+		roleID = opts.RoleID
+	}
+
+	if opts.UsergroupID == "" {
+		usergroupID = nil
+	} else {
+		usergroupID = opts.UsergroupID
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id, usergroup_id) VALUES ($1, $2, $3, $4, $5)", opts.Email, opts.InviterID, opts.OrgID, roleID, usergroupID)
 	if err != nil {
 		return parseErr("org invite", err)
 	}

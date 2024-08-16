@@ -7,6 +7,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -487,22 +488,99 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		return nil, status.Error(codes.InvalidArgument, "cannot add member to all-users group")
 	}
 
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to add user group members")
+	}
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		count, err := s.admin.DB.CountInvitesForOrganization(ctx, org.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if org.QuotaOutstandingInvites >= 0 && count >= org.QuotaOutstandingInvites {
+			return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can at most have %d outstanding invitations", org.QuotaOutstandingInvites)
+		}
+
+		var invitedByUserID, invitedByName string
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+			if err != nil && !errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, err.Error())
+			}
+			invitedByUserID = user.ID
+			invitedByName = user.DisplayName
+		}
+
+		// Invite user to join org
+		err = s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:       req.Email,
+			InviterID:   invitedByUserID,
+			OrgID:       org.ID,
+			RoleID:      "",
+			UsergroupID: group.ID,
+		})
+		if err != nil {
+			if errors.Is(err, database.ErrNotUnique) {
+				return nil, status.Error(codes.AlreadyExists, "a pending org invite already exists for this user")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Send invitation email
+		err = s.admin.Email.SendOrganizationInvite(&email.OrganizationInvite{
+			ToEmail:       req.Email,
+			ToName:        "",
+			AdminURL:      s.opts.ExternalURL,
+			FrontendURL:   s.opts.FrontendURL,
+			OrgName:       org.Name,
+			UsergroupName: group.Name,
+			InvitedByName: invitedByName,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		return &adminv1.AddUsergroupMemberUserResponse{
+			PendingSignup: true,
+		}, nil
 	}
 
 	isOrgMember, err := s.admin.DB.CheckUserIsAnOrganizationMember(ctx, user.ID, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if !isOrgMember {
-		return nil, status.Error(codes.InvalidArgument, "user is not a member of the organization")
-	}
 
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to add user group members")
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if !isOrgMember {
+		if req.AddRillUserToOrg {
+			role, err := s.admin.DB.FindOrganizationRole(ctx, "viewer")
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			// add user to org as viewer
+			err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+
+			err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		} else {
+			return nil, status.Error(codes.FailedPrecondition, "user is not a member of the organization")
+		}
 	}
 
 	err = s.admin.DB.InsertUsergroupMemberUser(ctx, group.ID, user.ID)
@@ -513,7 +591,14 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		return nil, err
 	}
 
-	return &adminv1.AddUsergroupMemberUserResponse{}, nil
+	err = tx.Commit()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.AddUsergroupMemberUserResponse{
+		PendingSignup: false,
+	}, nil
 }
 
 func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.ListUsergroupMemberUsersRequest) (*adminv1.ListUsergroupMemberUsersResponse, error) {

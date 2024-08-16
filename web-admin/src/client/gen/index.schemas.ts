@@ -124,6 +124,10 @@ export type AdminServiceCreateAssetBody = {
   extension?: string;
 };
 
+export type AdminServiceAddUsergroupMemberUserBody = {
+  addRillUserToOrg?: boolean;
+};
+
 export type AdminServiceListUsergroupMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1260,7 +1264,7 @@ export interface V1AlertOptions {
 }
 
 export interface V1AddUsergroupMemberUserResponse {
-  [key: string]: any;
+  pendingSignup?: boolean;
 }
 
 export interface V1AddProjectMemberUsergroupResponse {

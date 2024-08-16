@@ -5411,6 +5411,13 @@ export class AddUsergroupMemberUserRequest extends Message<AddUsergroupMemberUse
    */
   email = "";
 
+  /**
+   * should existing rill user be added to the org if not already in it, for non rill users this is ignored and they will be added to the org and usergroup
+   *
+   * @generated from field: bool add_rill_user_to_org = 4;
+   */
+  addRillUserToOrg = false;
+
   constructor(data?: PartialMessage<AddUsergroupMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5422,6 +5429,7 @@ export class AddUsergroupMemberUserRequest extends Message<AddUsergroupMemberUse
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "add_rill_user_to_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddUsergroupMemberUserRequest {
@@ -5445,6 +5453,11 @@ export class AddUsergroupMemberUserRequest extends Message<AddUsergroupMemberUse
  * @generated from message rill.admin.v1.AddUsergroupMemberUserResponse
  */
 export class AddUsergroupMemberUserResponse extends Message<AddUsergroupMemberUserResponse> {
+  /**
+   * @generated from field: bool pending_signup = 1;
+   */
+  pendingSignup = false;
+
   constructor(data?: PartialMessage<AddUsergroupMemberUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5453,6 +5466,7 @@ export class AddUsergroupMemberUserResponse extends Message<AddUsergroupMemberUs
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.AddUsergroupMemberUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pending_signup", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddUsergroupMemberUserResponse {

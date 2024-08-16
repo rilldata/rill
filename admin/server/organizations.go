@@ -543,10 +543,11 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 
 		// Invite user to join org
 		err := s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-			Email:     req.Email,
-			InviterID: invitedByUserID,
-			OrgID:     org.ID,
-			RoleID:    role.ID,
+			Email:       req.Email,
+			InviterID:   invitedByUserID,
+			OrgID:       org.ID,
+			RoleID:      role.ID,
+			UsergroupID: "",
 		})
 		// continue sending an email if the user already exists
 		if err != nil && !errors.Is(err, database.ErrNotUnique) {
