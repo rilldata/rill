@@ -147,7 +147,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			allowedOrigins = append(allowedOrigins, localURL)
 
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
-				Version:        ch.Version,
+				Ch:             ch,
 				Verbose:        verbose,
 				Debug:          debug,
 				Reset:          reset,
@@ -157,10 +157,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProjectPath:    projectPath,
 				LogFormat:      parsedLogFormat,
 				Variables:      varsMap,
-				Activity:       ch.Telemetry(cmd.Context()),
-				AdminURL:       ch.AdminURL,
-				AdminToken:     ch.AdminToken(),
-				CMDHelper:      ch,
 				LocalURL:       localURL,
 				AllowedOrigins: allowedOrigins,
 			})

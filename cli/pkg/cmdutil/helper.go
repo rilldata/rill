@@ -4,13 +4,11 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/client"
-	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -19,9 +17,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
+	defaultAdminURL = "https://admin.rilldata.com"
+
 	telemetryServiceName    = "cli"
 	telemetryIntakeURL      = "https://intake.rilldata.io/events/data-modeler-metrics"
 	telemetryIntakeUser     = "data-modeler"
@@ -31,11 +33,12 @@ const (
 type Helper struct {
 	*printer.Printer
 	Version            Version
-	AdminURL           string
-	AdminTokenOverride string
-	AdminTokenDefault  string
-	Org                string
 	Interactive        bool
+	AdminURLDefault    string
+	AdminURLOverride   string
+	AdminTokenDefault  string
+	AdminTokenOverride string
+	Org                string
 
 	adminClient        *client.Client
 	adminClientHash    string
@@ -74,6 +77,33 @@ func (h *Helper) IsAuthenticated() bool {
 	return h.AdminToken() != ""
 }
 
+// ReloadAdminConfig populates the helper's AdminURL, AdminTokenDefault, and Org properties from ~/.rill.
+func (h *Helper) ReloadAdminConfig() error {
+	adminToken, err := dotrill.GetAccessToken()
+	if err != nil {
+		return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
+	}
+
+	adminURL, err := dotrill.GetDefaultAdminURL()
+	if err != nil {
+		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
+	}
+	if adminURL == "" {
+		adminURL = defaultAdminURL
+	}
+
+	org, err := dotrill.GetDefaultOrg()
+	if err != nil {
+		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
+	}
+
+	h.AdminURLDefault = adminURL
+	h.AdminTokenDefault = adminToken
+	h.Org = org
+
+	return nil
+}
+
 func (h *Helper) AdminToken() string {
 	if h.AdminTokenOverride != "" {
 		return h.AdminTokenOverride
@@ -81,11 +111,18 @@ func (h *Helper) AdminToken() string {
 	return h.AdminTokenDefault
 }
 
+func (h *Helper) AdminURL() string {
+	if h.AdminURLOverride != "" {
+		return h.AdminURLOverride
+	}
+	return h.AdminURLDefault
+}
+
 func (h *Helper) Client() (*client.Client, error) {
 	// We allow the admin token and URL to be changed (e.g. during login or env switching).
 	// We compute and cache a hash of these values to detect changes.
 	// If the hash has changed, we should close the existing client.
-	hash := hashStr(h.AdminToken(), h.AdminURL)
+	hash := hashStr(h.AdminToken(), h.AdminURL())
 	if h.adminClient != nil && h.adminClientHash != hash {
 		_ = h.adminClient.Close()
 		h.adminClient = nil
@@ -101,7 +138,7 @@ func (h *Helper) Client() (*client.Client, error) {
 		}
 
 		userAgent := fmt.Sprintf("rill-cli/%v", cliVersion)
-		c, err := client.New(h.AdminURL, h.AdminToken(), userAgent)
+		c, err := client.New(h.AdminURL(), h.AdminToken(), userAgent)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +157,7 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 	// If the admin token or URL changes, the user ID of the telemetry client may have changed.
 	// We compute and cache a hash of these values to detect changes.
 	// If the hash has changed, we refetch the current user and update the client.
-	hash := hashStr(h.AdminToken(), h.AdminURL)
+	hash := hashStr(h.AdminToken(), h.AdminURL())
 
 	// Return the client if it's already created and the hash hasn't changed.
 	if h.activityClient != nil && h.activityClientHash == hash {
@@ -191,7 +228,7 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
-	newHash := hashStr(h.AdminToken(), h.AdminURL)
+	newHash := hashStr(h.AdminToken(), h.AdminURL())
 
 	oldHash, err := dotrill.GetUserCheckHash()
 	if err != nil {
@@ -234,6 +271,46 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 	return userID, nil
 }
 
+// LoadProject loads the cloud project identified by the .rillcloud directory at the given path.
+// It returns an error if the caller is not authenticated.
+// If there is no .rillcloud directory, it returns a nil project an no error.
+func (h *Helper) LoadProject(ctx context.Context, path string) (*adminv1.Project, error) {
+	if !h.IsAuthenticated() {
+		return nil, fmt.Errorf("can't load project because you are not authenticated")
+	}
+
+	rc, err := dotrillcloud.GetAll(path, h.AdminURL())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load .rillcloud: %w", err)
+	}
+	if rc == nil {
+		return nil, nil
+	}
+
+	c, err := h.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: rc.ProjectID,
+	})
+	if err != nil {
+		// If the project doesn't exist, delete the local project metadata.
+		if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
+			err = dotrillcloud.Delete(path, h.AdminURL())
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// We'll ignore the error, pretending no .rillcloud metadata was found
+		return nil, nil
+	}
+
+	return res.Project, nil
+}
+
 func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, subPath string) ([]string, error) {
 	c, err := h.Client()
 	if err != nil {
@@ -262,33 +339,13 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, su
 }
 
 func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string, error) {
-	rc, err := dotrillcloud.GetAll(path, h.AdminURL)
+	// Try loading the project from the .rillcloud directory
+	proj, err := h.LoadProject(ctx, path)
 	if err != nil {
 		return "", err
 	}
-	if rc != nil {
-		c, err := h.Client()
-		if err != nil {
-			return "", err
-		}
-
-		proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-			Id: rc.ProjectID,
-		})
-		if err != nil {
-			// unset if project doesnt exist
-			if errors.Is(err, database.ErrNotFound) {
-				err = dotrillcloud.Delete(path, h.AdminURL)
-				if err != nil {
-					return "", err
-				}
-			}
-			// do not error here.
-			// this could be because the locally saved project id might not be available when project is deleted outside the project path
-			// or the current user might not have access
-		} else {
-			return proj.Project.Name, nil
-		}
+	if proj != nil {
+		return proj.Name, nil
 	}
 
 	// Verify projectPath is a Git repo with remote on Github
