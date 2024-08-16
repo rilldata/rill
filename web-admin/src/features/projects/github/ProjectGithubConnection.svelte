@@ -6,24 +6,15 @@
     setGithubData,
   } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
-  import { invalidateProjectQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { invalidateRuntimeQueries } from "@rilldata/web-common/runtime-client/invalidation";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import {
-    createAdminServiceGetProject,
-    createAdminServiceUploadProjectAssets,
-    getAdminServiceGetGithubUserStatusQueryKey,
-    getAdminServiceGetProjectQueryKey,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -51,7 +42,6 @@
   const userStatus = githubData.userStatus;
   const repoSelectionOpen = githubData.repoSelectionOpen;
 
-  const deleteProjectConnection = createAdminServiceUploadProjectAssets();
   let disconnectConfirmOpen = false;
 
   function confirmConnectToGithub() {
@@ -76,26 +66,9 @@
     );
   }
 
-  async function disconnectGithubConnection() {
-    await $deleteProjectConnection.mutateAsync({
-      organization,
-      project,
-      data: {},
-    });
-    disconnectConfirmOpen = false;
-
-    void invalidateProjectQueries($runtime.instanceId, organization, project);
-
-    eventBus.emit("notification", {
-      message: `Disconnected github repo`,
-      type: "success",
-    });
-    void behaviourEvent?.fireGithubIntentEvent(
-      BehaviourEventAction.GithubDisconnect,
-      {
-        is_fresh_connection: isGithubConnected,
-      },
-    );
+  function disconnectGithubConnect() {
+    void githubData.promptGithubLogin();
+    disconnectConfirmOpen = true;
   }
 </script>
 
@@ -141,11 +114,7 @@
                 </Button>
               </DropdownMenu.Item>
               <DropdownMenu.Item class="px-1 py-1">
-                <Button
-                  on:click={() => (disconnectConfirmOpen = true)}
-                  type="text"
-                  compact
-                >
+                <Button on:click={disconnectGithubConnect} type="text" compact>
                   <div class="flex flex-row items-center gap-x-2">
                     <DisconnectIcon size="14px" />
                     <span class="text-xs">Disconnect</span>
@@ -206,6 +175,6 @@
 
 <DisconnectProjectConfirmDialog
   bind:open={disconnectConfirmOpen}
-  loading={$deleteProjectConnection.isLoading}
-  onDisconnect={disconnectGithubConnection}
+  {organization}
+  {project}
 />

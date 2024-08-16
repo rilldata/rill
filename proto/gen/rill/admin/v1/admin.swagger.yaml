@@ -3710,8 +3710,6 @@ definitions:
         type: boolean
       grantAccessUrl:
         type: string
-      authUrl:
-        type: string
       accessToken:
         type: string
       account:
