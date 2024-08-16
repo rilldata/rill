@@ -139,8 +139,6 @@
       {#if $isTimeComparisonActive}
         <col style:width="{columnWidth}px" />
         <col style:width="{columnWidth}px" />
-      {:else}
-        <col style:width="{columnWidth}px" />
       {/if}
     </colgroup>
 
