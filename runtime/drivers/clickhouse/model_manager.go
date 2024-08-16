@@ -45,6 +45,8 @@ type ModelOutputProperties struct {
 	TTL string `mapstructure:"ttl"`
 	// Settings set the table specific settings.
 	Settings string `mapstructure:"settings"`
+	// QuerySettings sets the settings clause used in insert/create table as select queries.
+	QuerySettings string `mapstructure:"query_settings"`
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {

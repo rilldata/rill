@@ -42,6 +42,6 @@ type ObjectStoreModelOutputProperties struct {
 }
 
 type ObjectStoreModelResultProperties struct {
-	Path   string     `mapstructure:"path"`
-	Format FileFormat `mapstructure:"format"`
+	Path   string `mapstructure:"path"`
+	Format string `mapstructure:"format"`
 }
