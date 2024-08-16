@@ -74,15 +74,24 @@
           </a>
         </div>
       </AlertDialogDescription>
-      {#if parsedError && !isLoading}
+      {#if parsedError?.message && !isLoading}
         <div class="text-red-500 text-sm py-px">
           {parsedError.message}
         </div>
       {/if}
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
-      <Button type="primary" on:click={onDisconnect} loading={isLoading}>
+      <Button
+        type="secondary"
+        on:click={() => (open = false)}
+        disabled={isLoading}>Cancel</Button
+      >
+      <Button
+        type="primary"
+        on:click={onDisconnect}
+        loading={isLoading}
+        disabled={isLoading}
+      >
         Yes, disconnect
       </Button>
     </AlertDialogFooter>

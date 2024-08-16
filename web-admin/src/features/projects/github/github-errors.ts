@@ -28,7 +28,6 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
 }
 
 export function extractGithubDisconnectError(err: AxiosError<RpcStatus>) {
-  console.log(err);
   if (!err) {
     return {
       message: "",

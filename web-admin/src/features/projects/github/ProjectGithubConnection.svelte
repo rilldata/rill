@@ -67,7 +67,7 @@
   }
 
   function disconnectGithubConnect() {
-    void githubData.promptGithubLogin();
+    void githubData.ensureGithubAccess();
     disconnectConfirmOpen = true;
   }
 </script>

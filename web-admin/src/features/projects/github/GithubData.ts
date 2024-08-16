@@ -68,7 +68,7 @@ export class GithubData {
   public async startRepoSelection() {
     this.repoSelectionOpen.set(true);
 
-    return this.promptGithubLogin();
+    return this.ensureGithubAccess();
   }
 
   /**
@@ -85,7 +85,7 @@ export class GithubData {
     this.openUserGithubConnectWindow(userStatus.grantAccessUrl);
   }
 
-  public async promptGithubLogin() {
+  public async ensureGithubAccess() {
     await waitUntil(() => !get(this.userStatus).isFetching);
     const userStatus = get(this.userStatus).data;
     if (!userStatus || userStatus?.hasAccess || !userStatus.grantAccessUrl) {
