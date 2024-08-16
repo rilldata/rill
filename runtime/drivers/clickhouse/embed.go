@@ -261,18 +261,15 @@ func (e *embedClickHouse) startAndWaitUntilReady() error {
 		return fmt.Errorf("failed to start clickhouse: %w", err)
 	}
 
-	return e.waitUntilReady(30*time.Second, stderr)
-}
+	scanner := bufio.NewScanner(stderr)
 
-func (e *embedClickHouse) waitUntilReady(timeout time.Duration, reader io.ReadCloser) error {
-	scanner := bufio.NewScanner(reader)
-	timer := time.NewTimer(timeout)
+	timer := time.NewTimer(30 * time.Second)
 	defer timer.Stop()
 
 	for {
 		select {
 		case <-timer.C:
-			return fmt.Errorf("clickhouse is not ready: timeout after %v", timeout)
+			return fmt.Errorf("clickhouse is not ready: timeout")
 		default:
 			if scanner.Scan() {
 				line := scanner.Text()
