@@ -43,6 +43,12 @@
   //   });
   // }
 
+  $: if (measures.length === 0) {
+    console.log("measures not found");
+  } else {
+    console.log("measures found");
+  }
+
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: projectPermissions = getProjectPermissions(organization, project);
