@@ -21,9 +21,9 @@ export function createTotalsForMeasure(
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   // Prevent querying if no measures are selected in security policy
-  if (measures.length === 0) {
-    return derived([], () => undefined);
-  }
+  // if (measures.length === 0) {
+  //   return derived([], () => undefined);
+  // }
 
   return derived(
     [

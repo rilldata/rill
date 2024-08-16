@@ -30,15 +30,16 @@
 
   $: measures = $filteredSimpleMeasures();
 
+  // TODO: Show error banner instead of ErrorPage
   // If no measures are mentioned in the security policy, the query will return undefined.
   // This is so we can gracefully fail and provide a helpful error message.
-  $: if (measures.length === 0) {
-    errorStore.set({
-      statusCode: 404,
-      header: "Measures not found",
-      body: `The measures you requested could not be found. Check the query and try again.`,
-    });
-  }
+  // $: if (measures.length === 0) {
+  //   errorStore.set({
+  //     statusCode: 404,
+  //     header: "Measures not found",
+  //     body: `The measures you requested could not be found. Check the query and try again.`,
+  //   });
+  // }
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
