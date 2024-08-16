@@ -12,7 +12,6 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { errorStore } from "@rilldata/web-admin/features/errors/error-store";
 
   export let metricViewName: string;
 
