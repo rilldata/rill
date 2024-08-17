@@ -8,6 +8,7 @@
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import DashboardsTableEmpty from "./DashboardsTableEmpty.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
+  import DashboardsTableToolbar from "./DashboardsTableToolbar.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
   import { useDashboardsV2, type DashboardResource } from "./selectors";
 
@@ -104,6 +105,7 @@
       {columnVisibility}
       on:click-row={handleClickRow}
     >
+      <DashboardsTableToolbar slot="toolbar" />
       <DashboardsTableHeader slot="header" />
       <DashboardsTableEmpty slot="empty" />
     </Table>
