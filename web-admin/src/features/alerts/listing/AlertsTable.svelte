@@ -1,8 +1,9 @@
 <script lang="ts">
+  import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { type ColumnDef, flexRender } from "@tanstack/svelte-table";
+  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
   import { useAlerts } from "../../alerts/selectors";
   import AlertsError from "./AlertsError.svelte";
@@ -79,6 +80,7 @@
     <NoAlertsCTA />
   {:else}
     <Table {columns} data={$alerts?.data?.resources} {columnVisibility}>
+      <Toolbar slot="toolbar" />
       <AlertsTableHeader slot="header" />
       <AlertsTableEmpty slot="empty" />
     </Table>
