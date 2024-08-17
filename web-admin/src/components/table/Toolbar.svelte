@@ -15,8 +15,6 @@
   $: filterTable(filter);
 
   beforeNavigate(() => (filter = "")); // resets filter when changing projects
-
-  console.log("got here");
 </script>
 
 <div class="w-full max-w-[800px] flex items-center">
