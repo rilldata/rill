@@ -1,15 +1,16 @@
 <script lang="ts">
+  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
   import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { BellIcon } from "lucide-svelte";
   import Table from "../../../components/table/Table.svelte";
   import { useAlerts } from "../../alerts/selectors";
   import AlertsError from "./AlertsError.svelte";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
-  import AlertsTableEmpty from "./AlertsTableEmpty.svelte";
-  import AlertsTableHeader from "./AlertsTableHeader.svelte";
   import NoAlertsCTA from "./NoAlertsCTA.svelte";
 
   export let organization: string;
@@ -81,8 +82,8 @@
   {:else}
     <Table {columns} data={$alerts?.data?.resources} {columnVisibility}>
       <Toolbar slot="toolbar" />
-      <AlertsTableHeader slot="header" />
-      <AlertsTableEmpty slot="empty" />
+      <ResourceHeader kind="alert" icon={BellIcon} slot="header" />
+      <ResourceTableEmpty kind="alert" slot="empty" />
     </Table>
   {/if}
 {/if}

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
+  import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type Row } from "@tanstack/svelte-table";
@@ -7,8 +10,6 @@
   import Toolbar from "../../../components/table/Toolbar.svelte";
   import DashboardsError from "./DashboardsError.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
-  import DashboardsTableEmpty from "./DashboardsTableEmpty.svelte";
-  import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
   import { useDashboardsV2, type DashboardResource } from "./selectors";
 
@@ -106,8 +107,12 @@
       on:click-row={handleClickRow}
     >
       <Toolbar slot="toolbar" />
-      <DashboardsTableHeader slot="header" />
-      <DashboardsTableEmpty slot="empty" />
+      <ResourceHeader
+        kind="dashboard"
+        icon={MetricsExplorerIcon}
+        slot="header"
+      />
+      <ResourceTableEmpty kind="dashboard" slot="empty" />
     </Table>
   {/if}
 {/if}

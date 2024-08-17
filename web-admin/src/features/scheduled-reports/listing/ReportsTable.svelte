@@ -1,5 +1,8 @@
 <script lang="ts">
+  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
   import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
+  import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -9,8 +12,6 @@
   import NoReportsCTA from "./NoReportsCTA.svelte";
   import ReportsError from "./ReportsError.svelte";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
-  import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
-  import ReportsTableHeader from "./ReportsTableHeader.svelte";
 
   export let organization: string;
   export let project: string;
@@ -85,8 +86,8 @@
   {:else}
     <Table {columns} data={$reports?.data?.resources} {columnVisibility}>
       <Toolbar slot="toolbar" />
-      <ReportsTableHeader slot="header" />
-      <ReportsTableEmpty slot="empty" />
+      <ResourceHeader kind="report" icon={ReportIcon} slot="header" />
+      <ResourceTableEmpty kind="report" slot="empty" />
     </Table>
   {/if}
 {/if}
