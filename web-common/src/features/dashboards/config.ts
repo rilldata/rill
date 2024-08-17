@@ -5,7 +5,7 @@ export const MEASURE_CONFIG = {
     fullHeight: 220,
   },
   container: {
-    width: { full: 620, breakpoint: 420 },
+    width: { full: 580, breakpoint: 420 },
   },
   bigNumber: {
     widthWithChart: 140,

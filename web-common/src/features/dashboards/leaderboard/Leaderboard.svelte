@@ -3,13 +3,13 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
+  import { onMount } from "svelte";
   import {
     LeaderboardItemData,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { onMount } from "svelte";
-  import LeaderboardRow from "./LeaderboardRow.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
+  import LeaderboardRow from "./LeaderboardRow.svelte";
   import LoadingRows from "./LoadingRows.svelte";
 
   const slice = 7;
@@ -116,7 +116,7 @@
   $: dimensionDescription = $getDimensionDescription(dimensionName);
 
   $: firstColumnWidth =
-    !$isTimeComparisonActive && !$isValidPercentOfTotal ? 240 : 190;
+    !$isTimeComparisonActive && !$isValidPercentOfTotal ? 240 : 164;
 
   $: columnCount = $isTimeComparisonActive ? 3 : $isValidPercentOfTotal ? 2 : 1;
 
