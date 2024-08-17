@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { SvelteComponent } from "svelte";
+  import type { ComponentType, SvelteComponent } from "svelte";
   import { getContext } from "svelte";
 
   export let kind: string;
-  export let icon: typeof SvelteComponent;
+  export let icon: ComponentType<SvelteComponent>;
 
   const table = getContext("table");
 
