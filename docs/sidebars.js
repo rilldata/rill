@@ -148,6 +148,14 @@ const sidebars = {
                   
                 ]
               },
+              {
+                type: 'category',
+                label: 'Custom APIs',
+                items: [
+                  'learn/rill_learn_300/custom_api/303_0',
+                  
+                ]
+              },
               'learn/rill_learn_300/310_0',
               ]
           },
@@ -229,8 +237,32 @@ const sidebars = {
             label: 'Concepts Explained',
             description: "Concepts further explained!",
             items: [
-              'learn/guides/conceptual/avg_avg',  
-              'learn/guides/conceptual/one_dashboard',      
+              {
+                type: 'category',
+                label: 'Rill Concepts Explained',
+                description: "Concepts further explained!",
+                items: [
+                  'learn/guides/conceptual/avg_avg',  
+                  'learn/guides/conceptual/one_dashboard',      
+                ]
+              },
+              {
+                type: 'category',
+                label: 'Videos',
+                link: {
+                  type: 'doc',
+                  id: 'learn/guides/conceptual/video/index',
+        
+                },
+                description: "Concepts further explained!",
+                items: [
+                  'learn/guides/conceptual/video/rill_overview',  
+                  'learn/guides/conceptual/video/yaml',  
+                  'learn/guides/conceptual/video/OLAP',  
+                  'learn/guides/conceptual/video/access_policy',  
+                ]
+              },
+  
             ]
           },
 

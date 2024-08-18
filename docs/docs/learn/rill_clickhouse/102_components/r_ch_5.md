@@ -21,12 +21,12 @@ features:
 Once this is enabled, you'll be able to create model files and add sources in the UI and use these for SQL transformations, as you would with DuckDB. 
 
 :::note
-Currently not all the functionality is supported but our team is working on this to add more features!
+Currently not all the functionality is supported but our team is working on this to add more features! Please reach out to us on our community or via GitHub for any specific missing functionality that you looking for.
 :::
 
 ### Ingestion directly on ClickHouse or Rill?
 
-In order to support you, our team created some functionality within Rill for you to be able to import data directly from your warehouses to ClickHouse. 
+Our team created some functionality within Rill for you to be able to import data directly from your warehouses to ClickHouse. 
 
 In the below example, we are importing data from snowflake to ClickHouse using S3 as an intermediate stage.
 ```yaml
@@ -46,7 +46,6 @@ output:
   connector: clickhouse
   materialize: true
 ```
-Note that this is a `yaml` file instead of a traditional `sql` file.
 
 In order to use this method you will need to set your credentials in .env. If the .env does not already exist (it will be created default if you have created a source), you can create a .env file in the rill directoy by running `touch .env` and this should now be visible in Rill Developer.
 

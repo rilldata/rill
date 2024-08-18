@@ -6,27 +6,23 @@ sidebar_label: "Tutorials"
 
 # Welcome to the Rill Learning Center!
 
->> Add some changes here from Marianne's input for why this guide matters!
+### Hi! Welcome to the **Rill Learn portal**. 
 
->> put a decription of the 100/200 dataset. Clickhouse commit history of their repository.
-
-We're excited to have you here. These tutorial to help you get started with Rill and empower you to build your own projects. 
-
-These courses are structured to follow along with our documentation and provide you with a working project for reference and to get you started on your Rill Journey!
+We're excited to have you here. These tutorial to help you get started with Rill and empower you to build your own projects. The journey from data import, SQL transformations, dashboard creation and finally deployment to Cloud.
 
 
-## Why Rill?
-
+### Why Rill?
+Here at Rill, we believe in business-speed visual analytics. Gone are the days of waiting for your dashboard to load! By utilizing OLAP engines, we strive for quick, reactive dashboards that you can drill down further to make decisions real-time.
 
 
 ---
-Follow along, practice, and test your knowledge to make the most out of these tutorials! Please ask any question or provide feedback on Community!
+Follow along, refer to the in-line linked documentation, and explore to make the most out of these tutorials! Please reach out to ask any question or provide feedback on our Community Slack or Discord!
 
 - **Basics:** Learn the basics and understand the core concepts of Rill and deploy to Cloud!
 - **Advanced:** Dive deeper into Rill Cloud and how the development cycles works!
 - **Expert:** Master advanced features and become an expert in Rill.
 
-
+- **Rill + ClickHouse:** For our friends from ClickHouse, we have created a dedicated course that goes over the same topics as Rill Basics! After completing, you can continue to Rill Advanced
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!
 
