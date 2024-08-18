@@ -97,7 +97,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			_, err = repo.ListRecursive(cmd.Context(), "**", false)
 			if err != nil {
 				if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
-					ch.PrintfError(`The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or configure "ignore_paths" in "rill.yaml".\n`, drivers.RepoListLimit)
+					ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
 					return nil
 				}
 				return fmt.Errorf("failed to list project files: %w", err)
