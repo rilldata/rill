@@ -1,8 +1,8 @@
 package start
 
 import (
+	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,12 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
-
-// maxProjectFiles is the maximum number of files that can be in a project directory.
-// It corresponds to the file watcher limit in runtime/drivers/file/repo.go.
-const maxProjectFiles = 1000
 
 // StartCmd represents the start command
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -93,16 +88,22 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// Check that projectPath doesn't have an excessive number of files
-			n, err := countFilesInDirectory(projectPath)
+			// Check that projectPath doesn't have an excessive number of files.
+			// Note: Relies on ListRecursive enforcing drivers.RepoListLimit.
+			repo, _, err := cmdutil.RepoForProjectPath(projectPath)
 			if err != nil {
 				return err
 			}
-			if n > maxProjectFiles {
-				ch.PrintfError("The project directory exceeds the limit of %d files (found %d files). Please open Rill against a directory with fewer files.\n", maxProjectFiles, n)
-				return nil
+			_, err = repo.ListRecursive(cmd.Context(), "**", false)
+			if err != nil {
+				if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
+					ch.PrintfError(`The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or configure "ignore_paths" in "rill.yaml".\n`, drivers.RepoListLimit)
+					return nil
+				}
+				return fmt.Errorf("failed to list project files: %w", err)
 			}
 
+			// Parse log format
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
 				return fmt.Errorf("invalid log format %q", logFormat)
@@ -210,56 +211,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	return startCmd
-}
-
-// a smaller subset of relevant parts of rill.yaml
-type rillYAML struct {
-	IgnorePaths []string `yaml:"ignore_paths"`
-}
-
-func countFilesInDirectory(projectPath string) (int, error) {
-	var fileCount int
-
-	if projectPath == "" {
-		projectPath = "."
-	}
-
-	var ignorePaths []string
-	// Read rill.yaml and get `ignore_paths`
-	rawYaml, err := os.ReadFile(filepath.Join(projectPath, "rill.yaml"))
-	if err == nil {
-		yml := &rillYAML{}
-		err = yaml.Unmarshal(rawYaml, yml)
-		if err == nil {
-			ignorePaths = yml.IgnorePaths
-		}
-	}
-
-	err = filepath.WalkDir(projectPath, func(path string, info fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		path = strings.TrimPrefix(path, projectPath)
-
-		if drivers.IsIgnored(path, ignorePaths) {
-			if info.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if !info.IsDir() {
-			fileCount++
-		}
-		return nil
-	})
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
-		return 0, err
-	}
-
-	return fileCount, nil
 }
 
 func parseVariables(vals []string) (map[string]string, error) {

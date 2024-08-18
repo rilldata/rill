@@ -14,8 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var listFileslimit = 2000
-
 func (h *Handle) Root() string {
 	return h.projPath
 }
@@ -67,8 +65,8 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) 
 		}
 
 		// Exit if we reached the limit
-		if len(entries) == listFileslimit {
-			return fmt.Errorf("glob exceeded limit of %d matched files", listFileslimit)
+		if len(entries) == drivers.RepoListLimit {
+			return drivers.ErrRepoListLimitExceeded
 		}
 
 		// Track file (p is already relative to the FS root)
