@@ -2,7 +2,6 @@
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { get } from "svelte/store";
   import {
     SignalListeners,
     VegaLite,
@@ -10,6 +9,7 @@
     VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
+  import { get } from "svelte/store";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
 

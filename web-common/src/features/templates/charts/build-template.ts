@@ -6,6 +6,7 @@ import { buildLine } from "./line";
 import { buildSimpleBar } from "./simple-bar";
 import { buildStackedArea } from "./stacked-area";
 import { buildStackedBar } from "./stacked-bar";
+import { buildStackedGroupedBar } from "./stacked-grouped-bar";
 
 const BAR_LIKE_CHARTS = [
   ChartType.BAR,
@@ -47,6 +48,13 @@ export function buildVegaLiteSpec(
         nominalFields[0],
       );
     } else if (chartType === ChartType.STACKED_BAR) {
+      if (quantitativeFields.length > 1) {
+        return buildStackedGroupedBar(
+          timeFields,
+          quantitativeFields,
+          nominalFields[0],
+        );
+      }
       return buildStackedBar(
         timeFields[0],
         quantitativeFields[0],
