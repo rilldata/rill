@@ -14,7 +14,7 @@ func PingCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Ping",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Must set here to avoid flag parser overriding it globally
-			ch.AdminURL = adminURL
+			ch.AdminURLOverride = adminURL
 
 			client, err := ch.Client()
 			if err != nil {

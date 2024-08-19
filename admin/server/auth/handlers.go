@@ -122,6 +122,7 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess := a.cookies.Get(r, cookieName)
+
 	// Check that random state matches (for CSRF protection)
 	if r.URL.Query().Get("state") != sess.Values[cookieFieldState] {
 		http.Error(w, "invalid state parameter", http.StatusBadRequest)
