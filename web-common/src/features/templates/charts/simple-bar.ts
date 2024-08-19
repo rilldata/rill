@@ -18,9 +18,6 @@ export function buildSimpleBar(
       field: timeField.name,
       type: "temporal",
       bandPosition: 0,
-      // TODO: will this enable zoom?
-      // https://vega.github.io/vega-lite-v4/docs/zoom.html
-      // scale: { domain: { param: "brush" } },
     },
     y: { field: quantitativeField.name, type: "quantitative" },
     opacity: {
@@ -68,9 +65,6 @@ export function buildSimpleBar(
         encodings: ["x"],
       },
     },
-    // TODO: update selectedSubRange so we can zoom in on a subrange
-    // $dashboardStore.setSelectedScrubRange(value);
-    // How to access the interval value?
     {
       name: "brush",
       select: {

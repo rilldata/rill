@@ -55,8 +55,6 @@
   $: hoveredTime = $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
 
-  // $: console.log("data: ", data);
-
   $: {
     updateVegaOnTableHover(
       viewVL,
@@ -78,8 +76,6 @@
     selectedValues,
   );
 
-  // $: console.log("vegaSpec: ", vegaSpec);
-
   $: sanitizedVegaSpec = patchSpecForTDD(
     vegaSpec,
     chartType,
@@ -90,8 +86,6 @@
     expandedMeasureName,
     selectedValues,
   );
-
-  // $: console.log("selectedValues: ", selectedValues);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,

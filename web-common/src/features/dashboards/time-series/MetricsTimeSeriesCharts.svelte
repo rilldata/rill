@@ -233,6 +233,10 @@
 
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
 
+  // $: console.log("tddChartType: ", tddChartType);
+  // $: console.log("showComparison: ", showComparison);
+  // $: console.log("expandedMeasureName: ", expandedMeasureName);
+
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
     const pivot = $dashboardStore?.pivot;
@@ -348,7 +352,6 @@
     </div>
   {/if}
 
-  <!-- bignumbers and line charts -->
   {#if renderedMeasures}
     <div
       class:pb-4={!isInTimeDimensionView}
