@@ -605,9 +605,9 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
   rillUserOrgs: string[] = [];
 
   /**
-   * @generated from field: string assumed_user_email = 3;
+   * @generated from field: bool is_representing_user = 3;
    */
-  assumedUserEmail = "";
+  isRepresentingUser = false;
 
   constructor(data?: PartialMessage<GetCurrentUserResponse>) {
     super();
@@ -619,7 +619,7 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user", kind: "message", T: User },
     { no: 2, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 3, name: "assumed_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "is_representing_user", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentUserResponse {

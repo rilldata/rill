@@ -98,7 +98,7 @@ message GetCurrentUserRequest {}
 message GetCurrentUserResponse {
   admin.v1.User user = 1;
   repeated string rill_user_orgs = 2;
-  string assumed_user_email = 3;
+  bool is_representing_user = 3;
 }
 
 message GetCurrentProjectRequest {}

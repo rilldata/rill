@@ -497,9 +497,13 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 		userOrgs = append(userOrgs, org.Name)
 	}
 
-	assumedUser, err := dotrill.GetRepresentingUser()
+	representingUser, err := dotrill.GetRepresentingUser()
 	if err != nil {
 		return nil, errors.New("failed to get assumed user email")
+	}
+	isRepresentingUser := false
+	if representingUser != "" {
+		isRepresentingUser = true
 	}
 
 	return connect.NewResponse(&localv1.GetCurrentUserResponse{
@@ -509,8 +513,8 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 			DisplayName: userResp.User.DisplayName,
 			PhotoUrl:    userResp.User.PhotoUrl,
 		},
-		RillUserOrgs:     userOrgs,
-		AssumedUserEmail: assumedUser,
+		RillUserOrgs:       userOrgs,
+		IsRepresentingUser: isRepresentingUser,
 	}), nil
 }
 

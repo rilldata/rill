@@ -5,11 +5,11 @@
   const user = createLocalServiceGetCurrentUser();
 </script>
 
-{#if $user.data?.assumedUserEmail}
+{#if $user.data?.isRepresentingUser}
   <div class="bg-yellow-100 py-1 w-full">
     <div class="flex flex-row items-center mx-auto w-fit gap-x-2">
       <InfoCircle />
-      <span>Warning: Running action as {$user.data?.assumedUserEmail}</span>
+      <span>Warning: Running action as {$user.data?.user?.email}</span>
     </div>
   </div>
 {/if}

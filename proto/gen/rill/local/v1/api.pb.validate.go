@@ -1493,7 +1493,7 @@ func (m *GetCurrentUserResponse) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for AssumedUserEmail
+	// no validation rules for IsRepresentingUser
 
 	if len(errors) > 0 {
 		return GetCurrentUserResponseMultiError(errors)
