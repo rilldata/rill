@@ -222,8 +222,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Serving static assets
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/assets/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.assetsHandler))))
 
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/components/{name}/parse", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.parseTemplate))))
-
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		httpMux.Handle("/metrics", promhttp.Handler())
