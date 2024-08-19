@@ -24,10 +24,10 @@
 
         if (data.permissions.manageOrg) {
           // TODO: once settings page is filled in we add these
-          // tabs.push({
-          //   route: `/${organization}/-/settings`,
-          //   label: "Status",
-          // });
+          tabs.push({
+            route: `/${organization}/-/settings`,
+            label: "Settings",
+          });
         }
 
         return tabs;
@@ -47,6 +47,9 @@
       </a>
     {/each}
   </nav>
+{:else}
+  <!-- Add a border to keep things consistent. It is cleaner to handle this here. -->
+  <div class="border-b"></div>
 {/if}
 
 <style lang="postcss">

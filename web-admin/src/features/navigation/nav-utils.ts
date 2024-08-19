@@ -5,6 +5,10 @@ export function isOrganizationPage(page: Page): boolean {
   return page.route.id === "/[organization]";
 }
 
+export function withinOrganization(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]");
+}
+
 export function isProjectPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]" ||

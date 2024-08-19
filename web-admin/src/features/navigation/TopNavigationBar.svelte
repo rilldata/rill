@@ -29,6 +29,7 @@
     isMagicLinkPage,
     isMetricsExplorerPage,
     isProjectPage,
+    withinOrganization,
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
@@ -52,6 +53,7 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onMagicLinkPage = isMagicLinkPage($page);
+  $: witinOrgPage = withinOrganization($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -148,7 +150,7 @@
 
 <div
   class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage}
+  class:border-b={!onProjectPage && !witinOrgPage}
 >
   <!-- Left side -->
   <a
