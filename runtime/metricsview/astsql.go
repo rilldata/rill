@@ -1,6 +1,7 @@
 package metricsview
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -135,20 +136,20 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteString(n.FromSelect.Alias)
 
 		for _, ljs := range n.LeftJoinSelects {
-			err := b.writeJoin("LEFT", n.FromSelect, ljs)
+			err := b.writeJoin("LEFT", n.FromSelect, ljs, false)
 			if err != nil {
 				return err
 			}
 		}
 
 		if n.SpineSelect != nil {
-			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
+			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect, false)
 			if err != nil {
 				return err
 			}
 		}
 		if n.JoinComparisonSelect != nil {
-			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
+			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect, true)
 			if err != nil {
 				return err
 			}
@@ -217,7 +218,24 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	return nil
 }
 
-func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
+func (a *AST) interval() (string, error) {
+	if a.query.TimeRange == nil {
+		return "", fmt.Errorf("no time range for the offset")
+	}
+	if a.query.TimeRange.Start.IsZero() {
+		return "", fmt.Errorf("no start time for the offset")
+	}
+	if a.query.ComparisonTimeRange == nil {
+		return "", fmt.Errorf("no comparison time range for the offset")
+	}
+	if a.query.ComparisonTimeRange.Start.IsZero() {
+		return "", fmt.Errorf("no start time for the comparison time range")
+	}
+	diff := a.query.ComparisonTimeRange.Start.Sub(a.query.TimeRange.Start)
+	return fmt.Sprint(diff.Milliseconds()), nil
+}
+
+func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode, comp bool) error {
 	b.out.WriteByte(' ')
 	b.out.WriteString(string(joinType))
 	b.out.WriteString(" JOIN ")
@@ -244,6 +262,15 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		}
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
 		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
+		if comp && f.Time {
+			intv, err := b.ast.interval()
+			if err != nil {
+				return err
+			}
+
+			// example: base.ts IS NOT DISTINCT FROM comparison.ts - (? - ?) -- <comparison-start> - <base-start>
+			rhs = fmt.Sprintf("(%s - INTERVAL %s MILLISECONDS)", rhs, intv)
+		}
 		b.out.WriteByte('(')
 		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')

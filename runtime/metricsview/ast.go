@@ -65,6 +65,7 @@ type FieldNode struct {
 	Name  string
 	Label string
 	Expr  string
+	Time  bool
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -144,6 +145,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			Name:  dim.Name,
 			Label: dim.Label,
 			Expr:  ast.dialect.MetricsViewDimensionExpression(dim),
+			Time:  ast.isTime(qd),
 		}
 
 		if dim.Unnest {
@@ -224,6 +226,14 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	ast.Root.Offset = ast.query.Offset
 
 	return ast, nil
+}
+
+func (a *AST) isTime(qd Dimension) bool {
+	return qd.Name == a.metricsView.TimeDimension ||
+		qd.Compute != nil &&
+			qd.Compute.TimeFloor != nil &&
+			qd.Compute.TimeFloor.Grain.Valid() &&
+			qd.Compute.TimeFloor.Dimension == a.metricsView.TimeDimension
 }
 
 // resolveDimension returns a dimension spec for the given dimension query.
