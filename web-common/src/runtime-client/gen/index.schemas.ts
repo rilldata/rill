@@ -802,6 +802,9 @@ export type V1ResolveComponentResponseRendererProperties = {
 export type V1ResolveComponentResponseDataItem = { [key: string]: any };
 
 export interface V1ResolveComponentResponse {
+  /** Show property with templating resolved for the provided args.
+If it resolves to false, the other fields are not set. */
+  show?: boolean;
   schema?: V1StructType;
   data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
@@ -1857,15 +1860,16 @@ export type V1ComponentSpecResolverProperties = { [key: string]: any };
 
 export interface V1ComponentSpec {
   title?: string;
+  subtitle?: string;
   resolver?: string;
   resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
-  definedInDashboard?: boolean;
-  subtitle?: string;
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
-  show?: boolean;
+  /** Templated string that should evaluate to a boolean. */
+  show?: string;
+  definedInDashboard?: boolean;
 }
 
 export interface V1Component {

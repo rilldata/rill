@@ -26,12 +26,12 @@ type ComponentYAML struct {
 	commonYAML `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string                    `yaml:"title"`
 	Subtitle   string                    `yaml:"subtitle"`
+	Input      []*ComponentVariableYAML  `yaml:"input"`
+	Output     *ComponentVariableYAML    `yaml:"output"`
 	Data       *DataYAML                 `yaml:"data"`
+	Show       string                    `yaml:"show"`
 	VegaLite   *string                   `yaml:"vega_lite"`
 	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
-	Input      []*ComponentVariableYAML  `yaml:"input,omitempty"`
-	Output     *ComponentVariableYAML    `yaml:"output,omitempty"`
-	Show       *bool                     `yaml:"show,omitempty"`
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -151,11 +151,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		}
 	}
 
-	var show = true
-	if tmp.Show != nil {
-		show = *tmp.Show
-	}
-
 	// Create the component spec
 	spec := &runtimev1.ComponentSpec{
 		Title:              tmp.Title,
@@ -166,7 +161,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		RendererProperties: rendererProps,
 		Input:              input,
 		Output:             output,
-		Show:               show,
+		Show:               tmp.Show,
 	}
 
 	return spec, refs, nil

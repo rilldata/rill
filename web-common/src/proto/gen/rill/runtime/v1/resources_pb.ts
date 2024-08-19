@@ -3390,6 +3390,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
   title = "";
 
   /**
+   * @generated from field: string subtitle = 7;
+   */
+  subtitle = "";
+
+  /**
    * @generated from field: string resolver = 2;
    */
   resolver = "";
@@ -3410,16 +3415,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   rendererProperties?: Struct;
 
   /**
-   * @generated from field: bool defined_in_dashboard = 6;
-   */
-  definedInDashboard = false;
-
-  /**
-   * @generated from field: string subtitle = 7;
-   */
-  subtitle = "";
-
-  /**
    * @generated from field: repeated rill.runtime.v1.ComponentVariable input = 8;
    */
   input: ComponentVariable[] = [];
@@ -3430,9 +3425,16 @@ export class ComponentSpec extends Message<ComponentSpec> {
   output?: ComponentVariable;
 
   /**
-   * @generated from field: bool show = 10;
+   * Templated string that should evaluate to a boolean.
+   *
+   * @generated from field: string show = 10;
    */
-  show = false;
+  show = "";
+
+  /**
+   * @generated from field: bool defined_in_dashboard = 6;
+   */
+  definedInDashboard = false;
 
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
@@ -3443,15 +3445,15 @@ export class ComponentSpec extends Message<ComponentSpec> {
   static readonly typeName = "rill.runtime.v1.ComponentSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
-    { no: 6, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
-    { no: 10, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {

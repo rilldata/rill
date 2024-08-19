@@ -488,15 +488,15 @@ message Component {
 
 message ComponentSpec {
   string title = 1;
+  string subtitle = 7;
   string resolver = 2;
   google.protobuf.Struct resolver_properties = 3;
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
-  bool defined_in_dashboard = 6;
-  string subtitle = 7;
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
-  bool show = 10;
+  string show = 10; // Templated string that should evaluate to a boolean.
+  bool defined_in_dashboard = 6;
 }
 
 message ComponentState {}

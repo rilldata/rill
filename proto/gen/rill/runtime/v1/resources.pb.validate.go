@@ -8052,6 +8052,8 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for Title
 
+	// no validation rules for Subtitle
+
 	// no validation rules for Resolver
 
 	if all {
@@ -8113,10 +8115,6 @@ func (m *ComponentSpec) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for DefinedInDashboard
-
-	// no validation rules for Subtitle
 
 	for idx, item := range m.GetInput() {
 		_, _ = idx, item
@@ -8182,6 +8180,8 @@ func (m *ComponentSpec) validate(all bool) error {
 	}
 
 	// no validation rules for Show
+
+	// no validation rules for DefinedInDashboard
 
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
