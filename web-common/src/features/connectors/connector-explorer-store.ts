@@ -26,7 +26,7 @@ function createConnectorExplorerStore() {
   }
 
   function getDefaultState(
-    connector: string,
+    connector: string, // Included for API consistency, but not used in this function
     database?: string,
     schema?: string,
   ): boolean {
