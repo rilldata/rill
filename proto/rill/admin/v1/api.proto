@@ -1390,12 +1390,9 @@ message AddUsergroupMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
-  bool add_rill_user_to_org = 4; // should existing rill user be added to the org if not already in it, for non rill users this is ignored and they will be added to the org and usergroup
 }
 
-message AddUsergroupMemberUserResponse {
-  bool pending_signup = 1;
-}
+message AddUsergroupMemberUserResponse {}
 
 message ListUsergroupMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];

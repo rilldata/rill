@@ -9,8 +9,6 @@ import (
 
 	"github.com/rilldata/rill/admin/database"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, error) {
@@ -80,23 +78,24 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		if invite.OrgRoleID.Valid {
-			err = s.DB.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID.String)
+		err = s.DB.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, usergroupID := range invite.UsergroupIDs {
+			// check if the user group exists, need to check explicitly as tx is not completed yet
+			exists, err := s.DB.CheckUsergroupExists(ctx, usergroupID)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			role, err := s.DB.FindOrganizationRole(ctx, "viewer")
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			// add user to org as viewer
-			err = s.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+
+			if !exists {
+				// ignore if usergroup does not exist, might have been deleted before invite was accepted
+				continue
 			}
 
-			err = s.DB.InsertUsergroupMemberUser(ctx, invite.UsergroupID.String, user.ID)
+			err = s.DB.InsertUsergroupMemberUser(ctx, usergroupID, user.ID)
 			if err != nil {
 				return nil, err
 			}

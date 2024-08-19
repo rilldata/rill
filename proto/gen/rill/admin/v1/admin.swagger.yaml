@@ -1944,10 +1944,6 @@ paths:
           required: true
           schema:
             type: object
-            properties:
-              addRillUserToOrg:
-                type: boolean
-                title: should existing rill user be added to the org if not already in it, for non rill users this is ignored and they will be added to the org and usergroup
       tags:
         - AdminService
   /v1/organizations/{organization}/usergroups/{usergroup}/role:
@@ -3342,9 +3338,6 @@ definitions:
     type: object
   v1AddUsergroupMemberUserResponse:
     type: object
-    properties:
-      pendingSignup:
-        type: boolean
   v1AlertOptions:
     type: object
     properties:

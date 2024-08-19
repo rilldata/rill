@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/rilldata/rill/admin/database"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
@@ -797,6 +798,15 @@ func (c *connection) DeleteUsergroupMemberUser(ctx context.Context, groupID, use
 	return checkDeleteRow("usergroup member", res, err)
 }
 
+func (c *connection) CheckUsergroupExists(ctx context.Context, groupID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM usergroups WHERE id=$1)", groupID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
+	}
+	return res, nil
+}
+
 func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `
 		DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id IN (SELECT id FROM usergroups WHERE org_id = $2)
@@ -1497,21 +1507,29 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 }
 
 func (c *connection) FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*database.OrganizationInvite, error) {
-	var res []*database.OrganizationInvite
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
+	var dtos []*OrganizationInviteDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
 	if err != nil {
 		return nil, parseErr("org invites", err)
+	}
+	res := make([]*database.OrganizationInvite, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsModel()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
 
 func (c *connection) FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*database.OrganizationInvite, error) {
-	res := &database.OrganizationInvite{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(res)
+	dto := &OrganizationInviteDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("org invite", err)
 	}
-	return res, nil
+	return dto.AsModel()
 }
 
 func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *database.InsertOrganizationInviteOptions) error {
@@ -1519,24 +1537,16 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return err
 	}
 
-	var roleID, usergroupID interface{}
-	if opts.RoleID == "" {
-		roleID = nil
-	} else {
-		roleID = opts.RoleID
-	}
-
-	if opts.UsergroupID == "" {
-		usergroupID = nil
-	} else {
-		usergroupID = opts.UsergroupID
-	}
-
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id, usergroup_id) VALUES ($1, $2, $3, $4, $5)", opts.Email, opts.InviterID, opts.OrgID, roleID, usergroupID)
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.OrgID, opts.RoleID)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
 	return nil
+}
+
+func (c *connection) UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET usergroup_ids = $1 WHERE id = $2`, pq.Array(groupIDs), id)
+	return checkUpdateRow("org invite", res, err)
 }
 
 func (c *connection) DeleteOrganizationInvite(ctx context.Context, id string) error {
@@ -1961,6 +1971,20 @@ func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser,
 	}
 
 	return m.MagicAuthTokenWithUser, nil
+}
+
+type OrganizationInviteDTO struct {
+	*database.OrganizationInvite
+	UsergroupIDs pgtype.TextArray `db:"usergroup_ids"`
+}
+
+func (o *OrganizationInviteDTO) AsModel() (*database.OrganizationInvite, error) {
+	err := o.UsergroupIDs.AssignTo(&o.OrganizationInvite.UsergroupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return o.OrganizationInvite, nil
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

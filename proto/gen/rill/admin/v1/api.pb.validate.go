@@ -15499,8 +15499,6 @@ func (m *AddUsergroupMemberUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for AddRillUserToOrg
-
 	if len(errors) > 0 {
 		return AddUsergroupMemberUserRequestMultiError(errors)
 	}
@@ -15653,8 +15651,6 @@ func (m *AddUsergroupMemberUserResponse) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for PendingSignup
 
 	if len(errors) > 0 {
 		return AddUsergroupMemberUserResponseMultiError(errors)

@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -126,6 +125,7 @@ type DB interface {
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
+	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -207,6 +207,7 @@ type DB interface {
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
+	UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
@@ -744,11 +745,11 @@ type MemberUsergroup struct {
 type OrganizationInvite struct {
 	ID              string
 	Email           string
-	OrgID           string         `db:"org_id"`
-	OrgRoleID       sql.NullString `db:"org_role_id"`
-	UsergroupID     sql.NullString `db:"usergroup_id"`
-	InvitedByUserID string         `db:"invited_by_user_id"`
-	CreatedOn       time.Time      `db:"created_on"`
+	OrgID           string    `db:"org_id"`
+	OrgRoleID       string    `db:"org_role_id"`
+	UsergroupIDs    []string  `db:"usergroup_ids"`
+	InvitedByUserID string    `db:"invited_by_user_id"`
+	CreatedOn       time.Time `db:"created_on"`
 }
 
 // ProjectInvite represents an outstanding invitation to join a project.
@@ -825,11 +826,10 @@ const (
 )
 
 type InsertOrganizationInviteOptions struct {
-	Email       string `validate:"email"`
-	InviterID   string
-	OrgID       string `validate:"required"`
-	RoleID      string
-	UsergroupID string
+	Email     string `validate:"email"`
+	InviterID string
+	OrgID     string `validate:"required"`
+	RoleID    string `validate:"required"`
 }
 
 type InsertProjectInviteOptions struct {

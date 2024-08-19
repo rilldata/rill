@@ -7,8 +7,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func AddCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -39,31 +37,49 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if group != "" {
-				res, err := client.AddUsergroupMemberUser(cmd.Context(), &adminv1.AddUsergroupMemberUserRequest{
-					Organization:     ch.Org,
-					Usergroup:        group,
-					Email:            email,
-					AddRillUserToOrg: false,
+				_, err = client.AddUsergroupMemberUser(cmd.Context(), &adminv1.AddUsergroupMemberUserRequest{
+					Organization: ch.Org,
+					Usergroup:    group,
+					Email:        email,
 				})
 				if err != nil {
-					if s, ok := status.FromError(err); ok && s.Code() == codes.FailedPrecondition && strings.Contains(s.Message(), "user is not a member of the org") {
+					if strings.Contains(err.Error(), "user is not a member of the org") {
 						// ask if user should be added to the organization
-						addToOrg, err := cmdutil.ConfirmPrompt(fmt.Sprintf("This user exists in Rill but not part of the %q organization. Do you want to add the user to the organization as viewer?", ch.Org), "", false)
+						ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("The user must be a member of %q to join one of its groups. Do you want to add the user to %q ?", ch.Org, ch.Org), "", false)
 						if err != nil {
 							return err
 						}
 
-						if addToOrg {
-							_, err = client.AddUsergroupMemberUser(cmd.Context(), &adminv1.AddUsergroupMemberUserRequest{
-								Organization:     ch.Org,
-								Usergroup:        group,
-								Email:            email,
-								AddRillUserToOrg: true,
+						if ok {
+							if role == "" {
+								role = "viewer"
+							}
+							res, err := client.AddOrganizationMemberUser(cmd.Context(), &adminv1.AddOrganizationMemberUserRequest{
+								Organization: ch.Org,
+								Email:        email,
+								Role:         role,
 							})
 							if err != nil {
 								return err
 							}
-							ch.PrintfSuccess("User %q added to the user group %q and organization %q\n", email, group, ch.Org)
+
+							if res.PendingSignup {
+								ch.PrintfSuccess("Invitation sent to %q to join organization %q as %q\n", email, ch.Org, role)
+							} else {
+								ch.PrintfSuccess("User %q added to the organization %q as %q\n", email, ch.Org, role)
+							}
+
+							// User is added or invite to the org, now add the user again to the group
+							_, err = client.AddUsergroupMemberUser(cmd.Context(), &adminv1.AddUsergroupMemberUserRequest{
+								Organization: ch.Org,
+								Usergroup:    group,
+								Email:        email,
+							})
+							if err != nil {
+								return err
+							}
+
+							ch.PrintfSuccess("User %q added to the user group %q\n", email, group)
 							return nil
 						}
 						ch.PrintfWarn("Aborted, user needs to be part of the organization to be added to the user group\n")
@@ -72,11 +88,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				if res.PendingSignup {
-					ch.PrintfSuccess("Invitation sent to %q to join user group \"%s\"\n", email, group)
-				} else {
-					ch.PrintfSuccess("User %q added to the user group %q\n", email, group)
-				}
+				ch.PrintfSuccess("User %q added to the user group %q\n", email, group)
 			} else if projectName != "" {
 				res, err := client.AddProjectMemberUser(cmd.Context(), &adminv1.AddProjectMemberUserRequest{
 					Organization: ch.Org,
