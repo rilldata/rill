@@ -4,6 +4,7 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import { V1AnalyzedConnector } from "../../../runtime-client";
+  import { connectorExplorerStore } from "../connector-explorer-store";
   import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
   import { useDatabaseSchemas } from "./selectors";
 
@@ -11,8 +12,8 @@
   export let connector: V1AnalyzedConnector;
   export let database: string;
 
-  let showDatabaseSchemas = true;
-
+  $: connectorName = connector?.name as string;
+  $: expanded = connectorExplorerStore.getItem(connectorName, database);
   $: databaseSchemasQuery = useDatabaseSchemas(
     instanceId,
     connector?.name as string,
@@ -25,11 +26,12 @@
   {#if database}
     <button
       class="database-entry-header"
-      class:open={showDatabaseSchemas}
-      on:click={() => (showDatabaseSchemas = !showDatabaseSchemas)}
+      class:open={$expanded}
+      on:click={() =>
+        connectorExplorerStore.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
-        className="transform transition-transform text-gray-400 {showDatabaseSchemas
+        className="transform transition-transform text-gray-400 {$expanded
           ? 'rotate-0'
           : '-rotate-90'}"
         size="14px"
@@ -42,7 +44,7 @@
   {/if}
 
   <ol transition:slide={{ duration }}>
-    {#if showDatabaseSchemas}
+    {#if $expanded}
       {#if error}
         <span class="message">Error: {error.response.data.message}</span>
       {:else if isLoading}

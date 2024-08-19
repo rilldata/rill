@@ -6,14 +6,16 @@
   import { createRuntimeServiceAnalyzeConnectors } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import ConnectorEntry from "./ConnectorEntry.svelte";
+  import { connectorExplorerStore } from "./connector-explorer-store";
 
   export let containerHeight: number;
 
   const MIN_HEIGHT = 31; // The height of the "Connectors" header
 
-  let showConnectors = true;
   let initialHeight = containerHeight / 2;
   let sectionHeight = initialHeight;
+
+  $: showConnectors = $connectorExplorerStore.showConnectors;
 
   $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId, {
     query: {
@@ -39,11 +41,7 @@
     basis={showConnectors ? initialHeight : MIN_HEIGHT}
     max={containerHeight * 0.9}
   />
-  <button
-    on:click={() => {
-      showConnectors = !showConnectors;
-    }}
-  >
+  <button on:click={connectorExplorerStore.toggleExplorer}>
     <h3>Connectors</h3>
     <CaretDownIcon
       className="transform transition-transform {showConnectors
