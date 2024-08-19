@@ -13,7 +13,7 @@
   export let connector: V1AnalyzedConnector;
 
   $: connectorName = connector?.name as string;
-  $: showConnector = connectorExplorerStore.getItemState(connectorName);
+  $: expanded = connectorExplorerStore.getItem(connectorName);
   $: ({ instanceId } = $runtime);
   $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
@@ -32,7 +32,7 @@
         on:click={() => connectorExplorerStore.toggleItem(connectorName)}
       >
         <CaretDownIcon
-          className="transform transition-transform text-gray-400 {$showConnector
+          className="transform transition-transform text-gray-400 {$expanded
             ? 'rotate-0'
             : '-rotate-90'}"
           size="14px"
@@ -51,7 +51,7 @@
           <Tag height={16}>OLAP</Tag>
         {/if}
       </button>
-      {#if $showConnector}
+      {#if $expanded}
         <DatabaseExplorer {instanceId} {connector} />
       {/if}
     </li>

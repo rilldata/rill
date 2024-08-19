@@ -35,22 +35,42 @@ function createConnectorExplorerStore() {
     return true; // Connector
   }
 
+  function createItemIfNotExists(
+    connector: string,
+    database?: string,
+    schema?: string,
+  ) {
+    update((state) => {
+      const key = getItemKey(connector, database, schema);
+
+      if (key in state.expandedItems) return state; // Item already exists
+
+      return {
+        ...state,
+        expandedItems: {
+          ...state.expandedItems,
+          [key]: getDefaultState(connector, database, schema),
+        },
+      };
+    });
+  }
+
   return {
     subscribe,
     toggleExplorer: () =>
       update((state) => ({ ...state, showConnectors: !state.showConnectors })),
 
-    getItemState: (
+    getItem: (
       connector: string,
       database?: string,
       schema?: string,
     ): Readable<boolean> => {
+      createItemIfNotExists(connector, database, schema);
+
       const key = getItemKey(connector, database, schema);
+
       return derived({ subscribe }, ($state) => {
-        if (key in $state.expandedItems) {
-          return $state.expandedItems[key];
-        }
-        return getDefaultState(connector, database, schema);
+        return $state.expandedItems[key];
       });
     },
 
@@ -66,6 +86,48 @@ function createConnectorExplorerStore() {
             ...state.expandedItems,
             [key]: !currentState,
           },
+        };
+      }),
+
+    renameItem: (
+      oldConnector: string,
+      newConnector: string,
+      oldDatabase?: string,
+      newDatabase?: string,
+      oldSchema?: string,
+      newSchema?: string,
+    ) =>
+      update((state) => {
+        const oldKeyPrefix = getItemKey(oldConnector, oldDatabase, oldSchema);
+        const newKeyPrefix = getItemKey(newConnector, newDatabase, newSchema);
+
+        const updatedExpandedItems = Object.fromEntries(
+          Object.entries(state.expandedItems).map(([key, value]) => {
+            if (key.startsWith(oldKeyPrefix)) {
+              const newKey = key.replace(oldKeyPrefix, newKeyPrefix);
+              return [newKey, value];
+            }
+            return [key, value];
+          }),
+        );
+
+        return {
+          ...state,
+          expandedItems: updatedExpandedItems,
+        };
+      }),
+
+    deleteItem: (connector: string, database?: string, schema?: string) =>
+      update((state) => {
+        const keyPrefix = getItemKey(connector, database, schema);
+        const updatedExpandedItems = Object.fromEntries(
+          Object.entries(state.expandedItems).filter(
+            ([key]) => !key.startsWith(keyPrefix),
+          ),
+        );
+        return {
+          ...state,
+          expandedItems: updatedExpandedItems,
         };
       }),
   };

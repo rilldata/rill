@@ -12,7 +12,7 @@
   export let databaseSchema: string;
 
   $: connectorName = connector?.name as string;
-  $: showDatabaseSchema = connectorExplorerStore.getItemState(
+  $: expanded = connectorExplorerStore.getItem(
     connectorName,
     database,
     databaseSchema,
@@ -38,7 +38,7 @@
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
   <button
     class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
-    class:open={$showDatabaseSchema}
+    class:open={$expanded}
     on:click={() =>
       connectorExplorerStore.toggleItem(
         connectorName,
@@ -47,7 +47,7 @@
       )}
   >
     <CaretDownIcon
-      className="transform transition-transform text-gray-400 {$showDatabaseSchema
+      className="transform transition-transform text-gray-400 {$expanded
         ? 'rotate-0'
         : '-rotate-90'}"
       size="14px"
@@ -65,7 +65,7 @@
     </span>
   </button>
 
-  {#if $showDatabaseSchema}
+  {#if $expanded}
     {#if connector?.errorMessage}
       <div class="message">{connector.errorMessage}</div>
     {:else if !connector.driver || !connector.driver.name}

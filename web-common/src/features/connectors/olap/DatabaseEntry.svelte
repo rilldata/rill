@@ -13,10 +13,8 @@
   export let database: string;
 
   $: connectorName = connector?.name as string;
-  $: showDatabase = connectorExplorerStore.getItemState(
-    connectorName,
-    database,
-  );
+  $: expanded = connectorExplorerStore.getItem(connectorName, database);
+  $: console.log(connectorName, database, "expanded", $expanded);
   $: databaseSchemasQuery = useDatabaseSchemas(
     instanceId,
     connector?.name as string,
@@ -29,12 +27,12 @@
   {#if database}
     <button
       class="database-entry-header"
-      class:open={$showDatabase}
+      class:open={$expanded}
       on:click={() =>
         connectorExplorerStore.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
-        className="transform transition-transform text-gray-400 {$showDatabase
+        className="transform transition-transform text-gray-400 {$expanded
           ? 'rotate-0'
           : '-rotate-90'}"
         size="14px"
@@ -47,7 +45,7 @@
   {/if}
 
   <ol transition:slide={{ duration }}>
-    {#if $showDatabase}
+    {#if $expanded}
       {#if error}
         <span class="message">Error: {error.response.data.message}</span>
       {:else if isLoading}
