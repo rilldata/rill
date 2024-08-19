@@ -12,13 +12,36 @@ export function buildSimpleBar(
     width: { band: 0.75 },
     clip: true,
   };
+
   baseSpec.encoding = {
-    x: { field: timeField.name, type: "temporal", bandPosition: 0 },
+    x: {
+      field: timeField.name,
+      type: "temporal",
+      bandPosition: 0,
+      // TODO: will this enable zoom?
+      // https://vega.github.io/vega-lite-v4/docs/zoom.html
+      // scale: { domain: { param: "brush" } },
+    },
     y: { field: quantitativeField.name, type: "quantitative" },
     opacity: {
-      condition: { param: "hover", empty: false, value: 1 },
+      condition: [
+        {
+          param: "hover",
+          empty: false,
+          value: 1,
+        },
+        {
+          param: "brush",
+          empty: false,
+          value: 1,
+        },
+      ],
       value: 0.8,
     },
+
+    // TODO: configure or disable tooltip while scrubbing for the time being
+    // https://vega.github.io/vega-lite/docs/tooltip.html#disable-tooltips
+    // TODO: can add a `disableTooltip` flag to buildSimpleBar
     tooltip: [
       {
         field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
@@ -45,6 +68,9 @@ export function buildSimpleBar(
         encodings: ["x"],
       },
     },
+    // TODO: update selectedSubRange so we can zoom in on a subrange
+    // $dashboardStore.setSelectedScrubRange(value);
+    // How to access the interval value?
     {
       name: "brush",
       select: {
