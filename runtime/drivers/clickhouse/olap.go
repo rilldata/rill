@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -224,8 +225,20 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	create.WriteString(safeSQLName(name))
 
-	// see if there is any column override
-	if outputProps.Columns != "" {
+	if outputProps.Columns == "" {
+		// infer columns
+		v := tempName("view")
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", v, sql)})
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = c.Exec(context.Background(), &drivers.Statement{Query: "DROP VIEW " + v})
+		}()
+		// create table with same schema as view
+		create.WriteString(" AS ")
+		create.WriteString(v)
+	} else {
 		create.WriteString(outputProps.Columns)
 	}
 
@@ -274,16 +287,22 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	}
 
 	// settings
-	if outputProps.Settings != "" {
+	if outputProps.TableSettings != "" {
 		create.WriteString(" SETTINGS ")
-		create.WriteString(outputProps.Settings)
+		create.WriteString(outputProps.TableSettings)
 	}
 
-	// write sql query
-	create.WriteString(" AS ")
-	create.WriteString(sql)
+	// create table
+	// on replicated databases `create table t as select * from ...` is prohibited
+	// so we need to create a table first and then insert data into it
+	err := c.Exec(ctx, &drivers.Statement{Query: create.String(), Priority: 100})
+	if err != nil {
+		return err
+	}
+
+	// insert into table
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    create.String(),
+		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 		Priority: 100,
 	})
 }
@@ -654,3 +673,7 @@ func splitBaseAndArgs(s string) (string, string, bool) {
 }
 
 var errUnsupportedType = errors.New("encountered unsupported clickhouse type")
+
+func tempName(prefix string) string {
+	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
+}
