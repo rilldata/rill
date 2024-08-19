@@ -89,6 +89,7 @@ function createConnectorExplorerStore() {
         };
       }),
 
+    // Not used yet. Currently, the reconciler does not track connector renames.
     renameItem: (
       oldConnector: string,
       newConnector: string,
