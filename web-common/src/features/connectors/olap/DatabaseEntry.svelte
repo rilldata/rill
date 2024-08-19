@@ -14,7 +14,6 @@
 
   $: connectorName = connector?.name as string;
   $: expanded = connectorExplorerStore.getItem(connectorName, database);
-  $: console.log(connectorName, database, "expanded", $expanded);
   $: databaseSchemasQuery = useDatabaseSchemas(
     instanceId,
     connector?.name as string,
