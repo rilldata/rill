@@ -3,7 +3,6 @@
   import SurfaceView from "@rilldata/web-common/components/icons/SurfaceView.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { portal } from "@rilldata/web-common/lib/actions/portal";
 
   export let navWidth: number;
   export let navOpen: boolean;
@@ -26,7 +25,6 @@
   on:mousedown={() => {
     active = false;
   }}
-  use:portal
 >
   <Tooltip location="bottom" alignment="start" distance={12} bind:active>
     {#if navOpen}

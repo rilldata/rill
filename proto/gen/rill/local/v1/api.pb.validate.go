@@ -17,8 +17,6 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
-
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 )
 
 // ensure the imports are used
@@ -35,8 +33,6 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 	_ = sort.Sort
-
-	_ = adminv1.GithubPermission(0)
 )
 
 // Validate checks the field values on PingRequest with the rules defined in
@@ -701,242 +697,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetVersionResponseValidationError{}
-
-// Validate checks the field values on DeployValidationRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DeployValidationRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeployValidationRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DeployValidationRequestMultiError, or nil if none found.
-func (m *DeployValidationRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeployValidationRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return DeployValidationRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// DeployValidationRequestMultiError is an error wrapping multiple validation
-// errors returned by DeployValidationRequest.ValidateAll() if the designated
-// constraints aren't met.
-type DeployValidationRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeployValidationRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeployValidationRequestMultiError) AllErrors() []error { return m }
-
-// DeployValidationRequestValidationError is the validation error returned by
-// DeployValidationRequest.Validate if the designated constraints aren't met.
-type DeployValidationRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeployValidationRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeployValidationRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeployValidationRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeployValidationRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeployValidationRequestValidationError) ErrorName() string {
-	return "DeployValidationRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeployValidationRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeployValidationRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeployValidationRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeployValidationRequestValidationError{}
-
-// Validate checks the field values on DeployValidationResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DeployValidationResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeployValidationResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DeployValidationResponseMultiError, or nil if none found.
-func (m *DeployValidationResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeployValidationResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for IsAuthenticated
-
-	// no validation rules for LoginUrl
-
-	// no validation rules for IsGithubConnected
-
-	// no validation rules for GithubGrantAccessUrl
-
-	// no validation rules for GithubUserName
-
-	// no validation rules for GithubUserPermission
-
-	// no validation rules for GithubOrganizationPermissions
-
-	// no validation rules for IsGithubRepo
-
-	// no validation rules for IsGithubRemoteFound
-
-	// no validation rules for IsGithubRepoAccessGranted
-
-	// no validation rules for GithubUrl
-
-	// no validation rules for RillOrgExistsAsGithubUserName
-
-	// no validation rules for LocalProjectName
-
-	// no validation rules for DeployedProjectId
-
-	if m.HasUncommittedChanges != nil {
-		// no validation rules for HasUncommittedChanges
-	}
-
-	if len(errors) > 0 {
-		return DeployValidationResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// DeployValidationResponseMultiError is an error wrapping multiple validation
-// errors returned by DeployValidationResponse.ValidateAll() if the designated
-// constraints aren't met.
-type DeployValidationResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeployValidationResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeployValidationResponseMultiError) AllErrors() []error { return m }
-
-// DeployValidationResponseValidationError is the validation error returned by
-// DeployValidationResponse.Validate if the designated constraints aren't met.
-type DeployValidationResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeployValidationResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeployValidationResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeployValidationResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeployValidationResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeployValidationResponseValidationError) ErrorName() string {
-	return "DeployValidationResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeployValidationResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeployValidationResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeployValidationResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeployValidationResponseValidationError{}
 
 // Validate checks the field values on PushToGithubRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1732,6 +1492,8 @@ func (m *GetCurrentUserResponse) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for AssumedUserEmail
 
 	if len(errors) > 0 {
 		return GetCurrentUserResponseMultiError(errors)

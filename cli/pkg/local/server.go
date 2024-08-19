@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -110,188 +109,6 @@ func (s *Server) GetVersion(ctx context.Context, r *connect.Request[localv1.GetV
 	return connect.NewResponse(&localv1.GetVersionResponse{
 		Current: s.app.ch.Version.Number,
 		Latest:  latestVersion,
-	}), nil
-}
-
-// DeployValidation implements localv1connect.LocalServiceHandler.
-func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv1.DeployValidationRequest]) (*connect.Response[localv1.DeployValidationResponse], error) {
-	localProjectName := filepath.Base(s.app.ProjectPath)
-	loginURL, err := url.JoinPath(s.app.localURL, "auth")
-	if err != nil {
-		return nil, err
-	}
-
-	// Don't proceed to validation if the user is not logged in
-	if !s.app.ch.IsAuthenticated() {
-		return connect.NewResponse(&localv1.DeployValidationResponse{
-			IsAuthenticated:               false,
-			LoginUrl:                      loginURL,
-			IsGithubConnected:             false,
-			GithubGrantAccessUrl:          "",
-			GithubUserName:                "",
-			GithubUserPermission:          adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED,
-			GithubOrganizationPermissions: nil,
-			IsGithubRepo:                  false,
-			IsGithubRemoteFound:           false,
-			IsGithubRepoAccessGranted:     false,
-			GithubUrl:                     "",
-			HasUncommittedChanges:         nil,
-			RillOrgExistsAsGithubUserName: false,
-			RillUserOrgs:                  nil,
-			LocalProjectName:              localProjectName,
-		}), nil
-	}
-
-	// Load deployed project if it exists (may be nil)
-	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
-	if err != nil {
-		return nil, err
-	}
-	var deployedProjectID string
-	if project != nil {
-		deployedProjectID = project.Id
-	}
-
-	// Get rill user orgs
-	c, err := s.app.ch.Client()
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	userOrgs := make([]string, 0, len(resp.Organizations))
-	for _, org := range resp.Organizations {
-		userOrgs = append(userOrgs, org.Name)
-	}
-	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
-
-	isGithubRepo := false
-	githubRemoteFound := false
-	repoAccess := false
-	var remote *gitutil.Remote
-	var ghURL string
-
-	if project == nil || project.GithubUrl == "" {
-		// check if project is a git repo only if there is no project already, or it is connected to github
-		remote, ghURL, err = gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-		if err != nil {
-			if errors.Is(err, gitutil.ErrGitRemoteNotFound) {
-				isGithubRepo = true
-			} else if !errors.Is(err, git.ErrRepositoryNotExists) {
-				// do not return error if repo doesn't exist
-				return nil, err
-			}
-		} else {
-			isGithubRepo = true
-			githubRemoteFound = true
-		}
-	}
-
-	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	if !userStatus.HasAccess {
-		// user should have git app installed before deploying, so redirect to grant access url
-		return connect.NewResponse(&localv1.DeployValidationResponse{
-			IsAuthenticated:               true,
-			LoginUrl:                      loginURL,
-			IsGithubConnected:             false,
-			GithubGrantAccessUrl:          userStatus.GrantAccessUrl,
-			GithubUserName:                "",
-			GithubUserPermission:          adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED,
-			GithubOrganizationPermissions: nil,
-			IsGithubRepo:                  isGithubRepo,
-			IsGithubRemoteFound:           githubRemoteFound,
-			IsGithubRepoAccessGranted:     false,
-			GithubUrl:                     "",
-			HasUncommittedChanges:         nil,
-			RillOrgExistsAsGithubUserName: false,
-			RillUserOrgs:                  userOrgs,
-			LocalProjectName:              localProjectName,
-			DeployedProjectId:             deployedProjectID,
-		}), nil
-	}
-
-	rillOrgExistsAsGitUserName := false
-	// if user does not any have orgs, check if any orgs exist as github username as we suggest this as org name
-	if len(userOrgs) == 0 {
-		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-			Name: userStatus.Account,
-		})
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
-		} else {
-			rillOrgExistsAsGitUserName = true
-		}
-	}
-
-	var hasUncommittedChanges *bool
-	if isGithubRepo && githubRemoteFound {
-		// check if there are uncommitted changes
-		// ignore errors since check is best effort and can fail in multiple cases
-		syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
-		hasUncommittedChanges = new(bool)
-		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
-			*hasUncommittedChanges = true
-		} else {
-			*hasUncommittedChanges = false
-		}
-
-		// check git repo status, if git app installed and user is a collaborator and has authorised app on their account
-		repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-			GithubUrl: ghURL,
-		})
-		if err != nil {
-			return nil, err
-		}
-		repoAccess = repoStatus.HasAccess
-		if !repoStatus.HasAccess {
-			// we should have access to the repo before deploying
-			return connect.NewResponse(&localv1.DeployValidationResponse{
-				IsAuthenticated:               true,
-				LoginUrl:                      loginURL,
-				IsGithubConnected:             true,
-				GithubGrantAccessUrl:          userStatus.GrantAccessUrl,
-				GithubUserName:                userStatus.Account,
-				GithubUserPermission:          userStatus.UserInstallationPermission,
-				GithubOrganizationPermissions: userStatus.OrganizationInstallationPermissions,
-				IsGithubRepo:                  true,
-				IsGithubRemoteFound:           true,
-				IsGithubRepoAccessGranted:     repoAccess,
-				GithubUrl:                     "",
-				HasUncommittedChanges:         hasUncommittedChanges,
-				RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
-				RillUserOrgs:                  userOrgs,
-				LocalProjectName:              localProjectName,
-				DeployedProjectId:             deployedProjectID,
-			}), nil
-		}
-	}
-
-	return connect.NewResponse(&localv1.DeployValidationResponse{
-		IsAuthenticated:               true,
-		LoginUrl:                      loginURL,
-		IsGithubConnected:             true,
-		GithubGrantAccessUrl:          userStatus.GrantAccessUrl,
-		GithubUserName:                userStatus.Account,
-		GithubUserPermission:          userStatus.UserInstallationPermission,
-		GithubOrganizationPermissions: userStatus.OrganizationInstallationPermissions,
-		IsGithubRepo:                  isGithubRepo,
-		IsGithubRemoteFound:           githubRemoteFound,
-		IsGithubRepoAccessGranted:     repoAccess,
-		GithubUrl:                     ghURL,
-		HasUncommittedChanges:         hasUncommittedChanges,
-		RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
-		RillUserOrgs:                  userOrgs,
-		LocalProjectName:              localProjectName,
-		DeployedProjectId:             deployedProjectID,
 	}), nil
 }
 
@@ -680,6 +497,11 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 		userOrgs = append(userOrgs, org.Name)
 	}
 
+	assumedUser, err := dotrill.GetRepresentingUser()
+	if err != nil {
+		return nil, errors.New("failed to get assumed user email")
+	}
+
 	return connect.NewResponse(&localv1.GetCurrentUserResponse{
 		User: &adminv1.User{
 			Id:          userResp.User.Id,
@@ -687,7 +509,8 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 			DisplayName: userResp.User.DisplayName,
 			PhotoUrl:    userResp.User.PhotoUrl,
 		},
-		RillUserOrgs: userOrgs,
+		RillUserOrgs:     userOrgs,
+		AssumedUserEmail: assumedUser,
 	}), nil
 }
 
