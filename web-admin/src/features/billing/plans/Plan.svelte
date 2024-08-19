@@ -5,7 +5,6 @@
   import TeamPlan from "@rilldata/web-admin/features/billing/plans/TeamPlan.svelte";
   import TrialPlan from "@rilldata/web-admin/features/billing/plans/TrialPlan.svelte";
   import { getPlanForOrg } from "@rilldata/web-admin/features/billing/selectors";
-  import { Button } from "@rilldata/web-common/components/button";
 
   export let organization: string;
 

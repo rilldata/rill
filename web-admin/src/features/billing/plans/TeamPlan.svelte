@@ -4,8 +4,9 @@
     type V1BillingPlan,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
-  import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
+  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import SettingsItemContainer from "@rilldata/web-admin/features/settings/SettingsItemContainer.svelte";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -39,10 +40,11 @@
   let open = false;
 </script>
 
-<PlanContainer {organization} {plan}>
-  <svelte:fragment slot="description">
-    Next billing cycle will start on {subscription.endDate}
-  </svelte:fragment>
+<SettingsItemContainer title={plan.name}>
+  <div slot="description">
+    <div>Next billing cycle will start on {subscription.endDate}</div>
+    <PlanQuotas {organization} quotas={plan.quotas} />
+  </div>
   <svelte:fragment slot="contact">
     <span>For any questions,</span>
     <Button type="link" compact forcedStyle="padding-left:2px !important;">
@@ -85,4 +87,4 @@
       </AlertDialogContent>
     </AlertDialog>
   {/if}
-</PlanContainer>
+</SettingsItemContainer>

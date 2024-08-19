@@ -177,7 +177,6 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 	sub, err := o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
 		ExternalCustomerID: orb.String(customerID),
 		PlanID:             orb.String(plan.ID),
-		StartDate:          orb.F(time.Now().AddDate(0, 0, -1)),
 	})
 	if err != nil {
 		return nil, err
