@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -19,8 +20,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
+	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
@@ -106,17 +108,21 @@ func (s *Server) GetVersion(ctx context.Context, r *connect.Request[localv1.GetV
 	}
 
 	return connect.NewResponse(&localv1.GetVersionResponse{
-		Current: s.app.Version.Number,
+		Current: s.app.ch.Version.Number,
 		Latest:  latestVersion,
 	}), nil
 }
 
+// DeployValidation implements localv1connect.LocalServiceHandler.
 func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv1.DeployValidationRequest]) (*connect.Response[localv1.DeployValidationResponse], error) {
 	localProjectName := filepath.Base(s.app.ProjectPath)
-	loginURL := s.app.localURL + "/auth"
+	loginURL, err := url.JoinPath(s.app.localURL, "auth")
+	if err != nil {
+		return nil, err
+	}
 
+	// Don't proceed to validation if the user is not logged in
 	if !s.app.ch.IsAuthenticated() {
-		// user should be logged in first
 		return connect.NewResponse(&localv1.DeployValidationResponse{
 			IsAuthenticated:               false,
 			LoginUrl:                      loginURL,
@@ -135,39 +141,22 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			LocalProjectName:              localProjectName,
 		}), nil
 	}
-	// Get admin client
-	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
-	if err != nil {
-		return nil, err
-	}
 
-	rc, err := dotrillcloud.GetAll(s.app.ProjectPath, s.app.adminURL)
+	// Load deployed project if it exists (may be nil)
+	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
 	if err != nil {
 		return nil, err
 	}
 	var deployedProjectID string
-	var project *adminv1.Project
-	if rc != nil {
-		deployedProjectID = rc.ProjectID
-
-		proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-			Id: deployedProjectID,
-		})
-		if err != nil {
-			// unset if project doesnt exist
-			if errors.Is(err, database.ErrNotFound) {
-				err = dotrillcloud.Delete(s.app.ProjectPath, s.app.adminURL)
-				if err != nil {
-					return nil, err
-				}
-			}
-			deployedProjectID = ""
-		} else {
-			project = proj.Project
-		}
+	if project != nil {
+		deployedProjectID = project.Id
 	}
 
-	// get rill user orgs
+	// Get rill user orgs
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
 	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 	if err != nil {
 		return nil, err
@@ -306,13 +295,14 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	}), nil
 }
 
-// PushToGithub assumes that the current project is not a git repo, it should generally be called after DeployValidation.
+// PushToGithub implements localv1connect.LocalServiceHandler.
+// It assumes that the current project is not a git repo, it should generally be called after DeployValidation.
 func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.PushToGithubRequest]) (*connect.Response[localv1.PushToGithubResponse], error) {
+	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
-		return nil, errors.New("user should be authenticated before pushing to git")
+		return nil, errors.New("must authenticate before performing this action")
 	}
-	// Get admin client
-	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
+	c, err := s.app.ch.Client()
 	if err != nil {
 		return nil, err
 	}
@@ -450,12 +440,13 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}), nil
 }
 
+// DeployProject implements localv1connect.LocalServiceHandler.
 func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.DeployProjectRequest]) (*connect.Response[localv1.DeployProjectResponse], error) {
+	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
-		return nil, errors.New("user should be authenticated before deploying")
+		return nil, errors.New("must authenticate before performing this action")
 	}
-	// Get admin client
-	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
+	c, err := s.app.ch.Client()
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +567,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
-	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.adminURL, &dotrillcloud.Config{
+	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.ch.AdminURL(), &dotrillcloud.Config{
 		ProjectID: projResp.Project.Id,
 	})
 	if err != nil {
@@ -612,12 +603,13 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}), nil
 }
 
+// RedeployProject implements localv1connect.LocalServiceHandler.
 func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1.RedeployProjectRequest]) (*connect.Response[localv1.RedeployProjectResponse], error) {
+	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
-		return nil, errors.New("user should be authenticated")
+		return nil, errors.New("must authenticate before performing this action")
 	}
-	// Get admin client
-	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
+	c, err := s.app.ch.Client()
 	if err != nil {
 		return nil, err
 	}
@@ -656,6 +648,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	}), nil
 }
 
+// GetCurrentUser implements localv1connect.LocalServiceHandler.
 func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.GetCurrentUserRequest]) (*connect.Response[localv1.GetCurrentUserResponse], error) {
 	if !s.app.ch.IsAuthenticated() {
 		return connect.NewResponse(&localv1.GetCurrentUserResponse{
@@ -667,6 +660,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	if err != nil {
 		return nil, err
 	}
+
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		return nil, err
@@ -697,45 +691,20 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	}), nil
 }
 
+// GetCurrentProject implements localv1connect.LocalServiceHandler.
 func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[localv1.GetCurrentProjectRequest]) (*connect.Response[localv1.GetCurrentProjectResponse], error) {
 	localProjectName := filepath.Base(s.app.ProjectPath)
 
+	// Return early if the user isn't logged in
 	if !s.app.ch.IsAuthenticated() {
-		// user should be logged in first
-		return connect.NewResponse(&localv1.GetCurrentProjectResponse{
-			LocalProjectName: localProjectName,
-		}), nil
-	}
-	// Get admin client
-	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
-	if err != nil {
-		return nil, err
-	}
-
-	rc, err := dotrillcloud.GetAll(s.app.ProjectPath, s.app.adminURL)
-	if err != nil {
-		return nil, err
-	}
-	if rc == nil {
 		return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 			LocalProjectName: localProjectName,
 		}), nil
 	}
 
-	var project *adminv1.Project
-	proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-		Id: rc.ProjectID,
-	})
+	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
 	if err != nil {
-		// unset if project doesnt exist
-		if errors.Is(err, database.ErrNotFound) {
-			err = dotrillcloud.Delete(s.app.ProjectPath, s.app.adminURL)
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		project = proj.Project
+		return nil, err
 	}
 
 	return connect.NewResponse(&localv1.GetCurrentProjectResponse{
@@ -768,7 +737,7 @@ func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 			origin = "/"
 		}
 
-		authenticator, err := pkce.NewAuthenticator(s.app.adminURL, redirectURL, database.AuthClientIDRillWebLocal, origin)
+		authenticator, err := pkce.NewAuthenticator(s.app.ch.AdminURL(), redirectURL, database.AuthClientIDRillWebLocal, origin)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to generate pkce authenticator: %s", err), http.StatusInternalServerError)
 			return
@@ -813,13 +782,20 @@ func (s *Server) authCallbackHandler() http.Handler {
 			http.Error(w, fmt.Sprintf("failed to exchange code for token: %s", err), http.StatusInternalServerError)
 			return
 		}
-		// save token and redirect back to url provided by caller when initiating auth flow
+
+		// Save token and reload config
 		err = dotrill.SetAccessToken(token)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to save access token: %s", err), http.StatusInternalServerError)
 			return
 		}
-		s.app.ch.AdminTokenDefault = token
+		err = s.app.ch.ReloadAdminConfig()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to reload admin config: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Redirect back to url provided by caller when initiating auth flow
 		http.Redirect(w, r, authenticator.OriginURL, http.StatusFound)
 	})
 }
@@ -827,41 +803,30 @@ func (s *Server) authCallbackHandler() http.Handler {
 // logoutHandler logs out the user and unsets the token stored
 func (s *Server) logoutHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.app.ch.IsAuthenticated() {
-			return
-		}
-		c, err := s.app.ch.Client()
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to start admin client: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		ctx := r.Context()
-
-		_, err = c.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
+		// Logout the CLI
+		err := auth.Logout(r.Context(), s.app.ch)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to logout: %s", err), http.StatusInternalServerError)
 			return
 		}
 
-		// reset stored access token
-		err = dotrill.SetAccessToken("")
+		// Get URL for cloud auth.
+		// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
+		authURL := s.app.ch.AdminURL()
+		if strings.Contains(authURL, "http://localhost:9090") {
+			authURL = "http://localhost:8080"
+		}
+
+		// Logout on cloud as well
+		var qry map[string]string
+		if r.URL.Query().Get("redirect") != "" {
+			qry = map[string]string{"redirect": r.URL.Query().Get("redirect")}
+		}
+		logoutURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "auth", "logout"), qry)
 		if err != nil {
-			http.Error(w, "failed to save access token", http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to create logout URL: %s", err), http.StatusInternalServerError)
 			return
 		}
-		s.app.ch.AdminTokenDefault = ""
-
-		// logout from cloud UI as well
-		redirect := r.URL.Query().Get("redirect")
-		if redirect == "" {
-			redirect = "/"
-		}
-		baseURL := s.app.adminURL
-		if strings.Contains(baseURL, "http://localhost:9090") {
-			baseURL = "http://localhost:8080"
-		}
-		logoutURL := fmt.Sprintf("%s/auth/logout?redirect=%s", baseURL, redirect)
 
 		http.Redirect(w, r, logoutURL, http.StatusFound)
 	})
@@ -888,7 +853,7 @@ func (s *Server) trackingHandler() http.Handler {
 		}
 
 		// Pass as raw event to the telemetry client
-		err = s.app.activity.RecordRaw(event)
+		err = s.app.ch.Telemetry(r.Context()).RecordRaw(event)
 		if err != nil {
 			s.logger.Info("failed to proxy telemetry event from UI", zap.Error(err))
 		}
@@ -944,7 +909,7 @@ func (s *Server) versionHandler() http.Handler {
 		}
 
 		inf := &versionResponse{
-			CurrentVersion: s.app.Version.Number,
+			CurrentVersion: s.app.ch.Version.Number,
 			LatestVersion:  latestVersion,
 		}
 
