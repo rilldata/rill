@@ -41,6 +41,7 @@
 <style lang="postcss">
   button {
     @apply rounded flex justify-center items-center absolute;
+    @apply z-50;
     @apply w-6 h-6 mt-[10px];
     transition-property: left;
   }
