@@ -1,8 +1,10 @@
 <script lang="ts">
   import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
+  import type { Table } from "@tanstack/svelte-table";
   import { getContext } from "svelte";
+  import type { Readable } from "svelte/store";
 
-  const table = getContext("table");
+  const table = getContext<Readable<Table<unknown>>>("table");
 
   // Number of dashboards
   $: numDashboards = $table.getRowModel().rows.length;

@@ -1,11 +1,13 @@
 <script lang="ts">
+  import type { Table } from "@tanstack/svelte-table";
   import type { ComponentType, SvelteComponent } from "svelte";
   import { getContext } from "svelte";
+  import type { Readable } from "svelte/store";
 
   export let kind: string;
   export let icon: ComponentType<SvelteComponent>;
 
-  const table = getContext("table");
+  const table = getContext<Readable<Table<unknown>>>("table");
 
   $: numRows = $table.getRowModel().rows.length;
 </script>

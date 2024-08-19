@@ -1,8 +1,10 @@
 <script lang="ts">
+  import type { Table } from "@tanstack/svelte-table";
   import { BellIcon } from "lucide-svelte";
   import { getContext } from "svelte";
+  import type { Readable } from "svelte/store";
 
-  const table = getContext("table");
+  const table = getContext<Readable<Table<unknown>>>("table");
 
   // Number of alerts
   $: numAlerts = $table.getRowModel().rows.length;
