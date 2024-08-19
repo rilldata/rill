@@ -38,7 +38,6 @@
     MainAreaColorGradientLight,
   ];
 
-  $: console.log(dimensionData);
   $: areaGradientColors = (
     hasSubrangeSelected
       ? [AreaMutedColorGradientDark, AreaMutedColorGradientLight]
@@ -104,7 +103,7 @@
           {yAccessor}
         />
       </g>
-      {#if isHighlighted}
+      {#if isHighlighted && showComparison}
         <g class="transition-opacity">
           <ChunkedLine
             lineType="dimension-time-comparison"
