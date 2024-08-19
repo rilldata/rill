@@ -110,9 +110,9 @@
       dispatch("chart-hover", { dimension, ts });
     },
     brush: (_name: string, value) => {
-      const timeRange = resolveSignalIntervalField(value);
+      const interval = resolveSignalIntervalField(value);
 
-      dispatch("chart-brush", { timeRange });
+      dispatch("chart-brush", { interval });
     },
   };
 
