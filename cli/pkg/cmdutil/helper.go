@@ -113,8 +113,14 @@ func (h *Helper) AdminURL() string {
 }
 
 func (h *Helper) Client() (*client.Client, error) {
-	// We allow the admin token and URL to be changed (e.g. during login or env switching).
-	// We compute and cache a hash of these values to detect changes.
+	// The admin token and URL may have changed (e.g. if the user did a separate login or env switch).
+	// Reload the admin config from disk to get the latest values.
+	err := h.ReloadAdminConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// Compute and cache a hash of the admin config values to detect changes.
 	// If the hash has changed, we should close the existing client.
 	hash := hashStr(h.AdminToken(), h.AdminURL())
 	if h.adminClient != nil && h.adminClientHash != hash {
