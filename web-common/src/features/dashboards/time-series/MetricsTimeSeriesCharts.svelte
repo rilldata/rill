@@ -415,6 +415,12 @@
                   formattedData,
                 );
               }}
+              on:chart-brush={(e) => {
+                const { timeRange } = e.detail;
+                console.log("chart-brush: ", timeRange);
+
+                // TODO: $dashboardStore.setSelectedScrubRange(value);
+              }}
             />
           {:else if formattedData && interval}
             <MeasureChart

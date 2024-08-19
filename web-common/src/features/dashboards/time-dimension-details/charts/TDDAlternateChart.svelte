@@ -3,7 +3,8 @@
   import {
     resolveSignalField,
     resolveSignalTimeField,
-  } from "@rilldata/web-common/features/canvas-components/render/vega-signals";
+    resolveSignalIntervalField,
+  } from "@rilldata/web-common/features/charts/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
@@ -54,6 +55,8 @@
   $: hoveredTime = $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
 
+  // $: console.log("data: ", data);
+
   $: {
     updateVegaOnTableHover(
       viewVL,
@@ -75,6 +78,8 @@
     selectedValues,
   );
 
+  // $: console.log("vegaSpec: ", vegaSpec);
+
   $: sanitizedVegaSpec = patchSpecForTDD(
     vegaSpec,
     chartType,
@@ -85,6 +90,8 @@
     expandedMeasureName,
     selectedValues,
   );
+
+  // $: console.log("selectedValues: ", selectedValues);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
@@ -101,6 +108,11 @@
       const ts = resolveSignalTimeField(value);
 
       dispatch("chart-hover", { dimension, ts });
+    },
+    brush: (_name: string, value) => {
+      const timeRange = resolveSignalIntervalField(value);
+
+      dispatch("chart-brush", { timeRange });
     },
   };
 
