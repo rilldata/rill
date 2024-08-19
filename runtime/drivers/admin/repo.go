@@ -58,7 +58,7 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) 
 	defer h.repoMu.RUnlock()
 
 	fsRoot := os.DirFS(h.projPath)
-	glob = path.Clean(path.Join("./", glob))
+	glob = path.Clean(path.Join(".", glob))
 
 	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
@@ -72,7 +72,7 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) 
 		}
 
 		// Track file (p is already relative to the FS root)
-		p = filepath.Join("/", p)
+		p = path.Join("/", p)
 		// Do not send files for ignored paths
 		if drivers.IsIgnored(p, h.ignorePaths) {
 			return nil

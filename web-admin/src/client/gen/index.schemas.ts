@@ -158,6 +158,8 @@ export type AdminServiceIssueMagicAuthTokenBody = {
   /** Optional list of names of dimensions and measures to limit access to.
 If empty, all dimensions and measures are accessible. */
   metricsViewFields?: string[];
+  /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
+  state?: string;
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
@@ -225,6 +227,13 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
 };
 
+export type AdminServiceConnectProjectToGithubBody = {
+  repo?: string;
+  branch?: string;
+  subpath?: string;
+  force?: boolean;
+};
+
 export type AdminServiceListProjectMemberUsergroupsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -253,6 +262,7 @@ export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
+  billingEmail?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -336,6 +346,10 @@ export interface V1User {
   quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1UploadProjectAssetsResponse {
+  [key: string]: any;
 }
 
 export interface V1UpdateUserPreferencesResponse {
@@ -723,6 +737,7 @@ export interface V1Organization {
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
+  billingEmail?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -777,6 +792,7 @@ export interface V1MagicAuthToken {
   metricsView?: string;
   metricsViewFilter?: V1Expression;
   metricsViewFields?: string[];
+  state?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -990,6 +1006,10 @@ export interface V1GetCurrentUserResponse {
   preferences?: V1UserPreferences;
 }
 
+export interface V1GetCurrentMagicAuthTokenResponse {
+  token?: V1MagicAuthToken;
+}
+
 export interface V1GetCloneCredentialsResponse {
   gitRepoUrl?: string;
   gitUsername?: string;
@@ -1007,7 +1027,6 @@ export interface V1GetBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
   billingPortalUrl?: string;
-  hasPaymentMethod?: boolean;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -1172,6 +1191,10 @@ export interface V1CreateAlertResponse {
   name?: string;
 }
 
+export interface V1ConnectProjectToGithubResponse {
+  [key: string]: any;
+}
+
 export interface V1Condition {
   op?: V1Operation;
   exprs?: V1Expression[];
@@ -1292,4 +1315,5 @@ export interface ListGithubUserReposResponseRepo {
   owner?: string;
   description?: string;
   url?: string;
+  defaultBranch?: string;
 }

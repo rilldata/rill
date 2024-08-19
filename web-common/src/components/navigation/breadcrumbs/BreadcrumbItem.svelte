@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import type { PathOption, PathOptions } from "./Breadcrumbs.svelte";
 
   export let options: PathOptions;
@@ -10,6 +9,7 @@
   export let depth: number = 0;
   export let currentPath: (string | undefined)[] = [];
   export let onSelect: undefined | ((id: string) => void) = undefined;
+  export let isEmbedded: boolean = false;
 
   $: selected = options.get(current.toLowerCase());
 
@@ -39,7 +39,7 @@
     {#if selected}
       <a
         on:click={() => {
-          if (isCurrentPage) window.location.reload();
+          if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
         href={linkMaker(currentPath, depth, current, selected)}
         class="text-gray-500 hover:text-gray-600"
@@ -55,23 +55,26 @@
             <CaretDownIcon size="14px" />
           </button>
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="max-h-96 overflow-auto">
+        <DropdownMenu.Content
+          align="start"
+          class="min-w-44 max-h-96 overflow-y-auto"
+        >
           {#each options as [id, option] (id)}
             {@const selected = id === current}
-            <DropdownMenu.Item
+            <DropdownMenu.CheckboxItem
+              class="cursor-pointer"
+              checked={selected}
+              checkSize={"h-3 w-3"}
               href={linkMaker(currentPath, depth, id, option)}
               on:click={() => {
-                if (onSelect) onSelect(id);
+                if (onSelect) {
+                  onSelect(id);
+                }
               }}
             >
-              <div class="item" class:pl-4={!selected}>
-                <Check className={!selected ? "hidden" : ""} />
-
-                <svelte:element this={selected ? "b" : "span"}>
-                  {option.label}
-                </svelte:element>
-              </div>
-            </DropdownMenu.Item>
+              <span class="text-xs text-gray-800 flex-grow">{option.label}</span
+              >
+            </DropdownMenu.CheckboxItem>
           {/each}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
@@ -82,10 +85,6 @@
 <style lang="postcss">
   .current {
     @apply text-gray-800 font-medium;
-  }
-
-  .item {
-    @apply text-gray-800 flex gap-x-2 items-center;
   }
 
   .trigger {

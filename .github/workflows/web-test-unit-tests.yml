@@ -39,6 +39,9 @@ jobs:
 
       - name: NPM Install
         run: npm install
+        # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
+        env:
+          HUSKY: 0
 
       - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'

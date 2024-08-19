@@ -131,11 +131,12 @@
           {@const hasError = errors?.[i]?.length}
           <div
             class="flex items-center text-gray-600 text-sm rounded-2xl border border-gray-300 bg-gray-100 pl-2 pr-1 max-w-full"
-            class:border-red-500={hasError}
+            class:border-red-300={hasError}
+            class:bg-red-50={hasError}
           >
             <div
               class="w-fit h-5 overflow-hidden text-ellipsis"
-              class:text-red-500={hasError}
+              class:text-red-600={hasError}
             >
               {values[i]}
             </div>
@@ -143,7 +144,7 @@
               <XIcon
                 size="12px"
                 class="{hasError
-                  ? 'text-red-500'
+                  ? 'text-red-600'
                   : 'text-gray-500'} cursor-pointer"
               />
             </IconButton>

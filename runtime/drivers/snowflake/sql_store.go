@@ -27,16 +27,11 @@ import (
 // recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
 const rowGroupBufferSize = int64(datasize.MB) * 512
 
-// Query implements drivers.SQLStore
-func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
-	return nil, drivers.ErrNotImplemented
-}
-
 // QueryAsFiles implements drivers.SQLStore.
 // Fetches query result in arrow batches.
 // As an alternative (or in case of memory issues) consider utilizing Snowflake "COPY INTO <location>" feature,
 // see https://docs.snowflake.com/en/sql-reference/sql/copy-into-location
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -90,9 +85,6 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, drivers.ErrNoRows
 	}
 
-	// the number of returned rows is unknown at this point, only the number of batches and output files
-	p.Target(1, drivers.ProgressUnitFile)
-
 	tempDir, err := os.MkdirTemp(c.configProperties.TempDir, "snowflake")
 	if err != nil {
 		return nil, err
@@ -103,7 +95,6 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		conn:               conn,
 		rows:               rows,
 		batches:            batches,
-		progress:           p,
 		limitInBytes:       opt.TotalLimitInBytes,
 		parallelFetchLimit: parallelFetchLimit,
 		logger:             c.logger,
@@ -117,7 +108,6 @@ type fileIterator struct {
 	conn         *sql.Conn
 	rows         sqld.Rows
 	batches      []*sf.ArrowBatch
-	progress     drivers.Progress
 	limitInBytes int64
 	logger       *zap.Logger
 	tempDir      string
@@ -256,7 +246,6 @@ func (f *fileIterator) Next() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.progress.Observe(1, drivers.ProgressUnitFile)
 	f.logger.Debug("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }

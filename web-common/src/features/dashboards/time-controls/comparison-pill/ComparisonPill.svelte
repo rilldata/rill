@@ -33,14 +33,14 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
+  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
-
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
   $: metricsViewSpec = $metricsView.data ?? {};
 
@@ -83,7 +83,7 @@
       <Switch checked={showTimeComparison} id="comparing" small />
 
       <Label class="font-normal text-xs cursor-pointer" for="comparing">
-        <span class:opacity-50={!showTimeComparison}>Comparing</span>
+        <span>Comparing</span>
       </Label>
     </div>
   </button>

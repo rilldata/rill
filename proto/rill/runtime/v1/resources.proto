@@ -110,8 +110,15 @@ message ModelSpec {
   bool incremental = 13;
   string incremental_state_resolver = 14;
   google.protobuf.Struct incremental_state_resolver_properties = 15;
+  string splits_resolver = 18;
+  google.protobuf.Struct splits_resolver_properties = 19;
+  string splits_watermark_field = 20;
+  uint32 splits_concurrency_limit = 21;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
+  // stage_connector is optional.
+  string stage_connector = 16;
+  google.protobuf.Struct stage_properties = 17;
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
@@ -119,15 +126,28 @@ message ModelSpec {
 }
 
 message ModelState {
+  // executor_connector is the ModelExecutor that produced the model's result.
   string executor_connector = 6;
+  // result_connector is the connector where the model's result is stored.
   string result_connector = 1;
+  // result_properties are returned by the executor and contains metadata about the result.
   google.protobuf.Struct result_properties = 5;
+  // result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties.
   string result_table = 2;
+  // spec_hash is a hash of those parts of the spec that affect the model's result.
   string spec_hash = 3;
+  // refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
   string refs_hash = 9;
+  // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
+  // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
   google.protobuf.Struct incremental_state = 7;
+  // incremental_state_schema contains a schema for the data in incremental_state.
   StructType incremental_state_schema = 8;
+  // splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
+  string splits_model_id = 10;
+  // splits_have_errors is true if one or more splits failed to execute.
+  bool splits_have_errors = 11;
 }
 
 message MetricsViewV2 {
@@ -207,6 +227,8 @@ message MetricsViewSpec {
   string database_schema = 22;
   // Name of the table the metrics view is based on
   string table = 2;
+  // Name of the model the metrics view is based on. Either table or model should be set.
+  string model = 24;
   // User friendly label for the dashboard
   string title = 3;
   // Description of the dashboard
@@ -345,6 +367,9 @@ message AlertSpec {
   int32 intervals_limit = 6;
   bool intervals_check_unclosed = 7;
   uint32 timeout_seconds = 8;
+  // for alerts that have not been edited since resolver and resolver_properties have been added
+  string query_name = 9;
+  string query_args_json = 10;
   string resolver = 22;
   google.protobuf.Struct resolver_properties = 23;
   oneof query_for {
@@ -382,6 +407,8 @@ message AlertExecution {
   google.protobuf.Timestamp execution_time = 4;
   google.protobuf.Timestamp started_on = 5;
   google.protobuf.Timestamp finished_on = 6;
+  // Stores the last notification time in suppressed alerts
+  google.protobuf.Timestamp suppressed_since = 7;
 }
 
 message AssertionResult {

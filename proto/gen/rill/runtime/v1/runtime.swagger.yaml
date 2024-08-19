@@ -971,6 +971,39 @@ paths:
           default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/models/{model}/splits:
+    get:
+      summary: GetModelSplits returns the splits of a model
+      operationId: RuntimeService_GetModelSplits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetModelSplitsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: model
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -1058,6 +1091,41 @@ paths:
           required: false
           type: integer
           format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/components/{component}/resolve:
+    post:
+      summary: ResolveComponent resolves the data and renderer for a Component resource.
+      operationId: QueryService_ResolveComponent
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveComponentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance ID
+          in: path
+          required: true
+          type: string
+        - name: component
+          description: Component name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              args:
+                type: object
+                title: Optional args to pass to the data resolver and for resolving templating in the renderer properties
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
@@ -1217,9 +1285,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               limit:
                 type: string
                 format: int64
@@ -1315,9 +1389,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               aliases:
                 type: array
                 items:
@@ -1589,9 +1669,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               timeZone:
                 type: string
                 title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -1659,8 +1745,12 @@ paths:
                   $ref: '#/definitions/v1MetricsViewSort'
               where:
                 $ref: '#/definitions/v1Expression'
+              whereSql:
+                type: string
               having:
                 $ref: '#/definitions/v1Expression'
+              havingSql:
+                type: string
               priority:
                 type: integer
                 format: int32
@@ -1715,6 +1805,9 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               priority:
                 type: integer
                 format: int32
@@ -2990,6 +3083,10 @@ definitions:
       finishedOn:
         type: string
         format: date-time
+      suppressedSince:
+        type: string
+        format: date-time
+        title: Stores the last notification time in suppressed alerts
   v1AlertSpec:
     type: object
     properties:
@@ -3012,6 +3109,11 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
+      queryName:
+        type: string
+        title: for alerts that have not been edited since resolver and resolver_properties have been added
+      queryArgsJson:
+        type: string
       resolver:
         type: string
       resolverProperties:
@@ -3617,6 +3719,8 @@ definitions:
         type: boolean
       implementsNotifier:
         type: boolean
+      implementsWarehouse:
+        type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
   v1ConnectorSpec:
     type: object
@@ -3883,6 +3987,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Log'
+  v1GetModelSplitsResponse:
+    type: object
+    properties:
+      splits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelSplit'
+      nextPageToken:
+        type: string
   v1GetResourceResponse:
     type: object
     properties:
@@ -4127,6 +4241,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonDelta'
       comparisonRatio:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
+      percentOfTotal:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -4148,6 +4264,11 @@ definitions:
     type: object
     properties:
       dimension:
+        type: string
+  v1MetricsViewAggregationMeasureComputePercentOfTotal:
+    type: object
+    properties:
+      measure:
         type: string
   v1MetricsViewAggregationRequest:
     type: object
@@ -4203,9 +4324,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       limit:
         type: string
         format: int64
@@ -4312,9 +4439,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       aliases:
         type: array
         items:
@@ -4508,6 +4641,9 @@ definitions:
       table:
         type: string
         title: Name of the table the metrics view is based on
+      model:
+        type: string
+        description: Name of the model the metrics view is based on. Either table or model should be set.
       title:
         type: string
         title: User friendly label for the dashboard
@@ -4624,9 +4760,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -4683,8 +4825,12 @@ definitions:
           $ref: '#/definitions/v1MetricsViewSort'
       where:
         $ref: '#/definitions/v1Expression'
+      whereSql:
+        type: string
       having:
         $ref: '#/definitions/v1Expression'
+      havingSql:
+        type: string
       priority:
         type: integer
         format: int32
@@ -4728,6 +4874,9 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       priority:
         type: integer
         format: int32
@@ -4790,9 +4939,23 @@ definitions:
         type: string
       incrementalStateResolverProperties:
         type: object
+      splitsResolver:
+        type: string
+      splitsResolverProperties:
+        type: object
+      splitsWatermarkField:
+        type: string
+      splitsConcurrencyLimit:
+        type: integer
+        format: int64
       inputConnector:
         type: string
       inputProperties:
+        type: object
+      stageConnector:
+        type: string
+        description: stage_connector is optional.
+      stageProperties:
         type: object
       outputConnector:
         type: string
@@ -4800,28 +4963,61 @@ definitions:
         type: object
       trigger:
         type: boolean
+  v1ModelSplit:
+    type: object
+    properties:
+      key:
+        type: string
+      data:
+        type: object
+      watermark:
+        type: string
+        format: date-time
+      executedOn:
+        type: string
+        format: date-time
+      error:
+        type: string
+      elapsedMs:
+        type: integer
+        format: int64
   v1ModelState:
     type: object
     properties:
       executorConnector:
         type: string
+        description: executor_connector is the ModelExecutor that produced the model's result.
       resultConnector:
         type: string
+        description: result_connector is the connector where the model's result is stored.
       resultProperties:
         type: object
+        description: result_properties are returned by the executor and contains metadata about the result.
       resultTable:
         type: string
+        description: result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties.
       specHash:
         type: string
+        description: spec_hash is a hash of those parts of the spec that affect the model's result.
       refsHash:
         type: string
+        description: refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
       refreshedOn:
         type: string
         format: date-time
+        description: refreshed_on is the time the model was last executed.
       incrementalState:
         type: object
+        description: incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
       incrementalStateSchema:
         $ref: '#/definitions/v1StructType'
+        description: incremental_state_schema contains a schema for the data in incremental_state.
+      splitsModelId:
+        type: string
+        description: splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
+      splitsHaveErrors:
+        type: boolean
+        description: splits_have_errors is true if one or more splits failed to execute.
   v1ModelV2:
     type: object
     properties:
@@ -5207,6 +5403,20 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1ResolveComponentResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+        title: Schema of the resolved component data
+      data:
+        type: array
+        items:
+          type: object
+        title: Resolved component data
+      rendererProperties:
+        type: object
+        title: Renderer properties with templating resolved for the provided args
   v1Resource:
     type: object
     properties:

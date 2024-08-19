@@ -263,9 +263,9 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	if err == nil && len(projects) != 0 { // ignoring error since this is just for a confirmation prompt
 		for _, p := range projects {
 			if strings.EqualFold(opts.Name, p) {
-				ch.PrintfWarn("Can't deploy project %q.", opts.Name)
-				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q", githubURL)
-				ch.PrintfWarn("If you want to deploy to a new project, use `rill deploy --project new-name`")
+				ch.PrintfWarn("Can't deploy project %q.\n", opts.Name)
+				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q\n", githubURL)
+				ch.PrintfWarn("If you want to deploy to a new project, use `rill deploy --project new-name`\n")
 				return nil
 			}
 		}

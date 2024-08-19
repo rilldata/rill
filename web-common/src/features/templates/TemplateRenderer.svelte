@@ -5,6 +5,7 @@
   import Markdown from "@rilldata/web-common/features/templates/markdown/Markdown.svelte";
   import Select from "@rilldata/web-common/features/templates/select/Select.svelte";
   import Switch from "@rilldata/web-common/features/templates/switch/Switch.svelte";
+  import TableTemplate from "@rilldata/web-common/features/templates/table/TableTemplate.svelte";
 
   import {
     V1ComponentSpecRendererProperties,
@@ -23,6 +24,8 @@
 
 {#if renderer === "kpi"}
   <KPITemplate {rendererProperties} />
+{:else if renderer === "table"}
+  <TableTemplate {rendererProperties} />
 {:else if renderer === "markdown"}
   <Markdown {rendererProperties} />
 {:else if renderer === "image"}

@@ -11,6 +11,7 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
@@ -171,3 +172,5 @@
     </TooltipContent>
   </Tooltip>
 {/if}
+
+<LocalAvatarButton />

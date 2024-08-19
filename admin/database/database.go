@@ -155,6 +155,7 @@ type DB interface {
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
 	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
+	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
@@ -284,6 +285,7 @@ type Organization struct {
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
+	BillingEmail                        string    `db:"billing_email"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -298,6 +300,7 @@ type InsertOrganizationOptions struct {
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
+	BillingEmail                        string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -312,6 +315,7 @@ type UpdateOrganizationOptions struct {
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
+	BillingEmail                        string
 }
 
 // Project represents one Git connection.
@@ -594,6 +598,7 @@ type MagicAuthToken struct {
 	MetricsView           string         `db:"metrics_view"`
 	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
 	MetricsViewFields     []string       `db:"metrics_view_fields"`
+	State                 string         `db:"state"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -613,6 +618,7 @@ type InsertMagicAuthTokenOptions struct {
 	MetricsView           string `validate:"required"`
 	MetricsViewFilterJSON string
 	MetricsViewFields     []string
+	State                 string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -813,7 +819,7 @@ const (
 	DefaultQuotaSlotsPerDeployment             = 5
 	DefaultQuotaOutstandingInvites             = 200
 	DefaultQuotaSingleuserOrgs                 = 3
-	DefaultQuotaStorageLimitBytesPerDeployment = int64(5368709120)
+	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
 )
 
 type InsertOrganizationInviteOptions struct {

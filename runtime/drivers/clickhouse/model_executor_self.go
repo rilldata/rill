@@ -9,18 +9,26 @@ import (
 )
 
 type selfToSelfExecutor struct {
-	c    *connection
-	opts *drivers.ModelExecutorOptions
+	c *connection
 }
 
-func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
+var _ drivers.ModelExecutor = &selfToSelfExecutor{}
+
+func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
+	if desired > 1 {
+		return desired, true
+	}
+	return _defaultConcurrentInserts, true
+}
+
+func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	olap, ok := e.c.AsOLAP(e.c.instanceID)
 	if !ok {
 		return nil, fmt.Errorf("output connector is not OLAP")
 	}
 
 	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(e.opts.InputProperties, inputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if err := inputProps.Validate(); err != nil {
@@ -28,33 +36,33 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	}
 
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(e.opts.OutputProperties, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	if err := outputProps.Validate(e.opts); err != nil {
+	if err := outputProps.Validate(opts); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
 	usedModelName := false
 	if outputProps.Table == "" {
-		outputProps.Table = e.opts.ModelName
+		outputProps.Table = opts.ModelName
 		usedModelName = true
 	}
 
-	materialize := e.opts.Env.DefaultMaterialize
+	materialize := opts.Env.DefaultMaterialize
 	if outputProps.Materialize != nil {
 		materialize = *outputProps.Materialize
 	}
-	if e.opts.IncrementalRun && !materialize {
+	if opts.IncrementalRun && !materialize {
 		return nil, fmt.Errorf("incremental models are only supported for materialized models")
 	}
 
 	asView := !materialize
 	tableName := outputProps.Table
 
-	if !e.opts.IncrementalRun {
+	if !opts.IncrementalRun {
 		stagingTableName := tableName
-		if e.opts.Env.StageChanges {
+		if opts.Env.StageChanges {
 			stagingTableName = stagingTableNameFor(tableName)
 		}
 
@@ -65,7 +73,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		}
 
 		// Create the table
-		err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL, e.opts.OutputProperties)
+		err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL, opts.OutputProperties)
 		if err != nil {
 			_ = olap.DropTable(ctx, stagingTableName, asView)
 			return nil, fmt.Errorf("failed to create model: %w", err)
@@ -100,7 +108,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 
 	// Done
 	return &drivers.ModelResult{
-		Connector:  e.opts.OutputConnector,
+		Connector:  opts.OutputConnector,
 		Properties: resultPropsMap,
 		Table:      tableName,
 	}, nil

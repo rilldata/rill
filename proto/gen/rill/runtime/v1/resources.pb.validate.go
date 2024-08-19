@@ -2377,6 +2377,41 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for SplitsResolver
+
+	if all {
+		switch v := interface{}(m.GetSplitsResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "SplitsResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "SplitsResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSplitsResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelSpecValidationError{
+				field:  "SplitsResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for SplitsWatermarkField
+
+	// no validation rules for SplitsConcurrencyLimit
+
 	// no validation rules for InputConnector
 
 	if all {
@@ -2402,6 +2437,37 @@ func (m *ModelSpec) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return ModelSpecValidationError{
 				field:  "InputProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for StageConnector
+
+	if all {
+		switch v := interface{}(m.GetStageProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "StageProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "StageProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStageProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelSpecValidationError{
+				field:  "StageProperties",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -2665,6 +2731,10 @@ func (m *ModelState) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for SplitsModelId
+
+	// no validation rules for SplitsHaveErrors
 
 	if len(errors) > 0 {
 		return ModelStateMultiError(errors)
@@ -2930,6 +3000,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 	// no validation rules for DatabaseSchema
 
 	// no validation rules for Table
+
+	// no validation rules for Model
 
 	// no validation rules for Title
 
@@ -5186,6 +5258,10 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
+	// no validation rules for QueryName
+
+	// no validation rules for QueryArgsJson
+
 	// no validation rules for Resolver
 
 	if all {
@@ -5873,6 +5949,35 @@ func (m *AlertExecution) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return AlertExecutionValidationError{
 				field:  "FinishedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetSuppressedSince()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "SuppressedSince",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "SuppressedSince",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSuppressedSince()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertExecutionValidationError{
+				field:  "SuppressedSince",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

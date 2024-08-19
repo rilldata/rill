@@ -93,6 +93,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Provisioner:          proj.Provisioner,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
+		Subpath:              proj.Subpath,
 		ProdVariables:        proj.ProdVariables,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
@@ -138,7 +139,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	requiresReset := (proj.Provisioner != opts.Provisioner) || (proj.ProdSlots != opts.ProdSlots) || (proj.ProdVersion != opts.ProdVersion)
 
-	impactsDeployments := (requiresReset ||
+	impactsDeployments := requiresReset ||
 		(proj.Name != opts.Name) ||
 		(proj.Subpath != opts.Subpath) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
@@ -146,7 +147,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID))
+		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID)
 
 	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
@@ -269,6 +270,7 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
+		Subpath:              proj.Subpath,
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     nil,
 		ProdSlots:            proj.ProdSlots,
@@ -316,6 +318,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
+		Subpath:              proj.Subpath,
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     &newDepl.ID,
 		ProdSlots:            proj.ProdSlots,

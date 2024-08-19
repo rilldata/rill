@@ -174,6 +174,7 @@ type IssueMagicAuthTokenOptions struct {
 	MetricsView           string
 	MetricsViewFilterJSON string
 	MetricsViewFields     []string
+	State                 string
 }
 
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
@@ -196,6 +197,7 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 		MetricsView:           opts.MetricsView,
 		MetricsViewFilterJSON: opts.MetricsViewFilterJSON,
 		MetricsViewFields:     opts.MetricsViewFields,
+		State:                 opts.State,
 	})
 	if err != nil {
 		return nil, err

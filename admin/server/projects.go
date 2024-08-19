@@ -217,11 +217,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			depl.RuntimeInstanceID: {
-				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
-				runtimeauth.ReadProfiling,
-				runtimeauth.ReadRepo,
 				runtimeauth.ReadAPI,
 			},
 		},
@@ -389,18 +386,23 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	opts := &database.InsertProjectOptions{
-		OrganizationID:  org.ID,
-		Name:            req.Name,
-		Description:     req.Description,
-		Public:          req.Public,
-		CreatedByUserID: userID,
-		Provisioner:     req.Provisioner,
-		ProdVersion:     req.ProdVersion,
-		ProdOLAPDriver:  req.ProdOlapDriver,
-		ProdOLAPDSN:     req.ProdOlapDsn,
-		ProdSlots:       int(req.ProdSlots),
-		ProdVariables:   req.Variables,
-		ProdTTLSeconds:  prodTTL,
+		OrganizationID:       org.ID,
+		Name:                 req.Name,
+		Description:          req.Description,
+		Public:               req.Public,
+		CreatedByUserID:      userID,
+		Provisioner:          req.Provisioner,
+		ArchiveAssetID:       nil,         // Populated below
+		GithubURL:            nil,         // Populated below
+		GithubInstallationID: nil,         // Populated below
+		ProdBranch:           "",          // Populated below
+		Subpath:              req.Subpath, // Populated below
+		ProdVersion:          req.ProdVersion,
+		ProdOLAPDriver:       req.ProdOlapDriver,
+		ProdOLAPDSN:          req.ProdOlapDsn,
+		ProdSlots:            int(req.ProdSlots),
+		ProdVariables:        req.Variables,
+		ProdTTLSeconds:       prodTTL,
 	}
 
 	if req.GithubUrl != "" {
@@ -519,6 +521,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, fmt.Errorf("cannot set both github_url and archive_asset_id")
 	}
 	githubURL := proj.GithubURL
+	githubInstID := proj.GithubInstallationID
+	subpath := valOrDefault(req.Subpath, proj.Subpath)
+	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
@@ -528,7 +533,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 				return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 			}
 
-			_, err = s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
+			instID, err := s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
+			// github installation ID might change, so make sure it is updated
+			githubInstID = &instID
 			if err != nil {
 				return nil, err
 			}
@@ -545,6 +552,10 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		if !s.hasAssetUsagePermission(ctx, *archiveAssetID, org.ID, claims.OwnerID()) {
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
+		githubURL = nil
+		githubInstID = nil
+		subpath = ""
+		prodBranch = ""
 	}
 
 	prodTTLSeconds := proj.ProdTTLSeconds
@@ -562,10 +573,10 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Public:               valOrDefault(req.Public, proj.Public),
 		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		Subpath:              valOrDefault(req.Subpath, proj.Subpath),
+		GithubInstallationID: githubInstID,
+		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
-		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
+		ProdBranch:           prodBranch,
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
@@ -622,6 +633,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
+		Subpath:              proj.Subpath,
 		ProdVariables:        req.Variables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
@@ -1253,6 +1265,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
+		Subpath:              proj.Subpath,
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,

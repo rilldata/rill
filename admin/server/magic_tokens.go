@@ -47,6 +47,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		ProjectID:         proj.ID,
 		MetricsView:       req.MetricsView,
 		MetricsViewFields: req.MetricsViewFields,
+		State:             req.State,
 	}
 
 	if req.TtlMinutes != 0 {
@@ -92,6 +93,30 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	return &adminv1.IssueMagicAuthTokenResponse{
 		Token: tokenStr,
 		Url:   s.urls.magicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+	}, nil
+}
+
+func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetCurrentMagicAuthTokenRequest) (*adminv1.GetCurrentMagicAuthTokenResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeMagicAuthToken {
+		return nil, status.Error(codes.PermissionDenied, "request was not made with a magic auth token")
+	}
+
+	tkn, err := s.admin.DB.FindMagicAuthTokenWithUser(ctx, claims.OwnerID())
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "magic auth token not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	pb, err := magicAuthTokenToPB(tkn)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.GetCurrentMagicAuthTokenResponse{
+		Token: pb,
 	}, nil
 }
 
@@ -224,6 +249,7 @@ func magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser) (*adminv1.MagicAut
 		MetricsView:        tkn.MetricsView,
 		MetricsViewFilter:  metricsViewFilter,
 		MetricsViewFields:  tkn.MetricsViewFields,
+		State:              tkn.State,
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)

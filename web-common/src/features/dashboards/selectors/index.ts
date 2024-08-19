@@ -7,7 +7,6 @@ import {
   ResourceKind,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
 import {
   RpcStatus,
   V1MetricsViewSpec,
@@ -58,12 +57,10 @@ export const getFilterSearchList = (
     dimension,
     addNull,
     searchText,
-    type,
   }: {
     dimension: string;
     addNull: boolean;
     searchText: string;
-    type: string | undefined;
   },
 ): Readable<
   QueryObserverResult<V1MetricsViewComparisonResponse, RpcStatus>
@@ -91,9 +88,7 @@ export const getFilterSearchList = (
           sort: [{ name: dimension }],
           where: addNull
             ? createInExpression(dimension, [null])
-            : STRING_LIKES.has(type ?? "")
-              ? createLikeExpression(dimension, `%${searchText}%`)
-              : undefined,
+            : createLikeExpression(dimension, `%${searchText}%`),
         },
         {
           query: {
