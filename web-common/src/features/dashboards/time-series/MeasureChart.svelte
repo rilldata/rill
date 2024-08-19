@@ -338,6 +338,7 @@
                   {xAccessor}
                   {yAccessor}
                   {dimensionData}
+                  hasTimeComparison={showComparison}
                   dimensionValue={$tableInteractionStore?.dimensionValue}
                   {validPercTotal}
                   {mouseoverFormat}

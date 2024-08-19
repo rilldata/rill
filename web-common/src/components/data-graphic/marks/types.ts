@@ -9,7 +9,15 @@ export interface Point {
   labelColorClass?: string;
   labelStyleClass?: string;
   pointColor?: string;
+  pointOpacity?: number;
   yOverride?: boolean;
   yOverrideLabel?: string;
   yOverrideStyleClass?: string;
+}
+
+export interface YValue {
+  y: string | number | Date | undefined | null;
+  name?: string | null;
+  color?: string;
+  isTimeComparison?: boolean;
 }

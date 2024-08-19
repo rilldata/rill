@@ -274,7 +274,11 @@ It is probably not the most up to date code; but it works very well in practice.
                 fill={location.pointColor}
                 stroke="white"
                 stroke-width="3"
-                opacity={location?.yOverride ? 0.7 : 1}
+                opacity={location?.yOverride
+                  ? 0.7
+                  : location.pointOpacity
+                    ? location.pointOpacity
+                    : 1}
               />
             {/if}
           </WithTween>
