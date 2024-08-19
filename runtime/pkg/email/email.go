@@ -198,7 +198,6 @@ type OrganizationInvite struct {
 	FrontendURL   string
 	OrgName       string
 	RoleName      string
-	UsergroupName string
 	InvitedByName string
 }
 
@@ -212,21 +211,12 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName))
 	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
 
-	var body string
-	if opts.RoleName != "" {
-		body = fmt.Sprintf("%s has invited you to join <b>%s</b> as a %s for their Rill account. Get started interacting with fast, exploratory dashboards by clicking the button below to sign in and accept your invitation.", opts.InvitedByName, opts.OrgName, opts.RoleName)
-	} else if opts.UsergroupName != "" {
-		body = fmt.Sprintf("%s has invited you to join <b>%s</b> user group for their <b>%s</b> Rill account. Get started interacting with fast, exploratory dashboards by clicking the button below to sign in and accept your invitation.", opts.InvitedByName, opts.UsergroupName, opts.OrgName)
-	} else {
-		return fmt.Errorf("roleName or usergroupName must be provided")
-	}
-
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
 		Subject:    fmt.Sprintf("%s invited you to join Rill", opts.InvitedByName),
 		Title:      "Accept your invitation to Rill",
-		Body:       template.HTML(body),
+		Body:       template.HTML(fmt.Sprintf("%s has invited you to join <b>%s</b> as a %s for their Rill account. Get started interacting with fast, exploratory dashboards by clicking the button below to sign in and accept your invitation.", opts.InvitedByName, opts.OrgName, opts.RoleName)),
 		ButtonText: "Accept invitation",
 		ButtonLink: finalURL,
 	})
