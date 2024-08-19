@@ -318,7 +318,8 @@
     {/if}
   </div>
 
-  {#if tddChartType == TDDChart.DEFAULT || !expandedMeasureName}
+  <!-- TODO: support more types after testing -->
+  {#if tddChartType === TDDChart.DEFAULT || tddChartType === TDDChart.GROUPED_BAR || !expandedMeasureName}
     <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
       <div class="relative w-full">
         <ChartInteractions
@@ -326,21 +327,23 @@
           {showComparison}
           timeGrain={interval}
         />
-        <div class="translate-x-5">
-          {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
-            <SimpleDataGraphic
-              height={26}
-              overflowHidden={false}
-              top={29}
-              bottom={0}
-              right={isInTimeDimensionView ? 10 : 25}
-              xMin={startValue}
-              xMax={endValue}
-            >
-              <Axis superlabel side="top" placement="start" />
-            </SimpleDataGraphic>
-          {/if}
-        </div>
+        {#if tddChartType === TDDChart.DEFAULT}
+          <div class="translate-x-5">
+            {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
+              <SimpleDataGraphic
+                height={26}
+                overflowHidden={false}
+                top={29}
+                bottom={0}
+                right={isInTimeDimensionView ? 10 : 25}
+                xMin={startValue}
+                xMax={endValue}
+              >
+                <Axis superlabel side="top" placement="start" />
+              </SimpleDataGraphic>
+            {/if}
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
@@ -416,10 +419,12 @@
                 );
               }}
               on:chart-brush={(e) => {
-                const { timeRange } = e.detail;
-                console.log("chart-brush: ", timeRange);
+                const { interval } = e.detail;
 
-                // TODO: $dashboardStore.setSelectedScrubRange(value);
+                metricsExplorerStore.setSelectedScrubRange(
+                  metricViewName,
+                  interval,
+                );
               }}
             />
           {:else if formattedData && interval}

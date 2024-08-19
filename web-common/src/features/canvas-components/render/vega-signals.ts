@@ -2,6 +2,8 @@
  * Util methods for handling vega signals
  */
 
+import { TimeRange } from "@rilldata/web-common/lib/time/types";
+
 export function resolveSignalField(value: unknown, field: string) {
   if (typeof value === "object" && value !== null) {
     return Array.isArray(value[field]) ? value[field][0] : undefined;
@@ -28,7 +30,9 @@ export function resolveSignalTimeField(value: unknown) {
   return undefined;
 }
 
-export function resolveSignalIntervalField(value: unknown) {
+export function resolveSignalIntervalField(
+  value: unknown,
+): TimeRange | undefined {
   /**
    * Time range fields end with `_ts`
    * We iterate over the keys of the object and return the first key that ends with `_ts`
