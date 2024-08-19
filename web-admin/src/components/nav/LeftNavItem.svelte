@@ -11,7 +11,7 @@
 <style lang="postcss">
   a {
     @apply p-2 flex gap-x-1 items-center;
-    @apply rounded-sm text-gray-500;
+    @apply rounded-sm text-slate-900;
     @apply text-sm font-medium;
   }
 
@@ -20,6 +20,6 @@
   }
 
   a:hover {
-    @apply bg-slate-100 text-gray-700;
+    @apply bg-slate-50;
   }
 </style>
