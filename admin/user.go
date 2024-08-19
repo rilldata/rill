@@ -203,6 +203,8 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		QuotaOutstandingInvites:             quotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
 		BillingEmail:                        email,
+		BillingCustomerID:                   "", // Populated later
+		PaymentCustomerID:                   "", // Populated later
 	})
 	if err != nil {
 		return nil, err

@@ -73,6 +73,7 @@ const (
 	AdminService_GetGithubUserStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubUserStatus"
 	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_ConnectProjectToGithub_FullMethodName                = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
+	AdminService_UploadProjectAssets_FullMethodName                   = "/rill.admin.v1.AdminService/UploadProjectAssets"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
@@ -250,6 +251,9 @@ type AdminServiceClient interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
+	// Converts a project connected to github to a rill managed project.
+	// Uploads the current project to assets.
+	UploadProjectAssets(ctx context.Context, in *UploadProjectAssetsRequest, opts ...grpc.CallOption) (*UploadProjectAssetsResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -912,6 +916,16 @@ func (c *adminServiceClient) ConnectProjectToGithub(ctx context.Context, in *Con
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConnectProjectToGithubResponse)
 	err := c.cc.Invoke(ctx, AdminService_ConnectProjectToGithub_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UploadProjectAssets(ctx context.Context, in *UploadProjectAssetsRequest, opts ...grpc.CallOption) (*UploadProjectAssetsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadProjectAssetsResponse)
+	err := c.cc.Invoke(ctx, AdminService_UploadProjectAssets_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1642,6 +1656,9 @@ type AdminServiceServer interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
+	// Converts a project connected to github to a rill managed project.
+	// Uploads the current project to assets.
+	UploadProjectAssets(context.Context, *UploadProjectAssetsRequest) (*UploadProjectAssetsResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -1931,6 +1948,9 @@ func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *Lis
 }
 func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConnectProjectToGithub not implemented")
+}
+func (UnimplementedAdminServiceServer) UploadProjectAssets(context.Context, *UploadProjectAssetsRequest) (*UploadProjectAssetsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadProjectAssets not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
@@ -3104,6 +3124,24 @@ func _AdminService_ConnectProjectToGithub_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ConnectProjectToGithub(ctx, req.(*ConnectProjectToGithubRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UploadProjectAssets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadProjectAssetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UploadProjectAssets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UploadProjectAssets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UploadProjectAssets(ctx, req.(*UploadProjectAssetsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4428,6 +4466,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConnectProjectToGithub",
 			Handler:    _AdminService_ConnectProjectToGithub_Handler,
+		},
+		{
+			MethodName: "UploadProjectAssets",
+			Handler:    _AdminService_UploadProjectAssets_Handler,
 		},
 		{
 			MethodName: "GetCloneCredentials",

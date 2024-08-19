@@ -22,10 +22,11 @@
   } = $resource);
   $: resourceReconcileError = resourceData?.meta?.reconcileError;
 
-  $: connector = $resource.data?.metricsView?.spec?.connector ?? "";
-  $: database = $resource.data?.metricsView?.spec?.database ?? "";
-  $: databaseSchema = $resource.data?.metricsView?.spec?.databaseSchema ?? "";
-  $: table = $resource.data?.metricsView?.spec?.table ?? "";
+  $: connector = $resource.data?.metricsView?.state?.validSpec?.connector ?? "";
+  $: database = $resource.data?.metricsView?.state?.validSpec?.database ?? "";
+  $: databaseSchema =
+    $resource.data?.metricsView?.state?.validSpec?.databaseSchema ?? "";
+  $: table = $resource.data?.metricsView?.state?.validSpec?.table ?? "";
 
   $: tableQuery = createConnectorServiceOLAPGetTable(
     {

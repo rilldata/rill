@@ -404,7 +404,7 @@ func (c *Controller) List(ctx context.Context, kind, path string, clone bool) ([
 	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
-	return c.catalog.list(kind, path, false, clone)
+	return c.catalog.list(kind, path, false, clone), nil
 }
 
 // SubscribeCallback is the callback type passed to Subscribe.

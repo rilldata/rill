@@ -8,8 +8,7 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import Spinner from "../../entity-management/Spinner.svelte";
-  import { EntityStatus } from "../../entity-management/types";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
 
   export let dimensionName: string;
@@ -30,7 +29,7 @@
   <tr>
     <th aria-label="Comparison column">
       {#if isFetching}
-        <Spinner size="16px" status={EntityStatus.Running} />
+        <DelayedSpinner isLoading={isFetching} size="16px" />
       {:else if hovered || isBeingCompared}
         <DimensionCompareMenu {dimensionName} />
       {/if}

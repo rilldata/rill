@@ -1,6 +1,5 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type Row } from "@tanstack/svelte-table";
   import { createEventDispatcher } from "svelte";
@@ -85,13 +84,13 @@
   const dispatch = createEventDispatcher();
 
   function handleClickRow(e: CustomEvent<Row<DashboardResource>>) {
-    dispatch("select-dashboard", e.detail.original.resource.meta.name.name);
+    dispatch("select-resource", e.detail.original.resource.meta.name);
   }
 </script>
 
 {#if $dashboards.isLoading}
   <div class="m-auto mt-20">
-    <Spinner status={EntityStatus.Running} size="24px" />
+    <DelayedSpinner isLoading={$dashboards.isLoading} size="24px" />
   </div>
 {:else if $dashboards.isError}
   <DashboardsError />

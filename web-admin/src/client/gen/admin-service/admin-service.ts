@@ -86,6 +86,7 @@ import type {
   AdminServiceListMagicAuthTokensParams,
   V1IssueMagicAuthTokenResponse,
   AdminServiceIssueMagicAuthTokenBody,
+  V1UploadProjectAssetsResponse,
   V1RemoveProjectMemberUsergroupResponse,
   V1AddProjectMemberUsergroupResponse,
   V1SetProjectMemberUsergroupRoleResponse,
@@ -3138,6 +3139,71 @@ export const createAdminServiceIssueMagicAuthToken = <
       organization: string;
       project: string;
       data: AdminServiceIssueMagicAuthTokenBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary Converts a project connected to github to a rill managed project.
+Uploads the current project to assets.
+ */
+export const adminServiceUploadProjectAssets = (
+  organization: string,
+  project: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1UploadProjectAssetsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/upload-assets`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceUploadProjectAssetsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>
+>;
+export type AdminServiceUploadProjectAssetsMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceUploadProjectAssetsMutationError = RpcStatus;
+
+export const createAdminServiceUploadProjectAssets = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceUploadProjectAssets(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);

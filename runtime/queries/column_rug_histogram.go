@@ -64,11 +64,11 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
+	minVal, maxVal, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
 	if err != nil {
 		return err
 	}
-	if min == nil || max == nil || rng == nil {
+	if minVal == nil || maxVal == nil || rng == nil {
 		return nil
 	}
 
@@ -136,8 +136,8 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		sanitizedColumnName,
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		outlierPseudoBucketSize,
-		*min,
-		*max,
+		*minVal,
+		*maxVal,
 		*rng,
 	)
 
