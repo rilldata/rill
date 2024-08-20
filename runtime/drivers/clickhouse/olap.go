@@ -233,7 +233,9 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 			return err
 		}
 		defer func() {
-			_ = c.Exec(context.Background(), &drivers.Statement{Query: "DROP VIEW " + v})
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+			defer cancel()
+			_ = c.Exec(ctx, &drivers.Statement{Query: "DROP VIEW " + v})
 		}()
 		// create table with same schema as view
 		create.WriteString(" AS ")
