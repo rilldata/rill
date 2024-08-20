@@ -2,9 +2,7 @@ package testruntime
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
