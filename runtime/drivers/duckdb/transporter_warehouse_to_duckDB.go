@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -38,11 +37,7 @@ func (w *warehouseToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 
 	w.logger = w.logger.With(zap.String("source", sinkCfg.Table))
 
-	limitInBytes, _ := w.to.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
-	if limitInBytes == 0 {
-		limitInBytes = math.MaxInt64
-	}
-	iter, err := w.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: limitInBytes})
+	iter, err := w.from.QueryAsFiles(ctx, srcProps)
 	if err != nil {
 		return err
 	}
