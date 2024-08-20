@@ -10,10 +10,15 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
-  $: user = createLocalServiceGetCurrentUser();
+  $: user = createLocalServiceGetCurrentUser({
+    query: {
+      // refetch in case user does a login/logout from outside of rill developer UI
+      refetchOnWindowFocus: true,
+    },
+  });
   $: metadata = createLocalServiceGetMetadata();
 
-  $: loginUrl = `${$metadata.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
+  $: loginUrl = `${$metadata.data?.loginUrl}?redirect=${window.location.origin}${window.location.pathname}`;
   $: logoutUrl = `${$metadata.data?.loginUrl}/logout?redirect=${$page.url.href}`;
   $: loggedIn = $user.isSuccess && $user.data?.user;
 
