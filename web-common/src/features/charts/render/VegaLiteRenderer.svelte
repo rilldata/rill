@@ -21,7 +21,6 @@
   export let customDashboard = false;
   export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
-  // Bind view to parent component
   export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
@@ -33,8 +32,18 @@
   $: if (viewVL && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
     viewVL.tooltip(handler.handleTooltip);
-    viewVL.runAsync();
+    // https://stackoverflow.com/questions/59255654/vega-wont-update-until-the-mouse-has-brushed-over-the-div-containing-the-chart
+    void viewVL.runAsync();
   }
+
+  // Add signal listeners after view is set
+  // $: if (viewVL) {
+  //   viewVL.addSignalListener("brushend", (name, value) => {
+  //     if (name === "brushend") {
+  //       console.log("Brush selection ended with value:", value);
+  //     }
+  //   });
+  // }
 
   $: options = <EmbedOptions>{
     config: getRillTheme(),

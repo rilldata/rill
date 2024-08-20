@@ -87,6 +87,8 @@
     selectedValues,
   );
 
+  // $: console.log("sanitizedVegaSpec", sanitizedVegaSpec);
+
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
     expandedMeasureLabel,
@@ -108,6 +110,12 @@
 
       dispatch("chart-brush", { interval });
     },
+    // brushend: (_name: string, value) => {
+    //   console.log("brushend", value);
+    //   const ts = resolveSignalTimeField(value);
+
+    //   dispatch("chart-brushend", { ts });
+    // },
   };
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
