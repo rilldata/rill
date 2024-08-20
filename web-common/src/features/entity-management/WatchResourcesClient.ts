@@ -22,6 +22,7 @@ import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matc
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
+import { connectorExplorerStore } from "../connectors/connector-explorer-store";
 import { getConnectorNameForResource } from "../connectors/utils";
 
 const MainResourceKinds: {
@@ -210,6 +211,9 @@ export class WatchResourcesClient {
         void queryClient.cancelQueries({
           predicate: (query) => invalidationForMetricsViewData(query, name),
         });
+        break;
+      case ResourceKind.Connector:
+        connectorExplorerStore.deleteItem(name);
         break;
     }
   }

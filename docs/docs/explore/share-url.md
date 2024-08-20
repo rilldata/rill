@@ -71,13 +71,13 @@ Using the Rill CLI, you can list, create or delete public URLs.
 To delete a public URL, you will need an `id` parameter. In order to retrieve the appropriate `id`, you will need to first list out the public URLs. You can do so using the below with any flags to help you. 
 
 ```
-rill share-url list 
+rill public-url list 
 ```
 
 Once you have obtained the `id` you can run the following:
 
 ```
-rill share-url delete <id>
+rill public-url delete <id>
 ```
 
 If you are interested in creating a public URL directly from the CLI, you can do so by passing the required parameters. (You can use the --help flag to see what additional flags are required.)

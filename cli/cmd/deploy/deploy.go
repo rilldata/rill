@@ -295,7 +295,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	}
 
 	if localProjectPath != "" {
-		err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL, &dotrillcloud.Config{
+		err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
 			ProjectID: res.Project.Id,
 		})
 		if err != nil {
@@ -440,7 +440,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		return fmt.Errorf("create project failed with error %w", err)
 	}
 
-	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL, &dotrillcloud.Config{
+	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
 		ProjectID: res.Project.Id,
 	})
 	if err != nil {
@@ -533,16 +533,18 @@ func setDefaultOrg(ctx context.Context, c *client.Client, ch *cmdutil.Helper) er
 }
 
 func loginWithTelemetryAndGithubRedirect(ctx context.Context, ch *cmdutil.Helper, remote string) error {
-	authURL := ch.AdminURL
+	// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
+	authURL := ch.AdminURL()
 	if strings.Contains(authURL, "http://localhost:9090") {
 		authURL = "http://localhost:8080"
 	}
+
 	var qry map[string]string
 	if remote != "" {
 		qry = map[string]string{"remote": remote}
 	}
 
-	redirectURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "/github/post-auth-redirect"), qry)
+	redirectURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "github", "post-auth-redirect"), qry)
 	if err != nil {
 		return err
 	}

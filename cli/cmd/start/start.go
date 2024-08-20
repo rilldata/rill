@@ -51,7 +51,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 					projectPath = repoName
 				}
-			} else if !rillv1beta.HasRillProject("") {
+			} else if !rillv1beta.HasRillProject(".") {
 				if !ch.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
@@ -61,7 +61,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				projectPath = currentDir
 				homeDir, err := os.UserHomeDir()
 				if err != nil {
 					return err
@@ -69,12 +68,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				displayPath := currentDir
 				defval := true
-				if strings.HasPrefix(currentDir, homeDir) {
+				if currentDir == homeDir {
+					defval = false
+					displayPath = "~/"
+				} else if strings.HasPrefix(currentDir, homeDir) {
 					displayPath = strings.Replace(currentDir, homeDir, "~", 1)
-					if currentDir == homeDir {
-						defval = false
-						displayPath = "~/"
-					}
 				}
 
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
@@ -88,19 +86,26 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			// Default to the current directory if no path is provided
+			if projectPath == "" {
+				projectPath = "."
+			}
+
 			// Check that projectPath doesn't have an excessive number of files.
 			// Note: Relies on ListRecursive enforcing drivers.RepoListLimit.
-			repo, _, err := cmdutil.RepoForProjectPath(projectPath)
-			if err != nil {
-				return err
-			}
-			_, err = repo.ListRecursive(cmd.Context(), "**", false)
-			if err != nil {
-				if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
-					ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
-					return nil
+			if _, err := os.Stat(projectPath); err == nil {
+				repo, _, err := cmdutil.RepoForProjectPath(projectPath)
+				if err != nil {
+					return err
 				}
-				return fmt.Errorf("failed to list project files: %w", err)
+				_, err = repo.ListRecursive(cmd.Context(), "**", false)
+				if err != nil {
+					if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
+						ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
+						return nil
+					}
+					return fmt.Errorf("failed to list project files: %w", err)
+				}
 			}
 
 			// Parse log format
@@ -148,7 +153,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			allowedOrigins = append(allowedOrigins, localURL)
 
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
-				Version:        ch.Version,
+				Ch:             ch,
 				Verbose:        verbose,
 				Debug:          debug,
 				Reset:          reset,
@@ -158,10 +163,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProjectPath:    projectPath,
 				LogFormat:      parsedLogFormat,
 				Variables:      varsMap,
-				Activity:       ch.Telemetry(cmd.Context()),
-				AdminURL:       ch.AdminURL,
-				AdminToken:     ch.AdminToken(),
-				CMDHelper:      ch,
 				LocalURL:       localURL,
 				AllowedOrigins: allowedOrigins,
 			})

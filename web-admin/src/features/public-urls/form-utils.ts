@@ -1,3 +1,4 @@
+import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -109,16 +110,22 @@ export function getSanitizedDashboardStateParam(
     pivot: {
       ...dashboard.pivot,
       rows: {
-        dimension: dashboard.pivot.rows.dimension.filter((chip) =>
-          metricsViewFields?.includes(chip.id),
+        dimension: dashboard.pivot.rows.dimension.filter(
+          (chip) =>
+            metricsViewFields?.includes(chip.id) ||
+            chip.type === PivotChipType.Time,
         ),
       },
       columns: {
-        measure: dashboard.pivot.columns.measure.filter((chip) =>
-          metricsViewFields?.includes(chip.id),
+        measure: dashboard.pivot.columns.measure.filter(
+          (chip) =>
+            metricsViewFields?.includes(chip.id) ||
+            chip.type === PivotChipType.Time,
         ),
-        dimension: dashboard.pivot.columns.dimension.filter((chip) =>
-          metricsViewFields?.includes(chip.id),
+        dimension: dashboard.pivot.columns.dimension.filter(
+          (chip) =>
+            metricsViewFields?.includes(chip.id) ||
+            chip.type === PivotChipType.Time,
         ),
       },
     },
