@@ -37,7 +37,7 @@
 
   $: tabs = $tabsQuery.data;
   // 1st entry is always the default page. so findLastIndex will make sure the correct page is matched.
-  $: selectedIndex = tabs.findLastIndex((t) => pathname.startsWith(t.route));
+  $: selectedIndex = tabs?.findLastIndex((t) => pathname.startsWith(t.route));
 </script>
 
 <!-- Hide the tabs when there is only one entry -->
