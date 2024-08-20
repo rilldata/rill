@@ -322,35 +322,32 @@
     {/if}
   </div>
 
-  <!-- TODO: support more types after testing -->
-  {#if tddChartType === TDDChart.DEFAULT || tddChartType === TDDChart.GROUPED_BAR || !expandedMeasureName}
-    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
-      <div class="relative w-full">
-        <ChartInteractions
-          {metricViewName}
-          {showComparison}
-          timeGrain={interval}
-        />
-        {#if tddChartType === TDDChart.DEFAULT}
-          <div class="translate-x-5">
-            {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
-              <SimpleDataGraphic
-                height={26}
-                overflowHidden={false}
-                top={29}
-                bottom={0}
-                right={isInTimeDimensionView ? 10 : 25}
-                xMin={startValue}
-                xMax={endValue}
-              >
-                <Axis superlabel side="top" placement="start" />
-              </SimpleDataGraphic>
-            {/if}
-          </div>
-        {/if}
-      </div>
+  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
+    <div class="relative w-full">
+      <ChartInteractions
+        {metricViewName}
+        {showComparison}
+        timeGrain={interval}
+      />
+      {#if tddChartType === TDDChart.DEFAULT}
+        <div class="translate-x-5">
+          {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
+            <SimpleDataGraphic
+              height={26}
+              overflowHidden={false}
+              top={29}
+              bottom={0}
+              right={isInTimeDimensionView ? 10 : 25}
+              xMin={startValue}
+              xMax={endValue}
+            >
+              <Axis superlabel side="top" placement="start" />
+            </SimpleDataGraphic>
+          {/if}
+        </div>
+      {/if}
     </div>
-  {/if}
+  </div>
 
   {#if renderedMeasures}
     <div

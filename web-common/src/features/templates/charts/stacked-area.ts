@@ -128,6 +128,23 @@ export function buildStackedArea(
             clear: "pointerout",
           },
         },
+        {
+          name: "brush",
+          select: {
+            type: "interval",
+            encodings: ["x"],
+            mark: {
+              fill: "lightblue",
+              fillOpacity: 0.25,
+              stroke: "var(--color-primary-200)",
+              strokeWidth: 1,
+              strokeOpacity: 0.8,
+            },
+            // TODO: create event stream to clear brush on escape key
+            // https://vega.github.io/vega-lite-v4/docs/clear.html
+            clear: "dblclick",
+          },
+        },
       ],
     },
     {
