@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -507,7 +508,7 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 			return nil, status.Error(codes.FailedPrecondition, "user is not a member of the organization")
 		}
 		// add group to the invite, dedupe the group ids
-		if !contains(invite.UsergroupIDs, group.ID) {
+		if !slices.Contains(invite.UsergroupIDs, group.ID) {
 			invite.UsergroupIDs = append(invite.UsergroupIDs, group.ID)
 			err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, invite.ID, invite.UsergroupIDs)
 			if err != nil {
@@ -640,13 +641,4 @@ func memberUsergroupToPB(member *database.MemberUsergroup) *adminv1.MemberUsergr
 		CreatedOn: timestamppb.New(member.CreatedOn),
 		UpdatedOn: timestamppb.New(member.UpdatedOn),
 	}
-}
-
-func contains(slice []string, item string) bool {
-	for _, v := range slice {
-		if v == item {
-			return true
-		}
-	}
-	return false
 }
