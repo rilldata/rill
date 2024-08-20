@@ -153,6 +153,16 @@ const sidebars = {
                 label: 'Custom APIs',
                 items: [
                   'learn/rill_learn_300/custom_api/303_0',
+                  'learn/rill_learn_300/custom_api/303_1',
+                  
+                ]
+              },
+              {
+                type: 'category',
+                label: 'Embedding Rill',
+                items: [
+                  'learn/rill_learn_300/embedding/304_0',
+                  'learn/rill_learn_300/embedding/304_1',
                   
                 ]
               },
@@ -200,7 +210,6 @@ const sidebars = {
         },
         items: [
 
-          'learn/guides/use-case/all_in_one',
  
 
           {
@@ -234,40 +243,95 @@ const sidebars = {
           },
           {
             type: 'category',
-            label: 'Concepts Explained',
+            label: 'Rill Concepts Explained',
             description: "Concepts further explained!",
             items: [
               {
                 type: 'category',
-                label: 'Rill Concepts Explained',
+                label: 'Rill Basics',
                 description: "Concepts further explained!",
                 items: [
-                  'learn/guides/conceptual/avg_avg',  
-                  'learn/guides/conceptual/one_dashboard',      
+                  'learn/guides/conceptual/basics/yaml',   
+                  'learn/guides/conceptual/basics/dimensions',   
+                  'learn/guides/conceptual/basics/measures',   
+
                 ]
               },
-              {
-                type: 'category',
-                label: 'Videos',
-                link: {
-                  type: 'doc',
-                  id: 'learn/guides/conceptual/video/index',
-        
-                },
-                description: "Concepts further explained!",
-                items: [
-                  'learn/guides/conceptual/video/rill_overview',  
-                  'learn/guides/conceptual/video/yaml',  
-                  'learn/guides/conceptual/video/OLAP',  
-                  'learn/guides/conceptual/video/access_policy',  
-                ]
-              },
-  
+          
+              'learn/guides/use-case/all_in_one',
+
+              'learn/guides/conceptual/one_dashboard',      
+              'learn/guides/use-case/embed-dashboard',    
+              'learn/guides/use-case/time-series-comparison',    
             ]
           },
 
 
+            'learn/guides/conceptual/avg_avg',  
             'learn/guides/use-case/rill_on_rill',
+            {
+              type: 'category',
+              label: 'Videos [Needs feedback]',
+              link: {
+                type: 'doc',
+                id: 'learn/guides/conceptual/video/index',
+      
+              },
+              description: "Concepts further explained!",
+              items: [
+                {
+                  type: 'category',
+                  label: 'Rill Basic Concepts Explained',
+                  link: {
+                    type: 'doc',
+                    id: 'learn/guides/conceptual/video/basics/index',
+          
+                  },
+                  description: "Rill Basic Concepts Explained!",
+                  items: [
+                    'learn/guides/conceptual/video/basics/basics-developer',  
+                    'learn/guides/conceptual/video/basics/basics-yaml',  
+  
+                    'learn/guides/conceptual/video/basics/basics-dimension',  
+                    'learn/guides/conceptual/video/basics/basics-metrics',  
+                    'learn/guides/conceptual/video/basics/basics-cloud',  
+                    
+                  ]
+                },
+                {
+                  type: 'category',
+                  label: 'Rill Advanced Concepts Explained',
+                  link: {
+                    type: 'doc',
+                    id: 'learn/guides/conceptual/video/advanced/index',
+          
+                  },
+                  description: "Rill Advanced Concepts Explained!",
+                  items: [
+                    'learn/guides/conceptual/video/advanced/OLAP',
+                    'learn/guides/conceptual/video/advanced/access_policy',  
+                    
+                  ]
+                },
+                {
+                  type: 'category',
+                  label: 'Rill Expert Concepts Explained',
+                  link: {
+                    type: 'doc',
+                    id: 'learn/guides/conceptual/video/expert/index',
+          
+                  },
+                  description: "Rill Advanced Concepts Explained!",
+                  items: [
+                    'learn/guides/conceptual/video/expert/custom-dashboard',  
+                    'learn/guides/conceptual/video/expert/incremental-model',  
+                    'learn/guides/conceptual/video/expert/embed-dashboard',  
+                    'learn/guides/conceptual/video/expert/custom-api',                    
+                  ]
+                },
+
+              ]
+            },
             
         ],
   

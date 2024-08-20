@@ -5,7 +5,24 @@ sidebar_position: 1
 hide_table_of_contents: false
 ---
 
-## in just a few minutes!
+## Import data to Dashboard in a few minutes
+
+### Import Data
+
+
+### Creating Model
+
+
+
+### Preview locally
+
+
+
+### Deploy to Cloud
+
+
+
+
 
 
 import DocsRating from '@site/src/components/DocsRating';
