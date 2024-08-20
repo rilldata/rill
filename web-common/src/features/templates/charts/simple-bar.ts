@@ -35,10 +35,10 @@ export function buildSimpleBar(
       ],
       value: 0.8,
     },
-
     // TODO: configure or disable tooltip while scrubbing for the time being
     // https://vega.github.io/vega-lite/docs/tooltip.html#disable-tooltips
     // TODO: can add a `disableTooltip` flag to buildSimpleBar
+    // TODO: do we want to turn this into multiLayerSpec to disable tooltip on interval?
     tooltip: [
       {
         field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
@@ -70,6 +70,16 @@ export function buildSimpleBar(
       select: {
         type: "interval",
         encodings: ["x"],
+        mark: {
+          fill: "lightblue",
+          fillOpacity: 0.25,
+          stroke: "var(--color-primary-200)",
+          strokeWidth: 1,
+          strokeOpacity: 0.8,
+        },
+        // TODO: create event stream to clear brush on escape key
+        // https://vega.github.io/vega-lite-v4/docs/clear.html
+        clear: "dblclick",
       },
     },
   ];
