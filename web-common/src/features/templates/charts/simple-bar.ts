@@ -1,11 +1,6 @@
 import { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
 import { singleLayerBaseSpec } from "./utils";
-import {
-  ScrubArea0Color,
-  ScrubArea1Color,
-  ScrubArea2Color,
-  ScrubBoxColor,
-} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildSimpleBar(
   timeField: ChartField,

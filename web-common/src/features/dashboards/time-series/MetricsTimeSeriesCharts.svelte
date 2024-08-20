@@ -233,10 +233,6 @@
 
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
 
-  // $: console.log("tddChartType: ", tddChartType);
-  // $: console.log("showComparison: ", showComparison);
-  // $: console.log("expandedMeasureName: ", expandedMeasureName);
-
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
     const pivot = $dashboardStore?.pivot;
@@ -420,11 +416,11 @@
               }}
               on:chart-brush={(e) => {
                 const { interval } = e.detail;
-
-                metricsExplorerStore.setSelectedScrubRange(
-                  metricViewName,
-                  interval,
-                );
+                console.log("Brushing:", interval);
+                // metricsExplorerStore.setSelectedScrubRange(
+                //   metricViewName,
+                //   interval,
+                // );
               }}
             />
           {:else if formattedData && interval}
