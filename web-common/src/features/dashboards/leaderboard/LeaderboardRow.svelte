@@ -131,23 +131,26 @@
 
   $: showZigZag = barLength > tableWidth;
 
-  function makeHref(uri: string | undefined) {
-    if (!uri) {
+  // uri template or "true" string literal or undefined
+  function makeHref(uriTemplateOrBoolean: string | undefined) {
+    if (!uriTemplateOrBoolean) {
       return undefined;
     }
 
+    const uri =
+      uriTemplateOrBoolean === "true"
+        ? label
+        : uriTemplateOrBoolean
+            .replace(/\s/g, "")
+            .replace(`{{${dimensionName}}}`, label);
+
     const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
-    if (uri === "true") {
-      if (!hasProtocol) {
-        uri = "https://" + label;
-      }
-      return uri;
-    }
 
     if (!hasProtocol) {
-      uri = "https://" + uri;
+      return "https://" + uri;
+    } else {
+      return uri;
     }
-    return uri.replace(/\s/g, "").replace(`{{${dimensionName}}}`, label);
   }
 </script>
 
