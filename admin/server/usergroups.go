@@ -524,23 +524,12 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		return nil, status.Error(codes.FailedPrecondition, "user is not a member of the organization")
 	}
 
-	ctx, tx, err := s.admin.DB.NewTx(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	defer func() { _ = tx.Rollback() }()
-
 	err = s.admin.DB.InsertUsergroupMemberUser(ctx, group.ID, user.ID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.AlreadyExists, err.Error())
 		}
 		return nil, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.AddUsergroupMemberUserResponse{}, nil
