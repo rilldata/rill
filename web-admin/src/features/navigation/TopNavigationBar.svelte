@@ -55,7 +55,7 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: witinOrgPage = withinOrganization($page);
+  $: withinOrgPage = withinOrganization($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -157,7 +157,7 @@
 
 <div
   class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage && !witinOrgPage}
+  class:border-b={!onProjectPage && !withinOrgPage}
 >
   <!-- Left side -->
   <a
