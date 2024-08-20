@@ -126,10 +126,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil

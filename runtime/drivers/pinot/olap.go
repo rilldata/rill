@@ -106,10 +106,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 type informationSchema struct {
 	c *connection
 }

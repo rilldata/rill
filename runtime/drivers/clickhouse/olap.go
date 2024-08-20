@@ -196,10 +196,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	return res, nil
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 // AddTableColumn implements drivers.OLAPStore.
 func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
 	return fmt.Errorf("clickhouse: data transformation not yet supported")

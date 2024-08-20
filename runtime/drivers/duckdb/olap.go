@@ -181,10 +181,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	return res, nil
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 func (c *connection) estimateSize(includeTemp bool) int64 {
 	path := c.config.DBFilePath
 	if path == "" {
