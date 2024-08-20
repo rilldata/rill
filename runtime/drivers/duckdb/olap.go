@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -182,6 +181,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	return res, nil
 }
 
+func (c *connection) EstimateSize() (int64, bool) {
+	return 0, false
+}
+
 func (c *connection) estimateSize(includeTemp bool) int64 {
 	path := c.config.DBFilePath
 	if path == "" {
@@ -292,7 +295,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		})
 	}
 	if !c.config.ExtTableStorage {
-		return c.execWithLimits(ctx, &drivers.Statement{
+		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(name), sql),
 			Priority:    1,
 			LongRunning: true,
@@ -324,7 +327,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		}
 
 		// Enforce storage limits
-		if err := c.execWithLimits(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s\n)", safeSQLName(db), sql)}); err != nil {
+		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s\n)", safeSQLName(db), sql)}); err != nil {
 			cleanupFunc = func() { c.detachAndRemoveFile(db, dbFile) }
 			return fmt.Errorf("create: create %q.default table failed: %w", db, err)
 		}
@@ -625,7 +628,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 	}
 
 	if strategy == drivers.IncrementalStrategyAppend {
-		return c.execWithLimits(ctx, &drivers.Statement{
+		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeName, byNameClause, sql),
 			Priority:    1,
 			LongRunning: true,
@@ -635,7 +638,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 	if strategy == drivers.IncrementalStrategyMerge {
 		// Create a temporary table with the new data
 		tmp := uuid.New().String()
-		err := c.execWithLimits(ctx, &drivers.Statement{
+		err := c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql),
 			Priority:    1,
 			LongRunning: true,
@@ -653,7 +656,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 			}
 			where += fmt.Sprintf("base.%s = tmp.%s", key, key)
 		}
-		err = c.execWithLimits(ctx, &drivers.Statement{
+		err = c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeName, safeSQLName(tmp), where),
 			Priority:    1,
 			LongRunning: true,
@@ -663,7 +666,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 		}
 
 		// Insert the new data into the target table
-		return c.execWithLimits(ctx, &drivers.Statement{
+		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeName, byNameClause, safeSQLName(tmp)),
 			Priority:    1,
 			LongRunning: true,
@@ -743,45 +746,6 @@ func (c *connection) updateVersion(name, version string) error {
 	defer file.Close()
 
 	_, err = file.WriteString(version)
-	return err
-}
-
-func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Statement) error {
-	storageLimit := c.config.StorageLimitBytes
-	if storageLimit <= 0 { // no limit
-		return c.Exec(parentCtx, stmt)
-	}
-
-	// current size already exceeds limit
-	if c.estimateSize(true) >= storageLimit {
-		return drivers.ErrStorageLimitExceeded
-	}
-
-	ctx, cancel := context.WithCancel(parentCtx)
-	defer cancel()
-	limitExceeded := atomic.Bool{}
-	// Start background goroutine to check size is not exceeded during query execution
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				if c.estimateSize(true) > storageLimit {
-					limitExceeded.Store(true)
-					cancel()
-					return
-				}
-			}
-		}
-	}()
-
-	err := c.Exec(ctx, stmt)
-	if limitExceeded.Load() {
-		return drivers.ErrStorageLimitExceeded
-	}
 	return err
 }
 

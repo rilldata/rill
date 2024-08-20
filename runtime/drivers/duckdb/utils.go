@@ -248,12 +248,3 @@ func fileSize(paths []string) int64 {
 func safeName(name string) string {
 	return drivers.DialectDuckDB.EscapeIdentifier(name)
 }
-
-func sizeWithinStorageLimits(olap drivers.OLAPStore, size int64) bool {
-	limit, ok := olap.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
-	if !ok || limit <= 0 { // no limit
-		return true
-	}
-
-	return olap.(*connection).estimateSize(true)+size <= limit
-}
