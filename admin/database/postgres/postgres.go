@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"github.com/rilldata/rill/admin/database"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
@@ -1507,7 +1506,7 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 }
 
 func (c *connection) FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*database.OrganizationInvite, error) {
-	var dtos []*OrganizationInviteDTO
+	var dtos []*organizationInviteDTO
 	err := c.getDB(ctx).SelectContext(ctx, &dtos, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
 	if err != nil {
 		return nil, parseErr("org invites", err)
@@ -1524,7 +1523,7 @@ func (c *connection) FindOrganizationInvitesByEmail(ctx context.Context, userEma
 }
 
 func (c *connection) FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*database.OrganizationInvite, error) {
-	dto := &OrganizationInviteDTO{}
+	dto := &organizationInviteDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("org invite", err)
@@ -1545,7 +1544,7 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 }
 
 func (c *connection) UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET usergroup_ids = $1 WHERE id = $2`, pq.Array(groupIDs), id)
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET usergroup_ids = $1 WHERE id = $2`, groupIDs, id)
 	return checkUpdateRow("org invite", res, err)
 }
 
@@ -1973,12 +1972,12 @@ func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser,
 	return m.MagicAuthTokenWithUser, nil
 }
 
-type OrganizationInviteDTO struct {
+type organizationInviteDTO struct {
 	*database.OrganizationInvite
 	UsergroupIDs pgtype.TextArray `db:"usergroup_ids"`
 }
 
-func (o *OrganizationInviteDTO) AsModel() (*database.OrganizationInvite, error) {
+func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) {
 	err := o.UsergroupIDs.AssignTo(&o.OrganizationInvite.UsergroupIDs)
 	if err != nil {
 		return nil, err
