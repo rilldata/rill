@@ -1,5 +1,11 @@
 import { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
 import { singleLayerBaseSpec } from "./utils";
+import {
+  ScrubArea0Color,
+  ScrubArea1Color,
+  ScrubArea2Color,
+  ScrubBoxColor,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildSimpleBar(
   timeField: ChartField,
@@ -71,9 +77,9 @@ export function buildSimpleBar(
         type: "interval",
         encodings: ["x"],
         mark: {
-          fill: "lightblue",
-          fillOpacity: 0.25,
-          stroke: "var(--color-primary-200)",
+          fill: ScrubBoxColor,
+          fillOpacity: 0.2,
+          stroke: ScrubBoxColor,
           strokeWidth: 1,
           strokeOpacity: 0.8,
         },
