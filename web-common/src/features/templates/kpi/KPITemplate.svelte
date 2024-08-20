@@ -27,6 +27,7 @@
   $: kpiProperties = rendererProperties as KPIProperties;
 
   const queryClient = useQueryClient();
+  let containerWidth: number;
 
   $: instanceId = $runtime?.instanceId;
   $: metricViewName = kpiProperties.metric_view;
@@ -71,7 +72,10 @@
   $: [xMin, xMax] = extent(sparkData, (d) => d["ts"]);
 </script>
 
-<div class="flex flex-row h-full w-full items-center">
+<div
+  bind:clientWidth={containerWidth}
+  class="flex flex-row h-full w-full items-center"
+>
   {#if $measure.data && $measureValue.data}
     <MeasureBigNumber
       measure={$measure.data}
@@ -90,7 +94,7 @@
     {#if sparkData.length}
       <SimpleDataGraphic
         height={comparisonTimeRange ? 70 : 65}
-        width={200}
+        width={containerWidth - 160}
         overflowHidden={false}
         top={10}
         bottom={0}
