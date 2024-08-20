@@ -9339,6 +9339,8 @@ func (m *ResolveComponentResponse) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Show
+
 	if all {
 		switch v := interface{}(m.GetSchema()).(type) {
 		case interface{ ValidateAll() error }:
