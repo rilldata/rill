@@ -164,7 +164,7 @@ func (s *Stripe) handleChargeFailed(ctx context.Context, charge *stripe.Charge) 
 }
 
 func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.PaymentMethod) error {
-	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAdded{
+	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAddedArgs{
 		ID:          method.ID,
 		CustomerID:  method.Customer.ID,
 		PaymentType: string(method.Type),
@@ -185,7 +185,7 @@ func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.Pa
 }
 
 func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, method *stripe.PaymentMethod) error {
-	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAdded{
+	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAddedArgs{
 		ID:          method.ID,
 		CustomerID:  method.Customer.ID,
 		PaymentType: string(method.Type),

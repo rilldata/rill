@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
+	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -38,6 +41,14 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		return nil, nil, err
 	}
 	s.Logger.Info("created subscription", zap.String("org", org.Name), zap.String("subscription_id", sub.ID))
+
+	// schedule trial end check job to the river queue
+	// TODO should be done in same tx as UpdateOrganization using InsertTx but river driver expects sql.Tx and does not work with the Tx implementation we have
+	// so just scheduling it before the update as repair billing job can take care of the update if update fails
+	err = scheduleTrialEndCheckJob(ctx, org.ID, sub.TrialEndDate)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -79,6 +90,12 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			}
 			s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 			subs = append(subs, sub)
+
+			// schedule trial end check job to the river queue, if it was already scheduled it will be ignored
+			err = scheduleTrialEndCheckJob(ctx, org.ID, sub.TrialEndDate)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 		if len(subs) > 1 {
 			s.Logger.Warn("multiple subscriptions found for the customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Int("num_subscriptions", len(subs)))
@@ -150,6 +167,12 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		}
 		s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 		subs = append(subs, sub)
+
+		// schedule trial end check job to the river queue, if it was already scheduled it will be ignored
+		err = scheduleTrialEndCheckJob(ctx, org.ID, sub.TrialEndDate)
+		if err != nil {
+			return nil, nil, err
+		}
 	} else if len(subs) > 1 {
 		s.Logger.Warn("multiple subscriptions found for the customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Int("num_subscriptions", len(subs)))
 	}
@@ -173,6 +196,19 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 	return org, subs, nil
+}
+
+func scheduleTrialEndCheckJob(ctx context.Context, orgID string, trialEndDate time.Time) error {
+	_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndCheckArgs{OrgID: orgID}, &river.InsertOpts{
+		ScheduledAt: trialEndDate.Add(time.Hour * 25), // add buffer of 1 hour to ensure the job runs after trial period days
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to schedule trial end check job: %w", err)
+	}
+	return nil
 }
 
 func valOrDefault[T any](ptr *T, def T) T {

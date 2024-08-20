@@ -30,19 +30,31 @@ type ChargeSuccessArgs struct {
 
 func (ChargeSuccessArgs) Kind() string { return "charge_success" }
 
-type PaymentMethodAdded struct {
+type PaymentMethodAddedArgs struct {
 	ID          string // for deduplication
 	CustomerID  string
 	PaymentType string
 	EventTime   time.Time
 }
 
-func (PaymentMethodAdded) Kind() string { return "payment_method_added" }
+func (PaymentMethodAddedArgs) Kind() string { return "payment_method_added" }
 
-type PaymentMethodRemoved struct {
+type PaymentMethodRemovedArgs struct {
 	ID         string // for deduplication
 	CustomerID string
 	EventTime  time.Time
 }
 
-func (PaymentMethodRemoved) Kind() string { return "payment_method_removed" }
+func (PaymentMethodRemovedArgs) Kind() string { return "payment_method_removed" }
+
+type TrialEndCheckArgs struct {
+	OrgID string
+}
+
+func (TrialEndCheckArgs) Kind() string { return "trial_end_check" }
+
+type TrialGracePeriodCheckArgs struct {
+	OrgID string
+}
+
+func (TrialGracePeriodCheckArgs) Kind() string { return "trial_grace_period_check" }
