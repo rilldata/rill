@@ -146,7 +146,7 @@ export class ProjectDeployer {
         queryKey: getLocalServiceGetCurrentUserQueryKey(),
         queryFn: localServiceGetCurrentUser,
       });
-      org = userResp.user!.email.replace(nameSanitiserRegex, "-");
+      org = this.getOrgNameFromEmail(userResp.user?.email ?? "");
       checkNextOrg = true;
     }
     return { org, checkNextOrg };
@@ -180,5 +180,9 @@ export class ProjectDeployer {
         }
       }
     }
+  }
+
+  private getOrgNameFromEmail(email: string): string {
+    return email.split("@")[0]?.replace(nameSanitiserRegex, "-") ?? "";
   }
 }
