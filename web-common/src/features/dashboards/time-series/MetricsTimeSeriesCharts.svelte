@@ -416,11 +416,12 @@
               }}
               on:chart-brush={(e) => {
                 const { interval } = e.detail;
-                console.log("Brushing:", interval);
-                // metricsExplorerStore.setSelectedScrubRange(
-                //   metricViewName,
-                //   interval,
-                // );
+
+                // TODO: do not set value on drag, only set on release
+                metricsExplorerStore.setSelectedScrubRange(
+                  metricViewName,
+                  interval,
+                );
               }}
             />
           {:else if formattedData && interval}
