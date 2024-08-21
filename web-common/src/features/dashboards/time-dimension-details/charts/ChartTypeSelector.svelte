@@ -51,13 +51,13 @@
   {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
     {@const disabled = !hasComparison && comparisonCharts.includes(id)}
-    <div class:bg-primary-100={active} class="chart-icon-wrapper">
-      <IconButton
-        {disabled}
-        disableHover
-        tooltipLocation="top"
-        on:click={() => handleChartTypeChange(id, disabled)}
-      >
+    <!-- FIXME: reduce this button wrapper and apply click handler directly to IconButton -->
+    <button
+      class:bg-primary-100={active}
+      class="chart-icon-wrapper"
+      on:click={() => handleChartTypeChange(id, disabled)}
+    >
+      <IconButton {disabled} disableHover tooltipLocation="top">
         <Icon
           primaryColor={disabled ? "#9CA3AF" : "var(--color-primary-700)"}
           secondaryColor={disabled ? "#CBD5E1" : "var(--color-primary-300)"}
@@ -67,7 +67,7 @@
           {label}
         </svelte:fragment>
       </IconButton>
-    </div>
+    </button>
   {/each}
 </div>
 
