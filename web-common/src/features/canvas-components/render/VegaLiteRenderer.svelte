@@ -2,6 +2,7 @@
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { getRillTheme } from "@rilldata/web-common/features/canvas-components/render/vega-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { onMount, onDestroy } from "svelte";
   import {
     SignalListeners,
     VegaLite,
@@ -36,15 +37,6 @@
     void viewVL.runAsync();
   }
 
-  // Add signal listeners after view is set
-  // $: if (viewVL) {
-  //   viewVL.addSignalListener("brushend", (name, value) => {
-  //     if (name === "brushend") {
-  //       console.log("Brush selection ended with value:", value);
-  //     }
-  //   });
-  // }
-
   $: options = <EmbedOptions>{
     config: getRillTheme(),
     renderer: "svg",
@@ -69,6 +61,28 @@
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
   };
+
+  function clearBrush() {
+    if (viewVL) {
+      viewVL.signal("brush", null);
+      viewVL.data("brush_store", []);
+      void viewVL.runAsync();
+    }
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      clearBrush();
+      dispatchEvent(new CustomEvent("brushCleared"));
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener("keydown", handleKeydown);
+    return () => {
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  });
 </script>
 
 <div

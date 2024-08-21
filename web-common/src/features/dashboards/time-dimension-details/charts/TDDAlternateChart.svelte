@@ -14,7 +14,7 @@
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { View } from "svelte-vega";
   import { TDDAlternateCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
@@ -87,8 +87,6 @@
     selectedValues,
   );
 
-  // $: console.log("sanitizedVegaSpec", sanitizedVegaSpec);
-
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
     expandedMeasureLabel,
@@ -110,12 +108,6 @@
 
       dispatch("chart-brush", { interval });
     },
-    // brushend: (_name: string, value) => {
-    //   console.log("brushend", value);
-    //   const ts = resolveSignalTimeField(value);
-
-    //   dispatch("chart-brushend", { ts });
-    // },
   };
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
@@ -129,6 +121,18 @@
   const expressionFunctions = {
     measureFormatter: { fn: vegaCustomFormatter },
   };
+
+  onMount(() => {
+    window.addEventListener("brushCleared", () => {
+      dispatch("chart-brush", { interval: null });
+    });
+
+    return () => {
+      window.removeEventListener("brushCleared", () => {
+        dispatch("chart-brush", { interval: null });
+      });
+    };
+  });
 </script>
 
 {#if sanitizedVegaSpec && data}

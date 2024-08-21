@@ -78,9 +78,6 @@ export function buildSimpleBar(
           strokeWidth: 1,
           strokeOpacity: 0.8,
         },
-        // TODO: create event stream to clear brush on escape key
-        // https://vega.github.io/vega-lite-v4/docs/clear.html
-        clear: "dblclick",
       },
     },
   ];
