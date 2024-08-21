@@ -121,6 +121,10 @@ export function buildSimpleBarMultiLayer(
           field: timeField.name,
           type: "temporal",
           bandPosition: 0,
+          axis: {
+            orient: "top",
+            title: null,
+          },
         },
         opacity: {
           condition: { param: "hover", empty: false, value: 0.5 },
@@ -159,7 +163,13 @@ export function buildSimpleBarMultiLayer(
           type: "temporal",
           bandPosition: 0,
         },
-        y: { field: quantitativeField.name, type: "quantitative" },
+        y: {
+          field: quantitativeField.name,
+          type: "quantitative",
+          axis: {
+            title: null,
+          },
+        },
       },
     },
   ];
