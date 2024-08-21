@@ -30,9 +30,17 @@ type Resolvers struct {
 }
 
 type Test struct {
-	Resolver string
-	Options  runtime.ResolveOptions
-	Result   []map[string]any
+	Options struct {
+		InstanceID         string
+		Resolver           string
+		ResolverProperties map[string]any
+		Args               map[string]any
+		Claims             struct {
+			UserAttributes map[string]any
+		}
+	}
+	Result        []map[string]any
+	ErrorContains string "yaml:\"error_contains\""
 }
 
 var update = flag.Bool("update", false, "Update test results")
@@ -103,21 +111,32 @@ func TestResolvers(t *testing.T) {
 					t.Log("======================")
 					t.Log("Running ", testName, "with", f, "and", connector)
 					testruntime.RequireReconcileState(t, rt, instanceID, -1, 0, 0)
-					api, err := rt.APIForName(context.Background(), instanceID, test.Resolver)
-					require.NoError(t, err)
 
-					o := test.Options
-					o.InstanceID = instanceID
-					o.Resolver = api.Spec.Resolver
-					o.ResolverProperties = api.Spec.ResolverProperties.AsMap()
-
-					res, err := rt.Resolve(context.Background(), &o)
-					require.NoError(t, err)
+					ropts := test.Options
+					ro := &runtime.ResolveOptions{}
+					ro.InstanceID = instanceID
+					ro.Resolver = ropts.Resolver
+					ro.ResolverProperties = ropts.ResolverProperties
+					ro.Args = ropts.Args
+					ro.Claims = &runtime.SecurityClaims{
+						UserAttributes: ropts.Claims.UserAttributes,
+					}
+					res, err := rt.Resolve(context.Background(), ro)
+					if test.ErrorContains != "" {
+						if *update {
+							// todo
+						} else {
+							require.ErrorContains(t, err, test.ErrorContains)
+						}
+						return
+					} else {
+						require.NoError(t, err)
+					}
 					var rows []map[string]interface{}
 					b, err := res.MarshalJSON()
 					require.NoError(t, err)
 					require.NoError(t, json.Unmarshal(b, &rows), string(b))
-					if *update || true {
+					if *update {
 						test.Result = rows
 						for _, m := range test.Result {
 							for k, v := range m {
@@ -139,7 +158,7 @@ func TestResolvers(t *testing.T) {
 					t.Log("======================")
 				})
 			}
-			if *update || true {
+			if *update {
 				buf := bytes.Buffer{}
 				yamlEncoder := yaml.NewEncoder(&buf)
 				yamlEncoder.SetIndent(2)

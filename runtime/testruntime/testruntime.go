@@ -90,7 +90,6 @@ type InstanceOptionsForResolvers struct {
 	InstanceOptions
 	OLAPDriver string
 	OLAPDSN    string
-	TempDir    string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.

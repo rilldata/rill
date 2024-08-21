@@ -43,19 +43,15 @@ project:
           - if: "'{{ .user.domain }}' != 'msn.com'"
             names:
               - total volume
-  apis:
-    mv_sql_policy_api.yaml:
-      kind: api
-      metrics_sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
 connectors:
   clickhouse: null
 tests:
   empty:
     resolver: mv_sql_policy_api
     options:
-      instanceid: ""
-      resolver: ""
-      resolverproperties: {}
+      resolver: "metrics_sql"
+      resolverproperties: 
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
         user_attributes:
@@ -67,9 +63,9 @@ tests:
   msn:
     resolver: mv_sql_policy_api
     options:
-      instanceid: ""
-      resolver: ""
-      resolverproperties: {}
+      resolver: metrics_sql
+      resolverproperties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
         user_attributes:
@@ -84,9 +80,9 @@ tests:
   simple:
     resolver: mv_sql_policy_api
     options:
-      instanceid: ""
-      resolver: ""
-      resolverproperties: {}
+      resolver: metrics_sql
+      resolverproperties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
         user_attributes:

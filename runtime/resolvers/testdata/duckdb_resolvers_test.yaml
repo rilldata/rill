@@ -50,58 +50,63 @@ project:
           - if: "'{{ .user.domain }}' != 'msn.com'"
             names:
               - total volume
-  apis:
-    mv_sql_policy_api.yaml:
-      kind: api
-      metrics_sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
 connectors:
   duckdb: null
 tests:
   empty:
-    resolver: mv_sql_policy_api
     options:
-      instanceid: ""
-      resolver: ""
-      resolverproperties: {}
+      resolver: metrics_sql
+      resolverproperties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
-        user_attributes:
+        userattributes:
           domain: google.com
           email: user@google.com
-        additionalrules: []
-        skipchecks: false
     result: []
   msn:
-    resolver: mv_sql_policy_api
     options:
-      instanceid: ""
-      resolver: ""
-      resolverproperties: {}
+      resolver: metrics_sql
+      resolverproperties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
-        user_attributes:
+        userattributes:
           domain: msn.com
           email: user@msn.com
-        additionalrules: []
-        skipchecks: false
     result:
       - domain: msn.com
         publisher: null
         total impressions: 3.00
-  simple:
-    resolver: mv_sql_policy_api
+  sql:
     options:
-      instanceid: ""
-      resolver: ""
-      resolverproperties: {}
+      resolver: sql
+      resolverproperties:
+        sql: "select \n    publisher,\n    domain \n    \nFROM \n  ad_bids_mini where publisher = 'Yahoo' limit 1\n"
       args: {}
       claims:
-        user_attributes:
-          domain: yahoo.com
-          email: user@yahoo.com
-        additionalrules: []
-        skipchecks: false
+        userattributes:
+          domain: msn.com
+          email: user@msn.com
     result:
-      - domain: yahoo.com
-        publisher: YAHOO
-        total impressions: 3.00
+      - publisher: Yahoo
+        domain: yahoo.com
+  simple:
+    options:
+      resolver: metrics_sql
+      resolverproperties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        userattributes: {}
+    result: []
+  error:
+    options:
+      resolver: metrics_sql
+      resolverproperties:
+        sql: "select \n    publisher,\n    dom1, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        userattributes: {}
+    error_contains: "selected column `dom1` not found"
+

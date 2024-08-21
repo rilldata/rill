@@ -30,19 +30,14 @@ project:
         access: true
         # row_filter: "domain = '{{ .user.domain }}'" is not supported in Druid
         # exclude: is not supported in Druid
-  apis:
-    mv_sql_policy_api.yaml:
-      kind: api
-      metrics_sql: "select \n    publisher,\n    domain, \n    \"min bid price\",\n    \"max bid price\"\nFROM \n  ad_bids_mini_metrics_with_policy \nWHERE\n  publisher is not null AND domain = 'news.yahoo.com'\nORDER BY \n  publisher,\n  domain\nLIMIT 1\n"
 connectors:
   druid: null
 tests:
   simple:
-    resolver: mv_sql_policy_api
     options:
-      instanceid: ""
-      resolver: ""
-      resolverproperties: {}
+      resolver: metrics_sql
+      resolverproperties:
+        sql: "select \n    publisher,\n    domain, \n    \"min bid price\",\n    \"max bid price\"\nFROM \n  ad_bids_mini_metrics_with_policy \nWHERE\n  publisher is not null AND domain = 'news.yahoo.com'\nORDER BY \n  publisher,\n  domain\nLIMIT 1\n"
       args: {}
       claims:
         user_attributes:

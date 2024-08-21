@@ -23,7 +23,7 @@ var ErrForbidden = errors.New("action not allowed")
 // SecurityClaims represents contextual information for the enforcement of security rules.
 type SecurityClaims struct {
 	// UserAttributes about the current user (or service account). Usually exposed through templating as {{ .user }}.
-	UserAttributes map[string]any `yaml:"user_attributes"`
+	UserAttributes map[string]any
 	// AdditionalRules are optional security rules to apply *in addition* to the built-in rules and the rules defined on the requested resource.
 	// These are currently leveraged by the admin service to enforce restrictions for magic auth tokens.
 	AdditionalRules []*runtimev1.SecurityRule
