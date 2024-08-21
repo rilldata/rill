@@ -56,7 +56,7 @@
         if (panRange) updatePanRange(panRange.start, panRange.end);
       }
     } else if ($dashboardStore?.selectedScrubRange?.end) {
-      if (e.key === "z") {
+      if (e.key === "z" && !e.metaKey && !e.ctrlKey) {
         zoomScrub();
       } else if (
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
