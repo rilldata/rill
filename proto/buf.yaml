@@ -1,12 +1,19 @@
-version: v1
+version: v2
 name: buf.build/rilldata/rill
+deps:
+  - buf.build/envoyproxy/protoc-gen-validate
+  - buf.build/googleapis/googleapis
+  - buf.build/grpc-ecosystem/grpc-gateway
 lint:
   use:
     - DEFAULT
+  except:
+    - FIELD_NOT_REQUIRED
+    - PACKAGE_NO_IMPORT_CYCLE
+  disallow_comment_ignores: true
 breaking:
   use:
     - FILE
-deps:
-  - buf.build/googleapis/googleapis
-  - buf.build/grpc-ecosystem/grpc-gateway
-  - buf.build/envoyproxy/protoc-gen-validate
+  except:
+    - EXTENSION_NO_DELETE
+    - FIELD_SAME_DEFAULT

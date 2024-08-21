@@ -59,6 +59,10 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 	asView := !materialize
 	tableName := outputProps.Table
+	if outputProps.QuerySettings != "" {
+		// Note: This will lead to failures if user sets settings both in query and output properties
+		inputProps.SQL = inputProps.SQL + " SETTINGS " + outputProps.QuerySettings
+	}
 
 	if !opts.IncrementalRun {
 		stagingTableName := tableName

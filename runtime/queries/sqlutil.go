@@ -12,19 +12,8 @@ import (
 
 var ErrExportNotSupported = fmt.Errorf("exporting is not supported")
 
-func quoteName(name string) string {
-	return fmt.Sprintf("\"%s\"", name)
-}
-
-func escapeDoubleQuotes(column string) string {
-	return strings.ReplaceAll(column, "\"", "\"\"")
-}
-
 func safeName(name string) string {
-	if name == "" {
-		return name
-	}
-	return quoteName(escapeDoubleQuotes(name))
+	return drivers.DialectDuckDB.EscapeIdentifier(name)
 }
 
 func tempName(prefix string) string {

@@ -205,7 +205,9 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 		case int64:
 			t = time.UnixMilli(v)
 		default:
-			panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
+			if v != nil {
+				panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
+			}
 		}
 		delete(rowMap, tsAlias)
 

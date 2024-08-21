@@ -1,19 +1,23 @@
 <script lang="ts">
   import ConnectToGithubButton from "@rilldata/web-admin/features/projects/github/ConnectToGithubButton.svelte";
+  import DisconnectProjectConfirmDialog from "@rilldata/web-admin/features/projects/github/DisconnectProjectConfirmDialog.svelte";
   import {
     GithubData,
     setGithubData,
   } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
 
   export let organization: string;
   export let project: string;
@@ -31,11 +35,14 @@
   );
 
   let hovered = false;
+  let editDropdownOpen = false;
 
   const githubData = new GithubData();
   setGithubData(githubData);
   const userStatus = githubData.userStatus;
   const repoSelectionOpen = githubData.repoSelectionOpen;
+
+  let disconnectConfirmOpen = false;
 
   function confirmConnectToGithub() {
     // prompt reselection repos since a new repo might be created here.
@@ -57,6 +64,11 @@
         is_fresh_connection: isGithubConnected,
       },
     );
+  }
+
+  function disconnectGithubConnect() {
+    void githubData.ensureGithubAccess();
+    disconnectConfirmOpen = true;
   }
 </script>
 
@@ -84,13 +96,33 @@
           >
             {repoName}
           </a>
-          <Button on:click={editGithubConnection} type="ghost" compact>
-            <div class="min-w-4">
-              {#if hovered}
-                <EditIcon size="16px" />
-              {/if}
-            </div>
-          </Button>
+          <DropdownMenu.Root bind:open={editDropdownOpen}>
+            <DropdownMenu.Trigger>
+              <IconButton>
+                {#if hovered || editDropdownOpen}
+                  <ThreeDot size="16px" />
+                {/if}
+              </IconButton>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start">
+              <DropdownMenu.Item class="px-1 py-1">
+                <Button on:click={editGithubConnection} type="text" compact>
+                  <div class="flex flex-row items-center gap-x-2">
+                    <EditIcon size="14px" />
+                    <span class="text-xs">Edit</span>
+                  </div>
+                </Button>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item class="px-1 py-1">
+                <Button on:click={disconnectGithubConnect} type="text" compact>
+                  <div class="flex flex-row items-center gap-x-2">
+                    <DisconnectIcon size="14px" />
+                    <span class="text-xs">Disconnect</span>
+                  </div>
+                </Button>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </div>
         {#if subpath}
           <div class="flex items-center">
@@ -137,6 +169,12 @@
   currentUrl={$proj.data?.project?.githubUrl}
   currentSubpath={$proj.data?.project?.subpath}
   currentBranch={$proj.data?.project?.prodBranch}
+  {organization}
+  {project}
+/>
+
+<DisconnectProjectConfirmDialog
+  bind:open={disconnectConfirmOpen}
   {organization}
   {project}
 />

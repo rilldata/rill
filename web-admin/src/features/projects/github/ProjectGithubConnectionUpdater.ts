@@ -1,14 +1,11 @@
 import {
   createAdminServiceConnectProjectToGithub,
-  getAdminServiceGetGithubUserStatusQueryKey,
-  getAdminServiceGetProjectQueryKey,
   type ListGithubUserReposResponseRepo,
 } from "@rilldata/web-admin/client";
 import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { invalidateProjectQueries } from "@rilldata/web-admin/features/projects/invalidations";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-import { invalidateRuntimeQueries } from "@rilldata/web-common/runtime-client/invalidation";
 import { get, writable } from "svelte/store";
 
 /**
@@ -87,17 +84,11 @@ export class ProjectGithubConnectionUpdater {
       );
       this.reset();
 
-      void queryClient.refetchQueries(
-        getAdminServiceGetProjectQueryKey(this.organization, this.project),
-        {
-          // avoid refetching createAdminServiceGetProjectWithBearerToken
-          exact: true,
-        },
+      void invalidateProjectQueries(
+        instanceId,
+        this.organization,
+        this.project,
       );
-      void queryClient.refetchQueries(
-        getAdminServiceGetGithubUserStatusQueryKey(),
-      );
-      void invalidateRuntimeQueries(queryClient, instanceId);
     } catch (e) {
       const err = extractGithubConnectError(e);
       if (!force && err.notEmpty) {

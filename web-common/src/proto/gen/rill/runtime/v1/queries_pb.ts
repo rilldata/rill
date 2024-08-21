@@ -3223,6 +3223,125 @@ export class MetricsViewSearchResponse_SearchResult extends Message<MetricsViewS
 }
 
 /**
+ * @generated from message rill.runtime.v1.ResolveComponentRequest
+ */
+export class ResolveComponentRequest extends Message<ResolveComponentRequest> {
+  /**
+   * Instance ID
+   *
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Component name
+   *
+   * @generated from field: string component = 2;
+   */
+  component = "";
+
+  /**
+   * Optional args to pass to the data resolver and for resolving templating in the renderer properties
+   *
+   * @generated from field: google.protobuf.Struct args = 3;
+   */
+  args?: Struct;
+
+  constructor(data?: PartialMessage<ResolveComponentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveComponentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "args", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentRequest {
+    return new ResolveComponentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveComponentRequest {
+    return new ResolveComponentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveComponentRequest {
+    return new ResolveComponentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveComponentRequest | PlainMessage<ResolveComponentRequest> | undefined, b: ResolveComponentRequest | PlainMessage<ResolveComponentRequest> | undefined): boolean {
+    return proto3.util.equals(ResolveComponentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolveComponentResponse
+ */
+export class ResolveComponentResponse extends Message<ResolveComponentResponse> {
+  /**
+   * Show property with templating resolved for the provided args.
+   * If it resolves to false, the other fields are not set.
+   *
+   * @generated from field: bool show = 1;
+   */
+  show = false;
+
+  /**
+   * Schema of the resolved component data
+   *
+   * @generated from field: rill.runtime.v1.StructType schema = 2;
+   */
+  schema?: StructType;
+
+  /**
+   * Resolved component data
+   *
+   * @generated from field: repeated google.protobuf.Struct data = 3;
+   */
+  data: Struct[] = [];
+
+  /**
+   * Renderer properties with templating resolved for the provided args
+   *
+   * @generated from field: google.protobuf.Struct renderer_properties = 4;
+   */
+  rendererProperties?: Struct;
+
+  constructor(data?: PartialMessage<ResolveComponentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveComponentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "schema", kind: "message", T: StructType },
+    { no: 3, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 4, name: "renderer_properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentResponse {
+    return new ResolveComponentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveComponentResponse {
+    return new ResolveComponentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveComponentResponse {
+    return new ResolveComponentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveComponentResponse | PlainMessage<ResolveComponentResponse> | undefined, b: ResolveComponentResponse | PlainMessage<ResolveComponentResponse> | undefined): boolean {
+    return proto3.util.equals(ResolveComponentResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ColumnRollupIntervalRequest
  */
 export class ColumnRollupIntervalRequest extends Message<ColumnRollupIntervalRequest> {

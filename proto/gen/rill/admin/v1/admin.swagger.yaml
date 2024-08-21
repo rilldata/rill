@@ -1428,6 +1428,37 @@ paths:
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/upload-assets:
+    post:
+      summary: |-
+        Converts a project connected to github to a rill managed project.
+        Uploads the current project to assets.
+      operationId: AdminService_UploadProjectAssets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UploadProjectAssetsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
     delete:
       summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
@@ -3275,7 +3306,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -4626,6 +4657,8 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1UploadProjectAssetsResponse:
+    type: object
   v1User:
     type: object
     properties:

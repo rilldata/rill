@@ -4,7 +4,6 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_connect";
 import {
   DeployProjectRequest,
-  DeployValidationRequest,
   GetCurrentProjectRequest,
   GetCurrentUserRequest,
   GetMetadataRequest,
@@ -88,31 +87,6 @@ export function createLocalServiceGetVersion<
     ...queryOptions,
     queryKey: queryOptions?.queryKey ?? getLocalServiceGetVersionQueryKey(),
     queryFn: queryOptions?.queryFn ?? localServiceGetVersion,
-  });
-}
-
-export function localServiceDeployValidation() {
-  return getClient().deployValidation(new DeployValidationRequest());
-}
-export const getLocalServiceDeployValidationQueryKey = () => [
-  `/v1/local/deploy-validation`,
-];
-export function createLocalServiceDeployValidation<
-  TData = Awaited<ReturnType<typeof localServiceDeployValidation>>,
-  TError = ConnectError,
->(options?: {
-  query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof localServiceDeployValidation>>,
-    TError,
-    TData
-  >;
-}) {
-  const { query: queryOptions } = options ?? {};
-  return createQuery({
-    ...queryOptions,
-    queryKey:
-      queryOptions?.queryKey ?? getLocalServiceDeployValidationQueryKey(),
-    queryFn: queryOptions?.queryFn ?? localServiceDeployValidation,
   });
 }
 

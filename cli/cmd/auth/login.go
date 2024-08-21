@@ -20,7 +20,7 @@ func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			// updating this as its not required to logout first and login again
+			// Logout if already logged in
 			if ch.AdminTokenDefault != "" {
 				err := Logout(ctx, ch)
 				if err != nil {
@@ -51,7 +51,7 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
 	// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
 	// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
-	authURL := ch.AdminURL
+	authURL := ch.AdminURL()
 	if strings.Contains(authURL, "http://localhost:9090") {
 		authURL = "http://localhost:8080"
 	}
@@ -82,8 +82,12 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	if err != nil {
 		return err
 	}
-	// set the default token to the one we just got
-	ch.AdminTokenDefault = res1.AccessToken
+
+	err = ch.ReloadAdminConfig()
+	if err != nil {
+		return err
+	}
+
 	ch.PrintfBold("Successfully logged in. Welcome to Rill!\n")
 	return nil
 }

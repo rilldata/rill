@@ -31,6 +31,7 @@ type Authenticator struct {
 }
 
 func NewAuthenticator(baseAuthURL, redirectURL, clientID, origin string) (*Authenticator, error) {
+	// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
 	if strings.Contains(baseAuthURL, "http://localhost:9090") {
 		baseAuthURL = "http://localhost:8080"
 	}

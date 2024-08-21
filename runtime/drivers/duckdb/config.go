@@ -37,8 +37,6 @@ type config struct {
 	CPU int `mapstructure:"cpu"`
 	// MemoryLimitGB is the amount of memory available for the DB
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// StorageLimitBytes is the amount of disk storage available for the DB
-	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
 	// MaxMemoryOverride sets a hard override for the "max_memory" DuckDB setting
 	MaxMemoryGBOverride int `mapstructure:"max_memory_gb_override"`
 	// ThreadsOverride sets a hard override for the "threads" DuckDB setting. Set to -1 for unlimited threads.
@@ -150,18 +148,4 @@ func generateDSN(path, encodedQuery string) string {
 		return path
 	}
 	return path + "?" + encodedQuery
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
