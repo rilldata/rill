@@ -129,12 +129,12 @@
 
   onMount(() => {
     window.addEventListener("brushCleared", () => {
-      dispatch("chart-brush", { interval: null });
+      dispatch("chart-brush", { interval: null, isScrubbing: false });
     });
 
     return () => {
       window.removeEventListener("brushCleared", () => {
-        dispatch("chart-brush", { interval: null });
+        dispatch("chart-brush", { interval: null, isScrubbing: false });
       });
     };
   });
