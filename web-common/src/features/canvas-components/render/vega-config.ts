@@ -17,6 +17,7 @@ export const getRillTheme: () => Config = () => ({
     type: "fit-x",
   },
   mark: {
+    // TODO: this global mark tooltip is causing the brush layer to show tooltips
     tooltip: true,
   },
   arc: { fill: defaultMarkColor },

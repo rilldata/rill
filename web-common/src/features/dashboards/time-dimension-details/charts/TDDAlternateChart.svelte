@@ -108,11 +108,11 @@
     // on every pixel dragged. The ideal solution is to listen to the completion
     // of the drag and then fire the brush event.
     // See: https://github.com/vega/vega-lite/issues/5341
-    brush: debounce((_name: string, value) => {
-      const interval = resolveSignalIntervalField(value);
+    // brush: (_name: string, value) => {
+    //   const interval = resolveSignalIntervalField(value);
 
-      dispatch("chart-brush", { interval });
-    }, 100),
+    //   dispatch("chart-brush", { interval });
+    // },
   };
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(

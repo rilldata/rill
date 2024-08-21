@@ -1,8 +1,8 @@
 import { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
-import { singleLayerBaseSpec } from "./utils";
+import { singleLayerBaseSpec, multiLayerBaseSpec } from "./utils";
 import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
-export function buildSimpleBar(
+export function buildSimpleBarSingleLayer(
   timeField: ChartField,
   quantitativeField: ChartField,
 ) {
@@ -36,10 +36,6 @@ export function buildSimpleBar(
       ],
       value: 0.8,
     },
-    // TODO: configure or disable tooltip while scrubbing for the time being
-    // https://vega.github.io/vega-lite/docs/tooltip.html#disable-tooltips
-    // TODO: can add a `disableTooltip` flag to buildSimpleBar
-    // TODO: do we want to turn this into multiLayerSpec to disable tooltip on interval?
     tooltip: [
       {
         field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
@@ -78,6 +74,92 @@ export function buildSimpleBar(
           strokeWidth: 1,
           strokeOpacity: 0.8,
         },
+      },
+    },
+  ];
+
+  return baseSpec;
+}
+
+export function buildSimpleBarMultiLayer(
+  timeField: ChartField,
+  quantitativeField: ChartField,
+) {
+  const baseSpec = multiLayerBaseSpec();
+
+  baseSpec.layer = [
+    // Full-height hover layer
+    {
+      params: [
+        {
+          name: "hover",
+          select: { type: "point", on: "pointerover", clear: "pointerout" },
+        },
+        {
+          name: "brush",
+          select: {
+            type: "interval",
+            encodings: ["x"],
+            mark: {
+              fill: ScrubBoxColor,
+              fillOpacity: 0.2,
+              stroke: ScrubBoxColor,
+              strokeWidth: 1,
+              strokeOpacity: 0.8,
+            },
+          },
+        },
+      ],
+      mark: {
+        type: "bar",
+        color: ScrubBoxColor,
+        // color: "transparent",
+        tooltip: false,
+      },
+      encoding: {
+        x: {
+          field: timeField.name,
+          type: "temporal",
+          bandPosition: 0,
+        },
+        opacity: {
+          condition: { param: "hover", empty: false, value: 0.5 },
+          value: 0,
+        },
+        detail: {
+          field: quantitativeField.name,
+          type: "quantitative",
+        },
+        // TODO: Uncomment to add tooltip
+        // The tooltips are pretty disruptive, ideally we would only show them on hoverintent
+        // tooltip: [
+        //   {
+        //     field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
+        //     type: "temporal",
+        //     title: "Time",
+        //     format: "%b %d, %Y %H:%M",
+        //   },
+        //   {
+        //     title: quantitativeField.label,
+        //     field: quantitativeField.name,
+        //     type: "quantitative",
+        //     formatType: quantitativeField.formatterFunction || "number",
+        //   },
+        // ],
+      },
+    },
+    // Main bar layer
+    {
+      mark: {
+        type: "bar",
+      },
+      encoding: {
+        x: {
+          field: timeField.name,
+          type: "temporal",
+          bandPosition: 0,
+        },
+        y: { field: quantitativeField.name, type: "quantitative" },
       },
     },
   ];
