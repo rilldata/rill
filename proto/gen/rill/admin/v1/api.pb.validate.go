@@ -789,6 +789,272 @@ var _ interface {
 	ErrorName() string
 } = GetOrganizationResponseValidationError{}
 
+// Validate checks the field values on GetOrganizationByDomainRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetOrganizationByDomainRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetOrganizationByDomainRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetOrganizationByDomainRequestMultiError, or nil if none found.
+func (m *GetOrganizationByDomainRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetOrganizationByDomainRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Domain
+
+	if len(errors) > 0 {
+		return GetOrganizationByDomainRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetOrganizationByDomainRequestMultiError is an error wrapping multiple
+// validation errors returned by GetOrganizationByDomainRequest.ValidateAll()
+// if the designated constraints aren't met.
+type GetOrganizationByDomainRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetOrganizationByDomainRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetOrganizationByDomainRequestMultiError) AllErrors() []error { return m }
+
+// GetOrganizationByDomainRequestValidationError is the validation error
+// returned by GetOrganizationByDomainRequest.Validate if the designated
+// constraints aren't met.
+type GetOrganizationByDomainRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetOrganizationByDomainRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetOrganizationByDomainRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetOrganizationByDomainRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetOrganizationByDomainRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetOrganizationByDomainRequestValidationError) ErrorName() string {
+	return "GetOrganizationByDomainRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetOrganizationByDomainRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetOrganizationByDomainRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetOrganizationByDomainRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetOrganizationByDomainRequestValidationError{}
+
+// Validate checks the field values on GetOrganizationByDomainResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetOrganizationByDomainResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetOrganizationByDomainResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetOrganizationByDomainResponseMultiError, or nil if none found.
+func (m *GetOrganizationByDomainResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetOrganizationByDomainResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetOrganization()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetOrganizationByDomainResponseValidationError{
+					field:  "Organization",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetOrganizationByDomainResponseValidationError{
+					field:  "Organization",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOrganization()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetOrganizationByDomainResponseValidationError{
+				field:  "Organization",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetPermissions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetOrganizationByDomainResponseValidationError{
+					field:  "Permissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetOrganizationByDomainResponseValidationError{
+					field:  "Permissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPermissions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetOrganizationByDomainResponseValidationError{
+				field:  "Permissions",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetOrganizationByDomainResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetOrganizationByDomainResponseMultiError is an error wrapping multiple
+// validation errors returned by GetOrganizationByDomainResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GetOrganizationByDomainResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetOrganizationByDomainResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetOrganizationByDomainResponseMultiError) AllErrors() []error { return m }
+
+// GetOrganizationByDomainResponseValidationError is the validation error
+// returned by GetOrganizationByDomainResponse.Validate if the designated
+// constraints aren't met.
+type GetOrganizationByDomainResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetOrganizationByDomainResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetOrganizationByDomainResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetOrganizationByDomainResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetOrganizationByDomainResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetOrganizationByDomainResponseValidationError) ErrorName() string {
+	return "GetOrganizationByDomainResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetOrganizationByDomainResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetOrganizationByDomainResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetOrganizationByDomainResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetOrganizationByDomainResponseValidationError{}
+
 // Validate checks the field values on CreateOrganizationRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10046,6 +10312,251 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SudoUpdateOrganizationBillingCustomerResponseValidationError{}
+
+// Validate checks the field values on
+// SudoUpdateOrganizationCustomDomainRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SudoUpdateOrganizationCustomDomainRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// SudoUpdateOrganizationCustomDomainRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// SudoUpdateOrganizationCustomDomainRequestMultiError, or nil if none found.
+func (m *SudoUpdateOrganizationCustomDomainRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoUpdateOrganizationCustomDomainRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for CustomDomain
+
+	if len(errors) > 0 {
+		return SudoUpdateOrganizationCustomDomainRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoUpdateOrganizationCustomDomainRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// SudoUpdateOrganizationCustomDomainRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoUpdateOrganizationCustomDomainRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoUpdateOrganizationCustomDomainRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoUpdateOrganizationCustomDomainRequestMultiError) AllErrors() []error { return m }
+
+// SudoUpdateOrganizationCustomDomainRequestValidationError is the validation
+// error returned by SudoUpdateOrganizationCustomDomainRequest.Validate if the
+// designated constraints aren't met.
+type SudoUpdateOrganizationCustomDomainRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoUpdateOrganizationCustomDomainRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoUpdateOrganizationCustomDomainRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoUpdateOrganizationCustomDomainRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoUpdateOrganizationCustomDomainRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoUpdateOrganizationCustomDomainRequestValidationError) ErrorName() string {
+	return "SudoUpdateOrganizationCustomDomainRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoUpdateOrganizationCustomDomainRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoUpdateOrganizationCustomDomainRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoUpdateOrganizationCustomDomainRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoUpdateOrganizationCustomDomainRequestValidationError{}
+
+// Validate checks the field values on
+// SudoUpdateOrganizationCustomDomainResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SudoUpdateOrganizationCustomDomainResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// SudoUpdateOrganizationCustomDomainResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// SudoUpdateOrganizationCustomDomainResponseMultiError, or nil if none found.
+func (m *SudoUpdateOrganizationCustomDomainResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoUpdateOrganizationCustomDomainResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetOrganization()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SudoUpdateOrganizationCustomDomainResponseValidationError{
+					field:  "Organization",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SudoUpdateOrganizationCustomDomainResponseValidationError{
+					field:  "Organization",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOrganization()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SudoUpdateOrganizationCustomDomainResponseValidationError{
+				field:  "Organization",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SudoUpdateOrganizationCustomDomainResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoUpdateOrganizationCustomDomainResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// SudoUpdateOrganizationCustomDomainResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SudoUpdateOrganizationCustomDomainResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoUpdateOrganizationCustomDomainResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoUpdateOrganizationCustomDomainResponseMultiError) AllErrors() []error { return m }
+
+// SudoUpdateOrganizationCustomDomainResponseValidationError is the validation
+// error returned by SudoUpdateOrganizationCustomDomainResponse.Validate if
+// the designated constraints aren't met.
+type SudoUpdateOrganizationCustomDomainResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoUpdateOrganizationCustomDomainResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoUpdateOrganizationCustomDomainResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoUpdateOrganizationCustomDomainResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoUpdateOrganizationCustomDomainResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoUpdateOrganizationCustomDomainResponseValidationError) ErrorName() string {
+	return "SudoUpdateOrganizationCustomDomainResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoUpdateOrganizationCustomDomainResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoUpdateOrganizationCustomDomainResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoUpdateOrganizationCustomDomainResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoUpdateOrganizationCustomDomainResponseValidationError{}
 
 // Validate checks the field values on SudoUpdateUserQuotasRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -29861,6 +30372,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for Description
+
+	// no validation rules for CustomDomain
 
 	if all {
 		switch v := interface{}(m.GetQuotas()).(type) {

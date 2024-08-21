@@ -22,6 +22,7 @@ const (
 	AdminService_Ping_FullMethodName                                  = "/rill.admin.v1.AdminService/Ping"
 	AdminService_ListOrganizations_FullMethodName                     = "/rill.admin.v1.AdminService/ListOrganizations"
 	AdminService_GetOrganization_FullMethodName                       = "/rill.admin.v1.AdminService/GetOrganization"
+	AdminService_GetOrganizationByDomain_FullMethodName               = "/rill.admin.v1.AdminService/GetOrganizationByDomain"
 	AdminService_CreateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/CreateOrganization"
 	AdminService_DeleteOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/DeleteOrganization"
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
@@ -89,6 +90,7 @@ const (
 	AdminService_SudoUpdateUserQuotas_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName          = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
+	AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName    = "/rill.admin.v1.AdminService/SudoUpdateOrganizationCustomDomain"
 	AdminService_SudoUpdateAnnotations_FullMethodName                 = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_SudoIssueRuntimeManagerToken_FullMethodName          = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
@@ -147,6 +149,9 @@ type AdminServiceClient interface {
 	ListOrganizations(ctx context.Context, in *ListOrganizationsRequest, opts ...grpc.CallOption) (*ListOrganizationsResponse, error)
 	// GetOrganization returns information about a specific organization
 	GetOrganization(ctx context.Context, in *GetOrganizationRequest, opts ...grpc.CallOption) (*GetOrganizationResponse, error)
+	// GetOrganizationByDomain finds the org for a custom domain.
+	// If the application detects it is running on a non-default domain, it can use this to find the org to present.
+	GetOrganizationByDomain(ctx context.Context, in *GetOrganizationByDomainRequest, opts ...grpc.CallOption) (*GetOrganizationByDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(ctx context.Context, in *CreateOrganizationRequest, opts ...grpc.CallOption) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organizations
@@ -284,6 +289,10 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
+	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+	// It only updates the custom domain in the database, which is used to ensure correct redirects.
+	// The DNS records and ingress TLS must be configured separately.
+	SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
@@ -406,6 +415,16 @@ func (c *adminServiceClient) GetOrganization(ctx context.Context, in *GetOrganiz
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetOrganizationResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetOrganization_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetOrganizationByDomain(ctx context.Context, in *GetOrganizationByDomainRequest, opts ...grpc.CallOption) (*GetOrganizationByDomainResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetOrganizationByDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetOrganizationByDomain_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1082,6 +1101,16 @@ func (c *adminServiceClient) SudoUpdateOrganizationBillingCustomer(ctx context.C
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoUpdateOrganizationCustomDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoUpdateAnnotationsResponse)
@@ -1552,6 +1581,9 @@ type AdminServiceServer interface {
 	ListOrganizations(context.Context, *ListOrganizationsRequest) (*ListOrganizationsResponse, error)
 	// GetOrganization returns information about a specific organization
 	GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error)
+	// GetOrganizationByDomain finds the org for a custom domain.
+	// If the application detects it is running on a non-default domain, it can use this to find the org to present.
+	GetOrganizationByDomain(context.Context, *GetOrganizationByDomainRequest) (*GetOrganizationByDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organizations
@@ -1689,6 +1721,10 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
+	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+	// It only updates the custom domain in the database, which is used to ensure correct redirects.
+	// The DNS records and ingress TLS must be configured separately.
+	SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
@@ -1795,6 +1831,9 @@ func (UnimplementedAdminServiceServer) ListOrganizations(context.Context, *ListO
 }
 func (UnimplementedAdminServiceServer) GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrganization not implemented")
+}
+func (UnimplementedAdminServiceServer) GetOrganizationByDomain(context.Context, *GetOrganizationByDomainRequest) (*GetOrganizationByDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationByDomain not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateOrganization not implemented")
@@ -1996,6 +2035,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Cont
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationBillingCustomer not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationCustomDomain not implemented")
 }
 func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateAnnotations not implemented")
@@ -2206,6 +2248,24 @@ func _AdminService_GetOrganization_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetOrganization(ctx, req.(*GetOrganizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetOrganizationByDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOrganizationByDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetOrganizationByDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetOrganizationByDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetOrganizationByDomain(ctx, req.(*GetOrganizationByDomainRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3416,6 +3476,24 @@ func _AdminService_SudoUpdateOrganizationBillingCustomer_Handler(srv interface{}
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoUpdateOrganizationCustomDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateOrganizationCustomDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationCustomDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationCustomDomain(ctx, req.(*SudoUpdateOrganizationCustomDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SudoUpdateAnnotations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoUpdateAnnotationsRequest)
 	if err := dec(in); err != nil {
@@ -4264,6 +4342,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetOrganization_Handler,
 		},
 		{
+			MethodName: "GetOrganizationByDomain",
+			Handler:    _AdminService_GetOrganizationByDomain_Handler,
+		},
+		{
 			MethodName: "CreateOrganization",
 			Handler:    _AdminService_CreateOrganization_Handler,
 		},
@@ -4530,6 +4612,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateOrganizationBillingCustomer",
 			Handler:    _AdminService_SudoUpdateOrganizationBillingCustomer_Handler,
+		},
+		{
+			MethodName: "SudoUpdateOrganizationCustomDomain",
+			Handler:    _AdminService_SudoUpdateOrganizationCustomDomain_Handler,
 		},
 		{
 			MethodName: "SudoUpdateAnnotations",
