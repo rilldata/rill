@@ -128,7 +128,8 @@ func TestResolvers(t *testing.T) {
 					res, err := rt.Resolve(context.Background(), ro)
 					if test.ErrorContains != "" {
 						if *update {
-							// todo
+							require.Error(t, err)
+							test.ErrorContains = err.Error()
 						} else {
 							require.ErrorContains(t, err, test.ErrorContains)
 						}
@@ -141,6 +142,7 @@ func TestResolvers(t *testing.T) {
 					require.NoError(t, err)
 					require.NoError(t, json.Unmarshal(b, &rows), string(b))
 					if *update {
+						test.Result = rows
 						for _, m := range test.Result {
 							for k, v := range m {
 								node := yaml.Node{}
