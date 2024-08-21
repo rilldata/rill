@@ -82,14 +82,14 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 	if values.Get("redirect") != "" {
 		qry["redirect"] = values.Get("redirect")
 	} else {
-		qry["redirect"] = a.admin.URLs.CLIAuthSuccess()
+		qry["redirect"] = a.admin.URLs.AuthCLISuccessUI()
 	}
 
 	resp := DeviceCodeResponse{
 		DeviceCode:              authCode.DeviceCode,
 		UserCode:                readableUserCode,
-		VerificationURI:         a.admin.URLs.DeviceAuthVerification(nil),
-		VerificationCompleteURI: a.admin.URLs.DeviceAuthVerification(qry),
+		VerificationURI:         a.admin.URLs.AuthVerifyDeviceUI(nil),
+		VerificationCompleteURI: a.admin.URLs.AuthVerifyDeviceUI(qry),
 		ExpiresIn:               int(admin.DeviceAuthCodeTTL.Seconds()),
 		PollingInterval:         5,
 	}

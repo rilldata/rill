@@ -3,6 +3,7 @@ package admin
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/pkg/urlutil"
@@ -22,10 +23,10 @@ import (
 // 1. The admin service must be reachable at the `/api` path prefix on the custom domain. The `/api` prefix should be removed by the load balancer before proxying to the admin service.
 // 2. The frontend must be reachable at all other paths on the custom domain.
 type URLs struct {
-	externalURL    *url.URL
-	externalURLRaw string
-	frontendURL    *url.URL
-	frontendURLRaw string
+	external string
+	frontend string
+	custom   string
+	https    bool
 }
 
 // NewURLs creates a new URLs. The provided URLs should include the scheme, host, optional port, and optional path prefix.
@@ -36,37 +37,89 @@ func NewURLs(externalURL, frontendURL string) (*URLs, error) {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
 	}
 
-	fu, err := url.Parse(frontendURL)
+	_, err = url.Parse(frontendURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse frontend URL: %w", err)
 	}
 
 	return &URLs{
-		externalURL:    eu,
-		externalURLRaw: externalURL,
-		frontendURL:    fu,
-		frontendURLRaw: frontendURL,
+		external: externalURL,
+		frontend: frontendURL,
+		https:    eu.Scheme == "https",
 	}, nil
+}
+
+// WithCustomDomain returns a copy that generates URLs for the provided custom domain (as described in the type doc).
+// The result automatically generates correct URLs also for the few endpoints that must always use the non-custom external URL (such as AuthLogin).
+func (u *URLs) WithCustomDomain(domain string) *URLs {
+	if u.custom != "" {
+		panic(fmt.Errorf("nested calls to WithCustomDomain are not allowed"))
+	}
+
+	custom := &url.URL{
+		Scheme: "https",
+		Host:   domain,
+	}
+	if !u.https {
+		custom.Scheme = "http"
+	}
+
+	return &URLs{
+		external: u.external,
+		frontend: u.frontend,
+		custom:   custom.String(),
+		https:    u.https,
+	}
+}
+
+// WithCustomDomainFromURL attempts to infer a custom domain from a redirect URL.
+// If it succeeds, it passes the custom domain to WithCustomDomain and returns the result.
+// If it does not detect a custom domain in the redirect URL, or the redirect URL is invalid, it returns base URLs.
+func (u *URLs) WithCustomDomainFromRedirectURL(redirectURL string) *URLs {
+	u2, err := url.Parse(redirectURL)
+	if err != nil {
+		// Ignoring err as per docstring.
+		return u
+	}
+
+	// Skip if there's no host in the redirect URL.
+	if u2.Host == "" {
+		return u
+	}
+
+	// Skip if it points to the primary external or frontend URL.
+	if strings.HasPrefix(redirectURL, u.external) || strings.HasPrefix(redirectURL, u.frontend) {
+		return u
+	}
+
+	return u.WithCustomDomain(u2.Host)
 }
 
 // IsHTTPS returns true if the admin service's external URL uses HTTPS.
 func (u *URLs) IsHTTPS() bool {
-	return u.externalURL.Scheme == "https"
+	return u.https
 }
 
-// ExternalURL returns the external URL for the admin service.
+// External returns the external URL for the admin service.
 func (u *URLs) External() string {
-	return u.externalURLRaw
+	if u.custom != "" {
+		// As described in the type doc, the admin service is required to be reachable at the `/api` path prefix on a custom domain.
+		return urlutil.MustJoinURL(u.custom, "api")
+	}
+	return u.external
 }
 
-// FrontendURL returns the frontend URL for the admin service.
+// Frontend returns the frontend URL for the admin service.
 func (u *URLs) Frontend() string {
-	return u.frontendURLRaw
+	if u.custom != "" {
+		return u.custom
+	}
+	return u.frontend
 }
 
 // AuthLogin returns the URL that starts the redirects to the auth service for login.
 func (u *URLs) AuthLogin(redirect string) string {
-	res := urlutil.MustJoinURL(u.externalURLRaw, "/auth/login")
+	res := urlutil.MustJoinURL(u.external, "/auth/login") // NOTE: Always using the primary external URL.
 	if redirect != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	}
@@ -75,32 +128,37 @@ func (u *URLs) AuthLogin(redirect string) string {
 
 // AuthLoginCallback returns the URL for the OAuth2 callback.
 func (u *URLs) AuthLoginCallback() string {
-	return urlutil.MustJoinURL(u.externalURLRaw, "/auth/callback")
+	return urlutil.MustJoinURL(u.external, "/auth/callback") // NOTE: Always using the primary external URL.
+}
+
+// AuthLogout returns the URL that starts the logout redirects.
+func (u *URLs) AuthLogout() string {
+	return urlutil.MustJoinURL(u.External(), "/auth/logout") // NOTE: Uses custom domain if set to correctly clear cookies.
 }
 
 // AuthLogoutCallback returns the URL for the logout callback.
 func (u *URLs) AuthLogoutCallback() string {
-	return urlutil.MustJoinURL(u.externalURLRaw, "/auth/logout/callback")
+	return urlutil.MustJoinURL(u.external, "/auth/logout/callback") // NOTE: Always using the primary external URL.
 }
 
-// VerifyEmailUI returns the frontend URL for the verify email page.
-func (u *URLs) VerifyEmailUI() string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, "/-/auth/verify-email")
+// AuthVerifyEmailUI returns the frontend URL for the verify email page.
+func (u *URLs) AuthVerifyEmailUI() string {
+	return urlutil.MustJoinURL(u.Frontend(), "/-/auth/verify-email")
 }
 
-// DeviceAuthVerification returns the frontend URL for the device auth verification page.
-func (u *URLs) DeviceAuthVerification(query map[string]string) string {
-	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.frontendURLRaw, "/-/auth/device"), query)
+// AuthVerifyDeviceUI returns the frontend URL for the device auth verification page.
+func (u *URLs) AuthVerifyDeviceUI(query map[string]string) string {
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), "/-/auth/device"), query)
 }
 
-// CLIAuthSuccess returns the frontend URL to redirect to after successful CLI authentication.
-func (u *URLs) CLIAuthSuccess() string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, "/-/auth/cli/success")
+// AuthCLISuccessUI returns the frontend URL to redirect to after successful CLI authentication.
+func (u *URLs) AuthCLISuccessUI() string {
+	return urlutil.MustJoinURL(u.Frontend(), "/-/auth/cli/success")
 }
 
 // GithubConnect returns the URL that starts the Github connect redirects.
 func (u *URLs) GithubConnect(remote string) string {
-	res := urlutil.MustJoinURL(u.externalURLRaw, "/github/connect")
+	res := urlutil.MustJoinURL(u.external, "/github/connect") // NOTE: Always using the primary external URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
 	}
@@ -109,7 +167,7 @@ func (u *URLs) GithubConnect(remote string) string {
 
 // GithubAuthLogin returns the URL that starts the Github auth redirects.
 func (u *URLs) GithubAuthLogin(remote string) string {
-	res := urlutil.MustJoinURL(u.externalURLRaw, "/github/auth/login")
+	res := urlutil.MustJoinURL(u.external, "/github/auth/login") // NOTE: Always using the primary external URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
 	}
@@ -118,12 +176,12 @@ func (u *URLs) GithubAuthLogin(remote string) string {
 
 // GithubAuthCallback returns the URL for the Github auth callback.
 func (u *URLs) GithubAuthCallback() string {
-	return urlutil.MustJoinURL(u.externalURLRaw, "/github/auth/callback")
+	return urlutil.MustJoinURL(u.external, "/github/auth/callback") // NOTE: Always using the primary external URL.
 }
 
 // GithubConnectUI returns the page in the Rill frontend for starting the Github connect flow.
 func (u *URLs) GithubConnectUI(redirect string) string {
-	res := urlutil.MustJoinURL(u.frontendURLRaw, "/-/github/connect")
+	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect") // NOTE: Always using the primary frontend URL.
 	if redirect != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	}
@@ -132,7 +190,7 @@ func (u *URLs) GithubConnectUI(redirect string) string {
 
 // GithubConnectRetryUI returns the page in the Rill frontend for retrying the Github connect flow.
 func (u *URLs) GithubConnectRetryUI(remote string) string {
-	res := urlutil.MustJoinURL(u.frontendURLRaw, "/-/github/connect/retry-install")
+	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect/retry-install") // NOTE: Always using the primary frontend URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
 	}
@@ -141,7 +199,7 @@ func (u *URLs) GithubConnectRetryUI(remote string) string {
 
 // GithubConnectRequestUI returns the page in the Rill frontend for requesting a Github connect.
 func (u *URLs) GithubConnectRequestUI(remote string) string {
-	res := urlutil.MustJoinURL(u.frontendURLRaw, "/-/github/connect/request")
+	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect/request") // NOTE: Always using the primary frontend URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
 	}
@@ -150,7 +208,7 @@ func (u *URLs) GithubConnectRequestUI(remote string) string {
 
 // GithubConnectSuccessUI returns the page in the Rill frontend for a successful Github connect.
 func (u *URLs) GithubConnectSuccessUI(autoclose bool) string {
-	res := urlutil.MustJoinURL(u.frontendURLRaw, "/-/github/connect/success")
+	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect/success") // NOTE: Always using the primary frontend URL.
 	if autoclose {
 		res = urlutil.MustWithQuery(res, map[string]string{"autoclose": "true"})
 	}
@@ -159,7 +217,7 @@ func (u *URLs) GithubConnectSuccessUI(autoclose bool) string {
 
 // GithubRetryAuthUI returns the page in the Rill frontend for retrying the Github auth flow.
 func (u *URLs) GithubRetryAuthUI(remote, username string) string {
-	res := urlutil.MustJoinURL(u.frontendURLRaw, "/-/github/connect/retry-auth")
+	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect/retry-auth") // NOTE: Always using the primary frontend URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
 	}
@@ -169,54 +227,54 @@ func (u *URLs) GithubRetryAuthUI(remote, username string) string {
 	return res
 }
 
-// Project returns the URL for a project in the frontend.
-func (u *URLs) Project(org, project string) string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, org, project)
-}
-
 // Embed creates a URL for embedding the frontend in an iframe.
 func (u *URLs) Embed(query map[string]string) (string, error) {
-	return urlutil.WithQuery(urlutil.MustJoinURL(u.frontendURLRaw, "-", "embed"), query)
+	return urlutil.WithQuery(urlutil.MustJoinURL(u.Frontend(), "-", "embed"), query)
+}
+
+// Project returns the URL for a project in the frontend.
+func (u *URLs) Project(org, project string) string {
+	return urlutil.MustJoinURL(u.Frontend(), org, project)
 }
 
 // MagicAuthTokenOpen returns the frontend URL for opening a magic auth token.
 func (u *URLs) MagicAuthTokenOpen(org, project, token string) string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, org, project, "-", "share", token)
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "share", token)
 }
 
 // ApproveProjectAccess returns the frontend URL for approving a project access request.
 func (u *URLs) ApproveProjectAccess(org, project, id string) string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, org, project, "-", "request-access", id, "approve")
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "request-access", id, "approve")
 }
 
 // DenyProjectAccess returns the frontend URL for denying a project access request.
 func (u *URLs) DenyProjectAccess(org, project, id string) string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, org, project, "-", "request-access", id, "deny")
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "request-access", id, "deny")
 }
 
 // ReportOpen returns the URL for opening a report in the frontend.
 func (u *URLs) ReportOpen(org, project, report string, executionTime time.Time) string {
-	reportURL := urlutil.MustJoinURL(u.frontendURLRaw, org, project, "-", "reports", report, "open")
+	reportURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "open")
 	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
 	return reportURL
 }
 
 // ReportExport returns the URL for exporting a report in the frontend.
 func (u *URLs) ReportExport(org, project, report string) string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, org, project, "-", "reports", report, "export")
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
 }
 
 // ReportEdit returns the URL for editing a report in the frontend.
 func (u *URLs) ReportEdit(org, project, report string) string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, org, project, "-", "reports", report)
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report)
 }
 
 // AlertOpen returns the URL for opening an alert in the frontend.
 func (u *URLs) AlertOpen(org, project, alert string) string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, org, project, "-", "alerts", alert, "open")
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open")
 }
 
 // AlertEdit returns the URL for editing an alert in the frontend.
 func (u *URLs) AlertEdit(org, project, alert string) string {
-	return urlutil.MustJoinURL(u.frontendURLRaw, org, project, "-", "alerts", alert)
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert)
 }

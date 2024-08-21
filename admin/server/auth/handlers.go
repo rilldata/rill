@@ -199,7 +199,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	// Check that the user's email is verified
 	if !emailVerified {
-		redirectURL := a.admin.URLs.VerifyEmailUI()
+		redirectURL := a.admin.URLs.AuthVerifyEmailUI()
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
