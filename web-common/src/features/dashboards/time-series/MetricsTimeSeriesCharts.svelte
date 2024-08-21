@@ -417,7 +417,6 @@
               on:chart-brush={(e) => {
                 const { interval } = e.detail;
 
-                // TODO: do not set value on drag, only set on release
                 metricsExplorerStore.setSelectedScrubRange(
                   metricViewName,
                   interval,
