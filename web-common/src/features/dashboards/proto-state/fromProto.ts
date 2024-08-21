@@ -1,7 +1,7 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import {
-  mapExprToMeasureFilter,
   MeasureFilterEntry,
+  mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
@@ -44,6 +44,7 @@ import {
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotRowJoinType,
   DashboardTimeRange,
+  PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimensionV2,
@@ -327,18 +328,26 @@ function fromPivotProto(
     metricsView.dimensions ?? [],
     (d) => d.name,
   );
-  const mapDimension: (name: string) => PivotChipData = (name: string) => ({
-    id: name,
-    title: dimensionsMap.get(name)?.label || "Unknown",
-    type: PivotChipType.Dimension,
-  });
-  const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
-    grain: TimeGrain,
-  ) => ({
-    id: FromProtoTimeGrainMap[grain],
-    title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
-    type: PivotChipType.Time,
-  });
+  const mapDimension: (dimension: PivotElement) => PivotChipData = (
+    dimension: PivotElement,
+  ) => {
+    if (dimension?.element.case === "pivotTimeDimension") {
+      const grain = dimension?.element.value as TimeGrain;
+      return {
+        id: FromProtoTimeGrainMap[grain],
+        title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
+        type: PivotChipType.Time,
+      };
+    } else {
+      const name = dimension?.element.value as string;
+      return {
+        id: name,
+        title: dimensionsMap.get(name)?.label || "Unknown",
+        type: PivotChipType.Dimension,
+      };
+    }
+  };
+
   const measuresMap = getMapFromArray(
     metricsView.measures ?? [],
     (m) => m.name,
@@ -352,16 +361,10 @@ function fromPivotProto(
   return {
     active: dashboard.pivotIsActive ?? false,
     rows: {
-      dimension: [
-        ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
-        ...dashboard.pivotRowDimensions.map(mapDimension),
-      ],
+      dimension: dashboard.pivotRowDimensions.map(mapDimension),
     },
     columns: {
-      dimension: [
-        ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
-        ...dashboard.pivotColumnDimensions.map(mapDimension),
-      ],
+      dimension: dashboard.pivotColumnDimensions.map(mapDimension),
       measure: dashboard.pivotColumnMeasures.map(mapMeasure),
     },
     expanded: dashboard.pivotExpanded,
