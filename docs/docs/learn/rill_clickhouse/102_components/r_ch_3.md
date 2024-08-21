@@ -32,7 +32,12 @@ title: "Rill and ClickHouse Project"
 olap_connector: clickhouse
 ```
 
-Once updated, you have a few methods of adding the connection credentials to Rill Developer, either through a dsn or via each component.
+Once updated, we can create the clickhouse connection by selection `+Add Data` > `ClickHouse` and fill in the components on the UI.
+
+![clickhouse](/img/tutorials/ch/clickhouse-connector.png)
+
+Once this is created, a `clickhouse.yaml` file in the `connectors` folder.
+
 Example for a locally running ClickHouse server:
 ```yaml
 host: "localhost"

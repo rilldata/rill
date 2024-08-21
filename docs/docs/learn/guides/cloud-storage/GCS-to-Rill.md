@@ -22,7 +22,7 @@ A source can be added via the UI.
 
 If you have your own GCS dataset you'd like to use, please prepare the Google Cloud Storage URI from your GC console. If not, please use the following to follow along:
 ```
-insert a public GCS link here
+gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet
 ```
 :::note DuckDB
 Rill uses DuckDB as the underlying OLAP engine, and will ingest your data to the locally running database. For more information please refer to our documentation, [here](https://docs.rilldata.com/build/olap/).

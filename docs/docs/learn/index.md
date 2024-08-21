@@ -1,6 +1,6 @@
 ---
 id: index
-title: "Learn"
+title: "Tutorials"
 sidebar_label: "Tutorials"
 ---
 

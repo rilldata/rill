@@ -7,7 +7,7 @@ hide_table_of_contents: false
 ## Welcome to Rill!
 
 Warm welcome to you if you're coming from ClickHouse!
-
+> insert CH and Rill  image UI
 In this course, we will accomplish the following:
 
 - Install the Rill binary locally [Linux/MacOS and Windows]

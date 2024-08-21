@@ -19,7 +19,7 @@ const sidebars = {
     tutorialsSidebar: [
       {
         type: 'category',
-        label: 'Learn',
+        label: 'Tutorials',
         link: {
           type: 'doc',
           id: 'learn/index',
@@ -29,22 +29,18 @@ const sidebars = {
           
           {
             type: 'category',
-            label: 'Rill Basics',
-            description: 'Rill 100 series: Developer to Cloud & Developer features',
+            label: 'Basic: Rill Developer Source to Dashboard Deployment',
+            description: 'Rill 100 series: Rill Developer to  to Rill Cloud',
             items: [
-                'learn/rill_learn_100/101_0',
-                'learn/rill_learn_100/101_1',
                 'learn/rill_learn_100/101_2',
                 
                 {
                   type: 'category',
                   label: 'Rill Developer Components',
                   items: [
-                    'learn/rill_learn_100/components/102_0',
                     'learn/rill_learn_100/components/102_1',
                     'learn/rill_learn_100/components/102_2',
                     'learn/rill_learn_100/components/102_3',
-                    'learn/rill_learn_100/components/102_4',
                     
                   ]
                 },
@@ -53,32 +49,21 @@ const sidebars = {
                   type: 'category',
                   label: 'Modifying the Metric-Views',
                   items: [
-                    'learn/rill_learn_100/dashboard/103_0',
+
                     'learn/rill_learn_100/dashboard/103_1',
-                    'learn/rill_learn_100/dashboard/103_2',
                     'learn/rill_learn_100/dashboard/103_3',
                     'learn/rill_learn_100/dashboard/103_0_u'
                   ]
                 },
+                
   
-                    'learn/rill_learn_100/104_0',
-              
-  
-                {
-                  type: 'category',
-                  label: 'Rill CLI',
-                  items: [
-                    'learn/rill_learn_100/CLI/105_0',
-                    'learn/rill_learn_100/CLI/105_1',
-                    'learn/rill_learn_100/CLI/105_2'
-                  ]
-                },
+
                 {
                 type: 'category',
                 label: 'Deploy to Rill Cloud',
                 items: [
-                  'learn/rill_learn_100/deploy/106_0',
-                  'learn/rill_learn_100/deploy/106_1'
+                  'learn/rill_learn_100/deploy/106_1',
+                  
                 ]
               },
              'learn/rill_learn_100/107_0',
@@ -86,7 +71,7 @@ const sidebars = {
           },
           {
             type: 'category',
-            label: 'Rill Advanced',
+            label: 'Advanced: Rill Cloud Features and Advanced Usage',
             description: 'Rill 200 series: Rill Cloud features, User Management, and more!',
             items: [
               'learn/rill_learn_200/201_0',
@@ -113,19 +98,14 @@ const sidebars = {
                   'learn/rill_learn_200/cloud_components/205_3',
                   'learn/rill_learn_200/cloud_components/205_4',
                 ]
-              },
-
-
-
-              'learn/rill_learn_200/206_0',
-              
+              },              
 
               'learn/rill_learn_200/210_0',
             ]
           },
           {
             type: 'category',
-            label: 'Rill Expert',
+            label: 'Expert: Custom features and Beyond',
             description: 'Rill 300 series: Advanced use cases and beyond',
             items: [
               {
@@ -219,7 +199,6 @@ const sidebars = {
             items: [
               'learn/guides/cloud-storage/S3-to-Rill',  
               'learn/guides/cloud-storage/GCS-to-Rill',
-              'learn/guides/cloud-storage/ABS-to-Rill',
               
                           
             ]
@@ -229,7 +208,9 @@ const sidebars = {
             label: 'Data Warehouse',
             description: "See our guides specifically catered for cloud storage import",
             items: [
-              'learn/guides/data-warehouse/BQ-to-Rill',  
+              'learn/guides/data-warehouse/BQ-to-Rill', 
+              'learn/guides/data-warehouse/snowflake-to-Rill',   
+
                      
             ]
           },
@@ -269,69 +250,7 @@ const sidebars = {
 
             'learn/guides/conceptual/avg_avg',  
             'learn/guides/use-case/rill_on_rill',
-            {
-              type: 'category',
-              label: 'Videos [Needs feedback]',
-              link: {
-                type: 'doc',
-                id: 'learn/guides/conceptual/video/index',
-      
-              },
-              description: "Concepts further explained!",
-              items: [
-                {
-                  type: 'category',
-                  label: 'Rill Basic Concepts Explained',
-                  link: {
-                    type: 'doc',
-                    id: 'learn/guides/conceptual/video/basics/index',
-          
-                  },
-                  description: "Rill Basic Concepts Explained!",
-                  items: [
-                    'learn/guides/conceptual/video/basics/basics-developer',  
-                    'learn/guides/conceptual/video/basics/basics-yaml',  
-  
-                    'learn/guides/conceptual/video/basics/basics-dimension',  
-                    'learn/guides/conceptual/video/basics/basics-metrics',  
-                    'learn/guides/conceptual/video/basics/basics-cloud',  
-                    
-                  ]
-                },
-                {
-                  type: 'category',
-                  label: 'Rill Advanced Concepts Explained',
-                  link: {
-                    type: 'doc',
-                    id: 'learn/guides/conceptual/video/advanced/index',
-          
-                  },
-                  description: "Rill Advanced Concepts Explained!",
-                  items: [
-                    'learn/guides/conceptual/video/advanced/OLAP',
-                    'learn/guides/conceptual/video/advanced/access_policy',  
-                    
-                  ]
-                },
-                {
-                  type: 'category',
-                  label: 'Rill Expert Concepts Explained',
-                  link: {
-                    type: 'doc',
-                    id: 'learn/guides/conceptual/video/expert/index',
-          
-                  },
-                  description: "Rill Advanced Concepts Explained!",
-                  items: [
-                    'learn/guides/conceptual/video/expert/custom-dashboard',  
-                    'learn/guides/conceptual/video/expert/incremental-model',  
-                    'learn/guides/conceptual/video/expert/embed-dashboard',  
-                    'learn/guides/conceptual/video/expert/custom-api',                    
-                  ]
-                },
-
-              ]
-            },
+            
             
         ],
   
