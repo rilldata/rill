@@ -21,8 +21,10 @@
   $: ({ data: cookieProject } = $cookieProjectQuery);
   $: if (cookieProject) {
     eventBus.emit("banner", {
+      type: "default",
       message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/${metricsView}'>original dashboard</a>.`,
       includesHtml: true,
+      iconType: "alert",
     });
   }
 
