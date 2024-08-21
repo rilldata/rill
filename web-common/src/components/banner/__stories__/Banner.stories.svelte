@@ -26,7 +26,7 @@
       message,
       type: type as any,
       iconType: iconType as any,
-      ctaText: "CTA",
+      ctaText: "contact us",
     });
   }
 </script>

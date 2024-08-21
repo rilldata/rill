@@ -2,6 +2,7 @@
   import { BannerMessage } from "../../lib/event-bus/events";
   import AlertCircleIcon from "../icons/AlertCircleOutline.svelte";
   import CheckCircleOutline from "../icons/CheckCircleOutline.svelte";
+  import LoadingCircleOutline from "../icons/LoadingCircleOutline.svelte";
   import MoonCircleOutline from "../icons/MoonCircleOutline.svelte";
 
   export let banner: BannerMessage;
@@ -17,19 +18,14 @@
     alert: AlertCircleIcon,
     check: CheckCircleOutline,
     sleep: MoonCircleOutline,
-    // TODO
-    // loading: AlertCircleIcon,
+    loading: LoadingCircleOutline,
   };
 </script>
 
 <header class="{banner.type} app-banner">
   <div class="banner-content">
     {#if banner.iconType in IconMap}
-      <svelte:component
-        this={IconMap[banner.iconType]}
-        size="12px"
-        class="banner-icon"
-      />
+      <svelte:component this={IconMap[banner.iconType]} size="14px" />
     {/if}
     {#if banner.includesHtml}
       <p class="banner-message">{@html banner.message}</p>
@@ -54,7 +50,7 @@
     @apply flex justify-center items-center gap-x-2;
   }
 
-  .banner-icon {
+  .app-banner :global(svg) {
     @apply text-secondary-900;
   }
 
@@ -78,7 +74,7 @@
     @apply bg-primary-100;
   }
   .success .banner-message,
-  .success .banner-icon {
+  .success :global(svg) {
     @apply text-primary-800;
   }
 
@@ -86,7 +82,7 @@
     @apply bg-slate-100;
   }
   .info .banner-message,
-  .info .banner-icon {
+  .info :global(svg) {
     @apply text-slate-700;
   }
 
@@ -94,7 +90,7 @@
     @apply bg-yellow-100;
   }
   .warning .banner-message,
-  .warning .banner-icon {
+  .warning :global(svg) {
     @apply text-yellow-700;
   }
 
@@ -102,7 +98,7 @@
     @apply bg-red-100;
   }
   .error .banner-message,
-  .error .banner-icon {
+  .error :global(svg) {
     @apply text-red-700;
   }
 </style>
