@@ -801,8 +801,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		err = s.admin.Email.SendProjectInvite(&email.ProjectInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
-			AdminURL:      s.admin.URLs.External(),
-			FrontendURL:   s.admin.URLs.Frontend(),
+			AcceptURL:     s.admin.URLs.ProjectInviteAccept(org.Name, proj.Name),
 			OrgName:       org.Name,
 			ProjectName:   proj.Name,
 			RoleName:      role.Name,
@@ -826,7 +825,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
-		FrontendURL:   s.admin.URLs.Frontend(),
+		OpenURL:       s.admin.URLs.Project(org.Name, proj.Name),
 		OrgName:       org.Name,
 		ProjectName:   proj.Name,
 		RoleName:      role.Name,
@@ -1140,7 +1139,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	err = s.admin.Email.SendProjectAccessGranted(&email.ProjectAccessGranted{
 		ToEmail:     user.Email,
 		ToName:      user.DisplayName,
-		FrontendURL: s.admin.URLs.Frontend(),
+		OpenURL:     s.admin.URLs.Project(org.Name, proj.Name),
 		OrgName:     org.Name,
 		ProjectName: proj.Name,
 	})

@@ -232,9 +232,26 @@ func (u *URLs) Embed(query map[string]string) (string, error) {
 	return urlutil.WithQuery(urlutil.MustJoinURL(u.Frontend(), "-", "embed"), query)
 }
 
+// Organization returns the URL for an org in the frontend.
+func (u *URLs) Organization(org string) string {
+	return urlutil.MustJoinURL(u.Frontend(), org)
+}
+
+// OrganizationInviteAccept returns the URL for accepting an organization invite.
+func (u *URLs) OrganizationInviteAccept(org string) string {
+	redirect := urlutil.MustJoinURL(u.Frontend(), org)                                                                     // NOTE: Redirecting to the custom domain if set.
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.external, "/auth/signup"), map[string]string{"redirect": redirect}) // NOTE: Always using the primary external URL.
+}
+
 // Project returns the URL for a project in the frontend.
 func (u *URLs) Project(org, project string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project)
+}
+
+// ProjectInviteAccept returns the URL for accepting a project invite.
+func (u *URLs) ProjectInviteAccept(org, project string) string {
+	redirect := urlutil.MustJoinURL(u.Frontend(), org, project)                                                            // NOTE: Redirecting to the custom domain if set.
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.external, "/auth/signup"), map[string]string{"redirect": redirect}) // NOTE: Always using the primary external URL.
 }
 
 // MagicAuthTokenOpen returns the frontend URL for opening a magic auth token.
