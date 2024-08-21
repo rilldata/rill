@@ -3,12 +3,15 @@ package resolvers
 import (
 	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/runtime"
@@ -40,6 +43,7 @@ type Test struct {
 		}
 	}
 	Result        []map[string]any
+	CSVResult     string "yaml:\"csv_result\""
 	ErrorContains string "yaml:\"error_contains\""
 }
 
@@ -137,7 +141,6 @@ func TestResolvers(t *testing.T) {
 					require.NoError(t, err)
 					require.NoError(t, json.Unmarshal(b, &rows), string(b))
 					if *update {
-						test.Result = rows
 						for _, m := range test.Result {
 							for k, v := range m {
 								node := yaml.Node{}
@@ -153,7 +156,11 @@ func TestResolvers(t *testing.T) {
 							}
 						}
 					} else {
-						require.Equal(t, test.Result, rows)
+						expected := test.Result
+						if test.CSVResult != "" {
+							expected = readCSV(t, test.CSVResult)
+						}
+						require.Equal(t, expected, rows)
 					}
 					t.Log("======================")
 				})
@@ -168,4 +175,40 @@ func TestResolvers(t *testing.T) {
 			}
 		}
 	}
+}
+
+func readCSV(t *testing.T, in string) []map[string]any {
+	var digitCheck = regexp.MustCompile(`^[0-9]+$`)
+	var numericCheck = regexp.MustCompile(`^[0-9\.]+$`)
+
+	r := csv.NewReader(strings.NewReader(in))
+	records, err := r.ReadAll()
+	require.NoError(t, err)
+
+	rows := make([]map[string]any, 0, len(records))
+	headers := records[0]
+	for i := 1; i < len(records); i++ {
+		m := make(map[string]any, len(headers))
+		for j, h := range headers {
+			str := records[i][j]
+
+			if str == "" {
+				m[h] = nil
+				continue
+			}
+			if digitCheck.MatchString(str) {
+				num, err := strconv.Atoi(str)
+				require.NoError(t, err)
+				m[h] = num
+			} else if numericCheck.MatchString(str) {
+				num, err := strconv.ParseFloat(str, 64)
+				require.NoError(t, err)
+				m[h] = num
+			} else {
+				m[h] = records[i][j]
+			}
+		}
+		rows = append(rows, m)
+	}
+	return rows
 }

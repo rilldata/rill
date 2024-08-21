@@ -53,6 +53,19 @@ project:
 connectors:
   duckdb: null
 tests:
+  csv:
+    options:
+      resolver: metrics_sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes:
+          domain: msn.com
+          email: user@msn.com
+    csv_result: |
+      domain,publisher,total impressions
+      msn.com,,3.00
   empty:
     options:
       resolver: metrics_sql
