@@ -1,8 +1,7 @@
 project:
   sources: {}
   models: {}
-  dashboards:
-    ad_bids_mini_metrics_with_policy.yaml:
+  "dashboards/ad_bids_mini_metrics_with_policy.yaml":
       model: AdBids
       display_name: Ad bids
       description:

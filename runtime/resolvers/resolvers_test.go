@@ -20,14 +20,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Project struct {
-	Sources    map[string]yaml.Node
-	Models     map[string]yaml.Node
-	Dashboards map[string]yaml.Node
-	APIs       map[string]yaml.Node
-}
 type Resolvers struct {
-	Project    Project
+	Project    map[string]yaml.Node
 	Connectors map[string]*testruntime.InstanceOptionsForResolvers
 	Tests      map[string]*Test
 }
@@ -66,30 +60,10 @@ func TestResolvers(t *testing.T) {
 		require.NoError(t, err)
 
 		files := make(map[string]string)
-		for name, node := range r.Project.Sources {
-			abs := filepath.Join("sources", name)
+		for name, node := range r.Project {
 			bytes, err := yaml.Marshal(&node)
 			require.NoError(t, err)
-			files[abs] = string(bytes)
-		}
-		for name, node := range r.Project.Models {
-			abs := filepath.Join("models", name)
-			var bytes []byte
-			bytes, err = yaml.Marshal(&node)
-			require.NoError(t, err)
-			files[abs] = string(bytes)
-		}
-		for name, node := range r.Project.Dashboards {
-			abs := filepath.Join("dashboards", name)
-			bytes, err := yaml.Marshal(&node)
-			require.NoError(t, err)
-			files[abs] = string(bytes)
-		}
-		for name, node := range r.Project.APIs {
-			abs := filepath.Join("apis", name)
-			bytes, err := yaml.Marshal(&node)
-			require.NoError(t, err)
-			files[abs] = string(bytes)
+			files[name] = string(bytes)
 		}
 
 		for connector, opts := range r.Connectors {

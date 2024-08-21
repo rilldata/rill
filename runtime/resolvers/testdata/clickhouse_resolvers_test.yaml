@@ -1,15 +1,13 @@
 project:
   sources: {}
-  models:
-    ad_bids_mini.yaml:
+  "models/ad_bids_mini.yaml":
       type: model
       sql: SELECT * FROM url('https://raw.githubusercontent.com/rilldata/rill/main/runtime/testruntime/testdata/ad_bids/data/AdBids_mini.csv', CSV)
       output:
         columns: (id UInt32,timestamp DateTime64,publisher varchar,domain varchar,bid_price Float32,volume UInt8,impressions UInt8,"ad words" varchar,clicks Float32,device varchar)
         materialize: true
         incremental_strategy: append
-  dashboards:
-    ad_bids_mini_metrics_with_policy.yaml:
+  "dashboards/ad_bids_mini_metrics_with_policy.yaml":
       model: ad_bids_mini
       display_name: Ad bids
       description:
