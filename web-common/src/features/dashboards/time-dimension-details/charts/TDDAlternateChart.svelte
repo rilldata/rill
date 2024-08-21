@@ -5,6 +5,7 @@
     resolveSignalTimeField,
     resolveSignalIntervalField,
   } from "@rilldata/web-common/features/charts/render/vega-signals";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
@@ -103,11 +104,15 @@
 
       dispatch("chart-hover", { dimension, ts });
     },
-    brush: (_name: string, value) => {
+    // Debouncing is a short term solution to prevent the scrubbing from firing
+    // on every pixel dragged. The ideal solution is to listen to the completion
+    // of the drag and then fire the brush event.
+    // See: https://github.com/vega/vega-lite/issues/5341
+    brush: debounce((_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
 
       dispatch("chart-brush", { interval });
-    },
+    }, 100),
   };
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
