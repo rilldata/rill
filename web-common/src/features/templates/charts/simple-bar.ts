@@ -115,6 +115,7 @@ export function buildSimpleBarMultiLayer(
         color: ScrubBoxColor,
         // color: "transparent",
         tooltip: false,
+        // FIXME: width band
       },
       encoding: {
         x: {
@@ -156,6 +157,7 @@ export function buildSimpleBarMultiLayer(
     {
       mark: {
         type: "bar",
+        // FIXME: width band
       },
       encoding: {
         x: {

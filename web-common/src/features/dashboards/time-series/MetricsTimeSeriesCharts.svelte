@@ -415,12 +415,19 @@
                 );
               }}
               on:chart-brush={(e) => {
-                const { interval } = e.detail;
+                const { interval, isScrubbing } = e.detail;
 
-                metricsExplorerStore.setSelectedScrubRange(
-                  metricViewName,
-                  interval,
-                );
+                // metricsExplorerStore.setSelectedScrubRange(
+                //   metricViewName,
+                //   interval,
+                //   isScrubbing,
+                // );
+
+                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                  start: interval?.start,
+                  end: interval?.end,
+                  isScrubbing: isScrubbing,
+                });
               }}
             />
           {:else if formattedData && interval}
