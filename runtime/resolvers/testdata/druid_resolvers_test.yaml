@@ -36,15 +36,13 @@ tests:
   simple:
     options:
       resolver: metrics_sql
-      resolverproperties:
+      resolver_properties:
         sql: "select \n    publisher,\n    domain, \n    \"min bid price\",\n    \"max bid price\"\nFROM \n  ad_bids_mini_metrics_with_policy \nWHERE\n  publisher is not null AND domain = 'news.yahoo.com'\nORDER BY \n  publisher,\n  domain\nLIMIT 1\n"
       args: {}
       claims:
         user_attributes:
           domain: yahoo.com
           email: user@yahoo.com
-        additionalrules: []
-        skipchecks: false
     result:
       - domain: news.yahoo.com
         max bid price: 6.00

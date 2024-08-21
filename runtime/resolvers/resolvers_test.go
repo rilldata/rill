@@ -33,10 +33,10 @@ type Test struct {
 	Options struct {
 		InstanceID         string
 		Resolver           string
-		ResolverProperties map[string]any
+		ResolverProperties map[string]any "yaml:\"resolver_properties\""
 		Args               map[string]any
 		Claims             struct {
-			UserAttributes map[string]any
+			UserAttributes map[string]any "yaml:\"user_attributes\""
 		}
 	}
 	Result        []map[string]any

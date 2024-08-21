@@ -50,29 +50,25 @@ tests:
     resolver: mv_sql_policy_api
     options:
       resolver: "metrics_sql"
-      resolverproperties: 
+      resolver_properties: 
         sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
         user_attributes:
           domain: google.com
           email: user@google.com
-        additionalrules: []
-        skipchecks: false
     result: []
   msn:
     resolver: mv_sql_policy_api
     options:
       resolver: metrics_sql
-      resolverproperties:
+      resolver_properties:
         sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
         user_attributes:
           domain: msn.com
           email: user@msn.com
-        additionalrules: []
-        skipchecks: false
     result:
       - domain: msn.com
         publisher: ""
@@ -81,15 +77,13 @@ tests:
     resolver: mv_sql_policy_api
     options:
       resolver: metrics_sql
-      resolverproperties:
+      resolver_properties:
         sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
         user_attributes:
           domain: yahoo.com
           email: user@yahoo.com
-        additionalrules: []
-        skipchecks: false
     result:
       - domain: yahoo.com
         publisher: Yahoo

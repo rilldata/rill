@@ -56,22 +56,22 @@ tests:
   empty:
     options:
       resolver: metrics_sql
-      resolverproperties:
+      resolver_properties:
         sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
-        userattributes:
+        user_attributes:
           domain: google.com
           email: user@google.com
     result: []
   msn:
     options:
       resolver: metrics_sql
-      resolverproperties:
+      resolver_properties:
         sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
-        userattributes:
+        user_attributes:
           domain: msn.com
           email: user@msn.com
     result:
@@ -81,11 +81,11 @@ tests:
   sql:
     options:
       resolver: sql
-      resolverproperties:
+      resolver_properties:
         sql: "select \n    publisher,\n    domain \n    \nFROM \n  ad_bids_mini where publisher = 'Yahoo' limit 1\n"
       args: {}
       claims:
-        userattributes:
+        user_attributes:
           domain: msn.com
           email: user@msn.com
     result:
@@ -94,19 +94,19 @@ tests:
   simple:
     options:
       resolver: metrics_sql
-      resolverproperties:
+      resolver_properties:
         sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
-        userattributes: {}
+        user_attributes: {}
     result: []
   error:
     options:
       resolver: metrics_sql
-      resolverproperties:
+      resolver_properties:
         sql: "select \n    publisher,\n    dom1, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
       args: {}
       claims:
-        userattributes: {}
+        user_attributes: {}
     error_contains: "selected column `dom1` not found"
 
