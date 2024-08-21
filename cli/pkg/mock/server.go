@@ -69,8 +69,6 @@ func AdminServer(ctx context.Context, logger *zap.Logger, adm *admin.Service) (*
 	conf := &admincli.Config{
 		HTTPPort:        8080,
 		GRPCPort:        9090,
-		ExternalURL:     "http://localhost:8080",
-		FrontendURL:     "http://localhost:3000",
 		SessionKeyPairs: seesionKeyPairs,
 		AuthDomain:      "gorillio-stage.auth0.com",
 	}
