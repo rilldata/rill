@@ -32,129 +32,129 @@ export class DashboardState extends Message<DashboardState> {
   /**
    * Expression format for dimension filters
    *
-   * @generated from field: rill.runtime.v1.Expression where = 3;
+   * @generated from field: rill.runtime.v1.Expression where = 20;
    */
   where?: Expression;
 
   /**
    * Expression format for measure filters
    *
-   * @generated from field: repeated rill.ui.v1.DashboardDimensionFilter having = 4;
+   * @generated from field: repeated rill.ui.v1.DashboardDimensionFilter having = 21;
    */
   having: DashboardDimensionFilter[] = [];
 
   /**
    * Selected time granularity
    *
-   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 5;
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 3;
    */
   timeGrain = TimeGrain.UNSPECIFIED;
 
   /**
-   * @generated from field: rill.ui.v1.DashboardTimeRange compare_time_range = 6;
+   * @generated from field: rill.ui.v1.DashboardTimeRange compare_time_range = 4;
    */
   compareTimeRange?: DashboardTimeRange;
 
   /**
    * Determines the active page. This is cleaner than using setting `selected_dimension` or `expanded_measure`
    *
-   * @generated from field: rill.ui.v1.DashboardState.ActivePage active_page = 7;
+   * @generated from field: rill.ui.v1.DashboardState.ActivePage active_page = 32;
    */
   activePage = DashboardState_ActivePage.UNSPECIFIED;
 
   /**
    * Selected measure for the leaderboard
    *
-   * @generated from field: optional string leaderboard_measure = 8;
+   * @generated from field: optional string leaderboard_measure = 5;
    */
   leaderboardMeasure?: string;
 
   /**
    * Focused dimension
    *
-   * @generated from field: optional string selected_dimension = 9;
+   * @generated from field: optional string selected_dimension = 6;
    */
   selectedDimension?: string;
 
   /**
-   * @generated from field: optional bool show_time_comparison = 10;
+   * @generated from field: optional bool show_time_comparison = 7;
    */
   showTimeComparison?: boolean;
 
   /**
    * Selected measures and dimensions to be shown
    *
-   * @generated from field: repeated string visible_measures = 11;
+   * @generated from field: repeated string visible_measures = 8;
    */
   visibleMeasures: string[] = [];
 
   /**
-   * @generated from field: optional bool all_measures_visible = 12;
+   * @generated from field: optional bool all_measures_visible = 9;
    */
   allMeasuresVisible?: boolean;
 
   /**
-   * @generated from field: repeated string visible_dimensions = 13;
+   * @generated from field: repeated string visible_dimensions = 10;
    */
   visibleDimensions: string[] = [];
 
   /**
-   * @generated from field: optional bool all_dimensions_visible = 14;
+   * @generated from field: optional bool all_dimensions_visible = 11;
    */
   allDimensionsVisible?: boolean;
 
   /**
-   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardContextColumn leaderboard_context_column = 15;
+   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardContextColumn leaderboard_context_column = 12;
    */
   leaderboardContextColumn?: DashboardState_LeaderboardContextColumn;
 
   /**
    * Selected timezone for the dashboard
    *
-   * @generated from field: optional string selected_timezone = 16;
+   * @generated from field: optional string selected_timezone = 13;
    */
   selectedTimezone?: string;
 
   /**
    * Scrub time range
    *
-   * @generated from field: optional rill.ui.v1.DashboardTimeRange scrub_range = 17;
+   * @generated from field: optional rill.ui.v1.DashboardTimeRange scrub_range = 14;
    */
   scrubRange?: DashboardTimeRange;
 
   /**
-   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardSortDirection leaderboard_sort_direction = 18;
+   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardSortDirection leaderboard_sort_direction = 15;
    */
   leaderboardSortDirection?: DashboardState_LeaderboardSortDirection;
 
   /**
-   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardSortType leaderboard_sort_type = 19;
+   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardSortType leaderboard_sort_type = 16;
    */
   leaderboardSortType?: DashboardState_LeaderboardSortType;
 
   /**
-   * @generated from field: optional string comparison_dimension = 20;
+   * @generated from field: optional string comparison_dimension = 17;
    */
   comparisonDimension?: string;
 
   /**
    * Expanded measure for TDD view
    *
-   * @generated from field: optional string expanded_measure = 21;
+   * @generated from field: optional string expanded_measure = 18;
    */
   expandedMeasure?: string;
 
   /**
    * Pin index for TDD table selected values
    *
-   * @generated from field: optional int32 pin_index = 22;
+   * @generated from field: optional int32 pin_index = 19;
    */
   pinIndex?: number;
 
   /**
    * Type of visualization for TDD view
    *
-   * @generated from field: optional string chart_type = 23;
+   * @generated from field: optional string chart_type = 33;
    */
   chartType?: string;
 
@@ -162,23 +162,33 @@ export class DashboardState extends Message<DashboardState> {
    * *
    * Pivot related fields
    *
-   * @generated from field: optional bool pivot_is_active = 24;
+   * @generated from field: optional bool pivot_is_active = 22;
    */
   pivotIsActive?: boolean;
 
   /**
-   * List of dimensions selected for rows
    *
-   * @generated from field: repeated rill.ui.v1.PivotElement pivot_row_dimensions = 25;
+   * These pivot fields are preserved to support backward
+   * compatibility with existing URLs
+   *
+   * @generated from field: repeated rill.runtime.v1.TimeGrain pivot_row_time_dimensions = 23;
    */
-  pivotRowDimensions: PivotElement[] = [];
+  pivotRowTimeDimensions: TimeGrain[] = [];
 
   /**
-   * List dimensions selected for columns
-   *
-   * @generated from field: repeated rill.ui.v1.PivotElement pivot_column_dimensions = 26;
+   * @generated from field: repeated string pivot_row_dimensions = 24;
    */
-  pivotColumnDimensions: PivotElement[] = [];
+  pivotRowDimensions: string[] = [];
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.TimeGrain pivot_column_time_dimensions = 25;
+   */
+  pivotColumnTimeDimensions: TimeGrain[] = [];
+
+  /**
+   * @generated from field: repeated string pivot_column_dimensions = 26;
+   */
+  pivotColumnDimensions: string[] = [];
 
   /**
    * List of time measures selected for columns
@@ -216,9 +226,23 @@ export class DashboardState extends Message<DashboardState> {
   /**
    * Enable comparison for pivot
    *
-   * @generated from field: optional bool pivot_enable_comparison = 32;
+   * @generated from field: optional bool pivot_enable_comparison = 34;
    */
   pivotEnableComparison?: boolean;
+
+  /**
+   * List of all dimensions selected for rows
+   *
+   * @generated from field: repeated rill.ui.v1.PivotElement pivot_row_all_dimensions = 35;
+   */
+  pivotRowAllDimensions: PivotElement[] = [];
+
+  /**
+   * List of all dimensions selected for columns
+   *
+   * @generated from field: repeated rill.ui.v1.PivotElement pivot_column_all_dimensions = 36;
+   */
+  pivotColumnAllDimensions: PivotElement[] = [];
 
   constructor(data?: PartialMessage<DashboardState>) {
     super();
@@ -230,36 +254,40 @@ export class DashboardState extends Message<DashboardState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
-    { no: 3, name: "where", kind: "message", T: Expression },
-    { no: 4, name: "having", kind: "message", T: DashboardDimensionFilter, repeated: true },
-    { no: 5, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
-    { no: 6, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
-    { no: 7, name: "active_page", kind: "enum", T: proto3.getEnumType(DashboardState_ActivePage) },
-    { no: 8, name: "leaderboard_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 9, name: "selected_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 10, name: "show_time_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 11, name: "visible_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 12, name: "all_measures_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 13, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 14, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 15, name: "leaderboard_context_column", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardContextColumn), opt: true },
-    { no: 16, name: "selected_timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 17, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
-    { no: 18, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
-    { no: 19, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
-    { no: 20, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 21, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 22, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
-    { no: 23, name: "chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 24, name: "pivot_is_active", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 25, name: "pivot_row_dimensions", kind: "message", T: PivotElement, repeated: true },
-    { no: 26, name: "pivot_column_dimensions", kind: "message", T: PivotElement, repeated: true },
+    { no: 20, name: "where", kind: "message", T: Expression },
+    { no: 21, name: "having", kind: "message", T: DashboardDimensionFilter, repeated: true },
+    { no: 3, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
+    { no: 32, name: "active_page", kind: "enum", T: proto3.getEnumType(DashboardState_ActivePage) },
+    { no: 5, name: "leaderboard_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "selected_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "show_time_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 8, name: "visible_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "all_measures_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 10, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 12, name: "leaderboard_context_column", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardContextColumn), opt: true },
+    { no: 13, name: "selected_timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
+    { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
+    { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
+    { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 33, name: "chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 22, name: "pivot_is_active", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 23, name: "pivot_row_time_dimensions", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
+    { no: 24, name: "pivot_row_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "pivot_column_time_dimensions", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
+    { no: 26, name: "pivot_column_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 27, name: "pivot_column_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 28, name: "pivot_expanded", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 29, name: "pivot_sort", kind: "message", T: PivotColumnSort, repeated: true },
     { no: 30, name: "pivot_column_page", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 31, name: "pivot_row_join_type", kind: "enum", T: proto3.getEnumType(DashboardState_PivotRowJoinType), opt: true },
-    { no: 32, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 34, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
+    { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -344,6 +372,28 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
 ]);
 
 /**
+ * *
+ * SortType is used to determine how to sort the leaderboard
+ * and dimension detail table, as well as where to place the
+ * sort arrow.
+ *
+ * By default, the leaderboards+table will be sorted by VALUE,
+ * using the value of the currently selected dashboard measure.
+ *
+ * If DELTA_ABSOLUTE or DELTA_PERCENT is selected, the
+ * leaderboards+table will be sorted by the absolute or percentage
+ * delta change of the currently selected dashboard measure.
+ *
+ * If PERCENT is selected, the table will be sorted by the value
+ * of the currently selected dashboard measure, which will return
+ * the same ordering as the percent-of-total sort for measures
+ * with valid percent-of-total. However, the sort arrow will be
+ * placed next to the percent-of-total icon.
+ *
+ * As of 2023-08, DIMENSION is not implemented, but at that time
+ * the plan was to only apply DIMENSTION sort to the dimension
+ * detail table, and not the leaderboards.
+ *
  * @generated from enum rill.ui.v1.DashboardState.LeaderboardSortType
  */
 export enum DashboardState_LeaderboardSortType {

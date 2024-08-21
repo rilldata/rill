@@ -328,7 +328,19 @@ function fromPivotProto(
     metricsView.dimensions ?? [],
     (d) => d.name,
   );
-  const mapDimension: (dimension: PivotElement) => PivotChipData = (
+  const mapDimension: (name: string) => PivotChipData = (name: string) => ({
+    id: name,
+    title: dimensionsMap.get(name)?.label || "Unknown",
+    type: PivotChipType.Dimension,
+  });
+  const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
+    grain: TimeGrain,
+  ) => ({
+    id: FromProtoTimeGrainMap[grain],
+    title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
+    type: PivotChipType.Time,
+  });
+  const mapAllDimension: (dimension: PivotElement) => PivotChipData = (
     dimension: PivotElement,
   ) => {
     if (dimension?.element.case === "pivotTimeDimension") {
@@ -358,13 +370,38 @@ function fromPivotProto(
     type: PivotChipType.Measure,
   });
 
+  let rowDimensions: PivotChipData[] = [];
+  let colDimensions: PivotChipData[] = [];
+  if (
+    dashboard.pivotRowAllDimensions?.length ||
+    dashboard.pivotColumnAllDimensions?.length
+  ) {
+    rowDimensions = dashboard.pivotRowAllDimensions.map(mapAllDimension);
+    colDimensions = dashboard.pivotColumnAllDimensions.map(mapAllDimension);
+  } else if (
+    // backwards compatibility for old URLs
+    dashboard.pivotRowDimensions?.length ||
+    dashboard.pivotRowTimeDimensions?.length ||
+    dashboard.pivotColumnDimensions?.length ||
+    dashboard.pivotColumnTimeDimensions?.length
+  ) {
+    rowDimensions = [
+      ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
+      ...dashboard.pivotRowDimensions.map(mapDimension),
+    ];
+    colDimensions = [
+      ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
+      ...dashboard.pivotColumnDimensions.map(mapDimension),
+    ];
+  }
+
   return {
     active: dashboard.pivotIsActive ?? false,
     rows: {
-      dimension: dashboard.pivotRowDimensions.map(mapDimension),
+      dimension: rowDimensions,
     },
     columns: {
-      dimension: dashboard.pivotColumnDimensions.map(mapDimension),
+      dimension: colDimensions,
       measure: dashboard.pivotColumnMeasures.map(mapMeasure),
     },
     expanded: dashboard.pivotExpanded,

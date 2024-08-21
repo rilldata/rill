@@ -72,58 +72,62 @@ message DashboardState {
   // Dimension filters applied
   rill.runtime.v1.MetricsViewFilter filters = 2;
   // Expression format for dimension filters
-  rill.runtime.v1.Expression where = 3;
+  rill.runtime.v1.Expression where = 20;
   // Expression format for measure filters
-  repeated DashboardDimensionFilter having = 4;
+  repeated DashboardDimensionFilter having = 21;
   // Selected time granularity
-  rill.runtime.v1.TimeGrain time_grain = 5;
+  rill.runtime.v1.TimeGrain time_grain = 3;
 
-  DashboardTimeRange compare_time_range = 6;
+  DashboardTimeRange compare_time_range = 4;
 
   // Determines the active page. This is cleaner than using setting `selected_dimension` or `expanded_measure`
-  ActivePage active_page = 7;
+  ActivePage active_page = 32;
 
   // Selected measure for the leaderboard
-  optional string leaderboard_measure = 8;
+  optional string leaderboard_measure = 5;
   // Focused dimension
-  optional string selected_dimension = 9;
+  optional string selected_dimension = 6;
 
-  optional bool show_time_comparison = 10;
+  optional bool show_time_comparison = 7;
 
   // Selected measures and dimensions to be shown
-  repeated string visible_measures = 11;
-  optional bool all_measures_visible = 12;
-  repeated string visible_dimensions = 13;
-  optional bool all_dimensions_visible = 14;
+  repeated string visible_measures = 8;
+  optional bool all_measures_visible = 9;
+  repeated string visible_dimensions = 10;
+  optional bool all_dimensions_visible = 11;
 
-  optional LeaderboardContextColumn leaderboard_context_column = 15;
+  optional LeaderboardContextColumn leaderboard_context_column = 12;
 
   // Selected timezone for the dashboard
-  optional string selected_timezone = 16;
+  optional string selected_timezone = 13;
 
   // Scrub time range
-  optional DashboardTimeRange scrub_range = 17;
+  optional DashboardTimeRange scrub_range = 14;
 
-  optional LeaderboardSortDirection leaderboard_sort_direction = 18;
-  optional LeaderboardSortType leaderboard_sort_type = 19;
+  optional LeaderboardSortDirection leaderboard_sort_direction = 15;
+  optional LeaderboardSortType leaderboard_sort_type = 16;
 
-  optional string comparison_dimension = 20;
+  optional string comparison_dimension = 17;
 
   // Expanded measure for TDD view
-  optional string expanded_measure = 21;
+  optional string expanded_measure = 18;
   // Pin index for TDD table selected values
-  optional int32 pin_index = 22;
+  optional int32 pin_index = 19;
   // Type of visualization for TDD view
-  optional string chart_type = 23;
+  optional string chart_type = 33;
 
   /**
    * Pivot related fields
    */
-  optional bool pivot_is_active = 24;
-  // List of dimensions selected for rows
-  repeated PivotElement pivot_row_dimensions = 25;
-  // List dimensions selected for columns
-  repeated PivotElement pivot_column_dimensions = 26;
+  optional bool pivot_is_active = 22;
+  /*
+  * These pivot fields are preserved to support backward
+  * compatibility with existing URLs
+  */
+  repeated rill.runtime.v1.TimeGrain pivot_row_time_dimensions = 23;
+  repeated string pivot_row_dimensions = 24;
+  repeated rill.runtime.v1.TimeGrain pivot_column_time_dimensions = 25;
+  repeated string pivot_column_dimensions = 26;
   // List of time measures selected for columns
   repeated string pivot_column_measures = 27;
   // Map of dimensions that are expanded
@@ -134,7 +138,12 @@ message DashboardState {
   optional int32 pivot_column_page = 30;
   optional PivotRowJoinType pivot_row_join_type = 31;
   // Enable comparison for pivot
-  optional bool pivot_enable_comparison = 32;
+  optional bool pivot_enable_comparison = 34;
+
+  // List of all dimensions selected for rows
+  repeated PivotElement pivot_row_all_dimensions = 35;
+  // List of all dimensions selected for columns
+  repeated PivotElement pivot_column_all_dimensions = 36;
 }
 
 message DashboardTimeRange {
@@ -152,6 +161,7 @@ message PivotColumnSort {
   bool desc = 1;
   string id = 2;
 }
+
 
 message PivotElement {
   oneof element {
