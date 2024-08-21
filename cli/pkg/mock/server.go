@@ -45,6 +45,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		ProvisionerSetJSON: provisionerSetJSON,
 		DefaultProvisioner: "static",
 		ExternalURL:        "http://localhost:9090",
+		FrontendURL:        "http://localhost:3000",
 		VersionNumber:      "",
 		VersionCommit:      "",
 	}
@@ -87,8 +88,6 @@ func AdminServer(ctx context.Context, logger *zap.Logger, adm *admin.Service) (*
 	srv, err := server.New(logger, adm, issuer, limiter, activity.NewNoopClient(), &server.Options{
 		HTTPPort:               conf.HTTPPort,
 		GRPCPort:               conf.GRPCPort,
-		ExternalURL:            conf.ExternalURL,
-		FrontendURL:            conf.FrontendURL,
 		SessionKeyPairs:        keyPairs,
 		AllowedOrigins:         conf.AllowedOrigins,
 		ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,

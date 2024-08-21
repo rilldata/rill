@@ -199,13 +199,8 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	// Check that the user's email is verified
 	if !emailVerified {
-		errorRedirect, err := url.JoinPath(a.opts.FrontendURL, "/-/auth/verify-email")
-		if err != nil {
-			internalServerError(w, fmt.Errorf("failed to email verify uri: %w", err))
-			return
-		}
-
-		http.Redirect(w, r, errorRedirect, http.StatusTemporaryRedirect)
+		redirectURL := a.admin.URLs.VerifyEmailUI()
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -284,7 +279,7 @@ func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect to UI
-	http.Redirect(w, r, a.opts.FrontendURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, a.admin.URLs.Frontend(), http.StatusTemporaryRedirect)
 }
 
 // authLogout implements user logout. It revokes the current user auth token, then redirects to the auth provider's logout flow.
@@ -322,16 +317,9 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build callback endpoint for authLogoutCallback
-	returnTo, err := url.JoinPath(a.opts.ExternalURL, "/auth/logout/callback")
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to build callback URL: %s", err), http.StatusInternalServerError)
-		return
-	}
-
 	// Redirect to auth provider's logout
 	parameters := url.Values{}
-	parameters.Add("returnTo", returnTo)
+	parameters.Add("returnTo", a.admin.URLs.AuthLogoutCallback())
 	parameters.Add("client_id", a.opts.AuthClientID)
 	logoutURL.RawQuery = parameters.Encode()
 
@@ -359,7 +347,7 @@ func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
-// handleAuthorizeRequest handles the incoming OAuth2 Authorization request, if he user is not logged redirect to login, currently only PKCE based authorization code flow is supported
+// handleAuthorizeRequest handles the incoming OAuth2 Authorization request, if the user is not logged redirect to login, currently only PKCE based authorization code flow is supported
 func (a *Authenticator) handleAuthorizeRequest(w http.ResponseWriter, r *http.Request) {
 	claims := GetClaims(r.Context())
 	if claims == nil {

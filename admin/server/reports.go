@@ -57,9 +57,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
-		ExportUrl: s.urls.reportExport(org.Name, proj.Name, req.Report),
-		EditUrl:   s.urls.reportEdit(org.Name, proj.Name, req.Report),
+		OpenUrl:   s.admin.URLs.ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
+		ExportUrl: s.admin.URLs.ReportExport(org.Name, proj.Name, req.Report),
+		EditUrl:   s.admin.URLs.ReportEdit(org.Name, proj.Name, req.Report),
 	}, nil
 }
 
