@@ -11,6 +11,7 @@
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
+    CellContext,
     ExpandedState,
     SortingState,
     TableOptions,
@@ -243,6 +244,13 @@
     value: string | number | null;
   };
 
+  function handleCellClick(cellContext: CellContext<PivotDataRow, unknown>) {
+    const rowId = cellContext.row.id;
+    const columnId = cellContext.column.id;
+
+    metricsExplorerStore.setPivotActiveCell($metricsViewName, rowId, columnId);
+  }
+
   function handleHover(
     e: MouseEvent & {
       currentTarget: EventTarget & HTMLElement;
@@ -387,6 +395,7 @@
             <td
               class="ui-copy-number"
               class:border-r={i % measureCount === 0 && i}
+              on:click={() => handleCellClick(cell.getContext())}
               on:mouseenter={handleHover}
               on:mouseleave={handleLeave}
               data-value={cell.getValue()}

@@ -1,11 +1,14 @@
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { usePivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
+  import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
   import {
+    V1Expression,
     V1MetricsViewAggregationResponseDataItem,
     createQueryServiceMetricsViewAggregation,
   } from "@rilldata/web-common/runtime-client";
@@ -27,18 +30,39 @@
   let isOpen = false;
   let label = "";
   let height = INITIAL_HEIGHT_EXPANDED;
-  let timeEnd: string;
+
+  const stateManagers = getStateManagers();
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: pivotDataStore = usePivotDataStore(stateManagers);
+  $: showPivot = $dashboardStore.pivot.active;
+  $: activeCellFilters = $pivotDataStore.activeCellFilters;
+
+  let filters: V1Expression | undefined;
+  let timeRange: TimeRangeString = {
+    start: $timeControlsStore.timeStart,
+    end: $timeControlsStore.timeEnd,
+  };
+  $: if (showPivot && activeCellFilters) {
+    filters = activeCellFilters.filters;
+    timeRange = activeCellFilters.timeRange;
+  } else {
+    timeRange.start = $timeControlsStore.timeStart;
+    let maybeEnd = $timeControlsStore.timeEnd;
+    if (maybeEnd) {
+      timeRange.end = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
+    }
+    filters = sanitiseExpression($dashboardStore.whereFilter, undefined);
+  }
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
     metricViewName,
     {
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd,
-      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
+      timeStart: timeRange.start,
+      timeEnd: timeRange.end,
+      where: filters,
     },
     {
       query: {
@@ -46,9 +70,9 @@
           "dashboardFilteredRowsCt",
           metricViewName,
           {
-            timeStart: $timeControlsStore.timeStart,
-            timeEnd,
-            where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
+            timeStart: timeRange.start,
+            timeEnd: timeRange.end,
+            where: filters,
           },
         ],
         enabled: $timeControlsStore.ready && !!$dashboardStore?.whereFilter,
@@ -71,13 +95,6 @@
       },
     },
   );
-
-  $: {
-    let maybeEnd = $timeControlsStore.timeEnd;
-    if (maybeEnd) {
-      timeEnd = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
-    }
-  }
 
   $: {
     if ($filteredTotalsQuery.data && $totalsQuery.data) {
@@ -129,7 +146,7 @@
   </div>
 
   {#if isOpen}
-    <RowsViewer {metricViewName} {height} />
+    <RowsViewer {filters} {timeRange} {metricViewName} {height} />
   {/if}
 </div>
 
