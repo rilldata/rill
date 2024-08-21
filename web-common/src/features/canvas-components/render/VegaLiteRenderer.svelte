@@ -2,7 +2,7 @@
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { getRillTheme } from "@rilldata/web-common/features/canvas-components/render/vega-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
   import {
     SignalListeners,
     VegaLite,
