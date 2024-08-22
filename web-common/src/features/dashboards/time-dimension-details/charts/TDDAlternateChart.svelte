@@ -1,11 +1,11 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/canvas-components/render/VegaLiteRenderer.svelte";
+  import VegaRenderer from "@rilldata/web-common/features/charts/render/VegaRenderer.svelte";
   import {
     resolveSignalField,
     resolveSignalTimeField,
     resolveSignalIntervalField,
   } from "@rilldata/web-common/features/charts/render/vega-signals";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
@@ -17,6 +17,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { View } from "svelte-vega";
+  import { compile } from "vega-lite";
   import { TDDAlternateCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
@@ -36,6 +37,7 @@
   export let isTimeComparison: boolean;
 
   let viewVL: View;
+  let vegaSpec: any;
 
   const dispatch = createEventDispatcher();
   const {
@@ -67,7 +69,9 @@
     );
   }
 
-  $: vegaSpec = getVegaSpecForTDD(
+  // TODO: rename
+  // vega lite spec
+  $: vegaSpecForTDD = getVegaSpecForTDD(
     chartType,
     expandedMeasureName,
     expandedMeasureLabel,
@@ -77,8 +81,10 @@
     selectedValues,
   );
 
+  // TODO: rename
+  // vega lite spec
   $: sanitizedVegaSpec = patchSpecForTDD(
-    vegaSpec,
+    vegaSpecForTDD,
     chartType,
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
     xMin,
@@ -87,6 +93,40 @@
     expandedMeasureName,
     selectedValues,
   );
+
+  // TODO: check if sanitized vega spec already has brush params
+
+  $: {
+    if (sanitizedVegaSpec) {
+      // Compile vega lite spec to vega spec
+      // See: https://github.com/vega/vega-lite/issues/5341
+      // See: https://github.com/vega/vega-lite/issues/3338
+      const compiledSpec = compile(sanitizedVegaSpec).spec;
+
+      // Add custom signals for brushstart and brushend
+      // See: https://vega.github.io/vega/docs/signals/
+      // See: https://vega.github.io/vega-lite/docs/parameter.html#using-parameters
+      vegaSpec = {
+        ...compiledSpec,
+        // TODO: check if sanitized vega spec already has brush params
+        signals: [
+          ...(compiledSpec.signals || []),
+          {
+            name: "brush_start",
+            value: {},
+            on: [{ events: "brush:start", update: "{time: x()}" }],
+          },
+          {
+            name: "brush_end",
+            value: {},
+            on: [{ events: "brush:end", update: "{time: x()}" }],
+          },
+        ],
+      };
+    }
+  }
+
+  $: console.log("vegaSpec: ", vegaSpec);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
@@ -140,7 +180,15 @@
   });
 </script>
 
-{#if sanitizedVegaSpec && data}
+{#if vegaSpec && data}
+  <VegaRenderer
+    bind:viewVL
+    data={{ table: data }}
+    spec={vegaSpec}
+    {signalListeners}
+    {expressionFunctions}
+  />
+{:else if sanitizedVegaSpec && data}
   <VegaLiteRenderer
     bind:viewVL
     data={{ table: data }}
