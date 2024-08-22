@@ -7,6 +7,7 @@
   import { rowViewerStore } from "@rilldata/web-common/features/dashboards/rows-viewer/row-viewer-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -57,6 +58,10 @@
   const pivotDashboardStore = derived(dashboardStore, (dashboard) => {
     return dashboard?.pivot;
   });
+
+  const { cloudDataViewer, readOnly } = featureFlags;
+  $: isRillDeveloper = $readOnly === false;
+  $: canShowDataViewer = cloudDataViewer && isRillDeveloper;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDashboardStore, pivotDataStore],
@@ -168,6 +173,13 @@
     });
   }
 
+  let customShortcuts: { description: string; shortcut: string }[] = [];
+  $: if (canShowDataViewer) {
+    customShortcuts = [
+      { description: "View raw data for aggregated cell", shortcut: "Click" },
+    ];
+  }
+
   function onExpandedChange(updater: Updater<ExpandedState>) {
     // Something is off with tanstack's types
     //@ts-expect-error-free
@@ -253,6 +265,7 @@
   };
 
   function handleCellClick(cell: Cell<PivotDataRow, unknown>) {
+    if (!canShowDataViewer) return;
     const rowId = cell.row.id;
     const columnId = cell.column.id;
 
@@ -414,7 +427,8 @@
             {@const isActive = isCellActive(cell)}
             <td
               class:active-cell={isActive}
-              class="ui-copy-number cursor-pointer"
+              class="ui-copy-number"
+              class:cursor-pointer={canShowDataViewer}
               class:border-r={i % measureCount === 0 && i}
               on:click={() => handleCellClick(cell)}
               on:mouseenter={handleHover}
@@ -455,9 +469,7 @@
     {hovering}
     {hoverPosition}
     pinned={false}
-    customShortcuts={[
-      { description: "View raw data for aggregated cell", shortcut: "Click" },
-    ]}
+    {customShortcuts}
   />
 {/if}
 
