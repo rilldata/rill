@@ -140,3 +140,34 @@ export function updateVegaOnTableHover(
   viewVL.signal("hover_tuple", newValue);
   viewVL.runAsync();
 }
+
+function checkLayerForBrush(layer) {
+  if (layer.params && Array.isArray(layer.params)) {
+    for (let param of layer.params) {
+      if (param.name === "brush") {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Check if vega lite spec has brush params
+// To support brushstart and brushend, we need to compile vega lite spec to vega spec
+export function hasBrushParam(spec) {
+  if (spec.layer && Array.isArray(spec.layer)) {
+    // Multi-layer case
+    for (let layer of spec.layer) {
+      if (checkLayerForBrush(layer)) {
+        return true;
+      }
+    }
+  } else if (spec.params && Array.isArray(spec.params)) {
+    // Single-layer case
+    if (checkLayerForBrush(spec)) {
+      return true;
+    }
+  }
+
+  return false;
+}

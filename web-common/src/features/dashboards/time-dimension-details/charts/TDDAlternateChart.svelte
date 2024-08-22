@@ -23,6 +23,7 @@
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
     getVegaSpecForTDD,
+    hasBrushParam,
     reduceDimensionData,
     updateVegaOnTableHover,
   } from "./utils";
@@ -94,10 +95,8 @@
     selectedValues,
   );
 
-  // TODO: check if sanitized vega spec already has brush params
-
   $: {
-    if (sanitizedVegaSpec) {
+    if (hasBrushParam(sanitizedVegaSpec)) {
       // Compile vega lite spec to vega spec
       // See: https://github.com/vega/vega-lite/issues/5341
       // See: https://github.com/vega/vega-lite/issues/3338
@@ -126,7 +125,7 @@
     }
   }
 
-  $: console.log("vegaSpec: ", vegaSpec);
+  // $: console.log("vegaSpec: ", vegaSpec);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
@@ -180,7 +179,7 @@
   });
 </script>
 
-{#if vegaSpec && data}
+{#if hasBrushParam(sanitizedVegaSpec) && data}
   <VegaRenderer
     bind:viewVL
     data={{ table: data }}
@@ -188,7 +187,7 @@
     {signalListeners}
     {expressionFunctions}
   />
-{:else if sanitizedVegaSpec && data}
+{:else}
   <VegaLiteRenderer
     bind:viewVL
     data={{ table: data }}
