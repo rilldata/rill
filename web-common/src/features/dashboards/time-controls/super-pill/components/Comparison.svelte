@@ -38,7 +38,7 @@
         DateTime.fromJSDate(selectedComparison.start).setZone(zone),
         DateTime.fromJSDate(selectedComparison.end).setZone(zone),
       )
-    : currentInterval;
+    : undefined;
 
   $: firstVisibleMonth = interval?.start ?? DateTime.now();
 
@@ -104,7 +104,7 @@
           <p>no comparison period</p>
         {:else}
           <b class="line-clamp-1">{label}</b>
-          {#if interval.isValid}
+          {#if interval?.isValid}
             <RangeDisplay {interval} {grain} />
           {/if}
         {/if}

@@ -1,20 +1,23 @@
 <script lang="ts">
   import type { Table } from "@tanstack/svelte-table";
-  import { BellIcon } from "lucide-svelte";
+  import type { ComponentType, SvelteComponent } from "svelte";
   import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
 
+  export let kind: string;
+  export let icon: ComponentType<SvelteComponent>;
+
   const table = getContext<Readable<Table<unknown>>>("table");
 
-  // Number of alerts
-  $: numAlerts = $table.getRowModel().rows.length;
+  $: numRows = $table.getRowModel().rows.length;
 </script>
 
 <thead>
   <tr>
     <td>
-      <BellIcon size={"14px"} />
-      {numAlerts} alert{numAlerts !== 1 ? "s" : ""}
+      <svelte:component this={icon} size={"14px"} />
+      {numRows}
+      {kind}{numRows !== 1 ? "s" : ""}
     </td>
   </tr>
 </thead>

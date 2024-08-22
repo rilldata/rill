@@ -8,7 +8,7 @@
 </script>
 
 <ContentContainer>
-  <div class="flex flex-col items-center">
+  <div class="flex flex-col items-center gap-y-4">
     <ReportsTable {organization} {project} />
   </div>
 </ContentContainer>
