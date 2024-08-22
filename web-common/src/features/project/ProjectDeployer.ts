@@ -86,10 +86,9 @@ export class ProjectDeployer {
     const userResp = get(this.user).data as GetCurrentUserResponse;
     if (!userResp.user) {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
-      window.open(
-        `${metadata.loginUrl}?redirect=${get(page).url.toString()}`,
-        "_self",
-      );
+      const u = new URL(metadata.loginUrl);
+      u.searchParams.set("redirect", get(page).url.toString());
+      window.open(u.toString(), "_self");
     } else {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
     }
