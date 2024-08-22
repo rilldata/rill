@@ -96,6 +96,21 @@ Over time, we'll make this the default Line implementation, but it's not quite t
    */
   // let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
   // $: lineThickness.setData(data);
+
+  function getLineOpacity(type: string) {
+    switch (type) {
+      case "time":
+        return 1;
+      case "time-comparison":
+        return 0.5;
+      case "dimension":
+        return 1;
+      case "dimension-time-comparison":
+        return 0.4;
+      default:
+        return 1;
+    }
+  }
 </script>
 
 <WithDelayedValue
@@ -133,9 +148,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     >
       <!-- line -->
       <path
-        stroke-dasharray={lineType === "dimension-time-comparison"
-          ? "5,5"
-          : "none"}
+        opacity={getLineOpacity(lineType)}
         stroke-width={lineType === "dimension" ? 1.5 : 1}
         stroke={lineColor}
         d={dt}

@@ -10,7 +10,6 @@
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
-    TimeComparisonLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
@@ -88,7 +87,7 @@
       {@const isHighlighted = d?.value === dimensionValue}
       <g
         class="transition-opacity"
-        class:opacity-5={isDimValueHiglighted && !isHighlighted}
+        class:opacity-0={isDimValueHiglighted && !isHighlighted}
       >
         <ChunkedLine
           lineType="dimension"
@@ -129,7 +128,7 @@
       >
         <ChunkedLine
           lineType="time-comparison"
-          lineColor={TimeComparisonLineColor}
+          lineColor={mainLineColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey
