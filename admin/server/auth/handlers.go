@@ -30,6 +30,29 @@ const (
 // RegisterEndpoints adds HTTP endpoints for auth.
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
+//
+// Since we support optional custom domains for orgs, we need to jump through some hoops to ensure the auth redirects work correctly,
+// and that the auth token cookie is set on the correct domain. Below follows an overview of the redirect flows for login and logout.
+
+// Login flow:
+//  1. Frontend calls <canonical domain>/auth/login?redirect=<frontend return URL>
+//  2. It redirects to <auth provider> for login
+//  3. The auth provider redirects to <canonical domain>/auth/callback
+//  4. It redirects to <custom domain>/auth/with-token
+//  5. It redirects to <frontend return URL>
+//
+// Logout flow:
+//  1. Frontend calls <custom domain>/auth/logout?redirect=<frontend return URL>
+//  2. It redirects to <canonical domain>/auth/logout/provider?redirect=<frontend return URL>
+//  3. It redirects to <auth provider> for logout
+//  4. The auth provider redirects to <canonical domain>/auth/logout/callback
+//  5. It redirects to <frontend return URL>
+//
+// The "canonical domain" is the Rill-managed external URL of the current service (e.g. "admin.rilldata.com").
+// The "custom domain" is the custom domain of the current org with path suffix for the admin service (e.g. "myorg.com/api").
+// If the current org doesn't have a custom domain, the custom domain can be substituted for the canonical domain (without path suffix).
+//
+// There are more details in the type doc for `admin.URLs` and in the individual handler docstrings below.
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
 	// checkLimit needs access to limiter
 	checkLimit := func(route string) middleware.CheckFunc {
@@ -135,8 +158,10 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 // It then issues a new user auth token and saves it in a cookie.
 // Finally, it redirects the user to the location specified in the initial call to authLogin.
 //
-// If the redirect destination is an org with a custom domain, authLoginCallback does not set the cookie directly.
-// Instead it redirects to authWithToken on the custom domain to ensure the cookie is set on the custom domain.
+// authLoginCallback doesn't set the auth cookie directly because the final redirect destination may be an org with a custom domain.
+// So we need to ensure that the auth token is set in a cookie on the custom domain instead of the primary domain.
+// So after creating a new token, it redirects to authWithToken on the same domain as the final redirect destination (if any, else it stays on the same domain).
+// authWithToken will then set the actual auth cookie and do the final redirect back to the UI.
 func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess := a.cookies.Get(r, cookieName)
@@ -257,6 +282,8 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, withTokenURL, http.StatusTemporaryRedirect)
 }
 
+// authWithToken extracts an auth token from the query params and sets it in the auth cookie.
+// It then redirects the user to the frontend. The redirect destination can be overridden by passing a "redirect" query parameter.
 func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
 	// Get new auth token
 	newToken := r.URL.Query().Get("token")
@@ -299,6 +326,11 @@ func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
 
 // authLogout implements user logout. It revokes the current user auth token, then redirects to the auth provider's logout flow.
 // Once the logout has completed, the auth provider will redirect the user to authLogoutCallback.
+//
+// For orgs with a custom domain configured, the frontend should call authLogout on the custom domain's admin endpoint.
+// Note that this is different from authStart, which must always be called on the canonical external domain.
+// The reason logout must be called on the custom domain is that the auth token cookie must be cleared from the custom domain.
+// authLogout itself will then handle the redirects with the auth provider from the canonical domain.
 func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 	// Revoke access token and clear in cookie
 	sess := a.cookies.Get(r, cookieName)
@@ -356,7 +388,10 @@ func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, logoutURL.String(), http.StatusTemporaryRedirect)
 }
 
-// authLogoutCallback is called when a logout flow iniated by authLogout has completed.
+// authLogoutCallback is called by the auth provider when a logout flow iniated by authLogout has completed.
+//
+// For orgs with a custom domain configured, the auth provider will still redirect back to the canonical domain's authLogoutCallback.
+// The user will then be sent back to the custom domain if the redirect destination initially provided in authLogout is on the custom domain.
 func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Request) {
 	// Get redirect destination
 	sess := a.cookies.Get(r, cookieName)
