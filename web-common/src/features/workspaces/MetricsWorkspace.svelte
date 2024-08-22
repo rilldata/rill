@@ -21,6 +21,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import VisualMetrics from "./VisualMetrics.svelte";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -108,7 +109,9 @@
   }
 </script>
 
-<MetricsTable {metricsViewName} {reorderList} />
+<!-- <MetricsTable {metricsViewName} {reorderList} /> -->
+
+<VisualMetrics {fileArtifact} />
 
 <WorkspaceContainer inspector={isModelingSupported}>
   <WorkspaceHeader
