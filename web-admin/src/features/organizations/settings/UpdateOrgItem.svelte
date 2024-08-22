@@ -51,6 +51,7 @@
           await $updateOrgMutation.mutateAsync({
             name: organization,
             data: {
+              newDisplayName: values.name,
               newName: newOrg,
               description: values.description,
             },
@@ -64,10 +65,10 @@
         }
 
         if (organization !== newOrg) {
-          void goto(`/${newOrg}/-/settings`);
           queryClient.removeQueries(
             getAdminServiceGetOrganizationQueryKey(organization),
           );
+          setTimeout(() => goto(`/${newOrg}/-/settings`));
         } else {
           void queryClient.refetchQueries(
             getAdminServiceGetOrganizationQueryKey(organization),
@@ -83,7 +84,8 @@
 
   $: orgResp = createAdminServiceGetOrganization(organization);
   $: if ($orgResp.data?.organization) {
-    $form.name = $orgResp.data.organization.name;
+    $form.name =
+      $orgResp.data.organization.displayName || $orgResp.data.organization.name;
     $form.description = $orgResp.data.organization.description;
   }
 

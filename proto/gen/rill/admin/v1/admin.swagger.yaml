@@ -301,6 +301,8 @@ paths:
                 type: string
               newName:
                 type: string
+              newDisplayName:
+                type: string
               billingEmail:
                 type: string
       tags:
@@ -4104,6 +4106,8 @@ definitions:
       name:
         type: string
         title: Globally unique
+      displayName:
+        type: string
       description:
         type: string
       quotas:
