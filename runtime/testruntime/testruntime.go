@@ -230,7 +230,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 
 func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) {
 	_, currentFile, _, _ := goruntime.Caller(0)
-	envPath := filepath.Join(currentFile, "..", "..", ".env")
+	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
 	_, err := os.Stat(envPath)
 	if err == nil { // avoid .env in CI environment
 		require.NoError(t, godotenv.Load(envPath))

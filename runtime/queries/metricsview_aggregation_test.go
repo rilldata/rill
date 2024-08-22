@@ -2475,7 +2475,6 @@ func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 }
 
 func TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
-
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)
 
