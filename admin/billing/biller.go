@@ -43,6 +43,10 @@ type Biller interface {
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
 	FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error)
 
+	GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error)
+	IsInvoiceValid(ctx context.Context, invoice *Invoice) bool
+	IsInvoicePaid(ctx context.Context, invoice *Invoice) bool
+
 	ReportUsage(ctx context.Context, usage []*Usage) error
 
 	GetReportingGranularity() UsageReportingGranularity
@@ -110,6 +114,18 @@ type Usage struct {
 	ReportingGrain UsageReportingGranularity
 	StartTime      time.Time // Start time of the usage period
 	EndTime        time.Time // End time of the usage period
+	Metadata       map[string]interface{}
+}
+
+type Invoice struct {
+	ID             string
+	Status         string
+	CustomerID     string
+	Amount         string
+	Currency       string
+	DueDate        time.Time
+	CreatedAt      time.Time
+	SubscriptionID string
 	Metadata       map[string]interface{}
 }
 

@@ -31,6 +31,11 @@ export enum BillingErrorType {
    * @generated from enum value: BILLING_ERROR_TYPE_PAYMENT_FAILED = 3;
    */
   PAYMENT_FAILED = 3,
+
+  /**
+   * @generated from enum value: BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 4;
+   */
+  INVOICE_PAYMENT_FAILED = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingErrorType)
 proto3.util.setEnumType(BillingErrorType, "rill.admin.v1.BillingErrorType", [
@@ -38,6 +43,7 @@ proto3.util.setEnumType(BillingErrorType, "rill.admin.v1.BillingErrorType", [
   { no: 1, name: "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD" },
   { no: 2, name: "BILLING_ERROR_TYPE_TRIAL_ENDED" },
   { no: 3, name: "BILLING_ERROR_TYPE_PAYMENT_FAILED" },
+  { no: 4, name: "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED" },
 ]);
 
 /**

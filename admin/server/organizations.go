@@ -10,10 +10,12 @@ import (
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
+	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -347,6 +349,20 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	}
+
+	// schedule plan change by API job
+	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandlePlanChangeByAPIArgs{
+		OrgID:  org.ID,
+		SubID:  subs[0].ID,
+		PlanID: plan.ID,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
@@ -1289,6 +1305,8 @@ func billingErrorTypeToDTO(t database.BillingErrorType) adminv1.BillingErrorType
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED
 	case database.BillingErrorTypePaymentFailed:
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_PAYMENT_FAILED
+	case database.BillingErrorTypeInvoicePaymentFailed:
+		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
 	default:
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_UNSPECIFIED
 	}
@@ -1304,6 +1322,8 @@ func dtoBillingErrorTypeToDB(t adminv1.BillingErrorType) (database.BillingErrorT
 		return database.BillingErrorTypeTrialEnded, nil
 	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_PAYMENT_FAILED:
 		return database.BillingErrorTypePaymentFailed, nil
+	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED:
+		return database.BillingErrorTypeInvoicePaymentFailed, nil
 	default:
 		return database.BillingErrorTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
 	}

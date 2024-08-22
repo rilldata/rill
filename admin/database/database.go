@@ -257,6 +257,7 @@ type DB interface {
 	FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*Organization, error)
 
 	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
+	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
 
 	FindBillingErrors(ctx context.Context, orgID string) ([]*BillingError, error)
 	FindBillingErrorByType(ctx context.Context, orgID string, errorType BillingErrorType) (*BillingError, error)
@@ -936,24 +937,27 @@ type BillingErrorType int
 const (
 	BillingErrorTypeUnspecified BillingErrorType = iota
 	BillingErrorTypeNoPaymentMethod
-	BillingErrorTypeTrialEnded
 	BillingErrorTypePaymentFailed
+	BillingErrorTypeTrialEnded
+	BillingErrorTypeInvoicePaymentFailed
 )
 
 type BillingError struct {
-	ID        string
-	OrgID     string           `db:"org_id"`
-	Type      BillingErrorType `db:"type"`
-	Message   string           `db:"msg"`
-	EventTime time.Time        `db:"event_time"`
-	CreatedOn time.Time        `db:"created_on"`
+	ID                 string
+	OrgID              string           `db:"org_id"`
+	Type               BillingErrorType `db:"type"`
+	Message            string           `db:"msg"`
+	TriggersRiverJobID int64            `db:"triggers_river_job_id"`
+	EventTime          time.Time        `db:"event_time"`
+	CreatedOn          time.Time        `db:"created_on"`
 }
 
 type UpsertBillingErrorOptions struct {
-	OrgID     string           `validate:"required"`
-	Type      BillingErrorType `validate:"required"`
-	Message   string           `validate:"required"`
-	EventTime time.Time        `validate:"required"`
+	OrgID              string           `validate:"required"`
+	Type               BillingErrorType `validate:"required"`
+	Message            string           `validate:"required"`
+	TriggersRiverJobID int64
+	EventTime          time.Time `validate:"required"`
 }
 
 type BillingWarningType int
@@ -964,19 +968,21 @@ const (
 )
 
 type BillingWarning struct {
-	ID        string
-	OrgID     string             `db:"org_id"`
-	Type      BillingWarningType `db:"type"`
-	Message   string             `db:"msg"`
-	EventTime time.Time          `db:"event_time"`
-	CreatedOn time.Time          `db:"created_on"`
+	ID                 string
+	OrgID              string             `db:"org_id"`
+	Type               BillingWarningType `db:"type"`
+	Message            string             `db:"msg"`
+	TriggersRiverJobID int64              `db:"triggers_river_job_id"`
+	EventTime          time.Time          `db:"event_time"`
+	CreatedOn          time.Time          `db:"created_on"`
 }
 
 type UpsertBillingWarningOptions struct {
-	OrgID     string             `validate:"required"`
-	Type      BillingWarningType `validate:"required"`
-	Message   string             `validate:"required"`
-	EventTime time.Time          `validate:"required"`
+	OrgID              string             `validate:"required"`
+	Type               BillingWarningType `validate:"required"`
+	Message            string             `validate:"required"`
+	TriggersRiverJobID int64
+	EventTime          time.Time `validate:"required"`
 }
 
 type WebhookEventWatermark struct {

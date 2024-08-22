@@ -78,6 +78,18 @@ func (n noop) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscrip
 	return []*Subscription{}, nil
 }
 
+func (n noop) GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error) {
+	return nil, nil
+}
+
+func (n noop) IsInvoiceValid(ctx context.Context, invoice *Invoice) bool {
+	return true
+}
+
+func (n noop) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
+	return true
+}
+
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }

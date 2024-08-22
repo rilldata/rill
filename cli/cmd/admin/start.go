@@ -298,8 +298,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			riverworker.AddWorker[riverutils.ChargeSuccessArgs](riverworker.NewChargeSuccessWorker(adm))
 			riverworker.AddWorker[riverutils.PaymentMethodAddedArgs](riverworker.NewPaymentMethodAddedWorker(adm))
 			riverworker.AddWorker[riverutils.PaymentMethodRemovedArgs](riverworker.NewPaymentMethodRemovedWorker(adm))
+			riverworker.AddWorker[riverutils.TrialEndingSoonArgs](riverworker.NewTrialEndingSoonWorker(adm))
 			riverworker.AddWorker[riverutils.TrialEndCheckArgs](riverworker.NewTrialEndCheckWorker(adm))
 			riverworker.AddWorker[riverutils.TrialGracePeriodCheckArgs](riverworker.NewTrialGracePeriodCheckWorker(adm))
+			riverworker.AddWorker[riverutils.InvoicePaymentFailedArgs](riverworker.NewInvoicePaymentFailedWorker(adm))
+			riverworker.AddWorker[riverutils.InvoicePaymentFailedGracePeriodCheckArgs](riverworker.NewInvoicePaymentFailedGracePeriodCheckWorker(adm))
+			riverworker.AddWorker[riverutils.InvoicePaymentSuccessArgs](riverworker.NewInvoicePaymentSuccessWorker(adm))
+			riverworker.AddWorker[riverutils.HandlePlanChangeByAPIArgs](riverworker.NewHandlePlanChangeByAPIWorker(adm))
 
 			// this driver will be shared by both admin and worker river clients, riverDBPool is used for migrations
 			riverDriver, riverDBPool, ok := adm.DB.AsRiverDriver()

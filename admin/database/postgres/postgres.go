@@ -1896,6 +1896,15 @@ func (c *connection) FindOrganizationForPaymentCustomerID(ctx context.Context, c
 	return res, nil
 }
 
+func (c *connection) FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM orgs WHERE billing_customer_id = $1`, customerID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("billing org for billing id", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindBillingErrors(ctx context.Context, orgID string) ([]*database.BillingError, error) {
 	var res []*database.BillingError
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM billing_errors WHERE org_id = $1`, orgID)
@@ -1920,8 +1929,8 @@ func (c *connection) UpsertBillingError(ctx context.Context, opts *database.Upse
 	}
 
 	res := &database.BillingError{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_errors (org_id, type, msg, event_time) VALUES ($1, $2, $3, $4)
-		ON CONFLICT (org_id, type) DO UPDATE SET msg = $3, event_time = $4 RETURNING *`, opts.OrgID, opts.Type, opts.Message, opts.EventTime).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_errors (org_id, type, msg, event_time, triggers_river_job_id) VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (org_id, type) DO UPDATE SET msg = $3, event_time = $4, triggers_river_job_id = $5 RETURNING *`, opts.OrgID, opts.Type, opts.Message, opts.EventTime, opts.TriggersRiverJobID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("billing error", err)
 	}
@@ -1962,8 +1971,8 @@ func (c *connection) UpsertBillingWarning(ctx context.Context, opts *database.Up
 	}
 
 	res := &database.BillingWarning{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_warnings (org_id, type, msg, event_time) VALUES ($1, $2, $3, $4)
-		ON CONFLICT (org_id, type) DO UPDATE SET msg = $3, event_time = $4 RETURNING *`, opts.OrgID, opts.Type, opts.Message, opts.EventTime).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_warnings (org_id, type, msg, event_time, triggers_river_job_id) VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (org_id, type) DO UPDATE SET msg = $3, event_time = $4, triggers_river_job_id = $5 RETURNING *`, opts.OrgID, opts.Type, opts.Message, opts.EventTime, opts.TriggersRiverJobID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("billing warning", err)
 	}

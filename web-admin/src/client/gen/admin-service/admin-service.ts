@@ -6328,7 +6328,8 @@ export const adminServiceSudoDeleteOrganizationBillingError = (
     | "BILLING_ERROR_TYPE_UNSPECIFIED"
     | "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD"
     | "BILLING_ERROR_TYPE_TRIAL_ENDED"
-    | "BILLING_ERROR_TYPE_PAYMENT_FAILED",
+    | "BILLING_ERROR_TYPE_PAYMENT_FAILED"
+    | "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingErrorResponse>({
     url: `/v1/superuser/organizations/${organization}/billing/errors/${type}`,
@@ -6357,7 +6358,8 @@ export const createAdminServiceSudoDeleteOrganizationBillingError = <
         | "BILLING_ERROR_TYPE_UNSPECIFIED"
         | "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ERROR_TYPE_TRIAL_ENDED"
-        | "BILLING_ERROR_TYPE_PAYMENT_FAILED";
+        | "BILLING_ERROR_TYPE_PAYMENT_FAILED"
+        | "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED";
     },
     TContext
   >;
@@ -6372,7 +6374,8 @@ export const createAdminServiceSudoDeleteOrganizationBillingError = <
         | "BILLING_ERROR_TYPE_UNSPECIFIED"
         | "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ERROR_TYPE_TRIAL_ENDED"
-        | "BILLING_ERROR_TYPE_PAYMENT_FAILED";
+        | "BILLING_ERROR_TYPE_PAYMENT_FAILED"
+        | "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED";
     }
   > = (props) => {
     const { organization, type } = props ?? {};
@@ -6389,7 +6392,8 @@ export const createAdminServiceSudoDeleteOrganizationBillingError = <
         | "BILLING_ERROR_TYPE_UNSPECIFIED"
         | "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ERROR_TYPE_TRIAL_ENDED"
-        | "BILLING_ERROR_TYPE_PAYMENT_FAILED";
+        | "BILLING_ERROR_TYPE_PAYMENT_FAILED"
+        | "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED";
     },
     TContext
   >(mutationFn, mutationOptions);

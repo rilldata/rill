@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
@@ -115,13 +116,7 @@ func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organiz
 		return nil, err
 	}
 
-	return &Customer{
-		ID:                customer.ExternalCustomerID,
-		Email:             customer.Email,
-		Name:              customer.Name,
-		PaymentProviderID: customer.PaymentProviderID,
-		PortalURL:         customer.PortalURL,
-	}, nil
+	return getBillingCustomerFromOrbCustomer(customer), nil
 }
 
 func (o *Orb) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
@@ -136,13 +131,7 @@ func (o *Orb) FindCustomer(ctx context.Context, customerID string) (*Customer, e
 		return nil, err
 	}
 
-	return &Customer{
-		ID:                customer.ExternalCustomerID,
-		Email:             customer.Email,
-		Name:              customer.Name,
-		PaymentProviderID: customer.PaymentProviderID,
-		PortalURL:         customer.PortalURL,
-	}, nil
+	return getBillingCustomerFromOrbCustomer(customer), nil
 }
 
 func (o *Orb) UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error {
@@ -183,14 +172,8 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 	}
 
 	return &Subscription{
-		ID: sub.ID,
-		Customer: &Customer{
-			ID:                sub.Customer.ExternalCustomerID,
-			Email:             sub.Customer.Email,
-			Name:              sub.Customer.Name,
-			PaymentProviderID: sub.Customer.PaymentProviderID,
-			PortalURL:         sub.Customer.PortalURL,
-		},
+		ID:                           sub.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&sub.Customer),
 		Plan:                         plan,
 		StartDate:                    sub.StartDate,
 		EndDate:                      sub.EndDate,
@@ -232,14 +215,8 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 		return nil, err
 	}
 	return &Subscription{
-		ID: s.ID,
-		Customer: &Customer{
-			ID:                s.Customer.ExternalCustomerID,
-			Email:             s.Customer.Email,
-			Name:              s.Customer.Name,
-			PaymentProviderID: s.Customer.PaymentProviderID,
-			PortalURL:         s.Customer.PortalURL,
-		},
+		ID:                           s.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
 		Plan:                         plan,
 		StartDate:                    s.StartDate,
 		EndDate:                      s.EndDate,
@@ -330,6 +307,23 @@ func (o *Orb) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscrip
 		return nil, err
 	}
 	return ended, nil
+}
+
+func (o *Orb) GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error) {
+	invoice, err := o.client.Invoices.Fetch(ctx, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	return getBillingInvoiceFromOrbInvoice(invoice), nil
+}
+
+func (o *Orb) IsInvoiceValid(ctx context.Context, invoice *Invoice) bool {
+	return !strings.EqualFold(invoice.Status, "void")
+}
+
+func (o *Orb) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
+	return strings.EqualFold(invoice.Status, "paid")
 }
 
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
@@ -468,14 +462,8 @@ func getBillingSubscriptionFromOrbSubscription(s *orb.Subscription) (*Subscripti
 		return nil, err
 	}
 	return &Subscription{
-		ID: s.ID,
-		Customer: &Customer{
-			ID:                s.Customer.ExternalCustomerID,
-			Email:             s.Customer.Email,
-			Name:              s.Customer.Name,
-			PaymentProviderID: s.Customer.PaymentProviderID,
-			PortalURL:         s.Customer.PortalURL,
-		},
+		ID:                           s.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
 		Plan:                         plan,
 		StartDate:                    s.StartDate,
 		EndDate:                      s.EndDate,
@@ -484,6 +472,30 @@ func getBillingSubscriptionFromOrbSubscription(s *orb.Subscription) (*Subscripti
 		TrialEndDate:                 s.TrialInfo.EndDate,
 		Metadata:                     s.Metadata,
 	}, nil
+}
+
+func getBillingCustomerFromOrbCustomer(c *orb.Customer) *Customer {
+	return &Customer{
+		ID:                c.ExternalCustomerID,
+		Email:             c.Email,
+		Name:              c.Name,
+		PaymentProviderID: c.PaymentProviderID,
+		PortalURL:         c.PortalURL,
+	}
+}
+
+func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
+	return &Invoice{
+		ID:             i.ID,
+		Status:         string(i.Status),
+		CustomerID:     i.Customer.ExternalCustomerID,
+		Amount:         i.AmountDue,
+		Currency:       i.Currency,
+		DueDate:        i.DueDate,
+		CreatedAt:      i.CreatedAt,
+		SubscriptionID: i.Subscription.ID,
+		Metadata:       map[string]interface{}{"issued_at": i.IssuedAt, "voided_at": i.VoidedAt, "paid_at": i.PaidAt, "payment_failed_at": i.PaymentFailedAt},
+	}
 }
 
 // retryErrClassifier classifies 429 and 500 errors as retryable and all other errors as non retryable

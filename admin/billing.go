@@ -14,6 +14,7 @@ import (
 )
 
 func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
+	// TODO This can be moved to a background job - schedule trial end check job to the river queue
 	// create payment customer
 	pc, err := s.PaymentProvider.CreateCustomer(ctx, org)
 	if err != nil {
@@ -42,12 +43,22 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	}
 	s.Logger.Info("created subscription", zap.String("org", org.Name), zap.String("subscription_id", sub.ID))
 
-	// schedule trial end check job to the river queue
-	// TODO should be done in same tx as UpdateOrganization using InsertTx but river driver expects sql.Tx and does not work with the Tx implementation we have
-	// so just scheduling it before the update as repair billing job can take care of the update if update fails
-	err = scheduleTrialEndCheckJob(ctx, org.ID, sub.TrialEndDate)
+	// can be done in same tx as UpdateOrganization using InsertTx but river driver expects sql.Tx and does not work with the Tx implementation we have
+	// scheduling it before the update as repair billing job can take care of the update if update fails
+	err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.TrialEndDate)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// raise no payment method billing error
+	_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+		OrgID:     org.ID,
+		Type:      database.BillingErrorTypeNoPaymentMethod,
+		Message:   "No payment method attached to the account",
+		EventTime: org.CreatedOn,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
 	}
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
@@ -92,9 +103,20 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			subs = append(subs, sub)
 
 			// schedule trial end check job to the river queue, if it was already scheduled it will be ignored
-			err = scheduleTrialEndCheckJob(ctx, org.ID, sub.TrialEndDate)
+			err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.TrialEndDate)
 			if err != nil {
 				return nil, nil, err
+			}
+
+			// raise no payment method billing error
+			_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingErrorTypeNoPaymentMethod,
+				Message:   "No payment method attached to the account",
+				EventTime: org.CreatedOn,
+			})
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
 			}
 		}
 		if len(subs) > 1 {
@@ -168,10 +190,21 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 		subs = append(subs, sub)
 
-		// schedule trial end check job to the river queue, if it was already scheduled it will be ignored
-		err = scheduleTrialEndCheckJob(ctx, org.ID, sub.TrialEndDate)
+		// schedule trial end check job to the river queue
+		err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.TrialEndDate)
 		if err != nil {
 			return nil, nil, err
+		}
+
+		// raise no payment method billing error
+		_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingErrorTypeNoPaymentMethod,
+			Message:   "No payment method attached to the account",
+			EventTime: org.CreatedOn,
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
 		}
 	} else if len(subs) > 1 {
 		s.Logger.Warn("multiple subscriptions found for the customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Int("num_subscriptions", len(subs)))
@@ -198,16 +231,38 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 	return org, subs, nil
 }
 
-func scheduleTrialEndCheckJob(ctx context.Context, orgID string, trialEndDate time.Time) error {
-	_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndCheckArgs{OrgID: orgID}, &river.InsertOpts{
-		ScheduledAt: trialEndDate.Add(time.Hour * 25), // add buffer of 1 hour to ensure the job runs after trial period days
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to schedule trial end check job: %w", err)
+func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID string, trialEndDate time.Time) error {
+	if trialEndDate.After(time.Now()) {
+		return nil
 	}
+
+	mid := (trialEndDate.UnixMilli() - time.Now().UnixMilli()) / 2
+	hours := mid / 3600000
+
+	if hours > 24 {
+		trialEndingSoon := time.Now().Add(time.Duration(hours) * time.Hour)
+		_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndingSoonArgs{OrgID: orgID}, &river.InsertOpts{
+			ScheduledAt: trialEndingSoon,
+			UniqueOpts: river.UniqueOpts{
+				ByArgs: true,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to schedule trial ending soon job: %w", err)
+		}
+	} else {
+		// this should not happen but just in case directly schedule the trial end check job
+		_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndCheckArgs{OrgID: orgID}, &river.InsertOpts{
+			ScheduledAt: trialEndDate.Add(time.Hour * 25), // add buffer of 1 hour to ensure the job runs after trial period days
+			UniqueOpts: river.UniqueOpts{
+				ByArgs: true,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to schedule trial end check job: %w", err)
+		}
+	}
+
 	return nil
 }
 

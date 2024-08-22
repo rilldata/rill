@@ -121,11 +121,11 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 func (s *Stripe) handleChargeSucceeded(ctx context.Context, charge *stripe.Charge) error {
 	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.ChargeSuccessArgs{
-		ID:         charge.ID,
-		CustomerID: charge.Customer.ID,
-		Amount:     charge.Amount,
-		Currency:   string(charge.Currency),
-		EventTime:  time.UnixMilli(charge.Created),
+		ID:                charge.ID,
+		PaymentCustomerID: charge.Customer.ID,
+		Amount:            charge.Amount,
+		Currency:          string(charge.Currency),
+		EventTime:         time.UnixMilli(charge.Created),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -143,11 +143,11 @@ func (s *Stripe) handleChargeSucceeded(ctx context.Context, charge *stripe.Charg
 
 func (s *Stripe) handleChargeFailed(ctx context.Context, charge *stripe.Charge) error {
 	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.ChargeFailedArgs{
-		ID:         charge.ID,
-		CustomerID: charge.Customer.ID,
-		Currency:   string(charge.Currency),
-		Amount:     charge.Amount,
-		EventTime:  time.UnixMilli(charge.Created),
+		ID:                charge.ID,
+		PaymentCustomerID: charge.Customer.ID,
+		Currency:          string(charge.Currency),
+		Amount:            charge.Amount,
+		EventTime:         time.UnixMilli(charge.Created),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -165,10 +165,10 @@ func (s *Stripe) handleChargeFailed(ctx context.Context, charge *stripe.Charge) 
 
 func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.PaymentMethod) error {
 	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAddedArgs{
-		ID:          method.ID,
-		CustomerID:  method.Customer.ID,
-		PaymentType: string(method.Type),
-		EventTime:   time.UnixMilli(method.Created),
+		ID:                method.ID,
+		PaymentCustomerID: method.Customer.ID,
+		PaymentType:       string(method.Type),
+		EventTime:         time.UnixMilli(method.Created),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -186,10 +186,10 @@ func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.Pa
 
 func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, method *stripe.PaymentMethod) error {
 	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAddedArgs{
-		ID:          method.ID,
-		CustomerID:  method.Customer.ID,
-		PaymentType: string(method.Type),
-		EventTime:   time.UnixMilli(method.Created),
+		ID:                method.ID,
+		PaymentCustomerID: method.Customer.ID,
+		PaymentType:       string(method.Type),
+		EventTime:         time.UnixMilli(method.Created),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
