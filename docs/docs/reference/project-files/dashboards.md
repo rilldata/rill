@@ -15,11 +15,13 @@ Files that are *nested at any level* under your native `dashboards` directory wi
 
 ## Properties
 
-**`type`** - Refers to the resource type and must be `metrics_view` _(required)_. 
+**`type`** — Refers to the resource type and must be `metrics_view` _(required)_. 
+
+**`database_schema`** — Refers to the database or schema to use in the OLAP engine (to be used in conjunction with `table`). Otherwise, will use the default database or schema if not specified _(optional)_.
 
 **`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models.md) _(either **model** or **table** is required)_.
 
-**`table`** - Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards created directly from [sources](/build/connect/connect.md) and/or from [external OLAP tables](build/olap/olap.md#external-olap-tables) _(either **table** or **model** is required)_.
+**`table`** — Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards created directly from [sources](/build/connect/connect.md) and/or from [external OLAP tables](../../concepts/OLAP.md#external-olap-tables) _(either **table** or **model** is required)_.
 
 **`title`** — Refers to the display name for the dashboard _(required)_.
 

@@ -12,55 +12,85 @@
   import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
+  import {
+    createLocalServiceGetCurrentProject,
+    createLocalServiceGetCurrentUser,
+    createLocalServiceGetMetadata,
+  } from "@rilldata/web-common/runtime-client/local-service";
+  import { get } from "svelte/store";
   import { Button } from "../../../components/button";
 
-  $: deployValidation = createLocalServiceDeployValidation({
+  $: currentProject = createLocalServiceGetCurrentProject({
     query: {
       refetchOnWindowFocus: true,
     },
   });
-  $: isDeployed = !!$deployValidation.data?.deployedProjectId;
+  $: isDeployed = !!$currentProject.data?.project;
+
+  $: user = createLocalServiceGetCurrentUser();
+  $: metadata = createLocalServiceGetMetadata();
 
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
+  let deployCTAUrl: string;
+  $: if (!$user.data?.user && $metadata.data) {
+    deployCTAUrl = `${$metadata.data.loginUrl}?redirect=${deployPageUrl}`;
+  } else {
+    deployCTAUrl = deployPageUrl;
+  }
 
-  let open = false;
-  function onShowDeploy() {
-    if (!isDeployed) {
-      open = true;
+  let pushThroughGitOpen = false;
+  async function onShowRedeploy() {
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
+
+    await waitUntil(() => !get(currentProject).isFetching);
+    if (get(currentProject).data?.project?.githubUrl) {
+      pushThroughGitOpen = true;
+      return;
     }
+
+    window.open(deployCTAUrl, "_target");
+  }
+
+  let deployConfirmOpen = false;
+  function onShowDeploy() {
+    deployConfirmOpen = true;
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
   }
 </script>
 
-<Tooltip distance={8}>
-  {#if isDeployed}
+{#if isDeployed}
+  <Tooltip distance={8}>
     <Button
-      loading={$deployValidation.isLoading}
-      on:click={onShowDeploy}
+      loading={$currentProject.isLoading}
+      on:click={onShowRedeploy}
       type="primary"
-      href={deployPageUrl}
-      target="_blank"
     >
-      Redeploy
+      Update
     </Button>
-  {:else}
+    <TooltipContent slot="tooltip-content">
+      Push changes to Rill Cloud
+    </TooltipContent>
+  </Tooltip>
+{:else}
+  <Tooltip distance={8}>
     <Button
-      loading={$deployValidation.isLoading}
+      loading={$currentProject.isLoading}
       on:click={onShowDeploy}
       type="primary"
     >
       Deploy to share
     </Button>
-  {/if}
-  <TooltipContent slot="tooltip-content">
-    Deploy this dashboard to Rill Cloud
-  </TooltipContent>
-</Tooltip>
+    <TooltipContent slot="tooltip-content">
+      Deploy this dashboard to Rill Cloud
+    </TooltipContent>
+  </Tooltip>
+{/if}
 
-<AlertDialog bind:open>
+<AlertDialog bind:open={deployConfirmOpen}>
   <AlertDialogTrigger asChild>
     <div class="hidden"></div>
   </AlertDialogTrigger>
@@ -72,22 +102,36 @@
           <AlertDialogTitle>Deploy this project</AlertDialogTitle>
           <AlertDialogDescription>
             You’re about to deploy to Rill Cloud, where you can set alerts,
-            share dashboards, and more. <a
+            share dashboards, and more.
+            <a
               href="https://www.rilldata.com/pricing"
-              target="_blank">See pricing details</a
+              target="_blank"
+              class="text-primary-600"
             >
+              See pricing details
+            </a>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
-          <Button on:click={() => (open = false)} type="secondary">Back</Button>
+          <Button on:click={() => (deployConfirmOpen = false)} type="secondary">
+            Back
+          </Button>
           <Button
-            on:click={() => (open = false)}
+            on:click={() => (deployConfirmOpen = false)}
             type="primary"
-            href={deployPageUrl}
-            target="_blank">Continue</Button
+            href={deployCTAUrl}
+            target="_blank"
           >
+            Continue
+          </Button>
         </AlertDialogFooter>
       </div>
     </div>
   </AlertDialogContent>
 </AlertDialog>
+
+<PushToGitForDeployDialog
+  bind:open={pushThroughGitOpen}
+  githubUrl={$currentProject.data?.project?.githubUrl ?? ""}
+  subpath={$currentProject.data?.project?.subpath ?? ""}
+/>

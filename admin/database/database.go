@@ -125,6 +125,7 @@ type DB interface {
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
+	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -206,6 +207,7 @@ type DB interface {
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
+	UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
@@ -285,6 +287,7 @@ type Organization struct {
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
+	BillingEmail                        string    `db:"billing_email"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -299,6 +302,7 @@ type InsertOrganizationOptions struct {
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
+	BillingEmail                        string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -313,6 +317,7 @@ type UpdateOrganizationOptions struct {
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
+	BillingEmail                        string
 }
 
 // Project represents one Git connection.
@@ -742,6 +747,7 @@ type OrganizationInvite struct {
 	Email           string
 	OrgID           string    `db:"org_id"`
 	OrgRoleID       string    `db:"org_role_id"`
+	UsergroupIDs    []string  `db:"usergroup_ids"`
 	InvitedByUserID string    `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
@@ -816,7 +822,7 @@ const (
 	DefaultQuotaSlotsPerDeployment             = 5
 	DefaultQuotaOutstandingInvites             = 200
 	DefaultQuotaSingleuserOrgs                 = 3
-	DefaultQuotaStorageLimitBytesPerDeployment = int64(5368709120)
+	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
 )
 
 type InsertOrganizationInviteOptions struct {

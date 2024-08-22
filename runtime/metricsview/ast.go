@@ -372,6 +372,25 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		}, nil
 	}
 
+	if qm.Compute.PercentOfTotal != nil {
+		if qm.Compute.PercentOfTotal.Total == nil {
+			return nil, fmt.Errorf("totals not computed for %s", qm.Name)
+		}
+
+		m, err := a.lookupMeasure(qm.Compute.PercentOfTotal.Measure, visible)
+		if err != nil {
+			return nil, err
+		}
+
+		return &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:               qm.Name,
+			Expression:         fmt.Sprintf("%s/%#f", a.dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total),
+			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
+			Label:              fmt.Sprintf("%s (Σ%%)", m.Label),
+		}, nil
+	}
+
 	return nil, errors.New("unhandled compute operation")
 }
 

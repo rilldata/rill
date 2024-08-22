@@ -1093,6 +1093,41 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/components/{component}/resolve:
+    post:
+      summary: ResolveComponent resolves the data and renderer for a Component resource.
+      operationId: QueryService_ResolveComponent
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveComponentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance ID
+          in: path
+          required: true
+          type: string
+        - name: component
+          description: Component name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              args:
+                type: object
+                title: Optional args to pass to the data resolver and for resolving templating in the renderer properties
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
     get:
       summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
@@ -1250,9 +1285,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               limit:
                 type: string
                 format: int64
@@ -1348,9 +1389,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               aliases:
                 type: array
                 items:
@@ -1622,9 +1669,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                title: Optional. Either having or having_sql should be set
               timeZone:
                 type: string
                 title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -1692,8 +1745,12 @@ paths:
                   $ref: '#/definitions/v1MetricsViewSort'
               where:
                 $ref: '#/definitions/v1Expression'
+              whereSql:
+                type: string
               having:
                 $ref: '#/definitions/v1Expression'
+              havingSql:
+                type: string
               priority:
                 type: integer
                 format: int32
@@ -1748,6 +1805,9 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                title: Optional. Either where or where_sql should be set
               priority:
                 type: integer
                 format: int32
@@ -2938,7 +2998,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3023,6 +3083,10 @@ definitions:
       finishedOn:
         type: string
         format: date-time
+      suppressedSince:
+        type: string
+        format: date-time
+        title: Stores the last notification time in suppressed alerts
   v1AlertSpec:
     type: object
     properties:
@@ -3550,6 +3614,8 @@ definitions:
     properties:
       title:
         type: string
+      subtitle:
+        type: string
       resolver:
         type: string
       resolverProperties:
@@ -3558,12 +3624,28 @@ definitions:
         type: string
       rendererProperties:
         type: object
+      input:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
+      output:
+        $ref: '#/definitions/v1ComponentVariable'
+      show:
+        type: string
+        description: Templated string that should evaluate to a boolean.
       definedInDashboard:
         type: boolean
-      subtitle:
-        type: string
   v1ComponentState:
     type: object
+  v1ComponentVariable:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      defaultValue: {}
   v1Condition:
     type: object
     properties:
@@ -3752,6 +3834,11 @@ definitions:
       gap:
         type: integer
         format: int64
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
       items:
         type: array
         items:
@@ -4155,6 +4242,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonDelta'
       comparisonRatio:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
+      percentOfTotal:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -4176,6 +4265,11 @@ definitions:
     type: object
     properties:
       dimension:
+        type: string
+  v1MetricsViewAggregationMeasureComputePercentOfTotal:
+    type: object
+    properties:
+      measure:
         type: string
   v1MetricsViewAggregationRequest:
     type: object
@@ -4231,9 +4325,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       limit:
         type: string
         format: int64
@@ -4340,9 +4440,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       aliases:
         type: array
         items:
@@ -4536,6 +4642,9 @@ definitions:
       table:
         type: string
         title: Name of the table the metrics view is based on
+      model:
+        type: string
+        description: Name of the model the metrics view is based on. Either table or model should be set.
       title:
         type: string
         title: User friendly label for the dashboard
@@ -4652,9 +4761,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        title: Optional. Either having or having_sql should be set
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -4711,8 +4826,12 @@ definitions:
           $ref: '#/definitions/v1MetricsViewSort'
       where:
         $ref: '#/definitions/v1Expression'
+      whereSql:
+        type: string
       having:
         $ref: '#/definitions/v1Expression'
+      havingSql:
+        type: string
       priority:
         type: integer
         format: int32
@@ -4756,6 +4875,9 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        title: Optional. Either where or where_sql should be set
       priority:
         type: integer
         format: int32
@@ -5282,6 +5404,25 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1ResolveComponentResponse:
+    type: object
+    properties:
+      show:
+        type: boolean
+        description: |-
+          Show property with templating resolved for the provided args.
+          If it resolves to false, the other fields are not set.
+      schema:
+        $ref: '#/definitions/v1StructType'
+        title: Schema of the resolved component data
+      data:
+        type: array
+        items:
+          type: object
+        title: Resolved component data
+      rendererProperties:
+        type: object
+        title: Renderer properties with templating resolved for the provided args
   v1Resource:
     type: object
     properties:

@@ -60,17 +60,12 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			var deployedID string
-			rc, err := dotrillcloud.GetAll(path, ch.AdminURL)
+			rc, err := dotrillcloud.GetAll(path, ch.AdminURL())
 			if err != nil {
 				return err
 			}
-			if rc != nil {
-				deployedID = rc.ProjectID
-			}
-
-			if delResp.Id == deployedID {
-				err = dotrillcloud.Delete(path, ch.AdminURL)
+			if rc != nil && rc.ProjectID == delResp.Id {
+				err = dotrillcloud.Delete(path, ch.AdminURL())
 				if err != nil {
 					return err
 				}

@@ -60,7 +60,7 @@ rill devtool dotenv upload cloud
 
 ### Local
 
-- UI: `http://localhost:3000`
+- UI: `http://localhost:3001`
 - Runtime HTTP: `http://localhost:9009`
 - Runtime gRPC: `http://localhost:49009`
 - Runtime debug: `http://localhost:6060`

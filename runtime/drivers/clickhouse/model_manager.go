@@ -43,11 +43,36 @@ type ModelOutputProperties struct {
 	SampleBy string `mapstructure:"sample_by"`
 	// TTL sets ttl for column and table.
 	TTL string `mapstructure:"ttl"`
-	// Settings set the table specific settings.
-	Settings string `mapstructure:"settings"`
+	// TableSettings set the table specific settings.
+	TableSettings string `mapstructure:"table_settings"`
+	// QuerySettings sets the settings clause used in insert/create table as select queries.
+	QuerySettings string `mapstructure:"query_settings"`
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
+	if opts.Incremental || opts.SplitRun {
+		if p.Materialize != nil && !*p.Materialize {
+			return fmt.Errorf("incremental or split models must be materialized")
+		}
+		p.Materialize = boolPtr(true)
+	}
+
+	if opts.InputConnector != opts.OutputConnector {
+		if p.Materialize != nil && !*p.Materialize {
+			return fmt.Errorf("models that output to a different connector must be materialized")
+		}
+		p.Materialize = boolPtr(true)
+	}
+
+	switch p.IncrementalStrategy {
+	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend:
+	default:
+		return fmt.Errorf("invalid incremental strategy %q", p.IncrementalStrategy)
+	}
+
+	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
+		p.IncrementalStrategy = drivers.IncrementalStrategyAppend
+	}
 	return nil
 }
 
@@ -164,4 +189,8 @@ func olapForceRenameTable(ctx context.Context, olap drivers.OLAPStore, fromName 
 
 	// Do the rename
 	return olap.RenameTable(ctx, fromName, toName, fromIsView)
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

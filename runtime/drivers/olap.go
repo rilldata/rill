@@ -33,7 +33,6 @@ type OLAPStore interface {
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
-	EstimateSize() (int64, bool)
 
 	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error
 	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, uniqueKey []string) error
@@ -201,7 +200,7 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
 }
 
 func (d Dialect) EscapeStringValue(s string) string {
@@ -239,6 +238,11 @@ func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 
 func (d Dialect) SupportsILike() bool {
 	return d != DialectDruid && d != DialectPinot
+}
+
+// RequiresCastForLike returns true if the dialect requires an expression used in a LIKE or ILIKE condition to explicitly be cast to type TEXT.
+func (d Dialect) RequiresCastForLike() bool {
+	return d == DialectClickHouse
 }
 
 // EscapeTable returns an esacped fully qualified table name

@@ -354,6 +354,15 @@ service AdminService {
     };
   }
 
+  // Converts a project connected to github to a rill managed project.
+  // Uploads the current project to assets.
+  rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
+      body: "*"
+    };
+  }
+
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -798,6 +807,7 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
+  optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
 message UpdateOrganizationResponse {
@@ -1161,12 +1171,12 @@ message SudoGetResourceResponse {
 
 message SudoUpdateOrganizationQuotasRequest {
   string org_name = 1;
-  optional uint32 projects = 2;
-  optional uint32 deployments = 3;
-  optional uint32 slots_total = 4;
-  optional uint32 slots_per_deployment = 5;
-  optional uint32 outstanding_invites = 6;
-  optional uint64 storage_limit_bytes_per_deployment = 7;
+  optional int32 projects = 2;
+  optional int32 deployments = 3;
+  optional int32 slots_total = 4;
+  optional int32 slots_per_deployment = 5;
+  optional int32 outstanding_invites = 6;
+  optional int64 storage_limit_bytes_per_deployment = 7;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -1185,7 +1195,7 @@ message SudoUpdateOrganizationBillingCustomerResponse {
 
 message SudoUpdateUserQuotasRequest {
   string email = 1;
-  optional uint32 singleuser_orgs = 2;
+  optional int32 singleuser_orgs = 2;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1626,6 +1636,13 @@ message ConnectProjectToGithubRequest {
 
 message ConnectProjectToGithubResponse {}
 
+message UploadProjectAssetsRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message UploadProjectAssetsResponse {}
+
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
   GITHUB_PERMISSION_READ = 1;
@@ -1873,7 +1890,6 @@ message GetBillingSubscriptionResponse {
   Organization organization = 1;
   Subscription subscription = 2;
   string billing_portal_url = 3;
-  bool has_payment_method = 4;
 }
 
 message UpdateBillingSubscriptionRequest {
@@ -1966,6 +1982,7 @@ message Organization {
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
+  string billing_email = 9;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -1983,16 +2000,16 @@ message Subscription {
 }
 
 message UserQuotas {
-  uint32 singleuser_orgs = 1;
+  int32 singleuser_orgs = 1;
 }
 
 message OrganizationQuotas {
-  uint32 projects = 1;
-  uint32 deployments = 2;
-  uint32 slots_total = 3;
-  uint32 slots_per_deployment = 4;
-  uint32 outstanding_invites = 5;
-  uint64 storage_limit_bytes_per_deployment = 6;
+  int32 projects = 1;
+  int32 deployments = 2;
+  int32 slots_total = 3;
+  int32 slots_per_deployment = 4;
+  int32 outstanding_invites = 5;
+  int64 storage_limit_bytes_per_deployment = 6;
 }
 
 message Project {

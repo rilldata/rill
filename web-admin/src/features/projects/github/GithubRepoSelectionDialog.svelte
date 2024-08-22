@@ -6,7 +6,7 @@
   import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
   import { ProjectGithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/ProjectGithubConnectionUpdater";
   import { getGithubData } from "@rilldata/web-admin/features/projects/github/GithubData";
-  import GithubOverwriteConfirmationDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmationDialog.svelte";
+  import GithubOverwriteConfirmDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmDialog.svelte";
   import {
     Dialog,
     DialogContent,
@@ -67,6 +67,7 @@
   $: githubUrl = githubConnectionUpdater.githubUrl;
   $: subpath = githubConnectionUpdater.subpath;
   $: branch = githubConnectionUpdater.branch;
+  $: disableContinue = !$githubUrl || !$branch || $status.isFetching;
 
   function onSelectedRepoChange(newUrl: string) {
     const repo = $userRepos.data?.repos?.find((r) => r.url === newUrl);
@@ -84,6 +85,7 @@
   }
 
   async function updateGithubUrl(force: boolean) {
+    let url = $githubUrl;
     const updateSucceeded = await githubConnectionUpdater.update({
       instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
       force,
@@ -91,7 +93,7 @@
     if (!updateSucceeded) return;
 
     eventBus.emit("notification", {
-      message: `Set github repo to ${$githubUrl}`,
+      message: `Set github repo to ${url}`,
       type: "success",
     });
     open = false;
@@ -177,13 +179,16 @@
       {/if}
     </DialogHeader>
     <DialogFooter class="mt-3">
-      <Button
-        outline={false}
-        type="link"
-        on:click={() => githubData.reselectRepos()}
-      >
-        Choose other repos
-      </Button>
+      <!-- temporarily show this only during edit. in the long run we will not have edit -->
+      {#if $githubUrl}
+        <Button
+          outline={false}
+          type="link"
+          on:click={() => githubData.reselectRepos()}
+        >
+          Choose other repos
+        </Button>
+      {/if}
       <Button
         type="secondary"
         on:click={() => {
@@ -194,13 +199,14 @@
       <Button
         type="primary"
         loading={$connectToGithubMutation.isLoading}
+        disabled={disableContinue}
         on:click={() => updateGithubUrl(false)}>Continue</Button
       >
     </DialogFooter>
   </DialogContent>
 </Dialog>
 
-<GithubOverwriteConfirmationDialog
+<GithubOverwriteConfirmDialog
   bind:open={$showOverwriteConfirmation}
   loading={$connectToGithubMutation.isLoading}
   {error}

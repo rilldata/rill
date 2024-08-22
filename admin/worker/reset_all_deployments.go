@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -50,7 +49,8 @@ func (w *Worker) resetAllDeploymentsForProject(ctx context.Context, proj *databa
 		// Make sure the deployment provisioner is in the current provisioner set
 		_, ok := w.admin.ProvisionerSet[depl.Provisioner]
 		if !ok {
-			return fmt.Errorf("reset all deployments: %q is not in the provisioner set", depl.Provisioner)
+			w.logger.Error("reset all deployments: provisioner is not in the provisioner set", zap.String("provisioner", depl.Provisioner), zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			continue
 		}
 
 		w.logger.Info("reset all deployments: redeploying deployment", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))

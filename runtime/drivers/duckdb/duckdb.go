@@ -840,7 +840,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 	for {
 		select {
 		case <-statTicker.C:
-			estimatedDBSize, _ := c.EstimateSize()
+			estimatedDBSize := c.estimateSize(false)
 			c.activity.RecordMetric(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
 			// NOTE :: running CALL pragma_database_size() while duckdb is ingesting data is causing the WAL file to explode.

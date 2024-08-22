@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { Expression } from "./expression_pb.js";
@@ -1063,6 +1063,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   table = "";
 
   /**
+   * Name of the model the metrics view is based on. Either table or model should be set.
+   *
+   * @generated from field: string model = 24;
+   */
+  model = "";
+
+  /**
    * User friendly label for the dashboard
    *
    * @generated from field: string title = 3;
@@ -1200,6 +1207,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -2708,6 +2716,13 @@ export class AlertExecution extends Message<AlertExecution> {
    */
   finishedOn?: Timestamp;
 
+  /**
+   * Stores the last notification time in suppressed alerts
+   *
+   * @generated from field: google.protobuf.Timestamp suppressed_since = 7;
+   */
+  suppressedSince?: Timestamp;
+
   constructor(data?: PartialMessage<AlertExecution>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2722,6 +2737,7 @@ export class AlertExecution extends Message<AlertExecution> {
     { no: 4, name: "execution_time", kind: "message", T: Timestamp },
     { no: 5, name: "started_on", kind: "message", T: Timestamp },
     { no: 6, name: "finished_on", kind: "message", T: Timestamp },
+    { no: 7, name: "suppressed_since", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertExecution {
@@ -3374,6 +3390,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
   title = "";
 
   /**
+   * @generated from field: string subtitle = 7;
+   */
+  subtitle = "";
+
+  /**
    * @generated from field: string resolver = 2;
    */
   resolver = "";
@@ -3394,14 +3415,26 @@ export class ComponentSpec extends Message<ComponentSpec> {
   rendererProperties?: Struct;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ComponentVariable input = 8;
+   */
+  input: ComponentVariable[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.ComponentVariable output = 9;
+   */
+  output?: ComponentVariable;
+
+  /**
+   * Templated string that should evaluate to a boolean.
+   *
+   * @generated from field: string show = 10;
+   */
+  show = "";
+
+  /**
    * @generated from field: bool defined_in_dashboard = 6;
    */
   definedInDashboard = false;
-
-  /**
-   * @generated from field: string subtitle = 7;
-   */
-  subtitle = "";
 
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
@@ -3412,12 +3445,15 @@ export class ComponentSpec extends Message<ComponentSpec> {
   static readonly typeName = "rill.runtime.v1.ComponentSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
+    { no: 9, name: "output", kind: "message", T: ComponentVariable },
+    { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
@@ -3465,6 +3501,55 @@ export class ComponentState extends Message<ComponentState> {
 
   static equals(a: ComponentState | PlainMessage<ComponentState> | undefined, b: ComponentState | PlainMessage<ComponentState> | undefined): boolean {
     return proto3.util.equals(ComponentState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ComponentVariable
+ */
+export class ComponentVariable extends Message<ComponentVariable> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string type = 2;
+   */
+  type = "";
+
+  /**
+   * @generated from field: google.protobuf.Value default_value = 3;
+   */
+  defaultValue?: Value;
+
+  constructor(data?: PartialMessage<ComponentVariable>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ComponentVariable";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "default_value", kind: "message", T: Value },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentVariable {
+    return new ComponentVariable().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ComponentVariable {
+    return new ComponentVariable().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ComponentVariable {
+    return new ComponentVariable().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ComponentVariable | PlainMessage<ComponentVariable> | undefined, b: ComponentVariable | PlainMessage<ComponentVariable> | undefined): boolean {
+    return proto3.util.equals(ComponentVariable, a, b);
   }
 }
 
@@ -3531,6 +3616,11 @@ export class DashboardSpec extends Message<DashboardSpec> {
   gap = 0;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
+   */
+  variables: ComponentVariable[] = [];
+
+  /**
    * @generated from field: repeated rill.runtime.v1.DashboardItem items = 4;
    */
   items: DashboardItem[] = [];
@@ -3546,6 +3636,7 @@ export class DashboardSpec extends Message<DashboardSpec> {
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: DashboardItem, repeated: true },
   ]);
 

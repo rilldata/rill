@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -41,15 +42,29 @@ func TestRenameTable(t *testing.T) {
 
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
-	err = olap.RenameTable(ctx, "foo", "foo1", false)
+
+	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
+	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
+}
+
+func testRenameTable(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	err := olap.RenameTable(ctx, "foo", "foo1", false)
 	require.NoError(t, err)
 
 	err = olap.RenameTable(ctx, "foo1", "bar", false)
 	require.NoError(t, err)
 
 	var exist bool
-	require.NoError(t, conn.(*connection).db.QueryRowContext(ctx, "EXISTS foo1").Scan(&exist))
+	require.NoError(t, olap.(*connection).db.QueryRowContext(ctx, "EXISTS foo1").Scan(&exist))
 	require.False(t, exist)
-	require.NoError(t, conn.(*connection).db.QueryRowContext(ctx, "EXISTS foo1").Scan(&exist))
+	require.NoError(t, olap.(*connection).db.QueryRowContext(ctx, "EXISTS foo1").Scan(&exist))
 	require.False(t, exist)
+}
+
+func testCreateTableAsSelect(t *testing.T, olap drivers.OLAPStore) {
+	err := olap.CreateTableAsSelect(context.Background(), "tbl", false, "SELECT 1 AS id, 'Earth' AS planet", map[string]any{
+		"engine": "MergeTree",
+	})
+	require.NoError(t, err)
 }

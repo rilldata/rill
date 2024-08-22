@@ -14,24 +14,35 @@
   import {
     convertDateToMinutes,
     getMetricsViewFields,
+    getSanitizedDashboardStateParam,
     hasDashboardWhereFilter,
   } from "./form-utils";
 
-  $: ({ organization, project } = $page.params);
-
-  let token: string;
-  let setExpiration = false;
-  let apiError: string;
-
   const {
     dashboardStore,
-
     metricsViewName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
     },
   } = getStateManagers();
+
+  $: ({ organization, project } = $page.params);
+
+  $: metricsViewFields = getMetricsViewFields(
+    $dashboardStore,
+    $visibleDimensions,
+    $visibleMeasures,
+  );
+
+  $: sanitizedState = getSanitizedDashboardStateParam(
+    $dashboardStore,
+    metricsViewFields,
+  );
+
+  let token: string;
+  let setExpiration = false;
+  let apiError: string;
 
   const formId = "create-shareable-url-form";
 
@@ -62,14 +73,11 @@
               metricsViewFilter: hasWhereFilter
                 ? $dashboardStore.whereFilter
                 : undefined,
-              metricsViewFields: getMetricsViewFields(
-                $dashboardStore,
-                $visibleDimensions,
-                $visibleMeasures,
-              ),
+              metricsViewFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
+              state: sanitizedState ? sanitizedState : undefined,
             },
           });
           token = _token;

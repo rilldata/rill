@@ -1,6 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { isProjectInvitePage } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import {
+    isProjectInvitePage,
+    withinOrganization,
+    withinProject,
+  } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import OrganizationTabs from "@rilldata/web-admin/features/organizations/OrganizationTabs.svelte";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
@@ -12,7 +17,7 @@
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
-  import { initPylonWidget } from "../features/help/initPylonWidget";
+  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
 
   export let data;
@@ -45,6 +50,8 @@
   $: isEmbed = $page.url.pathname === "/-/embed";
   // invite page shouldn't show the top bar because it is considered an onboard step
   $: hideTopBar = isProjectInvitePage($page);
+
+  $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 </script>
 
 <svelte:head>
@@ -60,6 +67,10 @@
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           manageProjectMembers={projectPermissions?.manageProjectMembers}
         />
+
+        {#if withinOnlyOrg}
+          <OrganizationTabs />
+        {/if}
       {/if}
       <ErrorBoundary>
         <slot />

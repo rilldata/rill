@@ -301,6 +301,8 @@ paths:
                 type: string
               newName:
                 type: string
+              billingEmail:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{orgName}/billing/payments/portal-url:
@@ -1424,6 +1426,37 @@ paths:
               state:
                 type: string
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/upload-assets:
+    post:
+      summary: |-
+        Converts a project connected to github to a rill managed project.
+        Uploads the current project to assets.
+      operationId: AdminService_UploadProjectAssets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UploadProjectAssetsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
@@ -3273,7 +3306,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3616,8 +3649,6 @@ definitions:
         $ref: '#/definitions/v1Subscription'
       billingPortalUrl:
         type: string
-      hasPaymentMethod:
-        type: boolean
   v1GetBookmarkResponse:
     type: object
     properties:
@@ -4081,6 +4112,8 @@ definitions:
         type: string
       paymentCustomerId:
         type: string
+      billingEmail:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -4109,22 +4142,22 @@ definitions:
     properties:
       projects:
         type: integer
-        format: int64
+        format: int32
       deployments:
         type: integer
-        format: int64
+        format: int32
       slotsTotal:
         type: integer
-        format: int64
+        format: int32
       slotsPerDeployment:
         type: integer
-        format: int64
+        format: int32
       outstandingInvites:
         type: integer
-        format: int64
+        format: int32
       storageLimitBytesPerDeployment:
         type: string
-        format: uint64
+        format: int64
   v1PingResponse:
     type: object
     properties:
@@ -4506,22 +4539,22 @@ definitions:
         type: string
       projects:
         type: integer
-        format: int64
+        format: int32
       deployments:
         type: integer
-        format: int64
+        format: int32
       slotsTotal:
         type: integer
-        format: int64
+        format: int32
       slotsPerDeployment:
         type: integer
-        format: int64
+        format: int32
       outstandingInvites:
         type: integer
-        format: int64
+        format: int32
       storageLimitBytesPerDeployment:
         type: string
-        format: uint64
+        format: int64
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
@@ -4534,7 +4567,7 @@ definitions:
         type: string
       singleuserOrgs:
         type: integer
-        format: int64
+        format: int32
   v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
@@ -4624,6 +4657,8 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1UploadProjectAssetsResponse:
+    type: object
   v1User:
     type: object
     properties:
@@ -4662,7 +4697,7 @@ definitions:
     properties:
       singleuserOrgs:
         type: integer
-        format: int64
+        format: int32
   v1Usergroup:
     type: object
     properties:

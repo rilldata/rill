@@ -122,9 +122,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -142,7 +142,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, payment_customer_id=$10, updated_on=now() WHERE id=$11 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, payment_customer_id=$10, billing_email=$11, updated_on=now() WHERE id=$12 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -795,6 +795,15 @@ func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afte
 func (c *connection) DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
 	return checkDeleteRow("usergroup member", res, err)
+}
+
+func (c *connection) CheckUsergroupExists(ctx context.Context, groupID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM usergroups WHERE id=$1)", groupID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
+	}
+	return res, nil
 }
 
 func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
@@ -1497,21 +1506,29 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 }
 
 func (c *connection) FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*database.OrganizationInvite, error) {
-	var res []*database.OrganizationInvite
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
+	var dtos []*organizationInviteDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
 	if err != nil {
 		return nil, parseErr("org invites", err)
+	}
+	res := make([]*database.OrganizationInvite, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsModel()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
 
 func (c *connection) FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*database.OrganizationInvite, error) {
-	res := &database.OrganizationInvite{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(res)
+	dto := &organizationInviteDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("org invite", err)
 	}
-	return res, nil
+	return dto.AsModel()
 }
 
 func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *database.InsertOrganizationInviteOptions) error {
@@ -1524,6 +1541,11 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return parseErr("org invite", err)
 	}
 	return nil
+}
+
+func (c *connection) UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET usergroup_ids = $1 WHERE id = $2`, groupIDs, id)
+	return checkUpdateRow("org invite", res, err)
 }
 
 func (c *connection) DeleteOrganizationInvite(ctx context.Context, id string) error {
@@ -1948,6 +1970,20 @@ func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser,
 	}
 
 	return m.MagicAuthTokenWithUser, nil
+}
+
+type organizationInviteDTO struct {
+	*database.OrganizationInvite
+	UsergroupIDs pgtype.TextArray `db:"usergroup_ids"`
+}
+
+func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) {
+	err := o.UsergroupIDs.AssignTo(&o.OrganizationInvite.UsergroupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return o.OrganizationInvite, nil
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

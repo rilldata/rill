@@ -9,10 +9,13 @@
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import CTAButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   const deployer = new ProjectDeployer();
-  const deployValidation = deployer.validation;
+  const metadata = deployer.metadata;
+  const user = deployer.user;
+  const project = deployer.project;
   const deployerStatus = deployer.getStatus();
   const promptOrgSelection = deployer.promptOrgSelection;
 
@@ -21,20 +24,26 @@
     return deployer.deploy(org);
   }
 
-  // TODO
-  // function onContactUs() {
-  // }
+  function onContactUs() {
+    window.Pylon("show");
+  }
 
   onMount(() => {
-    void deployer.deploy();
+    void deployer.loginOrDeploy();
   });
 </script>
+
+<!-- This seems to be necessary to trigger tanstack query to update the query object -->
+<!-- TODO: find a config to avoid this -->
+<div class="hidden">
+  {$user.isLoading}-{$metadata.isLoading}-{$project.isLoading}
+</div>
 
 <CTALayoutContainer>
   <CTAContentContainer>
     {#if $promptOrgSelection}
       <OrgSelector
-        orgs={$deployValidation.data?.rillUserOrgs ?? []}
+        orgs={$user.data?.rillUserOrgs ?? []}
         onSelect={onOrgSelect}
       />
     {:else if $deployerStatus.isLoading}
@@ -49,9 +58,9 @@
       <CancelCircleInverse size="7rem" className="text-gray-200" />
       <CTAHeader variant="bold">Oops! An error occurred</CTAHeader>
       <CTAMessage>{$deployerStatus.error}</CTAMessage>
-      <!--      <CTAButton variant="secondary" on:click={onContactUs}>-->
-      <!--        Contact us-->
-      <!--      </CTAButton>-->
+      <CTAButton variant="secondary" on:click={onContactUs}>
+        Contact us
+      </CTAButton>
       <CTANeedHelp />
     {/if}
   </CTAContentContainer>

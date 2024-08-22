@@ -262,6 +262,7 @@ export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
+  billingEmail?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -345,6 +346,10 @@ export interface V1User {
   quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1UploadProjectAssetsResponse {
+  [key: string]: any;
 }
 
 export interface V1UpdateUserPreferencesResponse {
@@ -732,6 +737,7 @@ export interface V1Organization {
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
+  billingEmail?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1021,7 +1027,6 @@ export interface V1GetBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
   billingPortalUrl?: string;
-  hasPaymentMethod?: boolean;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -1288,7 +1293,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
