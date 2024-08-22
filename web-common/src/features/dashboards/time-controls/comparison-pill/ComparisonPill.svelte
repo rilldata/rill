@@ -14,8 +14,6 @@
   import { DateTime, Interval } from "luxon";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
-  import { off } from "codemirror";
-  import { Target } from "lucide-svelte";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
