@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import DeleteOrgItems from "@rilldata/web-admin/features/organizations/settings/DeleteOrgItems.svelte";
   import UpdateOrgItem from "@rilldata/web-admin/features/organizations/settings/UpdateOrgItem.svelte";
   import UserDomainAllowListItem from "@rilldata/web-admin/features/organizations/settings/UserDomainAllowListItem.svelte";
 
@@ -10,5 +9,6 @@
 <div class="flex flex-col gap-y-6">
   <UpdateOrgItem {organization} />
   <UserDomainAllowListItem {organization} />
-  <DeleteOrgItems {organization} />
+  <!-- disabling for now since  there are some open questions around billing -->
+  <!--  <DeleteOrgItems {organization} />-->
 </div>

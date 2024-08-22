@@ -4,11 +4,15 @@
     createAdminServiceGetOrganization,
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,
+    type RpcStatus,
   } from "@rilldata/web-admin/client";
+  import { parseUpdateOrgError } from "@rilldata/web-admin/features/organizations/settings/errors";
   import SettingsItemContainer from "@rilldata/web-admin/features/organizations/settings/SettingsItemContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import type { AxiosError } from "axios";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -25,20 +29,14 @@
   };
   const schema = yup(
     object({
-      name: string()
-        .required()
-        .matches(/[_a-zA-Z0-9][-_a-zA-Z0-9 ]{2,39}/),
+      name: string().required(),
       description: string(),
     }),
   );
 
-  function correctOrgName(org: string) {
-    return org.replace(/ /g, "-");
-  }
-
   const updateOrgMutation = createAdminServiceUpdateOrganization();
 
-  const { form, errors, enhance, submit, submitting } = superForm(
+  const { form, errors, enhance, submit } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -47,15 +45,23 @@
         if (!form.valid) return;
         const values = form.data;
 
-        const newOrg = correctOrgName(values.name);
+        const newOrg = sanitizeOrgName(values.name);
 
-        await $updateOrgMutation.mutateAsync({
-          name: organization,
-          data: {
-            newName: correctOrgName(values.name),
-            description: values.description,
-          },
-        });
+        try {
+          await $updateOrgMutation.mutateAsync({
+            name: organization,
+            data: {
+              newName: newOrg,
+              description: values.description,
+            },
+          });
+        } catch (err) {
+          const parsedErr = parseUpdateOrgError(err);
+          if (parsedErr.duplicateOrg) {
+            form.errors.name = [`The name ${newOrg} is already taken`];
+          }
+          return;
+        }
 
         if (organization !== newOrg) {
           void goto(`/${newOrg}/-/settings`);
@@ -84,6 +90,10 @@
   $: changed =
     $orgResp.data?.organization?.name !== $form.name ||
     $orgResp.data?.organization?.description !== $form.description;
+
+  $: error = parseUpdateOrgError(
+    $updateOrgMutation.error as unknown as AxiosError<RpcStatus>,
+  );
 </script>
 
 <SettingsItemContainer title="Organization">
@@ -91,7 +101,7 @@
     slot="description"
     id="org-update-form"
     on:submit|preventDefault={submit}
-    class="w-full"
+    class="update-org-form"
     use:enhance
   >
     <Input
@@ -99,11 +109,9 @@
       errors={$errors?.name}
       id="name"
       label="Name"
+      description={`Your org URL will be https://ui.rilldata.com/${sanitizeOrgName($form.name)}, to comply with our naming rules.`}
+      alwaysShowError
     />
-    <div>
-      Your org URL will be https://ui.rilldata.com/{correctOrgName($form.name)},
-      to comply with our naming rules.
-    </div>
     <Input
       bind:value={$form.description}
       errors={$errors?.description}
@@ -112,13 +120,24 @@
       placeholder="Describe your organization"
     />
   </form>
+  {#if error?.message}
+    <div class="text-red-500 text-sm py-px">
+      {error.message}
+    </div>
+  {/if}
   <Button
     on:click={submit}
     type="primary"
-    loading={$submitting}
+    loading={$updateOrgMutation.isLoading}
     disabled={!changed}
     slot="action"
   >
     Save
   </Button>
 </SettingsItemContainer>
+
+<style lang="postcss">
+  .update-org-form {
+    @apply flex flex-col gap-y-5 w-full mt-2;
+  }
+</style>
