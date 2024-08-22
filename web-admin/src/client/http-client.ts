@@ -18,7 +18,7 @@ export const CANONICAL_ADMIN_URL =
  * which should always use the canonical admin URL.
  */
 export const ADMIN_URL =
-  urlExtractSLD(window.location.origin) === urlExtractSLD(CANONICAL_ADMIN_URL)
+  typeof window === "undefined" || urlExtractSLD(window.location.origin) === urlExtractSLD(CANONICAL_ADMIN_URL)
     ? CANONICAL_ADMIN_URL
     : urlRewritePath(window.location.origin, "/api");
 
