@@ -22,7 +22,7 @@ const (
 	AdminService_Ping_FullMethodName                                  = "/rill.admin.v1.AdminService/Ping"
 	AdminService_ListOrganizations_FullMethodName                     = "/rill.admin.v1.AdminService/ListOrganizations"
 	AdminService_GetOrganization_FullMethodName                       = "/rill.admin.v1.AdminService/GetOrganization"
-	AdminService_GetOrganizationByDomain_FullMethodName               = "/rill.admin.v1.AdminService/GetOrganizationByDomain"
+	AdminService_GetOrganizationNameForDomain_FullMethodName          = "/rill.admin.v1.AdminService/GetOrganizationNameForDomain"
 	AdminService_CreateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/CreateOrganization"
 	AdminService_DeleteOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/DeleteOrganization"
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
@@ -149,9 +149,10 @@ type AdminServiceClient interface {
 	ListOrganizations(ctx context.Context, in *ListOrganizationsRequest, opts ...grpc.CallOption) (*ListOrganizationsResponse, error)
 	// GetOrganization returns information about a specific organization
 	GetOrganization(ctx context.Context, in *GetOrganizationRequest, opts ...grpc.CallOption) (*GetOrganizationResponse, error)
-	// GetOrganizationByDomain finds the org for a custom domain.
+	// GetOrganizationNameForDomain finds the org name for a custom domain.
 	// If the application detects it is running on a non-default domain, it can use this to find the org to present.
-	GetOrganizationByDomain(ctx context.Context, in *GetOrganizationByDomainRequest, opts ...grpc.CallOption) (*GetOrganizationByDomainResponse, error)
+	// It can be called without being authenticated.
+	GetOrganizationNameForDomain(ctx context.Context, in *GetOrganizationNameForDomainRequest, opts ...grpc.CallOption) (*GetOrganizationNameForDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(ctx context.Context, in *CreateOrganizationRequest, opts ...grpc.CallOption) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organizations
@@ -421,10 +422,10 @@ func (c *adminServiceClient) GetOrganization(ctx context.Context, in *GetOrganiz
 	return out, nil
 }
 
-func (c *adminServiceClient) GetOrganizationByDomain(ctx context.Context, in *GetOrganizationByDomainRequest, opts ...grpc.CallOption) (*GetOrganizationByDomainResponse, error) {
+func (c *adminServiceClient) GetOrganizationNameForDomain(ctx context.Context, in *GetOrganizationNameForDomainRequest, opts ...grpc.CallOption) (*GetOrganizationNameForDomainResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetOrganizationByDomainResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetOrganizationByDomain_FullMethodName, in, out, cOpts...)
+	out := new(GetOrganizationNameForDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetOrganizationNameForDomain_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1581,9 +1582,10 @@ type AdminServiceServer interface {
 	ListOrganizations(context.Context, *ListOrganizationsRequest) (*ListOrganizationsResponse, error)
 	// GetOrganization returns information about a specific organization
 	GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error)
-	// GetOrganizationByDomain finds the org for a custom domain.
+	// GetOrganizationNameForDomain finds the org name for a custom domain.
 	// If the application detects it is running on a non-default domain, it can use this to find the org to present.
-	GetOrganizationByDomain(context.Context, *GetOrganizationByDomainRequest) (*GetOrganizationByDomainResponse, error)
+	// It can be called without being authenticated.
+	GetOrganizationNameForDomain(context.Context, *GetOrganizationNameForDomainRequest) (*GetOrganizationNameForDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organizations
@@ -1832,8 +1834,8 @@ func (UnimplementedAdminServiceServer) ListOrganizations(context.Context, *ListO
 func (UnimplementedAdminServiceServer) GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrganization not implemented")
 }
-func (UnimplementedAdminServiceServer) GetOrganizationByDomain(context.Context, *GetOrganizationByDomainRequest) (*GetOrganizationByDomainResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationByDomain not implemented")
+func (UnimplementedAdminServiceServer) GetOrganizationNameForDomain(context.Context, *GetOrganizationNameForDomainRequest) (*GetOrganizationNameForDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationNameForDomain not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateOrganization not implemented")
@@ -2252,20 +2254,20 @@ func _AdminService_GetOrganization_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetOrganizationByDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetOrganizationByDomainRequest)
+func _AdminService_GetOrganizationNameForDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOrganizationNameForDomainRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).GetOrganizationByDomain(ctx, in)
+		return srv.(AdminServiceServer).GetOrganizationNameForDomain(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_GetOrganizationByDomain_FullMethodName,
+		FullMethod: AdminService_GetOrganizationNameForDomain_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetOrganizationByDomain(ctx, req.(*GetOrganizationByDomainRequest))
+		return srv.(AdminServiceServer).GetOrganizationNameForDomain(ctx, req.(*GetOrganizationNameForDomainRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4342,8 +4344,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetOrganization_Handler,
 		},
 		{
-			MethodName: "GetOrganizationByDomain",
-			Handler:    _AdminService_GetOrganizationByDomain_Handler,
+			MethodName: "GetOrganizationNameForDomain",
+			Handler:    _AdminService_GetOrganizationNameForDomain_Handler,
 		},
 		{
 			MethodName: "CreateOrganization",

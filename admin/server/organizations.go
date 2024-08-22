@@ -74,7 +74,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}, nil
 }
 
-func (s *Server) GetOrganizationByDomain(ctx context.Context, req *adminv1.GetOrganizationByDomainRequest) (*adminv1.GetOrganizationByDomainResponse, error) {
+func (s *Server) GetOrganizationNameForDomain(ctx context.Context, req *adminv1.GetOrganizationNameForDomainRequest) (*adminv1.GetOrganizationNameForDomainResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.domain", req.Domain))
 
 	org, err := s.admin.DB.FindOrganizationByCustomDomain(ctx, req.Domain)
@@ -85,14 +85,10 @@ func (s *Server) GetOrganizationByDomain(ctx context.Context, req *adminv1.GetOr
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
-	}
+	// NOTE: Not checking auth on purpose. This needs to be a public endpoint.
 
-	return &adminv1.GetOrganizationByDomainResponse{
-		Organization: organizationToDTO(org),
-		Permissions:  claims.OrganizationPermissions(ctx, org.ID),
+	return &adminv1.GetOrganizationNameForDomainResponse{
+		Name: org.Name,
 	}, nil
 }
 

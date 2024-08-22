@@ -307,82 +307,76 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
 }
 
 /**
- * @generated from message rill.admin.v1.GetOrganizationByDomainRequest
+ * @generated from message rill.admin.v1.GetOrganizationNameForDomainRequest
  */
-export class GetOrganizationByDomainRequest extends Message<GetOrganizationByDomainRequest> {
+export class GetOrganizationNameForDomainRequest extends Message<GetOrganizationNameForDomainRequest> {
   /**
    * @generated from field: string domain = 1;
    */
   domain = "";
 
-  constructor(data?: PartialMessage<GetOrganizationByDomainRequest>) {
+  constructor(data?: PartialMessage<GetOrganizationNameForDomainRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetOrganizationByDomainRequest";
+  static readonly typeName = "rill.admin.v1.GetOrganizationNameForDomainRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationByDomainRequest {
-    return new GetOrganizationByDomainRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationNameForDomainRequest {
+    return new GetOrganizationNameForDomainRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationByDomainRequest {
-    return new GetOrganizationByDomainRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationNameForDomainRequest {
+    return new GetOrganizationNameForDomainRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationByDomainRequest {
-    return new GetOrganizationByDomainRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationNameForDomainRequest {
+    return new GetOrganizationNameForDomainRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetOrganizationByDomainRequest | PlainMessage<GetOrganizationByDomainRequest> | undefined, b: GetOrganizationByDomainRequest | PlainMessage<GetOrganizationByDomainRequest> | undefined): boolean {
-    return proto3.util.equals(GetOrganizationByDomainRequest, a, b);
+  static equals(a: GetOrganizationNameForDomainRequest | PlainMessage<GetOrganizationNameForDomainRequest> | undefined, b: GetOrganizationNameForDomainRequest | PlainMessage<GetOrganizationNameForDomainRequest> | undefined): boolean {
+    return proto3.util.equals(GetOrganizationNameForDomainRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.GetOrganizationByDomainResponse
+ * @generated from message rill.admin.v1.GetOrganizationNameForDomainResponse
  */
-export class GetOrganizationByDomainResponse extends Message<GetOrganizationByDomainResponse> {
+export class GetOrganizationNameForDomainResponse extends Message<GetOrganizationNameForDomainResponse> {
   /**
-   * @generated from field: rill.admin.v1.Organization organization = 1;
+   * @generated from field: string name = 1;
    */
-  organization?: Organization;
+  name = "";
 
-  /**
-   * @generated from field: rill.admin.v1.OrganizationPermissions permissions = 2;
-   */
-  permissions?: OrganizationPermissions;
-
-  constructor(data?: PartialMessage<GetOrganizationByDomainResponse>) {
+  constructor(data?: PartialMessage<GetOrganizationNameForDomainResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetOrganizationByDomainResponse";
+  static readonly typeName = "rill.admin.v1.GetOrganizationNameForDomainResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "organization", kind: "message", T: Organization },
-    { no: 2, name: "permissions", kind: "message", T: OrganizationPermissions },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationByDomainResponse {
-    return new GetOrganizationByDomainResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationNameForDomainResponse {
+    return new GetOrganizationNameForDomainResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationByDomainResponse {
-    return new GetOrganizationByDomainResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationNameForDomainResponse {
+    return new GetOrganizationNameForDomainResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationByDomainResponse {
-    return new GetOrganizationByDomainResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationNameForDomainResponse {
+    return new GetOrganizationNameForDomainResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetOrganizationByDomainResponse | PlainMessage<GetOrganizationByDomainResponse> | undefined, b: GetOrganizationByDomainResponse | PlainMessage<GetOrganizationByDomainResponse> | undefined): boolean {
-    return proto3.util.equals(GetOrganizationByDomainResponse, a, b);
+  static equals(a: GetOrganizationNameForDomainResponse | PlainMessage<GetOrganizationNameForDomainResponse> | undefined, b: GetOrganizationNameForDomainResponse | PlainMessage<GetOrganizationNameForDomainResponse> | undefined): boolean {
+    return proto3.util.equals(GetOrganizationNameForDomainResponse, a, b);
   }
 }
 

@@ -24,10 +24,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{name}"};
   }
 
-  // GetOrganizationByDomain finds the org for a custom domain.
+  // GetOrganizationNameForDomain finds the org name for a custom domain.
   // If the application detects it is running on a non-default domain, it can use this to find the org to present.
-  rpc GetOrganizationByDomain(GetOrganizationByDomainRequest) returns (GetOrganizationByDomainResponse) {
-    option (google.api.http) = {get: "/v1/organization-by-domain/{domain}"};
+  // It can be called without being authenticated.
+  rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
+    option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
   }
 
   // CreateOrganization creates a new organization
@@ -805,13 +806,12 @@ message GetOrganizationResponse {
   OrganizationPermissions permissions = 2;
 }
 
-message GetOrganizationByDomainRequest {
+message GetOrganizationNameForDomainRequest {
   string domain = 1 [(validate.rules).string.min_len = 1];
 }
 
-message GetOrganizationByDomainResponse {
-  Organization organization = 1;
-  OrganizationPermissions permissions = 2;
+message GetOrganizationNameForDomainResponse {
+  string name = 1;
 }
 
 message CreateOrganizationRequest {

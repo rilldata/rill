@@ -789,44 +789,55 @@ var _ interface {
 	ErrorName() string
 } = GetOrganizationResponseValidationError{}
 
-// Validate checks the field values on GetOrganizationByDomainRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetOrganizationByDomainRequest) Validate() error {
+// Validate checks the field values on GetOrganizationNameForDomainRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *GetOrganizationNameForDomainRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetOrganizationByDomainRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// GetOrganizationByDomainRequestMultiError, or nil if none found.
-func (m *GetOrganizationByDomainRequest) ValidateAll() error {
+// ValidateAll checks the field values on GetOrganizationNameForDomainRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// GetOrganizationNameForDomainRequestMultiError, or nil if none found.
+func (m *GetOrganizationNameForDomainRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetOrganizationByDomainRequest) validate(all bool) error {
+func (m *GetOrganizationNameForDomainRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	// no validation rules for Domain
+	if utf8.RuneCountInString(m.GetDomain()) < 1 {
+		err := GetOrganizationNameForDomainRequestValidationError{
+			field:  "Domain",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
-		return GetOrganizationByDomainRequestMultiError(errors)
+		return GetOrganizationNameForDomainRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetOrganizationByDomainRequestMultiError is an error wrapping multiple
-// validation errors returned by GetOrganizationByDomainRequest.ValidateAll()
-// if the designated constraints aren't met.
-type GetOrganizationByDomainRequestMultiError []error
+// GetOrganizationNameForDomainRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// GetOrganizationNameForDomainRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetOrganizationNameForDomainRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetOrganizationByDomainRequestMultiError) Error() string {
+func (m GetOrganizationNameForDomainRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -835,12 +846,12 @@ func (m GetOrganizationByDomainRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetOrganizationByDomainRequestMultiError) AllErrors() []error { return m }
+func (m GetOrganizationNameForDomainRequestMultiError) AllErrors() []error { return m }
 
-// GetOrganizationByDomainRequestValidationError is the validation error
-// returned by GetOrganizationByDomainRequest.Validate if the designated
+// GetOrganizationNameForDomainRequestValidationError is the validation error
+// returned by GetOrganizationNameForDomainRequest.Validate if the designated
 // constraints aren't met.
-type GetOrganizationByDomainRequestValidationError struct {
+type GetOrganizationNameForDomainRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -848,24 +859,24 @@ type GetOrganizationByDomainRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetOrganizationByDomainRequestValidationError) Field() string { return e.field }
+func (e GetOrganizationNameForDomainRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetOrganizationByDomainRequestValidationError) Reason() string { return e.reason }
+func (e GetOrganizationNameForDomainRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetOrganizationByDomainRequestValidationError) Cause() error { return e.cause }
+func (e GetOrganizationNameForDomainRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetOrganizationByDomainRequestValidationError) Key() bool { return e.key }
+func (e GetOrganizationNameForDomainRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetOrganizationByDomainRequestValidationError) ErrorName() string {
-	return "GetOrganizationByDomainRequestValidationError"
+func (e GetOrganizationNameForDomainRequestValidationError) ErrorName() string {
+	return "GetOrganizationNameForDomainRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetOrganizationByDomainRequestValidationError) Error() string {
+func (e GetOrganizationNameForDomainRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -877,14 +888,14 @@ func (e GetOrganizationByDomainRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetOrganizationByDomainRequest.%s: %s%s",
+		"invalid %sGetOrganizationNameForDomainRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetOrganizationByDomainRequestValidationError{}
+var _ error = GetOrganizationNameForDomainRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -892,102 +903,48 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetOrganizationByDomainRequestValidationError{}
+} = GetOrganizationNameForDomainRequestValidationError{}
 
-// Validate checks the field values on GetOrganizationByDomainResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetOrganizationByDomainResponse) Validate() error {
+// Validate checks the field values on GetOrganizationNameForDomainResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *GetOrganizationNameForDomainResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetOrganizationByDomainResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// GetOrganizationByDomainResponseMultiError, or nil if none found.
-func (m *GetOrganizationByDomainResponse) ValidateAll() error {
+// ValidateAll checks the field values on GetOrganizationNameForDomainResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// GetOrganizationNameForDomainResponseMultiError, or nil if none found.
+func (m *GetOrganizationNameForDomainResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetOrganizationByDomainResponse) validate(all bool) error {
+func (m *GetOrganizationNameForDomainResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if all {
-		switch v := interface{}(m.GetOrganization()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetOrganizationByDomainResponseValidationError{
-					field:  "Organization",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, GetOrganizationByDomainResponseValidationError{
-					field:  "Organization",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetOrganization()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return GetOrganizationByDomainResponseValidationError{
-				field:  "Organization",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetPermissions()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetOrganizationByDomainResponseValidationError{
-					field:  "Permissions",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, GetOrganizationByDomainResponseValidationError{
-					field:  "Permissions",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetPermissions()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return GetOrganizationByDomainResponseValidationError{
-				field:  "Permissions",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for Name
 
 	if len(errors) > 0 {
-		return GetOrganizationByDomainResponseMultiError(errors)
+		return GetOrganizationNameForDomainResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetOrganizationByDomainResponseMultiError is an error wrapping multiple
-// validation errors returned by GetOrganizationByDomainResponse.ValidateAll()
-// if the designated constraints aren't met.
-type GetOrganizationByDomainResponseMultiError []error
+// GetOrganizationNameForDomainResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// GetOrganizationNameForDomainResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetOrganizationNameForDomainResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetOrganizationByDomainResponseMultiError) Error() string {
+func (m GetOrganizationNameForDomainResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -996,12 +953,12 @@ func (m GetOrganizationByDomainResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetOrganizationByDomainResponseMultiError) AllErrors() []error { return m }
+func (m GetOrganizationNameForDomainResponseMultiError) AllErrors() []error { return m }
 
-// GetOrganizationByDomainResponseValidationError is the validation error
-// returned by GetOrganizationByDomainResponse.Validate if the designated
+// GetOrganizationNameForDomainResponseValidationError is the validation error
+// returned by GetOrganizationNameForDomainResponse.Validate if the designated
 // constraints aren't met.
-type GetOrganizationByDomainResponseValidationError struct {
+type GetOrganizationNameForDomainResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1009,24 +966,24 @@ type GetOrganizationByDomainResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetOrganizationByDomainResponseValidationError) Field() string { return e.field }
+func (e GetOrganizationNameForDomainResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetOrganizationByDomainResponseValidationError) Reason() string { return e.reason }
+func (e GetOrganizationNameForDomainResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetOrganizationByDomainResponseValidationError) Cause() error { return e.cause }
+func (e GetOrganizationNameForDomainResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetOrganizationByDomainResponseValidationError) Key() bool { return e.key }
+func (e GetOrganizationNameForDomainResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetOrganizationByDomainResponseValidationError) ErrorName() string {
-	return "GetOrganizationByDomainResponseValidationError"
+func (e GetOrganizationNameForDomainResponseValidationError) ErrorName() string {
+	return "GetOrganizationNameForDomainResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetOrganizationByDomainResponseValidationError) Error() string {
+func (e GetOrganizationNameForDomainResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1038,14 +995,14 @@ func (e GetOrganizationByDomainResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetOrganizationByDomainResponse.%s: %s%s",
+		"invalid %sGetOrganizationNameForDomainResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetOrganizationByDomainResponseValidationError{}
+var _ error = GetOrganizationNameForDomainResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1053,7 +1010,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetOrganizationByDomainResponseValidationError{}
+} = GetOrganizationNameForDomainResponseValidationError{}
 
 // Validate checks the field values on CreateOrganizationRequest with the rules
 // defined in the proto definition for this message. If any rules are

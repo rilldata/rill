@@ -975,9 +975,8 @@ export interface V1GetOrganizationResponse {
   permissions?: V1OrganizationPermissions;
 }
 
-export interface V1GetOrganizationByDomainResponse {
-  organization?: V1Organization;
-  permissions?: V1OrganizationPermissions;
+export interface V1GetOrganizationNameForDomainResponse {
+  name?: string;
 }
 
 export interface V1GetIFrameResponse {

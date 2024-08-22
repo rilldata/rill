@@ -26,7 +26,7 @@ import type {
   V1ListGithubUserReposResponse,
   V1RevokeMagicAuthTokenResponse,
   V1GetCurrentMagicAuthTokenResponse,
-  V1GetOrganizationByDomainResponse,
+  V1GetOrganizationNameForDomainResponse,
   V1ListOrganizationsResponse,
   AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
@@ -619,37 +619,38 @@ export const createAdminServiceGetCurrentMagicAuthToken = <
 };
 
 /**
- * @summary GetOrganizationByDomain finds the org for a custom domain.
+ * @summary GetOrganizationNameForDomain finds the org name for a custom domain.
 If the application detects it is running on a non-default domain, it can use this to find the org to present.
+It can be called without being authenticated.
  */
-export const adminServiceGetOrganizationByDomain = (
+export const adminServiceGetOrganizationNameForDomain = (
   domain: string,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1GetOrganizationByDomainResponse>({
-    url: `/v1/organization-by-domain/${domain}`,
+  return httpClient<V1GetOrganizationNameForDomainResponse>({
+    url: `/v1/organization-for-domain/${domain}`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceGetOrganizationByDomainQueryKey = (
+export const getAdminServiceGetOrganizationNameForDomainQueryKey = (
   domain: string,
-) => [`/v1/organization-by-domain/${domain}`];
+) => [`/v1/organization-for-domain/${domain}`];
 
-export type AdminServiceGetOrganizationByDomainQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetOrganizationByDomain>>
+export type AdminServiceGetOrganizationNameForDomainQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>
 >;
-export type AdminServiceGetOrganizationByDomainQueryError = RpcStatus;
+export type AdminServiceGetOrganizationNameForDomainQueryError = RpcStatus;
 
-export const createAdminServiceGetOrganizationByDomain = <
-  TData = Awaited<ReturnType<typeof adminServiceGetOrganizationByDomain>>,
+export const createAdminServiceGetOrganizationNameForDomain = <
+  TData = Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
   TError = RpcStatus,
 >(
   domain: string,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetOrganizationByDomain>>,
+      Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
       TError,
       TData
     >;
@@ -659,14 +660,14 @@ export const createAdminServiceGetOrganizationByDomain = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetOrganizationByDomainQueryKey(domain);
+    getAdminServiceGetOrganizationNameForDomainQueryKey(domain);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetOrganizationByDomain>>
-  > = ({ signal }) => adminServiceGetOrganizationByDomain(domain, signal);
+    Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>
+  > = ({ signal }) => adminServiceGetOrganizationNameForDomain(domain, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetOrganizationByDomain>>,
+    Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
     TError,
     TData
   >({

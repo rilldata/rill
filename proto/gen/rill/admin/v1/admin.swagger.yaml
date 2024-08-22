@@ -190,17 +190,18 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
-  /v1/organization-by-domain/{domain}:
+  /v1/organization-for-domain/{domain}:
     get:
       summary: |-
-        GetOrganizationByDomain finds the org for a custom domain.
+        GetOrganizationNameForDomain finds the org name for a custom domain.
         If the application detects it is running on a non-default domain, it can use this to find the org to present.
-      operationId: AdminService_GetOrganizationByDomain
+        It can be called without being authenticated.
+      operationId: AdminService_GetOrganizationNameForDomain
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GetOrganizationByDomainResponse'
+            $ref: '#/definitions/v1GetOrganizationNameForDomainResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3785,13 +3786,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
-  v1GetOrganizationByDomainResponse:
+  v1GetOrganizationNameForDomainResponse:
     type: object
     properties:
-      organization:
-        $ref: '#/definitions/v1Organization'
-      permissions:
-        $ref: '#/definitions/v1OrganizationPermissions'
+      name:
+        type: string
   v1GetOrganizationResponse:
     type: object
     properties:
