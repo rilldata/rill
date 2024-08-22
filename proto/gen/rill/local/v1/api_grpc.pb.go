@@ -22,7 +22,6 @@ const (
 	LocalService_Ping_FullMethodName              = "/rill.local.v1.LocalService/Ping"
 	LocalService_GetMetadata_FullMethodName       = "/rill.local.v1.LocalService/GetMetadata"
 	LocalService_GetVersion_FullMethodName        = "/rill.local.v1.LocalService/GetVersion"
-	LocalService_DeployValidation_FullMethodName  = "/rill.local.v1.LocalService/DeployValidation"
 	LocalService_PushToGithub_FullMethodName      = "/rill.local.v1.LocalService/PushToGithub"
 	LocalService_DeployProject_FullMethodName     = "/rill.local.v1.LocalService/DeployProject"
 	LocalService_RedeployProject_FullMethodName   = "/rill.local.v1.LocalService/RedeployProject"
@@ -40,8 +39,6 @@ type LocalServiceClient interface {
 	GetMetadata(ctx context.Context, in *GetMetadataRequest, opts ...grpc.CallOption) (*GetMetadataResponse, error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
-	// DeployValidation validates a deploy request.
-	DeployValidation(ctx context.Context, in *DeployValidationRequest, opts ...grpc.CallOption) (*DeployValidationResponse, error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(ctx context.Context, in *PushToGithubRequest, opts ...grpc.CallOption) (*PushToGithubResponse, error)
 	// DeployProject deploys the local project to the Rill cloud.
@@ -86,16 +83,6 @@ func (c *localServiceClient) GetVersion(ctx context.Context, in *GetVersionReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetVersionResponse)
 	err := c.cc.Invoke(ctx, LocalService_GetVersion_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *localServiceClient) DeployValidation(ctx context.Context, in *DeployValidationRequest, opts ...grpc.CallOption) (*DeployValidationResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeployValidationResponse)
-	err := c.cc.Invoke(ctx, LocalService_DeployValidation_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -162,8 +149,6 @@ type LocalServiceServer interface {
 	GetMetadata(context.Context, *GetMetadataRequest) (*GetMetadataResponse, error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
-	// DeployValidation validates a deploy request.
-	DeployValidation(context.Context, *DeployValidationRequest) (*DeployValidationResponse, error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error)
 	// DeployProject deploys the local project to the Rill cloud.
@@ -192,9 +177,6 @@ func (UnimplementedLocalServiceServer) GetMetadata(context.Context, *GetMetadata
 }
 func (UnimplementedLocalServiceServer) GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
-}
-func (UnimplementedLocalServiceServer) DeployValidation(context.Context, *DeployValidationRequest) (*DeployValidationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeployValidation not implemented")
 }
 func (UnimplementedLocalServiceServer) PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushToGithub not implemented")
@@ -282,24 +264,6 @@ func _LocalService_GetVersion_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LocalServiceServer).GetVersion(ctx, req.(*GetVersionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LocalService_DeployValidation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployValidationRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LocalServiceServer).DeployValidation(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LocalService_DeployValidation_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).DeployValidation(ctx, req.(*DeployValidationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -412,10 +376,6 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetVersion",
 			Handler:    _LocalService_GetVersion_Handler,
-		},
-		{
-			MethodName: "DeployValidation",
-			Handler:    _LocalService_DeployValidation_Handler,
 		},
 		{
 			MethodName: "PushToGithub",

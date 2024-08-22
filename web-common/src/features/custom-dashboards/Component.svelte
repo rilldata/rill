@@ -34,16 +34,36 @@
   export let componentName: string;
   export let instanceId: string;
 
+  // const dashboardName = getContext("rill::custom-dashboard:name") as string;
+
   $: resourceQuery = useResource(
     instanceId,
     componentName,
     ResourceKind.Component,
   );
-
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
-    componentResource?.component?.spec ?? {});
+  $: ({
+    renderer,
+    rendererProperties,
+    resolverProperties,
+    input,
+    output,
+    title,
+    subtitle,
+    // show,
+  } = componentResource?.component?.spec ?? {});
+
+  // $: inputVariableParams = useVariableInputParams(dashboardName, input);
+
+  // $: parsedResourceQuery = createRuntimeServiceGetParsedComponent(
+  //   queryClient,
+  //   instanceId,
+  //   componentName,
+  //   $inputVariableParams,
+  // );
+
+  // $: console.log($parsedResourceQuery.data);
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -87,7 +107,7 @@
     {/if}
 
     <div
-      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none"
+      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none bg-white"
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
@@ -104,6 +124,7 @@
         {/if}
         <Chart
           {chartView}
+          {input}
           vegaSpec={rendererProperties?.spec}
           chartName={componentName}
           {resolverProperties}
@@ -112,6 +133,8 @@
         <TemplateRenderer
           {chartView}
           {renderer}
+          {input}
+          {output}
           {rendererProperties}
           {resolverProperties}
           {componentName}

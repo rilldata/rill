@@ -10,7 +10,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -36,7 +35,7 @@ var selectQueryRegex = regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?
 var _ drivers.Warehouse = &Connection{}
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption) (drivers.FileIterator, error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -156,7 +155,6 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		client:       client,
 		bqIter:       it,
 		logger:       c.logger,
-		limitInBytes: opt.TotalLimitInBytes,
 		totalRecords: int64(it.TotalRows),
 		ctx:          ctx,
 		tempDir:      tempDir,
@@ -175,11 +173,10 @@ func createClient(ctx context.Context, projectID string, opts []option.ClientOpt
 }
 
 type fileIterator struct {
-	client       *bigquery.Client
-	bqIter       *bigquery.RowIterator
-	logger       *zap.Logger
-	limitInBytes int64
-	tempDir      string
+	client  *bigquery.Client
+	bqIter  *bigquery.RowIterator
+	logger  *zap.Logger
+	tempDir string
 
 	totalRecords int64
 	downloaded   bool
@@ -241,40 +238,12 @@ func (f *fileIterator) Next() ([]string, error) {
 	}
 	defer writer.Close()
 
-	overLimit := atomic.Bool{}
-	limitCtx, cancel := context.WithCancel(f.ctx)
-	defer cancel()
-
-	go func() {
-		ticker := time.NewTicker(time.Second * 5)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-limitCtx.Done():
-				return
-			case <-ticker.C:
-				fileInfo, err := os.Stat(fw.Name())
-				if err == nil { // ignore error
-					if fileInfo.Size() > f.limitInBytes {
-						overLimit.Store(true)
-						cancel()
-					}
-				}
-			}
-		}
-	}()
-
 	rows := int64(0)
 	// write arrow records to parquet file
 	for rdr.Next() {
 		select {
 		case <-f.ctx.Done():
 			return nil, f.ctx.Err()
-		case <-limitCtx.Done():
-			if overLimit.Load() {
-				return nil, drivers.ErrStorageLimitExceeded
-			}
-			return nil, limitCtx.Err()
 		default:
 			rec := rdr.Record()
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {

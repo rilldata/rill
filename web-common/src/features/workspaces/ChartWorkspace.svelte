@@ -4,6 +4,7 @@
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import ChartStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
+  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -18,8 +19,11 @@
   import { V1MetricsViewRowsResponseDataItem } from "@rilldata/web-common/runtime-client";
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getContext } from "svelte";
 
   export let fileArtifact: FileArtifact;
+
+  const dashboardName = getContext("rill::custom-dashboard:name") as string;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -38,13 +42,16 @@
 
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({ resolverProperties } = componentResource?.component?.spec ?? {});
+  $: ({ resolverProperties, input } = componentResource?.component?.spec ?? {});
+
+  $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
   $: chartDataQuery = resolverProperties
     ? createRuntimeServiceGetChartData(
         queryClient,
         instanceId,
         chartName,
+        $inputVariableParams,
         resolverProperties,
       )
     : null;
@@ -86,6 +93,7 @@
     <div class="size-full flex-col flex overflow-hidden">
       <ChartStatusDisplay {isFetching} {chartName}>
         <CustomDashboardEmbed
+          {dashboardName}
           chartView
           gap={8}
           columns={10}

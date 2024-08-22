@@ -759,12 +759,15 @@ message ResolveComponentRequest {
 }
 
 message ResolveComponentResponse {
+  // Show property with templating resolved for the provided args.
+  // If it resolves to false, the other fields are not set.
+  bool show = 1;
   // Schema of the resolved component data
-  StructType schema = 1;
+  StructType schema = 2;
   // Resolved component data
-  repeated google.protobuf.Struct data = 2;
+  repeated google.protobuf.Struct data = 3;
   // Renderer properties with templating resolved for the provided args
-  google.protobuf.Struct renderer_properties = 3;
+  google.protobuf.Struct renderer_properties = 4;
 }
 
 // **********

@@ -361,7 +361,7 @@
           ? $isMeasureValidPercentOfTotal(measure.name)
           : false}
 
-        <div class="flex flex-row gap-x-7">
+        <div class="flex flex-row gap-x-4">
           <MeasureBigNumber
             {measure}
             value={bigNum}

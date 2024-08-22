@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -104,12 +103,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		e.c.logger.Debug("duckdb: warehouse transfer finished", zap.Duration("elapsed", time.Since(start)), zap.Bool("success", err == nil), zap.Error(err), observability.ZapCtx(ctx))
 	}()
 
-	storageLimitBytes := e.c.config.StorageLimitBytes
-	if storageLimitBytes == 0 {
-		storageLimitBytes = math.MaxInt64
-	}
-
-	iter, err := e.w.QueryAsFiles(ctx, opts.InputProperties, &drivers.QueryOption{TotalLimitInBytes: storageLimitBytes})
+	iter, err := e.w.QueryAsFiles(ctx, opts.InputProperties)
 	if err != nil {
 		return err
 	}

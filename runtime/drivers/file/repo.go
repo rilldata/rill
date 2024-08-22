@@ -14,8 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var limit = 1000
-
 // Driver implements drivers.RepoStore.
 func (c *connection) Driver() string {
 	return "file"
@@ -48,8 +46,8 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 		}
 
 		// Exit if we reached the limit
-		if len(entries) == limit {
-			return fmt.Errorf("glob exceeded limit of %d matched files", limit)
+		if len(entries) == drivers.RepoListLimit {
+			return drivers.ErrRepoListLimitExceeded
 		}
 
 		// Track file (p is already relative to the FS root)

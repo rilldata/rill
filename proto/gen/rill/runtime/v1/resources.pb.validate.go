@@ -8052,6 +8052,8 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for Title
 
+	// no validation rules for Subtitle
+
 	// no validation rules for Resolver
 
 	if all {
@@ -8114,9 +8116,72 @@ func (m *ComponentSpec) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for DefinedInDashboard
+	for idx, item := range m.GetInput() {
+		_, _ = idx, item
 
-	// no validation rules for Subtitle
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ComponentSpecValidationError{
+						field:  fmt.Sprintf("Input[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ComponentSpecValidationError{
+						field:  fmt.Sprintf("Input[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ComponentSpecValidationError{
+					field:  fmt.Sprintf("Input[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetOutput()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ComponentSpecValidationError{
+					field:  "Output",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ComponentSpecValidationError{
+					field:  "Output",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOutput()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ComponentSpecValidationError{
+				field:  "Output",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Show
+
+	// no validation rules for DefinedInDashboard
 
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
@@ -8295,6 +8360,141 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ComponentStateValidationError{}
+
+// Validate checks the field values on ComponentVariable with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ComponentVariable) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ComponentVariable with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ComponentVariableMultiError, or nil if none found.
+func (m *ComponentVariable) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ComponentVariable) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Type
+
+	if all {
+		switch v := interface{}(m.GetDefaultValue()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ComponentVariableValidationError{
+					field:  "DefaultValue",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ComponentVariableValidationError{
+					field:  "DefaultValue",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDefaultValue()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ComponentVariableValidationError{
+				field:  "DefaultValue",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ComponentVariableMultiError(errors)
+	}
+
+	return nil
+}
+
+// ComponentVariableMultiError is an error wrapping multiple validation errors
+// returned by ComponentVariable.ValidateAll() if the designated constraints
+// aren't met.
+type ComponentVariableMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ComponentVariableMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ComponentVariableMultiError) AllErrors() []error { return m }
+
+// ComponentVariableValidationError is the validation error returned by
+// ComponentVariable.Validate if the designated constraints aren't met.
+type ComponentVariableValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ComponentVariableValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ComponentVariableValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ComponentVariableValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ComponentVariableValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ComponentVariableValidationError) ErrorName() string {
+	return "ComponentVariableValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ComponentVariableValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sComponentVariable.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ComponentVariableValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ComponentVariableValidationError{}
 
 // Validate checks the field values on Dashboard with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -8480,6 +8680,40 @@ func (m *DashboardSpec) validate(all bool) error {
 	// no validation rules for Columns
 
 	// no validation rules for Gap
+
+	for idx, item := range m.GetVariables() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, DashboardSpecValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, DashboardSpecValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return DashboardSpecValidationError{
+					field:  fmt.Sprintf("Variables[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	for idx, item := range m.GetItems() {
 		_, _ = idx, item
