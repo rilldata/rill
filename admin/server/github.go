@@ -79,7 +79,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		// token not valid or expired, take auth again
 		return &adminv1.GetGithubUserStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: s.admin.URLs.GithubAuthLogin(""),
+			GrantAccessUrl: s.admin.URLs.GithubAuth(""),
 		}, nil
 	}
 
@@ -208,7 +208,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	if user.GithubUsername == "" {
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: s.admin.URLs.GithubAuthLogin(req.GithubUrl),
+			GrantAccessUrl: s.admin.URLs.GithubAuth(req.GithubUrl),
 		}
 		return res, nil
 	}
@@ -388,7 +388,7 @@ func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	observability.MuxHandle(inner, "/github/webhook", http.HandlerFunc(s.githubWebhook))
 	observability.MuxHandle(inner, "/github/connect", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("/github/connect"), http.HandlerFunc(s.githubConnect))))
 	observability.MuxHandle(inner, "/github/connect/callback", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("/github/connect/callback"), http.HandlerFunc(s.githubConnectCallback))))
-	observability.MuxHandle(inner, "/github/auth/login", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/auth/login"), http.HandlerFunc(s.githubAuthLogin))))
+	observability.MuxHandle(inner, "/github/auth/login", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/auth/login"), http.HandlerFunc(s.githubAuth))))
 	observability.MuxHandle(inner, "/github/auth/callback", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/auth/callback"), http.HandlerFunc(s.githubAuthCallback))))
 	observability.MuxHandle(inner, "/github/post-auth-redirect", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/post-auth-redirect"), http.HandlerFunc(s.githubStatus))))
 	mux.Handle("/github/", observability.Middleware("admin", s.logger, inner))
@@ -408,7 +408,7 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	remote := query.Get("remote") // May be empty
+	remote := query.Get("remote") // May not be set
 
 	// Redirect to Github App for installation
 	redirectURL := s.githubAppInstallationURL(remote)
@@ -555,7 +555,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 // where this flow comes into picture.
 // Some implementation details are copied from auth package.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/auth/login.
-func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request) {
+func (s *Server) githubAuth(w http.ResponseWriter, r *http.Request) {
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(r.Context())
 	if claims.OwnerType() != auth.OwnerTypeUser {

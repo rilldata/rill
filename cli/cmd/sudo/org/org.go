@@ -11,6 +11,7 @@ func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Org management for support users",
 	}
 
+	cmd.AddCommand(ShowCmd(ch))
 	cmd.AddCommand(SetCustomDomainCmd(ch))
 
 	return cmd

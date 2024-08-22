@@ -165,8 +165,8 @@ func (u *URLs) GithubConnect(remote string) string {
 	return res
 }
 
-// GithubAuthLogin returns the URL that starts the Github auth redirects.
-func (u *URLs) GithubAuthLogin(remote string) string {
+// GithubAuth returns the URL that starts the Github auth redirects.
+func (u *URLs) GithubAuth(remote string) string {
 	res := urlutil.MustJoinURL(u.external, "/github/auth/login") // NOTE: Always using the primary external URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
