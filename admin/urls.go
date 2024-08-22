@@ -12,21 +12,23 @@ import (
 // URLs centralizes parsing and formatting of URLs for the admin service.
 //
 // There are several complexities around URL handling in Rill:
-// 1. The frontend may run on a different host than the admin service (e.g. ui.rilldata.com vs. admin.rilldata.com).
-// 2. We support custom domains for specific orgs (e.g. analytics.mycompany.com instead of ui.rilldata.com/mycompany).
-// 3. The admin service sends transactional emails that link to the frontend, such as project invites.
-// 4. The admin service is also responsible for sending transactional emails on behalf of the runtime, which also link to the frontend, such as for alerts and reports.
-// 5. We need to ensure correct redirects and callbacks for the auth service (on auth.rilldata.com) and Github.
+//  1. The frontend may run on a different host than the admin service (e.g. ui.rilldata.com vs. admin.rilldata.com).
+//  2. We support custom domains for specific orgs (e.g. analytics.mycompany.com instead of ui.rilldata.com/mycompany).
+//  3. The admin service sends transactional emails that link to the frontend, such as project invites.
+//  4. The admin service is also responsible for sending transactional emails on behalf of the runtime, which also link to the frontend, such as for alerts and reports.
+//  5. We need to ensure correct redirects and callbacks for the auth service (on auth.rilldata.com) and Github.
+//     These services have fixed callback URLs on the admin service's primary external URL, which complicates custom domain handling.
 //
 // For orgs with a custom domain configured (using the CLI command `rill sudo org set-custom-domain`),
-// the admin service and frontend must be reachable on the custom domain using the following load balancer rules:
-// 1. The admin service must be reachable at the `/api` path prefix on the custom domain. The `/api` prefix should be removed by the load balancer before proxying to the admin service.
-// 2. The frontend must be reachable at all other paths on the custom domain.
+// we require the admin service and frontend to be reachable on the custom domain using the following load balancer rules:
+//  1. The admin service must be reachable at the `/api` path prefix on the custom domain.
+//     The `/api` prefix should be removed by the load balancer before proxying to the admin service.
+//  2. The frontend must be reachable at all other paths on the custom domain.
 type URLs struct {
-	external string
-	frontend string
-	custom   string
-	https    bool
+	external string // The primary external URL for the admin service (with scheme).
+	frontend string // The primary frontend URL for the admin service (with scheme).
+	custom   string // Custom domain for the current org. Can optionally be set with WithCustomDomain.
+	https    bool   // True if HTTPS should be used.
 }
 
 // NewURLs creates a new URLs. The provided URLs should include the scheme, host, optional port, and optional path prefix.
@@ -56,6 +58,10 @@ func (u *URLs) WithCustomDomain(domain string) *URLs {
 		panic(fmt.Errorf("nested calls to WithCustomDomain are not allowed"))
 	}
 
+	if domain == "" {
+		return u
+	}
+
 	custom := &url.URL{
 		Scheme: "https",
 		Host:   domain,
@@ -74,7 +80,7 @@ func (u *URLs) WithCustomDomain(domain string) *URLs {
 
 // WithCustomDomainFromURL attempts to infer a custom domain from a redirect URL.
 // If it succeeds, it passes the custom domain to WithCustomDomain and returns the result.
-// If it does not detect a custom domain in the redirect URL, or the redirect URL is invalid, it returns base URLs.
+// If it does not detect a custom domain in the redirect URL, or the redirect URL is invalid, it fails silently by returning itself unchanged.
 func (u *URLs) WithCustomDomainFromRedirectURL(redirectURL string) *URLs {
 	u2, err := url.Parse(redirectURL)
 	if err != nil {
