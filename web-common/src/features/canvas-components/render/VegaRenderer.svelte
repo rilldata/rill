@@ -62,27 +62,28 @@
     error = e.detail.error.message;
   };
 
-  function clearBrush() {
-    if (viewVL) {
-      viewVL.signal("brush", null);
-      viewVL.data("brush_store", []);
-      void viewVL.runAsync();
-    }
-  }
+  // TODO: revisit
+  // function clearBrush() {
+  //   if (viewVL) {
+  //     viewVL.signal("brush", null);
+  //     viewVL.data("brush_store", []);
+  //     void viewVL.runAsync();
+  //   }
+  // }
 
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") {
-      clearBrush();
-      dispatchEvent(new CustomEvent("brushCleared"));
-    }
-  }
+  // function handleKeydown(event: KeyboardEvent) {
+  //   if (event.key === "Escape") {
+  //     clearBrush();
+  //     dispatchEvent(new CustomEvent("brushCleared"));
+  //   }
+  // }
 
-  onMount(() => {
-    window.addEventListener("keydown", handleKeydown);
-    return () => {
-      window.removeEventListener("keydown", handleKeydown);
-    };
-  });
+  // onMount(() => {
+  //   window.addEventListener("keydown", handleKeydown);
+  //   return () => {
+  //     window.removeEventListener("keydown", handleKeydown);
+  //   };
+  // });
 </script>
 
 <div

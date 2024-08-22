@@ -34,22 +34,31 @@ export function resolveSignalIntervalField(
   value: unknown,
 ): TimeRange | undefined {
   /**
-   * Time range fields end with `_ts`
-   * We iterate over the keys of the object and return the first key that ends with `_ts`
-   * and contains an array of two timestamps.
-   * */
+   * Time range fields can be either 'ts' or end with '_ts'
+   * We check for both cases and return a TimeRange if a valid array of two timestamps is found.
+   */
   if (typeof value === "object" && value !== null) {
-    for (const key in value) {
-      if (
-        key.endsWith("_ts") &&
-        Array.isArray(value[key]) &&
-        value[key].length === 2
-      ) {
-        const [start, end] = value[key];
+    const checkAndCreateTimeRange = (arr: unknown): TimeRange | undefined => {
+      if (Array.isArray(arr) && arr.length === 2) {
+        const [start, end] = arr;
         return {
           start: new Date(start),
           end: new Date(end),
         };
+      }
+      return undefined;
+    };
+
+    // Check for 'ts' key first
+    if ("ts" in value) {
+      return checkAndCreateTimeRange(value["ts"]);
+    }
+
+    // If 'ts' is not found, check for keys ending with '_ts'
+    for (const key in value) {
+      if (key.endsWith("_ts")) {
+        const timeRange = checkAndCreateTimeRange(value[key]);
+        if (timeRange) return timeRange;
       }
     }
   }

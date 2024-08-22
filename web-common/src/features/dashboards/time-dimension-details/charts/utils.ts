@@ -18,7 +18,7 @@ export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
     .flat();
 }
 
-export function getVegaSpecForTDD(
+export function getVegaLiteSpecForTDD(
   chartType: TDDAlternateCharts,
   expandedMeasureName: string,
   measureLabel: string,
@@ -155,15 +155,17 @@ function checkLayerForBrush(layer) {
 // Check if vega lite spec has brush params
 // To support brushstart and brushend, we need to compile vega lite spec to vega spec
 export function hasBrushParam(spec) {
-  if (spec.layer && Array.isArray(spec.layer)) {
-    // Multi-layer case
-    for (let layer of spec.layer) {
+  if (spec && spec.layer && Array.isArray(spec.layer)) {
+    // Layered and Multi-view
+    // https://vega.github.io/vega-lite/docs/spec.html#layered-and-multi-view-specifications
+    for (const layer of spec.layer) {
       if (checkLayerForBrush(layer)) {
         return true;
       }
     }
-  } else if (spec.params && Array.isArray(spec.params)) {
-    // Single-layer case
+  } else if (spec && spec.params && Array.isArray(spec.params)) {
+    // Single view
+    // https://vega.github.io/vega-lite/docs/spec.html#single
     if (checkLayerForBrush(spec)) {
       return true;
     }

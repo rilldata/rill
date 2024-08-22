@@ -22,7 +22,7 @@
   import { patchSpecForTDD } from "./patch-vega-spec";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
-    getVegaSpecForTDD,
+    getVegaLiteSpecForTDD,
     hasBrushParam,
     reduceDimensionData,
     updateVegaOnTableHover,
@@ -70,9 +70,7 @@
     );
   }
 
-  // TODO: rename
-  // vega lite spec
-  $: vegaSpecForTDD = getVegaSpecForTDD(
+  $: specForTDD = getVegaLiteSpecForTDD(
     chartType,
     expandedMeasureName,
     expandedMeasureLabel,
@@ -82,10 +80,8 @@
     selectedValues,
   );
 
-  // TODO: rename
-  // vega lite spec
-  $: sanitizedVegaSpec = patchSpecForTDD(
-    vegaSpecForTDD,
+  $: sanitizedVegaLiteSpec = patchSpecForTDD(
+    specForTDD,
     chartType,
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
     xMin,
@@ -96,29 +92,35 @@
   );
 
   $: {
-    if (hasBrushParam(sanitizedVegaSpec)) {
+    if (hasBrushParam(sanitizedVegaLiteSpec)) {
       // Compile vega lite spec to vega spec
       // See: https://github.com/vega/vega-lite/issues/5341
       // See: https://github.com/vega/vega-lite/issues/3338
-      const compiledSpec = compile(sanitizedVegaSpec).spec;
+      const compiledSpec = compile(sanitizedVegaLiteSpec).spec;
 
-      // Add custom signals for brushstart and brushend
+      // Add vega signal
       // See: https://vega.github.io/vega/docs/signals/
-      // See: https://vega.github.io/vega-lite/docs/parameter.html#using-parameters
       vegaSpec = {
         ...compiledSpec,
-        // TODO: check if sanitized vega spec already has brush params
         signals: [
           ...(compiledSpec.signals || []),
           {
-            name: "brush_start",
-            value: {},
-            on: [{ events: "brush:start", update: "{time: x()}" }],
-          },
-          {
-            name: "brush_end",
-            value: {},
-            on: [{ events: "brush:end", update: "{time: x()}" }],
+            name: "brushend",
+            value: false,
+            on: [
+              // FIXME: when using window source, it will be triggered when we switch the chart type
+              // Debug scope source
+              {
+                events: { source: "window", type: "mouseup" },
+                update: "true",
+                modify: "log('mouseup event captured')",
+              },
+              {
+                events: { source: "window", type: "mousedown" },
+                update: "false",
+                modify: "log('mousedown event captured')",
+              },
+            ],
           },
         ],
       };
@@ -143,15 +145,14 @@
 
       dispatch("chart-hover", { dimension, ts });
     },
-    // Debouncing is a short term solution to prevent the scrubbing from firing
-    // on every pixel dragged. The ideal solution is to listen to the completion
-    // of the drag and then fire the brush event.
-    // See: https://github.com/vega/vega-lite/issues/5341
-    // brush: (_name: string, value) => {
-    //   const interval = resolveSignalIntervalField(value);
-
-    //   dispatch("chart-brush", { interval });
-    // },
+    brushend: (_name: string, value: boolean) => {
+      console.log("brushend fired", value);
+      dispatch("chart-brush-end");
+    },
+    brush: (_name: string, value) => {
+      const interval = resolveSignalIntervalField(value);
+      dispatch("chart-brush", { interval });
+    },
   };
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
@@ -166,20 +167,20 @@
     measureFormatter: { fn: vegaCustomFormatter },
   };
 
-  onMount(() => {
-    window.addEventListener("brushCleared", () => {
-      dispatch("chart-brush", { interval: null, isScrubbing: false });
-    });
+  // onMount(() => {
+  //   window.addEventListener("brushCleared", () => {
+  //     dispatch("chart-brush", { interval: null, isScrubbing: false });
+  //   });
 
-    return () => {
-      window.removeEventListener("brushCleared", () => {
-        dispatch("chart-brush", { interval: null, isScrubbing: false });
-      });
-    };
-  });
+  //   return () => {
+  //     window.removeEventListener("brushCleared", () => {
+  //       dispatch("chart-brush", { interval: null, isScrubbing: false });
+  //     });
+  //   };
+  // });
 </script>
 
-{#if hasBrushParam(sanitizedVegaSpec) && data}
+{#if hasBrushParam(sanitizedVegaLiteSpec) && data}
   <VegaRenderer
     bind:viewVL
     data={{ table: data }}
@@ -191,7 +192,7 @@
   <VegaLiteRenderer
     bind:viewVL
     data={{ table: data }}
-    spec={sanitizedVegaSpec}
+    spec={sanitizedVegaLiteSpec}
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
