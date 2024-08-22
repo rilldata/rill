@@ -25,6 +25,8 @@ func SetCustomDomainCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			ch.Printf("Set custom domain %q for org %q. Remember to separately update DNS records and configure TLS on the load balancer (see runbook for details).\n", args[1], args[0])
+
 			return nil
 		},
 	}
