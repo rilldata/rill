@@ -39,7 +39,7 @@ rill start my-rill-project
 The Rill web app runs locally at `http://localhost:9009` and will create code files in the `my-rill-project` directory.
 
 :::note
-Starting from v0.48, we have added the ability to self host the local Rill Developer application on a non-localhost endpoint. Please refer to the [rill start reference page](https://docs.rilldata.com/reference/cli/start) for more details on using the `--allowed-origins` flag. This method is not officially supported, please proceed at your own risk.
+Starting from v0.48, we've made changes to the CORS policy to only allow calls from the default HTTP URL by default for security purposes. If you are hosting Rill Developer on a non-localhost endpoint **(not officially supported)**, this means that they will need to pass in the appropriate CORS origins / hostname via the --allowed-origins flag when starting Rill. Please refer to the [rill start reference page](https://docs.rilldata.com/reference/cli/start) for more details on using the `--allowed-origins` flag.
 :::
 
 
