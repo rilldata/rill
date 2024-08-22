@@ -372,6 +372,12 @@ const metricViewReducers = {
     });
   },
 
+  removePivotActiveCell(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.activeCell = null;
+    });
+  },
+
   createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = {

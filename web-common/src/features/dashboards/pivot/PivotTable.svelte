@@ -7,11 +7,12 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
-    CellContext,
+    Cell,
     ExpandedState,
     SortingState,
     TableOptions,
@@ -93,7 +94,13 @@
   let percentOfChangeDuringResize = 0;
   let resizingMeasure = false;
 
-  $: ({ expanded, sorting, rowPage, rows: rowPills } = $pivotDashboardStore);
+  $: ({
+    expanded,
+    sorting,
+    rowPage,
+    rows: rowPills,
+    activeCell,
+  } = $pivotDashboardStore);
 
   $: timeDimension = $config.time.timeDimension;
   $: hasDimension = rowPills.dimension.length > 0;
@@ -244,9 +251,9 @@
     value: string | number | null;
   };
 
-  function handleCellClick(cellContext: CellContext<PivotDataRow, unknown>) {
-    const rowId = cellContext.row.id;
-    const columnId = cellContext.column.id;
+  function handleCellClick(cell: Cell<PivotDataRow, unknown>) {
+    const rowId = cell.row.id;
+    const columnId = cell.column.id;
 
     metricsExplorerStore.setPivotActiveCell($metricsViewName, rowId, columnId);
   }
@@ -290,6 +297,16 @@
   function isElement(target: EventTarget | null): target is HTMLElement {
     return target instanceof HTMLElement;
   }
+
+  function isCellActive(cell: Cell<PivotDataRow, unknown>) {
+    return (
+      cell.row.id === activeCell?.rowId &&
+      cell.column.id === activeCell?.columnId
+    );
+  }
+  function removeActiveCell() {
+    metricsExplorerStore.removePivotActiveCell($metricsViewName);
+  }
 </script>
 
 <div
@@ -305,6 +322,7 @@
     style:width="{totalLength}px"
     on:click={modified({ shift: handleClick })}
     role="presentation"
+    use:clickOutside={[null, () => removeActiveCell()]}
   >
     {#if firstColumnName && firstColumnWidth}
       <colgroup>
@@ -392,10 +410,12 @@
               typeof cell.column.columnDef.cell === "function"
                 ? cell.column.columnDef.cell(cell.getContext())
                 : cell.column.columnDef.cell}
+            {@const isActive = isCellActive(cell)}
             <td
-              class="ui-copy-number"
+              class:active-cell={isActive}
+              class="ui-copy-number cursor-pointer"
               class:border-r={i % measureCount === 0 && i}
-              on:click={() => handleCellClick(cell.getContext())}
+              on:click={() => handleCellClick(cell)}
               on:mouseenter={handleHover}
               on:mouseleave={handleLeave}
               data-value={cell.getValue()}
@@ -429,7 +449,15 @@
 </div>
 
 {#if showTooltip && hovering}
-  <VirtualTooltip sortable={true} {hovering} {hoverPosition} pinned={false} />
+  <VirtualTooltip
+    sortable={true}
+    {hovering}
+    {hoverPosition}
+    pinned={false}
+    customShortcuts={[
+      { description: "View raw data for aggregated cell", shortcut: "Click" },
+    ]}
+  />
 {/if}
 
 <style lang="postcss">
@@ -526,5 +554,9 @@
 
   .totals-column {
     @apply bg-slate-50 font-semibold;
+  }
+  .active-cell,
+  .active-cell > div {
+    @apply bg-primary-50;
   }
 </style>
