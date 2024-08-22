@@ -26,7 +26,10 @@
       message,
       type: type as any,
       iconType: iconType as any,
-      ctaText: "contact us",
+      cta: {
+        text: "contact us",
+        type: "button",
+      },
     });
   }
 </script>

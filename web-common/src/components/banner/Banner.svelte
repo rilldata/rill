@@ -7,19 +7,14 @@
 
   export let banner: BannerMessage;
 
-  $: ctaElement = banner.ctaUrl ? "a" : "span";
-  $: ctaProps = {
-    ...(banner.ctaUrl ? { href: banner.ctaUrl } : {}),
-    ...(banner.ctaTarget ? { target: banner.ctaTarget } : {}),
-    ...(banner.ctaCallback ? { "on:click": banner.ctaCallback } : {}),
-  };
-
   const IconMap = {
     alert: AlertCircleIcon,
     check: CheckCircleOutline,
     sleep: MoonCircleOutline,
     loading: LoadingCircleOutline,
   };
+
+  function dummyClickHandler() {}
 </script>
 
 <header class="{banner.type} app-banner">
@@ -32,10 +27,19 @@
     {:else}
       <p class="banner-message">{banner.message}</p>
     {/if}
-    {#if banner.ctaText}
-      <svelte:element this={ctaElement} class="banner-cta" {...ctaProps}>
-        {banner.ctaText}
-      </svelte:element>
+    {#if banner.cta}
+      {#if banner.cta.type === "link"}
+        <a href={banner.cta.url} target={banner.cta.target} class="banner-cta">
+          {banner.cta.text}
+        </a>
+      {:else if banner.cta.type === "button"}
+        <button
+          on:click={banner.cta.onClick ?? dummyClickHandler}
+          class="banner-cta"
+        >
+          {banner.cta.text}
+        </button>
+      {/if}
     {/if}
   </div>
 </header>

@@ -23,10 +23,15 @@ export interface BannerMessage {
   iconType: "none" | "alert" | "check" | "sleep" | "loading";
 
   // cta abstraction
-  ctaText?: string;
-  // if it is a direct link
-  ctaUrl?: string;
-  ctaTarget?: string;
-  // callback when we need to take action like open pylon
-  ctaCallback?: () => void;
+  cta?: {
+    text: string;
+    type: "button" | "link";
+
+    // if it is a direct link
+    url?: string;
+    target?: string;
+
+    // callback when we need to take action like open pylon
+    onClick?: () => void;
+  };
 }
