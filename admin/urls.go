@@ -142,9 +142,29 @@ func (u *URLs) AuthLogout() string {
 	return urlutil.MustJoinURL(u.External(), "/auth/logout") // NOTE: Uses custom domain if set to correctly clear cookies.
 }
 
+// AuthLogoutProvider returns the URL that starts the logout redirects against the external auth provider.
+func (u *URLs) AuthLogoutProvider(redirect string) string {
+	res := urlutil.MustJoinURL(u.external, "/auth/logout/provider") // NOTE: Always using the primary external URL.
+	if redirect != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
+	}
+	return res
+}
+
 // AuthLogoutCallback returns the URL for the logout callback.
 func (u *URLs) AuthLogoutCallback() string {
 	return urlutil.MustJoinURL(u.external, "/auth/logout/callback") // NOTE: Always using the primary external URL.
+}
+
+// AuthWithToken returns a URL that sets the auth cookie to the provided token.
+// Providing a redirect URL is optional.
+func (u *URLs) AuthWithToken(tokenStr, redirect string) string {
+	res := urlutil.MustJoinURL(u.External(), "/auth/with-token") // NOTE: Uses custom domain if set.
+	res = urlutil.MustWithQuery(res, map[string]string{"token": tokenStr})
+	if redirect != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
+	}
+	return res
 }
 
 // AuthVerifyEmailUI returns the frontend URL for the verify email page.
