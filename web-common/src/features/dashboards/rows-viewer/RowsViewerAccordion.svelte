@@ -17,6 +17,7 @@
   import { featureFlags } from "../../feature-flags";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import RowsViewer from "./RowsViewer.svelte";
+  import { rowViewerStore } from "./row-viewer-store";
 
   const { exports } = featureFlags;
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -26,10 +27,16 @@
   const INITIAL_HEIGHT_EXPANDED = 300;
   const MIN_HEIGHT_EXPANDED = 30;
   const MAX_HEIGHT_EXPANDED = 1000;
+  const PIVOT_HEIGHT_EXPANDED = 200;
 
   let isOpen = false;
   let label = "";
   let height = INITIAL_HEIGHT_EXPANDED;
+  let rowViewer: HTMLElement;
+
+  $: if (rowViewer) {
+    rowViewerStore.set(rowViewer);
+  }
 
   const stateManagers = getStateManagers();
 
@@ -44,6 +51,8 @@
     end: $timeControlsStore.timeEnd,
   };
   $: if (showPivot && activeCellFilters) {
+    isOpen = true;
+    height = PIVOT_HEIGHT_EXPANDED;
     filters = activeCellFilters.filters;
     timeRange = activeCellFilters.timeRange;
   } else {
@@ -115,6 +124,7 @@
 </script>
 
 <div
+  bind:this={rowViewer}
   class="relative w-screen flex-none overflow-hidden flex flex-col bg-gray-100"
 >
   <Resizer

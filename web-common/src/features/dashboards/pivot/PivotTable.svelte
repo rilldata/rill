@@ -4,6 +4,7 @@
   import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import { rowViewerStore } from "@rilldata/web-common/features/dashboards/rows-viewer/row-viewer-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -322,7 +323,7 @@
     style:width="{totalLength}px"
     on:click={modified({ shift: handleClick })}
     role="presentation"
-    use:clickOutside={[null, () => removeActiveCell()]}
+    use:clickOutside={[$rowViewerStore, () => removeActiveCell()]}
   >
     {#if firstColumnName && firstColumnWidth}
       <colgroup>
