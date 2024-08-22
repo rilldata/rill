@@ -452,7 +452,7 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		orgName:         org.Name,
 		projID:          proj.ID,
 		projName:        proj.Name,
-		projSlots:       fmt.Sprint(proj.ProdSlots),
+		projSlots:       "slot-" + fmt.Sprint(proj.ProdSlots),
 		projProvisioner: proj.Provisioner,
 		projAnnotations: proj.Annotations,
 	}
