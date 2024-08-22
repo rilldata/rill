@@ -10,5 +10,5 @@ export function parseAccessRequestError(
     return `Failed to approve access to ${project}: ${error.toString()}`;
   if (error.response.data.code === 5)
     return `Project access request not found. Perhaps the request was already accepted/denied.`;
-  return `Failed to approve access to ${project}: ${error.response.data.message}`;
+  return `Failed to approve access to ${project}: ${error.response.data?.message}`;
 }

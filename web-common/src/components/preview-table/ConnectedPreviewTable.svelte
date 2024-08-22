@@ -48,7 +48,7 @@
   <ReconcilingSpinner />
 {:else if $rowsQuery.isError || $columnsQuery.isError}
   <WorkspaceError
-    message={`Error loading table: ${$rowsQuery.error?.response.data.message || $columnsQuery.error?.response.data.message}`}
+    message={`Error loading table: ${$rowsQuery.error?.response.data?.message || $columnsQuery.error?.response.data?.message}`}
   />
 {:else if rows && columns}
   <PreviewTable {rows} columnNames={columns} name={table} />
