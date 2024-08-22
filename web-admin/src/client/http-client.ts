@@ -22,19 +22,6 @@ export const ADMIN_URL =
     ? CANONICAL_ADMIN_URL
     : urlRewritePath(window.location.origin, "/api");
 
-export const AXIOS_INSTANCE = Axios.create({
-  baseURL: ADMIN_URL,
-  withCredentials: true,
-});
-
-// TODO: use the new client?
-export const httpClient = async <T>(config: AxiosRequestConfig): Promise<T> => {
-  const { data } = await AXIOS_INSTANCE(config);
-  return data;
-};
-
-export default httpClient;
-
 /**
  * extractSLD extracts the second-level domain from the given URL.
  * For example, "www.example.com" returns "example.com" and "localhost:8080" returns "localhost".
@@ -56,3 +43,16 @@ function urlRewritePath(url: string, path: string): string {
   parsed.pathname = path;
   return parsed.toString();
 }
+
+export const AXIOS_INSTANCE = Axios.create({
+  baseURL: ADMIN_URL,
+  withCredentials: true,
+});
+
+// TODO: use the new client?
+export const httpClient = async <T>(config: AxiosRequestConfig): Promise<T> => {
+  const { data } = await AXIOS_INSTANCE(config);
+  return data;
+};
+
+export default httpClient;
