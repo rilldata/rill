@@ -67,7 +67,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.dsn, bodyReader)
 	if err != nil {
 		if strings.Contains(err.Error(), c.dsn) { // avoid returning the actual DSN with the password which will be logged
-			return nil, fmt.Errorf("%s", strings.Replace(err.Error(), c.dsn, "<masked>", -1))
+			return nil, fmt.Errorf("%s", strings.ReplaceAll(err.Error(), c.dsn, "<masked>"))
 		}
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	resp, err := c.client.Do(req)
 	if err != nil {
 		if strings.Contains(err.Error(), c.dsn) { // avoid returning the actual DSN with the password which will be logged
-			return nil, fmt.Errorf("%s", strings.Replace(err.Error(), c.dsn, "<masked>", -1))
+			return nil, fmt.Errorf("%s", strings.ReplaceAll(err.Error(), c.dsn, "<masked>"))
 		}
 		return nil, err
 	}
