@@ -1,6 +1,10 @@
 import { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
 import { singleLayerBaseSpec, multiLayerBaseSpec } from "./utils";
-import { ScrubBoxColor, ScrubMutedColor, ScrubArea0Color, ScrubArea2Color } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import {
+  ScrubBoxColor,
+  ScrubMutedColor,
+  ScrubArea0Color,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildSimpleBarSingleLayer(
   timeField: ChartField,
@@ -143,7 +147,9 @@ export function buildSimpleBarMultiLayer(
         },
         tooltip: [
           {
-            field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
+            field: timeField.tooltipName
+              ? timeField.tooltipName
+              : timeField.name,
             type: "temporal",
             title: "Time",
             format: "%b %d, %Y %H:%M",

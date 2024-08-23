@@ -132,14 +132,14 @@ export function updateVegaOnTableHover(
 
   const newValue = epochTime
     ? {
-      unit: "",
-      // FIXME
-      // javascriptErrorEvent dashboard Error: Unrecognized signal name: "hover_tuple_fields"
-      // Error: Unrecognized signal name: "hover_tuple_fields"
-      // This doesn't currently work with vega spec, there is _probably_ a disparity between vega and vega-lite
-      fields: viewVL.signal("hover_tuple_fields"),
-      values,
-    }
+        unit: "",
+        // FIXME
+        // javascriptErrorEvent dashboard Error: Unrecognized signal name: "hover_tuple_fields"
+        // Error: Unrecognized signal name: "hover_tuple_fields"
+        // This doesn't currently work with vega spec, there is _probably_ a disparity between vega and vega-lite
+        fields: viewVL.signal("hover_tuple_fields"),
+        values,
+      }
     : null;
 
   // console.log("updateVegaOnTableHover newValue: ", newValue);
