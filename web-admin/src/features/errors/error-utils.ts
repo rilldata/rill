@@ -1,4 +1,3 @@
-import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
@@ -52,9 +51,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      await goto(
-        `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-      );
+      window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
       return;
     }
 

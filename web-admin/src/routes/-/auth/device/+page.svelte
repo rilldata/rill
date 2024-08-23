@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import {
     ADMIN_URL,
@@ -21,7 +20,7 @@
       onSuccess: (data) => {
         if (!data.user) {
           let redirect = encodeURIComponent(window.location.href);
-          goto(`${CANONICAL_ADMIN_URL}/auth/login?redirect=${redirect}`);
+          window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${redirect}`;
         }
       },
     },

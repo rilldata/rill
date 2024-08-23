@@ -25,9 +25,7 @@ export async function checkUserAccess() {
 
   // If not logged in, redirect to the login page
   if (!isLoggedIn) {
-    await goto(
-      `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-    );
+    window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
     return true;
   } else if (
     withinProject(pageState) &&

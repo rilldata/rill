@@ -99,7 +99,9 @@
       Contact Rill support
     </DropdownMenu.Item>
     <DropdownMenu.Item
-      href={makeLogOutHref()}
+      on:click={() => {
+        window.location.href = makeLogOutHref();
+      }}
       class="text-gray-800 font-normal"
     >
       Logout

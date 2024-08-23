@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import CodeBlockInline from "@rilldata/web-common/components/calls-to-action/CodeBlockInline.svelte";
@@ -16,9 +15,7 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          goto(
-            `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`,
-          );
+          window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`;
         }
       },
     },

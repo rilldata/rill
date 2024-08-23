@@ -1,6 +1,5 @@
 <!-- This page is for cases when user authorised the github app on another github account which doesn't have access to the repo  -->
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -20,9 +19,7 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          goto(
-            `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`,
-          );
+          window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`;
         }
       },
     },
@@ -47,9 +44,11 @@
       </CtaMessage>
       <CtaButton
         variant="primary"
-        href={encodeURI(
-          CANONICAL_ADMIN_URL + "/github/auth/login?remote=" + remote,
-        )}
+        on:click={() => {
+          window.location.href = encodeURI(
+            CANONICAL_ADMIN_URL + "/github/auth/login?remote=" + remote,
+          );
+        }}
       >
         Connect to GitHub
       </CtaButton>

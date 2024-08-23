@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -19,9 +18,7 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          goto(
-            `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`,
-          );
+          window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`;
         }
       },
     },
@@ -48,7 +45,7 @@
         </CtaMessage>
       {/if}
       <div class="mt-4 w-full flex justify-center">
-        <CtaButton variant="primary" href={redirectURL}>
+        <CtaButton variant="primary" href={redirectURL} rel="external">
           Connect to GitHub
         </CtaButton>
       </div>

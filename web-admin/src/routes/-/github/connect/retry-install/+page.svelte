@@ -2,7 +2,6 @@
   We can't control the repo users install the github app on and they can end up installing the app on another repo.
   This page is for showing them the message that github app is installed on another repo than they need to reinstall app on right repo.  -->
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -20,9 +19,7 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          goto(
-            `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`,
-          );
+          window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`;
         }
       },
     },
@@ -50,9 +47,11 @@
       </CtaMessage>
       <CtaButton
         variant="primary"
-        href={encodeURI(
-          CANONICAL_ADMIN_URL + "/github/connect?remote=" + remote,
-        )}
+        on:click={() => {
+          window.location.href = encodeURI(
+            CANONICAL_ADMIN_URL + "/github/connect?remote=" + remote,
+          );
+        }}
       >
         Connect to GitHub
       </CtaButton>

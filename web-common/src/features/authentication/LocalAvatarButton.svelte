@@ -84,11 +84,11 @@
         <DropdownMenu.Item on:click={handlePylon}>
           Contact Rill support
         </DropdownMenu.Item>
-        <DropdownMenu.Item href={logoutUrl} class="text-gray-800 font-normal">
+        <DropdownMenu.Item href={logoutUrl} rel="external" class="text-gray-800 font-normal">
           Logout
         </DropdownMenu.Item>
       {:else}
-        <DropdownMenu.Item href={loginUrl} class="text-gray-800 font-normal">
+        <DropdownMenu.Item href={loginUrl} rel="external" class="text-gray-800 font-normal">
           Log in / Sign up
         </DropdownMenu.Item>
       {/if}
