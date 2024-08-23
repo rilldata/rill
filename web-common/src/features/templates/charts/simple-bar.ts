@@ -135,22 +135,20 @@ export function buildSimpleBarMultiLayer(
           field: quantitativeField.name,
           type: "quantitative",
         },
-        // TODO: Uncomment to add tooltip
-        // The tooltips are pretty disruptive, ideally we would only show them on hoverintent
-        // tooltip: [
-        //   {
-        //     field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
-        //     type: "temporal",
-        //     title: "Time",
-        //     format: "%b %d, %Y %H:%M",
-        //   },
-        //   {
-        //     title: quantitativeField.label,
-        //     field: quantitativeField.name,
-        //     type: "quantitative",
-        //     formatType: quantitativeField.formatterFunction || "number",
-        //   },
-        // ],
+        tooltip: [
+          {
+            field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
+            type: "temporal",
+            title: "Time",
+            format: "%b %d, %Y %H:%M",
+          },
+          {
+            title: quantitativeField.label,
+            field: quantitativeField.name,
+            type: "quantitative",
+            formatType: quantitativeField.formatterFunction || "number",
+          },
+        ],
       },
     },
     // Main bar layer
