@@ -4,7 +4,7 @@
     createAdminServiceDeleteOrganization,
     getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
-  import SettingsItemContainer from "@rilldata/web-admin/features/organizations/settings/SettingsItemContainer.svelte";
+  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -29,8 +29,8 @@
   }
 </script>
 
-<SettingsItemContainer title="Delete org">
-  <svelte:fragment slot="description">
+<SettingsContainer title="Delete org">
+  <svelte:fragment slot="body">
     Permanently remove all contents of this org.
   </svelte:fragment>
 
@@ -47,4 +47,4 @@
       <Button builders={[builder]} type="primary">Delete org</Button>
     </svelte:fragment>
   </AlertDialogGuardedConfirmation>
-</SettingsItemContainer>
+</SettingsContainer>

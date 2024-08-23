@@ -192,7 +192,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	emailChanged := req.BillingEmail != nil && *req.BillingEmail != org.BillingEmail
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                valOrDefault(req.NewName, org.Name),
-		DisplayName:                         valOrDefault(req.NewDisplayName, org.DisplayName),
+		DisplayName:                         valOrDefault(req.DisplayName, org.DisplayName),
 		Description:                         valOrDefault(req.Description, org.Description),
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,

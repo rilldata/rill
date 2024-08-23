@@ -7,7 +7,7 @@
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { parseUpdateOrgError } from "@rilldata/web-admin/features/organizations/settings/errors";
-  import SettingsItemContainer from "@rilldata/web-admin/features/organizations/settings/SettingsItemContainer.svelte";
+  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -51,7 +51,7 @@
           await $updateOrgMutation.mutateAsync({
             name: organization,
             data: {
-              newDisplayName: values.name,
+              displayName: values.name,
               newName: newOrg,
               description: values.description,
             },
@@ -98,9 +98,9 @@
   );
 </script>
 
-<SettingsItemContainer title="Organization">
+<SettingsContainer title="Organization">
   <form
-    slot="description"
+    slot="body"
     id="org-update-form"
     on:submit|preventDefault={submit}
     class="update-org-form"
@@ -136,7 +136,7 @@
   >
     Save
   </Button>
-</SettingsItemContainer>
+</SettingsContainer>
 
 <style lang="postcss">
   .update-org-form {

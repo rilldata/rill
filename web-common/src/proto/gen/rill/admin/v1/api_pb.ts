@@ -474,9 +474,9 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   newName?: string;
 
   /**
-   * @generated from field: optional string new_display_name = 5;
+   * @generated from field: optional string display_name = 5;
    */
-  newDisplayName?: string;
+  displayName?: string;
 
   /**
    * @generated from field: optional string billing_email = 4;
@@ -494,7 +494,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 5, name: "new_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 

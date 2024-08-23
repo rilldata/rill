@@ -15,7 +15,7 @@
         <CancelCircle />
       {/if}
     </div>
-    <slot name="description" />
+    <slot name="body" />
   </div>
   {#if $$slots["contact"] || $$slots["action"]}
     <div class="settings-footer">
@@ -30,7 +30,7 @@
 
 <style lang="postcss">
   .settings-container {
-    @apply w-[800px] border border-slate-200;
+    @apply min-w-[500px] max-w-[844px] border border-slate-200;
   }
 
   .settings-header {

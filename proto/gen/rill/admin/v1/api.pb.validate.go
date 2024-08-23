@@ -1282,8 +1282,8 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for NewName
 	}
 
-	if m.NewDisplayName != nil {
-		// no validation rules for NewDisplayName
+	if m.DisplayName != nil {
+		// no validation rules for DisplayName
 	}
 
 	if m.BillingEmail != nil {

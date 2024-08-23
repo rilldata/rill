@@ -807,7 +807,7 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
-  optional string new_display_name = 5;
+  optional string display_name = 5;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 

@@ -262,7 +262,7 @@ export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
-  newDisplayName?: string;
+  displayName?: string;
   billingEmail?: string;
 };
 
