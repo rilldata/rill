@@ -74,6 +74,10 @@ export function getVegaLiteSpecForTDD(
 }
 
 function isSignalEqual(currentValues: unknown[], newValues: unknown[]) {
+  if (!Array.isArray(currentValues) || !Array.isArray(newValues)) {
+    return false;
+  }
+
   if (currentValues.length !== newValues.length) {
     return false;
   }
@@ -83,6 +87,7 @@ function isSignalEqual(currentValues: unknown[], newValues: unknown[]) {
       return false;
     }
   }
+
   return true;
 }
 
@@ -132,8 +137,14 @@ export function updateVegaOnTableHover(
       values,
     }
     : null;
+
+  // console.log("updateVegaOnTableHover newValue: ", newValue);
+
   const currentValues = (viewVL.signal("hover_tuple") || { values: [] }).values;
   const newValues = values || [];
+
+  // console.log("updateVegaOnTableHover: ", currentValues, newValues);
+
   if (isSignalEqual(currentValues, newValues)) {
     return;
   }

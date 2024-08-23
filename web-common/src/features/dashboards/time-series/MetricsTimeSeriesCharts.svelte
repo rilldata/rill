@@ -416,12 +416,16 @@
               }}
               on:chart-brush={(e) => {
                 // const { interval, isScrubbing } = e.detail;
-                console.log("chart-brush", isScrubbing);
-                // NOOP
+                // console.log("chart-brush: ", interval, isScrubbing);
               }}
               on:chart-brush-end={(e) => {
                 const { interval, isScrubbing } = e.detail;
-                console.log("chart-brush-end", isScrubbing);
+                // console.log(
+                //   "chart-brush-end: ",
+                //   interval?.start,
+                //   interval?.end,
+                //   isScrubbing,
+                // );
 
                 metricsExplorerStore.setSelectedScrubRange(metricViewName, {
                   start: interval?.start,

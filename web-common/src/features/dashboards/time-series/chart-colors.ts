@@ -41,4 +41,4 @@ export const ScrubArea2Color = "var(--color-primary-50)";
 export const ScrubMutedColor = mutedColors["100"]; // TODO: revisit
 
 // TODO: move this to elsewhere
-export const VEGA_BAR_WIDTH_SIZE = 8;
+export const VEGA_BAR_WIDTH_SIZE = 12;
