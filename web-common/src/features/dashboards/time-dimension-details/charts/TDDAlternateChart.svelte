@@ -27,7 +27,6 @@
     reduceDimensionData,
     updateVegaOnTableHover,
   } from "./utils";
-  import { VEGA_BAR_WIDTH_SIZE } from "../../time-series/chart-colors";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -60,17 +59,6 @@
   $: hoveredTime = $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
 
-  $: {
-    updateVegaOnTableHover(
-      viewVL,
-      chartType,
-      isTimeComparison,
-      hasDimensionData,
-      hoveredTime,
-      hoveredDimensionValue,
-    );
-  }
-
   $: specForTDD = getVegaLiteSpecForTDD(
     chartType,
     expandedMeasureName,
@@ -93,14 +81,32 @@
   );
 
   $: {
+    // TODO: Remove this - once we fix `Unrecognized signal name: "hover_tuple_fields"`
+    if (!hasBrushParam(sanitizedVegaLiteSpec)) {
+      updateVegaOnTableHover(
+        viewVL,
+        chartType,
+        isTimeComparison,
+        hasDimensionData,
+        hoveredTime,
+        hoveredDimensionValue,
+      );
+    }
+  }
+
+  /**
+   *
+   * Compile vega lite spec to vega spec
+   * See: https://github.com/vega/vega-lite/issues/5341
+   *
+   * Add brush signals to vega spec
+   * See: https://github.com/vega/vega-lite/issues/3338
+   * See: https://vega.github.io/vega/docs/signals/
+   */
+  $: {
     if (hasBrushParam(sanitizedVegaLiteSpec)) {
-      // Compile vega lite spec to vega spec
-      // See: https://github.com/vega/vega-lite/issues/5341
       const compiledSpec = compile(sanitizedVegaLiteSpec).spec;
 
-      // Add vega signal
-      // See: https://github.com/vega/vega-lite/issues/3338
-      // See: https://vega.github.io/vega/docs/signals/
       vegaSpec = {
         ...compiledSpec,
         signals: [
@@ -122,7 +128,7 @@
                 },
                 update: { signal: "brush" },
               },
-              // Track global pointer events (when user pointerups outside of chart)
+              // When user pointerups outside of chart
               {
                 events: {
                   source: "window",
@@ -136,6 +142,20 @@
                   type: "pointerdown",
                 },
                 update: { signal: "brush" },
+              },
+            ],
+          },
+          {
+            name: "brush_clear",
+            on: [
+              {
+                events: {
+                  source: "window",
+                  type: "keydown",
+                  filter: ["event.key === 'Escape'"],
+                },
+                update: "modify('brush_store', null)",
+                // update: { signal: "brush" },
               },
             ],
           },
@@ -162,13 +182,20 @@
 
       dispatch("chart-hover", { dimension, ts });
     },
-    brush_end: (_name: string, value: boolean) => {
-      const interval = resolveSignalIntervalField(value);
-      dispatch("chart-brush-end", { interval, isScrubbing: false });
-    },
     brush: (_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
+
       dispatch("chart-brush", { interval, isScrubbing: true });
+    },
+    brush_end: (_name: string, value: boolean) => {
+      const interval = resolveSignalIntervalField(value);
+
+      dispatch("chart-brush-end", { interval, isScrubbing: false });
+    },
+    brush_clear: (_name: string, value: any) => {
+      console.log("brush_clear fired: ", value);
+
+      dispatch("chart-brush-clear");
     },
   };
 
@@ -183,18 +210,6 @@
   const expressionFunctions = {
     measureFormatter: { fn: vegaCustomFormatter },
   };
-
-  // onMount(() => {
-  //   window.addEventListener("brushCleared", () => {
-  //     dispatch("chart-brush", { interval: null, isScrubbing: false });
-  //   });
-
-  //   return () => {
-  //     window.removeEventListener("brushCleared", () => {
-  //       dispatch("chart-brush", { interval: null, isScrubbing: false });
-  //     });
-  //   };
-  // });
 </script>
 
 {#if hasBrushParam(sanitizedVegaLiteSpec) && data}
