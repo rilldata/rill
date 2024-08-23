@@ -210,6 +210,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 	var res *drivers.Result
 	if !pivoting {
 		sql, args, err := ast.SQL()
+		fmt.Println(sql)
 		if err != nil {
 			return nil, err
 		}

@@ -62,10 +62,19 @@ type SelectNode struct {
 // The Name must always match a the name of a dimension/measure in the metrics view or a computed field specified in the request.
 // This means that if two columns in different places in the AST have the same Name, they're guaranteed to resolve to the same value.
 type FieldNode struct {
-	Name  string
-	Label string
-	Expr  string
-	Time  bool
+	Name      string
+	Label     string
+	Expr      string
+	timeProps TimeProps
+	Time      bool
+	TimeGrain TimeGrain
+	MinGrain  TimeGrain
+}
+
+type TimeProps struct {
+	Time bool
+TimeGrain TimeGrain
+	MinGrain  TimeGrain
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -135,17 +144,32 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	// Build dimensions to apply against the underlying SELECT.
 	// We cache these in the AST type because when resolving expressions and adding new JOINs, we need the ability to reference these.
 	ast.dimFields = make([]FieldNode, 0, len(ast.query.Dimensions))
+	timeFields := make([]FieldNode, 0, len(ast.query.Dimensions))
+	minGrain := TimeGrainYear
 	for _, qd := range ast.query.Dimensions {
 		dim, err := ast.resolveDimension(qd, true)
 		if err != nil {
 			return nil, fmt.Errorf("invalid dimension %q: %w", qd.Name, err)
 		}
 
+		tm, gn := ast.isTime(qd)
 		f := FieldNode{
-			Name:  dim.Name,
-			Label: dim.Label,
-			Expr:  ast.dialect.MetricsViewDimensionExpression(dim),
-			Time:  ast.isTime(qd),
+			Name:      dim.Name,
+			Label:     dim.Label,
+			Expr:      ast.dialect.MetricsViewDimensionExpression(dim),
+			TimeProps : TimeProps{
+				Time: tm,
+				TimeGrain: gn,
+				MinGrain:  gn,
+			},
+			// Time:      tm,
+			// TimeGrain: gn,
+		}
+		if f.TimeProps.Time {
+			timeFields = append(timeFields, f)
+			if gn.isLess(minGrain) {
+				minGrain = gn
+			}
 		}
 
 		if dim.Unnest {
@@ -163,6 +187,13 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		}
 
 		ast.dimFields = append(ast.dimFields, f)
+	}
+
+	for _, f := range timeFields {
+		if f.TimeProps.Time {
+			// nolint
+			f.MinGrain = minGrain
+		}
 	}
 
 	// Build underlying SELECT
@@ -226,14 +257,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	ast.Root.Offset = ast.query.Offset
 
 	return ast, nil
-}
-
-func (a *AST) isTime(qd Dimension) bool {
-	return qd.Name == a.metricsView.TimeDimension ||
-		qd.Compute != nil &&
-			qd.Compute.TimeFloor != nil &&
-			qd.Compute.TimeFloor.Grain.Valid() &&
-			qd.Compute.TimeFloor.Dimension == a.metricsView.TimeDimension
 }
 
 // resolveDimension returns a dimension spec for the given dimension query.
@@ -918,6 +941,8 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 		s.DimFields = append(s.DimFields, FieldNode{
 			Name:  f.Name,
 			Label: f.Label,
+			Time:  f.Time,
+			MinGrain: ,
 			Expr:  a.sqlForMember(cpy.Alias, f.Name),
 		})
 	}
@@ -1145,4 +1170,18 @@ func hasMeasure(n *SelectNode, name string) bool {
 		}
 	}
 	return false
+}
+
+func (a *AST) isTime(qd Dimension) (bool, TimeGrain) {
+	tm := qd.Name == a.metricsView.TimeDimension ||
+		qd.Compute != nil &&
+			qd.Compute.TimeFloor != nil &&
+			qd.Compute.TimeFloor.Grain.Valid() &&
+			qd.Compute.TimeFloor.Dimension == a.metricsView.TimeDimension
+
+	if tm {
+		return true, qd.Compute.TimeFloor.Grain
+	}
+
+	return false, ""
 }

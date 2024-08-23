@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // SQL builds a SQL query from the AST.
@@ -218,21 +219,31 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	return nil
 }
 
-func (a *AST) interval() (string, error) {
+func (a *AST) interval(g, mg TimeGrain) (string, error) {
+	var start1 time.Time
+	var start2 time.Time
 	if a.query.TimeRange == nil {
 		return "", fmt.Errorf("no time range for the offset")
 	}
 	if a.query.TimeRange.Start.IsZero() {
 		return "", fmt.Errorf("no start time for the offset")
 	}
+	start1 = a.query.TimeRange.Start
 	if a.query.ComparisonTimeRange == nil {
 		return "", fmt.Errorf("no comparison time range for the offset")
 	}
 	if a.query.ComparisonTimeRange.Start.IsZero() {
 		return "", fmt.Errorf("no start time for the comparison time range")
 	}
-	diff := a.query.ComparisonTimeRange.Start.Sub(a.query.TimeRange.Start)
-	return fmt.Sprint(diff.Milliseconds()), nil
+	start2 = a.query.ComparisonTimeRange.Start
+	if g == TimeGrainUnspecified {
+		g = TimeGrainMillisecond // todo millis won't work for druid
+		return a.dialect.DateDiff(string(g), start1, start2)
+	} else if g == mg {
+		return a.dialect.DateDiff(string(g), start1, start2)
+	}
+	// g > mg -> zero diff
+	return "0", nil
 }
 
 func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode, comp bool) error {
@@ -263,13 +274,17 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
 		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
 		if comp && f.Time {
-			intv, err := b.ast.interval()
+			intv, err := b.ast.interval(f.TimeGrain, f.MinGrain)
 			if err != nil {
 				return err
 			}
 
-			// example: base.ts IS NOT DISTINCT FROM comparison.ts - (? - ?) -- <comparison-start> - <base-start>
-			rhs = fmt.Sprintf("(%s - INTERVAL %s MILLISECONDS)", rhs, intv)
+			if f.TimeGrain == TimeGrainUnspecified {
+				return fmt.Errorf("unspecified time grain")
+			}
+
+			// example: base.ts IS NOT DISTINCT FROM comparison.ts - INTERVAL (DATEDIFF(...)) SECONDS
+			rhs = fmt.Sprintf("(%s - INTERVAL (%s) %s)", rhs, intv, string(f.TimeGrain))
 		}
 		b.out.WriteByte('(')
 		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))

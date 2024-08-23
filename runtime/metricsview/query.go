@@ -203,6 +203,10 @@ func (t TimeGrain) Valid() bool {
 	return false
 }
 
+func (t TimeGrain) isLess(tg TimeGrain) bool {
+	return t.ToTimeutil() < tg.ToTimeutil()
+}
+
 func (t TimeGrain) ToTimeutil() timeutil.TimeGrain {
 	switch t {
 	case TimeGrainUnspecified:
