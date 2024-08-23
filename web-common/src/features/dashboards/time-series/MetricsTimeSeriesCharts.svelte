@@ -417,6 +417,7 @@
               on:chart-brush={(e) => {
                 // const { interval, isScrubbing } = e.detail;
                 // console.log("chart-brush: ", interval, isScrubbing);
+                // TODO: update scrub range at every brush event (warning: implending slowness)
               }}
               on:chart-brush-end={(e) => {
                 const { interval, isScrubbing } = e.detail;
@@ -432,6 +433,11 @@
                   end: interval?.end,
                   isScrubbing: isScrubbing,
                 });
+              }}
+              on:chart-brush-clear={(e) => {
+                // NOOP
+
+                console.log("on:chart-brush-clear");
               }}
             />
           {:else if formattedData && interval}

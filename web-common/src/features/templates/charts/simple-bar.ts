@@ -114,16 +114,17 @@ export function buildSimpleBarMultiLayer(
         type: "bar",
         color: ScrubMutedColor,
         tooltip: false,
-        width: { band: 0.6 },
+        // width: { band: 0.6 },
+        width: 8,
       },
       encoding: {
         x: {
           field: timeField.name,
           type: "temporal",
-          scale: {
-            type: "band",
-            padding: 0.1,
-          },
+          // scale: {
+          //   type: "band",
+          //   padding: 0.1,
+          // },
           bandPosition: 0,
           axis: {
             orient: "top",
@@ -158,18 +159,19 @@ export function buildSimpleBarMultiLayer(
     {
       mark: {
         type: "bar",
-        width: {
-          band: 0.6,
-        }
+        // width: {
+        //   band: 0.6,
+        // }
+        width: 8,
       },
       encoding: {
         x: {
           field: timeField.name,
           type: "temporal",
-          scale: {
-            type: "band",
-            padding: 0.1,
-          },
+          // scale: {
+          //   type: "band",
+          //   padding: 0.1,
+          // },
           bandPosition: 0,
         },
         y: {
