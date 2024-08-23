@@ -801,7 +801,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		err = s.admin.Email.SendProjectInvite(&email.ProjectInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
-			AcceptURL:     s.admin.URLs.ProjectInviteAccept(org.Name, proj.Name),
+			AcceptURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).ProjectInviteAccept(org.Name, proj.Name),
 			OrgName:       org.Name,
 			ProjectName:   proj.Name,
 			RoleName:      role.Name,
@@ -825,7 +825,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
-		OpenURL:       s.admin.URLs.Project(org.Name, proj.Name),
+		OpenURL:       s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
 		OrgName:       org.Name,
 		ProjectName:   proj.Name,
 		RoleName:      role.Name,
@@ -1049,8 +1049,8 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 			Email:       user.Email,
 			OrgName:     org.Name,
 			ProjectName: proj.Name,
-			ApproveLink: s.admin.URLs.ApproveProjectAccess(org.Name, proj.Name, accessReq.ID),
-			DenyLink:    s.admin.URLs.DenyProjectAccess(org.Name, proj.Name, accessReq.ID),
+			ApproveLink: s.admin.URLs.WithCustomDomain(org.CustomDomain).ApproveProjectAccess(org.Name, proj.Name, accessReq.ID),
+			DenyLink:    s.admin.URLs.WithCustomDomain(org.CustomDomain).DenyProjectAccess(org.Name, proj.Name, accessReq.ID),
 		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -1139,7 +1139,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	err = s.admin.Email.SendProjectAccessGranted(&email.ProjectAccessGranted{
 		ToEmail:     user.Email,
 		ToName:      user.DisplayName,
-		OpenURL:     s.admin.URLs.Project(org.Name, proj.Name),
+		OpenURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
 		OrgName:     org.Name,
 		ProjectName: proj.Name,
 	})

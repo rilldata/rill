@@ -57,9 +57,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.admin.URLs.ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
-		ExportUrl: s.admin.URLs.ReportExport(org.Name, proj.Name, req.Report),
-		EditUrl:   s.admin.URLs.ReportEdit(org.Name, proj.Name, req.Report),
+		OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
+		ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
+		EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 	}, nil
 }
 

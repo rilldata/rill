@@ -550,7 +550,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		err = s.admin.Email.SendOrganizationInvite(&email.OrganizationInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
-			AcceptURL:     s.admin.URLs.OrganizationInviteAccept(org.Name),
+			AcceptURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).OrganizationInviteAccept(org.Name),
 			OrgName:       org.Name,
 			RoleName:      role.Name,
 			InvitedByName: invitedByName,
@@ -599,7 +599,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
-		OpenURL:       s.admin.URLs.Organization(org.Name),
+		OpenURL:       s.admin.URLs.WithCustomDomain(org.CustomDomain).Organization(org.Name),
 		OrgName:       org.Name,
 		RoleName:      role.Name,
 		InvitedByName: invitedByName,
