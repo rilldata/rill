@@ -438,7 +438,7 @@
                   isScrubbing: isScrubbing,
                 });
               }}
-              on:chart-brush-clear={(e) => {
+              on:chart-brush-clear={() => {
                 // NOOP
 
                 console.log("on:chart-brush-clear");
