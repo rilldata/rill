@@ -169,7 +169,9 @@ export function buildSimpleBarMultiLayer(
           field: quantitativeField.name,
           type: "quantitative",
           axis: {
+            orient: "right",
             title: null,
+            format: "~s",
           },
         },
       },
