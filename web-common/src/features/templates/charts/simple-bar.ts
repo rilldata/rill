@@ -112,8 +112,6 @@ export function buildSimpleBarMultiLayer(
       ],
       mark: {
         type: "bar",
-        // color: ScrubMutedColor,
-        tooltip: false,
         width: 8,
       },
       encoding: {
