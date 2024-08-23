@@ -415,15 +415,12 @@
                 );
               }}
               on:chart-brush={(e) => {
-                const { interval } = e.detail;
-
+                // const { interval } = e.detail;
                 // console.log("chart-brush fired", interval);
-
                 // metricsExplorerStore.setSelectedScrubRange(
                 //   metricViewName,
                 //   interval,
                 // );
-
                 // metricsExplorerStore.setSelectedScrubRange(metricViewName, {
                 //   start: interval?.start,
                 //   end: interval?.end,
@@ -431,7 +428,7 @@
                 // });
               }}
               on:chart-brush-end={(e) => {
-                console.log("chart-brush-end: ", e.detail);
+                // noop
               }}
             />
           {:else if formattedData && interval}

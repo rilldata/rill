@@ -127,10 +127,10 @@ export function updateVegaOnTableHover(
 
   const newValue = epochTime
     ? {
-        unit: "",
-        fields: viewVL.signal("hover_tuple_fields"),
-        values,
-      }
+      unit: "",
+      fields: viewVL.signal("hover_tuple_fields"),
+      values,
+    }
     : null;
   const currentValues = (viewVL.signal("hover_tuple") || { values: [] }).values;
   const newValues = values || [];

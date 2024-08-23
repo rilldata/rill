@@ -15,8 +15,8 @@
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher, onMount } from "svelte";
-  import { View } from "svelte-vega";
+  import { createEventDispatcher } from "svelte";
+  import { VegaSpec, View } from "svelte-vega";
   import { compile } from "vega-lite";
   import { TDDAlternateCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
@@ -38,7 +38,7 @@
   export let isTimeComparison: boolean;
 
   let viewVL: View;
-  let vegaSpec: any;
+  let vegaSpec: VegaSpec;
 
   const dispatch = createEventDispatcher();
   const {
@@ -59,16 +59,18 @@
   $: hoveredTime = $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
 
-  $: {
-    updateVegaOnTableHover(
-      viewVL,
-      chartType,
-      isTimeComparison,
-      hasDimensionData,
-      hoveredTime,
-      hoveredDimensionValue,
-    );
-  }
+  // $: {
+  //   // TODO: seems to be causing `isSignalEqual` to be undefined
+  //   // TypeError: Cannot read properties of undefined (reading 'length')
+  //   updateVegaOnTableHover(
+  //     viewVL,
+  //     chartType,
+  //     isTimeComparison,
+  //     hasDimensionData,
+  //     hoveredTime,
+  //     hoveredDimensionValue,
+  //   );
+  // }
 
   $: specForTDD = getVegaLiteSpecForTDD(
     chartType,
@@ -108,17 +110,19 @@
             name: "brushend",
             value: false,
             on: [
-              // FIXME: when using window source, it will be triggered when we switch the chart type
-              // Debug scope source
               {
-                events: { source: "window", type: "mouseup" },
+                events: {
+                  source: "scope",
+                  type: "pointerup",
+                },
                 update: "true",
-                modify: "log('mouseup event captured')",
               },
               {
-                events: { source: "window", type: "mousedown" },
+                events: {
+                  source: "scope",
+                  type: "pointerdown",
+                },
                 update: "false",
-                modify: "log('mousedown event captured')",
               },
             ],
           },
