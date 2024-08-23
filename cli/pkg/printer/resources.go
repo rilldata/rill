@@ -521,10 +521,14 @@ func toBillingErrorsTable(errs []*adminv1.BillingError) []*billingError {
 }
 
 func toBillingErrorRow(e *adminv1.BillingError) *billingError {
+	meta, err := json.Marshal(e.Metadata)
+	if err != nil {
+		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
+	}
 	return &billingError{
 		Organization: e.Organization,
 		Type:         e.Type.String(),
-		Message:      e.Message,
+		Metadata:     string(meta), // TODO pretty print
 		EventTime:    e.EventTime.AsTime().Local().Format(time.DateTime),
 		CreatedAt:    e.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
@@ -533,7 +537,7 @@ func toBillingErrorRow(e *adminv1.BillingError) *billingError {
 type billingError struct {
 	Organization string `header:"organization" json:"organization"`
 	Type         string `header:"type" json:"type"`
-	Message      string `header:"message" json:"message"`
+	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 	CreatedAt    string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }
@@ -555,10 +559,14 @@ func toBillingWarningsTable(warns []*adminv1.BillingWarning) []*billingWarning {
 }
 
 func toBillingWarningRow(w *adminv1.BillingWarning) *billingWarning {
+	meta, err := json.Marshal(w.Metadata)
+	if err != nil {
+		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
+	}
 	return &billingWarning{
 		Organization: w.Organization,
 		Type:         w.Type.String(),
-		Message:      w.Message,
+		Metadata:     string(meta), // TODO pretty print
 		EventTime:    w.EventTime.AsTime().Local().Format(time.DateTime),
 		CreatedAt:    w.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
@@ -567,7 +575,7 @@ func toBillingWarningRow(w *adminv1.BillingWarning) *billingWarning {
 type billingWarning struct {
 	Organization string `header:"organization" json:"organization"`
 	Type         string `header:"type" json:"type"`
-	Message      string `header:"message" json:"message"`
+	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 	CreatedAt    string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }

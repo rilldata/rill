@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -24,99 +23,6 @@ var Workers = river.NewWorkers()
 
 func AddWorker[T river.JobArgs](worker river.Worker[T]) {
 	river.AddWorker[T](Workers, worker)
-}
-
-func NewChargeSuccessWorker(adm *admin.Service) *ChargeSuccessWorker {
-	return &ChargeSuccessWorker{admin: adm}
-}
-
-type ChargeSuccessWorker struct {
-	river.WorkerDefaults[riverutils.ChargeSuccessArgs]
-	admin *admin.Service
-}
-
-func (w *ChargeSuccessWorker) Work(ctx context.Context, job *river.Job[riverutils.ChargeSuccessArgs]) error {
-	org, err := w.admin.DB.FindOrganizationForPaymentCustomerID(ctx, job.Args.PaymentCustomerID)
-	if err != nil {
-		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
-	}
-
-	// check for existing billing error and delete if it is older than the event time
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypePaymentFailed)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing errors: %w", err)
-		}
-	}
-
-	// TODO may be do updates in a transaction
-	// delete the payment failed error that are older than the event time
-	if be != nil && job.Args.EventTime.After(be.EventTime) {
-		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
-		if err != nil {
-			return fmt.Errorf("failed to delete billing error: %w", err)
-		}
-	}
-
-	// update latest event time for the org
-	_, err = w.admin.DB.UpsertWebhookEventWatermark(ctx, &database.UpsertWebhookEventOptions{
-		OrgID:          org.ID,
-		Type:           database.StripeWebhookEventTypeChargeSucceeded,
-		LastOccurrence: job.Args.EventTime,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update webhook event watermark: %w", err)
-	}
-
-	return nil
-}
-
-func NewChargeFailedWorker(adm *admin.Service) *ChargeFailedWorker {
-	return &ChargeFailedWorker{admin: adm}
-}
-
-// ChargeFailedWorker worker to add billing error of payment failed in the billing_error table for an org
-type ChargeFailedWorker struct {
-	river.WorkerDefaults[riverutils.ChargeFailedArgs]
-	admin *admin.Service
-}
-
-func (w *ChargeFailedWorker) Work(ctx context.Context, job *river.Job[riverutils.ChargeFailedArgs]) error {
-	org, err := w.admin.DB.FindOrganizationForPaymentCustomerID(ctx, job.Args.PaymentCustomerID)
-	if err != nil {
-		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
-	}
-	// check if there is any charge success event after this charge failed event, if yes then ignore this charge failed event
-	event, err := w.admin.DB.FindWebhookEventWatermark(ctx, org.ID, database.StripeWebhookEventTypeChargeSucceeded)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find webhook event watermark: %w", err)
-		}
-	}
-	if event != nil && event.LastOccurrence.After(job.Args.EventTime) {
-		return nil
-	}
-
-	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-		OrgID:     org.ID,
-		Type:      database.BillingErrorTypePaymentFailed,
-		Message:   fmt.Sprintf("Recent payment of %s %d failed, please fix by visiting the billing portal. Charge id:%s", strings.ToUpper(job.Args.Currency), job.Args.Amount, job.Args.ID),
-		EventTime: job.Args.EventTime,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to add billing error: %w", err)
-	}
-
-	_, err = w.admin.DB.UpsertWebhookEventWatermark(ctx, &database.UpsertWebhookEventOptions{
-		OrgID:          org.ID,
-		Type:           database.StripeWebhookEventTypeChargeFailed,
-		LastOccurrence: job.Args.EventTime,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update webhook event watermark: %w", err)
-	}
-
-	return nil
 }
 
 func NewPaymentMethodAddedWorker(adm *admin.Service) *PaymentMethodAddedWorker {
@@ -196,7 +102,6 @@ func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[ri
 	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 		OrgID:     org.ID,
 		Type:      database.BillingErrorTypeNoPaymentMethod,
-		Message:   "No payment method attached, please add a payment method by visiting the billing portal",
 		EventTime: job.Args.EventTime,
 	})
 	if err != nil {
@@ -331,9 +236,10 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[riverutil
 		// trial period has ended, log error, send email and schedule a job to hibernate projects after grace period days if still on trial
 		w.admin.Logger.Error("Trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
+		gracePeriodEndDate := sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)
 		// schedule a job to check if the org is still on trial after 7 days
 		j, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.TrialGracePeriodCheckArgs{OrgID: org.ID}, &river.InsertOpts{
-			ScheduledAt: time.Now().AddDate(0, 0, gracePeriodDays).Add(time.Hour * 1), // add buffer of 1 hour to ensure the job runs after grace period days
+			ScheduledAt: gracePeriodEndDate.AddDate(0, 0, 1).Add(time.Hour * 1), // run the job after end of grace period days + 1 hour
 			UniqueOpts: river.UniqueOpts{
 				ByArgs: true,
 			},
@@ -344,11 +250,13 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[riverutil
 
 		// insert billing error
 		_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-			OrgID:              org.ID,
-			Type:               database.BillingErrorTypeTrialEnded,
-			Message:            fmt.Sprintf("Trial period ended, please visit the billing portal to upgrade your plan to continue using Rill. After %d days, your projects will be hibernated if still on trial.", gracePeriodDays),
-			TriggersRiverJobID: j.Job.ID,
-			EventTime:          sub[0].TrialEndDate.AddDate(0, 0, 1),
+			OrgID: org.ID,
+			Type:  database.BillingErrorTypeTrialEnded,
+			Metadata: &database.BillingErrorMetadataTrialEnded{
+				GracePeriodEndsOn:  gracePeriodEndDate,
+				TriggersRiverJobID: j.Job.ID,
+			},
+			EventTime: sub[0].TrialEndDate.AddDate(0, 0, 1),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to add billing error: %w", err)
@@ -415,11 +323,13 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[r
 			}
 		}
 
-		// check the jobID to handle the case when the customer was put on a new trial plan manually
-		if be != nil && be.TriggersRiverJobID == job.ID {
-			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
-			if err != nil {
-				return fmt.Errorf("failed to delete billing error: %w", err)
+		if be != nil {
+			meta, ok := be.Metadata.(*database.BillingErrorMetadataTrialEnded)
+			if ok && meta.TriggersRiverJobID == job.ID {
+				err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+				if err != nil {
+					return fmt.Errorf("failed to delete billing error: %w", err)
+				}
 			}
 		}
 		return nil
@@ -493,13 +403,36 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[ri
 		return fmt.Errorf("failed to schedule invoice payment failed grace period check job: %w", err)
 	}
 
+	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeInvoicePaymentFailed)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+	var metadata *database.BillingErrorMetadataInvoicePaymentFailed
+	if be != nil {
+		metadata = be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed)
+	} else {
+		metadata = &database.BillingErrorMetadataInvoicePaymentFailed{}
+	}
+
+	metadata.Invoices[job.Args.InvoiceID] = database.InvoicePaymentFailedMeta{
+		ID:                 job.Args.InvoiceID,
+		Number:             job.Args.InvoiceNumber,
+		URL:                job.Args.InvoiceURL,
+		Amount:             job.Args.Amount,
+		Currency:           job.Args.Currency,
+		DueDate:            job.Args.DueDate,
+		FailedOn:           job.Args.FailedAt,
+		TriggersRiverJobID: jobres.Job.ID,
+	}
+
 	// insert billing error
 	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-		OrgID:              org.ID,
-		Type:               database.BillingErrorTypeInvoicePaymentFailed,
-		Message:            fmt.Sprintf("Invoice %s payment failed, please fix by visiting the billing portal.", job.Args.InvoiceID),
-		TriggersRiverJobID: jobres.Job.ID,
-		EventTime:          job.Args.FailedAt,
+		OrgID:     org.ID,
+		Type:      database.BillingErrorTypeInvoicePaymentFailed,
+		Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: metadata.Invoices},
+		EventTime: job.Args.FailedAt,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add billing error: %w", err)
@@ -546,18 +479,39 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[r
 
 	// delete the invoice failed error
 	if be != nil {
-		// remove any scheduled job for invoice payment failed grace period check
-		if be.TriggersRiverJobID > 0 { // river job ids starts from 1
-			_, err := riverutils.InsertOnlyRiverClient.JobCancel(ctx, be.TriggersRiverJobID)
-			if err != nil {
-				if !errors.Is(err, rivertype.ErrNotFound) {
-					return fmt.Errorf("failed to cancel invoice payment failed grace period check job: %w", err)
+		failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
+
+		// if found remove the invoice from the failed invoices
+		if i, ok := failedInvoices[job.Args.InvoiceID]; ok {
+			// remove any scheduled job for invoice payment failed grace period check
+			if i.TriggersRiverJobID > 0 { // river job ids starts from 1
+				_, err := riverutils.InsertOnlyRiverClient.JobCancel(ctx, i.TriggersRiverJobID)
+				if err != nil {
+					if !errors.Is(err, rivertype.ErrNotFound) {
+						return fmt.Errorf("failed to cancel invoice payment failed grace period check job: %w", err)
+					}
 				}
 			}
+			delete(failedInvoices, job.Args.InvoiceID)
 		}
-		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
-		if err != nil {
-			return fmt.Errorf("failed to delete billing error: %w", err)
+
+		// if no more failed invoices, delete the billing error
+		if len(failedInvoices) == 0 {
+			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+			if err != nil {
+				return fmt.Errorf("failed to delete billing error: %w", err)
+			}
+		} else {
+			// update the metadata
+			_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingErrorTypeInvoicePaymentFailed,
+				Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: failedInvoices},
+				EventTime: be.EventTime,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to update billing error: %w", err)
+			}
 		}
 	}
 
@@ -712,6 +666,11 @@ func (w *HandlePlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[r
 		}
 
 		if be != nil {
+			metadata, ok := be.Metadata.(*database.BillingErrorMetadataTrialEnded)
+			if ok && metadata.TriggersRiverJobID > 0 {
+				// cancel the trial end grace check job, ignore errors
+				_, _ = riverutils.InsertOnlyRiverClient.JobCancel(ctx, metadata.TriggersRiverJobID)
+			}
 			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
 			if err != nil {
 				return fmt.Errorf("failed to delete billing error: %w", err)

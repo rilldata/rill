@@ -2924,9 +2924,8 @@ paths:
           enum:
             - BILLING_ERROR_TYPE_UNSPECIFIED
             - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
-            - BILLING_ERROR_TYPE_TRIAL_ENDED
-            - BILLING_ERROR_TYPE_PAYMENT_FAILED
             - BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
+            - BILLING_ERROR_TYPE_TRIAL_ENDED
       tags:
         - AdminService
   /v1/superuser/organizations/{organization}/billing/warnings/{type}:
@@ -3452,12 +3451,45 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/v1BillingErrorType'
-      message:
-        type: string
+      metadata:
+        $ref: '#/definitions/v1BillingErrorMetadata'
       eventTime:
         type: string
         format: date-time
       createdOn:
+        type: string
+        format: date-time
+  v1BillingErrorMetadata:
+    type: object
+    properties:
+      noPaymentMethod:
+        $ref: '#/definitions/v1BillingErrorMetadataNoPaymentMethod'
+      invoicePaymentFailed:
+        $ref: '#/definitions/v1BillingErrorMetadataInvoicePaymentFailed'
+      trialEnded:
+        $ref: '#/definitions/v1BillingErrorMetadataTrialEnded'
+  v1BillingErrorMetadataInvoicePaymentFailed:
+    type: object
+    properties:
+      invoiceId:
+        type: string
+      invoiceNumber:
+        type: string
+      invoiceUrl:
+        type: string
+      amountDue:
+        type: string
+      currency:
+        type: string
+      dueDate:
+        type: string
+        format: date-time
+  v1BillingErrorMetadataNoPaymentMethod:
+    type: object
+  v1BillingErrorMetadataTrialEnded:
+    type: object
+    properties:
+      gracePeriodEndsOn:
         type: string
         format: date-time
   v1BillingErrorType:
@@ -3465,9 +3497,8 @@ definitions:
     enum:
       - BILLING_ERROR_TYPE_UNSPECIFIED
       - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
-      - BILLING_ERROR_TYPE_TRIAL_ENDED
-      - BILLING_ERROR_TYPE_PAYMENT_FAILED
       - BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
+      - BILLING_ERROR_TYPE_TRIAL_ENDED
     default: BILLING_ERROR_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -3495,12 +3526,23 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/v1BillingWarningType'
-      message:
-        type: string
+      metadata:
+        $ref: '#/definitions/v1BillingWarningMetadata'
       eventTime:
         type: string
         format: date-time
       createdOn:
+        type: string
+        format: date-time
+  v1BillingWarningMetadata:
+    type: object
+    properties:
+      trialEnding:
+        $ref: '#/definitions/v1BillingWarningMetadataTrialEnding'
+  v1BillingWarningMetadataTrialEnding:
+    type: object
+    properties:
+      trialEndsOn:
         type: string
         format: date-time
   v1BillingWarningType:

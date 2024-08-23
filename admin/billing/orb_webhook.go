@@ -102,6 +102,12 @@ func (o *Orb) handleInvoicePaymentFailed(ctx context.Context, ie invoiceEvent) e
 	_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.InvoicePaymentFailedArgs{
 		BillingCustomerID: ie.OrbInvoice.Customer.ExternalCustomerID,
 		InvoiceID:         ie.OrbInvoice.ID,
+		InvoiceNumber:     ie.OrbInvoice.InvoiceNumber,
+		InvoiceURL:        ie.OrbInvoice.HostedInvoiceURL,
+		Amount:            ie.OrbInvoice.AmountDue,
+		Currency:          ie.OrbInvoice.Currency,
+		DueDate:           ie.OrbInvoice.DueDate,
+		FailedAt:          ie.OrbInvoice.PaymentFailedAt,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,

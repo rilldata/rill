@@ -54,7 +54,6 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 		OrgID:     org.ID,
 		Type:      database.BillingErrorTypeNoPaymentMethod,
-		Message:   "No payment method attached to the account",
 		EventTime: org.CreatedOn,
 	})
 	if err != nil {
@@ -112,7 +111,6 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 				OrgID:     org.ID,
 				Type:      database.BillingErrorTypeNoPaymentMethod,
-				Message:   "No payment method attached to the account",
 				EventTime: org.CreatedOn,
 			})
 			if err != nil {
@@ -200,7 +198,6 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingErrorTypeNoPaymentMethod,
-			Message:   "No payment method attached to the account",
 			EventTime: org.CreatedOn,
 		})
 		if err != nil {

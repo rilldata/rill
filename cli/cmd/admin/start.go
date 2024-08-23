@@ -295,8 +295,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer adm.Close()
 
 			// add the river workers
-			riverworker.AddWorker[riverutils.ChargeFailedArgs](riverworker.NewChargeFailedWorker(adm))
-			riverworker.AddWorker[riverutils.ChargeSuccessArgs](riverworker.NewChargeSuccessWorker(adm))
 			riverworker.AddWorker[riverutils.PaymentMethodAddedArgs](riverworker.NewPaymentMethodAddedWorker(adm))
 			riverworker.AddWorker[riverutils.PaymentMethodRemovedArgs](riverworker.NewPaymentMethodRemovedWorker(adm))
 			riverworker.AddWorker[riverutils.TrialEndingSoonArgs](riverworker.NewTrialEndingSoonWorker(adm))

@@ -10,26 +10,6 @@ import (
 // InsertOnlyRiverClient is a river client that only supports inserting jobs, actual river worker is started in the worker service
 var InsertOnlyRiverClient *river.Client[*sql.Tx]
 
-type ChargeFailedArgs struct {
-	ID                string // for deduplication
-	PaymentCustomerID string
-	Currency          string
-	Amount            int64
-	EventTime         time.Time
-}
-
-func (ChargeFailedArgs) Kind() string { return "charge_failed" }
-
-type ChargeSuccessArgs struct {
-	ID                string // for deduplication
-	PaymentCustomerID string
-	Amount            int64
-	Currency          string
-	EventTime         time.Time
-}
-
-func (ChargeSuccessArgs) Kind() string { return "charge_success" }
-
 type PaymentMethodAddedArgs struct {
 	ID                string // for deduplication
 	PaymentCustomerID string
@@ -74,6 +54,11 @@ func (TrialGracePeriodCheckArgs) Kind() string { return "trial_grace_period_chec
 type InvoicePaymentFailedArgs struct {
 	BillingCustomerID string
 	InvoiceID         string
+	InvoiceNumber     string
+	InvoiceURL        string
+	Amount            string
+	Currency          string
+	DueDate           time.Time
 	FailedAt          time.Time
 }
 

@@ -1241,9 +1241,8 @@ message SudoDeleteOrganizationBillingErrorResponse {}
 enum BillingErrorType {
   BILLING_ERROR_TYPE_UNSPECIFIED = 0;
   BILLING_ERROR_TYPE_NO_PAYMENT_METHOD = 1;
-  BILLING_ERROR_TYPE_TRIAL_ENDED = 2;
-  BILLING_ERROR_TYPE_PAYMENT_FAILED = 3;
-  BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 4;
+  BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 2;
+  BILLING_ERROR_TYPE_TRIAL_ENDED = 3;
 }
 
 message SudoDeleteOrganizationBillingWarningRequest {
@@ -2275,15 +2274,48 @@ message MemberUsergroup {
 message BillingError {
   string organization = 1;
   BillingErrorType type = 2;
-  string message = 3;
+  BillingErrorMetadata metadata = 3;
   google.protobuf.Timestamp event_time = 4;
   google.protobuf.Timestamp created_on = 5;
+}
+
+message BillingErrorMetadata {
+  oneof metadata {
+    BillingErrorMetadataNoPaymentMethod no_payment_method = 1;
+    BillingErrorMetadataInvoicePaymentFailed invoice_payment_failed = 2;
+    BillingErrorMetadataTrialEnded trial_ended = 3;
+  }
+}
+
+message BillingErrorMetadataNoPaymentMethod {}
+
+message BillingErrorMetadataInvoicePaymentFailed {
+  string invoice_id = 1;
+  string invoice_number = 2;
+  string invoice_url = 3;
+  string amount_due = 4;
+  string currency = 5;
+  google.protobuf.Timestamp due_date = 6;
+}
+
+message BillingErrorMetadataTrialEnded {
+  google.protobuf.Timestamp grace_period_ends_on = 1;
 }
 
 message BillingWarning {
   string organization = 1;
   BillingWarningType type = 2;
-  string message = 3;
+  BillingWarningMetadata metadata = 3;
   google.protobuf.Timestamp event_time = 4;
   google.protobuf.Timestamp created_on = 5;
+}
+
+message BillingWarningMetadata {
+  oneof metadata {
+    BillingWarningMetadataTrialEnding trial_ending = 1;
+  }
+}
+
+message BillingWarningMetadataTrialEnding {
+  google.protobuf.Timestamp trial_ends_on = 1;
 }

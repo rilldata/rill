@@ -39,42 +39,6 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Handle the event based on its type
 	switch event.Type {
-	case stripe.EventType(database.StripeWebhookEventTypeChargeSucceeded):
-		var charge stripe.Charge
-		if err := json.Unmarshal(event.Data.Raw, &charge); err != nil {
-			s.logger.Error(fmt.Sprintf("Error parsing charge data: %v", err))
-			http.Error(w, "Error parsing charge data", http.StatusBadRequest)
-			return
-		}
-		if charge.Customer == nil {
-			s.logger.Error(fmt.Sprintf("No customer info sent for charge %s", charge.ID))
-			http.Error(w, "Error parsing charge data", http.StatusBadRequest)
-			return
-		}
-		err = s.handleChargeSucceeded(r.Context(), &charge)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("Error handling charge.succeeded event: %v", err))
-			http.Error(w, "Error handling charge.succeeded event", http.StatusInternalServerError)
-			return
-		}
-	case stripe.EventType(database.StripeWebhookEventTypeChargeFailed):
-		var charge stripe.Charge
-		if err := json.Unmarshal(event.Data.Raw, &charge); err != nil {
-			s.logger.Error(fmt.Sprintf("Error parsing charge data: %v", err))
-			http.Error(w, "Error parsing charge data", http.StatusBadRequest)
-			return
-		}
-		if charge.Customer == nil {
-			s.logger.Error(fmt.Sprintf("No customer info sent for charge %s", charge.ID))
-			http.Error(w, "Error parsing charge data", http.StatusBadRequest)
-			return
-		}
-		err = s.handleChargeFailed(r.Context(), &charge)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("Error handling charge.failed event: %v", err))
-			http.Error(w, "Error handling charge.failed event", http.StatusInternalServerError)
-			return
-		}
 	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodAttached):
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
@@ -119,50 +83,6 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Stripe) handleChargeSucceeded(ctx context.Context, charge *stripe.Charge) error {
-	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.ChargeSuccessArgs{
-		ID:                charge.ID,
-		PaymentCustomerID: charge.Customer.ID,
-		Amount:            charge.Amount,
-		Currency:          string(charge.Currency),
-		EventTime:         time.UnixMilli(charge.Created),
-	}, &river.InsertOpts{
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to add charge success: %w", err)
-	}
-	if res.UniqueSkippedAsDuplicate {
-		s.logger.Debug("Duplicate charge success event", zap.String("customer_id", charge.Customer.ID), zap.String("customer_name", charge.Customer.Name), zap.String("customer_email", charge.Customer.Email))
-		return nil
-	}
-	return nil
-}
-
-func (s *Stripe) handleChargeFailed(ctx context.Context, charge *stripe.Charge) error {
-	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.ChargeFailedArgs{
-		ID:                charge.ID,
-		PaymentCustomerID: charge.Customer.ID,
-		Currency:          string(charge.Currency),
-		Amount:            charge.Amount,
-		EventTime:         time.UnixMilli(charge.Created),
-	}, &river.InsertOpts{
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to add billing error: %w", err)
-	}
-	if res.UniqueSkippedAsDuplicate {
-		s.logger.Debug("Duplicate billing error event", zap.String("customer_id", charge.Customer.ID), zap.String("customer_name", charge.Customer.Name), zap.String("customer_email", charge.Customer.Email))
-		return nil
-	}
-	return nil
-}
-
 func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.PaymentMethod) error {
 	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAddedArgs{
 		ID:                method.ID,
@@ -185,10 +105,9 @@ func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.Pa
 }
 
 func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, method *stripe.PaymentMethod) error {
-	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodAddedArgs{
+	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodRemovedArgs{
 		ID:                method.ID,
 		PaymentCustomerID: method.Customer.ID,
-		PaymentType:       string(method.Type),
 		EventTime:         time.UnixMilli(method.Created),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{

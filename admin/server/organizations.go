@@ -1195,7 +1195,6 @@ func (s *Server) ListOrganizationBillingErrors(ctx context.Context, req *adminv1
 		dtos = append(dtos, &adminv1.BillingError{
 			Organization: org.Name,
 			Type:         billingErrorTypeToDTO(e.Type),
-			Message:      e.Message,
 			EventTime:    timestamppb.New(e.EventTime),
 			CreatedOn:    timestamppb.New(e.CreatedOn),
 		})
@@ -1232,7 +1231,6 @@ func (s *Server) ListOrganizationBillingWarnings(ctx context.Context, req *admin
 		dtos = append(dtos, &adminv1.BillingWarning{
 			Organization: org.Name,
 			Type:         billingWarningTypeToDTO(w.Type),
-			Message:      w.Message,
 			EventTime:    timestamppb.New(w.EventTime),
 			CreatedOn:    timestamppb.New(w.CreatedOn),
 		})
@@ -1303,8 +1301,6 @@ func billingErrorTypeToDTO(t database.BillingErrorType) adminv1.BillingErrorType
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
 	case database.BillingErrorTypeTrialEnded:
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED
-	case database.BillingErrorTypePaymentFailed:
-		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_PAYMENT_FAILED
 	case database.BillingErrorTypeInvoicePaymentFailed:
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
 	default:
@@ -1320,8 +1316,6 @@ func dtoBillingErrorTypeToDB(t adminv1.BillingErrorType) (database.BillingErrorT
 		return database.BillingErrorTypeNoPaymentMethod, nil
 	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED:
 		return database.BillingErrorTypeTrialEnded, nil
-	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_PAYMENT_FAILED:
-		return database.BillingErrorTypePaymentFailed, nil
 	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED:
 		return database.BillingErrorTypeInvoicePaymentFailed, nil
 	default:

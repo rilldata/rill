@@ -937,27 +937,48 @@ type BillingErrorType int
 const (
 	BillingErrorTypeUnspecified BillingErrorType = iota
 	BillingErrorTypeNoPaymentMethod
-	BillingErrorTypePaymentFailed
-	BillingErrorTypeTrialEnded
 	BillingErrorTypeInvoicePaymentFailed
+	BillingErrorTypeTrialEnded
 )
 
 type BillingError struct {
-	ID                 string
-	OrgID              string           `db:"org_id"`
-	Type               BillingErrorType `db:"type"`
-	Message            string           `db:"msg"`
-	TriggersRiverJobID int64            `db:"triggers_river_job_id"`
-	EventTime          time.Time        `db:"event_time"`
-	CreatedOn          time.Time        `db:"created_on"`
+	ID        string
+	OrgID     string
+	Type      BillingErrorType
+	Metadata  BillingErrorMetadata
+	EventTime time.Time
+	CreatedOn time.Time
+}
+
+type BillingErrorMetadata interface{}
+
+type BillingErrorMetadataNoPaymentMethod struct{}
+
+type BillingErrorMetadataInvoicePaymentFailed struct {
+	Invoices map[string]InvoicePaymentFailedMeta `json:"invoices"`
+}
+
+type InvoicePaymentFailedMeta struct {
+	ID                 string    `json:"id"`
+	Number             string    `json:"invoice_number"`
+	URL                string    `json:"invoice_url"`
+	Amount             string    `json:"amount"`
+	Currency           string    `json:"currency"`
+	DueDate            time.Time `json:"due_date"`
+	FailedOn           time.Time `json:"failed_on"`
+	TriggersRiverJobID int64     `json:"triggers_river_job_id"`
+}
+
+type BillingErrorMetadataTrialEnded struct {
+	GracePeriodEndsOn  time.Time `json:"grace_period_ends_on"`
+	TriggersRiverJobID int64     `json:"triggers_river_job_id"`
 }
 
 type UpsertBillingErrorOptions struct {
-	OrgID              string           `validate:"required"`
-	Type               BillingErrorType `validate:"required"`
-	Message            string           `validate:"required"`
-	TriggersRiverJobID int64
-	EventTime          time.Time `validate:"required"`
+	OrgID     string           `validate:"required"`
+	Type      BillingErrorType `validate:"required"`
+	Metadata  BillingErrorMetadata
+	EventTime time.Time `validate:"required"`
 }
 
 type BillingWarningType int
@@ -968,21 +989,25 @@ const (
 )
 
 type BillingWarning struct {
-	ID                 string
-	OrgID              string             `db:"org_id"`
-	Type               BillingWarningType `db:"type"`
-	Message            string             `db:"msg"`
-	TriggersRiverJobID int64              `db:"triggers_river_job_id"`
-	EventTime          time.Time          `db:"event_time"`
-	CreatedOn          time.Time          `db:"created_on"`
+	ID        string
+	OrgID     string
+	Type      BillingWarningType
+	Metadata  BillingWarningMetadata
+	EventTime time.Time
+	CreatedOn time.Time
 }
 
 type UpsertBillingWarningOptions struct {
-	OrgID              string             `validate:"required"`
-	Type               BillingWarningType `validate:"required"`
-	Message            string             `validate:"required"`
-	TriggersRiverJobID int64
-	EventTime          time.Time `validate:"required"`
+	OrgID     string             `validate:"required"`
+	Type      BillingWarningType `validate:"required"`
+	Metadata  BillingWarningMetadata
+	EventTime time.Time `validate:"required"`
+}
+
+type BillingWarningMetadata interface{}
+
+type BillingWarningMetadataTrialEnding struct {
+	TrialEndsOn time.Time `json:"trial_ends_on"`
 }
 
 type WebhookEventWatermark struct {
@@ -1002,8 +1027,6 @@ type UpsertWebhookEventOptions struct {
 type WebhookEventType string
 
 const (
-	StripeWebhookEventTypeChargeSucceeded       WebhookEventType = "charge.succeeded"
-	StripeWebhookEventTypeChargeFailed          WebhookEventType = "charge.failed"
 	StripeWebhookEventTypePaymentMethodAttached WebhookEventType = "payment_method.attached"
 	StripeWebhookEventTypePaymentMethodDetached WebhookEventType = "payment_method.detached"
 )

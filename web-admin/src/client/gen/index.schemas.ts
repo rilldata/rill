@@ -447,6 +447,11 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -500,11 +505,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -1061,13 +1061,6 @@ export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
 }
 
-export interface V1Expression {
-  ident?: string;
-  val?: unknown;
-  cond?: V1Condition;
-  subquery?: V1Subquery;
-}
-
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
 
@@ -1212,6 +1205,13 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
+export interface V1Expression {
+  ident?: string;
+  val?: unknown;
+  cond?: V1Condition;
+  subquery?: V1Subquery;
+}
+
 export interface V1CompletionMessage {
   role?: string;
   data?: string;
@@ -1249,10 +1249,18 @@ export const V1BillingWarningType = {
   BILLING_WARNING_TYPE_TRIAL_ENDING: "BILLING_WARNING_TYPE_TRIAL_ENDING",
 } as const;
 
+export interface V1BillingWarningMetadataTrialEnding {
+  trialEndsOn?: string;
+}
+
+export interface V1BillingWarningMetadata {
+  trialEnding?: V1BillingWarningMetadataTrialEnding;
+}
+
 export interface V1BillingWarning {
   organization?: string;
   type?: V1BillingWarningType;
-  message?: string;
+  metadata?: V1BillingWarningMetadata;
   eventTime?: string;
   createdOn?: string;
 }
@@ -1274,16 +1282,38 @@ export type V1BillingErrorType =
 export const V1BillingErrorType = {
   BILLING_ERROR_TYPE_UNSPECIFIED: "BILLING_ERROR_TYPE_UNSPECIFIED",
   BILLING_ERROR_TYPE_NO_PAYMENT_METHOD: "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD",
-  BILLING_ERROR_TYPE_TRIAL_ENDED: "BILLING_ERROR_TYPE_TRIAL_ENDED",
-  BILLING_ERROR_TYPE_PAYMENT_FAILED: "BILLING_ERROR_TYPE_PAYMENT_FAILED",
   BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED:
     "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED",
+  BILLING_ERROR_TYPE_TRIAL_ENDED: "BILLING_ERROR_TYPE_TRIAL_ENDED",
 } as const;
+
+export interface V1BillingErrorMetadataTrialEnded {
+  gracePeriodEndsOn?: string;
+}
+
+export interface V1BillingErrorMetadataNoPaymentMethod {
+  [key: string]: any;
+}
+
+export interface V1BillingErrorMetadataInvoicePaymentFailed {
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoiceUrl?: string;
+  amountDue?: string;
+  currency?: string;
+  dueDate?: string;
+}
+
+export interface V1BillingErrorMetadata {
+  noPaymentMethod?: V1BillingErrorMetadataNoPaymentMethod;
+  invoicePaymentFailed?: V1BillingErrorMetadataInvoicePaymentFailed;
+  trialEnded?: V1BillingErrorMetadataTrialEnded;
+}
 
 export interface V1BillingError {
   organization?: string;
   type?: V1BillingErrorType;
-  message?: string;
+  metadata?: V1BillingErrorMetadata;
   eventTime?: string;
   createdOn?: string;
 }

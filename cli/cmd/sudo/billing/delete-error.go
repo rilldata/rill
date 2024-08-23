@@ -10,7 +10,7 @@ import (
 
 func DeleteErrorCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org, errorType string
-	errors := []string{"no-payment-method", "trial-ended", "payment-failed"}
+	errors := []string{"no-payment-method", "trial-ended", "invoice-payment-failed"}
 	setCmd := &cobra.Command{
 		Use:   "delete-error",
 		Short: "Delete billing error of a type for an organization",
@@ -40,8 +40,8 @@ func DeleteErrorCmd(ch *cmdutil.Helper) *cobra.Command {
 				t = adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
 			case "trial-ended":
 				t = adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED
-			case "payment-failed":
-				t = adminv1.BillingErrorType_BILLING_ERROR_TYPE_PAYMENT_FAILED
+			case "invoice-payment-failed":
+				t = adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
 			default:
 				return fmt.Errorf("invalid error type %q", errorType)
 			}
