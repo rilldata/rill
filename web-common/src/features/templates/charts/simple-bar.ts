@@ -1,6 +1,6 @@
 import { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
 import { singleLayerBaseSpec, multiLayerBaseSpec } from "./utils";
-import { ScrubBoxColor, ScrubMutedColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import { ScrubBoxColor, ScrubMutedColor, ScrubArea0Color, ScrubArea2Color } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildSimpleBarSingleLayer(
   timeField: ChartField,
@@ -112,24 +112,28 @@ export function buildSimpleBarMultiLayer(
       ],
       mark: {
         type: "bar",
-        color: ScrubMutedColor,
+        // color: ScrubMutedColor,
         tooltip: false,
-        // width: { band: 0.6 },
         width: 8,
       },
       encoding: {
         x: {
           field: timeField.name,
           type: "temporal",
-          // scale: {
-          //   type: "band",
-          //   padding: 0.1,
-          // },
           bandPosition: 0,
           axis: {
             orient: "top",
             title: null,
           },
+        },
+        color: {
+          condition: [
+            {
+              test: { param: "brush" },
+              value: ScrubArea0Color,
+            },
+          ],
+          value: ScrubMutedColor,
         },
         opacity: {
           condition: { param: "hover", empty: false, value: 0.5 },
@@ -159,19 +163,12 @@ export function buildSimpleBarMultiLayer(
     {
       mark: {
         type: "bar",
-        // width: {
-        //   band: 0.6,
-        // }
         width: 8,
       },
       encoding: {
         x: {
           field: timeField.name,
           type: "temporal",
-          // scale: {
-          //   type: "band",
-          //   padding: 0.1,
-          // },
           bandPosition: 0,
         },
         y: {
@@ -182,6 +179,15 @@ export function buildSimpleBarMultiLayer(
             title: null,
             format: "~s",
           },
+        },
+        color: {
+          condition: [
+            {
+              test: { param: "brush" },
+              value: ScrubArea0Color,
+            },
+          ],
+          value: ScrubMutedColor,
         },
       },
     },
