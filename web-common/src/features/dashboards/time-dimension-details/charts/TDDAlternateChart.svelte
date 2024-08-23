@@ -60,18 +60,16 @@
   $: hoveredTime = $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
 
-  // $: {
-  //   // TODO: seems to be causing `isSignalEqual` to be undefined
-  //   // TypeError: Cannot read properties of undefined (reading 'length')
-  //   updateVegaOnTableHover(
-  //     viewVL,
-  //     chartType,
-  //     isTimeComparison,
-  //     hasDimensionData,
-  //     hoveredTime,
-  //     hoveredDimensionValue,
-  //   );
-  // }
+  $: {
+    updateVegaOnTableHover(
+      viewVL,
+      chartType,
+      isTimeComparison,
+      hasDimensionData,
+      hoveredTime,
+      hoveredDimensionValue,
+    );
+  }
 
   $: specForTDD = getVegaLiteSpecForTDD(
     chartType,
@@ -108,7 +106,7 @@
         signals: [
           ...(compiledSpec.signals || []),
           {
-            name: "brushend",
+            name: "brush_end",
             on: [
               {
                 events: {
@@ -141,17 +139,12 @@
               },
             ],
           },
-          // {
-          //   name: "barWidth",
-          //   value: VEGA_BAR_WIDTH_SIZE,
-          //   update: `min(${VEGA_BAR_WIDTH_SIZE}, width / (domain('x').length * 1.5))`,
-          // },
         ],
       };
     }
   }
 
-  // $: console.log("vegaSpec: ", vegaSpec);
+  // $: console.log("vegaSpec: ", vegaSpec.signals);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
@@ -169,7 +162,7 @@
 
       dispatch("chart-hover", { dimension, ts });
     },
-    brushend: (_name: string, value: boolean) => {
+    brush_end: (_name: string, value: boolean) => {
       const interval = resolveSignalIntervalField(value);
       dispatch("chart-brush-end", { interval, isScrubbing: false });
     },

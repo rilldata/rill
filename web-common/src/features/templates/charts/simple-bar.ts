@@ -115,7 +115,6 @@ export function buildSimpleBarMultiLayer(
         color: ScrubMutedColor,
         tooltip: false,
         width: VEGA_BAR_WIDTH_SIZE,
-        // width: { signal: "barWidth" },
       },
       encoding: {
         x: {
@@ -156,7 +155,6 @@ export function buildSimpleBarMultiLayer(
       mark: {
         type: "bar",
         width: VEGA_BAR_WIDTH_SIZE,
-        // width: { signal: "barWidth" },
       },
       encoding: {
         x: {
