@@ -415,9 +415,13 @@
                 );
               }}
               on:chart-brush={(e) => {
-                // const { interval, isScrubbing } = e.detail;
+                const { interval, isScrubbing } = e.detail;
                 // console.log("chart-brush: ", interval, isScrubbing);
-                // TODO: update scrub range at every brush event (warning: implending slowness)
+                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                  start: interval?.start,
+                  end: interval?.end,
+                  isScrubbing: isScrubbing,
+                });
               }}
               on:chart-brush-end={(e) => {
                 const { interval, isScrubbing } = e.detail;

@@ -15,7 +15,7 @@
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onDestroy } from "svelte";
   import { VegaSpec, View } from "svelte-vega";
   import { compile } from "vega-lite";
   import { TDDAlternateCharts } from "../types";
@@ -27,6 +27,7 @@
     reduceDimensionData,
     updateVegaOnTableHover,
   } from "./utils";
+  import { TimeRange } from "@rilldata/web-common/lib/time/types";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -164,7 +165,7 @@
     }
   }
 
-  $: console.log("vegaSpec: ", vegaSpec.signals);
+  // $: console.log("vegaSpec: ", vegaSpec.signals);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
@@ -174,6 +175,56 @@
     selectedValues,
     timeGrain,
   );
+
+  const createAdaptiveUpdateScrubRange = () => {
+    let rafId: number | null = null;
+    let lastUpdateTime = 0;
+    let currentInterval = 1000 / 60; // Start with 60fps
+    const MIN_INTERVAL = 1000 / 120; // Max 120fps
+    const MAX_INTERVAL = 1000 / 30; // Min 30fps
+    const ADJUSTMENT_FACTOR = 1.2;
+
+    const updateScrubRange = (
+      interval: TimeRange | undefined,
+      isScrubbing: boolean,
+    ) => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame((timestamp) => {
+        const elapsed = timestamp - lastUpdateTime;
+        if (elapsed >= currentInterval) {
+          dispatch("chart-brush", { interval, isScrubbing });
+          lastUpdateTime = timestamp;
+
+          // Adjust interval based on performance
+          if (elapsed > currentInterval * ADJUSTMENT_FACTOR) {
+            currentInterval = Math.min(
+              currentInterval * ADJUSTMENT_FACTOR,
+              MAX_INTERVAL,
+            );
+          } else {
+            currentInterval = Math.max(
+              currentInterval / ADJUSTMENT_FACTOR,
+              MIN_INTERVAL,
+            );
+          }
+        }
+        rafId = null;
+      });
+    };
+
+    onDestroy(() => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    });
+
+    return updateScrubRange;
+  };
+
+  const updateScrubRange = createAdaptiveUpdateScrubRange();
 
   const signalListeners = {
     hover: (_name: string, value) => {
@@ -185,7 +236,7 @@
     brush: (_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
 
-      dispatch("chart-brush", { interval, isScrubbing: true });
+      updateScrubRange(interval, true);
     },
     brush_end: (_name: string, value: boolean) => {
       const interval = resolveSignalIntervalField(value);
