@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/jmoiron/sqlx"
@@ -164,4 +165,43 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	}
 
 	return res, nil
+}
+
+func (i informationSchema) entityType(ctx context.Context, db, name string) (typ string, onCluster bool, err error) {
+	conn, release, err := i.c.acquireMetaConn(ctx)
+	if err != nil {
+		return "", false, err
+	}
+	defer func() { _ = release() }()
+
+	var q string
+	if i.c.config.Cluster == "" {
+		q = `SELECT
+    			multiIf(engine IN ('MaterializedView', 'View'), 'view', engine = 'Dictionary', 'dictionary', 'table') AS type,
+    			0 AS is_on_cluster
+			FROM system.tables AS t
+			JOIN system.databases AS db ON t.database = db.name
+			WHERE schema = coalesce(?, currentDatabase()) AND t.name = ?
+			GROUP BY
+			    name, schema, type, db_engine`
+	} else {
+		q = `SELECT
+    			multiIf(engine IN ('MaterializedView', 'View'), 'view', engine = 'Dictionary', 'dictionary', 'table') AS type,
+    			countDistinct(_shard_num) > 1 AS is_on_cluster
+			FROM clusterAllReplicas(` + i.c.config.Cluster + `, system.tables) AS t
+			JOIN system.databases AS db ON t.database = db.name
+			WHERE schema = coalesce(?, currentDatabase()) AND t.name = ?
+			GROUP BY
+			    name, schema, type, db_engine`
+	}
+	args := []any{db, name}
+	row := conn.QueryRowxContext(ctx, q, args...)
+	err = row.Scan(&typ, &onCluster)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", false, drivers.ErrNotFound
+		}
+		return
+	}
+	return
 }

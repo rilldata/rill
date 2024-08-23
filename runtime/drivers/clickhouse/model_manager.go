@@ -16,9 +16,6 @@ type ModelInputProperties struct {
 }
 
 func (p *ModelInputProperties) Validate() error {
-	if p.SQL == "" {
-		return fmt.Errorf("missing property 'sql'")
-	}
 	return nil
 }
 
@@ -27,10 +24,20 @@ type ModelOutputProperties struct {
 	Materialize         *bool                       `mapstructure:"materialize"`
 	UniqueKey           []string                    `mapstructure:"unique_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
+	// Typ to materialize the model into. Possible values include `TABLE`, `VIEW` or `DICTIONARY`. Optional.
+	Typ string `mapstructure:"type"`
 	// Columns sets the column names and data types. If unspecified these are detected from the select query by clickhouse.
 	// It is also possible to set indexes with this property.
 	// Example : (id UInt32, username varchar, email varchar, created_at datetime, INDEX idx1 username TYPE set(100) GRANULARITY 3)
 	Columns string `mapstructure:"columns"`
+	// Config can be used to set the table parameters like engine, partition key in SQL format without setting individual properties.
+	// It also allows creating dictionaries using a source.
+	// Example:
+	//  ENGINE = MergeTree
+	//	PARTITION BY toYYYYMM(__time)
+	//	ORDER BY __time
+	//	TTL d + INTERVAL 1 MONTH DELETE
+	Config string `mapstructure:"config"`
 	// Engine sets the table engine. Default: MergeTree
 	Engine string `mapstructure:"engine"`
 	// OrderBy sets the order by clause. Default: tuple() for MergeTree and not set for other engines
@@ -47,21 +54,44 @@ type ModelOutputProperties struct {
 	TableSettings string `mapstructure:"table_settings"`
 	// QuerySettings sets the settings clause used in insert/create table as select queries.
 	QuerySettings string `mapstructure:"query_settings"`
+	// OnCluster adds a ON CLUSTER clause to the create table statement. Optional.
+	// The `cluster` property must be set in the connector configuration.
+	OnCluster bool `mapstructure:"on_cluster"`
+	// DistributedConfig is config for distributed table.
+	// Note: the table name in config should be table__local. Optional.
+	// TODO :: How to handle staged changes ?
+	DistributedConfig string `mapstructure:"distributed_config"`
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
+	if p.Config != "" {
+		if p.Engine != "" || p.OrderBy != "" || p.PartitionBy != "" || p.PrimaryKey != "" || p.SampleBy != "" || p.TTL != "" || p.TableSettings != "" {
+			return fmt.Errorf("`config` property cannot be used with individual properties")
+		}
+	}
+	p.Typ = strings.ToUpper(p.Typ)
+	if p.Typ != "" && p.Materialize != nil {
+		return fmt.Errorf("cannot set both `type` and `materialize` properties")
+	}
+	if p.Materialize != nil {
+		if *p.Materialize {
+			p.Typ = "TABLE"
+		} else {
+			p.Typ = "VIEW"
+		}
+	}
 	if opts.Incremental || opts.SplitRun {
-		if p.Materialize != nil && !*p.Materialize {
+		if p.Typ != "" && p.Typ != "TABLE" {
 			return fmt.Errorf("incremental or split models must be materialized")
 		}
-		p.Materialize = boolPtr(true)
+		p.Typ = "TABLE"
+	}
+	if p.Typ == "" {
+		p.Typ = "VIEW"
 	}
 
-	if opts.InputConnector != opts.OutputConnector {
-		if p.Materialize != nil && !*p.Materialize {
-			return fmt.Errorf("models that output to a different connector must be materialized")
-		}
-		p.Materialize = boolPtr(true)
+	if p.Typ == "DICTIONARY" && p.Columns == "" {
+		return fmt.Errorf("model materialized as dictionary must specify columns")
 	}
 
 	switch p.IncrementalStrategy {
@@ -76,6 +106,54 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 	return nil
 }
 
+func (p *ModelOutputProperties) tblConfig() string {
+	if p.Config != "" {
+		return p.Config
+	}
+	var sb strings.Builder
+	// engine with default
+	if p.Engine != "" {
+		fmt.Fprintf(&sb, "ENGINE = %s", p.Engine)
+	} else {
+		fmt.Fprintf(&sb, "ENGINE = MergeTree")
+	}
+
+	// order_by
+	if p.OrderBy != "" {
+		fmt.Fprintf(&sb, " ORDER BY %s", p.OrderBy)
+	} else if p.Engine == "MergeTree" {
+		// need ORDER BY for MergeTree
+		// it is optional for many other engines
+		fmt.Fprintf(&sb, " ORDER BY tuple()")
+	}
+
+	// partition_by
+	if p.PartitionBy != "" {
+		fmt.Fprintf(&sb, " PARTITION BY %s", p.PartitionBy)
+	}
+
+	// primary_key
+	if p.PrimaryKey != "" {
+		fmt.Fprintf(&sb, " PRIMARY KEY %s", p.PrimaryKey)
+	}
+
+	// sample_by
+	if p.SampleBy != "" {
+		fmt.Fprintf(&sb, " SAMPLE BY %s", p.SampleBy)
+	}
+
+	// ttl
+	if p.TTL != "" {
+		fmt.Fprintf(&sb, " TTL %s", p.TTL)
+	}
+
+	// settings
+	if p.TableSettings != "" {
+		fmt.Fprintf(&sb, " %s", p.TableSettings)
+	}
+	return sb.String()
+}
+
 type ModelResultProperties struct {
 	Table         string `mapstructure:"table"`
 	View          bool   `mapstructure:"view"`
@@ -83,11 +161,6 @@ type ModelResultProperties struct {
 }
 
 func (c *connection) Rename(ctx context.Context, res *drivers.ModelResult, newName string, env *drivers.ModelEnv) (*drivers.ModelResult, error) {
-	olap, ok := c.AsOLAP(c.instanceID)
-	if !ok {
-		return nil, fmt.Errorf("connector is not an OLAP")
-	}
-
 	resProps := &ModelResultProperties{}
 	if err := mapstructure.WeakDecode(res.Properties, resProps); err != nil {
 		return nil, fmt.Errorf("failed to parse previous result properties: %w", err)
@@ -97,7 +170,7 @@ func (c *connection) Rename(ctx context.Context, res *drivers.ModelResult, newNa
 		return res, nil
 	}
 
-	err := olapForceRenameTable(ctx, olap, resProps.Table, resProps.View, newName)
+	err := olapForceRenameTable(ctx, c, resProps.Table, resProps.View, newName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to rename model: %w", err)
 	}
@@ -134,7 +207,7 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 
 	stagingTable, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableNameFor(res.Table))
 	if err == nil {
-		_ = olap.DropTable(ctx, stagingTable.Name, stagingTable.View)
+		_ = c.DropTable(ctx, stagingTable.Name, stagingTable.View)
 	}
 
 	table, err := olap.InformationSchema().Lookup(ctx, "", "", res.Table)
@@ -142,7 +215,7 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 		return err
 	}
 
-	return olap.DropTable(ctx, table.Name, table.View)
+	return c.DropTable(ctx, table.Name, table.View)
 }
 
 func (c *connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
@@ -160,7 +233,7 @@ func stagingTableNameFor(table string) string {
 
 // olapForceRenameTable renames a table or view from fromName to toName in the OLAP connector.
 // If a view or table already exists with toName, it is overwritten.
-func olapForceRenameTable(ctx context.Context, olap drivers.OLAPStore, fromName string, fromIsView bool, toName string) error {
+func olapForceRenameTable(ctx context.Context, c *connection, fromName string, fromIsView bool, toName string) error {
 	if fromName == "" || toName == "" {
 		return fmt.Errorf("cannot rename empty table name: fromName=%q, toName=%q", fromName, toName)
 	}
@@ -180,7 +253,7 @@ func olapForceRenameTable(ctx context.Context, olap drivers.OLAPStore, fromName 
 	// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
 	if strings.EqualFold(fromName, toName) {
 		tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
-		err := olap.RenameTable(ctx, fromName, tmpName, fromIsView)
+		err := c.RenameTable(ctx, fromName, tmpName, fromIsView)
 		if err != nil {
 			return err
 		}
@@ -188,7 +261,7 @@ func olapForceRenameTable(ctx context.Context, olap drivers.OLAPStore, fromName 
 	}
 
 	// Do the rename
-	return olap.RenameTable(ctx, fromName, toName, fromIsView)
+	return c.RenameTable(ctx, fromName, toName, fromIsView)
 }
 
 func boolPtr(b bool) *bool {
