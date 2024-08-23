@@ -151,7 +151,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, custom_doman=$3, quota_projects=$4, quota_deployments=$5, quota_slots_total=$6, quota_slots_per_deployment=$7, quota_outstanding_invites=$8, quota_storage_limit_bytes_per_deployment=$9, billing_customer_id=$10, payment_customer_id=$11, billing_email=$12, updated_on=now() WHERE id=$13 RETURNING *", opts.Name, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, custom_domain=$3, quota_projects=$4, quota_deployments=$5, quota_slots_total=$6, quota_slots_per_deployment=$7, quota_outstanding_invites=$8, quota_storage_limit_bytes_per_deployment=$9, billing_customer_id=$10, payment_customer_id=$11, billing_email=$12, updated_on=now() WHERE id=$13 RETURNING *", opts.Name, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
