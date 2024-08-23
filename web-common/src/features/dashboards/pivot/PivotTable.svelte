@@ -426,8 +426,8 @@
                 : cell.column.columnDef.cell}
             {@const isActive = isCellActive(cell)}
             <td
-              class:active-cell={isActive}
               class="ui-copy-number"
+              class:active-cell={isActive}
               class:interactive-cell={canShowDataViewer}
               class:border-r={i % measureCount === 0 && i}
               on:click={() => handleCellClick(cell)}
@@ -565,6 +565,10 @@
     @apply bg-slate-100;
   }
 
+  tr:hover .active-cell .cell {
+    @apply bg-primary-100;
+  }
+
   .totals-column {
     @apply bg-slate-50 font-semibold;
   }
@@ -574,8 +578,7 @@
   .interactive-cell:hover .cell {
     @apply bg-primary-100;
   }
-  .active-cell,
-  .active-cell > div {
+  .active-cell .cell {
     @apply bg-primary-50;
   }
 </style>
