@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -22,13 +23,14 @@ const (
 var _ Biller = &Orb{}
 
 type Orb struct {
-	client *orb.Client
+	client        *orb.Client
+	webhookSecret string
 }
 
-func NewOrb(orbKey string) Biller {
+func NewOrb(orbKey, webhookSecret string) Biller {
 	c := orb.NewClient(option.WithAPIKey(orbKey), option.WithRequestTimeout(requestTimeout))
 
-	return &Orb{client: c}
+	return &Orb{client: c, webhookSecret: webhookSecret}
 }
 
 func (o *Orb) Name() string {
@@ -399,6 +401,13 @@ func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
 func (o *Orb) GetReportingWorkerCron() string {
 	// run every hour at around end of the hour
 	return "55 * * * *"
+}
+
+func (o *Orb) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+	if o.webhookSecret == "" {
+		return nil
+	}
+	return o.handleWebhook
 }
 
 func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {

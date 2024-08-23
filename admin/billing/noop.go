@@ -2,6 +2,7 @@ package billing
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/rilldata/rill/admin/database"
 )
@@ -100,4 +101,8 @@ func (n noop) GetReportingGranularity() UsageReportingGranularity {
 
 func (n noop) GetReportingWorkerCron() string {
 	return ""
+}
+
+func (n noop) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+	return nil
 }

@@ -91,6 +91,7 @@ type Config struct {
 	MetricsProject                    string `default:"" split_words:"true"`
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
+	OrbWebhookSecret                  string `split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
 }
@@ -262,7 +263,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var biller billing.Biller
 			if conf.OrbAPIKey != "" {
-				biller = billing.NewOrb(conf.OrbAPIKey)
+				biller = billing.NewOrb(conf.OrbAPIKey, conf.OrbWebhookSecret)
 			} else {
 				biller = billing.NewNoop()
 			}

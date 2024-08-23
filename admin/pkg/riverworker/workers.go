@@ -544,7 +544,7 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[r
 		}
 	}
 
-	// delete the invoice failed error that are older than the event time
+	// delete the invoice failed error
 	if be != nil {
 		// remove any scheduled job for invoice payment failed grace period check
 		if be.TriggersRiverJobID > 0 { // river job ids starts from 1

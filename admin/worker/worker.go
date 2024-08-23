@@ -48,6 +48,7 @@ func New(logger *zap.Logger, adm *admin.Service, driver riverdriver.Driver[*sql.
 		JobTimeout:   10 * time.Minute,
 		MaxAttempts:  3,
 		ErrorHandler: &riverworker.ErrorHandler{Logger: logger},
+		// TODO set logger as well but it requires slog instead of zap
 	})
 	if err != nil {
 		panic(err)

@@ -257,6 +257,15 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		}
 	}
 
+	// Add biller webhook handler if any
+	if s.admin.Biller != nil {
+		handler := s.admin.Biller.WebhookHandlerFunc(ctx)
+		if handler != nil {
+			// TODO add observability middleware and rate limiter
+			mux.HandleFunc("/billing/webhook", handler)
+		}
+	}
+
 	// Build CORS options for admin server
 
 	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.

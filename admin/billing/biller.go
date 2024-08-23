@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -51,6 +52,9 @@ type Biller interface {
 
 	GetReportingGranularity() UsageReportingGranularity
 	GetReportingWorkerCron() string
+
+	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers.
+	WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request)
 }
 
 type Plan struct {
