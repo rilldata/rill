@@ -14,7 +14,9 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
     };
   }
 
-  if (err.response.data?.message.includes("worktree has additional contents")) {
+  if (
+    err.response.data?.message?.includes("worktree has additional contents")
+  ) {
     return {
       message: "",
       notEmpty: true,
