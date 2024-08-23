@@ -273,18 +273,18 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		}
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
 		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
-		if comp && f.Time {
-			intv, err := b.ast.interval(f.TimeGrain, f.MinGrain)
+		if comp && f.TimeProps.Time {
+			intv, err := b.ast.interval(f.TimeProps.TimeGrain, f.TimeProps.MinGrain)
 			if err != nil {
 				return err
 			}
 
-			if f.TimeGrain == TimeGrainUnspecified {
+			if f.TimeProps.TimeGrain == TimeGrainUnspecified {
 				return fmt.Errorf("unspecified time grain")
 			}
 
 			// example: base.ts IS NOT DISTINCT FROM comparison.ts - INTERVAL (DATEDIFF(...)) SECONDS
-			rhs = fmt.Sprintf("(%s - INTERVAL (%s) %s)", rhs, intv, string(f.TimeGrain))
+			rhs = fmt.Sprintf("(%s - INTERVAL (%s) %s)", rhs, intv, string(f.TimeProps.TimeGrain))
 		}
 		b.out.WriteByte('(')
 		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))

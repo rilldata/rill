@@ -65,15 +65,12 @@ type FieldNode struct {
 	Name      string
 	Label     string
 	Expr      string
-	timeProps TimeProps
-	Time      bool
-	TimeGrain TimeGrain
-	MinGrain  TimeGrain
+	TimeProps TimeProps
 }
 
 type TimeProps struct {
-	Time bool
-TimeGrain TimeGrain
+	Time      bool
+	TimeGrain TimeGrain
 	MinGrain  TimeGrain
 }
 
@@ -154,16 +151,14 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 
 		tm, gn := ast.isTime(qd)
 		f := FieldNode{
-			Name:      dim.Name,
-			Label:     dim.Label,
-			Expr:      ast.dialect.MetricsViewDimensionExpression(dim),
-			TimeProps : TimeProps{
-				Time: tm,
+			Name:  dim.Name,
+			Label: dim.Label,
+			Expr:  ast.dialect.MetricsViewDimensionExpression(dim),
+			TimeProps: TimeProps{
+				Time:      tm,
 				TimeGrain: gn,
 				MinGrain:  gn,
 			},
-			// Time:      tm,
-			// TimeGrain: gn,
 		}
 		if f.TimeProps.Time {
 			timeFields = append(timeFields, f)
@@ -191,8 +186,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 
 	for _, f := range timeFields {
 		if f.TimeProps.Time {
-			// nolint
-			f.MinGrain = minGrain
+			f.TimeProps.MinGrain = minGrain
 		}
 	}
 
@@ -939,20 +933,20 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 	s.DimFields = make([]FieldNode, 0, len(cpy.DimFields))
 	for _, f := range cpy.DimFields {
 		s.DimFields = append(s.DimFields, FieldNode{
-			Name:  f.Name,
-			Label: f.Label,
-			Time:  f.Time,
-			MinGrain: ,
-			Expr:  a.sqlForMember(cpy.Alias, f.Name),
+			Name:      f.Name,
+			Label:     f.Label,
+			TimeProps: f.TimeProps,
+			Expr:      a.sqlForMember(cpy.Alias, f.Name),
 		})
 	}
 
 	s.MeasureFields = make([]FieldNode, 0, len(cpy.MeasureFields))
 	for _, f := range cpy.MeasureFields {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
-			Name:  f.Name,
-			Label: f.Label,
-			Expr:  a.sqlForMember(cpy.Alias, f.Name),
+			Name:      f.Name,
+			Label:     f.Label,
+			Expr:      a.sqlForMember(cpy.Alias, f.Name),
+			TimeProps: f.TimeProps,
 		})
 	}
 
