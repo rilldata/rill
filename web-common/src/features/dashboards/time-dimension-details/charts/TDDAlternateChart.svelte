@@ -97,10 +97,10 @@
     if (hasBrushParam(sanitizedVegaLiteSpec)) {
       // Compile vega lite spec to vega spec
       // See: https://github.com/vega/vega-lite/issues/5341
-      // See: https://github.com/vega/vega-lite/issues/3338
       const compiledSpec = compile(sanitizedVegaLiteSpec).spec;
 
       // Add vega signal
+      // See: https://github.com/vega/vega-lite/issues/3338
       // See: https://vega.github.io/vega/docs/signals/
       vegaSpec = {
         ...compiledSpec,
@@ -108,21 +108,35 @@
           ...(compiledSpec.signals || []),
           {
             name: "brushend",
-            value: false,
             on: [
               {
                 events: {
                   source: "scope",
                   type: "pointerup",
                 },
-                update: "true",
+                update: { signal: "brush" },
               },
               {
                 events: {
                   source: "scope",
                   type: "pointerdown",
                 },
-                update: "false",
+                update: { signal: "brush" },
+              },
+              // Track global pointer events (when user pointerups outside of chart)
+              {
+                events: {
+                  source: "window",
+                  type: "pointerup",
+                },
+                update: { signal: "brush" },
+              },
+              {
+                events: {
+                  source: "window",
+                  type: "pointerdown",
+                },
+                update: { signal: "brush" },
               },
             ],
           },
@@ -150,12 +164,12 @@
       dispatch("chart-hover", { dimension, ts });
     },
     brushend: (_name: string, value: boolean) => {
-      console.log("brushend fired", value);
-      dispatch("chart-brush-end");
+      const interval = resolveSignalIntervalField(value);
+      dispatch("chart-brush-end", { interval, isScrubbing: false });
     },
     brush: (_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
-      dispatch("chart-brush", { interval });
+      dispatch("chart-brush", { interval, isScrubbing: true });
     },
   };
 

@@ -415,20 +415,19 @@
                 );
               }}
               on:chart-brush={(e) => {
-                // const { interval } = e.detail;
-                // console.log("chart-brush fired", interval);
-                // metricsExplorerStore.setSelectedScrubRange(
-                //   metricViewName,
-                //   interval,
-                // );
-                // metricsExplorerStore.setSelectedScrubRange(metricViewName, {
-                //   start: interval?.start,
-                //   end: interval?.end,
-                //   isScrubbing: isScrubbing,
-                // });
+                // const { interval, isScrubbing } = e.detail;
+                console.log("chart-brush", isScrubbing);
+                // NOOP
               }}
               on:chart-brush-end={(e) => {
-                // noop
+                const { interval, isScrubbing } = e.detail;
+                console.log("chart-brush-end", isScrubbing);
+
+                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                  start: interval?.start,
+                  end: interval?.end,
+                  isScrubbing: isScrubbing,
+                });
               }}
             />
           {:else if formattedData && interval}
