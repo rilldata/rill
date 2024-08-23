@@ -145,26 +145,26 @@
               },
             ],
           },
-          {
-            name: "brush_clear",
-            on: [
-              {
-                events: {
-                  source: "window",
-                  type: "keydown",
-                  filter: ["event.key === 'Escape'"],
-                },
-                update: "modify('brush_store', null)",
-                // update: { signal: "brush" },
-              },
-            ],
-          },
+          // {
+          //   name: "brush_clear",
+          //   on: [
+          //     {
+          //       events: {
+          //         source: "window",
+          //         type: "keydown",
+          //         filter: ["event.key === 'Escape'"],
+          //       },
+          //       update: "modify('brush_store', null)",
+          //       // update: { signal: "brush" },
+          //     },
+          //   ],
+          // },
         ],
       };
     }
   }
 
-  // $: console.log("vegaSpec: ", vegaSpec.signals);
+  $: console.log("vegaSpec: ", vegaSpec.signals);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
@@ -192,11 +192,11 @@
 
       dispatch("chart-brush-end", { interval, isScrubbing: false });
     },
-    brush_clear: (_name: string, value: any) => {
-      console.log("brush_clear fired: ", value);
+    // brush_clear: (_name: string, value: any) => {
+    //   console.log("brush_clear fired: ", value);
 
-      dispatch("chart-brush-clear");
-    },
+    //   dispatch("chart-brush-clear");
+    // },
   };
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
