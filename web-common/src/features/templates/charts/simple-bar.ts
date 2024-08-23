@@ -1,6 +1,6 @@
 import { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
 import { singleLayerBaseSpec, multiLayerBaseSpec } from "./utils";
-import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import { ScrubBoxColor, ScrubMutedColor, VEGA_BAR_WIDTH_SIZE } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildSimpleBarSingleLayer(
   timeField: ChartField,
@@ -112,10 +112,10 @@ export function buildSimpleBarMultiLayer(
       ],
       mark: {
         type: "bar",
-        color: ScrubBoxColor,
-        // color: "transparent",
+        color: ScrubMutedColor,
         tooltip: false,
-        // FIXME: width band
+        width: VEGA_BAR_WIDTH_SIZE,
+        // width: { signal: "barWidth" },
       },
       encoding: {
         x: {
@@ -155,7 +155,8 @@ export function buildSimpleBarMultiLayer(
     {
       mark: {
         type: "bar",
-        // FIXME: width band
+        width: VEGA_BAR_WIDTH_SIZE,
+        // width: { signal: "barWidth" },
       },
       encoding: {
         x: {
