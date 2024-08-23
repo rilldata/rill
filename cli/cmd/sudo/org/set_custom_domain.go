@@ -8,7 +8,7 @@ import (
 
 func SetCustomDomainCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "set <org> <custom-domain>",
+		Use:   "set-custom-domain <org> <custom-domain>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Set custom domain for an org (domain must not contain a scheme or path)",
 		RunE: func(cmd *cobra.Command, args []string) error {
