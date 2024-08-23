@@ -35,8 +35,7 @@ func TestOrganizationInvite(t *testing.T) {
 	opts := &OrganizationInvite{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
-		AdminURL:      "https://api.example.com",
-		FrontendURL:   "https://ui.example.com",
+		AcceptURL:     "https://api.example.com",
 		OrgName:       uuid.New().String(),
 		RoleName:      uuid.New().String(),
 		InvitedByName: uuid.New().String(),

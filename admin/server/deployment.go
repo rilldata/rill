@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime"
@@ -325,7 +324,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery[k] = v
 	}
 
-	iFrameURL, err := urlutil.WithQuery(urlutil.MustJoinURL(s.opts.FrontendURL, "/-/embed"), iframeQuery)
+	iFrameURL, err := s.admin.URLs.Embed(iframeQuery)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
 	}

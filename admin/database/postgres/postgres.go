@@ -96,6 +96,15 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	return res, nil
 }
 
+func (c *connection) FindOrganizationByCustomDomain(ctx context.Context, domain string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE lower(custom_domain)=lower($1)", domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,

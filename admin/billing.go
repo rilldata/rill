@@ -42,6 +42,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
@@ -159,6 +160,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
