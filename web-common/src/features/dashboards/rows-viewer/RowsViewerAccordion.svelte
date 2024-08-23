@@ -24,13 +24,15 @@
 
   export let metricViewName: string;
 
+  const DEFAULT_LABEL = "for selected global filters";
   const INITIAL_HEIGHT_EXPANDED = 300;
   const MIN_HEIGHT_EXPANDED = 30;
   const MAX_HEIGHT_EXPANDED = 1000;
   const PIVOT_HEIGHT_EXPANDED = 200;
 
   let isOpen = false;
-  let label = "";
+  let rowCountlabel = "";
+  let label = DEFAULT_LABEL;
   let height = INITIAL_HEIGHT_EXPANDED;
   let rowViewer: HTMLElement;
 
@@ -55,6 +57,7 @@
     height = PIVOT_HEIGHT_EXPANDED;
     filters = activeCellFilters.filters;
     timeRange = activeCellFilters.timeRange;
+    label = "for selected global filters and highlited pivot cell";
   } else {
     timeRange.start = $timeControlsStore.timeStart;
     let maybeEnd = $timeControlsStore.timeEnd;
@@ -62,6 +65,9 @@
       timeRange.end = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
     }
     filters = sanitiseExpression($dashboardStore.whereFilter, undefined);
+    if (showPivot) {
+      label = DEFAULT_LABEL;
+    } else label = "";
   }
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
@@ -114,7 +120,7 @@
       const denominator = (
         $totalsQuery.data.data as V1MetricsViewAggregationResponseDataItem
       )[0]["count"];
-      label = `${formatCompactInteger(numerator)} of ${formatCompactInteger(denominator)} rows`;
+      rowCountlabel = `${formatCompactInteger(numerator)} of ${formatCompactInteger(denominator)} rows`;
     }
   }
 
@@ -146,7 +152,8 @@
         <CaretDownIcon size="14px" />
       </span>
       <span class="font-bold">Model Data</span>
-      {label}
+      {rowCountlabel}
+      <span class="italic">{label}</span>
     </button>
     {#if $exports}
       <div class="ml-auto">
