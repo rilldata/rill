@@ -1,3 +1,5 @@
+import { mutedColors } from "../../themes/color-config";
+
 /**
  * Color used for the focused line in time series chart,
  * including when there is no scrubbing and thus the
@@ -36,3 +38,7 @@ export const ScrubBoxColor = "var(--color-primary-200)";
 export const ScrubArea0Color = "var(--color-primary-200)";
 export const ScrubArea1Color = "var(--color-primary-100)";
 export const ScrubArea2Color = "var(--color-primary-50)";
+export const ScrubMutedColor = mutedColors["100"]; // TODO: revisit
+
+// TODO: move this to elsewhere
+export const VEGA_BAR_WIDTH_SIZE = 8;

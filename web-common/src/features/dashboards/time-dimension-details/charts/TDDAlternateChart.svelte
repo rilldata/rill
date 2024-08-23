@@ -27,6 +27,7 @@
     reduceDimensionData,
     updateVegaOnTableHover,
   } from "./utils";
+  import { VEGA_BAR_WIDTH_SIZE } from "../../time-series/chart-colors";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -140,6 +141,11 @@
               },
             ],
           },
+          // {
+          //   name: "barWidth",
+          //   value: VEGA_BAR_WIDTH_SIZE,
+          //   update: `min(${VEGA_BAR_WIDTH_SIZE}, width / (domain('x').length * 1.5))`,
+          // },
         ],
       };
     }
