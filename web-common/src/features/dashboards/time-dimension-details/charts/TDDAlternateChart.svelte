@@ -205,6 +205,7 @@
     spec={vegaSpec}
     {signalListeners}
     {expressionFunctions}
+    {tooltipFormatter}
   />
 {:else}
   <VegaLiteRenderer

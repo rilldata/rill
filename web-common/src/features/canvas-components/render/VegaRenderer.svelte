@@ -10,8 +10,8 @@
     VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
-  import { ExpressionFunction } from "../types";
-  //   import { VegaLiteTooltipHandler } from "./vega-tooltip";
+  import { ExpressionFunction, VLTooltipFormatter } from "../types";
+  import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -20,7 +20,7 @@
   export let error: string | null = null;
   export let customDashboard = false;
   export let chartView = false;
-  //   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
+  export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
@@ -29,12 +29,12 @@
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
 
-  //   $: if (viewVL && tooltipFormatter) {
-  //     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
-  //     viewVL.tooltip(handler.handleTooltip);
-  //     // https://stackoverflow.com/questions/59255654/vega-wont-update-until-the-mouse-has-brushed-over-the-div-containing-the-chart
-  //     void viewVL.runAsync();
-  //   }
+  $: if (viewVL && tooltipFormatter) {
+    const handler = new VegaLiteTooltipHandler(tooltipFormatter);
+    viewVL.tooltip(handler.handleTooltip);
+    // https://stackoverflow.com/questions/59255654/vega-wont-update-until-the-mouse-has-brushed-over-the-div-containing-the-chart
+    void viewVL.runAsync();
+  }
 
   $: options = <EmbedOptions>{
     config: getRillTheme(),
