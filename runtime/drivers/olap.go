@@ -450,7 +450,7 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 	}
 }
 
-// unit ie second, minute, ...
+// unit - ie second, minute, ...
 func (d Dialect) DateDiff(unit string, t1 time.Time, t2 time.Time) (string, error) {
 	switch d {
 	case DialectClickHouse:
