@@ -16,7 +16,7 @@ import type { AxiosError } from "axios";
 import { get } from "svelte/store";
 import type { RpcStatus } from "../../client";
 import { getAdminServiceGetProjectQueryKey } from "../../client";
-import { ADMIN_URL } from "../../client/http-client";
+import { CANONICAL_ADMIN_URL } from "../../client/http-client";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
@@ -53,7 +53,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
       await goto(
-        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
+        `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
       );
       return;
     }

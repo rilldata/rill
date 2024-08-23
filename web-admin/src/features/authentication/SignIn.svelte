@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import { ADMIN_URL } from "../../client/http-client";
+  import { CANONICAL_ADMIN_URL } from "../../client/http-client";
 
   function handleSignIn() {
-    window.location.href = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
+    window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
   }
 </script>
 
