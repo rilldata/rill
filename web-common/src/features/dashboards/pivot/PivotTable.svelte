@@ -428,7 +428,7 @@
             <td
               class:active-cell={isActive}
               class="ui-copy-number"
-              class:cursor-pointer={canShowDataViewer}
+              class:interactive-cell={canShowDataViewer}
               class:border-r={i % measureCount === 0 && i}
               on:click={() => handleCellClick(cell)}
               on:mouseenter={handleHover}
@@ -567,6 +567,12 @@
 
   .totals-column {
     @apply bg-slate-50 font-semibold;
+  }
+  .interactive-cell {
+    @apply cursor-pointer;
+  }
+  .interactive-cell:hover .cell {
+    @apply bg-primary-100;
   }
   .active-cell,
   .active-cell > div {
