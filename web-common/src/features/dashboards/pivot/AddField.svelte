@@ -31,7 +31,7 @@
     </Button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content class="h-80 w-64 overflow-scroll" align="start">
+  <DropdownMenu.Content class="min-h-10 max-h-80 w-64 overflow-y-auto" align="start">
     {#if zone === "columns"}
       <DropdownMenu.Label>Measures</DropdownMenu.Label>
       <DropdownMenu.Group>
