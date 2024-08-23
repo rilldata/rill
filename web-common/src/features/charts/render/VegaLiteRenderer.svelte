@@ -3,7 +3,6 @@
   import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
-  import { onMount } from "svelte";
   import {
     SignalListeners,
     VegaLite,

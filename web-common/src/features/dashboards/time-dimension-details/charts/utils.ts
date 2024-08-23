@@ -157,7 +157,7 @@ export function updateVegaOnTableHover(
 
 function checkLayerForBrush(layer) {
   if (layer.params && Array.isArray(layer.params)) {
-    for (let param of layer.params) {
+    for (const param of layer.params) {
       if (param.name === "brush") {
         return true;
       }
