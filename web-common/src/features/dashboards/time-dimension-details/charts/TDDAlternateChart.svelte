@@ -16,8 +16,8 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onDestroy } from "svelte";
-  import { SignalListener, View } from "svelte-vega";
-  import { compile, TopLevelSpec } from "vega-lite";
+  import { View } from "svelte-vega";
+  import { TopLevelSpec } from "vega-lite";
   import { TDDAlternateCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
@@ -175,6 +175,7 @@
 
   const updateScrubRange = createAdaptiveUpdateScrubRange();
 
+  // TODO: centralize signal listeners to vega signal manager
   const signalListeners = {
     hover: (_name: string, value) => {
       const dimension = resolveSignalField(value, "dimension");
