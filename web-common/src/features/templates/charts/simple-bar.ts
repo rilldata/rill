@@ -132,7 +132,7 @@ export function buildSimpleBarMultiLayer(
           condition: [
             {
               test: { param: "brush" },
-              value: ScrubArea0Color,
+              value: ScrubMutedColor,
             },
           ],
           value: ScrubMutedColor,

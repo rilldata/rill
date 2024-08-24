@@ -51,7 +51,6 @@
   {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
     {@const disabled = !hasComparison && comparisonCharts.includes(id)}
-    <!-- FIXME: reduce this button wrapper and apply click handler directly to IconButton -->
     <button
       class:bg-primary-100={active}
       class="chart-icon-wrapper"

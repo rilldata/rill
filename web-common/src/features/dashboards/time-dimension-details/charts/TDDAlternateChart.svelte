@@ -16,8 +16,8 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onDestroy } from "svelte";
-  import { VegaSpec, View } from "svelte-vega";
-  import { compile } from "vega-lite";
+  import { View } from "svelte-vega";
+  import { compile, TopLevelSpec } from "vega-lite";
   import { TDDAlternateCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
@@ -39,7 +39,7 @@
   export let isTimeComparison: boolean;
 
   let viewVL: View;
-  let vegaSpec: VegaSpec;
+  let vegaSpec: any;
 
   const dispatch = createEventDispatcher();
   const {
@@ -106,7 +106,7 @@
    */
   $: {
     if (hasBrushParam(sanitizedVegaLiteSpec)) {
-      const compiledSpec = compile(sanitizedVegaLiteSpec).spec;
+      const compiledSpec = compile(sanitizedVegaLiteSpec as TopLevelSpec).spec;
 
       vegaSpec = {
         ...compiledSpec,
@@ -165,7 +165,7 @@
     }
   }
 
-  // $: console.log("vegaSpec: ", vegaSpec.signals);
+  $: console.log("vegaSpec: ", vegaSpec.signals);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,

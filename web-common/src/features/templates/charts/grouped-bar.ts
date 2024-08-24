@@ -1,3 +1,4 @@
+import { ScrubBoxColor } from "../../dashboards/time-series/chart-colors";
 import { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
 
@@ -53,6 +54,20 @@ export function buildGroupedBar(
         on: "pointerover",
         clear: "pointerout",
         encodings: ["x", "color"],
+      },
+    },
+    {
+      name: "brush",
+      select: {
+        type: "interval",
+        encodings: ["x"],
+        mark: {
+          fill: ScrubBoxColor,
+          fillOpacity: 0.2,
+          stroke: ScrubBoxColor,
+          strokeWidth: 1,
+          strokeOpacity: 0.8,
+        },
       },
     },
   ];
