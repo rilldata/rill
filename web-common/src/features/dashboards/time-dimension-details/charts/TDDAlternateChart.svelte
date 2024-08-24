@@ -16,7 +16,7 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onDestroy } from "svelte";
-  import { View } from "svelte-vega";
+  import { SignalListener, View } from "svelte-vega";
   import { compile, TopLevelSpec } from "vega-lite";
   import { TDDAlternateCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
@@ -28,6 +28,7 @@
     updateVegaOnTableHover,
   } from "./utils";
   import { TimeRange } from "@rilldata/web-common/lib/time/types";
+  import { VegaSignalManager } from "./vega-signal-manager";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -106,66 +107,14 @@
    */
   $: {
     if (hasBrushParam(sanitizedVegaLiteSpec)) {
-      const compiledSpec = compile(sanitizedVegaLiteSpec as TopLevelSpec).spec;
-
-      vegaSpec = {
-        ...compiledSpec,
-        signals: [
-          ...(compiledSpec.signals || []),
-          {
-            name: "brush_end",
-            on: [
-              {
-                events: {
-                  source: "scope",
-                  type: "pointerup",
-                },
-                update: { signal: "brush" },
-              },
-              {
-                events: {
-                  source: "scope",
-                  type: "pointerdown",
-                },
-                update: { signal: "brush" },
-              },
-              // When user pointerups outside of chart
-              {
-                events: {
-                  source: "window",
-                  type: "pointerup",
-                },
-                update: { signal: "brush" },
-              },
-              {
-                events: {
-                  source: "window",
-                  type: "pointerdown",
-                },
-                update: { signal: "brush" },
-              },
-            ],
-          },
-          // {
-          //   name: "brush_clear",
-          //   on: [
-          //     {
-          //       events: {
-          //         source: "window",
-          //         type: "keydown",
-          //         filter: ["event.key === 'Escape'"],
-          //       },
-          //       update: "modify('brush_store', null)",
-          //       // update: { signal: "brush" },
-          //     },
-          //   ],
-          // },
-        ],
-      };
+      const signalManager = new VegaSignalManager(
+        sanitizedVegaLiteSpec as TopLevelSpec,
+      );
+      vegaSpec = signalManager.updateVegaSpec();
     }
   }
 
-  $: console.log("vegaSpec: ", vegaSpec.signals);
+  // $: console.log("vegaSpec: ", vegaSpec.signals);
 
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
@@ -243,11 +192,6 @@
 
       dispatch("chart-brush-end", { interval, isScrubbing: false });
     },
-    // brush_clear: (_name: string, value: any) => {
-    //   console.log("brush_clear fired: ", value);
-
-    //   dispatch("chart-brush-clear");
-    // },
   };
 
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
