@@ -44,12 +44,14 @@ export function buildVegaLiteSpec(
     if (!hasNominalFields) {
       return buildSimpleBarMultiLayer(timeFields[0], quantitativeFields[0]);
     } else if (chartType === ChartType.GROUPED_BAR) {
+      // TODO: to configure multi layer for full height hover when comparison is enabled
       return buildGroupedBar(
         timeFields[0],
         quantitativeFields[0],
         nominalFields[0],
       );
     } else if (chartType === ChartType.STACKED_BAR) {
+      // TODO: to configure multi layer for full height hover when comparison is enabled
       return buildStackedBar(
         timeFields[0],
         quantitativeFields[0],
