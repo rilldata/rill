@@ -44,7 +44,10 @@
     if (higlighted.length) {
       pointsData = higlighted;
     }
+  } else {
+    pointsData = dimensionData;
   }
+
   let yValues: YValue[] = [];
   $: {
     yValues = [];
