@@ -45,6 +45,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   // FIXME – this is a different prop than elsewhere
   export let lineColor = LineMutedColor;
   export let areaGradientColors: [string, string] | null = null;
+  export let isHighlighted = false;
 
   $: area = areaGradientColors !== null;
 
@@ -97,8 +98,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   // let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
   // $: lineThickness.setData(data);
 
-  function getLineOpacity(type: string) {
-    switch (type) {
+  function getLineOpacity() {
+    switch (lineType) {
       case "time":
         return 1;
       case "time-comparison":
@@ -106,10 +107,17 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       case "dimension":
         return 1;
       case "dimension-time-comparison":
-        return 0.4;
+        return 0.5;
       default:
         return 1;
     }
+  }
+
+  function getLineWidth() {
+    if (lineType === "dimension") {
+      return isHighlighted ? 2 : 1.5;
+    }
+    return 1;
   }
 </script>
 
@@ -148,8 +156,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     >
       <!-- line -->
       <path
-        opacity={getLineOpacity(lineType)}
-        stroke-width={lineType === "dimension" ? 1.5 : 1}
+        opacity={getLineOpacity()}
+        stroke-width={getLineWidth()}
         stroke={lineColor}
         d={dt}
         id="segments-line"

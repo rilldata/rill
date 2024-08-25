@@ -98,6 +98,7 @@
             : 200}
           lineColor={d?.color}
           data={d?.data || []}
+          {isHighlighted}
           {xAccessor}
           {yAccessor}
         />
