@@ -37,7 +37,11 @@ export function getVegaSpecForTDD(
   ];
 
   let nominalFields: ChartField[] = [];
-  if (isDimensional && isTimeComparison && chartType == TDDChart.STACKED_BAR) {
+  if (
+    isDimensional &&
+    isTimeComparison &&
+    chartType !== TDDChart.STACKED_AREA
+  ) {
     nominalFields = [
       {
         name: "dimension",

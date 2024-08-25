@@ -1,7 +1,7 @@
 import { ChartField } from "./build-template";
 import { sanitizeValueForVega, singleLayerBaseSpec } from "./utils";
 
-export function buildStackedGroupedBar(
+export function buildGroupedComparisonBar(
   timeFields: ChartField[],
   quantitativeFields: ChartField[],
   nominalField: ChartField,
@@ -9,13 +9,31 @@ export function buildStackedGroupedBar(
   const baseSpec = singleLayerBaseSpec();
 
   const primaryTimeField = timeFields[0];
+  const measureName = sanitizeValueForVega(quantitativeFields[0].name);
+  const nominalFieldName = sanitizeValueForVega(nominalField.name);
+
   baseSpec.transform = [
+    // Sanitize and transform comparison data in the right time format
     {
-      fold: quantitativeFields.map((field) => sanitizeValueForVega(field.name)),
-      as: ["key", "measure"],
+      timeUnit: "yearmonthdate",
+      field: "comparison\\.ts",
+      as: "comparison_ts",
+    },
+    // Expand datum to have a key field to differentiate between current and comparison data
+    { fold: ["ts", "comparison_ts"], as: ["key", "value"] },
+    // Add a measure field to hold the right measure value
+    {
+      calculate: `(datum['key'] === 'comparison_ts' ? datum['comparison.${measureName}'] : datum['${measureName}'])`,
+      as: "measure",
     },
     {
-      calculate: `(datum['key'] === '${quantitativeFields[0].name}' ? datum['ts'] : datum['comparison\\.ts'])`,
+      calculate: `(datum['key'] === 'comparison_ts' ? datum['${nominalFieldName}'] + 'Comparison' : datum['${nominalFieldName}'])`,
+      as: "nominalField",
+    },
+    // Add a time field to hold the right time value
+    {
+      calculate:
+        "(datum['key'] === 'comparison_ts' ? datum['comparison_ts'] : datum['ts'])",
       as: "time",
     },
   ];
@@ -28,11 +46,7 @@ export function buildStackedGroupedBar(
 
   baseSpec.encoding = {
     x: { field: primaryTimeField.name, type: "temporal", bandPosition: 0 },
-    y: {
-      field: "measure",
-      type: "quantitative",
-      title: quantitativeFields[0].label,
-    },
+    y: { field: "measure", type: "quantitative" },
     opacity: {
       condition: [
         {
@@ -41,11 +55,11 @@ export function buildStackedGroupedBar(
           value: 1,
         },
         {
-          test: `datum.key === '${quantitativeFields[0].name}'`,
+          test: `datum.key === 'ts'`,
           value: 0.8,
         },
         {
-          test: `datum.key === '${quantitativeFields[1].name}'`,
+          test: `datum.key === 'comparison_ts'`,
           value: 0.4,
         },
       ],
@@ -57,10 +71,7 @@ export function buildStackedGroupedBar(
       legend: null,
     },
     xOffset: {
-      field: "key",
-      type: "nominal",
-      title: "Measure",
-      sort: null,
+      field: "nominalField",
     },
     tooltip: [
       {

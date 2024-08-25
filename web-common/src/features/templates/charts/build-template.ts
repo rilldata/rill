@@ -1,3 +1,4 @@
+import { buildGroupedComparisonBar } from "@rilldata/web-common/features/templates/charts/grouped-comparison-bar";
 import { VisualizationSpec } from "svelte-vega";
 import { ChartType } from "../../charts/types";
 import { buildArea } from "./area";
@@ -42,6 +43,13 @@ export function buildVegaLiteSpec(
     if (!hasNominalFields) {
       return buildSimpleBar(timeFields[0], quantitativeFields[0]);
     } else if (chartType === ChartType.GROUPED_BAR) {
+      if (quantitativeFields.length > 1) {
+        return buildGroupedComparisonBar(
+          timeFields,
+          quantitativeFields,
+          nominalFields[0],
+        );
+      }
       return buildGroupedBar(
         timeFields[0],
         quantitativeFields[0],
