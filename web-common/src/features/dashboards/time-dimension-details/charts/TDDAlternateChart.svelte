@@ -41,8 +41,6 @@
   let viewVL: View;
   let vegaSpec: any;
 
-  // $: console.log("vegaSpec: ", vegaSpec.signals);
-
   const dispatch = createEventDispatcher();
   const {
     selectors: {
@@ -84,17 +82,14 @@
   );
 
   $: {
-    // TODO: Remove this - once we fix `Unrecognized signal name: "hover_tuple_fields"`
-    if (!hasBrushParam(sanitizedVegaLiteSpec)) {
-      updateVegaOnTableHover(
-        viewVL,
-        chartType,
-        isTimeComparison,
-        hasDimensionData,
-        hoveredTime,
-        hoveredDimensionValue,
-      );
-    }
+    updateVegaOnTableHover(
+      viewVL,
+      chartType,
+      isTimeComparison,
+      hasDimensionData,
+      hoveredTime,
+      hoveredDimensionValue,
+    );
   }
 
   /**
@@ -137,7 +132,7 @@
       const interval = resolveSignalIntervalField(value);
 
       // console.log("brush_x:", viewVL.signal("brush_x"));
-      // console.log("brush_ts:", viewVL.signal("brush_ts"));
+      // console.log("brush_yearmonth_ts:", viewVL.signal("brush_yearmonth_ts"));
 
       // Skip if we're in the process of clearing
       if (isClearing) return;
