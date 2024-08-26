@@ -466,12 +466,22 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 				iwc.logger.Debug("repo synced")
 			}
 
-			// Start controller
+			// Before starting the controller, update the project config.
+			// This avoids the controller immediately cancelling and restarting if the project config has changed.
 			if err := r.updateProjectConfig(iwc); err != nil {
 				iwc.logger.Warn("failed to parse and update the project config before starting the controller", zap.Error(err))
 			}
+
+			// Build activity client.
+			ac := r.activity
+			inst, err := r.get(iwc.instanceID) // Need to use get since we don't currently hold the lock.
+			if err == nil {                    // Defensive handling to avoid a race condition if the instance was deleted.
+				ac = ac.With(instanceAnnotationsToAttribs(inst)...)
+			}
+
+			// Start controller
 			iwc.logger.Debug("controller starting")
-			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, r.activity)
+			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, ac)
 			if err == nil {
 				r.ensureProjectParser(iwc.ctx, iwc.instanceID, ctrl)
 
@@ -588,10 +598,6 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 
 	// Add instance annotations as attributes to pass organization id, project id, etc.
 	attrs := instanceAnnotationsToAttribs(inst)
-	for k, v := range inst.Annotations {
-		attrs = append(attrs, attribute.String(k, v))
-	}
-
 	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 }
 
