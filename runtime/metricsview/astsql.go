@@ -137,20 +137,20 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteString(n.FromSelect.Alias)
 
 		for _, ljs := range n.LeftJoinSelects {
-			err := b.writeJoin("LEFT", n.FromSelect, ljs, false)
+			err := b.writeJoin("LEFT", n.FromSelect, ljs)
 			if err != nil {
 				return err
 			}
 		}
 
 		if n.SpineSelect != nil {
-			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect, false)
+			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
 			if err != nil {
 				return err
 			}
 		}
 		if n.JoinComparisonSelect != nil {
-			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect, true)
+			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
 			if err != nil {
 				return err
 			}
@@ -246,7 +246,7 @@ func (a *AST) interval(g, mg TimeGrain) (string, error) {
 	return "0", nil
 }
 
-func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode, comp bool) error {
+func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
 	b.out.WriteByte(' ')
 	b.out.WriteString(string(joinType))
 	b.out.WriteString(" JOIN ")
@@ -273,19 +273,6 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		}
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
 		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
-		if comp && f.TimeProps.Time {
-			intv, err := b.ast.interval(f.TimeProps.TimeGrain, f.TimeProps.MinGrain)
-			if err != nil {
-				return err
-			}
-
-			if f.TimeProps.TimeGrain == TimeGrainUnspecified {
-				return fmt.Errorf("unspecified time grain")
-			}
-
-			// example: base.ts IS NOT DISTINCT FROM comparison.ts - INTERVAL (DATEDIFF(...)) SECONDS
-			rhs = fmt.Sprintf("(%s - INTERVAL (%s) %s)", rhs, intv, string(f.TimeProps.TimeGrain))
-		}
 		b.out.WriteByte('(')
 		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')

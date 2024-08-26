@@ -589,12 +589,14 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 func (a *AST) buildBaseSelect(alias string, tr *TimeRange) (*SelectNode, error) {
 	n := &SelectNode{
 		Alias:     alias,
-		DimFields: a.dimFields,
 		Unnests:   a.unnests,
 		Group:     true,
 		FromTable: a.underlyingTable,
 		Where:     a.underlyingWhere,
 	}
+	n.DimFields = make([]FieldNode, len(a.dimFields))
+	copy(n.DimFields, a.dimFields)
+
 	a.addTimeRange(n, tr)
 
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
@@ -830,6 +832,22 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 		csn, err := a.buildBaseSelect("comparison", a.query.ComparisonTimeRange)
 		if err != nil {
 			return err
+		}
+
+		for i, f := range csn.DimFields {
+			if f.TimeProps.Time {
+				intv, err := a.interval(f.TimeProps.TimeGrain, f.TimeProps.MinGrain)
+				if err != nil {
+					return err
+				}
+
+				if f.TimeProps.TimeGrain == TimeGrainUnspecified {
+					return fmt.Errorf("unspecified time grain")
+				}
+
+				// example: (<expr> - INTERVAL (DATEDIFF(...)) SECONDS)
+				csn.DimFields[i].Expr = fmt.Sprintf("(%s - INTERVAL (%s) %s)", f.Expr, intv, string(f.TimeProps.TimeGrain))
+			}
 		}
 		n.JoinComparisonSelect = csn
 
