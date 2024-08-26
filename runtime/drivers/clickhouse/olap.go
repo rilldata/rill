@@ -333,7 +333,7 @@ func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
 		// then drop the local table in case of cluster
 		if onCluster {
 			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(safelocalTableName(name)), onClusterClause),
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safelocalTableName(name), onClusterClause),
 				Priority: 100,
 			})
 		}
@@ -387,7 +387,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		res.Close()
 
 		// replace the old local table name with new local table name
-		sql = strings.Replace(sql, safelocalTableName(oldName), safeSQLName(safelocalTableName(newName)), 1)
+		sql = strings.Replace(sql, safelocalTableName(oldName), safelocalTableName(newName), 1)
 		return c.Exec(ctx, &drivers.Statement{
 			Query:    sql,
 			Priority: 100,
