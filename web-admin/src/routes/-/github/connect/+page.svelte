@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -18,7 +18,7 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`;
+          redirectToLogin();
         }
       },
     },

@@ -1,4 +1,5 @@
 import { page } from "$app/stores";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
@@ -15,7 +16,6 @@ import type { AxiosError } from "axios";
 import { get } from "svelte/store";
 import type { RpcStatus } from "../../client";
 import { getAdminServiceGetProjectQueryKey } from "../../client";
-import { CANONICAL_ADMIN_URL } from "../../client/http-client";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
@@ -51,7 +51,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
+      redirectToLogin();
       return;
     }
 

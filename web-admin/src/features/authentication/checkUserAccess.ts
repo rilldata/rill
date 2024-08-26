@@ -5,7 +5,7 @@ import {
   getAdminServiceGetCurrentUserQueryKey,
   type V1GetCurrentUserResponse,
 } from "@rilldata/web-admin/client";
-import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import {
   isProjectRequestAccessPage,
   withinProject,
@@ -25,7 +25,7 @@ export async function checkUserAccess() {
 
   // If not logged in, redirect to the login page
   if (!isLoggedIn) {
-    window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
+    redirectToLogin();
     return true;
   } else if (
     withinProject(pageState) &&

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { redirectToLogout } from "@rilldata/web-admin/client/redirect-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createAdminServiceGetCurrentUser } from "../../client";
-  import { ADMIN_URL, CANONICAL_ADMIN_URL } from "../../client/http-client";
   import {
     initPylonChat,
     type UserLike,
@@ -19,16 +19,6 @@
 
   function handlePylon() {
     window.Pylon("show");
-  }
-
-  function makeLogOutHref(): string {
-    // Create a login URL that redirects back to the current page
-    const loginWithRedirect = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
-
-    // Create the logout URL, providing the login URL as a redirect
-    const href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;
-
-    return href;
   }
 </script>
 
@@ -99,9 +89,7 @@
       Contact Rill support
     </DropdownMenu.Item>
     <DropdownMenu.Item
-      on:click={() => {
-        window.location.href = makeLogOutHref();
-      }}
+      on:click={redirectToLogout}
       class="text-gray-800 font-normal"
     >
       Logout
