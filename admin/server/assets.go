@@ -16,7 +16,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/uuid"
-	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -134,28 +133,9 @@ func (s *Server) UploadProjectAssets(ctx context.Context, req *adminv1.UploadPro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
 	if err != nil {
-		return nil, err
-	}
-
-	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	// refresh token changes after using it for getting a new token
-	// so saving the updated refresh token
-	_, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
-		DisplayName:         user.DisplayName,
-		PhotoURL:            user.PhotoURL,
-		GithubUsername:      user.GithubUsername,
-		GithubRefreshToken:  refreshToken,
-		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-		PreferenceTimeZone:  user.PreferenceTimeZone,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to update user: %w", err)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	archiveRoot, err := os.MkdirTemp(os.TempDir(), "archives")
@@ -225,7 +205,8 @@ func gitToFilesList(gitPath, repo, branch, subpath, token string) ([]drivers.Dir
 	srcProjDir := os.DirFS(projPath)
 	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(srcProjDir, "**", func(p string, d fs.DirEntry) error {
-		if d.Name() == ".git" {
+		// Ignore unnecessary paths
+		if drivers.IsIgnored(p, nil) {
 			return nil
 		}
 
