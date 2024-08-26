@@ -41,6 +41,8 @@
   let viewVL: View;
   let vegaSpec: any;
 
+  // $: console.log("vegaSpec: ", vegaSpec.signals);
+
   const dispatch = createEventDispatcher();
   const {
     selectors: {
@@ -134,8 +136,8 @@
     brush: (_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
 
-      console.log("brush_x:", viewVL.signal("brush_x"));
-      console.log("brush_ts:", viewVL.signal("brush_ts"));
+      // console.log("brush_x:", viewVL.signal("brush_x"));
+      // console.log("brush_ts:", viewVL.signal("brush_ts"));
 
       // Skip if we're in the process of clearing
       if (isClearing) return;
@@ -156,7 +158,7 @@
         rafId = requestAnimationFrame((timestamp) => {
           const elapsed = timestamp - lastUpdateTime;
           if (elapsed >= currentInterval) {
-            dispatch("chart-brush", { interval, isScrubbing: true });
+            dispatch("chart-brush", { interval });
             lastUpdateTime = timestamp;
 
             // Adjust interval based on performance
@@ -189,7 +191,7 @@
     brush_end: (_name: string, value: boolean) => {
       const interval = resolveSignalIntervalField(value);
 
-      dispatch("chart-brush-end", { interval, isScrubbing: false });
+      dispatch("chart-brush-end", { interval });
     },
     brush_clear: (_name: string, value: boolean) => {
       if (value) {
@@ -197,8 +199,8 @@
         dispatch("chart-brush-clear", {
           start: undefined,
           end: undefined,
-          isScrubbing: false,
         });
+
         // Allow other signals to process
         setTimeout(() => {
           isClearing = false;
