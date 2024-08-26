@@ -54,9 +54,6 @@ type ModelOutputProperties struct {
 	TableSettings string `mapstructure:"table_settings"`
 	// QuerySettings sets the settings clause used in insert/create table as select queries.
 	QuerySettings string `mapstructure:"query_settings"`
-	// OnCluster adds a ON CLUSTER clause to the create table statement. Optional.
-	// The `cluster` property must be set in the connector configuration.
-	OnCluster bool `mapstructure:"on_cluster"`
 	// DistributedConfig is config for distributed table.
 	// Note: the table name in config should be table__local. Optional.
 	// TODO :: How to handle staged changes ?

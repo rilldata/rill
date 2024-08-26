@@ -98,7 +98,7 @@ type configProperties struct {
 	Port     int    `mapstructure:"port"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
-	// Cluster name. Required when setting `on_cluster` as true in model definition..
+	// Cluster name. Required for running distributed queries.
 	Cluster string `mapstructure:"cluster"`
 	// EnableCache controls whether to enable cache for Clickhouse queries.
 	EnableCache bool `mapstructure:"enable_cache"`

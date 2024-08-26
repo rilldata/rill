@@ -214,7 +214,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		return fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	var onClusterClause string
-	if outputProps.OnCluster {
+	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	}
 
@@ -232,7 +232,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 
 	var create strings.Builder
 	create.WriteString("CREATE OR REPLACE TABLE ")
-	if outputProps.OnCluster {
+	if c.config.Cluster != "" {
 		// need to create a local table on the cluster first
 		fmt.Fprintf(&create, "%s %s", safelocalTableName(outputProps.Table), onClusterClause)
 	} else {
@@ -266,7 +266,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		return err
 	}
 
-	if outputProps.OnCluster {
+	if c.config.Cluster != "" {
 		// create the distributed table
 		var distributed strings.Builder
 		fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s AS %s %s", safeSQLName(name), safelocalTableName(name), onClusterClause)

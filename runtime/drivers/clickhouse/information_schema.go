@@ -201,7 +201,7 @@ func (i informationSchema) entityType(ctx context.Context, db, name string) (typ
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", false, drivers.ErrNotFound
 		}
-		return
+		return "", false, err
 	}
-	return
+	return typ, onCluster, nil
 }
