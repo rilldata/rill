@@ -16,6 +16,7 @@ export function redirectToGithubLogin(remote: string) {
 }
 
 function buildLoginUrl() {
+  // The backend requires that we always use the canonical admin URL for redirects to /auth/login.
   const u = new URL(CANONICAL_ADMIN_URL);
   u.pathname = appendPath(u.pathname, "auth/login");
   u.searchParams.set("redirect", window.location.href);
