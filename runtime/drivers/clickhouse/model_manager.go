@@ -55,7 +55,7 @@ type ModelOutputProperties struct {
 	// QuerySettings sets the settings clause used in insert/create table as select queries.
 	QuerySettings string `mapstructure:"query_settings"`
 	// DistributedConfig is config for distributed table.
-	// Note: the table name in config should be table__local. Optional.
+	// Note: the table name in config should be table_local. Optional.
 	// TODO :: How to handle staged changes ?
 	DistributedConfig string `mapstructure:"distributed_config"`
 }

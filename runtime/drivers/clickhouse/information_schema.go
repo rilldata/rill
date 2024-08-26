@@ -177,7 +177,7 @@ func (i informationSchema) entityType(ctx context.Context, db, name string) (typ
 	var q string
 	if i.c.config.Cluster == "" {
 		q = `SELECT
-    			multiIf(engine IN ('MaterializedView', 'View'), 'view', engine = 'Dictionary', 'dictionary', 'table') AS type,
+    			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
     			0 AS is_on_cluster
 			FROM system.tables AS t
 			JOIN system.databases AS db ON t.database = db.name
@@ -186,7 +186,7 @@ func (i informationSchema) entityType(ctx context.Context, db, name string) (typ
 			    name, schema, type, db_engine`
 	} else {
 		q = `SELECT
-    			multiIf(engine IN ('MaterializedView', 'View'), 'view', engine = 'Dictionary', 'dictionary', 'table') AS type,
+    			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
     			countDistinct(_shard_num) > 1 AS is_on_cluster
 			FROM clusterAllReplicas(` + i.c.config.Cluster + `, system.tables) AS t
 			JOIN system.databases AS db ON t.database = db.name

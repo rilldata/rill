@@ -737,5 +737,5 @@ func tempName(prefix string) string {
 }
 
 func safelocalTableName(name string) string {
-	return safeSQLName(name + "__local")
+	return safeSQLName(name + "_local")
 }
