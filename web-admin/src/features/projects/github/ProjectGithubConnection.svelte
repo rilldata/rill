@@ -56,7 +56,6 @@
   }
 
   function disconnectGithubConnect() {
-    void githubData.ensureGithubAccess();
     disconnectConfirmOpen = true;
   }
 </script>
