@@ -48,7 +48,7 @@ export function getValuesForExpandedKey(
   rowDimensions: string[],
   key: string,
   hasTotalsRow = true,
-) {
+): string[] {
   const indices = key.split(".").map((index) => parseInt(index, 10));
 
   if (hasTotalsRow) {

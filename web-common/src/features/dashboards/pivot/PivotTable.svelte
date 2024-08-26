@@ -61,7 +61,7 @@
 
   const { cloudDataViewer, readOnly } = featureFlags;
   $: isRillDeveloper = $readOnly === false;
-  $: canShowDataViewer = cloudDataViewer && isRillDeveloper;
+  $: canShowDataViewer = Boolean($cloudDataViewer || isRillDeveloper);
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDashboardStore, pivotDataStore],

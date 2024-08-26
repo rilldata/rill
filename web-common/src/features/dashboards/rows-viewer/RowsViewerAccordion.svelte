@@ -13,6 +13,7 @@
     createQueryServiceMetricsViewAggregation,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { onMount } from "svelte";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "../../feature-flags";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
@@ -35,10 +36,13 @@
   let label = DEFAULT_LABEL;
   let height = INITIAL_HEIGHT_EXPANDED;
   let rowViewer: HTMLElement;
+  let manualClose = false;
 
-  $: if (rowViewer) {
-    rowViewerStore.set(rowViewer);
-  }
+  onMount(() => {
+    if (rowViewer) {
+      rowViewerStore.set(rowViewer);
+    }
+  });
 
   const stateManagers = getStateManagers();
 
@@ -53,9 +57,11 @@
     end: $timeControlsStore.timeEnd,
   };
   $: if (showPivot && activeCellFilters) {
-    isOpen = true;
-    height = PIVOT_HEIGHT_EXPANDED;
-    filters = activeCellFilters.filters;
+    if (!isOpen && !manualClose) {
+      height = PIVOT_HEIGHT_EXPANDED;
+      isOpen = true;
+    }
+    filters = sanitiseExpression(activeCellFilters.filters, undefined);
     timeRange = activeCellFilters.timeRange;
     label = "for selected global filters and highlited pivot cell";
   } else {
@@ -125,6 +131,7 @@
   }
 
   function toggle() {
+    manualClose = true;
     isOpen = !isOpen;
   }
 </script>
