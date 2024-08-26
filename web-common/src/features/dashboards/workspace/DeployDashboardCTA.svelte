@@ -16,7 +16,11 @@
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { createLocalServiceGetCurrentProject } from "@rilldata/web-common/runtime-client/local-service";
+  import {
+    createLocalServiceGetCurrentProject,
+    createLocalServiceGetCurrentUser,
+    createLocalServiceGetMetadata,
+  } from "@rilldata/web-common/runtime-client/local-service";
   import { get } from "svelte/store";
   import { Button } from "../../../components/button";
 
@@ -27,7 +31,16 @@
   });
   $: isDeployed = !!$currentProject.data?.project;
 
+  $: user = createLocalServiceGetCurrentUser();
+  $: metadata = createLocalServiceGetMetadata();
+
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
+  let deployCTAUrl: string;
+  $: if (!$user.data?.user && $metadata.data) {
+    deployCTAUrl = `${$metadata.data.loginUrl}?redirect=${deployPageUrl}`;
+  } else {
+    deployCTAUrl = deployPageUrl;
+  }
 
   let pushThroughGitOpen = false;
   async function onShowRedeploy() {
@@ -39,7 +52,7 @@
       return;
     }
 
-    window.open(deployPageUrl, "_target");
+    window.open(deployCTAUrl, "_target");
   }
 
   let deployConfirmOpen = false;
@@ -106,7 +119,7 @@
           <Button
             on:click={() => (deployConfirmOpen = false)}
             type="primary"
-            href={deployPageUrl}
+            href={deployCTAUrl}
             target="_blank"
           >
             Continue

@@ -358,11 +358,8 @@ function getComparisonTimeRange(
   timeRange: DashboardTimeControls | undefined,
   comparisonTimeRange: DashboardTimeControls | undefined,
 ) {
-  if (!comparisonTimeRange || !timeRange || !timeRange.name || !allTimeRange)
-    return undefined;
+  if (!timeRange || !timeRange.name || !allTimeRange) return undefined;
 
-  let selectedComparisonTimeRange: DashboardTimeControls | undefined =
-    undefined;
   if (!comparisonTimeRange?.name) {
     const comparisonOption = DEFAULT_TIME_RANGES[
       timeRange.name as TimeComparisonOption
@@ -371,7 +368,8 @@ function getComparisonTimeRange(
       comparisonOption ??
         metricsView.availableTimeRanges?.find(
           (tr) => tr.range === timeRange.name,
-        )?.comparisonOffsets?.[0]?.offset,
+        )?.comparisonOffsets?.[0]?.offset ??
+        TimeComparisonOption.CONTIGUOUS,
       allTimeRange.start,
       allTimeRange.end,
       timeRange.start,
@@ -379,14 +377,14 @@ function getComparisonTimeRange(
     );
 
     if (range.isComparisonRangeAvailable && range.start && range.end) {
-      selectedComparisonTimeRange = {
+      return {
         start: range.start,
         end: range.end,
         name: comparisonOption,
       };
     }
   } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
-    selectedComparisonTimeRange = comparisonTimeRange;
+    return comparisonTimeRange;
   } else {
     // variable time range of some kind.
     const comparisonOption = comparisonTimeRange.name as TimeComparisonOption;
@@ -396,13 +394,11 @@ function getComparisonTimeRange(
       comparisonOption,
     );
 
-    selectedComparisonTimeRange = {
+    return {
       ...range,
       name: comparisonOption,
     };
   }
-
-  return selectedComparisonTimeRange;
 }
 
 /**

@@ -18,12 +18,23 @@
     hasDashboardWhereFilter,
   } from "./form-utils";
 
+  const {
+    dashboardStore,
+    metricsViewName,
+    selectors: {
+      measures: { visibleMeasures },
+      dimensions: { visibleDimensions },
+    },
+  } = getStateManagers();
+
   $: ({ organization, project } = $page.params);
+
   $: metricsViewFields = getMetricsViewFields(
     $dashboardStore,
     $visibleDimensions,
     $visibleMeasures,
   );
+
   $: sanitizedState = getSanitizedDashboardStateParam(
     $dashboardStore,
     metricsViewFields,
@@ -32,16 +43,6 @@
   let token: string;
   let setExpiration = false;
   let apiError: string;
-
-  const {
-    dashboardStore,
-
-    metricsViewName,
-    selectors: {
-      measures: { visibleMeasures },
-      dimensions: { visibleDimensions },
-    },
-  } = getStateManagers();
 
   const formId = "create-shareable-url-form";
 

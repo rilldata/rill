@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -487,9 +488,35 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		return nil, status.Error(codes.InvalidArgument, "cannot add member to all-users group")
 	}
 
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to add user group members")
+	}
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		// did not find user, check if there is any pending invite
+		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			// there is no pending invite return error
+			return nil, status.Error(codes.FailedPrecondition, "user is not a member of the organization")
+		}
+		// add group to the invite, dedupe the group ids
+		if !slices.Contains(invite.UsergroupIDs, group.ID) {
+			invite.UsergroupIDs = append(invite.UsergroupIDs, group.ID)
+			err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, invite.ID, invite.UsergroupIDs)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		return &adminv1.AddUsergroupMemberUserResponse{}, nil
 	}
 
 	isOrgMember, err := s.admin.DB.CheckUserIsAnOrganizationMember(ctx, user.ID, org.ID)
@@ -497,12 +524,7 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if !isOrgMember {
-		return nil, status.Error(codes.InvalidArgument, "user is not a member of the organization")
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to add user group members")
+		return nil, status.Error(codes.FailedPrecondition, "user is not a member of the organization")
 	}
 
 	err = s.admin.DB.InsertUsergroupMemberUser(ctx, group.ID, user.ID)

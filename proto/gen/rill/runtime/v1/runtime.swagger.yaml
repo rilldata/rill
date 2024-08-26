@@ -3614,6 +3614,8 @@ definitions:
     properties:
       title:
         type: string
+      subtitle:
+        type: string
       resolver:
         type: string
       resolverProperties:
@@ -3622,12 +3624,28 @@ definitions:
         type: string
       rendererProperties:
         type: object
+      input:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
+      output:
+        $ref: '#/definitions/v1ComponentVariable'
+      show:
+        type: string
+        description: Templated string that should evaluate to a boolean.
       definedInDashboard:
         type: boolean
-      subtitle:
-        type: string
   v1ComponentState:
     type: object
+  v1ComponentVariable:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      defaultValue: {}
   v1Condition:
     type: object
     properties:
@@ -3816,6 +3834,11 @@ definitions:
       gap:
         type: integer
         format: int64
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
       items:
         type: array
         items:
@@ -5384,6 +5407,11 @@ definitions:
   v1ResolveComponentResponse:
     type: object
     properties:
+      show:
+        type: boolean
+        description: |-
+          Show property with templating resolved for the provided args.
+          If it resolves to false, the other fields are not set.
       schema:
         $ref: '#/definitions/v1StructType'
         title: Schema of the resolved component data

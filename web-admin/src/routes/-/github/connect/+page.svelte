@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -19,7 +19,9 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          goto(`${ADMIN_URL}/auth/login?redirect=${window.location.href}`);
+          goto(
+            `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`,
+          );
         }
       },
     },

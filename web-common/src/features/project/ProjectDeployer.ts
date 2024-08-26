@@ -86,10 +86,9 @@ export class ProjectDeployer {
     const userResp = get(this.user).data as GetCurrentUserResponse;
     if (!userResp.user) {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
-      window.open(
-        `${metadata.loginUrl}/?redirect=${get(page).url.toString()}`,
-        "_self",
-      );
+      const u = new URL(metadata.loginUrl);
+      u.searchParams.set("redirect", get(page).url.toString());
+      window.open(u.toString(), "_self");
     } else {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
     }
@@ -146,7 +145,7 @@ export class ProjectDeployer {
         queryKey: getLocalServiceGetCurrentUserQueryKey(),
         queryFn: localServiceGetCurrentUser,
       });
-      org = userResp.user!.email.replace(nameSanitiserRegex, "-");
+      org = this.getOrgNameFromEmail(userResp.user?.email ?? "");
       checkNextOrg = true;
     }
     return { org, checkNextOrg };
@@ -180,5 +179,9 @@ export class ProjectDeployer {
         }
       }
     }
+  }
+
+  private getOrgNameFromEmail(email: string): string {
+    return email.split("@")[0]?.replace(nameSanitiserRegex, "-") ?? "";
   }
 }

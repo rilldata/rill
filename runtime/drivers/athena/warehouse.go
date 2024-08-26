@@ -26,7 +26,7 @@ import (
 
 var _ drivers.Warehouse = &Connection{}
 
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *drivers.QueryOption) (outIt drivers.FileIterator, outErr error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
 	conf, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)

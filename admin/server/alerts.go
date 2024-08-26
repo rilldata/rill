@@ -82,8 +82,8 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	}
 
 	return &adminv1.GetAlertMetaResponse{
-		OpenUrl:            s.urls.alertOpen(org.Name, proj.Name, req.Alert),
-		EditUrl:            s.urls.alertEdit(org.Name, proj.Name, req.Alert),
+		OpenUrl:            s.admin.URLs.AlertOpen(org.Name, proj.Name, req.Alert),
+		EditUrl:            s.admin.URLs.AlertEdit(org.Name, proj.Name, req.Alert),
 		QueryForAttributes: attrPB,
 	}, nil
 }

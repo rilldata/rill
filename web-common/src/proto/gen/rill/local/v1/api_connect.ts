@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployProjectRequest, DeployProjectResponse, DeployValidationRequest, DeployValidationResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -43,17 +43,6 @@ export const LocalService = {
       name: "GetVersion",
       I: GetVersionRequest,
       O: GetVersionResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * DeployValidation validates a deploy request.
-     *
-     * @generated from rpc rill.local.v1.LocalService.DeployValidation
-     */
-    deployValidation: {
-      name: "DeployValidation",
-      I: DeployValidationRequest,
-      O: DeployValidationResponse,
       kind: MethodKind.Unary,
     },
     /**
