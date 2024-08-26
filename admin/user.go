@@ -214,6 +214,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 
 	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
 		Name:                                orgName,
+		DisplayName:                         orgName,
 		Description:                         description,
 		CustomDomain:                        "",
 		QuotaProjects:                       quotaProjects,

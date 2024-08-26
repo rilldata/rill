@@ -90,7 +90,8 @@
   $: reports = $reportsQuery.data?.resources ?? [];
 
   $: organizationPaths = organizations.reduce(
-    (map, { name }) => map.set(name.toLowerCase(), { label: name }),
+    (map, { name, displayName }) =>
+      map.set(name.toLowerCase(), { label: displayName || name }),
     new Map<string, PathOption>(),
   );
 

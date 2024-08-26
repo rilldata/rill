@@ -1505,6 +1505,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for NewName
 	}
 
+	if m.DisplayName != nil {
+		// no validation rules for DisplayName
+	}
+
 	if m.BillingEmail != nil {
 
 		if err := m._validateEmail(m.GetBillingEmail()); err != nil {
@@ -30327,6 +30331,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for Id
 
 	// no validation rules for Name
+
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 

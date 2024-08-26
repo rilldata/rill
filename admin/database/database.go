@@ -276,6 +276,7 @@ var ErrNotUnique = errors.New("database: violates unique constraint")
 type Organization struct {
 	ID                                  string
 	Name                                string
+	DisplayName                         string `db:"display_name"`
 	Description                         string
 	CustomDomain                        string    `db:"custom_domain"`
 	AllUsergroupID                      *string   `db:"all_usergroup_id"`
@@ -295,6 +296,7 @@ type Organization struct {
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
 	Name                                string `validate:"slug"`
+	DisplayName                         string
 	Description                         string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
@@ -311,6 +313,7 @@ type InsertOrganizationOptions struct {
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
 	Name                                string `validate:"slug"`
+	DisplayName                         string
 	Description                         string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int

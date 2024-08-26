@@ -62,7 +62,7 @@
     </div>
     <UserInviteForm {organization} {project} />
   </div>
-  {#if $userDomain.data && $isPublicDomain.data}
+  {#if $userDomain.data && !$isPublicDomain.data}
     <div class="flex flex-col gap-y-1">
       <div class="text-sm font-medium">Allow domain access</div>
       <div class="flex flex-row gap-x-2">

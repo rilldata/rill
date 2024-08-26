@@ -262,6 +262,7 @@ export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
+  displayName?: string;
   billingEmail?: string;
 };
 
@@ -742,6 +743,7 @@ export interface V1OrganizationPermissions {
 export interface V1Organization {
   id?: string;
   name?: string;
+  displayName?: string;
   description?: string;
   customDomain?: string;
   quotas?: V1OrganizationQuotas;

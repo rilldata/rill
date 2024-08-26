@@ -548,6 +548,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   newName?: string;
 
   /**
+   * @generated from field: optional string display_name = 5;
+   */
+  displayName?: string;
+
+  /**
    * @generated from field: optional string billing_email = 4;
    */
   billingEmail?: string;
@@ -563,6 +568,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
@@ -10705,6 +10711,11 @@ export class Organization extends Message<Organization> {
   name = "";
 
   /**
+   * @generated from field: string display_name = 11;
+   */
+  displayName = "";
+
+  /**
    * @generated from field: string description = 3;
    */
   description = "";
@@ -10754,6 +10765,7 @@ export class Organization extends Message<Organization> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
