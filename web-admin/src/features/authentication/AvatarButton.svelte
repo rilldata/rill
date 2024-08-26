@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createAdminServiceGetCurrentUser } from "../../client";
-  import { ADMIN_URL } from "../../client/http-client";
+  import { ADMIN_URL, CANONICAL_ADMIN_URL } from "../../client/http-client";
   import {
     initPylonChat,
     type UserLike,
@@ -23,7 +23,7 @@
 
   function makeLogOutHref(): string {
     // Create a login URL that redirects back to the current page
-    const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
+    const loginWithRedirect = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
 
     // Create the logout URL, providing the login URL as a redirect
     const href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;

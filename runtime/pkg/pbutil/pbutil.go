@@ -116,6 +116,14 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			}
 		}
 	case string:
+		if t != nil && t.Code == runtimev1.Type_CODE_DECIMAL {
+			// Evil cast to float until frontend can deal with bigs:
+			v2, ok := new(big.Float).SetString(v)
+			if ok {
+				f, _ := v2.Float64()
+				return structpb.NewNumberValue(f), nil
+			}
+		}
 		return structpb.NewStringValue(strings.ToValidUTF8(v, "�")), nil
 	case net.IP:
 		return structpb.NewStringValue(v.String()), nil

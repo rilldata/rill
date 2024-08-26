@@ -152,7 +152,7 @@
   <ErrorPage
     statusCode={error.response.status}
     header="Error fetching deployment"
-    body={error.response.data.message}
+    body={error.response.data?.message}
   />
 {:else if projectData}
   {#if !projectData.prodDeployment}
