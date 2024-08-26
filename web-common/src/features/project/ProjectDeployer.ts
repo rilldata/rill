@@ -1,5 +1,6 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
+import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
 import { extractDeployError } from "@rilldata/web-common/features/project/deploy-errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -20,8 +21,6 @@ import {
   localServiceGetCurrentUser,
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
-
-const nameSanitiserRegex = /[^\w-]/g;
 
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
@@ -86,10 +85,9 @@ export class ProjectDeployer {
     const userResp = get(this.user).data as GetCurrentUserResponse;
     if (!userResp.user) {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
-      window.open(
-        `${metadata.loginUrl}/?redirect=${get(page).url.toString()}`,
-        "_self",
-      );
+      const u = new URL(metadata.loginUrl);
+      u.searchParams.set("redirect", get(page).url.toString());
+      window.open(u.toString(), "_self");
     } else {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
     }
@@ -183,6 +181,6 @@ export class ProjectDeployer {
   }
 
   private getOrgNameFromEmail(email: string): string {
-    return email.split("@")[0]?.replace(nameSanitiserRegex, "-") ?? "";
+    return sanitizeOrgName(email.split("@")[0] ?? "");
   }
 }

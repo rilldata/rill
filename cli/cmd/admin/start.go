@@ -273,9 +273,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			admOpts := &admin.Options{
 				DatabaseDriver:     conf.DatabaseDriver,
 				DatabaseDSN:        conf.DatabaseURL,
+				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
+				FrontendURL:        conf.FrontendURL,
 				ProvisionerSetJSON: conf.ProvisionerSetJSON,
 				DefaultProvisioner: conf.DefaultProvisioner,
-				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
 				VersionNumber:      ch.Version.Number,
 				VersionCommit:      ch.Version.Commit,
 				MetricsProjectOrg:  metricsProjectOrg,
@@ -324,8 +325,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
-					ExternalURL:            conf.ExternalURL,
-					FrontendURL:            conf.FrontendURL,
 					AllowedOrigins:         conf.AllowedOrigins,
 					SessionKeyPairs:        keyPairs,
 					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
