@@ -421,30 +421,30 @@
                 );
               }}
               on:chart-brush={(e) => {
-                const { interval, isScrubbing } = e.detail;
+                const { interval } = e.detail;
 
                 metricsExplorerStore.setSelectedScrubRange(metricViewName, {
                   start: interval?.start,
                   end: interval?.end,
-                  isScrubbing: isScrubbing,
+                  isScrubbing: true,
                 });
               }}
               on:chart-brush-end={(e) => {
-                const { interval, isScrubbing } = e.detail;
+                const { interval } = e.detail;
 
                 metricsExplorerStore.setSelectedScrubRange(metricViewName, {
                   start: interval?.start,
                   end: interval?.end,
-                  isScrubbing: isScrubbing,
+                  isScrubbing: false,
                 });
               }}
               on:chart-brush-clear={(e) => {
-                const { start, end, isScrubbing } = e.detail;
+                const { start, end } = e.detail;
 
                 metricsExplorerStore.setSelectedScrubRange(metricViewName, {
                   start,
                   end,
-                  isScrubbing,
+                  isScrubbing: false,
                 });
               }}
             />
