@@ -103,6 +103,12 @@ const config = {
           },
           {
             type: "docSidebar",
+            sidebarId: "tutorialsSidebar",
+            position: "left",
+            label: "Tutorials",
+          },
+          {
+            type: "docSidebar",
             sidebarId: "refSidebar",
             position: "left",
             label: "Reference",
@@ -113,12 +119,7 @@ const config = {
             to: "notes",
             position: "left",
           },
-          {
-            type: "docSidebar",
-            sidebarId: "tutorialsSidebar",
-            position: "left",
-            label: "Tutorials",
-          },
+
           {
             to: "contact",
             position: "left",
@@ -127,12 +128,12 @@ const config = {
           {
             href: "https://github.com/rilldata/rill",
             label: "GitHub",
-            position: "left",
+            position: "right",
           },
           {
             href: "https://www.rilldata.com/blog",
             label: "Blog",
-            position: "left",
+            position: "right",
           },
           {
             type: "search",

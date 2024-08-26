@@ -29,49 +29,83 @@ const sidebars = {
           
           {
             type: 'category',
-            label: 'Rill Developer Source to Dashboard Deployment in 5 Steps!',
+            label: 'Basic: Rill Developer Source to Dashboard Deployment',
             description: 'Rill 100 series: Rill Developer to  to Rill Cloud',
             items: [
                 'tutorials/rill_learn_100/101_2',
-                'tutorials/rill_learn_100/components/102_1',
-                'tutorials/rill_learn_100/components/102_2',
-                'tutorials/rill_learn_100/components/102_3',
-                'tutorials/rill_learn_100/deploy/106_1',
-                'tutorials/rill_learn_100/107_0',
-                ]
-          },
+                
+                {
+                  type: 'category',
+                  label: 'Rill Developer Components',
+                  items: [
+                    'tutorials/rill_learn_100/components/102_1',
+                    'tutorials/rill_learn_100/components/102_2',
+                    'tutorials/rill_learn_100/components/102_3',
+                    
+                  ]
+                },
+                
+                {
+                  type: 'category',
+                  label: 'Modifying the Metric-Views',
+                  items: [
 
+                    'tutorials/rill_learn_100/dashboard/103_1',
+                    'tutorials/rill_learn_100/dashboard/103_3',
+                    'tutorials/rill_learn_100/dashboard/103_0_u'
+                  ]
+                },
+                
+  
+
+                {
+                type: 'category',
+                label: 'Deploy to Rill Cloud',
+                items: [
+                  'tutorials/rill_learn_100/deploy/106_1',
+                  
+                ]
+              },
+             'tutorials/rill_learn_100/107_0',
+              ]
+          },
           {
             type: 'category',
-            label: 'Rill Cloud Features Explained',
-            description: 'Rill 200 series: Rill Cloud features',
+            label: 'Advanced: Rill Cloud Features and Advanced Usage',
+            description: 'Rill 200 series: Rill Cloud features, User Management, and more!',
             items: [
               'tutorials/rill_learn_200/201_0',
+              'tutorials/rill_learn_200/201_1',              
+              'tutorials/rill_learn_200/203_0',
               {
                 type: 'category',
                 label: 'Back to Rill Developer',
                 items: [
                   'tutorials/rill_learn_200/advanced_developer/204_0',
                   'tutorials/rill_learn_200/advanced_developer/204_1',
-                    ]
+                  'tutorials/rill_learn_200/advanced_developer/204_2',
+                ]
               },
-              'tutorials/rill_learn_200/cloud_components/205_0',
-              'tutorials/rill_learn_200/cloud_components/205_1',
-              'tutorials/rill_learn_200/cloud_components/205_2',
-              'tutorials/rill_learn_200/cloud_components/205_3',
-              'tutorials/rill_learn_200/cloud_components/205_4',
-
+              {
+                type: 'category',
+                label: 'Rill Cloud Features',
+                items: [
+                  'tutorials/rill_learn_200/cloud_components/205_0',
+                  'tutorials/rill_learn_200/cloud_components/205_1',
+                  'tutorials/rill_learn_200/cloud_components/205_2',
+                  'tutorials/rill_learn_200/cloud_components/205_3',
+                  'tutorials/rill_learn_200/cloud_components/205_4',
+                ]
+              },              
 
               'tutorials/rill_learn_200/210_0',
             ]
           },
-
           {
             type: 'category',
-            label: "Rill's Advanced features",
+            label: 'Expert: Custom features and Beyond',
             description: 'Rill 300 series: Advanced use cases and beyond',
             items: [
-                'tutorials/rill_learn_300/overview',
               {
                 type: 'category',
                 label: 'Rill Custom Dashboards',
@@ -111,49 +145,34 @@ const sidebars = {
                   
                 ]
               },
-              'tutorials/rill_learn_300/the_end',
-              ]
-          },
-          {
-            type: 'category',
-            label: 'Administration Topics',
-            description: 'Rill 100.5 series Ril Cloud Administration',
-            items: [
-              'tutorials/rill_learn_200/201_1',              
-              'tutorials/rill_learn_200/203_0',
-              'tutorials/rill_learn_200/advanced_developer/204_2',
-              {
-                type: 'category',
-                label: 'Rill CLI',
-                items: [
-                  'tutorials/rill_learn_100/CLI/105_0',
-                  'tutorials/rill_learn_100/CLI/105_1',
-                  'tutorials/rill_learn_100/CLI/105_2'
-                  
-                ]
-              },
-
+              'tutorials/rill_learn_300/310_0',
               ]
           },
           
           {
             type: 'category',
-            label: 'Rill and ClickHouse in 4 steps',
+            label: 'Rill and ClickHouse',
             description: 'For our friends from ClickHouse, a revamped guide.',
             items: [
+                'tutorials/rill_clickhouse/r_ch_0',
+                'tutorials/rill_clickhouse/r_ch_1',
                 'tutorials/rill_clickhouse/r_ch_2',
                 'tutorials/rill_clickhouse/components/r_ch_3',
                 'tutorials/rill_clickhouse/components/r_ch_4',
-                'tutorials/rill_clickhouse/deploy/r_ch_8',        
+                'tutorials/rill_clickhouse/components/r_ch_5',
                 {
                   type: 'category',
-                  label: 'Extra Topics:',
+                  label: 'Deploy To Cloud',
+                  link: {
+                    type: 'doc',
+                    id: 'tutorials/rill_clickhouse/r_ch_6',
+          
+                  },
                   items: [
-                    'tutorials/rill_clickhouse/components/r_ch_5',
-                    ],
-            
-              },
-                
+                    'tutorials/rill_clickhouse/deploy/r_ch_7',
+                    'tutorials/rill_clickhouse/deploy/r_ch_8',        
+                  ]
+                },
 
               ]
           },
@@ -193,6 +212,14 @@ const sidebars = {
           },
           {
             type: 'category',
+            label: 'OLAP',
+            description: "In-depth into our different OLAP engines",
+            items: [
+              'tutorials/guides/OLAP/rill_clickhouse',           
+            ]
+          },
+          {
+            type: 'category',
             label: 'Rill Concepts Explained',
             description: "Concepts further explained!",
             items: [
@@ -207,7 +234,9 @@ const sidebars = {
 
                 ]
               },
-        
+          
+              'tutorials/guides/use-case/all_in_one',
+
               'tutorials/guides/conceptual/one_dashboard',      
               'tutorials/guides/use-case/embed-dashboard',    
               'tutorials/guides/use-case/time-series-comparison',    
