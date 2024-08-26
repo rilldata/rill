@@ -1,11 +1,10 @@
 <script lang="ts">
   import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
+    createQueryServiceResolveComponent,
     V1ComponentSpecResolverProperties,
     V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
-  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
   import type { View, VisualizationSpec } from "svelte-vega";
@@ -34,15 +33,13 @@
   $: dashboardName = getContext("rill::custom-dashboard:name") as string;
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
-  $: chartDataQuery = createRuntimeServiceGetChartData(
-    queryClient,
+  $: chartDataQuery = createQueryServiceResolveComponent(
     $runtime.instanceId,
     chartName,
-    $inputVariableParams,
-    resolverProperties,
+    { args: $inputVariableParams },
   );
 
-  $: data = $chartDataQuery?.data;
+  $: data = $chartDataQuery?.data?.data;
 </script>
 
 {#if parsedVegaSpec}

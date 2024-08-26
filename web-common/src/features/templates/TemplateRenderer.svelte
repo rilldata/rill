@@ -31,13 +31,7 @@
 {:else if renderer === "image"}
   <Image {rendererProperties} />
 {:else if renderer === "select"}
-  <Select
-    {componentName}
-    {input}
-    {output}
-    {resolverProperties}
-    {rendererProperties}
-  />
+  <Select {componentName} {input} {output} {rendererProperties} />
 {:else if renderer === "switch"}
   <Switch {output} {rendererProperties} />
 {:else if resolverProperties}

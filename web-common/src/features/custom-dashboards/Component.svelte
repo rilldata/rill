@@ -51,19 +51,7 @@
     output,
     title,
     subtitle,
-    // show,
   } = componentResource?.component?.spec ?? {});
-
-  // $: inputVariableParams = useVariableInputParams(dashboardName, input);
-
-  // $: parsedResourceQuery = createRuntimeServiceGetParsedComponent(
-  //   queryClient,
-  //   instanceId,
-  //   componentName,
-  //   $inputVariableParams,
-  // );
-
-  // $: console.log($parsedResourceQuery.data);
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 

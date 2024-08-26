@@ -15,9 +15,10 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { V1MetricsViewRowsResponseDataItem } from "@rilldata/web-common/runtime-client";
-  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
+  import {
+    createQueryServiceResolveComponent,
+    V1MetricsViewRowsResponseDataItem,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
 
@@ -47,13 +48,9 @@
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
   $: chartDataQuery = resolverProperties
-    ? createRuntimeServiceGetChartData(
-        queryClient,
-        instanceId,
-        chartName,
-        $inputVariableParams,
-        resolverProperties,
-      )
+    ? createQueryServiceResolveComponent(instanceId, chartName, {
+        args: $inputVariableParams,
+      })
     : null;
 
   let isFetching = false;
@@ -61,7 +58,7 @@
 
   $: if (chartDataQuery) {
     isFetching = $chartDataQuery?.isFetching ?? false;
-    chartData = $chartDataQuery?.data;
+    chartData = $chartDataQuery?.data?.data;
   }
 </script>
 
