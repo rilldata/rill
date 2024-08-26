@@ -4,7 +4,7 @@
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
-  import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
+  import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -44,7 +44,6 @@
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
-  // and a meta.reconcileError exists.
   $: isDashboardErrored =
     $dashboard?.data?.metricsView?.state?.validSpec === null &&
     !!$dashboard?.data?.meta?.reconcileError;
@@ -71,13 +70,11 @@
   <title>{dashboardName} - Rill</title>
 </svelte:head>
 
-<!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
-  because dashboard #1 is errored, but dashboard #2 could be OK.  -->
 {#if $dashboard.isSuccess}
   {#if isDashboardReconcilingForFirstTime}
     <DashboardBuilding />
   {:else if isDashboardErrored}
-    <ProjectErrored organization={orgName} project={projectName} />
+    <DashboardErrored organization={orgName} project={projectName} />
   {:else if metricViewName}
     {#key metricViewName}
       <StateManagersProvider metricsViewName={metricViewName}>
