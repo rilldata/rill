@@ -27,7 +27,6 @@
     reduceDimensionData,
     updateVegaOnTableHover,
   } from "./utils";
-  import { TimeRange } from "@rilldata/web-common/lib/time/types";
   import { VegaSignalManager } from "./vega-signal-manager";
 
   export let totalsData: TimeSeriesDatum[];
@@ -114,8 +113,6 @@
     }
   }
 
-  // $: console.log("vegaSpec: ", vegaSpec.signals);
-
   $: tooltipFormatter = tddTooltipFormatter(
     chartType,
     expandedMeasureLabel,
@@ -125,57 +122,8 @@
     timeGrain,
   );
 
-  const createAdaptiveUpdateScrubRange = () => {
-    let rafId: number | null = null;
-    let lastUpdateTime = 0;
-    let currentInterval = 1000 / 60; // Start with 60fps
-    const MIN_INTERVAL = 1000 / 120; // Max 120fps
-    const MAX_INTERVAL = 1000 / 30; // Min 30fps
-    const ADJUSTMENT_FACTOR = 1.2;
+  let isClearing = false;
 
-    const updateScrubRange = (
-      interval: TimeRange | undefined,
-      isScrubbing: boolean,
-    ) => {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-
-      rafId = requestAnimationFrame((timestamp) => {
-        const elapsed = timestamp - lastUpdateTime;
-        if (elapsed >= currentInterval) {
-          dispatch("chart-brush", { interval, isScrubbing });
-          lastUpdateTime = timestamp;
-
-          // Adjust interval based on performance
-          if (elapsed > currentInterval * ADJUSTMENT_FACTOR) {
-            currentInterval = Math.min(
-              currentInterval * ADJUSTMENT_FACTOR,
-              MAX_INTERVAL,
-            );
-          } else {
-            currentInterval = Math.max(
-              currentInterval / ADJUSTMENT_FACTOR,
-              MIN_INTERVAL,
-            );
-          }
-        }
-        rafId = null;
-      });
-    };
-
-    onDestroy(() => {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-    });
-
-    return updateScrubRange;
-  };
-
-  const updateScrubRange = createAdaptiveUpdateScrubRange();
-
-  // TODO: centralize signal listeners to vega signal manager
   const signalListeners = {
     hover: (_name: string, value) => {
       const dimension = resolveSignalField(value, "dimension");
@@ -186,12 +134,76 @@
     brush: (_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
 
-      updateScrubRange(interval, true);
+      console.log("brush_x:", viewVL.signal("brush_x"));
+      console.log("brush_ts:", viewVL.signal("brush_ts"));
+
+      // Skip if we're in the process of clearing
+      if (isClearing) return;
+
+      function updateAdaptiveScrubRange() {
+        let rafId: number | null = null;
+        let lastUpdateTime = 0;
+        let currentInterval = 1000 / 60; // Start with 60fps
+
+        const MIN_INTERVAL = 1000 / 120; // Max 120fps
+        const MAX_INTERVAL = 1000 / 30; // Min 30fps
+        const ADJUSTMENT_FACTOR = 1.2; // Adjust interval based on performance
+
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+        }
+
+        rafId = requestAnimationFrame((timestamp) => {
+          const elapsed = timestamp - lastUpdateTime;
+          if (elapsed >= currentInterval) {
+            dispatch("chart-brush", { interval, isScrubbing: true });
+            lastUpdateTime = timestamp;
+
+            // Adjust interval based on performance
+            if (elapsed > currentInterval * ADJUSTMENT_FACTOR) {
+              currentInterval = Math.min(
+                currentInterval * ADJUSTMENT_FACTOR,
+                MAX_INTERVAL,
+              );
+            } else {
+              currentInterval = Math.max(
+                currentInterval / ADJUSTMENT_FACTOR,
+                MIN_INTERVAL,
+              );
+            }
+          }
+          rafId = null;
+        });
+
+        onDestroy(() => {
+          if (rafId) {
+            cancelAnimationFrame(rafId);
+          }
+        });
+
+        return updateAdaptiveScrubRange;
+      }
+
+      updateAdaptiveScrubRange();
     },
     brush_end: (_name: string, value: boolean) => {
       const interval = resolveSignalIntervalField(value);
 
       dispatch("chart-brush-end", { interval, isScrubbing: false });
+    },
+    brush_clear: (_name: string, value: boolean) => {
+      if (value) {
+        isClearing = true;
+        dispatch("chart-brush-clear", {
+          start: undefined,
+          end: undefined,
+          isScrubbing: false,
+        });
+        // Allow other signals to process
+        setTimeout(() => {
+          isClearing = false;
+        }, 0);
+      }
     },
   };
 

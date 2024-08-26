@@ -93,6 +93,11 @@
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
   $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
+  $: console.log(
+    "$dashboardStore?.selectedScrubRange: ",
+    $dashboardStore?.selectedScrubRange,
+  );
+
   $: isAllTime =
     $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
   $: isPercOfTotalAsContextColumn =
@@ -407,6 +412,7 @@
               isTimeComparison={showComparison}
               on:chart-hover={(e) => {
                 const { dimension, ts } = e.detail;
+
                 updateChartInteractionStore(
                   ts,
                   dimension,
@@ -430,6 +436,15 @@
                   start: interval?.start,
                   end: interval?.end,
                   isScrubbing: isScrubbing,
+                });
+              }}
+              on:chart-brush-clear={(e) => {
+                const { start, end, isScrubbing } = e.detail;
+
+                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                  start,
+                  end,
+                  isScrubbing,
                 });
               }}
             />
