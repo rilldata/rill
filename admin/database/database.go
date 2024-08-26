@@ -50,6 +50,7 @@ type DB interface {
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
+	FindOrganizationByCustomDomain(ctx context.Context, domain string) (*Organization, error)
 	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
@@ -277,6 +278,7 @@ type Organization struct {
 	Name                                string
 	DisplayName                         string `db:"display_name"`
 	Description                         string
+	CustomDomain                        string    `db:"custom_domain"`
 	AllUsergroupID                      *string   `db:"all_usergroup_id"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
@@ -296,6 +298,7 @@ type InsertOrganizationOptions struct {
 	Name                                string `validate:"slug"`
 	DisplayName                         string
 	Description                         string
+	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -312,6 +315,7 @@ type UpdateOrganizationOptions struct {
 	Name                                string `validate:"slug"`
 	DisplayName                         string
 	Description                         string
+	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -789,7 +793,7 @@ type OrganizationWhitelistedDomain struct {
 type InsertOrganizationWhitelistedDomainOptions struct {
 	OrgID     string `validate:"required"`
 	OrgRoleID string `validate:"required"`
-	Domain    string `validate:"domain"`
+	Domain    string `validate:"fqdn"`
 }
 
 // OrganizationWhitelistedDomainWithJoinedRoleNames convenience type used for display-friendly representation of an OrganizationWhitelistedDomain.
@@ -810,7 +814,7 @@ type ProjectWhitelistedDomain struct {
 type InsertProjectWhitelistedDomainOptions struct {
 	ProjectID     string `validate:"required"`
 	ProjectRoleID string `validate:"required"`
-	Domain        string `validate:"domain"`
+	Domain        string `validate:"fqdn"`
 }
 
 type ProjectWhitelistedDomainWithJoinedRoleNames struct {

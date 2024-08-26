@@ -92,7 +92,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	tokenStr := token.Token().String()
 	return &adminv1.IssueMagicAuthTokenResponse{
 		Token: tokenStr,
-		Url:   s.urls.magicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+		Url:   s.admin.URLs.MagicAuthTokenOpen(req.Organization, req.Project, tokenStr),
 	}, nil
 }
 

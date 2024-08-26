@@ -24,6 +24,13 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{name}"};
   }
 
+  // GetOrganizationNameForDomain finds the org name for a custom domain.
+  // If the application detects it is running on a non-default domain, it can use this to find the org to present.
+  // It can be called without being authenticated.
+  rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
+    option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
+  }
+
   // CreateOrganization creates a new organization
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
     option (google.api.http) = {
@@ -459,6 +466,17 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+  // It only updates the custom domain in the database, which is used to ensure correct redirects.
+  // The DNS records and ingress TLS must be configured separately.
+  rpc SudoUpdateOrganizationCustomDomain(SudoUpdateOrganizationCustomDomainRequest) returns (SudoUpdateOrganizationCustomDomainResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/custom-domain",
+      body: "*"
+    };
+  }
+
+
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
     option (google.api.http) = {
@@ -786,6 +804,14 @@ message GetOrganizationRequest {
 message GetOrganizationResponse {
   Organization organization = 1;
   OrganizationPermissions permissions = 2;
+}
+
+message GetOrganizationNameForDomainRequest {
+  string domain = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetOrganizationNameForDomainResponse {
+  string name = 1;
 }
 
 message CreateOrganizationRequest {
@@ -1192,6 +1218,15 @@ message SudoUpdateOrganizationBillingCustomerRequest {
 message SudoUpdateOrganizationBillingCustomerResponse {
   Organization organization = 1;
   repeated Subscription subscriptions = 2;
+}
+
+message SudoUpdateOrganizationCustomDomainRequest {
+  string name = 1;
+  string custom_domain = 2;
+}
+
+message SudoUpdateOrganizationCustomDomainResponse {
+  Organization organization = 1;
 }
 
 message SudoUpdateUserQuotasRequest {
@@ -1979,8 +2014,9 @@ message Service {
 message Organization {
   string id = 1;
   string name = 2; // Globally unique
-  string display_name = 10;
+  string display_name = 11;
   string description = 3;
+  string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;

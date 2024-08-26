@@ -190,6 +190,29 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/organization-for-domain/{domain}:
+    get:
+      summary: |-
+        GetOrganizationNameForDomain finds the org name for a custom domain.
+        If the application detects it is running on a non-default domain, it can use this to find the org to present.
+        It can be called without being authenticated.
+      operationId: AdminService_GetOrganizationNameForDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationNameForDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -2895,6 +2918,30 @@ paths:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
       tags:
         - AdminService
+  /v1/superuser/organization/custom-domain:
+    patch:
+      summary: |-
+        SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+        It only updates the custom domain in the database, which is used to ensure correct redirects.
+        The DNS records and ingress TLS must be configured separately.
+      operationId: AdminService_SudoUpdateOrganizationCustomDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
+      tags:
+        - AdminService
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -3741,6 +3788,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationNameForDomainResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1GetOrganizationResponse:
     type: object
     properties:
@@ -4109,6 +4161,8 @@ definitions:
       displayName:
         type: string
       description:
+        type: string
+      customDomain:
         type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
@@ -4536,6 +4590,18 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Subscription'
+  v1SudoUpdateOrganizationCustomDomainRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      customDomain:
+        type: string
+  v1SudoUpdateOrganizationCustomDomainResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:

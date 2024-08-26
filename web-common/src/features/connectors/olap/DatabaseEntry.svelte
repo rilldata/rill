@@ -46,7 +46,7 @@
   <ol transition:slide={{ duration }}>
     {#if $expanded}
       {#if error}
-        <span class="message">Error: {error.response.data.message}</span>
+        <span class="message">Error: {error.response.data?.message}</span>
       {:else if isLoading}
         <span class="message">Loading schemas...</span>
       {:else if data}

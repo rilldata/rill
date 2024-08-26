@@ -452,9 +452,13 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+export interface V1SudoUpdateOrganizationCustomDomainResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+}
+
+export interface V1SudoUpdateOrganizationCustomDomainRequest {
+  name?: string;
+  customDomain?: string;
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
@@ -502,6 +506,11 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -736,6 +745,7 @@ export interface V1Organization {
   name?: string;
   displayName?: string;
   description?: string;
+  customDomain?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -965,6 +975,10 @@ export interface V1GetPaymentsPortalURLResponse {
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
+}
+
+export interface V1GetOrganizationNameForDomainResponse {
+  name?: string;
 }
 
 export interface V1GetIFrameResponse {

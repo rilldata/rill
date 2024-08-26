@@ -227,11 +227,11 @@ export function createTimeSeriesDataStore(
           const error = {};
           if (primary.error) {
             isError = true;
-            error["timeseries"] = primary.error.response.data.message;
+            error["timeseries"] = primary.error.response.data?.message;
           }
           if (primaryTotal.error) {
             isError = true;
-            error["totals"] = primaryTotal.error.response.data.message;
+            error["totals"] = primaryTotal.error.response.data?.message;
           }
 
           return {
