@@ -3,7 +3,10 @@
   This page is for showing them the message that github app is installed on another repo than they need to reinstall app on right repo.  -->
 <script lang="ts">
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import {
+    redirectToGithubLogin,
+    redirectToLogin,
+  } from "@rilldata/web-admin/client/redirect-utils";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -19,7 +22,7 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          window.location.href = `${CANONICAL_ADMIN_URL}/auth/login?redirect=${window.location.href}`;
+          redirectToLogin();
         }
       },
     },
@@ -47,11 +50,7 @@
       </CtaMessage>
       <CtaButton
         variant="primary"
-        on:click={() => {
-          window.location.href = encodeURI(
-            CANONICAL_ADMIN_URL + "/github/connect?remote=" + remote,
-          );
-        }}
+        on:click={() => redirectToGithubLogin(remote)}
       >
         Connect to GitHub
       </CtaButton>
