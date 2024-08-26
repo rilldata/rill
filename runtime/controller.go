@@ -1354,6 +1354,25 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
 
+	// Emit event unless it was a cancellation.
+	if inv.cancelledOn.IsZero() {
+		eventArgs := []attribute.KeyValue{
+			attribute.String("name", inv.name.Name),
+			attribute.String("type", unqualifiedKind(inv.name.Kind)),
+			attribute.Int64("elapsed_ms", elapsed.Milliseconds()),
+		}
+		if inv.isDelete {
+			eventArgs = append(eventArgs, attribute.Bool("deleted", true))
+		}
+		if inv.isRename {
+			eventArgs = append(eventArgs, attribute.Bool("renamed", true))
+		}
+		if inv.result.Err != nil {
+			eventArgs = append(eventArgs, attribute.String("error", inv.result.Err.Error()))
+		}
+		c.Activity.Record(context.Background(), activity.EventTypeLog, "reconciled_resource", eventArgs...)
+	}
+
 	r, err := c.catalog.get(inv.name, true, false)
 	if err != nil {
 		if !errors.Is(err, drivers.ErrResourceNotFound) {
