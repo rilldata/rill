@@ -41,6 +41,5 @@
     {renderer}
     {componentName}
     {rendererProperties}
-    {resolverProperties}
   />
 {/if}

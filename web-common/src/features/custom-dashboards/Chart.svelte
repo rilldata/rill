@@ -2,7 +2,6 @@
   import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import {
     createQueryServiceResolveComponent,
-    V1ComponentSpecResolverProperties,
     V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -14,7 +13,6 @@
   export let chartView: boolean;
   export let input: V1ComponentVariable[] | undefined;
   export let vegaSpec: VisualizationSpec | string | undefined;
-  export let resolverProperties: V1ComponentSpecResolverProperties;
 
   let viewVL: View;
   let error: string | null = null;

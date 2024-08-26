@@ -34,8 +34,6 @@
   export let componentName: string;
   export let instanceId: string;
 
-  // const dashboardName = getContext("rill::custom-dashboard:name") as string;
-
   $: resourceQuery = useResource(
     instanceId,
     componentName,
@@ -115,7 +113,6 @@
           {input}
           vegaSpec={rendererProperties?.spec}
           chartName={componentName}
-          {resolverProperties}
         />
       {:else if renderer && rendererProperties}
         <TemplateRenderer
