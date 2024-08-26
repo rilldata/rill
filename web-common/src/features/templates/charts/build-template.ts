@@ -3,10 +3,7 @@ import { VisualizationSpec } from "svelte-vega";
 import { buildArea } from "./area";
 import { buildGroupedBar } from "./grouped-bar";
 import { buildLine } from "./line";
-import {
-  buildSimpleBarSingleLayer,
-  buildSimpleBarMultiLayer,
-} from "./simple-bar";
+import { buildSimpleBarSingleLayer } from "./simple-bar";
 import { buildStackedArea } from "./stacked-area";
 import { buildStackedBar } from "./stacked-bar";
 
@@ -42,16 +39,14 @@ export function buildVegaLiteSpec(
 
   if (BAR_LIKE_CHARTS.includes(chartType)) {
     if (!hasNominalFields) {
-      return buildSimpleBarMultiLayer(timeFields[0], quantitativeFields[0]);
+      return buildSimpleBarSingleLayer(timeFields[0], quantitativeFields[0]);
     } else if (chartType === ChartType.GROUPED_BAR) {
-      // TODO: to configure multi layer for full height hover when comparison is enabled
       return buildGroupedBar(
         timeFields[0],
         quantitativeFields[0],
         nominalFields[0],
       );
     } else if (chartType === ChartType.STACKED_BAR) {
-      // TODO: to configure multi layer for full height hover when comparison is enabled
       return buildStackedBar(
         timeFields[0],
         quantitativeFields[0],
