@@ -30,7 +30,7 @@
 
 <style lang="postcss">
   .settings-container {
-    @apply min-w-[500px] max-w-[844px] border border-slate-200;
+    @apply w-full max-w-[844px] border border-slate-200;
   }
 
   .settings-header {
