@@ -2,6 +2,8 @@ import { VegaSpec } from "svelte-vega";
 import { compile, TopLevelSpec } from "vega-lite";
 import { Signal } from "vega-typings";
 
+// WARN Config.customFormatTypes is not true, thus custom format type and format for channel y are dropped.
+// See: https://github.com/vega/vega-lite/pull/6448
 export class VegaSignalManager {
   private compiledSpec: VegaSpec;
 
@@ -72,22 +74,6 @@ export class VegaSignalManager {
           },
           update: { signal: "brush" },
         },
-        // When user pointerups outside of chart
-        // TODO: revisit this
-        // {
-        //   events: {
-        //     source: "window",
-        //     type: "pointerup",
-        //   },
-        //   update: { signal: "brush" },
-        // },
-        // {
-        //   events: {
-        //     source: "window",
-        //     type: "pointerdown",
-        //   },
-        //   update: { signal: "brush" },
-        // },
       ],
     };
   }

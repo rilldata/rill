@@ -93,11 +93,6 @@
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
   $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
-  $: console.log(
-    "$dashboardStore?.selectedScrubRange: ",
-    $dashboardStore?.selectedScrubRange,
-  );
-
   $: isAllTime =
     $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
   $: isPercOfTotalAsContextColumn =
@@ -106,7 +101,7 @@
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
-  $: isAlternateChart = tddChartType != TDDChart.DEFAULT;
+  $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasureV2[];
@@ -410,6 +405,12 @@
               xMin={startValue}
               xMax={endValue}
               isTimeComparison={showComparison}
+              clearScrubRange={() => {
+                metricsExplorerStore.setSelectedScrubRange(
+                  metricViewName,
+                  undefined,
+                );
+              }}
               on:chart-hover={(e) => {
                 const { dimension, ts } = e.detail;
 
