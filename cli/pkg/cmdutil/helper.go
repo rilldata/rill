@@ -4,17 +4,24 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/auth"
+	"github.com/rilldata/rill/cli/cmd/org"
+	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -29,6 +36,8 @@ const (
 	telemetryIntakeUser     = "data-modeler"
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
+
+var ErrInvalidProject = errors.New("invalid project")
 
 type Helper struct {
 	*printer.Printer
@@ -221,7 +230,7 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 	return h.activityClient
 }
 
-// CurrentUser fetches the ID of the current user.
+// CurrentUserID fetches the ID of the current user.
 // It caches the result in ~/.rill, along with a hash of the current admin token for cache invalidation in case of login/logout.
 func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 	if h.AdminToken() == "" {
@@ -365,6 +374,101 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	}
 
 	return SelectPrompt("Select project", names, "")
+}
+
+func (h *Helper) LoginWithTelemetry(ctx context.Context, redirectURL string) error {
+	h.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
+	time.Sleep(2 * time.Second)
+
+	h.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginStart)
+
+	if err := auth.Login(ctx, h, redirectURL); err != nil {
+		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
+			h.PrintfWarn("Rill login has timed out as the code was not confirmed in the browser.\n")
+			h.PrintfWarn("Run `rill deploy` again.\n")
+			return nil
+		} else if errors.Is(err, deviceauth.ErrCodeRejected) {
+			h.PrintfError("Login failed: Confirmation code rejected\n")
+			return nil
+		}
+		return fmt.Errorf("login failed: %w", err)
+	}
+
+	// The cmdutil.Helper automatically detects the login and will add the user's ID to the telemetry.
+	h.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginSuccess)
+
+	return nil
+}
+
+func (h *Helper) ValidateLocalProject(ctx context.Context, gitPath, subPath string) (string, string, error) {
+	var localGitPath string
+	var err error
+	if gitPath != "" {
+		localGitPath, err = fileutil.ExpandHome(gitPath)
+		if err != nil {
+			return "", "", err
+		}
+	}
+	localGitPath, err = filepath.Abs(localGitPath)
+	if err != nil {
+		return "", "", err
+	}
+
+	var localProjectPath string
+	if subPath == "" {
+		localProjectPath = localGitPath
+	} else {
+		localProjectPath = filepath.Join(localGitPath, subPath)
+	}
+
+	// Verify that localProjectPath contains a Rill project.
+	if rillv1beta.HasRillProject(localProjectPath) {
+		return localGitPath, localProjectPath, nil
+	}
+	// If not, we still navigate user to login and then fail afterwards.
+	if !h.IsAuthenticated() {
+		err := h.LoginWithTelemetry(ctx, "")
+		if err != nil {
+			h.PrintfWarn("Login failed with error: %s\n", err.Error())
+		}
+		fmt.Println()
+	}
+
+	h.PrintfWarn("Directory %q doesn't contain a valid Rill project.\n", localProjectPath)
+	h.PrintfWarn("Run `rill deploy` from a Rill project directory or use `--path` to pass a project path.\n")
+	h.PrintfWarn("Run `rill start` to initialize a new Rill project.\n")
+	return "", "", ErrInvalidProject
+}
+
+// SetDefaultOrg sets a default org for the user if user is part of any org.
+func (h *Helper) SetDefaultOrg(ctx context.Context) error {
+	c, err := h.Client()
+	if err != nil {
+		return err
+	}
+
+	res, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	if err != nil {
+		return fmt.Errorf("listing orgs failed: %w", err)
+	}
+
+	if len(res.Organizations) == 1 {
+		h.Org = res.Organizations[0].Name
+		if err := dotrill.SetDefaultOrg(h.Org); err != nil {
+			return err
+		}
+	} else if len(res.Organizations) > 1 {
+		orgName, err := org.SwitchSelectFlow(res.Organizations)
+		if err != nil {
+			return fmt.Errorf("org selection failed %w", err)
+		}
+
+		h.Org = orgName
+		if err := dotrill.SetDefaultOrg(h.Org); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func hashStr(ss ...string) string {

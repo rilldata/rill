@@ -19,29 +19,22 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
-	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-var (
-	errInvalidProject = errors.New("invalid project")
-	nonSlugRegex      = regexp.MustCompile(`[^\w-]`)
-)
+var nonSlugRegex = regexp.MustCompile(`[^\w-]`)
 
 const (
 	pollTimeout  = 10 * time.Minute
@@ -138,9 +131,9 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	var localGitPath, localProjectPath string
 	if isLocalGitPath {
 		var err error
-		localGitPath, localProjectPath, err = validateLocalProject(ctx, ch, opts)
+		localGitPath, localProjectPath, err = ch.ValidateLocalProject(ctx, opts.GitPath, opts.SubPath)
 		if err != nil {
-			if errors.Is(err, errInvalidProject) {
+			if errors.Is(err, cmdutil.ErrInvalidProject) {
 				return nil
 			}
 			return err
@@ -218,11 +211,6 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		}
 	}
 
-	adminClient, err := ch.Client()
-	if err != nil {
-		return err
-	}
-
 	// Run flow for access to the Github remote (if necessary)
 	ghRes, err := githubFlow(ctx, ch, githubURL, silentGitFlow)
 	if err != nil {
@@ -241,7 +229,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	// Set a default org for the user if necessary
 	// (If user is not in an org, we'll create one based on their Github account later in the flow.)
 	if ch.Org == "" {
-		if err := setDefaultOrg(ctx, adminClient, ch); err != nil {
+		if err := ch.SetDefaultOrg(ctx); err != nil {
 			return err
 		}
 	}
@@ -330,11 +318,11 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	// If user is not authenticated, run login flow.
 	if !ch.IsAuthenticated() {
-		if err := loginWithTelemetry(ctx, ch, ""); err != nil {
+		if err := ch.LoginWithTelemetry(ctx, ""); err != nil {
 			return err
 		}
 	}
-	_, localProjectPath, err := validateLocalProject(ctx, ch, opts)
+	_, localProjectPath, err := ch.ValidateLocalProject(ctx, opts.GitPath, opts.SubPath)
 	if err != nil {
 		return err
 	}
@@ -350,7 +338,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		return err
 	}
 	if ch.Org == "" {
-		if err := setDefaultOrg(ctx, adminClient, ch); err != nil {
+		if err := ch.SetDefaultOrg(ctx); err != nil {
 			return err
 		}
 	}
@@ -466,46 +454,6 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	return nil
 }
 
-func validateLocalProject(ctx context.Context, ch *cmdutil.Helper, opts *Options) (string, string, error) {
-	var localGitPath string
-	var err error
-	if opts.GitPath != "" {
-		localGitPath, err = fileutil.ExpandHome(opts.GitPath)
-		if err != nil {
-			return "", "", err
-		}
-	}
-	localGitPath, err = filepath.Abs(localGitPath)
-	if err != nil {
-		return "", "", err
-	}
-
-	var localProjectPath string
-	if opts.SubPath == "" {
-		localProjectPath = localGitPath
-	} else {
-		localProjectPath = filepath.Join(localGitPath, opts.SubPath)
-	}
-
-	// Verify that localProjectPath contains a Rill project.
-	if rillv1beta.HasRillProject(localProjectPath) {
-		return localGitPath, localProjectPath, nil
-	}
-	// If not, we still navigate user to login and then fail afterwards.
-	if !ch.IsAuthenticated() {
-		err := loginWithTelemetry(ctx, ch, "")
-		if err != nil {
-			ch.PrintfWarn("Login failed with error: %s\n", err.Error())
-		}
-		fmt.Println()
-	}
-
-	ch.PrintfWarn("Directory %q doesn't contain a valid Rill project.\n", localProjectPath)
-	ch.PrintfWarn("Run `rill deploy` from a Rill project directory or use `--path` to pass a project path.\n")
-	ch.PrintfWarn("Run `rill start` to initialize a new Rill project.\n")
-	return "", "", errInvalidProject
-}
-
 // setDefaultOrg sets a default org for the user if user is part of any org.
 func setDefaultOrg(ctx context.Context, c *client.Client, ch *cmdutil.Helper) error {
 	res, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
@@ -548,31 +496,7 @@ func loginWithTelemetryAndGithubRedirect(ctx context.Context, ch *cmdutil.Helper
 	if err != nil {
 		return err
 	}
-	return loginWithTelemetry(ctx, ch, redirectURL)
-}
-
-func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
-	ch.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
-	time.Sleep(2 * time.Second)
-
-	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginStart)
-
-	if err := auth.Login(ctx, ch, redirectURL); err != nil {
-		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
-			ch.PrintfWarn("Rill login has timed out as the code was not confirmed in the browser.\n")
-			ch.PrintfWarn("Run `rill deploy` again.\n")
-			return nil
-		} else if errors.Is(err, deviceauth.ErrCodeRejected) {
-			ch.PrintfError("Login failed: Confirmation code rejected\n")
-			return nil
-		}
-		return fmt.Errorf("login failed: %w", err)
-	}
-
-	// The cmdutil.Helper automatically detects the login and will add the user's ID to the telemetry.
-	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginSuccess)
-
-	return nil
+	return ch.LoginWithTelemetry(ctx, redirectURL)
 }
 
 func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath string, silent bool) error {
