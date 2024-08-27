@@ -52,23 +52,12 @@
 
   let previousChartType: TDDChart | undefined;
   let hasSwitchedChart = false;
+  // Reset scrub range when chart type changes until we migrate line chart to vega
   $: if (chartType !== previousChartType) {
     hasSwitchedChart = true;
     previousChartType = chartType;
 
     clearScrubRange();
-
-    // if (viewVL) {
-    //   const signalStates = viewVL.getState({
-    //     signals: (name) =>
-    //       ["brush_tuple", "brush_x", "brush_yearmonth_ts"].includes(name),
-    //   });
-    //   console.log("(brush) signalStates:", signalStates);
-
-    //   viewVL.runAsync().catch((error) => {
-    //     console.error("Error updating view after chart type change:", error);
-    //   });
-    // }
   }
 
   $: hasDimensionData = !!dimensionData?.length;
