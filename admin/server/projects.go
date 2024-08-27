@@ -210,16 +210,21 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
+	instancePermissions := []runtimeauth.Permission{
+		runtimeauth.ReadObjects,
+		runtimeauth.ReadMetrics,
+		runtimeauth.ReadAPI,
+	}
+	if permissions.ManageProject {
+		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
-			depl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-			},
+			depl.RuntimeInstanceID: instancePermissions,
 		},
 		Attributes:    attr,
 		SecurityRules: rules,
