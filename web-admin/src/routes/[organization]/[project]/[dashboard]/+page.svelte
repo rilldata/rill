@@ -17,6 +17,10 @@
 
   const user = createAdminServiceGetCurrentUser();
 
+  const PollIntervalWhenDashboardFirstReconciling = 1000;
+  const PollIntervalWhenDashboardErrored = 5000;
+  // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
+
   $: instanceId = $runtime?.instanceId;
 
   $: ({
@@ -28,9 +32,12 @@
   $: dashboard = useDashboardV2(instanceId, dashboardName, {
     refetchInterval: () => {
       if (isDashboardReconcilingForFirstTime) {
-        return 1000;
+        return PollIntervalWhenDashboardFirstReconciling;
+      } else if (isDashboardErrored) {
+        return PollIntervalWhenDashboardErrored;
+      } else {
+        return false;
       }
-      return false;
     },
   });
 
