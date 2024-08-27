@@ -1214,6 +1214,6 @@ func (a *AST) interval(g, mg runtimev1.TimeGrain) (string, error) {
 	return "0", nil
 }
 
-func isSmaller(t runtimev1.TimeGrain, tg runtimev1.TimeGrain) bool {
+func isSmaller(t, tg runtimev1.TimeGrain) bool {
 	return t < tg
 }
