@@ -4,7 +4,6 @@ import {
   ScrubBoxColor,
   ScrubMutedColor,
   ScrubArea0Color,
-  BarColor,
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildSimpleBarSingleLayer(
