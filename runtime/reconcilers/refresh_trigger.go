@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -69,12 +70,31 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		return runtime.ReconcileResult{}
 	}
 
+	// As a special case, triggers for the global project parser should actually be handled just by triggering a reconcile on it.
+	// We do this here instead of in the loop below since calling r.C.Reconcile directly must be done outside of a catalog lock.
+	for i, rn := range trigger.Spec.Resources {
+		if !equalResourceName(rn, runtime.GlobalProjectParserName) {
+			continue
+		}
+
+		err = r.C.Reconcile(ctx, runtime.GlobalProjectParserName)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+
+		trigger.Spec.Resources = slices.Delete(trigger.Spec.Resources, i, i+1)
+		break
+	}
+
+	// Get the catalog in case we need to update model splits
 	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	defer release()
 
+	// Lock the catalog, so we delay any reconciles from starting until we've set all the triggers.
+	// This will remove the chance of fast cancellations if resources that are connected in the DAG are getting triggered.
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
