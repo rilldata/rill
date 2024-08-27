@@ -268,26 +268,14 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	name := fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999"))
-
 	// Backwards compatibility for req.Trigger (deprecated)
 	if req.Trigger != nil {
-		var kind string
-		r := &runtimev1.Resource{}
 		switch trg := req.Trigger.(type) {
 		case *runtimev1.CreateTriggerRequest_PullTriggerSpec:
-			kind = runtime.ResourceKindPullTrigger
-			r.Resource = &runtimev1.Resource_PullTrigger{PullTrigger: &runtimev1.PullTrigger{Spec: trg.PullTriggerSpec}}
+			req.Parser = true
 		case *runtimev1.CreateTriggerRequest_RefreshTriggerSpec:
-			kind = runtime.ResourceKindRefreshTrigger
-			r.Resource = &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: trg.RefreshTriggerSpec}}
-		}
-
-		n := &runtimev1.ResourceName{Kind: kind, Name: name}
-
-		err = ctrl.Create(ctx, n, nil, nil, nil, true, r)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to create trigger: %w", err).Error())
+			req.Resources = trg.RefreshTriggerSpec.Resources
+			req.Models = trg.RefreshTriggerSpec.Models
 		}
 	}
 
@@ -328,6 +316,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	}
 
 	// Create the trigger resource
+	name := fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999"))
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: name}
 	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
 	err = ctrl.Create(ctx, n, nil, nil, nil, true, r)
