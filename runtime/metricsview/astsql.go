@@ -1,10 +1,8 @@
 package metricsview
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // SQL builds a SQL query from the AST.
@@ -217,33 +215,6 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	}
 
 	return nil
-}
-
-func (a *AST) interval(g, mg TimeGrain) (string, error) {
-	var start1 time.Time
-	var start2 time.Time
-	if a.query.TimeRange == nil {
-		return "", fmt.Errorf("no time range for the offset")
-	}
-	if a.query.TimeRange.Start.IsZero() {
-		return "", fmt.Errorf("no start time for the offset")
-	}
-	start1 = a.query.TimeRange.Start
-	if a.query.ComparisonTimeRange == nil {
-		return "", fmt.Errorf("no comparison time range for the offset")
-	}
-	if a.query.ComparisonTimeRange.Start.IsZero() {
-		return "", fmt.Errorf("no start time for the comparison time range")
-	}
-	start2 = a.query.ComparisonTimeRange.Start
-	if g == TimeGrainUnspecified {
-		g = TimeGrainMillisecond // todo millis won't work for druid
-		return a.dialect.DateDiff(string(g), start1, start2)
-	} else if g == mg {
-		return a.dialect.DateDiff(string(g), start1, start2)
-	}
-	// g > mg -> zero diff
-	return "0", nil
 }
 
 func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {

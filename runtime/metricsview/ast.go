@@ -3,6 +3,7 @@ package metricsview
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -65,13 +66,7 @@ type FieldNode struct {
 	Name      string
 	Label     string
 	Expr      string
-	TimeProps TimeProps
-}
-
-type TimeProps struct {
-	Time      bool
-	TimeGrain TimeGrain
-	MinGrain  TimeGrain
+	TimeGrain runtimev1.TimeGrain
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -141,30 +136,18 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	// Build dimensions to apply against the underlying SELECT.
 	// We cache these in the AST type because when resolving expressions and adding new JOINs, we need the ability to reference these.
 	ast.dimFields = make([]FieldNode, 0, len(ast.query.Dimensions))
-	timeFields := make([]FieldNode, 0, len(ast.query.Dimensions))
-	minGrain := TimeGrainYear
 	for _, qd := range ast.query.Dimensions {
 		dim, err := ast.resolveDimension(qd, true)
 		if err != nil {
 			return nil, fmt.Errorf("invalid dimension %q: %w", qd.Name, err)
 		}
 
-		tm, gn := ast.isTime(qd)
+		gn := ast.timeGrain(qd)
 		f := FieldNode{
-			Name:  dim.Name,
-			Label: dim.Label,
-			Expr:  ast.dialect.MetricsViewDimensionExpression(dim),
-			TimeProps: TimeProps{
-				Time:      tm,
-				TimeGrain: gn,
-				MinGrain:  gn,
-			},
-		}
-		if f.TimeProps.Time {
-			timeFields = append(timeFields, f)
-			if gn.isLess(minGrain) {
-				minGrain = gn
-			}
+			Name:      dim.Name,
+			Label:     dim.Label,
+			Expr:      ast.dialect.MetricsViewDimensionExpression(dim),
+			TimeGrain: gn,
 		}
 
 		if dim.Unnest {
@@ -182,12 +165,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		}
 
 		ast.dimFields = append(ast.dimFields, f)
-	}
-
-	for _, f := range timeFields {
-		if f.TimeProps.Time {
-			f.TimeProps.MinGrain = minGrain
-		}
 	}
 
 	// Build underlying SELECT
@@ -594,8 +571,7 @@ func (a *AST) buildBaseSelect(alias string, tr *TimeRange) (*SelectNode, error) 
 		FromTable: a.underlyingTable,
 		Where:     a.underlyingWhere,
 	}
-	n.DimFields = make([]FieldNode, len(a.dimFields))
-	copy(n.DimFields, a.dimFields)
+	n.DimFields = slices.Clone(a.dimFields)
 
 	a.addTimeRange(n, tr)
 
@@ -834,20 +810,33 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 			return err
 		}
 
-		for i, f := range csn.DimFields {
-			if f.TimeProps.Time {
-				intv, err := a.interval(f.TimeProps.TimeGrain, f.TimeProps.MinGrain)
-				if err != nil {
-					return err
-				}
-
-				if f.TimeProps.TimeGrain == TimeGrainUnspecified {
-					return fmt.Errorf("unspecified time grain")
-				}
-
-				// example: (<expr> - INTERVAL (DATEDIFF(...)) SECONDS)
-				csn.DimFields[i].Expr = fmt.Sprintf("(%s - INTERVAL (%s) %s)", f.Expr, intv, string(f.TimeProps.TimeGrain))
+		minGrain := runtimev1.TimeGrain_TIME_GRAIN_YEAR
+		for _, f := range csn.DimFields {
+			if f.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				continue
 			}
+			if isSmaller(f.TimeGrain, minGrain) {
+				minGrain = f.TimeGrain
+			}
+		}
+
+		// to join on a timestamp dimension with different subquery time ranges we need to specify offset in the join condition
+		for i, f := range csn.DimFields {
+			if f.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				continue
+			}
+			intv, err := a.interval(f.TimeGrain, minGrain)
+			if err != nil {
+				return err
+			}
+
+			if f.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				return fmt.Errorf("unspecified time grain")
+			}
+
+			// example: (<expr> - INTERVAL (DATEDIFF(...)) SECONDS)
+			gn := a.dialect.ConvertToDateTruncSpecifier(f.TimeGrain)
+			csn.DimFields[i].Expr = fmt.Sprintf("(%s - INTERVAL (%s) %s)", f.Expr, intv, gn)
 		}
 		n.JoinComparisonSelect = csn
 
@@ -953,7 +942,7 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 		s.DimFields = append(s.DimFields, FieldNode{
 			Name:      f.Name,
 			Label:     f.Label,
-			TimeProps: f.TimeProps,
+			TimeGrain: f.TimeGrain,
 			Expr:      a.sqlForMember(cpy.Alias, f.Name),
 		})
 	}
@@ -964,7 +953,7 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 			Name:      f.Name,
 			Label:     f.Label,
 			Expr:      a.sqlForMember(cpy.Alias, f.Name),
-			TimeProps: f.TimeProps,
+			TimeGrain: f.TimeGrain,
 		})
 	}
 
@@ -1184,7 +1173,7 @@ func hasMeasure(n *SelectNode, name string) bool {
 	return false
 }
 
-func (a *AST) isTime(qd Dimension) (bool, TimeGrain) {
+func (a *AST) timeGrain(qd Dimension) runtimev1.TimeGrain {
 	tm := qd.Name == a.metricsView.TimeDimension &&
 		qd.Compute != nil &&
 		qd.Compute.TimeFloor != nil &&
@@ -1192,8 +1181,39 @@ func (a *AST) isTime(qd Dimension) (bool, TimeGrain) {
 		qd.Compute.TimeFloor.Dimension == a.metricsView.TimeDimension
 
 	if tm {
-		return true, qd.Compute.TimeFloor.Grain
+		return qd.Compute.TimeFloor.Grain.ToProto()
 	}
 
-	return false, ""
+	return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+}
+
+func (a *AST) interval(g, mg runtimev1.TimeGrain) (string, error) {
+	var start1 time.Time
+	var start2 time.Time
+	if a.query.TimeRange == nil {
+		return "", fmt.Errorf("no time range for the offset")
+	}
+	if a.query.TimeRange.Start.IsZero() {
+		return "", fmt.Errorf("no start time for the offset")
+	}
+	start1 = a.query.TimeRange.Start
+	if a.query.ComparisonTimeRange == nil {
+		return "", fmt.Errorf("no comparison time range for the offset")
+	}
+	if a.query.ComparisonTimeRange.Start.IsZero() {
+		return "", fmt.Errorf("no start time for the comparison time range")
+	}
+	start2 = a.query.ComparisonTimeRange.Start
+	if g == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		g = runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND // todo millis won't work for druid
+		return a.dialect.DateDiff(g, start1, start2)
+	} else if g == mg {
+		return a.dialect.DateDiff(g, start1, start2)
+	}
+	// g > mg -> zero diff
+	return "0", nil
+}
+
+func isSmaller(t runtimev1.TimeGrain, tg runtimev1.TimeGrain) bool {
+	return t < tg
 }

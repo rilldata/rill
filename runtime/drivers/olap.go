@@ -451,7 +451,8 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 }
 
 // unit - ie second, minute, ...
-func (d Dialect) DateDiff(unit string, t1, t2 time.Time) (string, error) {
+func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, error) {
+	unit := d.ConvertToDateTruncSpecifier(grain)
 	switch d {
 	case DialectClickHouse:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
