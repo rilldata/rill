@@ -90,13 +90,9 @@ export function createStateManagers({
   const metricsSpecStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {
-    useResource(
-      r.instanceId,
-      metricViewName,
-      ResourceKind.MetricsView,
-      undefined,
+    useResource(r.instanceId, metricViewName, ResourceKind.MetricsView, {
       queryClient,
-    ).subscribe((result) => {
+    }).subscribe((result) => {
       // In case the store was created with a name that has incorrect casing
       if (result.data?.meta?.name?.name) {
         metricsViewNameStore.set(result.data.meta.name.name);

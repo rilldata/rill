@@ -44,34 +44,6 @@ export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,
   kind: ResourceKind,
-  selector?: (data: V1Resource) => T,
-  queryClient?: QueryClient,
-) {
-  return createRuntimeServiceGetResource(
-    instanceId,
-    {
-      "name.kind": kind,
-      "name.name": name,
-    },
-    {
-      query: {
-        select: (data) =>
-          (selector ? selector(data?.resource) : data?.resource) as T,
-        enabled: !!instanceId && !!name && !!kind,
-        queryClient,
-      },
-    },
-  );
-}
-
-/**
- * `useResourceV2` is a more flexible version of `useResource` that accepts
- *  any `queryOptions`, not just `select` and `queryClient`.
- */
-export function useResourceV2<T = V1Resource>(
-  instanceId: string,
-  name: string,
-  kind: ResourceKind,
   queryOptions?: CreateQueryOptions<
     V1GetResourceResponse,
     ErrorType<RpcStatus>,
@@ -107,8 +79,9 @@ export function useProjectParser(queryClient: QueryClient, instanceId: string) {
     instanceId,
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
-    undefined,
-    queryClient,
+    {
+      queryClient,
+    },
   );
 }
 
