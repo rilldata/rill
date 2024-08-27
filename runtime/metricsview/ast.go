@@ -1185,11 +1185,11 @@ func hasMeasure(n *SelectNode, name string) bool {
 }
 
 func (a *AST) isTime(qd Dimension) (bool, TimeGrain) {
-	tm := qd.Name == a.metricsView.TimeDimension ||
+	tm := qd.Name == a.metricsView.TimeDimension &&
 		qd.Compute != nil &&
-			qd.Compute.TimeFloor != nil &&
-			qd.Compute.TimeFloor.Grain.Valid() &&
-			qd.Compute.TimeFloor.Dimension == a.metricsView.TimeDimension
+		qd.Compute.TimeFloor != nil &&
+		qd.Compute.TimeFloor.Grain.Valid() &&
+		qd.Compute.TimeFloor.Dimension == a.metricsView.TimeDimension
 
 	if tm {
 		return true, qd.Compute.TimeFloor.Grain
