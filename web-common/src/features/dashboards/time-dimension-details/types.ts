@@ -5,6 +5,7 @@ export enum TDDChart {
   STACKED_AREA = "stacked_area",
 }
 
+export type TDDDefaultCharts = TDDChart.DEFAULT;
 export type TDDAlternateCharts = Exclude<TDDChart, TDDChart.DEFAULT>;
 export type TDDBarCharts = Exclude<TDDAlternateCharts, TDDChart.STACKED_AREA>;
 
