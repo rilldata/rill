@@ -2,13 +2,17 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
 )
 
@@ -89,6 +93,30 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	}
 
 	ch.PrintfBold("Successfully logged in. Welcome to Rill!\n")
+	return nil
+}
+
+func LoginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
+	ch.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
+	time.Sleep(2 * time.Second)
+
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginStart)
+
+	if err := Login(ctx, ch, redirectURL); err != nil {
+		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
+			ch.PrintfWarn("Rill login has timed out as the code was not confirmed in the browser.\n")
+			ch.PrintfWarn("Run `rill deploy` again.\n")
+			return nil
+		} else if errors.Is(err, deviceauth.ErrCodeRejected) {
+			ch.PrintfError("Login failed: Confirmation code rejected\n")
+			return nil
+		}
+		return fmt.Errorf("login failed: %w", err)
+	}
+
+	// The cmdutil.Helper automatically detects the login and will add the user's ID to the telemetry.
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginSuccess)
+
 	return nil
 }
 
