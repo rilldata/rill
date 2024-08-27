@@ -19,6 +19,7 @@
   import Https from "../../../components/icons/connectors/HTTPS.svelte";
   import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
   import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
+  import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
   import Postgres from "../../../components/icons/connectors/Postgres.svelte";
   import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
   import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
@@ -47,6 +48,7 @@
     "athena",
     "redshift",
     "duckdb",
+    "motherduck",
     "postgres",
     "mysql",
     "sqlite",
@@ -54,7 +56,6 @@
     "salesforce",
     "local_file",
     "https",
-    // "motherduck",
   ];
 
   const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
@@ -68,6 +69,8 @@
     bigquery: GoogleBigQuery,
     athena: AmazonAthena,
     redshift: AmazonRedshift,
+    duckdb: DuckDB,
+    motherduck: MotherDuck,
     postgres: Postgres,
     mysql: MySQL,
     sqlite: SQLite,
@@ -77,7 +80,6 @@
     https: Https,
     clickhouse: ClickHouse,
     druid: ApacheDruid,
-    duckdb: DuckDB,
     pinot: ApachePinot,
   };
 

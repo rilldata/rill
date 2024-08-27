@@ -116,6 +116,73 @@
       ],
       "type": "object"
     },
+    "SelectProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "labelField": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "tooltip": {
+          "type": "string"
+        },
+        "valueField": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "valueField"
+      ],
+      "type": "object"
+    },
+    "SelectPropertiesT": {
+      "additionalProperties": false,
+      "properties": {
+        "select": {
+          "$ref": "#/definitions/SelectProperties"
+        }
+      },
+      "required": [
+        "select"
+      ],
+      "type": "object"
+    },
+    "SwitchProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "tooltip": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "type": "object"
+    },
+    "SwitchPropertiesT": {
+      "additionalProperties": false,
+      "properties": {
+        "switch": {
+          "$ref": "#/definitions/SwitchProperties"
+        }
+      },
+      "required": [
+        "switch"
+      ],
+      "type": "object"
+    },
     "TableProperties": {
       "additionalProperties": false,
       "properties": {
@@ -124,6 +191,9 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "comparison_range": {
+          "type": "string"
         },
         "measures": {
           "items": {
@@ -145,10 +215,8 @@
         }
       },
       "required": [
-        "col_dimensions",
         "measures",
         "metric_view",
-        "row_dimensions",
         "time_range"
       ],
       "type": "object"
@@ -214,6 +282,12 @@
         },
         {
           "$ref": "#/definitions/ImageTemplateT"
+        },
+        {
+          "$ref": "#/definitions/SelectPropertiesT"
+        },
+        {
+          "$ref": "#/definitions/SwitchPropertiesT"
         }
       ]
     }

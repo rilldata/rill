@@ -47,7 +47,7 @@
   import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/shareable-urls/get-project-with-bearer-token";
+  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
@@ -62,7 +62,7 @@
 
   $: ({ organization, project, token } = $page.params);
   $: onProjectPage = isProjectPage($page);
-  $: onMagicLinkPage = !!token;
+  $: onPublicURLPage = !!token;
 
   /**
    * `GetProject` with default cookie-based auth.
@@ -79,8 +79,8 @@
 
   /**
    * `GetProject` with token-based auth.
-   * This returns the deployment credentials for anonymous users who visit a magic link.
-   * The token is provided via the `[organization]/[project]/-/share/[token]` URL (aka a "magic" link).
+   * This returns the deployment credentials for anonymous users who visit a Public URL.
+   * The token is provided via the `[organization]/[project]/-/share/[token]` URL.
    */
   $: tokenProjectQuery = createAdminServiceGetProjectWithBearerToken(
     organization,
@@ -92,7 +92,7 @@
     },
   );
 
-  $: projectQuery = onMagicLinkPage ? tokenProjectQuery : cookieProjectQuery;
+  $: projectQuery = onPublicURLPage ? tokenProjectQuery : cookieProjectQuery;
 
   /**
    * `GetDeploymentCredentials`
@@ -128,7 +128,7 @@
   $: authContext = (
     mockedUserId && mockedUserDeploymentCredentials
       ? "mock"
-      : onMagicLinkPage
+      : onPublicURLPage
         ? "magic"
         : "user"
   ) as AuthContext;
@@ -152,7 +152,7 @@
   <ErrorPage
     statusCode={error.response.status}
     header="Error fetching deployment"
-    body={error.response.data.message}
+    body={error.response.data?.message}
   />
 {:else if projectData}
   {#if !projectData.prodDeployment}

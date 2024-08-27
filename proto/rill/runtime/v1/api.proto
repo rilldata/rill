@@ -179,6 +179,11 @@ service RuntimeService {
   rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resource"};
   }
+
+  // GetModelSplits returns the splits of a model
+  rpc GetModelSplits(GetModelSplitsRequest) returns (GetModelSplitsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/splits"};
+  }
   
   // CreateTrigger creates a trigger in the catalog.
   // Triggers are ephemeral resources that will be cleaned up by the controller.
@@ -297,7 +302,7 @@ message Connector {
 
 // Request message for RuntimeService.ListInstances
 message ListInstancesRequest {
-  uint32 page_size = 1;
+  uint32 page_size = 1; 
   string page_token = 2;
 }
 
@@ -573,6 +578,15 @@ enum ResourceEvent {
   RESOURCE_EVENT_DELETE = 2;
 }
 
+message ModelSplit {
+  string key = 1;
+  google.protobuf.Struct data = 2;
+  google.protobuf.Timestamp watermark = 3;
+  google.protobuf.Timestamp executed_on = 4;
+  string error = 5;
+  uint32 elapsed_ms = 6;
+}
+
 message GetLogsRequest {
   string instance_id = 1;
   bool ascending = 2;
@@ -628,6 +642,18 @@ message GetResourceRequest {
 
 message GetResourceResponse {
   Resource resource = 1;
+}
+
+message GetModelSplitsRequest {
+  string instance_id = 1;
+  string model = 2;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
+  string page_token = 4;
+}
+
+message GetModelSplitsResponse {
+  repeated ModelSplit splits = 1;
+  string next_page_token = 2;
 }
 
 message CreateTriggerRequest {

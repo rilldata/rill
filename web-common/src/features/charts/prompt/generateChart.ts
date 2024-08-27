@@ -58,7 +58,7 @@ export function createChartGenerator(
     } catch (e) {
       chartPromptsStore.setPromptError(
         chart,
-        e.message ?? e.response.data.message,
+        e.message ?? e.response.data?.message,
       );
     }
   };
@@ -140,7 +140,7 @@ export function createFullChartGenerator(instanceId: string) {
     } catch (e) {
       chartPromptsStore.setPromptError(
         newChartName,
-        e.message ?? e.response.data.message,
+        e.message ?? e.response.data?.message,
       );
     }
   };

@@ -25,6 +25,8 @@ import type {
   V1GetGithubUserStatusResponse,
   V1ListGithubUserReposResponse,
   V1RevokeMagicAuthTokenResponse,
+  V1GetCurrentMagicAuthTokenResponse,
+  V1GetOrganizationNameForDomainResponse,
   V1ListOrganizationsResponse,
   AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
@@ -59,6 +61,8 @@ import type {
   V1UnsubscribeAlertResponse,
   V1GetAlertYAMLResponse,
   V1GetCloneCredentialsResponse,
+  V1ConnectProjectToGithubResponse,
+  AdminServiceConnectProjectToGithubBody,
   V1GetDeploymentCredentialsResponse,
   AdminServiceGetDeploymentCredentialsBody,
   V1HibernateProjectResponse,
@@ -83,6 +87,7 @@ import type {
   AdminServiceListMagicAuthTokensParams,
   V1IssueMagicAuthTokenResponse,
   AdminServiceIssueMagicAuthTokenBody,
+  V1UploadProjectAssetsResponse,
   V1RemoveProjectMemberUsergroupResponse,
   V1AddProjectMemberUsergroupResponse,
   V1SetProjectMemberUsergroupRoleResponse,
@@ -157,6 +162,8 @@ import type {
   V1SetSuperuserRequest,
   V1SudoUpdateOrganizationBillingCustomerResponse,
   V1SudoUpdateOrganizationBillingCustomerRequest,
+  V1SudoUpdateOrganizationCustomDomainResponse,
+  V1SudoUpdateOrganizationCustomDomainRequest,
   V1SudoUpdateAnnotationsResponse,
   V1SudoUpdateAnnotationsRequest,
   V1SearchProjectNamesResponse,
@@ -558,6 +565,123 @@ export const createAdminServiceRevokeMagicAuthToken = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary GetCurrentMagicAuthToken returns information about the current magic auth token.
+ */
+export const adminServiceGetCurrentMagicAuthToken = (signal?: AbortSignal) => {
+  return httpClient<V1GetCurrentMagicAuthTokenResponse>({
+    url: `/v1/magic-tokens/current`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetCurrentMagicAuthTokenQueryKey = () => [
+  `/v1/magic-tokens/current`,
+];
+
+export type AdminServiceGetCurrentMagicAuthTokenQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>
+>;
+export type AdminServiceGetCurrentMagicAuthTokenQueryError = RpcStatus;
+
+export const createAdminServiceGetCurrentMagicAuthToken = <
+  TData = Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>,
+  TError = RpcStatus,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetCurrentMagicAuthTokenQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>
+  > = ({ signal }) => adminServiceGetCurrentMagicAuthToken(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetOrganizationNameForDomain finds the org name for a custom domain.
+If the application detects it is running on a non-default domain, it can use this to find the org to present.
+It can be called without being authenticated.
+ */
+export const adminServiceGetOrganizationNameForDomain = (
+  domain: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetOrganizationNameForDomainResponse>({
+    url: `/v1/organization-for-domain/${domain}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetOrganizationNameForDomainQueryKey = (
+  domain: string,
+) => [`/v1/organization-for-domain/${domain}`];
+
+export type AdminServiceGetOrganizationNameForDomainQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>
+>;
+export type AdminServiceGetOrganizationNameForDomainQueryError = RpcStatus;
+
+export const createAdminServiceGetOrganizationNameForDomain = <
+  TData = Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+  TError = RpcStatus,
+>(
+  domain: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetOrganizationNameForDomainQueryKey(domain);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>
+  > = ({ signal }) => adminServiceGetOrganizationNameForDomain(domain, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!domain,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListOrganizations lists all the organizations currently managed by the admin
  */
@@ -1912,6 +2036,71 @@ export const createAdminServiceGetCloneCredentials = <
 };
 
 /**
+ * @summary Connects a rill managed project to github.
+Replaces the contents of the remote repo with the contents of the project.
+ */
+export const adminServiceConnectProjectToGithub = (
+  organization: string,
+  project: string,
+  adminServiceConnectProjectToGithubBody: AdminServiceConnectProjectToGithubBody,
+) => {
+  return httpClient<V1ConnectProjectToGithubResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/connect-to-github`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceConnectProjectToGithubBody,
+  });
+};
+
+export type AdminServiceConnectProjectToGithubMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceConnectProjectToGithub>>
+>;
+export type AdminServiceConnectProjectToGithubMutationBody =
+  AdminServiceConnectProjectToGithubBody;
+export type AdminServiceConnectProjectToGithubMutationError = RpcStatus;
+
+export const createAdminServiceConnectProjectToGithub = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceConnectProjectToGithub>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceConnectProjectToGithubBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceConnectProjectToGithub>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceConnectProjectToGithubBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceConnectProjectToGithub(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceConnectProjectToGithub>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceConnectProjectToGithubBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
  */
 export const adminServiceGetDeploymentCredentials = (
@@ -3017,6 +3206,71 @@ export const createAdminServiceIssueMagicAuthToken = <
       organization: string;
       project: string;
       data: AdminServiceIssueMagicAuthTokenBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary Converts a project connected to github to a rill managed project.
+Uploads the current project to assets.
+ */
+export const adminServiceUploadProjectAssets = (
+  organization: string,
+  project: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1UploadProjectAssetsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/upload-assets`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceUploadProjectAssetsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>
+>;
+export type AdminServiceUploadProjectAssetsMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceUploadProjectAssetsMutationError = RpcStatus;
+
+export const createAdminServiceUploadProjectAssets = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceUploadProjectAssets(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
@@ -6071,6 +6325,60 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
     >,
     TError,
     { data: V1SudoUpdateOrganizationBillingCustomerRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+It only updates the custom domain in the database, which is used to ensure correct redirects.
+The DNS records and ingress TLS must be configured separately.
+ */
+export const adminServiceSudoUpdateOrganizationCustomDomain = (
+  v1SudoUpdateOrganizationCustomDomainRequest: V1SudoUpdateOrganizationCustomDomainRequest,
+) => {
+  return httpClient<V1SudoUpdateOrganizationCustomDomainResponse>({
+    url: `/v1/superuser/organization/custom-domain`,
+    method: "patch",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateOrganizationCustomDomainRequest,
+  });
+};
+
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>
+  >;
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationBody =
+  V1SudoUpdateOrganizationCustomDomainRequest;
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationError =
+  RpcStatus;
+
+export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    TError,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoUpdateOrganizationCustomDomain(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    TError,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

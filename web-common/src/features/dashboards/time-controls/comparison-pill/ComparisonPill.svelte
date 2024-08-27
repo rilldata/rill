@@ -83,7 +83,7 @@
       <Switch checked={showTimeComparison} id="comparing" small />
 
       <Label class="font-normal text-xs cursor-pointer" for="comparing">
-        <span class:opacity-50={!showTimeComparison}>Comparing</span>
+        <span>Comparing</span>
       </Label>
     </div>
   </button>

@@ -82,6 +82,25 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
+
+		for _, usergroupID := range invite.UsergroupIDs {
+			// check if the user group exists, need to check explicitly as tx is not completed yet
+			exists, err := s.DB.CheckUsergroupExists(ctx, usergroupID)
+			if err != nil {
+				return nil, err
+			}
+
+			if !exists {
+				// ignore if usergroup does not exist, might have been deleted before invite was accepted
+				continue
+			}
+
+			err = s.DB.InsertUsergroupMemberUser(ctx, usergroupID, user.ID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
@@ -179,7 +198,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	return user, nil
 }
 
-func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string) (*database.Organization, error) {
+func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, orgName, description string) (*database.Organization, error) {
 	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
 		return nil, err
@@ -195,13 +214,18 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 
 	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
 		Name:                                orgName,
+		DisplayName:                         orgName,
 		Description:                         description,
+		CustomDomain:                        "",
 		QuotaProjects:                       quotaProjects,
 		QuotaDeployments:                    quotaDeployments,
 		QuotaSlotsTotal:                     quotaSlotsTotal,
 		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             quotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
+		BillingEmail:                        email,
+		BillingCustomerID:                   "", // Populated later
+		PaymentCustomerID:                   "", // Populated later
 	})
 	if err != nil {
 		return nil, err

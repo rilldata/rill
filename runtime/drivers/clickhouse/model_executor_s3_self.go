@@ -14,12 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-type s3ToSelfExecutor struct {
-	s3   drivers.Handle
-	c    *connection
-	opts *drivers.ModelExecutorOptions
-}
-
 type inputProps struct {
 	Path   string             `mapstructure:"path"`
 	Format drivers.FileFormat `mapstructure:"format"`
@@ -32,9 +26,23 @@ func (p *inputProps) Validate() error {
 	return nil
 }
 
-func (e *s3ToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
+type s3ToSelfExecutor struct {
+	s3 drivers.Handle
+	c  *connection
+}
+
+var _ drivers.ModelExecutor = &s3ToSelfExecutor{}
+
+func (e *s3ToSelfExecutor) Concurrency(desired int) (int, bool) {
+	if desired > 1 {
+		return desired, true
+	}
+	return _defaultConcurrentInserts, true
+}
+
+func (e *s3ToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &inputProps{}
-	if err := mapstructure.WeakDecode(e.opts.InputProperties, inputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if err := inputProps.Validate(); err != nil {
@@ -66,20 +74,31 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, e
 	if err := mapstructure.Decode(props, &propsMap); err != nil {
 		return nil, err
 	}
-	// Build the model executor options with updated input properties
-	opts := &drivers.ModelExecutorOptions{
-		Env:              e.opts.Env,
-		ModelName:        e.opts.ModelName,
-		InputConnector:   e.opts.OutputConnector,
-		InputProperties:  propsMap,
-		OutputConnector:  e.opts.OutputConnector,
-		OutputProperties: e.opts.OutputProperties,
-		Priority:         e.opts.Priority,
-		Incremental:      e.opts.Incremental,
-		IncrementalRun:   e.opts.IncrementalRun,
+
+	// Build the model executor options with updated input and output properties
+	clone := *opts
+	clone.InputProperties = propsMap
+	newOpts := &clone
+
+	// Ensure materialize is true because the selfToSelfExecutor is not able to infer it independently.
+	outputProps := &ModelOutputProperties{}
+	err = mapstructure.WeakDecode(opts.OutputProperties, &outputProps)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	executor := &selfToSelfExecutor{c: e.c, opts: opts}
-	return executor.Execute(ctx)
+
+	if outputProps.Materialize != nil && !*outputProps.Materialize {
+		return nil, fmt.Errorf("models must be materialized when fetching data from s3")
+	}
+	outputProps.Materialize = boolPtr(true)
+	err = mapstructure.WeakDecode(outputProps, &newOpts.OutputProperties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
+	// execute
+	executor := &selfToSelfExecutor{c: e.c}
+	return executor.Execute(ctx, newOpts)
 }
 
 func (e *s3ToSelfExecutor) genSQL(glob, format string) (string, error) {

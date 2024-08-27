@@ -24,7 +24,7 @@
   <DropdownMenuContent class="w-[520px] p-4" side="bottom" align="end">
     <div class="flex flex-col gap-y-3">
       <div class="flex flex-row items-center">
-        <div class="text-base font-medium">Share this project</div>
+        <div class="text-sm font-medium">Share this project</div>
         <div class="grow"></div>
         <CopyInviteLinkButton {copyLink} />
       </div>

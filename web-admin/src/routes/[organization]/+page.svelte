@@ -15,17 +15,19 @@
   $: projs = createAdminServiceListProjectsForOrganization(orgName, undefined, {
     query: { enabled: !!$org.data?.organization },
   });
+
+  $: title = $org.data?.organization?.displayName || orgName;
 </script>
 
 <svelte:head>
-  <title>{orgName} overview - Rill</title>
+  <title>{title} overview - Rill</title>
 </svelte:head>
 
 {#if $org.data && $org.data.organization && $projs.data}
   <section
     class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto flex flex-col gap-y-4"
   >
-    <OrganizationHero organization={orgName} />
+    <OrganizationHero organization={orgName} {title} />
     {#if $projs.data.projects?.length === 0}
       <span
         >This organization has no projects yet. <a

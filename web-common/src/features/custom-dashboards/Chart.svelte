@@ -1,15 +1,18 @@
 <script lang="ts">
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { V1ComponentSpecResolverProperties } from "@rilldata/web-common/runtime-client";
-  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
+  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import {
+    createQueryServiceResolveComponent,
+    V1ComponentVariable,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getContext } from "svelte";
   import type { View, VisualizationSpec } from "svelte-vega";
   import VegaLiteRenderer from "../charts/render/VegaLiteRenderer.svelte";
 
   export let chartName: string;
   export let chartView: boolean;
+  export let input: V1ComponentVariable[] | undefined;
   export let vegaSpec: VisualizationSpec | string | undefined;
-  export let resolverProperties: V1ComponentSpecResolverProperties;
 
   let viewVL: View;
   let error: string | null = null;
@@ -25,14 +28,16 @@
     error = JSON.stringify(e);
   }
 
-  $: chartDataQuery = createRuntimeServiceGetChartData(
-    queryClient,
+  $: dashboardName = getContext("rill::custom-dashboard:name") as string;
+  $: inputVariableParams = useVariableInputParams(dashboardName, input);
+
+  $: chartDataQuery = createQueryServiceResolveComponent(
     $runtime.instanceId,
     chartName,
-    resolverProperties,
+    { args: $inputVariableParams },
   );
 
-  $: data = $chartDataQuery?.data;
+  $: data = $chartDataQuery?.data?.data;
 </script>
 
 {#if parsedVegaSpec}

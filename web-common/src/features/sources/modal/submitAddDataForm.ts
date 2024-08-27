@@ -29,13 +29,13 @@ import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
-import { compileCreateSourceYAML } from "../sourceUtils";
+import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
 import { AddDataFormType } from "./types";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export async function submitAddDataForm(
@@ -84,17 +84,37 @@ export async function submitAddDataForm(
    */
 
   if (formType === "source") {
+    const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+      connector,
+      formValues,
+    );
+
     // Make a new <source>.yaml file
     await runtimeServicePutFile(instanceId, {
-      path: getFileAPIPathFromNameAndType(values.name, EntityType.Table),
-      blob: compileCreateSourceYAML(formValues, connector.name as string),
+      path: getFileAPIPathFromNameAndType(
+        values.name as string,
+        EntityType.Table,
+      ),
+      blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
       create: true,
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
     });
 
+    // Update the `.env` file
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: await updateDotEnvWithSecrets(
+        queryClient,
+        rewrittenConnector,
+        rewrittenFormValues,
+      ),
+      create: true,
+      createOnly: false,
+    });
+
     await checkSourceImported(
       queryClient,
-      getFilePathFromNameAndType(values.name, EntityType.Table),
+      getFilePathFromNameAndType(values.name as string, EntityType.Table),
     );
 
     return;

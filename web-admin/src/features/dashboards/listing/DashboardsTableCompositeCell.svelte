@@ -30,7 +30,7 @@
 
 <svelte:element
   this={isEmbedded ? "button" : "a"}
-  class="flex flex-col gap-y-0.5 group px-4 py-[5px] w-full"
+  class="flex flex-col gap-y-0.5 group px-4 py-2 w-full"
   {href}
   role={isEmbedded ? "button" : "link"}
 >

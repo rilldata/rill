@@ -3,7 +3,6 @@
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
-  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/shareable-urls/selectors";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -23,12 +22,15 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
+  import PageTitle from "../public-urls/PageTitle.svelte";
+  import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
+  import { usePublicURLMetricsView } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
-  import PageTitle from "../shareable-urls/PageTitle.svelte";
   import {
-    isMagicLinkPage,
     isMetricsExplorerPage,
     isProjectPage,
+    withinOrganization,
+    isPublicURLPage,
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
@@ -45,13 +47,15 @@
     dashboard: dashboardParam,
     alert,
     report,
+    token,
   } = $page.params);
 
   $: onProjectPage = isProjectPage($page);
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
-  $: onMagicLinkPage = isMagicLinkPage($page);
+  $: onPublicURLPage = isPublicURLPage($page);
+  $: withinOrgPage = withinOrganization($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -86,7 +90,8 @@
   $: reports = $reportsQuery.data?.resources ?? [];
 
   $: organizationPaths = organizations.reduce(
-    (map, { name }) => map.set(name.toLowerCase(), { label: name }),
+    (map, { name, displayName }) =>
+      map.set(name.toLowerCase(), { label: displayName || name }),
     new Map<string, PathOption>(),
   );
 
@@ -133,14 +138,19 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  // When visiting a magic link, the metrics view name won't be in the URL. However, the URL's token will
-  // have access to only one metrics view. So, we can get the metrics view name from the first (and only) metrics view resource.
-  $: metricsViewQuery = useShareableURLMetricsView(instanceId, onMagicLinkPage);
-  $: dashboard = onMagicLinkPage
-    ? $metricsViewQuery.data?.meta?.name?.name
+  // Public URLs do not have the metrics view name in the URL. However, the magic token's metadata includes the metrics view name.
+  $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
+  $: dashboard = onPublicURLPage
+    ? $tokenQuery?.data?.token?.metricsView
     : dashboardParam;
 
-  $: magicLinkDashboardTitle =
+  // If on a Public URL, get the dashboard title
+  $: metricsViewQuery = usePublicURLMetricsView(
+    instanceId,
+    $tokenQuery?.data?.token?.metricsView,
+    onPublicURLPage,
+  );
+  $: publicURLDashboardTitle =
     $metricsViewQuery.data?.metricsView?.spec?.title ?? dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
@@ -148,7 +158,7 @@
 
 <div
   class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage}
+  class:border-b={!onProjectPage && !withinOrgPage}
 >
   <!-- Left side -->
   <a
@@ -157,8 +167,8 @@
   >
     <Rill />
   </a>
-  {#if onMagicLinkPage}
-    <PageTitle title={magicLinkDashboardTitle} />
+  {#if onPublicURLPage}
+    <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath} />
   {/if}
@@ -171,11 +181,11 @@
     {#if onProjectPage && manageProjectMembers}
       <UserInviteButton {organization} {project} />
     {/if}
-    {#if onMetricsExplorerPage || onMagicLinkPage}
+    {#if onMetricsExplorerPage || onPublicURLPage}
       <StateManagersProvider metricsViewName={dashboard}>
         <LastRefreshedDate {dashboard} />
         <GlobalDimensionSearch metricsViewName={dashboard} />
-        {#if $user.isSuccess && $user.data.user && !onMagicLinkPage}
+        {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
           <CreateAlert />
           <Bookmarks metricsViewName={dashboard} />
           <ShareDashboardButton {createMagicAuthTokens} />

@@ -104,7 +104,7 @@ func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organiz
 	}
 
 	customer, err := o.client.Customers.New(ctx, orb.CustomerNewParams{
-		Email:              orb.String(SupportEmail), // TODO use creators email or capture organization billing email
+		Email:              orb.String(Email(organization)),
 		Name:               orb.String(organization.Name),
 		ExternalCustomerID: orb.String(organization.ID),
 		Timezone:           orb.String(DefaultTimeZone),
@@ -156,6 +156,16 @@ func (o *Orb) UpdateCustomerPaymentID(ctx context.Context, customerID string, pr
 	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
 		PaymentProvider:   orb.F(paymentProviderType),
 		PaymentProviderID: orb.String(paymentProviderID),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Orb) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		Email: orb.String(email),
 	})
 	if err != nil {
 		return err

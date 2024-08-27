@@ -290,10 +290,10 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c, opts}, true
+		return &selfToSelfExecutor{c}, true
 	}
 	if opts.InputHandle.Driver() == "s3" && opts.OutputHandle == c {
-		return &s3ToSelfExecutor{opts.InputHandle, c, opts}, true
+		return &s3ToSelfExecutor{opts.InputHandle, c}, true
 	}
 	return nil, false
 }
@@ -327,10 +327,6 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
 }
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {

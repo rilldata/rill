@@ -1,12 +1,12 @@
-import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
-  isMagicLinkPage,
   isMetricsExplorerPage,
   isProjectPage,
   isProjectRequestAccessPage,
+  isPublicURLPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
 import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
@@ -16,16 +16,14 @@ import type { AxiosError } from "axios";
 import { get } from "svelte/store";
 import type { RpcStatus } from "../../client";
 import { getAdminServiceGetProjectQueryKey } from "../../client";
-import { ADMIN_URL } from "../../client/http-client";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
 
-    // Let the magic link page handle all errors
-    const onMagicLinkPage = isMagicLinkPage(get(page));
-    if (onMagicLinkPage) {
+    const onPublicURLPage = isPublicURLPage(get(page));
+    if (onPublicURLPage) {
       // When a token is expired, show a specific error page
       if (
         error.response?.status === 401 &&
@@ -40,7 +38,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         return;
       }
 
-      // Let the magic link page handle all other errors
+      // Let the Public URL page handle all other errors
       return;
     }
 
@@ -53,9 +51,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      await goto(
-        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-      );
+      redirectToLogin();
       return;
     }
 

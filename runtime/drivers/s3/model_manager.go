@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pathutil"
 )
 
 var _ drivers.ModelManager = &Connection{}
@@ -43,6 +45,47 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	}
 	base, _ := doublestar.SplitPattern(strings.TrimPrefix(u.Path, "/"))
 	return deleteObjectsInPrefix(ctx, sess, u.Host, base)
+}
+
+func (c *Connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
+	propsA := &drivers.ObjectStoreModelResultProperties{}
+	if err := mapstructure.Decode(a.Properties, propsA); err != nil {
+		return nil, err
+	}
+
+	propsB := &drivers.ObjectStoreModelResultProperties{}
+	if err := mapstructure.Decode(b.Properties, propsB); err != nil {
+		return nil, err
+	}
+
+	if propsA.Format != propsB.Format {
+		return nil, fmt.Errorf("cannot merge split results that output to different file formats (format %q is not %q)", propsA.Format, propsB.Format)
+	}
+
+	// NOTE: This makes an assumption that the common path of the individual split results only contains data for the model.
+	// This is a convenient assumption, but may cause data loss if the common path contains other data.
+	// To protect against the most obvious error case, we check that the common path is not the bucket root.
+
+	commonPath := pathutil.CommonPrefix(propsA.Path, propsB.Path)
+	if commonPath == "" {
+		return nil, fmt.Errorf("cannot merge split results that do not share a common subpath (%q vs. %q)", propsA.Path, propsB.Path)
+	}
+
+	p := &drivers.ObjectStoreModelResultProperties{
+		Path:   commonPath,
+		Format: propsA.Format,
+	}
+
+	pm := map[string]any{}
+	if err := mapstructure.Decode(p, &pm); err != nil {
+		return nil, err
+	}
+
+	return &drivers.ModelResult{
+		Connector:  a.Connector,
+		Properties: pm,
+		Table:      "",
+	}, nil
 }
 
 func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketName, prefix string) error {

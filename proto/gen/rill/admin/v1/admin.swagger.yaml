@@ -175,6 +175,44 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/magic-tokens/current:
+    get:
+      summary: GetCurrentMagicAuthToken returns information about the current magic auth token.
+      operationId: AdminService_GetCurrentMagicAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetCurrentMagicAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/organization-for-domain/{domain}:
+    get:
+      summary: |-
+        GetOrganizationNameForDomain finds the org name for a custom domain.
+        If the application detects it is running on a non-default domain, it can use this to find the org to present.
+        It can be called without being authenticated.
+      operationId: AdminService_GetOrganizationNameForDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationNameForDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -285,6 +323,10 @@ paths:
               description:
                 type: string
               newName:
+                type: string
+              displayName:
+                type: string
+              billingEmail:
                 type: string
       tags:
         - AdminService
@@ -768,6 +810,46 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/connect-to-github:
+    post:
+      summary: |-
+        Connects a rill managed project to github.
+        Replaces the contents of the remote repo with the contents of the project.
+      operationId: AdminService_ConnectProjectToGithub
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ConnectProjectToGithubResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              repo:
+                type: string
+              branch:
+                type: string
+              subpath:
+                type: string
+              force:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
@@ -1366,6 +1448,40 @@ paths:
                 description: |-
                   Optional list of names of dimensions and measures to limit access to.
                   If empty, all dimensions and measures are accessible.
+              state:
+                type: string
+                description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/upload-assets:
+    post:
+      summary: |-
+        Converts a project connected to github to a rill managed project.
+        Uploads the current project to assets.
+      operationId: AdminService_UploadProjectAssets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UploadProjectAssetsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
@@ -2802,6 +2918,30 @@ paths:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
       tags:
         - AdminService
+  /v1/superuser/organization/custom-domain:
+    patch:
+      summary: |-
+        SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+        It only updates the custom domain in the database, which is used to ensure correct redirects.
+        The DNS records and ingress TLS must be configured separately.
+      operationId: AdminService_SudoUpdateOrganizationCustomDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
+      tags:
+        - AdminService
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -3198,6 +3338,8 @@ definitions:
         type: string
       url:
         type: string
+      defaultBranch:
+        type: string
   protobufAny:
     type: object
     properties:
@@ -3213,7 +3355,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3369,6 +3511,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Expression'
+  v1ConnectProjectToGithubResponse:
+    type: object
   v1CreateAlertResponse:
     type: object
     properties:
@@ -3554,8 +3698,6 @@ definitions:
         $ref: '#/definitions/v1Subscription'
       billingPortalUrl:
         type: string
-      hasPaymentMethod:
-        type: boolean
   v1GetBookmarkResponse:
     type: object
     properties:
@@ -3577,6 +3719,11 @@ definitions:
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set
+  v1GetCurrentMagicAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        $ref: '#/definitions/v1MagicAuthToken'
   v1GetCurrentUserResponse:
     type: object
     properties:
@@ -3641,6 +3788,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationNameForDomainResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1GetOrganizationResponse:
     type: object
     properties:
@@ -3947,6 +4099,8 @@ definitions:
         type: array
         items:
           type: string
+      state:
+        type: string
   v1MemberUser:
     type: object
     properties:
@@ -4004,13 +4158,19 @@ definitions:
       name:
         type: string
         title: Globally unique
+      displayName:
+        type: string
       description:
+        type: string
+      customDomain:
         type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
       billingCustomerId:
         type: string
       paymentCustomerId:
+        type: string
+      billingEmail:
         type: string
       createdOn:
         type: string
@@ -4040,22 +4200,22 @@ definitions:
     properties:
       projects:
         type: integer
-        format: int64
+        format: int32
       deployments:
         type: integer
-        format: int64
+        format: int32
       slotsTotal:
         type: integer
-        format: int64
+        format: int32
       slotsPerDeployment:
         type: integer
-        format: int64
+        format: int32
       outstandingInvites:
         type: integer
-        format: int64
+        format: int32
       storageLimitBytesPerDeployment:
         type: string
-        format: uint64
+        format: int64
   v1PingResponse:
     type: object
     properties:
@@ -4430,6 +4590,18 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Subscription'
+  v1SudoUpdateOrganizationCustomDomainRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      customDomain:
+        type: string
+  v1SudoUpdateOrganizationCustomDomainResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
@@ -4437,22 +4609,22 @@ definitions:
         type: string
       projects:
         type: integer
-        format: int64
+        format: int32
       deployments:
         type: integer
-        format: int64
+        format: int32
       slotsTotal:
         type: integer
-        format: int64
+        format: int32
       slotsPerDeployment:
         type: integer
-        format: int64
+        format: int32
       outstandingInvites:
         type: integer
-        format: int64
+        format: int32
       storageLimitBytesPerDeployment:
         type: string
-        format: uint64
+        format: int64
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
@@ -4465,7 +4637,7 @@ definitions:
         type: string
       singleuserOrgs:
         type: integer
-        format: int64
+        format: int32
   v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
@@ -4555,6 +4727,8 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1UploadProjectAssetsResponse:
+    type: object
   v1User:
     type: object
     properties:
@@ -4593,7 +4767,7 @@ definitions:
     properties:
       singleuserOrgs:
         type: integer
-        format: int64
+        format: int32
   v1Usergroup:
     type: object
     properties:

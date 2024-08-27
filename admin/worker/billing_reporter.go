@@ -13,9 +13,11 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 	// Get reporting granularity
 	var granularity time.Duration
 	var sqlGrainIdentifier string
+	var gracePeriod time.Duration
 	switch w.admin.Biller.GetReportingGranularity() {
 	case billing.UsageReportingGranularityHour:
 		granularity = time.Hour
+		gracePeriod = time.Hour // keep 1 hour of delay as buffer, cron job runs at 55 minutes of each hour, so effectively we will report until the end of the last to last hour
 		sqlGrainIdentifier = "hour"
 	case billing.UsageReportingGranularityNone:
 		w.logger.Debug("skipping usage reporting: no reporting granularity configured")
@@ -29,15 +31,16 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 		return fmt.Errorf("failed to get last usage reporting time: %w", err)
 	}
 
-	// start reporting from the last reported time
+	// after going back by grace period, report until the "end" of the last grain period
+	endTime := time.Now().UTC().Add(-gracePeriod).Truncate(granularity)
+
+	// start reporting from the last reported time or from the "start" of the last grain period for first time reporting
 	var startTime time.Time
 	if t.IsZero() {
-		startTime = time.Now().UTC().Truncate(granularity).Add(-granularity)
+		startTime = endTime.Add(-granularity)
 	} else {
 		startTime = t.UTC()
 	}
-	// report until end of the last hour
-	endTime := time.Now().UTC().Truncate(granularity)
 
 	if !startTime.Before(endTime) {
 		w.logger.Debug("skipping usage reporting: no new usage data available", zap.Time("start_time", startTime), zap.Time("end_time", endTime))
@@ -84,7 +87,7 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 			afterProjectID = u[len(u)-1].ProjectID
 			afterEventName = u[len(u)-1].EventName
 		}
-		// since the usage data is ordered by start time first, we can get the max end time
+		// since the usage data is ordered by start time first and end time is just (start time + grain), we can directly get the max end time
 		maxEndTime = u[len(u)-1].EndTime
 
 		var usage []*billing.Usage

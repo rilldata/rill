@@ -19,6 +19,10 @@ test.describe("leaderboard and dimension table sorting", () => {
   test("leaderboard and dimension table sorting", async ({ page }) => {
     await page.getByRole("button", { name: "Preview" }).click();
 
+    // Change time zone to UTC
+    await page.getByLabel("Timezone selector").click();
+    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
+
     /**
      * LEADERBOARD
      */
