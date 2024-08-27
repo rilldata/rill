@@ -18,7 +18,7 @@
   import { createEventDispatcher, onDestroy } from "svelte";
   import { View } from "svelte-vega";
   import { TopLevelSpec } from "vega-lite";
-  import { TDDAlternateCharts, TDDChart } from "../types";
+  import { TDDAlternateCharts, TDDChart, TDDDefaultCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
@@ -38,6 +38,8 @@
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
   export let clearScrubRange: () => void;
+  export let scrubStart;
+  export let scrubEnd;
 
   let viewVL: View;
   let vegaSpec: any;
@@ -50,10 +52,10 @@
     },
   } = getStateManagers();
 
+  $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
   let previousChartType: TDDChart | undefined;
   let hasSwitchedChart = false;
-  // Reset scrub range when chart type changes until we migrate line chart to vega
-  $: if (chartType !== previousChartType) {
+  $: if (chartType !== previousChartType && hasSubrangeSelected) {
     hasSwitchedChart = true;
     previousChartType = chartType;
 
