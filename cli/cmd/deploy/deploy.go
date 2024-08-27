@@ -1,86 +1,88 @@
 package deploy
 
 import (
-	"context"
-	"regexp"
-	"time"
+	"fmt"
 
+	"github.com/rilldata/rill/cli/cmd/project"
+	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/spf13/cobra"
-)
-
-var nonSlugRegex = regexp.MustCompile(`[^\w-]`)
-
-const (
-	pollTimeout  = 10 * time.Minute
-	pollInterval = 5 * time.Second
 )
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
-	opts := &Options{}
+	var httpPort, grpcPort int
+	var allowedOrigins []string
 
 	deployCmd := &cobra.Command{
-		Use:   "deploy",
+		Use:   "deploy [<path>]",
 		Short: "Deploy project to Rill Cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return DeployFlow(cmd.Context(), ch, opts)
+			var projectPath string
+			if len(args) > 0 {
+				projectPath = args[0]
+			}
+
+			_, _, err := project.ValidateLocalProject(cmd.Context(), ch, projectPath, "")
+			if err != nil {
+				return err
+			}
+
+			// Parse log format
+			parsedLogFormat, ok := local.ParseLogFormat("console")
+			if !ok {
+				return fmt.Errorf("invalid log format 'console'")
+			}
+
+			localURL := fmt.Sprintf("http://localhost:%d", httpPort)
+
+			allowedOrigins = append(allowedOrigins, localURL)
+
+			ctx := cmd.Context()
+
+			app, err := local.NewApp(ctx, &local.AppOptions{
+				Ch:             ch,
+				Environment:    "dev",
+				OlapDriver:     local.DefaultOLAPDriver,
+				OlapDSN:        local.DefaultOLAPDSN,
+				ProjectPath:    projectPath,
+				LogFormat:      parsedLogFormat,
+				LocalURL:       localURL,
+				AllowedOrigins: allowedOrigins,
+			})
+			if err != nil {
+				return err
+			}
+			defer app.Close()
+
+			userID, _ := ch.CurrentUserID(ctx)
+
+			// open the `/deploy` page once the app is up
+			go func() {
+				app.PollServer(ctx, httpPort, false, false)
+				uri := fmt.Sprintf("http://localhost:%d/deploy", httpPort)
+
+				ch.PrintfBold("\nOpen this URL in your browser (if not automatically opened) to deploy the project: %s\n\n", uri)
+
+				err := browser.Open(uri)
+				if err != nil {
+					app.Logger.Debugf("could not open browser: %v", err)
+				}
+			}()
+
+			err = app.Serve(httpPort, grpcPort, true, false, false, userID, "", "")
+			if err != nil {
+				return fmt.Errorf("serve: %w", err)
+			}
+
+			return nil
 		},
 	}
 
-	deployCmd.Flags().SortFlags = false
-	deployCmd.Flags().StringVar(&opts.GitPath, "path", ".", "Path to project repository (default: current directory)") // This can also be a remote .git URL (undocumented feature)
-	deployCmd.Flags().StringVar(&opts.SubPath, "subpath", "", "Relative path to project in the repository (for monorepos)")
-	deployCmd.Flags().StringVar(&opts.RemoteName, "remote", "", "Remote name (default: first Git remote)")
-	deployCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Org to deploy project in")
-	deployCmd.Flags().StringVar(&opts.Name, "project", "", "Project name (default: Git repo name)")
-	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
-	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
-	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
-	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
-	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", 2, "Slots to allocate for production deployments")
-	deployCmd.Flags().BoolVarP(&opts.Upload, "upload", "u", false, "Upload project files to Rill managed storage instead of github")
-	if !ch.IsDev() {
-		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
-			panic(err)
-		}
-	}
+	deployCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
+	deployCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
+	deployCmd.Flags().StringSliceVarP(&allowedOrigins, "allowed-origins", "", []string{}, "Override allowed origins for CORS")
 
-	// 2024-02-19: We have deprecated configuration of the OLAP DB using flags in favor of using rill.yaml.
-	// When the migration is complete, we can remove the flags as well as the admin-server support for them.
-	deployCmd.Flags().StringVar(&opts.DBDriver, "prod-db-driver", "duckdb", "Database driver")
-	deployCmd.Flags().StringVar(&opts.DBDSN, "prod-db-dsn", "", "Database driver configuration")
-	if err := deployCmd.Flags().MarkHidden("prod-db-driver"); err != nil {
-		panic(err)
-	}
-	if err := deployCmd.Flags().MarkHidden("prod-db-dsn"); err != nil {
-		panic(err)
-	}
-
-	deployCmd.MarkFlagsMutuallyExclusive("upload", "subpath")
-	deployCmd.MarkFlagsMutuallyExclusive("upload", "remote")
-	deployCmd.MarkFlagsMutuallyExclusive("upload", "prod-branch")
 	return deployCmd
-}
-
-type Options struct {
-	GitPath     string
-	SubPath     string
-	RemoteName  string
-	Name        string
-	Description string
-	Public      bool
-	Provisioner string
-	ProdVersion string
-	ProdBranch  string
-	DBDriver    string
-	DBDSN       string
-	Slots       int
-	// Upload repo to rill managed storage instead of GitHub.
-	Upload bool
-}
-
-func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
-	return nil
 }

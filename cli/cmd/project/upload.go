@@ -33,7 +33,7 @@ var (
 	ErrInvalidProject = errors.New("invalid project")
 )
 
-type deployOpts struct {
+type DeployOpts struct {
 	GitPath     string
 	SubPath     string
 	RemoteName  string
@@ -49,7 +49,7 @@ type deployOpts struct {
 }
 
 func UploadCmd(ch *cmdutil.Helper) *cobra.Command {
-	opts := &deployOpts{}
+	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
 		Use:   "upload",
@@ -130,7 +130,7 @@ func ValidateLocalProject(ctx context.Context, ch *cmdutil.Helper, gitPath, subP
 	return "", "", ErrInvalidProject
 }
 
-func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *deployOpts) error {
+func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
 	// If user is not authenticated, run login flow.
 	if !ch.IsAuthenticated() {
 		if err := auth.LoginWithTelemetry(ctx, ch, ""); err != nil {

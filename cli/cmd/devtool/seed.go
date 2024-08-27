@@ -3,7 +3,7 @@ package devtool
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/cmd/deploy"
+	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +19,7 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("seeding not available for preset %q", preset)
 			}
 
-			return deploy.DeployFlow(cmd.Context(), ch, &deploy.Options{
+			return project.GitPushFlow(cmd.Context(), ch, &project.DeployOpts{
 				GitPath:     "https://github.com/rilldata/rill-examples.git",
 				SubPath:     "rill-openrtb-prog-ads",
 				Name:        "rill-openrtb-prog-ads",

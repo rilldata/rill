@@ -36,13 +36,13 @@ const (
 )
 
 func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
-	opts := &deployOpts{}
+	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
 		Use:   "git-push",
 		Short: "Deploy project to Rill Cloud by pulling project files from a git repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return gitPushFlow(cmd.Context(), ch, opts)
+			return GitPushFlow(cmd.Context(), ch, opts)
 		},
 	}
 
@@ -78,7 +78,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	return deployCmd
 }
 
-func gitPushFlow(ctx context.Context, ch *cmdutil.Helper, opts *deployOpts) error {
+func GitPushFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
 	// The gitPath can be either a local path or a remote .git URL.
 	// Determine which it is.
 	var isLocalGitPath bool
