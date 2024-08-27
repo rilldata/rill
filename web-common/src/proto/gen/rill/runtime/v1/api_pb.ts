@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
-import { PullTriggerSpec, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
+import { PullTriggerSpec, RefreshModelTrigger, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -3087,11 +3087,52 @@ export class GetModelSplitsResponse extends Message<GetModelSplitsResponse> {
  */
 export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
   /**
+   * Instance to target.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
+   * Resources to trigger. See RefreshTriggerSpec for details.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName resources = 4;
+   */
+  resources: ResourceName[] = [];
+
+  /**
+   * Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+   *
+   * @generated from field: repeated rill.runtime.v1.RefreshModelTrigger models = 5;
+   */
+  models: RefreshModelTrigger[] = [];
+
+  /**
+   * Parser is a convenience flag to trigger the global project parser.
+   * Triggering the project parser ensures a pull of the repository and a full parse of all files.
+   *
+   * @generated from field: bool parser = 6;
+   */
+  parser = false;
+
+  /**
+   * Convenience flag to trigger all sources and models.
+   *
+   * @generated from field: bool all_sources_models = 7;
+   */
+  allSourcesModels = false;
+
+  /**
+   * Convenience flag to trigger all sources and models.
+   * Will trigger models with RefreshModelTrigger.full set to true.
+   *
+   * @generated from field: bool all_sources_models_full = 8;
+   */
+  allSourcesModelsFull = false;
+
+  /**
+   * Deprecated: Kept for backwards compatibility.
+   *
    * @generated from oneof rill.runtime.v1.CreateTriggerRequest.trigger
    */
   trigger: {
@@ -3117,6 +3158,11 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
   static readonly typeName = "rill.runtime.v1.CreateTriggerRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 5, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
+    { no: 6, name: "parser", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "all_sources_models", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "all_sources_models_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "pull_trigger_spec", kind: "message", T: PullTriggerSpec, oneof: "trigger" },
     { no: 3, name: "refresh_trigger_spec", kind: "message", T: RefreshTriggerSpec, oneof: "trigger" },
   ]);

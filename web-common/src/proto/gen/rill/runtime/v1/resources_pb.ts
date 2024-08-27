@@ -2959,9 +2959,19 @@ export class RefreshTrigger extends Message<RefreshTrigger> {
  */
 export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   /**
-   * @generated from field: repeated rill.runtime.v1.ResourceName only_names = 1;
+   * Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+   * If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName resources = 1;
    */
-  onlyNames: ResourceName[] = [];
+  resources: ResourceName[] = [];
+
+  /**
+   * Models to refresh. These are specified separately to enable more fine-grained configuration.
+   *
+   * @generated from field: repeated rill.runtime.v1.RefreshModelTrigger models = 2;
+   */
+  models: RefreshModelTrigger[] = [];
 
   constructor(data?: PartialMessage<RefreshTriggerSpec>) {
     super();
@@ -2971,7 +2981,8 @@ export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.RefreshTriggerSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "only_names", kind: "message", T: ResourceName, repeated: true },
+    { no: 1, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 2, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshTriggerSpec {
@@ -3019,6 +3030,70 @@ export class RefreshTriggerState extends Message<RefreshTriggerState> {
 
   static equals(a: RefreshTriggerState | PlainMessage<RefreshTriggerState> | undefined, b: RefreshTriggerState | PlainMessage<RefreshTriggerState> | undefined): boolean {
     return proto3.util.equals(RefreshTriggerState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.RefreshModelTrigger
+ */
+export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
+  /**
+   * The model to refresh.
+   *
+   * @generated from field: string model = 1;
+   */
+  model = "";
+
+  /**
+   * If true, the current table and state will be dropped before refreshing.
+   * For non-incremental models, this is equivalent to a normal refresh.
+   *
+   * @generated from field: bool full = 2;
+   */
+  full = false;
+
+  /**
+   * Keys of specific splits to refresh.
+   *
+   * @generated from field: repeated string splits = 3;
+   */
+  splits: string[] = [];
+
+  /**
+   * If true, it will refresh all splits that errored on their last execution.
+   *
+   * @generated from field: bool all_errored_splits = 4;
+   */
+  allErroredSplits = false;
+
+  constructor(data?: PartialMessage<RefreshModelTrigger>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RefreshModelTrigger";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "splits", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "all_errored_splits", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RefreshModelTrigger | PlainMessage<RefreshModelTrigger> | undefined, b: RefreshModelTrigger | PlainMessage<RefreshModelTrigger> | undefined): boolean {
+    return proto3.util.equals(RefreshModelTrigger, a, b);
   }
 }
 

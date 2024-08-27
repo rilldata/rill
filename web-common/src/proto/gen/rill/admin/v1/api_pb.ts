@@ -11069,6 +11069,8 @@ export class Project extends Message<Project> {
   prodDeploymentId = "";
 
   /**
+   * Note: Does NOT incorporate the parent org's custom domain.
+   *
    * @generated from field: string frontend_url = 16;
    */
   frontendUrl = "";

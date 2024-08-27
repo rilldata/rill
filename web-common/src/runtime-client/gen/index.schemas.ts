@@ -38,6 +38,18 @@ export type ConnectorServiceOLAPListTablesParams = {
 };
 
 export type RuntimeServiceCreateTriggerBody = {
+  /** Resources to trigger. See RefreshTriggerSpec for details. */
+  resources?: V1ResourceName[];
+  /** Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger. */
+  models?: V1RefreshModelTrigger[];
+  /** Parser is a convenience flag to trigger the global project parser.
+Triggering the project parser ensures a pull of the repository and a full parse of all files. */
+  parser?: boolean;
+  /** Convenience flag to trigger all sources and models. */
+  allSourcesModels?: boolean;
+  /** Convenience flag to trigger all sources and models.
+Will trigger models with RefreshModelTrigger.full set to true. */
+  allSourcesModelsFull?: boolean;
   pullTriggerSpec?: V1PullTriggerSpec;
   refreshTriggerSpec?: V1RefreshTriggerSpec;
 };
@@ -554,6 +566,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -581,12 +599,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -685,11 +697,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -701,6 +708,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -859,7 +871,11 @@ export interface V1RefreshTriggerState {
 }
 
 export interface V1RefreshTriggerSpec {
-  onlyNames?: V1ResourceName[];
+  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
+  resources?: V1ResourceName[];
+  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
+  models?: V1RefreshModelTrigger[];
 }
 
 export interface V1RefreshTrigger {
@@ -884,6 +900,18 @@ export interface V1Resource {
   dashboard?: V1Dashboard;
   api?: V1API;
   connector?: V1ConnectorV2;
+}
+
+export interface V1RefreshModelTrigger {
+  /** The model to refresh. */
+  model?: string;
+  /** If true, the current table and state will be dropped before refreshing.
+For non-incremental models, this is equivalent to a normal refresh. */
+  full?: boolean;
+  /** Keys of specific splits to refresh. */
+  splits?: string[];
+  /** If true, it will refresh all splits that errored on their last execution. */
+  allErroredSplits?: boolean;
 }
 
 export type V1ReconcileStatus =

@@ -2492,6 +2492,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to target.
           in: path
           required: true
           type: string
@@ -2501,6 +2502,31 @@ paths:
           schema:
             type: object
             properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+                description: Resources to trigger. See RefreshTriggerSpec for details.
+              models:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1RefreshModelTrigger'
+                description: Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+              parser:
+                type: boolean
+                description: |-
+                  Parser is a convenience flag to trigger the global project parser.
+                  Triggering the project parser ensures a pull of the repository and a full parse of all files.
+              allSourcesModels:
+                type: boolean
+                description: Convenience flag to trigger all sources and models.
+              allSourcesModelsFull:
+                type: boolean
+                description: |-
+                  Convenience flag to trigger all sources and models.
+                  Will trigger models with RefreshModelTrigger.full set to true.
               pullTriggerSpec:
                 $ref: '#/definitions/v1PullTriggerSpec'
               refreshTriggerSpec:
@@ -5305,6 +5331,25 @@ definitions:
       - RECONCILE_STATUS_PENDING
       - RECONCILE_STATUS_RUNNING
     default: RECONCILE_STATUS_UNSPECIFIED
+  v1RefreshModelTrigger:
+    type: object
+    properties:
+      model:
+        type: string
+        description: The model to refresh.
+      full:
+        type: boolean
+        description: |-
+          If true, the current table and state will be dropped before refreshing.
+          For non-incremental models, this is equivalent to a normal refresh.
+      splits:
+        type: array
+        items:
+          type: string
+        description: Keys of specific splits to refresh.
+      allErroredSplits:
+        type: boolean
+        description: If true, it will refresh all splits that errored on their last execution.
   v1RefreshTrigger:
     type: object
     properties:
@@ -5315,11 +5360,20 @@ definitions:
   v1RefreshTriggerSpec:
     type: object
     properties:
-      onlyNames:
+      resources:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
+        description: |-
+          Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+          If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes.
+      models:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1RefreshModelTrigger'
+        description: Models to refresh. These are specified separately to enable more fine-grained configuration.
   v1RefreshTriggerState:
     type: object
   v1RenameFileResponse:
