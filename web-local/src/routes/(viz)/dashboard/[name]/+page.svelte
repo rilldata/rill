@@ -38,7 +38,7 @@
     if (malformed) {
       await asyncWait(300);
       eventBus.emit("notification", {
-        message: "Malformed filter paramter",
+        message: "Malformed filter parameter",
         detail: filter ?? "",
         type: "error",
         options: { persisted: true },
