@@ -729,6 +729,13 @@ service AdminService {
     };
   }
 
+  // CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+  rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      delete: "/v1/organizations/{org_name}/billing/subscriptions",
+    };
+  }
+
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
     option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/payments/portal-url"};
@@ -1926,6 +1933,12 @@ message UpdateBillingSubscriptionRequest {
   string org_name = 1;
   string plan_name = 2;
 }
+
+message CancelBillingSubscriptionRequest {
+  string org_name = 1;
+}
+
+message CancelBillingSubscriptionResponse {}
 
 message UpdateBillingSubscriptionResponse {
   Organization organization = 1;

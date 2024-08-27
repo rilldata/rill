@@ -83,6 +83,17 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		attribute.String("args.deployment_id", req.DeploymentId),
 	)
 
+	// check if org has any of the following billing errors and return error if it does
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	err = s.checkBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	// For backwards compatibility, this RPC supports passing either DeploymentId or Organization+Project names
 	var proj *database.Project
 	var depl *database.Deployment
@@ -117,7 +128,7 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
-	_, err := s.admin.TriggerRedeploy(ctx, proj, depl)
+	_, err = s.admin.TriggerRedeploy(ctx, proj, depl)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -386,4 +397,41 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 	}
 
 	return attr, nil
+}
+
+func (s *Server) checkBillingErrors(ctx context.Context, orgID string) error {
+	be, err := s.admin.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeTrialEnded)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	if be != nil {
+		return status.Error(codes.InvalidArgument, "trial has ended")
+	}
+
+	be, err = s.admin.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeInvoicePaymentFailed)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	if be != nil {
+		return status.Error(codes.InvalidArgument, "invoice payment failed")
+	}
+
+	be, err = s.admin.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeSubscriptionCancelled)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	if be != nil {
+		return status.Error(codes.InvalidArgument, "subscription cancelled")
+	}
+
+	return nil
 }

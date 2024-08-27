@@ -33,12 +33,13 @@ type Biller interface {
 	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
 	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
 
-	// CreateSubscription creates a subscription for the given organization.
-	// The subscription starts immediately.
+	// CreateSubscription creates a subscription for the given organization. Subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
+	// CreateSubscriptionInFuture creates a subscription for the given organization with a start date in the future.
+	CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error)
 	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error
 	GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
-	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error)
+	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error)
 	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
 	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
@@ -145,6 +146,13 @@ type SubscriptionCancellationOption int
 const (
 	SubscriptionCancellationOptionEndOfSubscriptionTerm SubscriptionCancellationOption = iota
 	SubscriptionCancellationOptionImmediate
+)
+
+type SubscriptionChangeOption int
+
+const (
+	SubscriptionChangeOptionEndOfSubscriptionTerm SubscriptionChangeOption = iota
+	SubscriptionChangeOptionImmediate
 )
 
 type PaymentProvider string

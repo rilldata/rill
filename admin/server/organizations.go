@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
@@ -330,7 +331,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	if len(subs) == 1 {
 		// schedule plan change
-		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan)
+		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionImmediate)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -396,6 +397,94 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		Organization:  organizationToDTO(org),
 		Subscriptions: subscriptions,
 	}, nil
+}
+
+// CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.CancelBillingSubscriptionRequest) (*adminv1.CancelBillingSubscriptionResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to cancel org subscription")
+	}
+
+	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if len(subs) == 0 {
+		return nil, status.Error(codes.FailedPrecondition, "no subscription found for the organization")
+	}
+
+	plan, err := s.admin.Biller.GetDefaultPlan(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if plan.ID == subs[0].Plan.ID {
+		return &adminv1.CancelBillingSubscriptionResponse{}, nil
+	}
+
+	if len(subs) == 1 {
+		// schedule plan change
+		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionEndOfSubscriptionTerm)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		// multiple subscriptions, cancel them first immediately and assign default plan to start at the end of the current subscription term
+		latestEndDate := time.Time{}
+		for _, sub := range subs {
+			if sub.CurrentBillingCycleEndDate.After(latestEndDate) {
+				latestEndDate = sub.CurrentBillingCycleEndDate
+			}
+			err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		// create new subscription with default plan to start at the end of the current subscription term
+		_, err = s.admin.Biller.CreateSubscriptionInFuture(ctx, org.BillingCustomerID, plan, latestEndDate.AddDate(0, 0, 1))
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	_, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		Description:                         org.Description,
+		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// raise a billing error of the subscription cancellation
+	_, err = s.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+		OrgID:     org.ID,
+		Type:      database.BillingErrorTypeSubscriptionCancelled,
+		EventTime: time.Now(),
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.CancelBillingSubscriptionResponse{}, nil
 }
 
 func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {

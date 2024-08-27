@@ -130,6 +130,7 @@ const (
 	AdminService_GetAlertYAML_FullMethodName                          = "/rill.admin.v1.AdminService/GetAlertYAML"
 	AdminService_GetBillingSubscription_FullMethodName                = "/rill.admin.v1.AdminService/GetBillingSubscription"
 	AdminService_UpdateBillingSubscription_FullMethodName             = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
+	AdminService_CancelBillingSubscription_FullMethodName             = "/rill.admin.v1.AdminService/CancelBillingSubscription"
 	AdminService_GetPaymentsPortalURL_FullMethodName                  = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
 	AdminService_ListPublicBillingPlans_FullMethodName                = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
 	AdminService_RequestProjectAccess_FullMethodName                  = "/rill.admin.v1.AdminService/RequestProjectAccess"
@@ -366,6 +367,8 @@ type AdminServiceClient interface {
 	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
 	UpdateBillingSubscription(ctx context.Context, in *UpdateBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateBillingSubscriptionResponse, error)
+	// CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+	CancelBillingSubscription(ctx context.Context, in *CancelBillingSubscriptionRequest, opts ...grpc.CallOption) (*CancelBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
@@ -1496,6 +1499,16 @@ func (c *adminServiceClient) UpdateBillingSubscription(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *adminServiceClient) CancelBillingSubscription(ctx context.Context, in *CancelBillingSubscriptionRequest, opts ...grpc.CallOption) (*CancelBillingSubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CancelBillingSubscriptionResponse)
+	err := c.cc.Invoke(ctx, AdminService_CancelBillingSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetPaymentsPortalURLResponse)
@@ -1802,6 +1815,8 @@ type AdminServiceServer interface {
 	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
 	UpdateBillingSubscription(context.Context, *UpdateBillingSubscriptionRequest) (*UpdateBillingSubscriptionResponse, error)
+	// CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+	CancelBillingSubscription(context.Context, *CancelBillingSubscriptionRequest) (*CancelBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
@@ -2154,6 +2169,9 @@ func (UnimplementedAdminServiceServer) GetBillingSubscription(context.Context, *
 }
 func (UnimplementedAdminServiceServer) UpdateBillingSubscription(context.Context, *UpdateBillingSubscriptionRequest) (*UpdateBillingSubscriptionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateBillingSubscription not implemented")
+}
+func (UnimplementedAdminServiceServer) CancelBillingSubscription(context.Context, *CancelBillingSubscriptionRequest) (*CancelBillingSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelBillingSubscription not implemented")
 }
 func (UnimplementedAdminServiceServer) GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPaymentsPortalURL not implemented")
@@ -4198,6 +4216,24 @@ func _AdminService_UpdateBillingSubscription_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CancelBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelBillingSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CancelBillingSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CancelBillingSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CancelBillingSubscription(ctx, req.(*CancelBillingSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetPaymentsPortalURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPaymentsPortalURLRequest)
 	if err := dec(in); err != nil {
@@ -4792,6 +4828,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateBillingSubscription",
 			Handler:    _AdminService_UpdateBillingSubscription_Handler,
+		},
+		{
+			MethodName: "CancelBillingSubscription",
+			Handler:    _AdminService_CancelBillingSubscription_Handler,
 		},
 		{
 			MethodName: "GetPaymentsPortalURL",

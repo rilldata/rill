@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
 )
@@ -59,6 +60,10 @@ func (n noop) CreateSubscription(ctx context.Context, customerID string, plan *P
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
+func (n noop) CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
+	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
+}
+
 func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error {
 	return nil
 }
@@ -67,7 +72,7 @@ func (n noop) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	return []*Subscription{{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}}, nil
 }
 
-func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
+func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 

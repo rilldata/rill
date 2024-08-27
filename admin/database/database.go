@@ -939,6 +939,7 @@ const (
 	BillingErrorTypeNoPaymentMethod
 	BillingErrorTypeInvoicePaymentFailed
 	BillingErrorTypeTrialEnded
+	BillingErrorTypeSubscriptionCancelled
 )
 
 type BillingError struct {

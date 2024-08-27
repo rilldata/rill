@@ -652,6 +652,9 @@ func (w *HandlePlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[r
 
 	// if the new plan is still a trial plan, can happen if manually assigned new trial plan for example to extend trial period, if yes then schedule trail job checks
 	if !sub[0].TrialEndDate.IsZero() {
+		if sub[0].TrialEndDate.Before(time.Now().UTC()) {
+			return nil
+		}
 		err = w.admin.ScheduleTrialEndCheckJobs(ctx, org.ID, sub[0].TrialEndDate)
 		if err != nil {
 			return fmt.Errorf("failed to schedule trial end check job: %w", err)
@@ -671,6 +674,21 @@ func (w *HandlePlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[r
 				// cancel the trial end grace check job, ignore errors
 				_, _ = riverutils.InsertOnlyRiverClient.JobCancel(ctx, metadata.TriggersRiverJobID)
 			}
+			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+			if err != nil {
+				return fmt.Errorf("failed to delete billing error: %w", err)
+			}
+		}
+
+		// delete any subscription cancellation error if any
+		be, err = w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return fmt.Errorf("failed to find billing errors: %w", err)
+			}
+		}
+
+		if be != nil {
 			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
 			if err != nil {
 				return fmt.Errorf("failed to delete billing error: %w", err)

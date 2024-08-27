@@ -37,6 +37,7 @@ import type {
   V1GetPaymentsPortalURLResponse,
   AdminServiceGetPaymentsPortalURLParams,
   V1GetBillingSubscriptionResponse,
+  V1CancelBillingSubscriptionResponse,
   V1UpdateBillingSubscriptionResponse,
   AdminServiceUpdateBillingSubscriptionBody,
   V1ListOrganizationBillingErrorsResponse,
@@ -1016,6 +1017,51 @@ export const createAdminServiceGetBillingSubscription = <
   return query;
 };
 
+/**
+ * @summary CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+ */
+export const adminServiceCancelBillingSubscription = (orgName: string) => {
+  return httpClient<V1CancelBillingSubscriptionResponse>({
+    url: `/v1/organizations/${orgName}/billing/subscriptions`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceCancelBillingSubscriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>
+>;
+
+export type AdminServiceCancelBillingSubscriptionMutationError = RpcStatus;
+
+export const createAdminServiceCancelBillingSubscription = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
+    TError,
+    { orgName: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
+    { orgName: string }
+  > = (props) => {
+    const { orgName } = props ?? {};
+
+    return adminServiceCancelBillingSubscription(orgName);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
+    TError,
+    { orgName: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary UpdateBillingSubscription updates the billing plan for the organization
  */

@@ -349,6 +349,25 @@ paths:
           type: string
       tags:
         - AdminService
+    delete:
+      summary: CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+      operationId: AdminService_CancelBillingSubscription
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CancelBillingSubscriptionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
     patch:
       summary: UpdateBillingSubscription updates the billing plan for the organization
       operationId: AdminService_UpdateBillingSubscription
@@ -3581,6 +3600,8 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1CancelBillingSubscriptionResponse:
+    type: object
   v1CompleteRequest:
     type: object
     properties:

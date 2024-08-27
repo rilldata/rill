@@ -447,11 +447,6 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -505,6 +500,11 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -1061,6 +1061,13 @@ export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1Expression {
+  ident?: string;
+  val?: unknown;
+  cond?: V1Condition;
+  subquery?: V1Subquery;
+}
+
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
 
@@ -1205,13 +1212,6 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
-export interface V1Expression {
-  ident?: string;
-  val?: unknown;
-  cond?: V1Condition;
-  subquery?: V1Subquery;
-}
-
 export interface V1CompletionMessage {
   role?: string;
   data?: string;
@@ -1223,6 +1223,10 @@ export interface V1CompleteResponse {
 
 export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
+}
+
+export interface V1CancelBillingSubscriptionResponse {
+  [key: string]: any;
 }
 
 export interface V1Bookmark {
