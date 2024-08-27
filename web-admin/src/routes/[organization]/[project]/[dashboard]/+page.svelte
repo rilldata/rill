@@ -9,7 +9,7 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
-  import { useDashboardV2 } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -29,7 +29,7 @@
     dashboard: dashboardName,
   } = $page.params);
 
-  $: dashboard = useDashboardV2(instanceId, dashboardName, {
+  $: dashboard = useDashboard(instanceId, dashboardName, {
     refetchInterval: () => {
       if (isDashboardReconcilingForFirstTime) {
         return PollIntervalWhenDashboardFirstReconciling;

@@ -7,7 +7,7 @@
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
-  import { useDashboardV2 } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
@@ -136,7 +136,7 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  $: dashboardQuery = useDashboardV2(instanceId, dashboardParam, {
+  $: dashboardQuery = useDashboard(instanceId, dashboardParam, {
     enabled: !!instanceId && onMetricsExplorerPage,
   });
   $: isDashboardValid = !!$dashboardQuery.data?.metricsView?.state?.validSpec;

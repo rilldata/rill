@@ -23,14 +23,7 @@ import type {
 import { derived } from "svelte/store";
 import { ErrorType } from "../../runtime-client/http-client";
 
-export function useDashboard(instanceId: string, metricViewName: string) {
-  return useResource(instanceId, metricViewName, ResourceKind.MetricsView);
-}
-
-/**
- * `useDashboardV2` is a more flexible version of `useDashboard` that accepts`queryOptions`.
- */
-export function useDashboardV2(
+export function useDashboard(
   instanceId: string,
   metricViewName: string,
   queryOptions?: CreateQueryOptions<
