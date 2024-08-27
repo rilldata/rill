@@ -1,0 +1,44 @@
+---
+title: "Welcome to Rill Cloud! "
+description:  Let's get into further details of Rill Cloud
+sidebar_label: "Rill Cloud UI"
+sidebar_position: 11
+---
+
+## Rill Cloud
+
+
+So, we've deployed to Rill Cloud. But... what is Rill Cloud and how was it different from Rill Developer? For an indepth comparison between the two platforms, please refer to the concepts article: <a href= 'https://docs.rilldata.com/concepts/developerVsCloud' target="blank ">Rill Cloud vs. Rill Developer</a>.
+
+To summarize:
+
+- Rill Developer is for development and testing and is run locally, `localhost`.
+- Rill Cloud is for your deployed dashboard and available on the web, `https://ui.rilldata.com/<your_org>`
+
+
+## Rill Cloud UI
+Let's take another look at some of the UI components to better understand Rill Cloud.
+
+<img src = '/img/tutorials/201/rill-cloud.gif' class='rounded-gif' />
+<br />
+
+
+From the organization page, you can see a list of available projects, each displayed as a square in the UI. In this case, we just have our single project, my-rill-tutorial. Note that this name is derived from the original `rill start my-rill-tutorial` and is based on the parent folder name. You can change the project name via the [CLI](https://docs.rilldata.com/reference/cli/project/).
+
+
+## Table of Contents
+
+import CustomDocCardList from '@site/src/components/CustomDocCardList';
+
+<CustomDocCardList />
+
+:::tip Available on GitHub
+This project is available on our [GitHub Repository](https://github.com/rilldata/rill-examples/) under the 'Rill Advanced' Folder.
+:::
+
+
+
+import DocsRating from '@site/src/components/DocsRating';
+
+---
+<DocsRating />

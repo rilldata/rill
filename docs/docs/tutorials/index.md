@@ -1,14 +1,16 @@
 ---
-id: index
-title: "Tutorials"
-sidebar_label: "Tutorials"
+title: Tutorials
+slug: /tutorials
+sidebar_label: Tutorials
+sidebar_position: 00
+hide_table_of_contents: true
 ---
 
 # Welcome to Rill Tutorials!
 
-### Hi, We're excited to have you here!
+### Hi! We're excited to have you here!
 
-These tutorial to help you get started with Rill and empower you to build your own projects. The journey from data import, SQL transformations, dashboard creation and finally deployment to Cloud.
+These tutorials were built to help you get started with Rill and empower you to build your own projects. The journey from data import, SQL transformations, dashboard creation and finally deployment to Cloud. From there, looking at Rill Cloud specific features, pushing local changes to Rill Cloud, then finally developing custom features.
 
 
 ### Why Rill?

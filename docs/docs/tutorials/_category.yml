@@ -1,8 +1,0 @@
-# _category_.yml
-label: " "
-position: 1000
-collapsible: false
-collapsed: false
-className: hidden
-customProps:
-  hidden: true

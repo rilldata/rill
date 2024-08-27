@@ -44,6 +44,7 @@ const config = {
           editUrl:
             "https://github.com/rilldata/rill/blob/main/docs/",
         },
+  
         blog: {
           routeBasePath: 'notes',
           blogTitle: 'Release Notes',

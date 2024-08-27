@@ -1,0 +1,27 @@
+---
+title: Deployment Success!
+sidebar_label: Deployment Success!
+sidebar_position: 8
+hide_table_of_contents: false
+---
+
+### Congratulations!
+
+You have successfully deployed your project from Rill Developer to Rill Cloud in 5 steps!
+
+
+
+### Key Takeaways
+
+1. Via Rill Developer, you can import, transform and create dashboards.
+2. You can deploy your dashboard to Rill Cloud in a few clicks.
+3. Rill Developer and Rill Cloud offer different capabilities, we will discuss Rill Cloud next!
+
+
+While you have completed the Basics Course, there are still many more features in our product with new ones coming out regularly! Please continue onto our next series, **Rill Cloud Features Explained**, to dive into Rill Cloud's features and advanced modeling/dashboarding.
+
+
+import DocsRating from '@site/src/components/DocsRating';
+
+---
+<DocsRating />
