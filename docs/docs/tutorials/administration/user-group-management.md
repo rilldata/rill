@@ -5,6 +5,7 @@ sidebar_label: "Creating Usergroups"
 sidebar_position: 12
 ---
 
+import ComingSoon from '@site/src/components/ComingSoon';
 
 
 ## Create Usergroups
