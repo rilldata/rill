@@ -5,6 +5,7 @@
     createAdminServiceCreateProjectWhitelistedDomain,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
+  import { shouldWaitForDeployment } from "@rilldata/web-admin/features/projects/status/waitForDeployment";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-invite/CopyInviteLinkButton.svelte";
   import {
     getUserDomain,
@@ -46,7 +47,8 @@
         });
       }
     }
-    return goto(`/${organization}/${project}/-/status`);
+    shouldWaitForDeployment.set(true);
+    return goto(`/${organization}/${project}`);
   }
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
