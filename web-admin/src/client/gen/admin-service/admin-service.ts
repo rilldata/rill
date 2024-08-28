@@ -26,6 +26,7 @@ import type {
   V1ListGithubUserReposResponse,
   V1RevokeMagicAuthTokenResponse,
   V1GetCurrentMagicAuthTokenResponse,
+  V1GetOrganizationNameForDomainResponse,
   V1ListOrganizationsResponse,
   AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
@@ -161,6 +162,8 @@ import type {
   V1SetSuperuserRequest,
   V1SudoUpdateOrganizationBillingCustomerResponse,
   V1SudoUpdateOrganizationBillingCustomerRequest,
+  V1SudoUpdateOrganizationCustomDomainResponse,
+  V1SudoUpdateOrganizationCustomDomainRequest,
   V1SudoUpdateAnnotationsResponse,
   V1SudoUpdateAnnotationsRequest,
   V1SearchProjectNamesResponse,
@@ -609,6 +612,70 @@ export const createAdminServiceGetCurrentMagicAuthToken = <
     TData,
     TError
   > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetOrganizationNameForDomain finds the org name for a custom domain.
+If the application detects it is running on a non-default domain, it can use this to find the org to present.
+It can be called without being authenticated.
+ */
+export const adminServiceGetOrganizationNameForDomain = (
+  domain: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetOrganizationNameForDomainResponse>({
+    url: `/v1/organization-for-domain/${domain}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetOrganizationNameForDomainQueryKey = (
+  domain: string,
+) => [`/v1/organization-for-domain/${domain}`];
+
+export type AdminServiceGetOrganizationNameForDomainQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>
+>;
+export type AdminServiceGetOrganizationNameForDomainQueryError = RpcStatus;
+
+export const createAdminServiceGetOrganizationNameForDomain = <
+  TData = Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+  TError = RpcStatus,
+>(
+  domain: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetOrganizationNameForDomainQueryKey(domain);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>
+  > = ({ signal }) => adminServiceGetOrganizationNameForDomain(domain, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!domain,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryKey;
 
@@ -6258,6 +6325,60 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
     >,
     TError,
     { data: V1SudoUpdateOrganizationBillingCustomerRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+It only updates the custom domain in the database, which is used to ensure correct redirects.
+The DNS records and ingress TLS must be configured separately.
+ */
+export const adminServiceSudoUpdateOrganizationCustomDomain = (
+  v1SudoUpdateOrganizationCustomDomainRequest: V1SudoUpdateOrganizationCustomDomainRequest,
+) => {
+  return httpClient<V1SudoUpdateOrganizationCustomDomainResponse>({
+    url: `/v1/superuser/organization/custom-domain`,
+    method: "patch",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateOrganizationCustomDomainRequest,
+  });
+};
+
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>
+  >;
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationBody =
+  V1SudoUpdateOrganizationCustomDomainRequest;
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationError =
+  RpcStatus;
+
+export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    TError,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoUpdateOrganizationCustomDomain(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    TError,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

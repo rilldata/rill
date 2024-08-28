@@ -44,7 +44,6 @@
   } from "@rilldata/web-admin/client";
   import { isProjectPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
-  import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
@@ -152,7 +151,7 @@
   <ErrorPage
     statusCode={error.response.status}
     header="Error fetching deployment"
-    body={error.response.data.message}
+    body={error.response.data?.message}
   />
 {:else if projectData}
   {#if !projectData.prodDeployment}
@@ -181,9 +180,7 @@
         : projectData.jwt}
       {authContext}
     >
-      <ProjectDashboardsListener>
-        <slot />
-      </ProjectDashboardsListener>
+      <slot />
     </RuntimeProvider>
   {/if}
 {/if}

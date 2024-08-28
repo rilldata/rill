@@ -37,6 +37,11 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
+	}
+
 	claims := auth.GetClaims(ctx)
 	projPerms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !projPerms.CreateMagicAuthTokens {
@@ -92,7 +97,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	tokenStr := token.Token().String()
 	return &adminv1.IssueMagicAuthTokenResponse{
 		Token: tokenStr,
-		Url:   s.urls.magicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+		Url:   s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(req.Organization, req.Project, tokenStr),
 	}, nil
 }
 

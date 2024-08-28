@@ -29,6 +29,7 @@
   export let noStroke = false;
   export let rounded = false;
   export let href: string | null = null;
+  export let rel: string | undefined = undefined;
   export let builders: Builder[] = [];
   export let loading = false;
   export let target: string | undefined = undefined;
@@ -68,7 +69,7 @@
   form={submitForm ? form : undefined}
   aria-label={label}
   {target}
-  rel={target === "_blank" ? "noopener noreferrer" : undefined}
+  rel={target === "_blank" ? "noopener noreferrer" : rel}
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
   on:click={handleClick}

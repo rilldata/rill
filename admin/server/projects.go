@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/url"
 	"strings"
 	"time"
 
@@ -802,8 +801,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		err = s.admin.Email.SendProjectInvite(&email.ProjectInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
-			AdminURL:      s.opts.ExternalURL,
-			FrontendURL:   s.opts.FrontendURL,
+			AcceptURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).ProjectInviteAccept(org.Name, proj.Name),
 			OrgName:       org.Name,
 			ProjectName:   proj.Name,
 			RoleName:      role.Name,
@@ -827,7 +825,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
-		FrontendURL:   s.opts.FrontendURL,
+		OpenURL:       s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
 		OrgName:       org.Name,
 		ProjectName:   proj.Name,
 		RoleName:      role.Name,
@@ -1051,8 +1049,8 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 			Email:       user.Email,
 			OrgName:     org.Name,
 			ProjectName: proj.Name,
-			ApproveLink: s.urls.approveProjectAccess(org.Name, proj.Name, accessReq.ID),
-			DenyLink:    s.urls.denyProjectAccess(org.Name, proj.Name, accessReq.ID),
+			ApproveLink: s.admin.URLs.WithCustomDomain(org.CustomDomain).ApproveProjectAccess(org.Name, proj.Name, accessReq.ID),
+			DenyLink:    s.admin.URLs.WithCustomDomain(org.CustomDomain).DenyProjectAccess(org.Name, proj.Name, accessReq.ID),
 		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -1141,7 +1139,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	err = s.admin.Email.SendProjectAccessGranted(&email.ProjectAccessGranted{
 		ToEmail:     user.Email,
 		ToName:      user.DisplayName,
-		FrontendURL: s.opts.FrontendURL,
+		OpenURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
 		OrgName:     org.Name,
 		ProjectName: proj.Name,
 	})
@@ -1478,8 +1476,6 @@ func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernatePro
 }
 
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
-	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
-
 	return &adminv1.Project{
 		Id:               p.ID,
 		Name:             p.Name,
@@ -1499,7 +1495,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
-		FrontendUrl:      frontendURL,
+		FrontendUrl:      s.admin.URLs.Project(orgName, p.Name),
 		Annotations:      p.Annotations,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),

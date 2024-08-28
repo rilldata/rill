@@ -13,7 +13,7 @@ import {
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import {
-  invalidateChartData,
+  invalidateComponentData,
   invalidateMetricsViewData,
   invalidateProfilingQueries,
   invalidationForMetricsViewData,
@@ -176,8 +176,7 @@ export class WatchResourcesClient {
         return invalidateMetricsViewData(queryClient, name, failed);
 
       case ResourceKind.Component:
-        return invalidateChartData(queryClient, name, failed);
-
+        return invalidateComponentData(queryClient, name, failed);
       case ResourceKind.Dashboard:
       // TODO
     }
