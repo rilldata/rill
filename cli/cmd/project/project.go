@@ -21,6 +21,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(ShowCmd(ch))
 	projectCmd.AddCommand(EditCmd(ch))
 	projectCmd.AddCommand(RenameCmd(ch))
+	projectCmd.AddCommand(HibernateCmd(ch))
 	projectCmd.AddCommand(DeleteCmd(ch))
 	projectCmd.AddCommand(StatusCmd(ch))
 	projectCmd.AddCommand(SplitsCmd(ch))
