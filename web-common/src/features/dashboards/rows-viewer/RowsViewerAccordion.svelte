@@ -25,7 +25,7 @@
 
   export let metricViewName: string;
 
-  const DEFAULT_LABEL = "for selected global filters";
+  const DEFAULT_LABEL = "Model Data";
   const INITIAL_HEIGHT_EXPANDED = 300;
   const MIN_HEIGHT_EXPANDED = 30;
   const MAX_HEIGHT_EXPANDED = 1000;
@@ -63,7 +63,7 @@
     }
     filters = sanitiseExpression(activeCellFilters.filters, undefined);
     timeRange = activeCellFilters.timeRange;
-    label = "for selected global filters and highlited pivot cell";
+    label = "Model data for selected cell";
   } else {
     timeRange.start = $timeControlsStore.timeStart;
     let maybeEnd = $timeControlsStore.timeEnd;
@@ -71,9 +71,7 @@
       timeRange.end = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
     }
     filters = sanitiseExpression($dashboardStore.whereFilter, undefined);
-    if (showPivot) {
-      label = DEFAULT_LABEL;
-    } else label = "";
+    label = DEFAULT_LABEL;
   }
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
@@ -158,9 +156,8 @@
       <span class:rotate-180={isOpen}>
         <CaretDownIcon size="14px" />
       </span>
-      <span class="font-bold">Model Data</span>
+      <span class="font-bold">{label}</span>
       {rowCountlabel}
-      <span class="italic">{label}</span>
     </button>
     {#if $exports}
       <div class="ml-auto">
