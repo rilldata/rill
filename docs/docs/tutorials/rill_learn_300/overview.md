@@ -6,8 +6,9 @@ hide_table_of_contents: false
 ---
 ### Advanced Features of Rill
 
-Now that you have mastered using Rill Developer and gone through some of Rill Cloud's useful features, we can delve further into the features that Rill provides. 
+Now that you have deployed your project onto Rill Cloud, we can go back and take more time to learn all of what Rill has to offer! 
 
+First, we will head back to Developer to make some changes to the existing model and dashboard. Once this is ready, we can make use of the new features and finally push our updates to Rill Cloud.
 
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 

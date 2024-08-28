@@ -45,7 +45,7 @@ Rill supports creating and powering dashboards using existing tables from altern
 
 ## DuckDB
 
-DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck.md) and [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB though, rather than use an external table, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-duckdb) to read the table and ingest the data into Rill. 
+DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck.md) and [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB though, rather than use an external table, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read the table and ingest the data into Rill. 
 
 ## Druid
 

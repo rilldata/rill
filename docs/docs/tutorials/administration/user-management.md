@@ -1,24 +1,27 @@
 ---
 title: "User Management"
 description:  Let's get into further details of Rill Cloud
-sidebar_label: "User Management: Create User and Usergroup"
+sidebar_label: "Creating Users"
 sidebar_position: 12
 ---
 
 ## How to manage the users?
 
-Maintaining user access is a vital role for the administrator. There are a few key concepts within Rill that should be read and understood before proceeding:
+Maintaining user access is a vital role for administrators. There are a few key concepts within Rill that should be read and understood before proceeding:
 
 - [Rill's Organization and Project Structure](https://docs.rilldata.com/manage/project-management)
 - [User Groups and Groups](https://docs.rilldata.com/manage/usergroup-management)
 - [Access Policies](https://docs.rilldata.com/manage/security)
 
-## Create User
+## Create a User
 
 ### Via UI
 Starting from 0.48, we are starting to roll out some UI features for user managment with more features coming soon.
 
-Please refer to the <a href='https://docs.rilldata.com/manage/user-management#via-the-ui' target = "blank">documentation how a user can request access to project, or how an admin can set project access. </a>
+Please refer to the <a href='https://docs.rilldata.com/manage/user-management#via-the-ui' target = "blank">documentation how a user can request access to project, or how an admin can invite a user to the project. </a>
+
+
+Soon, you will be able to manage the users via the UI.
 
 import ComingSoon from '@site/src/components/ComingSoon';
 
@@ -31,9 +34,9 @@ Historically (pre 0.48), user management was only possible via the CLI. Now, it 
 
 ### Via CLI
 
-The two commands that you will need to use for user management in rill is `user` and `usergroup`.
+For our friends who'd rather use the CLI, there are two commands that you will need to use for user management in rill is `user` and `usergroup`.
 
-### Let's see the Rill commands
+_**Let's see the Rill commands**_
 
 ```
 Usage:
@@ -53,21 +56,23 @@ Global Flags:
       --interactive        Prompt for missing required parameters (default true)
 ```
 
+**Adding a User:**
 
-### Let's request access to the project from another user
+When a user is requesting access to the project via the UI, this adds the user at the _project level_. In order to add a user to the organization, you will need to do so via the CLI. For more information on what the difference is between the permission granted, please refer to [our documentation](https://docs.rilldata.com/manage/roles-permissions).
 
-Let's access the following URL of your deployed organization 
+```bash
+rill user add
 ```
-https://ui.rilldata.com/<your_org>/my-rill-tutorial
+
+You can add a user to a project by adding the `--project` flag.
+
+```bash
+rill user add --project my-rill-tutorial
 ```
 
-:::tip Already logged in?
-You can access the following site on an in-cognito window to request access from another email.
-:::
 
-![img](/img/tutorials/201/request-access.png)
+Whether the user was invited to the project via the UI or via the CLI, you can see the user by running the following.
 
-Once you approve the request of access to the project, you can check this via the CLI:
 ```bash
  rill user list --project my-rill-tutorial
   NAME       EMAIL                       ROLE     CREATED ON            UPDATED ON           
@@ -91,83 +96,16 @@ rill user list
   2. Project-level
   3. User group
 
-When a user is requesting access to the project via the UI, this adds the user at the _project level_. In order to add a user to the organization, you will need to do so via the CLI. For more information on what the difference is between the permission granted, please refer to [our documentation](https://docs.rilldata.com/manage/roles-permissions).
+When listing users in the CLI, you need to ensure that you are listing at the _**correct level**_. 
 
-```bash
-rill user add
-```
+### In summary:
 
+- When running any command without a `--project` flag, this will add, list, remove at the organization level.
+- In order to add, list, remove at the project level, you need to add the `--project` flag.
 
-
-## Create Usergroups
-
-
-```
-Usage:
-  rill usergroup [command]
-
-Available Commands:
-  create      Create a user group
-  rename      Rename a user group
-  edit        Edit a user group
-  show        Show a user group
-  list        List user groups
-  delete      Delete a user group
-  add         Add role to a user group in an organization or project
-  set         Set role to a user group in an organization or project
-  remove      Remove role of a user group in an organization or prodject
-```
-As the name suggests, user groups are designed to group your users together so that you do not need to set permissions on each user. Simply adding the user to the group, the users will inherit permissions from the group.
-
-By default, all-users will be created in your environment. Let's add a `tutorial-admin` group.
-```
-rill usergroup list
-
-  NAME        ROLE   CREATED ON            UPDATED ON           
- ----------- ------ --------------------- --------------------- 
-  all-users   -      2024-08-01 09:32:29   2024-08-01 09:32:29  
-```
-
-```
-rill usergroup create
-
-? Enter user group name tutorial-admin
-User group "tutorial-admin" created in organization "Rill_Learn"
-```
-Now let's give admin access to the group for the project `my-rill-tutorial`.
+Next let's review user groups.
 
 
-```
-rill usergroup add --project my-rill-tutorial
-? Select role admin
-? Enter user group name tutorial-admin
-Role "admin" added to user group "tutorial-admin" in project "my-rill-tutorial"
-```
-
-Next, let's try to add your user to this group and see what happens.
-
-```bash
-rill user add --group tutorial-admin
-? Enter email <your_email>@domain.com 
-? The user must be a member of "<your_org>" to join one of its groups. Do you want to invite the user to join "<your_org>"? Yes
-User "<your_email>@domain.com " added to the organization "<your_org>" as "viewer"
-User "<your_email>@domain.com " added to the user group "tutorial-admin"
-```
-
-Since the user was added to the project only, not the organization, when adding the user to a usergroup (which requires the user to be a part of the organization), we will prompt if you'd like to invite the user to the organization. Once added to the organization, the user will be added to the usergroup.
-
-Let's confirm that the user is part of the user group.
-
-```bash
-rill user list --group tutorial-admin
-```
-
-Let's navigate to our project, my-rill-tutorial, to see some differences between viewer and admin.
-
-<img src = '/img/tutorials/201/viewervsadmin.gif' class='rounded-gif' />
-<br />
-
-For a detailed description of the differences between `admin` and `viewer`, please refer to our <a href='https://docs.rilldata.com/manage/roles-permissions' target=' blank'> Roles and permissions documentation. </a>
 
 import DocsRating from '@site/src/components/DocsRating';
 

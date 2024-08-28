@@ -2,9 +2,8 @@
 title: "Source to Dashboard in 5 Steps."
 sidebar_label: "1. Launching Rill Developer"
 position: 1
-collapsible: true
 collapsed: false
-sidebar_position: 0
+sidebar_position: 1
 ---
 :::note prerequisites
 You will need to [install Rill](https://docs.rilldata.com/home/install).

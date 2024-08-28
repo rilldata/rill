@@ -1,20 +1,12 @@
 ---
-title: "Status page and GitHub"
+title: "GitHub"
 description: Connect to GitHub [note on status page]
-sidebar_label: "Status and GitHub"
+sidebar_label: "GitHub"
 ---
-
-## Status Page
-
-The Status Page gives us an overview of all the components within Rill Cloud, including the underlying source and models. While you will not be able to make any direct changes, the Status page is a good place to start when dashboards are acting strange.
-
-![img](/img/tutorials/203/status.png)
-
-You'll see here that there's an option to connect to GitHub.
-During our first deployment onto Rill Cloud, we opted for a one-time upload. By doing so, we are able to directly deploy the project without any further steps, but we lose out on a few powerful capablities that can enhance the user experience, such as version control.
 
 
 ## Connect to GitHub
+
 
 ### via UI
 

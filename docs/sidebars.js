@@ -31,6 +31,7 @@ const sidebars = {
             type: 'category',
             label: 'Rill Developer to Rill Cloud in 5 steps!',
             description: 'Rill 100 series: Rill Developer to  to Rill Cloud',
+
             items: [
                 'tutorials/rill_learn_100/launch',
                 'tutorials/rill_learn_100/import',
@@ -47,15 +48,23 @@ const sidebars = {
             type: 'category',
             label: "Rill's Advanced Features",
             description: 'Rill 300 series: Advanced use cases and beyond',
+            link: {
+              type: 'doc',
+              id: 'tutorials/rill_learn_300/overview',
+    
+            },
+           
             items: [
-                'tutorials/rill_learn_300/overview',
+                
                 {
                   type: 'category',
                   label: 'Back to Rill Developer',
                   description: 'Make some changes to our SQL model and Dashboard',
                   items: [
-                    'tutorials/rill_learn_200/advanced_developer/advanced-modeling',
-                    'tutorials/rill_learn_200/advanced_developer/advanced-dashboard',
+                    'tutorials/rill_learn_300/advanced_developer/advanced-modeling',
+                    'tutorials/rill_learn_300/advanced_developer/advanced-dashboard',
+                    'tutorials/rill_learn_300/advanced_developer/update-rill-cloud',
+
                       ]
                 },
               {
@@ -88,26 +97,38 @@ const sidebars = {
                   'tutorials/rill_learn_300/custom_api/test-api',
                 ]
               },
-              {
-                type: 'category',
-                label: 'Embedding Rill',
-                items: [
-                  'tutorials/rill_learn_300/embedding/304_0',
-                  'tutorials/rill_learn_300/embedding/304_1',
-                  
-                ]
-              },
               ]
           },
           {
             type: 'category',
             label: 'Administration Topics',
             description: 'Rill Admin series: Rill Cloud Administration',
+            link: {
+              type: 'doc',
+              id: 'tutorials/administration/index',
+    
+            },
             items: [
-              'tutorials/administration/user-management',             
-              'tutorials/administration/credential-mangement', 
-              'tutorials/administration/status-github',
-              'tutorials/administration/update-rill-cloud',
+              {
+                type: 'category',
+                label: 'User Management',
+                items: [
+                  'tutorials/administration/user-management',           
+                  'tutorials/administration/user-group-management',  
+                ]
+              },
+              {
+                type: 'category',
+                label: 'Project Management',
+                items: [
+                  'tutorials/administration/project-maintanence',
+    
+                  'tutorials/administration/credential-mangement', 
+                  'tutorials/administration/github',
+
+                  
+                ]
+              },
 
               ]
           },
@@ -142,21 +163,7 @@ const sidebars = {
 
               ]
           },
-          {
-            type: 'category',
-            label: 'Rill Cloud Features Explained',
-            description: 'Rill 200 series: Rill Cloud features',
-            items: [
-              'tutorials/rill_learn_200/rill-cloud',
 
-              'tutorials/rill_learn_200/cloud_components/time-series',
-              'tutorials/rill_learn_200/cloud_components/scheduled-reports',
-              'tutorials/rill_learn_200/cloud_components/alerts',
-              'tutorials/rill_learn_200/cloud_components/bookmark',
-              'tutorials/rill_learn_200/cloud_components/sharing',
-              'tutorials/rill_learn_200/cloud_components/access-policies',
-            ]
-          },
 
         ],
       },  

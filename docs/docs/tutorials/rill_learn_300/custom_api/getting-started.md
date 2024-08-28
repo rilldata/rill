@@ -37,13 +37,13 @@ Created service "my-api-service" in org "Rill_Learn".
 Access token: rill_svc_<RANDOM_STRING>
 ```
 
-Once this is created, you can use the service access token to create a user token. From [our previous example](/tutorials/rill_learn_200/cloud_components/access-policies), dashboard_1 has the following access policies applied:
-
+Once this is created, you can use the service access token to create a user token. Using [dashboard access policies](https://docs.rilldata.com/manage/security), we can add the following to our [dashboard_1.yaml](../advanced_developer/advanced-dashboard.md) file.
 ```yaml
 security:
-  access: "{{ .user.admin }} "
-```
-This access policy allows admins to view this dashboard only. For the user token below, please select an email for a user that is a viewer to the project, `my-rill-tutorial`.
+  access: "{{ .user.admin }} AND '{{ .user.domain }}' == 'rilldata.com'"
+  ```
+
+This access policy gives access to the dashboard for admins who's email domain is rilldata.com. For the user token below, please select an email for a user that is [a viewer](../../administration/user-management.md) to the project, `my-rill-tutorial`.
 
 ```bash
 curl -X POST https://admin.rilldata.com/v1/organizations/Rill_Learn/projects/my-rill-tutorial/credentials \
