@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -83,5 +84,28 @@ func ResourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindConnector, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource type %q", name.Kind))
+	}
+}
+
+// PrettifyResourceKind returns the resource kind in a user-friendly format suitable for printing.
+func PrettifyResourceKind(k string) string {
+	k = strings.TrimPrefix(k, "rill.runtime.v1.")
+	k = strings.TrimSuffix(k, "V2")
+	return k
+}
+
+// PrettifyReconcileStatus returns the reconcile status in a user-friendly format suitable for printing.
+func PrettifyReconcileStatus(s runtimev1.ReconcileStatus) string {
+	switch s {
+	case runtimev1.ReconcileStatus_RECONCILE_STATUS_UNSPECIFIED:
+		return "Unknown"
+	case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
+		return "Idle"
+	case runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING:
+		return "Pending"
+	case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
+		return "Running"
+	default:
+		panic(fmt.Errorf("unknown reconcile status: %s", s.String()))
 	}
 }
