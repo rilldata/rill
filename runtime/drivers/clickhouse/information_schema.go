@@ -181,20 +181,22 @@ func (i informationSchema) entityType(ctx context.Context, db, name string) (typ
     			0 AS is_on_cluster
 			FROM system.tables AS t
 			JOIN system.databases AS db ON t.database = db.name
-			WHERE schema = coalesce(?, currentDatabase()) AND t.name = ?
-			GROUP BY
-			    name, schema, type, db_engine`
+			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?`
 	} else {
 		q = `SELECT
     			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
     			countDistinct(_shard_num) > 1 AS is_on_cluster
 			FROM clusterAllReplicas(` + i.c.config.Cluster + `, system.tables) AS t
 			JOIN system.databases AS db ON t.database = db.name
-			WHERE schema = coalesce(?, currentDatabase()) AND t.name = ?
-			GROUP BY
-			    name, schema, type, db_engine`
+			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?
+			GROUP BY engine, t.name`
 	}
-	args := []any{db, name}
+	var args []any
+	if db == "" {
+		args = []any{nil, name}
+	} else {
+		args = []any{db, name}
+	}
 	row := conn.QueryRowxContext(ctx, q, args...)
 	err = row.Scan(&typ, &onCluster)
 	if err != nil {

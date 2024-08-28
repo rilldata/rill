@@ -1,6 +1,30 @@
 <clickhouse>
   <timezone>UTC</timezone>
+  <allow_experimental_cluster_discovery>1</allow_experimental_cluster_discovery>
   <access_control_improvements>
     <select_from_information_schema_requires_grant>true</select_from_information_schema_requires_grant>
   </access_control_improvements>
+  <remote_servers>
+    <cluster_name>
+        <discovery>
+            <path>/clickhouse/discovery/cluster_name</path>
+
+            <!-- # Optional configuration parameters: -->
+
+            <!-- ## Authentication credentials to access all other nodes in cluster: -->
+            <user>clickhouse</user>
+            <password>clickhouse</password>
+            <!-- ### Alternatively to password, interserver secret may be used: -->
+            <!-- <secret>secret123</secret> -->
+
+            <!-- ## Shard for current node (see below): -->
+            <shard>1</shard>
+
+            <!-- ## Observer mode (see below): -->
+            <!-- <observer/> -->
+        </discovery>
+    </cluster_name>
+</remote_servers>
+
+
 </clickhouse>

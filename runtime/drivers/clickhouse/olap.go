@@ -269,11 +269,14 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	if c.config.Cluster != "" {
 		// create the distributed table
 		var distributed strings.Builder
-		fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s AS %s %s", safeSQLName(name), safelocalTableName(name), onClusterClause)
-		if outputProps.DistributedConfig != "" {
-			fmt.Fprintf(&distributed, " %s", outputProps.DistributedConfig)
-		} else {
-			fmt.Fprintf(&distributed, " Engine = Distributed(%s, currentDatabase(), %s)", safeSQLName(c.config.Cluster), safelocalTableName(name))
+		fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
+		fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, currentDatabase(), %s", safeSQLName(c.config.Cluster), safelocalTableName(name))
+		if outputProps.DistributedShardingKey != "" {
+			fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
+		}
+		distributed.WriteString(")")
+		if outputProps.DistributedSettings != "" {
+			fmt.Fprintf(&distributed, " SETTINGS %s", outputProps.DistributedSettings)
 		}
 		err = c.Exec(ctx, &drivers.Statement{Query: distributed.String(), Priority: 100})
 		if err != nil {
@@ -364,13 +367,13 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 			return c.renameTable(ctx, oldName, newName, onClusterClause)
 		}
 		// rename the local table
-		err := c.renameTable(ctx, safelocalTableName(oldName), safelocalTableName(newName), onClusterClause)
+		err := c.renameTable(ctx, localTableName(oldName), localTableName(newName), onClusterClause)
 		if err != nil {
 			return err
 		}
 		// recreate the distributed table
 		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(oldName)),
+			Query:    fmt.Sprintf("SHOW CREATE TABLE %s", safeSQLName(oldName)),
 			Priority: 100,
 		})
 		if err != nil {
@@ -387,9 +390,18 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		res.Close()
 
 		// replace the old local table name with new local table name
-		sql = strings.Replace(sql, safelocalTableName(oldName), safelocalTableName(newName), 1)
-		return c.Exec(ctx, &drivers.Statement{
+		sql = strings.Replace(sql, localTableName(oldName), safelocalTableName(newName), -1)
+		sql = strings.Replace(sql, oldName, safeSQLName(newName), -1)
+		err = c.Exec(ctx, &drivers.Statement{
 			Query:    sql,
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+		// drop the old distributed table
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(oldName), onClusterClause),
 			Priority: 100,
 		})
 	default:
@@ -738,4 +750,8 @@ func tempName(prefix string) string {
 
 func safelocalTableName(name string) string {
 	return safeSQLName(name + "_local")
+}
+
+func localTableName(name string) string {
+	return name + "_local"
 }

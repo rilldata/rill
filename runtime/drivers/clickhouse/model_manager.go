@@ -54,10 +54,10 @@ type ModelOutputProperties struct {
 	TableSettings string `mapstructure:"table_settings"`
 	// QuerySettings sets the settings clause used in insert/create table as select queries.
 	QuerySettings string `mapstructure:"query_settings"`
-	// DistributedConfig is config for distributed table.
-	// Note: the table name in config should be table_local. Optional.
-	// TODO :: How to handle staged changes ?
-	DistributedConfig string `mapstructure:"distributed_config"`
+	// DistributedSettings is table settings for distributed table.
+	DistributedSettings string `mapstructure:"distributed.settings"`
+	// DistributedShardingKey is the sharding key for distributed table.
+	DistributedShardingKey string `mapstructure:"distributed.sharding_key"`
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
