@@ -135,7 +135,7 @@ const sidebars = {
           
           {
             type: 'category',
-            label: 'Rill and ClickHouse in 4 steps',
+            label: 'Rill and ClickHouse to Dashboarding in 4 steps!',
             description: 'For our friends from ClickHouse, a revamped guide.',
             items: [
                 'tutorials/rill_clickhouse/r_ch_launch',
