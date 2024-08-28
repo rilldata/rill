@@ -27,7 +27,6 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(LogsCmd(ch))
 	projectCmd.AddCommand(DescribeCmd(ch))
 	projectCmd.AddCommand(RefreshCmd(ch))
-	projectCmd.AddCommand(ReconcileCmd(ch))
 	projectCmd.AddCommand(JwtCmd(ch))
 
 	return projectCmd

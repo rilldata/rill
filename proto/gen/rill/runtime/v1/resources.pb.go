@@ -3297,6 +3297,7 @@ func (x *AssertionResult) GetErrorMessage() string {
 	return ""
 }
 
+// DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
 type PullTrigger struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

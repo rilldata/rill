@@ -3131,7 +3131,7 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
   allSourcesModelsFull = false;
 
   /**
-   * Deprecated: Kept for backwards compatibility.
+   * DEPRECATED (2024-08-28): Kept for backwards compatibility.
    *
    * @generated from oneof rill.runtime.v1.CreateTriggerRequest.trigger
    */

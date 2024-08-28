@@ -3990,7 +3990,7 @@ type CreateTriggerRequest struct {
 	// Convenience flag to trigger all sources and models.
 	// Will trigger models with RefreshModelTrigger.full set to true.
 	AllSourcesModelsFull bool `protobuf:"varint,8,opt,name=all_sources_models_full,json=allSourcesModelsFull,proto3" json:"all_sources_models_full,omitempty"`
-	// Deprecated: Kept for backwards compatibility.
+	// DEPRECATED (2024-08-28): Kept for backwards compatibility.
 	//
 	// Types that are assignable to Trigger:
 	//

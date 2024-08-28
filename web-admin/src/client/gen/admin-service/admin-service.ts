@@ -75,6 +75,7 @@ import type {
   V1AddProjectMemberUserResponse,
   V1RemoveProjectMemberUserResponse,
   V1SetProjectMemberUserRoleResponse,
+  V1RedeployProjectResponse,
   V1CreateReportResponse,
   AdminServiceCreateReportBodyBody,
   V1GenerateReportYAMLResponse,
@@ -253,7 +254,8 @@ export const createAdminServiceListPublicBillingPlans = <
 };
 
 /**
- * @summary TriggerReconcile triggers reconcile for the project's prod deployment
+ * @summary TriggerReconcile triggers reconcile for the project's prod deployment.
+DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
  */
 export const adminServiceTriggerReconcile = (
   deploymentId: string,
@@ -304,7 +306,8 @@ export const createAdminServiceTriggerReconcile = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary TriggerRefreshSources refresh the source for production deployment
+ * @summary TriggerRefreshSources refresh the source for production deployment.
+DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
  */
 export const adminServiceTriggerRefreshSources = (
   deploymentId: string,
@@ -2612,6 +2615,55 @@ export const createAdminServiceSetProjectMemberUserRole = <
       email: string;
       data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary TriggerRedeploy creates a new production deployment for a project. If the project currently has another production deployment, it will be deprovisioned.
+This RPC can be used to redeploy a project that has been hibernated.
+ */
+export const adminServiceRedeployProject = (
+  organization: string,
+  project: string,
+) => {
+  return httpClient<V1RedeployProjectResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/redeploy`,
+    method: "post",
+  });
+};
+
+export type AdminServiceRedeployProjectMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRedeployProject>>
+>;
+
+export type AdminServiceRedeployProjectMutationError = RpcStatus;
+
+export const createAdminServiceRedeployProject = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRedeployProject>>,
+    TError,
+    { organization: string; project: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRedeployProject>>,
+    { organization: string; project: string }
+  > = (props) => {
+    const { organization, project } = props ?? {};
+
+    return adminServiceRedeployProject(organization, project);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRedeployProject>>,
+    TError,
+    { organization: string; project: string },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -5730,7 +5782,8 @@ export const createAdminServiceDenyProjectAccess = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+ * @summary TriggerRedeploy is similar to RedeployProject.
+DEPRECATED: Use RedeployProject instead.
  */
 export const adminServiceTriggerRedeploy = (
   v1TriggerRedeployRequest: V1TriggerRedeployRequest,

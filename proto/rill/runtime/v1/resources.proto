@@ -425,6 +425,7 @@ enum AssertionStatus {
   ASSERTION_STATUS_ERROR = 3;
 }
 
+// DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
 message PullTrigger {
   PullTriggerSpec spec = 1;
   PullTriggerState state = 2;

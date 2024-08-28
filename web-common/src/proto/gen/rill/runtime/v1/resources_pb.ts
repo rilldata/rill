@@ -2813,6 +2813,8 @@ export class AssertionResult extends Message<AssertionResult> {
 }
 
 /**
+ * DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
+ *
  * @generated from message rill.runtime.v1.PullTrigger
  */
 export class PullTrigger extends Message<PullTrigger> {

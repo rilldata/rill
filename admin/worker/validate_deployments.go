@@ -92,7 +92,7 @@ func (w *Worker) reconcileAllDeploymentsForProject(ctx context.Context, proj *da
 			// Trigger a redeploy if config is no longer valid
 			if !v {
 				w.logger.Info("validate deployments: config no longer valid, triggering redeploy", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-				_, err = w.admin.TriggerRedeploy(ctx, proj, depl)
+				_, err = w.admin.RedeployProject(ctx, proj, depl)
 				if err != nil {
 					return err
 				}

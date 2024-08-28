@@ -54,7 +54,7 @@ func (w *Worker) resetAllDeploymentsForProject(ctx context.Context, proj *databa
 		}
 
 		w.logger.Info("reset all deployments: redeploying deployment", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-		_, err = w.admin.TriggerRedeploy(ctx, proj, depl)
+		_, err = w.admin.RedeployProject(ctx, proj, depl)
 		if err != nil {
 			return err
 		}

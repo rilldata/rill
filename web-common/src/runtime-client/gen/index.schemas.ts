@@ -972,6 +972,9 @@ export interface V1PullTriggerSpec {
   [key: string]: any;
 }
 
+/**
+ * DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
+ */
 export interface V1PullTrigger {
   spec?: V1PullTriggerSpec;
   state?: V1PullTriggerState;
