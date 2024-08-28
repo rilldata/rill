@@ -29,16 +29,6 @@
                 <hostname>clickhouse-keeper-01</hostname>
                 <port>9234</port>
             </server>
-            <server>
-                <id>2</id>
-                <hostname>clickhouse-keeper-02</hostname>
-                <port>9234</port>
-            </server>
-            <server>
-                <id>3</id>
-                <hostname>clickhouse-keeper-03</hostname>
-                <port>9234</port>
-            </server>
         </raft_configuration>
     </keeper_server>
 </clickhouse>

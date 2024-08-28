@@ -50,16 +50,6 @@ func ClickhouseCluster(t TestingT) (string, string) {
 			return status == 200
 		}),
 	))
-	compose.WaitForService("clickhouse-keeper-02", wait.ForAll(
-		wait.NewHTTPStrategy("/ready").WithPort(nat.Port("9182/tcp")).WithStatusCodeMatcher(func(status int) bool {
-			return status == 200
-		}),
-	))
-	compose.WaitForService("clickhouse-keeper-03", wait.ForAll(
-		wait.NewHTTPStrategy("/ready").WithPort(nat.Port("9182/tcp")).WithStatusCodeMatcher(func(status int) bool {
-			return status == 200
-		}),
-	))
 
 	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
 

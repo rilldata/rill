@@ -52,14 +52,6 @@
             <host>clickhouse-keeper-01</host>
             <port>9181</port>
         </node>
-        <node>
-            <host>clickhouse-keeper-02</host>
-            <port>9182</port>
-        </node>
-                <node>
-            <host>clickhouse-keeper-03</host>
-            <port>9183</port>
-        </node>
     </zookeeper>
     <macros>
         <shard>01</shard>
