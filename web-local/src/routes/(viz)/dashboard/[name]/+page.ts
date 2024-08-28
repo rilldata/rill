@@ -63,18 +63,33 @@ export const load = async ({ params, depends, url }) => {
 
     const searchParams = new URLSearchParams(url.searchParams);
 
-    const filter = searchParams.get("filter") ?? "";
+    const rawFilter = searchParams.get("filter") ?? "";
+
+    let filter = "";
+
+    if (
+      (rawFilter.startsWith(`"`) && rawFilter.endsWith(`"`)) ||
+      (rawFilter.startsWith(`'`) && rawFilter.endsWith(`'`)) ||
+      (rawFilter.startsWith(`“`) && rawFilter.endsWith(`”`))
+    ) {
+      filter = rawFilter.slice(1, -1);
+    } else {
+      filter = rawFilter;
+    }
 
     const dimensions = spec.dimensions ?? [];
 
     const dimensionNames = dimensions.map(({ name }) => name).filter(isDefined);
 
-    const initDimensions = parseFilterString(filter, dimensionNames);
+    const { initDimensions, errorMessage } = parseFilterString(
+      filter,
+      dimensionNames,
+    );
 
     return {
       metricsView: metricsViewResource,
       initDimensions,
-      malformed: initDimensions.size === 0 && filter.length > 0,
+      errorMessage,
       filter,
     };
   } catch (e) {
@@ -83,15 +98,18 @@ export const load = async ({ params, depends, url }) => {
   }
 };
 
+const conditionRegex = /(\w+)\s+(eq|ne)\s+(.+)/;
+const dimensionValueRegex = /[‘'’]([^‘'’]*)[‘'’]/g;
+
 function parseFilterString(filterString: string, dimensions: string[]) {
   const conditions = filterString.split(" and ");
-
-  const conditionRegex = /(\w+)\s+(eq|in|ne|nin)\s+(.+)/;
 
   const initDimensions = new Map<
     string,
     { exclude: boolean; values: string[] }
   >();
+
+  let errorMessage: string | null = null;
 
   conditions.forEach((condition) => {
     const match = condition.match(conditionRegex);
@@ -101,18 +119,23 @@ function parseFilterString(filterString: string, dimensions: string[]) {
       const values: string[] = [];
 
       if (valueString.startsWith("(") && valueString.endsWith(")")) {
-        const regex = /'([^']*)'/g;
-
         let match: RegExpExecArray | null;
 
-        while ((match = regex.exec(valueString)) !== null) {
+        while ((match = dimensionValueRegex.exec(valueString)) !== null) {
           values.push(match[1]);
         }
-      } else {
+      } else if (valueString.match(dimensionValueRegex)) {
         values.push(valueString.slice(1, -1));
+      } else {
+        errorMessage = `Value missing quotes: ${valueString}`;
+        return;
       }
 
       if (!dimensions.includes(dimension)) {
+        errorMessage = `Invalid value string: ${valueString}`;
+        return;
+      } else if (values.length === 0) {
+        errorMessage = `Invalid values: ${valueString}`;
         return;
       }
 
@@ -122,10 +145,15 @@ function parseFilterString(filterString: string, dimensions: string[]) {
         exclude,
         values,
       });
+    } else {
+      errorMessage = `Invalid condition. Expected format: <dimension> <eq|ne> ('<value>', '<value>')`;
     }
   });
 
-  return initDimensions;
+  return {
+    initDimensions,
+    errorMessage,
+  };
 }
 
 function isDefined(value: string | undefined): value is string {

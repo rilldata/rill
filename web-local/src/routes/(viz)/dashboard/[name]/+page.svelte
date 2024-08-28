@@ -24,7 +24,7 @@
 
   $: metricsViewName = data.metricsView.meta?.name?.name as string;
 
-  $: ({ initDimensions, malformed, filter } = data);
+  $: ({ initDimensions, errorMessage, filter } = data);
   $: ({ instanceId } = $runtime);
 
   $: filePaths = data.metricsView.meta?.filePaths as string[];
@@ -35,11 +35,11 @@
     );
 
   onMount(async () => {
-    if (malformed) {
+    if (errorMessage) {
       await asyncWait(300);
       eventBus.emit("notification", {
-        message: "Malformed filter parameter",
-        detail: filter ?? "",
+        message: errorMessage,
+        detail: `Filter: ${filter ?? ""}`,
         type: "error",
         options: { persisted: true },
       });
