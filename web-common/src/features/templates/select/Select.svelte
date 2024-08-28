@@ -55,7 +55,6 @@
         e.detail,
       )}
     bind:value
-    detach
     id={componentName}
     tooltip={selectProperties.tooltip || ""}
     label={selectProperties.label || ""}

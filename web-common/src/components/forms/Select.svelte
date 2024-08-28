@@ -3,11 +3,9 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { InfoIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
-  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
-  import Menu from "../menu-v2/Menu.svelte";
-  import MenuButton from "../menu-v2/MenuButton.svelte";
-  import MenuItem from "../menu-v2/MenuItem.svelte";
-  import MenuItems from "../menu-v2/MenuItems.svelte";
+  import * as Select from "@rilldata/web-common/components/select";
+
+  const dispatch = createEventDispatcher();
 
   export let value: string;
   export let id: string;
@@ -17,20 +15,9 @@
   export let optional: boolean = false;
   export let tooltip: string = "";
   export let className = "";
-
-  // temporary till we figure out the menus
-  export let detach = false;
   export let itemsClass = "";
 
-  const dispatch = createEventDispatcher();
-
-  let displayValue: string;
-  let hasNoValue = false;
-  $: {
-    const foundOption = options.find((option) => option.value === value);
-    displayValue = foundOption?.label ?? value;
-    hasNoValue = !foundOption;
-  }
+  $: selected = options.find((option) => option.value === value);
 </script>
 
 <div class="flex flex-col gap-y-2 {className}">
@@ -56,32 +43,27 @@
       {/if}
     </label>
   {/if}
-  <Menu {detach}>
-    <MenuButton
-      className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center {hasNoValue
-        ? 'text-gray-400'
-        : ''}"
-    >
-      <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-        {#if hasNoValue}
-          {placeholder}
-        {:else}
-          {displayValue}
-        {/if}
-      </div>
-      <CaretDownIcon />
-    </MenuButton>
-    <MenuItems positioningOverride={itemsClass}>
-      {#each options as option}
-        <MenuItem
-          on:click={() => {
-            value = option.value;
-            dispatch("change", value);
-          }}
-        >
+
+  <Select.Root
+    {selected}
+    onSelectedChange={(newSelection) => {
+      value = newSelection.value;
+      dispatch("change", newSelection.value);
+    }}
+    items={options}
+  >
+    <Select.Trigger>
+      <Select.Value
+        {placeholder}
+        class="text-[12px] {!selected ? 'text-gray-400' : ''}"
+      />
+    </Select.Trigger>
+    <Select.Content>
+      {#each options as option (option.value)}
+        <Select.Item value={option.value} class="text-[12px] {itemsClass}">
           {option?.label ?? option.value}
-        </MenuItem>
+        </Select.Item>
       {/each}
-    </MenuItems>
-  </Menu>
+    </Select.Content>
+  </Select.Root>
 </div>
