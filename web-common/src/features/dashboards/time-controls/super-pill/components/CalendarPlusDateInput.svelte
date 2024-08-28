@@ -25,7 +25,8 @@
   function onValidDateInput(date: DateTime) {
     let newInterval: Interval;
 
-    const selectedEndDateBeforeStart = date < calendarInterval.start;
+    const selectedEndDateBeforeStart =
+      calendarInterval?.start && date < calendarInterval.start;
 
     if (selectingStart || selectedEndDateBeforeStart) {
       newInterval = calendarInterval.set({ start: date });

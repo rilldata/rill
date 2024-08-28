@@ -49,7 +49,7 @@
     <button
       class:hide={visibleIndex !== 0}
       class="hover:opacity-50"
-      on:click={onPan(-1)}
+      on:click={() => onPan(-1)}
     >
       <ChevronLeft size="14px" />
     </button>
@@ -62,9 +62,7 @@
     <button
       class="hover:opacity-50"
       class:hide={visibleIndex !== visibleMonths - 1}
-      on:click={() => {
-        onPan(1);
-      }}
+      on:click={() => onPan(1)}
     >
       <ChevronRight size="14px" />
     </button>
