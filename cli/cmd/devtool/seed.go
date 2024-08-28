@@ -19,7 +19,7 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("seeding not available for preset %q", preset)
 			}
 
-			return project.GitPushFlow(cmd.Context(), ch, &project.DeployOpts{
+			return project.ConnectGithubFlow(cmd.Context(), ch, &project.DeployOpts{
 				GitPath:     "https://github.com/rilldata/rill-examples.git",
 				SubPath:     "rill-openrtb-prog-ads",
 				Name:        "rill-openrtb-prog-ads",
