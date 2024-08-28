@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"path/filepath"
+	"path"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -73,7 +73,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	}
 
 	paths := make([]string, 0)
-	err = fs.WalkDir(exampleFS, ".", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(exampleFS, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -82,11 +82,11 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 			return nil
 		}
 
-		if _, ok := existingPaths[filepath.Join("/", path)]; ok {
-			return fmt.Errorf("path %q already exists", path)
+		if _, ok := existingPaths[path.Join("/", p)]; ok {
+			return fmt.Errorf("path %q already exists", p)
 		}
 
-		paths = append(paths, path)
+		paths = append(paths, p)
 		return nil
 	})
 	if err != nil {

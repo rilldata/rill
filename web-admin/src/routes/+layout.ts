@@ -5,9 +5,11 @@ ensure the same single-page app behavior in development.
 */
 export const ssr = false;
 
-import type { V1ProjectPermissions } from "@rilldata/web-admin/client";
-import { adminServiceGetProject } from "@rilldata/web-admin/client/index.js";
-import { getAdminServiceGetProjectQueryKey } from "@rilldata/web-admin/client/index.js";
+import {
+  adminServiceGetProject,
+  getAdminServiceGetProjectQueryKey,
+  type V1ProjectPermissions,
+} from "@rilldata/web-admin/client";
 import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error } from "@sveltejs/kit";
@@ -15,7 +17,7 @@ import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
 import {
   adminServiceGetProjectWithBearerToken,
   getAdminServiceGetProjectWithBearerTokenQueryKey,
-} from "../features/shareable-urls/get-project-with-bearer-token.js";
+} from "../features/public-urls/get-project-with-bearer-token.js";
 
 export const load = async ({ params }) => {
   const { organization, project, token } = params;

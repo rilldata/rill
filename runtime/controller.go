@@ -404,7 +404,7 @@ func (c *Controller) List(ctx context.Context, kind, path string, clone bool) ([
 	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
-	return c.catalog.list(kind, path, false, clone)
+	return c.catalog.list(kind, path, false, clone), nil
 }
 
 // SubscribeCallback is the callback type passed to Subscribe.
@@ -1108,7 +1108,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 			return false, err
 		}
 		if !r.Meta.Hidden {
-			logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", unqualifiedKind(n.Kind)), zap.Any("error", errCyclicDependency)}
+			logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", PrettifyResourceKind(n.Kind)), zap.Any("error", errCyclicDependency)}
 			c.Logger.Warn("Skipping resource", logArgs...)
 		}
 		return true, nil
@@ -1262,7 +1262,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 
 	// Log invocation
 	if !inv.isHidden {
-		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", unqualifiedKind(n.Kind))}
+		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", PrettifyResourceKind(n.Kind))}
 		if inv.isDelete {
 			logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
 		}
@@ -1298,7 +1298,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		tracerAttrs := []attribute.KeyValue{
 			attribute.String("instance_id", c.InstanceID),
 			attribute.String("name", n.Name),
-			attribute.String("type", unqualifiedKind(n.Kind)),
+			attribute.String("type", PrettifyResourceKind(n.Kind)),
 		}
 		if inv.isDelete {
 			tracerAttrs = append(tracerAttrs, attribute.Bool("deleted", inv.isDelete))
@@ -1331,7 +1331,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	// Log result
 	logArgs := []zap.Field{
 		zap.String("name", inv.name.Name),
-		zap.String("type", unqualifiedKind(inv.name.Kind)),
+		zap.String("type", PrettifyResourceKind(inv.name.Kind)),
 	}
 	elapsed := time.Since(inv.startedOn).Round(time.Millisecond)
 	if elapsed > 0 {
@@ -1352,6 +1352,25 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		c.Logger.Warn("Reconcile failed", logArgs...)
 	} else if !inv.isHidden {
 		c.Logger.Info("Reconciled resource", logArgs...)
+	}
+
+	// Emit event unless it was a cancellation.
+	if inv.cancelledOn.IsZero() {
+		eventArgs := []attribute.KeyValue{
+			attribute.String("name", inv.name.Name),
+			attribute.String("type", PrettifyResourceKind(inv.name.Kind)),
+			attribute.Int64("elapsed_ms", elapsed.Milliseconds()),
+		}
+		if inv.isDelete {
+			eventArgs = append(eventArgs, attribute.Bool("deleted", true))
+		}
+		if inv.isRename {
+			eventArgs = append(eventArgs, attribute.Bool("renamed", true))
+		}
+		if inv.result.Err != nil {
+			eventArgs = append(eventArgs, attribute.String("error", inv.result.Err.Error()))
+		}
+		c.Activity.Record(context.Background(), activity.EventTypeLog, "reconciled_resource", eventArgs...)
 	}
 
 	r, err := c.catalog.get(inv.name, true, false)
@@ -1530,16 +1549,4 @@ func invocationFromContext(ctx context.Context) *invocation {
 		return inv.(*invocation)
 	}
 	return nil
-}
-
-// unqualifiedKind removes the protobuf package name from a kind.
-// E.g. "rill.runtime.v1.Source" -> "Source".
-func unqualifiedKind(k string) string {
-	idx := strings.LastIndex(k, ".")
-	if idx >= 0 {
-		k = k[idx+1:]
-	}
-	// TEMP: Trim the "V2" suffix. TODO: Remove when dropping the suffixes.
-	k = strings.TrimSuffix(k, "V2")
-	return k
 }

@@ -14,20 +14,26 @@ import (
 )
 
 type selfToFileExecutor struct {
-	c    *connection
-	opts *drivers.ModelExecutorOptions
+	c *connection
 }
 
 var _ drivers.ModelExecutor = &selfToFileExecutor{}
 
-func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
+func (e *selfToFileExecutor) Concurrency(desired int) (int, bool) {
+	if desired > 1 {
+		return 0, false
+	}
+	return 1, true
+}
+
+func (e *selfToFileExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	olap, ok := e.c.AsOLAP(e.c.instanceID)
 	if !ok {
 		return nil, fmt.Errorf("output connector is not OLAP")
 	}
 
 	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(e.opts.InputProperties, inputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if err := inputProps.Validate(); err != nil {
@@ -35,14 +41,14 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	}
 
 	outputProps := &file.ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(e.opts.OutputProperties, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	if err := outputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
-	if e.opts.IncrementalRun {
+	if opts.IncrementalRun {
 		return nil, fmt.Errorf("duckdb-to-file executor does not support incremental runs")
 	}
 
@@ -82,7 +88,7 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	err = olap.Exec(ctx, &drivers.Statement{
 		Query:    sql,
 		Args:     inputProps.Args,
-		Priority: e.opts.Priority,
+		Priority: opts.Priority,
 	})
 	if err != nil {
 		if overLimit.Load() {
@@ -115,7 +121,7 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		return nil, fmt.Errorf("failed to encode result properties: %w", err)
 	}
 	return &drivers.ModelResult{
-		Connector:  e.opts.OutputConnector,
+		Connector:  opts.OutputConnector,
 		Properties: resultPropsMap,
 	}, nil
 }

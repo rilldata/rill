@@ -4,11 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
-	"net/http"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
@@ -18,11 +15,7 @@ import (
 	"go.uber.org/zap"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
-	"golang.org/x/oauth2"
-	"google.golang.org/api/googleapi"
 )
-
-const defaultPageSize = 20
 
 func init() {
 	drivers.Register("gcs", driver{})
@@ -49,6 +42,14 @@ var spec = drivers.Spec{
 			Placeholder: "gs://bucket-name/path/to/file.csv",
 			Required:    true,
 			Hint:        "Glob patterns are supported",
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
 		},
 		{
 			Key:         "gcp.credentials",
@@ -253,6 +254,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
@@ -263,67 +269,7 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// DownloadFiles returns a file iterator over objects stored in gcs.
-// The credential json is read from config google_application_credentials.
-// Additionally in case `allow_host_credentials` is true it looks for "Application Default Credentials" as well
-func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
-	conf, err := parseSourceProperties(props)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	client, err := c.createClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	bucketObj, err := gcsblob.OpenBucket(ctx, client, conf.url.Host, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
-	}
-
-	var batchSize datasize.ByteSize
-	if conf.BatchSize == "-1" {
-		batchSize = math.MaxInt64 // download everything in one batch
-	} else {
-		batchSize, err = datasize.ParseString(conf.BatchSize)
-		if err != nil {
-			return nil, err
-		}
-	}
-	// prepare fetch configs
-	opts := rillblob.Options{
-		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
-		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
-		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
-		GlobPageSize:          conf.GlobPageSize,
-		GlobPattern:           conf.url.Path,
-		ExtractPolicy:         conf.extractPolicy,
-		BatchSizeBytes:        int64(batchSize.Bytes()),
-		KeepFilesUntilClose:   conf.BatchSize == "-1",
-		TempDir:               c.config.TempDir,
-	}
-
-	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
-	if err != nil {
-		apiError := &googleapi.Error{}
-		// in cases when no creds are passed
-		if errors.As(err, &apiError) && apiError.Code == http.StatusUnauthorized {
-			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", apiError))
-		}
-
-		// StatusUnauthorized when incorrect key is passsed
-		// StatusBadRequest when key doesn't have a valid credentials file
-		retrieveError := &oauth2.RetrieveError{}
-		if errors.As(err, &retrieveError) && (retrieveError.Response.StatusCode == http.StatusUnauthorized || retrieveError.Response.StatusCode == http.StatusBadRequest) {
-			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", retrieveError))
-		}
-	}
-
-	return iter, err
-}
-
-func (c *Connection) createClient(ctx context.Context) (*gcp.HTTPClient, error) {
+func (c *Connection) newClient(ctx context.Context) (*gcp.HTTPClient, error) {
 	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
 		if !errors.Is(err, gcputil.ErrNoCredentials) {

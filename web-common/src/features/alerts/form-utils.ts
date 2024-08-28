@@ -1,9 +1,11 @@
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
+  ComparisonPercentOfTotal,
   mapMeasureFilterToExpr,
   MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { mergeDimensionAndMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -58,6 +60,16 @@ export function getAlertQueryArgsFromFormValues(
             },
           ]
         : []),
+      ...(formValues.criteria.some(
+        (c) => c.type === MeasureFilterType.PercentOfTotal,
+      )
+        ? [
+            {
+              name: formValues.measure + ComparisonPercentOfTotal,
+              percentOfTotal: { measure: formValues.measure },
+            },
+          ]
+        : []),
     ],
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
@@ -106,7 +118,23 @@ export const alertFormValidationSchema = yup.object({
     yup.object().shape({
       measure: yup.string().required("Required"),
       operation: yup.string().required("Required"),
-      value1: yup.number().required("Required"),
+      type: yup.string().required("Required"),
+      value1: yup
+        .number()
+        .required("Required")
+        .test((value, context) => {
+          const criteria = context.parent as MeasureFilterEntry;
+          if (
+            (criteria.type === MeasureFilterType.PercentOfTotal ||
+              criteria.type === MeasureFilterType.PercentChange) &&
+            (value < 0 || value > 100)
+          ) {
+            return context.createError({
+              message: `${context.path} must be a value between 0 and 100.`,
+            });
+          }
+          return true;
+        }),
     }),
   ),
   criteriaOperation: yup.string().required("Required"),

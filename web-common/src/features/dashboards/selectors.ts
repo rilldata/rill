@@ -4,10 +4,14 @@ import {
   useClientFilteredResources,
   useFilteredResources,
   useResource,
+  useResourceV2,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
+  RpcStatus,
   V1Expression,
+  V1GetResourceResponse,
   V1MetricsViewSpec,
+  V1Resource,
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
   type V1MetricsViewTimeRangeResponse,
@@ -17,9 +21,23 @@ import type {
   CreateQueryResult,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
+import { ErrorType } from "../../runtime-client/http-client";
 
-export function useDashboard(instanceId: string, metricViewName: string) {
-  return useResource(instanceId, metricViewName, ResourceKind.MetricsView);
+export function useDashboard(
+  instanceId: string,
+  metricViewName: string,
+  queryOptions?: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    V1Resource
+  >,
+) {
+  return useResourceV2(
+    instanceId,
+    metricViewName,
+    ResourceKind.MetricsView,
+    queryOptions,
+  );
 }
 
 export function useValidDashboards(instanceId: string) {

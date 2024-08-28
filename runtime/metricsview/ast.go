@@ -15,6 +15,8 @@ import (
 type AST struct {
 	// Root of the AST
 	Root *SelectNode
+	// List of CTEs to add to the query
+	CTEs []*SelectNode
 
 	// Cached internal state for building the AST
 	underlyingTable *string
@@ -34,9 +36,10 @@ type AST struct {
 // The from/join clauses are not all compatible. The allowed combinations are:
 //   - FromTable
 //   - FromSelect and optionally SpineSelect and/or LeftJoinSelects
-//   - FromSelect and optionally JoinComparisonSelect
+//   - FromSelect and optionally JoinComparisonSelect (for comparison CTE based optimization, this combination is used, both should be set and one of them will be used as CTE)
 type SelectNode struct {
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
+	IsCTE                bool             // Whether this node is a Common Table Expression
 	DimFields            []FieldNode      // Dimensions fields to select
 	MeasureFields        []FieldNode      // Measure fields to select
 	FromTable            *string          // Underlying table expression to select from (if set, FromSelect must not be set)
@@ -59,9 +62,10 @@ type SelectNode struct {
 // The Name must always match a the name of a dimension/measure in the metrics view or a computed field specified in the request.
 // This means that if two columns in different places in the AST have the same Name, they're guaranteed to resolve to the same value.
 type FieldNode struct {
-	Name  string
-	Label string
-	Expr  string
+	Name       string
+	Label      string
+	Expr       string
+	AutoUnnest bool
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -151,7 +155,9 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 				return nil, fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
 			}
 
-			if !auto {
+			if auto {
+				f.AutoUnnest = true
+			} else {
 				ast.unnests = append(ast.unnests, tblWithAlias)
 				f.Expr = ast.sqlForMember(unnestAlias, f.Name)
 			}
@@ -366,6 +372,25 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonRatio.Measure},
 			Label:              fmt.Sprintf("%s (Δ%%)", m.Label),
+		}, nil
+	}
+
+	if qm.Compute.PercentOfTotal != nil {
+		if qm.Compute.PercentOfTotal.Total == nil {
+			return nil, fmt.Errorf("totals not computed for %s", qm.Name)
+		}
+
+		m, err := a.lookupMeasure(qm.Compute.PercentOfTotal.Measure, visible)
+		if err != nil {
+			return nil, err
+		}
+
+		return &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:               qm.Name,
+			Expression:         fmt.Sprintf("%s/%#f", a.dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total),
+			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
+			Label:              fmt.Sprintf("%s (Σ%%)", m.Label),
 		}, nil
 	}
 
@@ -1074,6 +1099,16 @@ func (a *AST) sqlForMember(tbl, name string) string {
 // sqlForAnyInGroup returns a SQL expression for passing through a field in a GROUP BY.
 func (a *AST) sqlForAnyInGroup(expr string) string {
 	return fmt.Sprintf("ANY_VALUE(%s)", expr)
+}
+
+// convertToCTE util func that sets IsCTE and only adds to a.CTEs if IsCTE was false
+func (a *AST) convertToCTE(n *SelectNode) {
+	if n.IsCTE {
+		return
+	}
+
+	n.IsCTE = true
+	a.CTEs = append(a.CTEs, n)
 }
 
 // hasName checks if the given name is present as either a dimension or measure field in the node.

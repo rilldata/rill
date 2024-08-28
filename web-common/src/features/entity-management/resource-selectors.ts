@@ -3,13 +3,16 @@ import {
   createRuntimeServiceListResources,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  RpcStatus,
   runtimeServiceGetResource,
   runtimeServiceListResources,
+  V1GetResourceResponse,
   V1ListResourcesResponse,
   V1ReconcileStatus,
-  V1Resource,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
+import { ErrorType } from "../../runtime-client/http-client";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -24,23 +27,13 @@ export enum ResourceKind {
   Dashboard = "rill.runtime.v1.Dashboard",
   API = "rill.runtime.v1.API",
 }
+
 export type UserFacingResourceKinds = Exclude<
   ResourceKind,
   ResourceKind.ProjectParser
 >;
+
 export const SingletonProjectParserName = "parser";
-export const ResourceShortNameToKind: Record<string, ResourceKind> = {
-  source: ResourceKind.Source,
-  model: ResourceKind.Model,
-  metricsview: ResourceKind.MetricsView,
-  metrics_view: ResourceKind.MetricsView,
-  component: ResourceKind.Component,
-  dashboard: ResourceKind.Dashboard,
-  report: ResourceKind.Report,
-  alert: ResourceKind.Alert,
-  theme: ResourceKind.Theme,
-  api: ResourceKind.API,
-};
 
 // In the UI, we shouldn't show the `rill.runtime.v1` prefix
 export function prettyResourceKind(kind: string) {
@@ -66,6 +59,44 @@ export function useResource<T = V1Resource>(
           (selector ? selector(data?.resource) : data?.resource) as T,
         enabled: !!instanceId && !!name && !!kind,
         queryClient,
+      },
+    },
+  );
+}
+
+/**
+ * `useResourceV2` is a more flexible version of `useResource` that accepts
+ *  any `queryOptions`, not just `select` and `queryClient`.
+ */
+export function useResourceV2<T = V1Resource>(
+  instanceId: string,
+  name: string,
+  kind: ResourceKind,
+  queryOptions?: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    T // T is the return type of the `select` function
+  >,
+) {
+  const defaultQueryOptions: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    T
+  > = {
+    select: (data) => data?.resource as T,
+    enabled: !!instanceId && !!name && !!kind,
+  };
+
+  return createRuntimeServiceGetResource(
+    instanceId,
+    {
+      "name.kind": kind,
+      "name.name": name,
+    },
+    {
+      query: {
+        ...defaultQueryOptions,
+        ...queryOptions,
       },
     },
   );

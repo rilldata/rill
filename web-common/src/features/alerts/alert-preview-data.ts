@@ -8,6 +8,7 @@ import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
+  ComparisonPercentOfTotal,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import {
@@ -123,7 +124,8 @@ function getSchemaEntryForField(
       let type: string = field.type?.code ?? TypeCode.CODE_STRING;
       if (
         measure.name + ComparisonDeltaAbsoluteSuffix === field.name ||
-        measure.name + ComparisonDeltaRelativeSuffix === field.name
+        measure.name + ComparisonDeltaRelativeSuffix === field.name ||
+        measure.name + ComparisonPercentOfTotal === field.name
       ) {
         const comparisonProps = getComparisonProperties(field.name, measure);
         label = comparisonProps.component;

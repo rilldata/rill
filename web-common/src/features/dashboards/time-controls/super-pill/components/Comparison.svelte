@@ -34,8 +34,11 @@
   let showSelector = false;
 
   $: interval = selectedComparison?.start
-    ? Interval.fromDateTimes(selectedComparison.start, selectedComparison.end)
-    : currentInterval;
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedComparison.start).setZone(zone),
+        DateTime.fromJSDate(selectedComparison.end).setZone(zone),
+      )
+    : undefined;
 
   $: firstVisibleMonth = interval?.start ?? DateTime.now();
 
@@ -88,6 +91,7 @@
       comparisonOption === TimeComparisonOption.CUSTOM && showComparison
     );
   }}
+  typeahead={!showSelector}
 >
   <DropdownMenu.Trigger asChild let:builder>
     <button
@@ -100,7 +104,7 @@
           <p>no comparison period</p>
         {:else}
           <b class="line-clamp-1">{label}</b>
-          {#if interval.isValid}
+          {#if interval?.isValid}
             <RangeDisplay {interval} {grain} />
           {/if}
         {/if}

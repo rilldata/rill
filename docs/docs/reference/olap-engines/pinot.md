@@ -9,7 +9,7 @@ sidebar_position: 4
 
 [Apache Pinot](https://docs.pinot.apache.org/) is a real-time distributed OLAP datastore purpose-built for low-latency, high-throughput analytics, and perfect for user-facing analytical workloads.
 
-Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](../../build/olap/olap.md#external-olap-tables).
+Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](../../concepts/OLAP#external-olap-tables).
 
 ## Connection string (DSN)
 
@@ -83,7 +83,6 @@ Multi-Valued dimensions needed to be defined in the dashboard yaml as expression
   expression: arrayToMv(RandomAirports)
   name: RandomAirports
   description: "Random Airports"
-  ignore: false
 ```
 Refer to the [Dashboard YAML](../project-files/dashboards) reference page for all dimension properties detail. 
 

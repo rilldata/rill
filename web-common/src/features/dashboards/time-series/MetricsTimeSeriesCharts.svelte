@@ -5,6 +5,11 @@
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
+  import {
+    PivotChipData,
+    PivotChipType,
+  } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -25,7 +30,10 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import {
+    AvailableTimeGrain,
+    TimeRangePreset,
+  } from "@rilldata/web-common/lib/time/types";
   import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -36,7 +44,6 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
-  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -224,7 +231,53 @@
     "timeseries",
   );
 
-  $: minTimeGrain = $timeControlsStore.minTimeGrain;
+  $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
+
+  let showReplacePivotModal = false;
+  function startPivotForTimeseries() {
+    const pivot = $dashboardStore?.pivot;
+
+    if (
+      pivot.rows.dimension.length ||
+      pivot.columns.measure.length ||
+      pivot.columns.dimension.length
+    ) {
+      showReplacePivotModal = true;
+    } else {
+      createPivot();
+    }
+  }
+
+  function getTimeDimension() {
+    return {
+      id: $timeControlsStore.selectedTimeRange?.interval,
+      title: TIME_GRAIN[activeTimeGrain as AvailableTimeGrain]?.label,
+      type: PivotChipType.Time,
+    } as PivotChipData;
+  }
+
+  function createPivot() {
+    showReplacePivotModal = false;
+
+    const measures = renderedMeasures
+      .filter((m) => m.name !== undefined)
+      .map((m) => {
+        return {
+          id: m.name as string,
+          title: m.label || (m.name as string),
+          type: PivotChipType.Measure,
+        };
+      });
+
+    metricsExplorerStore.createPivot(
+      metricViewName,
+      { dimension: [getTimeDimension()] },
+      {
+        dimension: [],
+        measure: measures,
+      },
+    );
+  }
 </script>
 
 <TimeSeriesChartContainer
@@ -253,9 +306,15 @@
         selectedItems={$showHideMeasures.selectedItems}
         tooltipText="Choose measures to display"
       />
-      {#if minTimeGrain}
-        <TimeGrainSelector {metricViewName} />
-      {/if}
+
+      <button
+        class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
+        on:click={() => {
+          startPivotForTimeseries();
+        }}
+      >
+        Start Pivot
+      </button>
     {/if}
   </div>
 
@@ -304,7 +363,7 @@
           ? $isMeasureValidPercentOfTotal(measure.name)
           : false}
 
-        <div class="flex flex-row gap-x-7">
+        <div class="flex flex-row gap-x-4">
           <MeasureBigNumber
             {measure}
             value={bigNum}
@@ -400,3 +459,10 @@
     </div>
   {/if}
 </TimeSeriesChartContainer>
+<ReplacePivotDialog
+  open={showReplacePivotModal}
+  on:close={() => {
+    showReplacePivotModal = false;
+  }}
+  on:replace={() => createPivot()}
+/>

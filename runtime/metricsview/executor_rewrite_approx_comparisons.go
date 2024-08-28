@@ -1,7 +1,16 @@
 package metricsview
 
+import (
+	"fmt"
+
+	"github.com/rilldata/rill/runtime/drivers"
+)
+
 // rewriteApproxComparisons rewrites the AST to use a LEFT or RIGHT join instead of a FULL joins for comparisons,
 // which enables more efficient query execution at the cost of some accuracy.
+// ---- CTE Optimization ---- //
+// Extracts out the base or comparison query into a CTE depending on the sort field.
+// This is done to enable more efficient query execution by adding filter in the join query to select only dimension values present in the CTE.
 func (e *Executor) rewriteApproxComparisons(ast *AST) {
 	if !e.instanceCfg.MetricsApproximateComparisons {
 		return
@@ -38,6 +47,16 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		return false
 	}
 	sortField := a.Root.OrderBy[0]
+
+	if e.olap.Dialect() == drivers.DialectDruid {
+		// if there are unnests in the query, we can't rewrite the query for Druid
+		// it fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
+		for _, dim := range n.FromSelect.DimFields {
+			if dim.AutoUnnest {
+				return false
+			}
+		}
+	}
 
 	// Find out what we're sorting by
 	var sortDim, sortBase, sortComparison, sortDelta bool
@@ -92,6 +111,17 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.OrderBy = order
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
+
+		// ---- CTE Optimization ---- //
+		// make FromSelect a CTE
+		a.convertToCTE(n.FromSelect)
+
+		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
+		for _, dim := range n.JoinComparisonSelect.DimFields {
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
+		}
 	} else if sortComparison {
 		// We're sorting by a measure in JoinComparisonSelect. We can do a RIGHT JOIN and push down the order/limit to it.
 		// This should remain correct when the limit is lower than the number of rows in the comparison query.
@@ -100,6 +130,17 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.JoinComparisonSelect.OrderBy = order
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
+
+		// ---- CTE Optimization ---- //
+		// make JoinComparisonSelect a CTE
+		a.convertToCTE(n.JoinComparisonSelect)
+
+		// now change the FromSelect WHERE clause to use selected dim values from CTE
+		for _, dim := range n.FromSelect.DimFields {
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.JoinComparisonSelect.Alias, dimName), nil)
+		}
 	} else if sortDim {
 		// We're sorting by a dimension. We do a LEFT JOIN that only returns values present in the base query.
 		// The approximate part here is that dimension values only present in the comparison query will be missing.
@@ -107,6 +148,17 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.OrderBy = order
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
+
+		// ---- CTE Optimization ---- //
+		// make FromSelect a CTE
+		a.convertToCTE(n.FromSelect)
+
+		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
+		for _, dim := range n.JoinComparisonSelect.DimFields {
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
+		}
 	}
 	// TODO: Good ideas for approx delta sorts?
 

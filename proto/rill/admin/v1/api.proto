@@ -24,6 +24,13 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{name}"};
   }
 
+  // GetOrganizationNameForDomain finds the org name for a custom domain.
+  // If the application detects it is running on a non-default domain, it can use this to find the org to present.
+  // It can be called without being authenticated.
+  rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
+    option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
+  }
+
   // CreateOrganization creates a new organization
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
     option (google.api.http) = {
@@ -345,6 +352,24 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
+  // Connects a rill managed project to github.
+  // Replaces the contents of the remote repo with the contents of the project.
+  rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/connect-to-github",
+      body: "*"
+    };
+  }
+
+  // Converts a project connected to github to a rill managed project.
+  // Uploads the current project to assets.
+  rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
+      body: "*"
+    };
+  }
+
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -441,6 +466,17 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+  // It only updates the custom domain in the database, which is used to ensure correct redirects.
+  // The DNS records and ingress TLS must be configured separately.
+  rpc SudoUpdateOrganizationCustomDomain(SudoUpdateOrganizationCustomDomainRequest) returns (SudoUpdateOrganizationCustomDomainResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/custom-domain",
+      body: "*"
+    };
+  }
+
+
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
     option (google.api.http) = {
@@ -529,6 +565,11 @@ service AdminService {
   // ListMagicAuthTokens lists all the magic auth tokens for a specific project.
   rpc ListMagicAuthTokens(ListMagicAuthTokensRequest) returns (ListMagicAuthTokensResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/tokens/magic"};
+  }
+
+  // GetCurrentMagicAuthToken returns information about the current magic auth token.
+  rpc GetCurrentMagicAuthToken(GetCurrentMagicAuthTokenRequest) returns (GetCurrentMagicAuthTokenResponse) {
+    option (google.api.http) = {get: "/v1/magic-tokens/current"};
   }
 
   // RevokeMagicAuthToken revokes a magic auth token.
@@ -765,6 +806,14 @@ message GetOrganizationResponse {
   OrganizationPermissions permissions = 2;
 }
 
+message GetOrganizationNameForDomainRequest {
+  string domain = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetOrganizationNameForDomainResponse {
+  string name = 1;
+}
+
 message CreateOrganizationRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
@@ -784,6 +833,8 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
+  optional string display_name = 5;
+  optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
 message UpdateOrganizationResponse {
@@ -1147,12 +1198,12 @@ message SudoGetResourceResponse {
 
 message SudoUpdateOrganizationQuotasRequest {
   string org_name = 1;
-  optional uint32 projects = 2;
-  optional uint32 deployments = 3;
-  optional uint32 slots_total = 4;
-  optional uint32 slots_per_deployment = 5;
-  optional uint32 outstanding_invites = 6;
-  optional uint64 storage_limit_bytes_per_deployment = 7;
+  optional int32 projects = 2;
+  optional int32 deployments = 3;
+  optional int32 slots_total = 4;
+  optional int32 slots_per_deployment = 5;
+  optional int32 outstanding_invites = 6;
+  optional int64 storage_limit_bytes_per_deployment = 7;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -1169,9 +1220,18 @@ message SudoUpdateOrganizationBillingCustomerResponse {
   repeated Subscription subscriptions = 2;
 }
 
+message SudoUpdateOrganizationCustomDomainRequest {
+  string name = 1;
+  string custom_domain = 2;
+}
+
+message SudoUpdateOrganizationCustomDomainResponse {
+  Organization organization = 1;
+}
+
 message SudoUpdateUserQuotasRequest {
   string email = 1;
-  optional uint32 singleuser_orgs = 2;
+  optional int32 singleuser_orgs = 2;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1532,6 +1592,8 @@ message IssueMagicAuthTokenRequest {
   // Optional list of names of dimensions and measures to limit access to.
   // If empty, all dimensions and measures are accessible.
   repeated string metrics_view_fields = 6;
+  // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+  string state = 7;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1549,6 +1611,12 @@ message ListMagicAuthTokensRequest {
 message ListMagicAuthTokensResponse {
   repeated MagicAuthToken tokens = 1;
   string next_page_token = 2;
+}
+
+message GetCurrentMagicAuthTokenRequest {}
+
+message GetCurrentMagicAuthTokenResponse {
+  MagicAuthToken token = 1;
 }
 
 message RevokeMagicAuthTokenRequest {
@@ -1588,9 +1656,28 @@ message ListGithubUserReposResponse {
     string owner = 2;
     string description = 3;
     string url = 4;
+    string default_branch = 5;
   }
   repeated Repo repos = 1;
 }
+
+message ConnectProjectToGithubRequest {
+  string organization = 1;
+  string project = 2;
+  string repo = 3;
+  string branch = 4;
+  string subpath = 5;
+  bool force = 6;
+}
+
+message ConnectProjectToGithubResponse {}
+
+message UploadProjectAssetsRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message UploadProjectAssetsResponse {}
 
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
@@ -1839,7 +1926,6 @@ message GetBillingSubscriptionResponse {
   Organization organization = 1;
   Subscription subscription = 2;
   string billing_portal_url = 3;
-  bool has_payment_method = 4;
 }
 
 message UpdateBillingSubscriptionRequest {
@@ -1928,10 +2014,13 @@ message Service {
 message Organization {
   string id = 1;
   string name = 2; // Globally unique
+  string display_name = 11;
   string description = 3;
+  string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
+  string billing_email = 9;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -1949,16 +2038,16 @@ message Subscription {
 }
 
 message UserQuotas {
-  uint32 singleuser_orgs = 1;
+  int32 singleuser_orgs = 1;
 }
 
 message OrganizationQuotas {
-  uint32 projects = 1;
-  uint32 deployments = 2;
-  uint32 slots_total = 3;
-  uint32 slots_per_deployment = 4;
-  uint32 outstanding_invites = 5;
-  uint64 storage_limit_bytes_per_deployment = 6;
+  int32 projects = 1;
+  int32 deployments = 2;
+  int32 slots_total = 3;
+  int32 slots_per_deployment = 4;
+  int32 outstanding_invites = 5;
+  int64 storage_limit_bytes_per_deployment = 6;
 }
 
 message Project {
@@ -1978,7 +2067,7 @@ message Project {
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
-  string frontend_url = 16;
+  string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
   map<string, string> annotations = 20;
   string prod_version = 21;
@@ -2090,6 +2179,7 @@ message MagicAuthToken {
   string metrics_view = 9;
   rill.runtime.v1.Expression metrics_view_filter = 10;
   repeated string metrics_view_fields = 11;
+  string state = 12;
 }
 
 message VirtualFile {

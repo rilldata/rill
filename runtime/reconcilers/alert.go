@@ -5,9 +5,9 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"time"
 
@@ -573,22 +573,21 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve alert: %w", err)
 	}
+	defer res.Close()
 
-	var tmp []map[string]any
-	err = json.Unmarshal(res.Data, &tmp)
+	row, err := res.Next()
 	if err != nil {
-		return nil, fmt.Errorf("alert state resolver produced invalid JSON: %w", err)
-	}
-
-	if len(tmp) == 0 {
-		r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
-		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
+		if errors.Is(err, io.EOF) {
+			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
+		}
+		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 	}
 
 	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Return fail row
-	failRow, err := structpb.NewStruct(tmp[0])
+	failRow, err := structpb.NewStruct(row)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}
@@ -606,12 +605,28 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 
 	// td represents the amount of time since we last sent a notification for the current status AND where all intervening executions have returned the same status.
 	var td *time.Duration
+	var lastNotifyTime time.Time
 	if current.ExecutionTime != nil {
+		var currT time.Time
+		if current.ExecutionTime != nil {
+			currT = current.ExecutionTime.AsTime()
+		} else {
+			currT = current.FinishedOn.AsTime()
+		}
+
 		for _, prev := range a.State.ExecutionHistory {
 			if prev.Result.Status != current.Result.Status {
 				break
 			}
 			if !prev.SentNotifications {
+				// If notifications were not sent we store since when we are suppressing
+				if prev.SuppressedSince != nil {
+					lastNotifyTime = prev.SuppressedSince.AsTime()
+					v := currT.Sub(lastNotifyTime)
+					td = &v
+					break
+				}
+				// backward compatibility since we did not store the suppressed time earlier
 				continue
 			}
 
@@ -622,15 +637,10 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				prevT = prev.FinishedOn.AsTime()
 			}
 
-			var currT time.Time
-			if current.ExecutionTime != nil {
-				currT = current.ExecutionTime.AsTime()
-			} else {
-				currT = current.FinishedOn.AsTime()
-			}
-
 			v := currT.Sub(prevT)
 			td = &v
+			lastNotifyTime = prevT
+			break
 		}
 	}
 
@@ -647,6 +657,8 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		} else if int(td.Seconds()) >= int(a.Spec.RenotifyAfterSeconds) {
 			// The status has not changed since the last notification and the last notification was sent more than the renotify suppression period ago, so we should notify.
 			notify = true
+		} else {
+			current.SuppressedSince = timestamppb.New(lastNotifyTime)
 		}
 	}
 

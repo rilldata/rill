@@ -13,13 +13,20 @@ import (
 
 // ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
 type ModelYAML struct {
-	commonYAML      `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
-	Refresh         *ScheduleYAML                           `yaml:"refresh"`
-	Timeout         string                                  `yaml:"timeout"`
-	Incremental     bool                                    `yaml:"incremental"`
-	State           *DataYAML                               `yaml:"state"`
-	InputProperties map[string]any                          `yaml:",inline" mapstructure:",remain"`
-	Output          struct {
+	commonYAML        `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
+	Refresh           *ScheduleYAML                           `yaml:"refresh"`
+	Timeout           string                                  `yaml:"timeout"`
+	Incremental       bool                                    `yaml:"incremental"`
+	State             *DataYAML                               `yaml:"state"`
+	Splits            *DataYAML                               `yaml:"splits"`
+	SplitsWatermark   string                                  `yaml:"splits_watermark"`
+	SplitsConcurrency uint                                    `yaml:"splits_concurrency"`
+	InputProperties   map[string]any                          `yaml:",inline" mapstructure:",remain"`
+	Stage             struct {
+		Connector  string         `yaml:"connector"`
+		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
+	} `yaml:"stage"`
+	Output struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"output"`
@@ -62,6 +69,25 @@ func (p *Parser) parseModel(node *Node) error {
 		node.Refs = append(node.Refs, refs...)
 	}
 
+	// Parse splits resolver
+	var splitsResolver string
+	var splitsResolverProps *structpb.Struct
+	if tmp.Splits != nil {
+		var refs []ResourceName
+		splitsResolver, splitsResolverProps, refs, err = p.parseDataYAML(tmp.Splits)
+		if err != nil {
+			return fmt.Errorf(`failed to parse "splits": %w`, err)
+		}
+		node.Refs = append(node.Refs, refs...)
+
+		// As a small convenience, automatically set the watermark field for resolvers where we know a good default
+		if tmp.SplitsWatermark == "" {
+			if splitsResolver == "glob" {
+				tmp.SplitsWatermark = "updated_on"
+			}
+		}
+	}
+
 	// Build input details
 	inputConnector := node.Connector
 	inputProps := tmp.InputProperties
@@ -87,6 +113,15 @@ func (p *Parser) parseModel(node *Node) error {
 	inputPropsPB, err := structpb.NewStruct(inputProps)
 	if err != nil {
 		return fmt.Errorf(`found invalid input property type: %w`, err)
+	}
+
+	// Stage details are optional
+	var stagePropsPB *structpb.Struct
+	if len(tmp.Stage.Properties) > 0 {
+		stagePropsPB, err = structpb.NewStruct(tmp.Stage.Properties)
+		if err != nil {
+			return fmt.Errorf(`found invalid input property type: %w`, err)
+		}
 	}
 
 	// Build output details
@@ -133,8 +168,16 @@ func (p *Parser) parseModel(node *Node) error {
 	r.ModelSpec.IncrementalStateResolver = incrementalStateResolver
 	r.ModelSpec.IncrementalStateResolverProperties = incrementalStateResolverProps
 
+	r.ModelSpec.SplitsResolver = splitsResolver
+	r.ModelSpec.SplitsResolverProperties = splitsResolverProps
+	r.ModelSpec.SplitsWatermarkField = tmp.SplitsWatermark
+	r.ModelSpec.SplitsConcurrencyLimit = uint32(tmp.SplitsConcurrency)
+
 	r.ModelSpec.InputConnector = inputConnector
 	r.ModelSpec.InputProperties = inputPropsPB
+
+	r.ModelSpec.StageConnector = tmp.Stage.Connector
+	r.ModelSpec.StageProperties = stagePropsPB
 
 	r.ModelSpec.OutputConnector = outputConnector
 	r.ModelSpec.OutputProperties = outputPropsPB

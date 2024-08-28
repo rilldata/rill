@@ -45,7 +45,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			msg := fmt.Sprintf("Do you want to rename the project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
+			msg := fmt.Sprintf("Do you want to rename the project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName)) // nolint:gocritic // Because it uses colors
 			ok, err := cmdutil.ConfirmPrompt(msg, "", false)
 			if err != nil {
 				return err

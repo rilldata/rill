@@ -39,40 +39,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "8888",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Host",
 			Description: "Hostname or IP address of the Druid server",
@@ -144,7 +110,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	dsn, err := dnsFromConfig(conf)
+	dsn, err := dsnFromConfig(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -275,6 +241,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
 // AsSQLStore implements drivers.Connection.
 // Use OLAPStore instead.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
@@ -286,25 +257,11 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
 }
 
-func GetDSN(config map[string]string) (string, error) {
-	conf := &configProperties{}
-	err := mapstructure.WeakDecode(config, conf)
-	if err != nil {
-		return "", err
-	}
-
-	return dnsFromConfig(conf)
-}
-
-func dnsFromConfig(conf *configProperties) (string, error) {
+func dsnFromConfig(conf *configProperties) (string, error) {
 	var dsn string
 	var err error
 	if conf.DSN != "" {

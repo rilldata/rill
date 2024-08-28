@@ -32,6 +32,7 @@ type Spec struct {
 	ImplementsObjectStore bool
 	ImplementsFileStore   bool
 	ImplementsNotifier    bool
+	ImplementsWarehouse   bool
 }
 
 // PropertySpec provides metadata about a single connector property.

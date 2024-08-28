@@ -3,7 +3,8 @@
   import { page } from "$app/stores";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
-  import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
+  import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
+  import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -14,6 +15,12 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { errorStore } from "../../../../features/errors/error-store";
 
+  const user = createAdminServiceGetCurrentUser();
+
+  const PollIntervalWhenDashboardFirstReconciling = 1000;
+  const PollIntervalWhenDashboardErrored = 5000;
+  // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
+
   $: instanceId = $runtime?.instanceId;
 
   $: ({
@@ -22,18 +29,33 @@
     dashboard: dashboardName,
   } = $page.params);
 
-  const user = createAdminServiceGetCurrentUser();
+  $: dashboard = useDashboard(instanceId, dashboardName, {
+    refetchInterval: () => {
+      if (isDashboardReconcilingForFirstTime) {
+        return PollIntervalWhenDashboardFirstReconciling;
+      } else if (isDashboardErrored) {
+        return PollIntervalWhenDashboardErrored;
+      } else {
+        return false;
+      }
+    },
+  });
 
-  $: dashboard = useDashboard(instanceId, dashboardName);
   $: isDashboardNotFound =
     !$dashboard.data &&
     $dashboard.isError &&
     $dashboard.error?.response?.status === 404;
+  $: isDashboardReconcilingForFirstTime =
+    $dashboard?.data?.metricsView?.state?.validSpec === null &&
+    !$dashboard?.data?.meta?.reconcileError;
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
-  $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
+  $: isDashboardErrored =
+    $dashboard?.data?.metricsView?.state?.validSpec === null &&
+    !!$dashboard?.data?.meta?.reconcileError;
   $: metricViewName = $dashboard.data?.meta.name.name;
+
   // If no dashboard is found, show a 404 page
   $: if (isDashboardNotFound) {
     errorStore.set({
@@ -55,12 +77,11 @@
   <title>{dashboardName} - Rill</title>
 </svelte:head>
 
-<!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
-  because dashboard #1 is errored, but dashboard #2 could be OK.  -->
-
 {#if $dashboard.isSuccess}
-  {#if isDashboardErrored}
-    <ProjectErrored organization={orgName} project={projectName} />
+  {#if isDashboardReconcilingForFirstTime}
+    <DashboardBuilding />
+  {:else if isDashboardErrored}
+    <DashboardErrored organization={orgName} project={projectName} />
   {:else if metricViewName}
     {#key metricViewName}
       <StateManagersProvider metricsViewName={metricViewName}>

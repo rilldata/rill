@@ -59,7 +59,11 @@ export function prepareSortedQueryBody(
     apiSortName = dimensionName;
   }
 
-  if (!!timeControls.selectedComparisonTimeRange && sortMeasureName) {
+  if (
+    timeControls.showTimeComparison &&
+    !!timeControls.selectedComparisonTimeRange &&
+    sortMeasureName
+  ) {
     // insert beside the correct measure
     measures.splice(
       measures.findIndex((m) => m.name === sortMeasureName),
@@ -90,7 +94,8 @@ export function prepareSortedQueryBody(
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
     },
-    ...(timeControls.selectedComparisonTimeRange
+    ...(timeControls.selectedComparisonTimeRange &&
+    timeControls.showTimeComparison
       ? {
           comparisonTimeRange: {
             start: timeControls.comparisonTimeStart,

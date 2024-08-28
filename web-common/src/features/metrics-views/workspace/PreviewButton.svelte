@@ -40,11 +40,11 @@
 >
   <Button
     disabled={disabled || !dashboardName}
-    label="Preview"
     href={`/${type}/${dashboardName}`}
-    on:click={viewDashboard}
-    type="primary"
+    label="Preview"
     {loading}
+    on:click={viewDashboard}
+    type="secondary"
   >
     <Play size="10px" />
     Preview

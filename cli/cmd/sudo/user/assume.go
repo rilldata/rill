@@ -53,8 +53,11 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// set the default token to the one we just got
-			ch.AdminTokenDefault = res.Token
+			// Load new token
+			err = ch.ReloadAdminConfig()
+			if err != nil {
+				return err
+			}
 
 			// Select org for new user
 			err = auth.SelectOrgFlow(ctx, ch, true)

@@ -533,6 +533,7 @@ func local_request_ConnectorService_BigQueryListTables_0(ctx context.Context, ma
 // UnaryRPC     :call ConnectorServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterConnectorServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ConnectorServiceServer) error {
 
 	mux.Handle("GET", pattern_ConnectorService_S3ListBuckets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -848,7 +849,7 @@ func RegisterConnectorServiceHandler(ctx context.Context, mux *runtime.ServeMux,
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "ConnectorServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "ConnectorServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "ConnectorServiceClient" to call the correct interceptors.
+// "ConnectorServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterConnectorServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ConnectorServiceClient) error {
 
 	mux.Handle("GET", pattern_ConnectorService_S3ListBuckets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

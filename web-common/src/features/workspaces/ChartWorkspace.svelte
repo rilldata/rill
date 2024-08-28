@@ -4,6 +4,7 @@
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import ChartStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
+  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -14,12 +15,16 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { V1MetricsViewRowsResponseDataItem } from "@rilldata/web-common/runtime-client";
-  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
+  import {
+    createQueryServiceResolveComponent,
+    V1MetricsViewRowsResponseDataItem,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getContext } from "svelte";
 
   export let fileArtifact: FileArtifact;
+
+  const dashboardName = getContext("rill::custom-dashboard:name") as string;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -38,15 +43,14 @@
 
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({ resolverProperties } = componentResource?.component?.spec ?? {});
+  $: ({ resolverProperties, input } = componentResource?.component?.spec ?? {});
+
+  $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
   $: chartDataQuery = resolverProperties
-    ? createRuntimeServiceGetChartData(
-        queryClient,
-        instanceId,
-        chartName,
-        resolverProperties,
-      )
+    ? createQueryServiceResolveComponent(instanceId, chartName, {
+        args: $inputVariableParams,
+      })
     : null;
 
   let isFetching = false;
@@ -54,7 +58,7 @@
 
   $: if (chartDataQuery) {
     isFetching = $chartDataQuery?.isFetching ?? false;
-    chartData = $chartDataQuery?.data;
+    chartData = $chartDataQuery?.data?.data;
   }
 </script>
 
@@ -86,6 +90,7 @@
     <div class="size-full flex-col flex overflow-hidden">
       <ChartStatusDisplay {isFetching} {chartName}>
         <CustomDashboardEmbed
+          {dashboardName}
           chartView
           gap={8}
           columns={10}

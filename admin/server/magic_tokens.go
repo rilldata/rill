@@ -37,6 +37,11 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
+	}
+
 	claims := auth.GetClaims(ctx)
 	projPerms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !projPerms.CreateMagicAuthTokens {
@@ -47,6 +52,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		ProjectID:         proj.ID,
 		MetricsView:       req.MetricsView,
 		MetricsViewFields: req.MetricsViewFields,
+		State:             req.State,
 	}
 
 	if req.TtlMinutes != 0 {
@@ -91,7 +97,31 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	tokenStr := token.Token().String()
 	return &adminv1.IssueMagicAuthTokenResponse{
 		Token: tokenStr,
-		Url:   s.urls.magicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+		Url:   s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+	}, nil
+}
+
+func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetCurrentMagicAuthTokenRequest) (*adminv1.GetCurrentMagicAuthTokenResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeMagicAuthToken {
+		return nil, status.Error(codes.PermissionDenied, "request was not made with a magic auth token")
+	}
+
+	tkn, err := s.admin.DB.FindMagicAuthTokenWithUser(ctx, claims.OwnerID())
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "magic auth token not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	pb, err := magicAuthTokenToPB(tkn)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.GetCurrentMagicAuthTokenResponse{
+		Token: pb,
 	}, nil
 }
 
@@ -224,6 +254,7 @@ func magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser) (*adminv1.MagicAut
 		MetricsView:        tkn.MetricsView,
 		MetricsViewFilter:  metricsViewFilter,
 		MetricsViewFields:  tkn.MetricsViewFields,
+		State:              tkn.State,
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)
