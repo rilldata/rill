@@ -211,11 +211,11 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// Generate unnest join
 		unnestTableAlias := b.ast.generateIdentifier()
-		unnestFrom, ok, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
+		unnestFrom, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
