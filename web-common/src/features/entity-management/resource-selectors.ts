@@ -74,6 +74,44 @@ export function useResource<T = V1Resource>(
   );
 }
 
+/**
+ * `useResourceV2` is a more flexible version of `useResource` that accepts
+ *  any `queryOptions`, not just `select` and `queryClient`.
+ */
+export function useResourceV2<T = V1Resource>(
+  instanceId: string,
+  name: string,
+  kind: ResourceKind,
+  queryOptions?: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    T // T is the return type of the `select` function
+  >,
+) {
+  const defaultQueryOptions: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    T
+  > = {
+    select: (data) => data?.resource as T,
+    enabled: !!instanceId && !!name && !!kind,
+  };
+
+  return createRuntimeServiceGetResource(
+    instanceId,
+    {
+      "name.kind": kind,
+      "name.name": name,
+    },
+    {
+      query: {
+        ...defaultQueryOptions,
+        ...queryOptions,
+      },
+    },
+  );
+}
+
 export function useProjectParser(queryClient: QueryClient, instanceId: string) {
   return useResource(
     instanceId,
