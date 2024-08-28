@@ -41,7 +41,6 @@
 
     // Scenario 3: User has no activeOrg in localStorage, but does belong to an org
     if (orgs.length > 0) {
-      localStorage.setItem(activeOrgLocalStorageKey, orgs[0].name);
       await goto(`/${orgs[0].name}`);
       return;
     }

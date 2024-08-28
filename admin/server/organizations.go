@@ -183,6 +183,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	emailChanged := req.BillingEmail != nil && *req.BillingEmail != org.BillingEmail
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                valOrDefault(req.NewName, org.Name),
+		DisplayName:                         valOrDefault(req.DisplayName, org.DisplayName),
 		Description:                         valOrDefault(req.Description, org.Description),
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
@@ -343,6 +344,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
@@ -550,7 +552,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		err = s.admin.Email.SendOrganizationInvite(&email.OrganizationInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
-			AcceptURL:     s.admin.URLs.OrganizationInviteAccept(org.Name),
+			AcceptURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).OrganizationInviteAccept(org.Name),
 			OrgName:       org.Name,
 			RoleName:      role.Name,
 			InvitedByName: invitedByName,
@@ -599,7 +601,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
-		OpenURL:       s.admin.URLs.Organization(org.Name),
+		OpenURL:       s.admin.URLs.WithCustomDomain(org.CustomDomain).Organization(org.Name),
 		OrgName:       org.Name,
 		RoleName:      role.Name,
 		InvitedByName: invitedByName,
@@ -1049,6 +1051,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 
 	opts := &database.UpdateOrganizationOptions{
 		Name:                                req.OrgName,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
@@ -1095,6 +1098,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 
 	opts := &database.UpdateOrganizationOptions{
 		Name:                                req.OrgName,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
@@ -1148,6 +1152,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        req.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
@@ -1192,6 +1197,7 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 	return &adminv1.Organization{
 		Id:           o.ID,
 		Name:         o.Name,
+		DisplayName:  o.DisplayName,
 		Description:  o.Description,
 		CustomDomain: o.CustomDomain,
 		Quotas: &adminv1.OrganizationQuotas{

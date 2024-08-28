@@ -8,7 +8,6 @@
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -56,18 +55,7 @@
     );
   }
 
-  function editGithubConnection() {
-    void githubData.startRepoSelection();
-    behaviourEvent?.fireGithubIntentEvent(
-      BehaviourEventAction.GithubConnectStart,
-      {
-        is_fresh_connection: isGithubConnected,
-      },
-    );
-  }
-
   function disconnectGithubConnect() {
-    void githubData.ensureGithubAccess();
     disconnectConfirmOpen = true;
   }
 </script>
@@ -105,14 +93,15 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <DropdownMenu.Item class="px-1 py-1">
-                <Button on:click={editGithubConnection} type="text" compact>
-                  <div class="flex flex-row items-center gap-x-2">
-                    <EditIcon size="14px" />
-                    <span class="text-xs">Edit</span>
-                  </div>
-                </Button>
-              </DropdownMenu.Item>
+              <!-- Disabling for now, until we figure out how to do this  -->
+              <!--              <DropdownMenu.Item class="px-1 py-1">-->
+              <!--                <Button on:click={editGithubConnection} type="text" compact>-->
+              <!--                  <div class="flex flex-row items-center gap-x-2">-->
+              <!--                    <EditIcon size="14px" />-->
+              <!--                    <span class="text-xs">Edit</span>-->
+              <!--                  </div>-->
+              <!--                </Button>-->
+              <!--              </DropdownMenu.Item>-->
               <DropdownMenu.Item class="px-1 py-1">
                 <Button on:click={disconnectGithubConnect} type="text" compact>
                   <div class="flex flex-row items-center gap-x-2">
