@@ -58,6 +58,7 @@
     rowPage: 1,
     enableComparison: false,
     rowJoinType: "nest",
+    activeCell: null,
   });
 
   let pivotDataStore: PivotDataStore | undefined = undefined;

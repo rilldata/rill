@@ -4,13 +4,17 @@
   import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import { rowViewerStore } from "@rilldata/web-common/features/dashboards/rows-viewer/row-viewer-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
+    Cell,
     ExpandedState,
     SortingState,
     TableOptions,
@@ -55,6 +59,10 @@
     return dashboard?.pivot;
   });
 
+  const { cloudDataViewer, readOnly } = featureFlags;
+  $: isRillDeveloper = $readOnly === false;
+  $: canShowDataViewer = Boolean($cloudDataViewer || isRillDeveloper);
+
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDashboardStore, pivotDataStore],
     ([pivotConfig, pivotData]) => {
@@ -92,7 +100,13 @@
   let percentOfChangeDuringResize = 0;
   let resizingMeasure = false;
 
-  $: ({ expanded, sorting, rowPage, rows: rowPills } = $pivotDashboardStore);
+  $: ({
+    expanded,
+    sorting,
+    rowPage,
+    rows: rowPills,
+    activeCell,
+  } = $pivotDashboardStore);
 
   $: timeDimension = $config.time.timeDimension;
   $: hasDimension = rowPills.dimension.length > 0;
@@ -157,6 +171,13 @@
         initScrollOnResize +
         percentOfChangeDuringResize * (totalLength - initLengthOnResize),
     });
+  }
+
+  let customShortcuts: { description: string; shortcut: string }[] = [];
+  $: if (canShowDataViewer) {
+    customShortcuts = [
+      { description: "View raw data for aggregated cell", shortcut: "Click" },
+    ];
   }
 
   function onExpandedChange(updater: Updater<ExpandedState>) {
@@ -243,6 +264,14 @@
     value: string | number | null;
   };
 
+  function handleCellClick(cell: Cell<PivotDataRow, unknown>) {
+    if (!canShowDataViewer) return;
+    const rowId = cell.row.id;
+    const columnId = cell.column.id;
+
+    metricsExplorerStore.setPivotActiveCell($metricsViewName, rowId, columnId);
+  }
+
   function handleHover(
     e: MouseEvent & {
       currentTarget: EventTarget & HTMLElement;
@@ -282,6 +311,16 @@
   function isElement(target: EventTarget | null): target is HTMLElement {
     return target instanceof HTMLElement;
   }
+
+  function isCellActive(cell: Cell<PivotDataRow, unknown>) {
+    return (
+      cell.row.id === activeCell?.rowId &&
+      cell.column.id === activeCell?.columnId
+    );
+  }
+  function removeActiveCell() {
+    metricsExplorerStore.removePivotActiveCell($metricsViewName);
+  }
 </script>
 
 <div
@@ -297,6 +336,7 @@
     style:width="{totalLength}px"
     on:click={modified({ shift: handleClick })}
     role="presentation"
+    use:clickOutside={[$rowViewerStore, () => removeActiveCell()]}
   >
     {#if firstColumnName && firstColumnWidth}
       <colgroup>
@@ -384,9 +424,13 @@
               typeof cell.column.columnDef.cell === "function"
                 ? cell.column.columnDef.cell(cell.getContext())
                 : cell.column.columnDef.cell}
+            {@const isActive = isCellActive(cell)}
             <td
               class="ui-copy-number"
+              class:active-cell={isActive}
+              class:interactive-cell={canShowDataViewer}
               class:border-r={i % measureCount === 0 && i}
+              on:click={() => handleCellClick(cell)}
               on:mouseenter={handleHover}
               on:mouseleave={handleLeave}
               data-value={cell.getValue()}
@@ -420,7 +464,13 @@
 </div>
 
 {#if showTooltip && hovering}
-  <VirtualTooltip sortable={true} {hovering} {hoverPosition} pinned={false} />
+  <VirtualTooltip
+    sortable={true}
+    {hovering}
+    {hoverPosition}
+    pinned={false}
+    {customShortcuts}
+  />
 {/if}
 
 <style lang="postcss">
@@ -515,7 +565,20 @@
     @apply bg-slate-100;
   }
 
+  tr:hover .active-cell .cell {
+    @apply bg-primary-100;
+  }
+
   .totals-column {
     @apply bg-slate-50 font-semibold;
+  }
+  .interactive-cell {
+    @apply cursor-pointer;
+  }
+  .interactive-cell:hover .cell {
+    @apply bg-primary-100;
+  }
+  .active-cell .cell {
+    @apply bg-primary-50;
   }
 </style>
