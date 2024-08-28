@@ -54,7 +54,19 @@ Configuring connector "snowflake":
 
 Once you have completed, this you can head back over to Rill Cloud and check if your sources are connecting successfully. 
 
-### 
+### Making Changes Locally
+
+Sometimes, you will need to makes changes to the project locally and the credentials were not setup. In this case, if the project credentials are already configured, you can run the following to pull them locally. 
+
+```bash
+rill env pull
+```
+
+Conversly, if you've made any small changes to the .env file, you can push the changes using:
+
+```bash
+rill env push
+```
 
 import DocsRating from '@site/src/components/DocsRating';
 
