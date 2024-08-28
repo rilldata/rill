@@ -2507,6 +2507,8 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for Trigger
 
+	// no validation rules for TriggerFull
+
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
 	}

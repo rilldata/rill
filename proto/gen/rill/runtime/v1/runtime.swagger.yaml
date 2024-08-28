@@ -4990,6 +4990,8 @@ definitions:
         type: object
       trigger:
         type: boolean
+      triggerFull:
+        type: boolean
   v1ModelSplit:
     type: object
     properties:

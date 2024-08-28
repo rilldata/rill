@@ -1149,6 +1149,7 @@ export interface V1ModelSpec {
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
+  triggerFull?: boolean;
 }
 
 export interface V1ModelV2 {

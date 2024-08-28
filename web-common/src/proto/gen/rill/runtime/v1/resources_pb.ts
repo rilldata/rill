@@ -825,6 +825,11 @@ export class ModelSpec extends Message<ModelSpec> {
    */
   trigger = false;
 
+  /**
+   * @generated from field: bool trigger_full = 22;
+   */
+  triggerFull = false;
+
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -849,6 +854,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {

@@ -128,9 +128,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			for _, split := range mt.Splits {
 				err := catalog.UpdateModelSplitPending(ctx, modelID, split)
 				if err != nil {
-					// TODO: This is probably because the split key doesn't exist. Ideally, we should check that case specifically, and return other errors.
-					r.C.Logger.Warn("Skipped split because we failed to mark it pending", zap.String("model", mt.Model), zap.String("split", split), zap.Error(err))
-					continue
+					return runtime.ReconcileResult{Err: fmt.Errorf("failed to mark split %q pending for model %q: %w", split, mt.Model, err)}
 				}
 			}
 		}
@@ -183,8 +181,11 @@ func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *r
 		if model.Spec.Trigger {
 			return nil
 		}
-		model.Spec.Trigger = true
-		// TODO: Handle full
+		if full {
+			model.Spec.TriggerFull = true
+		} else {
+			model.Spec.Trigger = true
+		}
 	case runtime.ResourceKindAlert:
 		alert := res.GetAlert()
 		if alert.Spec.Trigger {

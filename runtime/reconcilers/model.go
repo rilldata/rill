@@ -205,7 +205,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Decide if we should trigger a reset
-	triggerReset := model.State.ResultConnector == "" // If its nil, ResultProperties/ResultTable will also be nil
+	triggerReset := model.Spec.TriggerFull
+	triggerReset = triggerReset || model.State.ResultConnector == "" // If its nil, ResultProperties/ResultTable will also be nil
 	triggerReset = triggerReset || model.State.RefreshedOn == nil
 	triggerReset = triggerReset || model.State.SpecHash != specHash
 	triggerReset = triggerReset || !exists
@@ -302,8 +303,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: errors.Join(ctx.Err(), execErr)}
 	}
 
-	// Reset spec.Trigger
-	if model.Spec.Trigger {
+	// Reset spec.Trigger and spec.TriggerFull
+	if model.Spec.Trigger || model.Spec.TriggerFull {
 		err := r.updateTriggerFalse(ctx, n)
 		if err != nil {
 			return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
@@ -551,7 +552,7 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }
 
-// updateTriggerFalse sets the model's spec.Trigger to false.
+// updateTriggerFalse sets the model's spec.Trigger and spec.TriggerFull to false.
 // Unlike the State, the Spec may be edited concurrently with a Reconcile call, so we need to read and edit it under a lock.
 func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.ResourceName) error {
 	r.C.Lock(ctx)
@@ -568,6 +569,7 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 	}
 
 	model.Spec.Trigger = false
+	model.Spec.TriggerFull = false
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 

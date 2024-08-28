@@ -122,6 +122,7 @@ message ModelSpec {
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
+  bool trigger_full = 22;
   reserved 2, 3, 6, 7, 8;
 }
 
