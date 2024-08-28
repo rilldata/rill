@@ -347,6 +347,7 @@
         side="right"
         direction="EW"
         justify="end"
+        hang={false}
         min={MIN_COL_WIDTH}
         max={MAX_COL_WIDTH}
         dimension={firstColumnWidth}
@@ -373,6 +374,7 @@
               side="right"
               direction="EW"
               justify="end"
+              hang={false}
               min={MIN_MEASURE_WIDTH}
               max={MAX_MEAUSRE_WIDTH}
               dimension={length}

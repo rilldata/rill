@@ -19,6 +19,7 @@
   export let onMouseUp: (() => void) | null = null;
   export let disabled = false;
   export let justify: "center" | "start" | "end" = "center";
+  export let hang = true;
 
   let start = 0;
   let startingDimension = dimension;
@@ -81,6 +82,7 @@
   {disabled}
   class:absolute
   class="{direction} {side} justify-{justify}"
+  class:hang
   on:mousedown|stopPropagation|preventDefault={handleMousedown}
   on:dblclick={handleDoubleClick}
   on:mouseenter={() => {
@@ -136,19 +138,35 @@
     @apply cursor-w-resize;
   }
 
-  .left {
+  .left.hang {
     @apply -left-1;
   }
 
-  .right {
-    @apply -right-0;
+  .right.hang {
+    @apply -right-1;
   }
 
-  .top {
+  .top.hang {
     @apply -top-1;
   }
 
-  .bottom {
+  .bottom.hang {
     @apply -bottom-1;
+  }
+
+  .left {
+    @apply left-0;
+  }
+
+  .right {
+    @apply right-0;
+  }
+
+  .top {
+    @apply top-0;
+  }
+
+  .bottom {
+    @apply bottom-0;
   }
 </style>
