@@ -9,35 +9,23 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"go.uber.org/zap"
 )
 
-func TestClickhouseSingleHost(t *testing.T) {
+func TestClickhouseCrudOps(t *testing.T) {
 	if testing.Short() {
 		t.Skip("clickhouse: skipping test in short mode")
 	}
 
-	ctx := context.Background()
-	clickHouseContainer, err := clickhouse.Run(ctx,
-		"clickhouse/clickhouse-server:latest",
-		clickhouse.WithUsername("clickhouse"),
-		clickhouse.WithPassword("clickhouse"),
-		clickhouse.WithConfigFile("../../testruntime/testdata/clickhouse-config.xml"),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := clickHouseContainer.Terminate(ctx)
-		require.NoError(t, err)
-	})
+	dsn, cluster := testruntime.ClickhouseCluster(t)
+	t.Run("SingleHost", func(t *testing.T) { testClickhouseSingleHost(t, dsn) })
+	t.Run("Cluster", func(t *testing.T) { testClickhouseCluster(t, dsn, cluster) })
+}
 
-	host, err := clickHouseContainer.Host(ctx)
+func testClickhouseSingleHost(t *testing.T, dsn string) {
+	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
-	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
-	require.NoError(t, err)
-
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())}, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
+	defer conn.Close()
 	prepareConn(t, conn)
 
 	olap, ok := conn.AsOLAP("default")
@@ -47,15 +35,10 @@ func TestClickhouseSingleHost(t *testing.T) {
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
 }
 
-func TestClickhouseCluster(t *testing.T) {
-	if testing.Short() {
-		t.Skip("clickhouse: skipping test in short mode")
-	}
-
-	dsn, cluster := testruntime.ClickhouseCluster(t)
-
+func testClickhouseCluster(t *testing.T, dsn, cluster string) {
 	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "cluster": cluster}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
+	defer conn.Close()
 
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
@@ -100,12 +83,12 @@ func testCreateTableAsSelect(t *testing.T, olap drivers.OLAPStore) {
 
 func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
 	err := olap.Exec(context.Background(), &drivers.Statement{
-		Query: fmt.Sprintf("CREATE TABLE foo_local ON CLUSTER %s (bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()", cluster),
+		Query: fmt.Sprintf("CREATE OR REPLACE TABLE foo_local ON CLUSTER %s (bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()", cluster),
 	})
 	require.NoError(t, err)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: fmt.Sprintf("CREATE TABLE foo ON CLUSTER %s AS foo_local engine=Distributed(%s, currentDatabase(), foo_local, rand())", cluster, cluster),
+		Query: fmt.Sprintf("CREATE OR REPLACE TABLE foo ON CLUSTER %s AS foo_local engine=Distributed(%s, currentDatabase(), foo_local, rand())", cluster, cluster),
 	})
 	require.NoError(t, err)
 
@@ -115,12 +98,12 @@ func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
 	require.NoError(t, err)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: fmt.Sprintf("CREATE TABLE bar_local ON CLUSTER %s (bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()", cluster),
+		Query: fmt.Sprintf("CREATE OR REPLACE TABLE bar_local ON CLUSTER %s (bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()", cluster),
 	})
 	require.NoError(t, err)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: fmt.Sprintf("CREATE TABLE bar ON CLUSTER %s AS foo_local engine=Distributed(%s, currentDatabase(), foo_local, rand())", cluster, cluster),
+		Query: fmt.Sprintf("CREATE OR REPLACE TABLE bar ON CLUSTER %s AS foo_local engine=Distributed(%s, currentDatabase(), foo_local, rand())", cluster, cluster),
 	})
 	require.NoError(t, err)
 

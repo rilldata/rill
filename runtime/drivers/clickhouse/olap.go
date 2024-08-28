@@ -390,8 +390,9 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		res.Close()
 
 		// replace the old local table name with new local table name
-		sql = strings.Replace(sql, localTableName(oldName), safelocalTableName(newName), -1)
-		sql = strings.Replace(sql, oldName, safeSQLName(newName), -1)
+		// this makes an assumption that cluster name is different from table names
+		sql = strings.ReplaceAll(sql, localTableName(oldName), safelocalTableName(newName))
+		sql = strings.ReplaceAll(sql, oldName, safeSQLName(newName))
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    sql,
 			Priority: 100,
