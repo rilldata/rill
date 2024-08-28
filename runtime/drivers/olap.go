@@ -450,7 +450,6 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 	}
 }
 
-// unit - ie second, minute, ...
 func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, error) {
 	unit := d.ConvertToDateTruncSpecifier(grain)
 	switch d {
