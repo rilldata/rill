@@ -24,6 +24,13 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{name}"};
   }
 
+  // GetOrganizationNameForDomain finds the org name for a custom domain.
+  // If the application detects it is running on a non-default domain, it can use this to find the org to present.
+  // It can be called without being authenticated.
+  rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
+    option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
+  }
+
   // CreateOrganization creates a new organization
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
     option (google.api.http) = {
@@ -43,19 +50,6 @@ service AdminService {
       patch: "/v1/organizations/{name}",
       body: "*"
     };
-  }
-
-  // UpdateOrganizationBillingSubscription updates the billing plan for the organization
-  rpc UpdateOrganizationBillingSubscription(UpdateOrganizationBillingSubscriptionRequest) returns (UpdateOrganizationBillingSubscriptionResponse) {
-    option (google.api.http) = {
-      patch: "/v1/organizations/{org_name}/billing/subscriptions",
-      body: "*"
-    };
-  }
-
-  // GetOrganizationBillingSubscription lists the subscription for the organization
-  rpc GetOrganizationBillingSubscription(GetOrganizationBillingSubscriptionRequest) returns (GetOrganizationBillingSubscriptionResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/subscriptions"};
   }
 
   // ListProjectsForOrganization lists all the projects currently available for given organizations
@@ -118,6 +112,11 @@ service AdminService {
       post: "/v1/organizations/{organization_name}/create_asset",
       body: "*"
     };
+  }
+
+  // HibernateProject hibernates a project by tearing down its deployments.
+  rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
+    option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
   }
 
   // TriggerReconcile triggers reconcile for the project's prod deployment
@@ -349,6 +348,28 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user"};
   }
 
+  rpc ListGithubUserRepos(ListGithubUserReposRequest) returns (ListGithubUserReposResponse) {
+    option (google.api.http) = {get: "/v1/github/user/repositories"};
+  }
+
+  // Connects a rill managed project to github.
+  // Replaces the contents of the remote repo with the contents of the project.
+  rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/connect-to-github",
+      body: "*"
+    };
+  }
+
+  // Converts a project connected to github to a rill managed project.
+  // Uploads the current project to assets.
+  rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
+      body: "*"
+    };
+  }
+
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -445,10 +466,29 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+  // It only updates the custom domain in the database, which is used to ensure correct redirects.
+  // The DNS records and ingress TLS must be configured separately.
+  rpc SudoUpdateOrganizationCustomDomain(SudoUpdateOrganizationCustomDomainRequest) returns (SudoUpdateOrganizationCustomDomainResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/custom-domain",
+      body: "*"
+    };
+  }
+
+
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
     option (google.api.http) = {
       patch: "/v1/superuser/projects/annotations",
+      body: "*"
+    };
+  }
+
+  // SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+  rpc SudoIssueRuntimeManagerToken(SudoIssueRuntimeManagerTokenRequest) returns (SudoIssueRuntimeManagerTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/deployments/manager-token",
       body: "*"
     };
   }
@@ -525,6 +565,11 @@ service AdminService {
   // ListMagicAuthTokens lists all the magic auth tokens for a specific project.
   rpc ListMagicAuthTokens(ListMagicAuthTokensRequest) returns (ListMagicAuthTokensResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/tokens/magic"};
+  }
+
+  // GetCurrentMagicAuthToken returns information about the current magic auth token.
+  rpc GetCurrentMagicAuthToken(GetCurrentMagicAuthTokenRequest) returns (GetCurrentMagicAuthTokenResponse) {
+    option (google.api.http) = {get: "/v1/magic-tokens/current"};
   }
 
   // RevokeMagicAuthToken revokes a magic auth token.
@@ -686,9 +731,52 @@ service AdminService {
     };
   }
 
+  // GetBillingSubscription lists the subscription for the organization
+  rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/subscriptions"};
+  }
+
+  // UpdateBillingSubscription updates the billing plan for the organization
+  rpc UpdateBillingSubscription(UpdateBillingSubscriptionRequest) returns (UpdateBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      patch: "/v1/organizations/{org_name}/billing/subscriptions",
+      body: "*"
+    };
+  }
+
+  // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
+  rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/payments/portal-url"};
+  }
+
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
+  }
+
+  rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/request-access",
+      body: "*"
+    };
+  }
+
+  rpc GetProjectAccessRequest(GetProjectAccessRequestRequest) returns (GetProjectAccessRequestResponse) {
+    option (google.api.http) = {get: "/v1/project-access-request/{id}"};
+  }
+
+  rpc ApproveProjectAccess(ApproveProjectAccessRequest) returns (ApproveProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/project-access-request/{id}/approve",
+      body: "*"
+    };
+  }
+
+  rpc DenyProjectAccess(DenyProjectAccessRequest) returns (DenyProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/project-access-request/{id}/deny",
+      body: "*"
+    };
   }
 }
 
@@ -718,6 +806,14 @@ message GetOrganizationResponse {
   OrganizationPermissions permissions = 2;
 }
 
+message GetOrganizationNameForDomainRequest {
+  string domain = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetOrganizationNameForDomainResponse {
+  string name = 1;
+}
+
 message CreateOrganizationRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
@@ -737,29 +833,12 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
+  optional string display_name = 5;
+  optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
 message UpdateOrganizationResponse {
   Organization organization = 1;
-}
-
-message UpdateOrganizationBillingSubscriptionRequest {
-  string org_name = 1;
-  string plan_name = 2;
-}
-
-message UpdateOrganizationBillingSubscriptionResponse {
-  Organization organization = 1;
-  repeated Subscription subscriptions = 2;
-}
-
-message GetOrganizationBillingSubscriptionRequest {
-  string org_name = 1;
-}
-
-message GetOrganizationBillingSubscriptionResponse {
-  Organization organization = 1;
-  Subscription subscription = 2;
 }
 
 message ListProjectsForOrganizationRequest {
@@ -964,6 +1043,7 @@ message UpdateProjectRequest {
   optional bool public = 4;
   optional string prod_branch = 5;
   optional string github_url = 6;
+  optional string subpath = 13;
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
   optional string provisioner = 8;
@@ -998,6 +1078,13 @@ message CreateAssetResponse {
   string signed_url = 2;
   map<string, string> signing_headers = 3;
 }
+
+message HibernateProjectRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message HibernateProjectResponse {}
 
 message TriggerReconcileRequest {
   string deployment_id = 1;
@@ -1111,12 +1198,12 @@ message SudoGetResourceResponse {
 
 message SudoUpdateOrganizationQuotasRequest {
   string org_name = 1;
-  optional uint32 projects = 2;
-  optional uint32 deployments = 3;
-  optional uint32 slots_total = 4;
-  optional uint32 slots_per_deployment = 5;
-  optional uint32 outstanding_invites = 6;
-  optional uint64 storage_limit_bytes_per_deployment = 7;
+  optional int32 projects = 2;
+  optional int32 deployments = 3;
+  optional int32 slots_total = 4;
+  optional int32 slots_per_deployment = 5;
+  optional int32 outstanding_invites = 6;
+  optional int64 storage_limit_bytes_per_deployment = 7;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -1133,9 +1220,18 @@ message SudoUpdateOrganizationBillingCustomerResponse {
   repeated Subscription subscriptions = 2;
 }
 
+message SudoUpdateOrganizationCustomDomainRequest {
+  string name = 1;
+  string custom_domain = 2;
+}
+
+message SudoUpdateOrganizationCustomDomainResponse {
+  Organization organization = 1;
+}
+
 message SudoUpdateUserQuotasRequest {
   string email = 1;
-  optional uint32 singleuser_orgs = 2;
+  optional int32 singleuser_orgs = 2;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1150,6 +1246,14 @@ message SudoUpdateAnnotationsRequest {
 
 message SudoUpdateAnnotationsResponse {
   Project project = 1;
+}
+
+message SudoIssueRuntimeManagerTokenRequest {
+  string host = 1;
+}
+
+message SudoIssueRuntimeManagerTokenResponse {
+  string token = 1;
 }
 
 message ListProjectMemberUsersRequest {
@@ -1488,6 +1592,8 @@ message IssueMagicAuthTokenRequest {
   // Optional list of names of dimensions and measures to limit access to.
   // If empty, all dimensions and measures are accessible.
   repeated string metrics_view_fields = 6;
+  // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+  string state = 7;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1505,6 +1611,12 @@ message ListMagicAuthTokensRequest {
 message ListMagicAuthTokensResponse {
   repeated MagicAuthToken tokens = 1;
   string next_page_token = 2;
+}
+
+message GetCurrentMagicAuthTokenRequest {}
+
+message GetCurrentMagicAuthTokenResponse {
+  MagicAuthToken token = 1;
 }
 
 message RevokeMagicAuthTokenRequest {
@@ -1535,6 +1647,37 @@ message GetGithubUserStatusResponse {
   // DEPRECATED: Use organization_installation_permissions instead.
   repeated string organizations = 5 [deprecated = true];
 }
+
+message ListGithubUserReposRequest {}
+
+message ListGithubUserReposResponse {
+  message Repo {
+    string name = 1;
+    string owner = 2;
+    string description = 3;
+    string url = 4;
+    string default_branch = 5;
+  }
+  repeated Repo repos = 1;
+}
+
+message ConnectProjectToGithubRequest {
+  string organization = 1;
+  string project = 2;
+  string repo = 3;
+  string branch = 4;
+  string subpath = 5;
+  bool force = 6;
+}
+
+message ConnectProjectToGithubResponse {}
+
+message UploadProjectAssetsRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message UploadProjectAssetsResponse {}
 
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
@@ -1775,6 +1918,35 @@ message GetAlertYAMLResponse {
   string yaml = 1;
 }
 
+message GetBillingSubscriptionRequest {
+  string org_name = 1;
+}
+
+message GetBillingSubscriptionResponse {
+  Organization organization = 1;
+  Subscription subscription = 2;
+  string billing_portal_url = 3;
+}
+
+message UpdateBillingSubscriptionRequest {
+  string org_name = 1;
+  string plan_name = 2;
+}
+
+message UpdateBillingSubscriptionResponse {
+  Organization organization = 1;
+  repeated Subscription subscriptions = 2;
+}
+
+message GetPaymentsPortalURLRequest {
+  string org_name = 1;
+  string return_url = 2;
+}
+
+message GetPaymentsPortalURLResponse {
+  string url = 1;
+}
+
 message ListPublicBillingPlansRequest {}
 
 message ListPublicBillingPlansResponse {
@@ -1791,6 +1963,34 @@ message TelemetryRequest {
 }
 
 message TelemetryResponse {}
+
+message RequestProjectAccessRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message RequestProjectAccessResponse {}
+
+message GetProjectAccessRequestRequest {
+  string id = 1;
+}
+
+message GetProjectAccessRequestResponse {
+  string email = 1;
+}
+
+message ApproveProjectAccessRequest {
+  string id = 1;
+  string role = 2;
+}
+
+message ApproveProjectAccessResponse {}
+
+message DenyProjectAccessRequest {
+  string id = 1;
+}
+
+message DenyProjectAccessResponse {}
 
 message User {
   string id = 1;
@@ -1814,9 +2014,13 @@ message Service {
 message Organization {
   string id = 1;
   string name = 2; // Globally unique
+  string display_name = 11;
   string description = 3;
+  string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
+  string payment_customer_id = 8;
+  string billing_email = 9;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -1834,16 +2038,16 @@ message Subscription {
 }
 
 message UserQuotas {
-  uint32 singleuser_orgs = 1;
+  int32 singleuser_orgs = 1;
 }
 
 message OrganizationQuotas {
-  uint32 projects = 1;
-  uint32 deployments = 2;
-  uint32 slots_total = 3;
-  uint32 slots_per_deployment = 4;
-  uint32 outstanding_invites = 5;
-  uint64 storage_limit_bytes_per_deployment = 6;
+  int32 projects = 1;
+  int32 deployments = 2;
+  int32 slots_total = 3;
+  int32 slots_per_deployment = 4;
+  int32 outstanding_invites = 5;
+  int64 storage_limit_bytes_per_deployment = 6;
 }
 
 message Project {
@@ -1863,7 +2067,7 @@ message Project {
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
-  string frontend_url = 16;
+  string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
   map<string, string> annotations = 20;
   string prod_version = 21;
@@ -1975,6 +2179,7 @@ message MagicAuthToken {
   string metrics_view = 9;
   rill.runtime.v1.Expression metrics_view_filter = 10;
   repeated string metrics_view_fields = 11;
+  string state = 12;
 }
 
 message VirtualFile {
@@ -2005,7 +2210,11 @@ message ReportOptions {
 message AlertOptions {
   string title = 1;
   string interval_duration = 2;
+  string resolver = 13;
+  google.protobuf.Struct resolver_properties = 14;
+  // DEPRECATED: Use resolver and resolver_properties instead.
   string query_name = 3;
+  // DEPRECATED: Use resolver and resolver_properties instead.
   string query_args_json = 4;
   string metrics_view_name = 5;
   bool renotify = 6;

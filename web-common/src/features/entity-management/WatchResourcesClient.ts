@@ -13,7 +13,7 @@ import {
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import {
-  invalidateChartData,
+  invalidateComponentData,
   invalidateMetricsViewData,
   invalidateProfilingQueries,
   invalidationForMetricsViewData,
@@ -22,6 +22,7 @@ import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matc
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
+import { connectorExplorerStore } from "../connectors/connector-explorer-store";
 import { getConnectorNameForResource } from "../connectors/utils";
 
 const MainResourceKinds: {
@@ -56,7 +57,7 @@ export class WatchResourcesClient {
     // only process for the `ResourceKind` present in `UsedResourceKinds`
     if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind]) {
       if (res.event === V1ResourceEvent.RESOURCE_EVENT_DELETE && res.name) {
-        fileArtifacts.resourceDeleted(res.name);
+        fileArtifacts.deleteResource(res.name);
       }
       return;
     }
@@ -175,8 +176,7 @@ export class WatchResourcesClient {
         return invalidateMetricsViewData(queryClient, name, failed);
 
       case ResourceKind.Component:
-        return invalidateChartData(queryClient, name, failed);
-
+        return invalidateComponentData(queryClient, name, failed);
       case ResourceKind.Dashboard:
       // TODO
     }
@@ -210,6 +210,9 @@ export class WatchResourcesClient {
         void queryClient.cancelQueries({
           predicate: (query) => invalidationForMetricsViewData(query, name),
         });
+        break;
+      case ResourceKind.Connector:
+        connectorExplorerStore.deleteItem(name);
         break;
     }
   }

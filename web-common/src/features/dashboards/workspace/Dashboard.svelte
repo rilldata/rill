@@ -12,13 +12,12 @@
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
-  import MockUserHasNoAccess from "../granular-access-policies/MockUserHasNoAccess.svelte";
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
-  import TimeControls from "../time-controls/TimeControls.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   export let metricViewName: string;
 
@@ -53,56 +52,63 @@
 >
   <div
     id="header"
-    class="border-b w-fit min-w-full flex flex-col bg-slate-50 pl-4 slide"
+    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
     class:left-shift={extraLeftPadding}
   >
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
-      <div class="-ml-3 px-1 pt-2 space-y-2">
-        <TimeControls {metricViewName} />
-
-        {#key metricViewName}
-          <section class="flex justify-between gap-x-4">
-            <Filters />
-            <div class="flex flex-col justify-end">
-              <TabBar />
-            </div>
-          </section>
-        {/key}
-      </div>
+      {#key metricViewName}
+        <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
+          <Filters />
+          <div class="absolute bottom-0 flex flex-col right-0">
+            <TabBar />
+          </div>
+        </section>
+      {/key}
     {/if}
   </div>
 
   {#if mockUserHasNoAccess}
-    <MockUserHasNoAccess />
+    <!-- Additional safeguard for mock users without dashboard access. -->
+    <ErrorPage
+      statusCode={$dashboard.error?.response?.status}
+      header="This user can't access this dashboard"
+      body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
+    />
   {:else if showPivot}
     <PivotDisplay />
   {:else}
     <div
-      class="flex gap-x-1 gap-y-2 pt-3 size-full overflow-hidden pl-4 slide"
+      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide"
       class:flex-col={expandedMeasureName}
       class:flex-row={!expandedMeasureName}
       class:left-shift={extraLeftPadding}
     >
-      {#key metricViewName}
-        {#if hasTimeSeries}
-          <MetricsTimeSeriesCharts
-            {metricViewName}
-            workspaceWidth={exploreContainerWidth}
-          />
-        {:else}
-          <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-        {/if}
-      {/key}
+      <div class="pt-2">
+        {#key metricViewName}
+          {#if hasTimeSeries}
+            <MetricsTimeSeriesCharts
+              {metricViewName}
+              workspaceWidth={exploreContainerWidth}
+            />
+          {:else}
+            <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+          {/if}
+        {/key}
+      </div>
 
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
         <TimeDimensionDisplay {metricViewName} />
       {:else if selectedDimensionName}
-        <DimensionDisplay />
+        <div class="pt-2 pl-1 border-l overflow-auto w-full">
+          <DimensionDisplay />
+        </div>
       {:else}
-        <LeaderboardDisplay />
+        <div class="pt-2 pl-1 border-l overflow-auto w-full">
+          <LeaderboardDisplay />
+        </div>
       {/if}
     </div>
   {/if}

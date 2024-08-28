@@ -7,16 +7,15 @@ import {
   ResourceKind,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
 import {
   RpcStatus,
+  V1MetricsViewComparisonResponse,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
-  createQueryServiceMetricsViewTimeRange,
-  createQueryServiceMetricsViewSchema,
-  type V1MetricsViewSchemaResponse,
   createQueryServiceMetricsViewComparison,
-  V1MetricsViewComparisonResponse,
+  createQueryServiceMetricsViewSchema,
+  createQueryServiceMetricsViewTimeRange,
+  type V1MetricsViewSchemaResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryResult,
@@ -36,11 +35,13 @@ export const useMetricsView = <T = V1MetricsViewSpec>(
         runtime.instanceId,
         metricViewName,
         ResourceKind.MetricsView,
-        (data) =>
-          selector
-            ? selector(data.metricsView?.state?.validSpec)
-            : data.metricsView?.state?.validSpec,
-        ctx.queryClient,
+        {
+          select: (data) =>
+            selector
+              ? selector(data.resource?.metricsView?.state?.validSpec)
+              : data.resource?.metricsView?.state?.validSpec,
+          queryClient: ctx.queryClient,
+        },
       ).subscribe(set);
     },
   );
@@ -58,12 +59,10 @@ export const getFilterSearchList = (
     dimension,
     addNull,
     searchText,
-    type,
   }: {
     dimension: string;
     addNull: boolean;
     searchText: string;
-    type: string | undefined;
   },
 ): Readable<
   QueryObserverResult<V1MetricsViewComparisonResponse, RpcStatus>
@@ -91,9 +90,7 @@ export const getFilterSearchList = (
           sort: [{ name: dimension }],
           where: addNull
             ? createInExpression(dimension, [null])
-            : STRING_LIKES.has(type ?? "")
-              ? createLikeExpression(dimension, `%${searchText}%`)
-              : undefined,
+            : createLikeExpression(dimension, `%${searchText}%`),
         },
         {
           query: {

@@ -170,8 +170,7 @@ const TestCases: [
     undefined,
   ],
   [
-    // TODO
-    "share of totals",
+    "percent of totals",
     {
       measure: "imp",
       operation: MeasureFilterOperation.LessThan,
@@ -179,7 +178,11 @@ const TestCases: [
       value1: "10",
       value2: "",
     },
-    undefined,
+    createBinaryExpression(
+      "imp_percent_of_total",
+      V1Operation.OPERATION_LT,
+      0.1,
+    ),
   ],
 ];
 

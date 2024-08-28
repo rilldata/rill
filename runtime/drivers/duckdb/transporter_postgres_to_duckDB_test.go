@@ -77,7 +77,7 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	olap, _ := to.AsOLAP("")
 
 	tr := NewSQLStoreToDuckDB(sqlStore, olap, zap.NewNop())
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{Progress: drivers.NoOpProgress{}})
+	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
 	require.NoError(t, err)
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
 	require.NoError(t, err)

@@ -24,7 +24,7 @@ export const isTimeControlReady = (dashData: DashboardDataSources): boolean =>
 
 export const isTimeComparisonActive = (
   dashData: DashboardDataSources,
-): boolean => timeControlsState(dashData).showComparison === true;
+): boolean => timeControlsState(dashData).showTimeComparison === true;
 
 export const timeRangeSelectorState = (dashData: DashboardDataSources) =>
   timeRangeSelectionsSelector([

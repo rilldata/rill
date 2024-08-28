@@ -50,6 +50,7 @@ type DB interface {
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
+	FindOrganizationByCustomDomain(ctx context.Context, domain string) (*Organization, error)
 	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
@@ -125,6 +126,7 @@ type DB interface {
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
+	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -155,6 +157,7 @@ type DB interface {
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
 	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
+	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
@@ -183,6 +186,7 @@ type DB interface {
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
+	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*MemberUser, error)
 
 	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*MemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
@@ -204,6 +208,7 @@ type DB interface {
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
+	UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
@@ -214,6 +219,12 @@ type DB interface {
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
+
+	FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*ProjectAccessRequest, error)
+	FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*ProjectAccessRequest, error)
+	FindProjectAccessRequestByID(ctx context.Context, id string) (*ProjectAccessRequest, error)
+	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
+	DeleteProjectAccessRequest(ctx context.Context, id string) error
 
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
@@ -240,6 +251,8 @@ type DB interface {
 	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
+
+	FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*Organization, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -263,7 +276,9 @@ var ErrNotUnique = errors.New("database: violates unique constraint")
 type Organization struct {
 	ID                                  string
 	Name                                string
+	DisplayName                         string `db:"display_name"`
 	Description                         string
+	CustomDomain                        string    `db:"custom_domain"`
 	AllUsergroupID                      *string   `db:"all_usergroup_id"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
@@ -274,12 +289,16 @@ type Organization struct {
 	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
+	PaymentCustomerID                   string    `db:"payment_customer_id"`
+	BillingEmail                        string    `db:"billing_email"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
 	Name                                string `validate:"slug"`
+	DisplayName                         string
 	Description                         string
+	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -287,12 +306,16 @@ type InsertOrganizationOptions struct {
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
+	PaymentCustomerID                   string
+	BillingEmail                        string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
 	Name                                string `validate:"slug"`
+	DisplayName                         string
 	Description                         string
+	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -300,6 +323,8 @@ type UpdateOrganizationOptions struct {
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
+	PaymentCustomerID                   string
+	BillingEmail                        string
 }
 
 // Project represents one Git connection.
@@ -361,6 +386,7 @@ type UpdateProjectOptions struct {
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string
@@ -581,6 +607,7 @@ type MagicAuthToken struct {
 	MetricsView           string         `db:"metrics_view"`
 	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
 	MetricsViewFields     []string       `db:"metrics_view_fields"`
+	State                 string         `db:"state"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -600,6 +627,7 @@ type InsertMagicAuthTokenOptions struct {
 	MetricsView           string `validate:"required"`
 	MetricsViewFilterJSON string
 	MetricsViewFields     []string
+	State                 string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -726,6 +754,7 @@ type OrganizationInvite struct {
 	Email           string
 	OrgID           string    `db:"org_id"`
 	OrgRoleID       string    `db:"org_role_id"`
+	UsergroupIDs    []string  `db:"usergroup_ids"`
 	InvitedByUserID string    `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
@@ -764,7 +793,7 @@ type OrganizationWhitelistedDomain struct {
 type InsertOrganizationWhitelistedDomainOptions struct {
 	OrgID     string `validate:"required"`
 	OrgRoleID string `validate:"required"`
-	Domain    string `validate:"domain"`
+	Domain    string `validate:"fqdn"`
 }
 
 // OrganizationWhitelistedDomainWithJoinedRoleNames convenience type used for display-friendly representation of an OrganizationWhitelistedDomain.
@@ -785,7 +814,7 @@ type ProjectWhitelistedDomain struct {
 type InsertProjectWhitelistedDomainOptions struct {
 	ProjectID     string `validate:"required"`
 	ProjectRoleID string `validate:"required"`
-	Domain        string `validate:"domain"`
+	Domain        string `validate:"fqdn"`
 }
 
 type ProjectWhitelistedDomainWithJoinedRoleNames struct {
@@ -800,7 +829,7 @@ const (
 	DefaultQuotaSlotsPerDeployment             = 5
 	DefaultQuotaOutstandingInvites             = 200
 	DefaultQuotaSingleuserOrgs                 = 3
-	DefaultQuotaStorageLimitBytesPerDeployment = int64(5368709120)
+	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
 )
 
 type InsertOrganizationInviteOptions struct {
@@ -815,6 +844,18 @@ type InsertProjectInviteOptions struct {
 	InviterID string
 	ProjectID string `validate:"required"`
 	RoleID    string `validate:"required"`
+}
+
+type ProjectAccessRequest struct {
+	ID        string
+	UserID    string    `db:"user_id"`
+	ProjectID string    `db:"project_id"`
+	CreatedOn time.Time `db:"created_on"`
+}
+
+type InsertProjectAccessRequestOptions struct {
+	UserID    string `validate:"required"`
+	ProjectID string `validate:"required"`
 }
 
 type Bookmark struct {
@@ -872,7 +913,7 @@ type InsertVirtualFileOptions struct {
 
 type Asset struct {
 	ID             string
-	OrganizationID string    `db:"org_id"`
+	OrganizationID *string   `db:"org_id"`
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`

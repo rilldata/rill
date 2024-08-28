@@ -2458,6 +2458,73 @@ export class Log extends Message<Log> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.ModelSplit
+ */
+export class ModelSplit extends Message<ModelSplit> {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct data = 2;
+   */
+  data?: Struct;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp watermark = 3;
+   */
+  watermark?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp executed_on = 4;
+   */
+  executedOn?: Timestamp;
+
+  /**
+   * @generated from field: string error = 5;
+   */
+  error = "";
+
+  /**
+   * @generated from field: uint32 elapsed_ms = 6;
+   */
+  elapsedMs = 0;
+
+  constructor(data?: PartialMessage<ModelSplit>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ModelSplit";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "data", kind: "message", T: Struct },
+    { no: 3, name: "watermark", kind: "message", T: Timestamp },
+    { no: 4, name: "executed_on", kind: "message", T: Timestamp },
+    { no: 5, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "elapsed_ms", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSplit {
+    return new ModelSplit().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelSplit {
+    return new ModelSplit().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelSplit {
+    return new ModelSplit().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ModelSplit | PlainMessage<ModelSplit> | undefined, b: ModelSplit | PlainMessage<ModelSplit> | undefined): boolean {
+    return proto3.util.equals(ModelSplit, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GetLogsRequest
  */
 export class GetLogsRequest extends Message<GetLogsRequest> {
@@ -2918,6 +2985,104 @@ export class GetResourceResponse extends Message<GetResourceResponse> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.GetModelSplitsRequest
+ */
+export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string model = 2;
+   */
+  model = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<GetModelSplitsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetModelSplitsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelSplitsRequest {
+    return new GetModelSplitsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelSplitsRequest {
+    return new GetModelSplitsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelSplitsRequest {
+    return new GetModelSplitsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetModelSplitsRequest | PlainMessage<GetModelSplitsRequest> | undefined, b: GetModelSplitsRequest | PlainMessage<GetModelSplitsRequest> | undefined): boolean {
+    return proto3.util.equals(GetModelSplitsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GetModelSplitsResponse
+ */
+export class GetModelSplitsResponse extends Message<GetModelSplitsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.ModelSplit splits = 1;
+   */
+  splits: ModelSplit[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<GetModelSplitsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetModelSplitsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "splits", kind: "message", T: ModelSplit, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelSplitsResponse {
+    return new GetModelSplitsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelSplitsResponse {
+    return new GetModelSplitsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelSplitsResponse {
+    return new GetModelSplitsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetModelSplitsResponse | PlainMessage<GetModelSplitsResponse> | undefined, b: GetModelSplitsResponse | PlainMessage<GetModelSplitsResponse> | undefined): boolean {
+    return proto3.util.equals(GetModelSplitsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.CreateTriggerRequest
  */
 export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
@@ -3097,6 +3262,11 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
    */
   implementsNotifier = false;
 
+  /**
+   * @generated from field: bool implements_warehouse = 20;
+   */
+  implementsWarehouse = false;
+
   constructor(data?: PartialMessage<ConnectorDriver>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3120,6 +3290,7 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
     { no: 17, name: "implements_object_store", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "implements_file_store", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 19, name: "implements_notifier", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 20, name: "implements_warehouse", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver {
@@ -3215,6 +3386,13 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
    */
   secret = false;
 
+  /**
+   * If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+   *
+   * @generated from field: bool no_prompt = 11;
+   */
+  noPrompt = false;
+
   constructor(data?: PartialMessage<ConnectorDriver_Property>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3233,6 +3411,7 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
     { no: 8, name: "default", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "placeholder", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "secret", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "no_prompt", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver_Property {

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Discord from "@rilldata/web-common/components/icons/Discord.svelte";
-  import Docs from "@rilldata/web-common/components/icons/Docs.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
@@ -17,20 +15,6 @@
     getContext("rill:app:metadata");
 
   const lineItems = [
-    {
-      icon: Docs,
-      label: "Documentation",
-      href: "https://docs.rilldata.com",
-      className: "fill-gray-600",
-      shrinkIcon: false,
-    },
-    {
-      icon: Discord,
-      label: "Ask a question",
-      href: "http://bit.ly/3jg4IsF",
-      className: "fill-gray-500",
-      shrinkIcon: true,
-    },
     {
       icon: Github,
       label: "Report an issue",

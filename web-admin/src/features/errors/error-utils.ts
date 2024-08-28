@@ -1,10 +1,12 @@
-import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
+import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
-  isMagicLinkPage,
   isMetricsExplorerPage,
   isProjectPage,
+  isProjectRequestAccessPage,
+  isPublicURLPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
 import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
@@ -12,22 +14,16 @@ import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
-import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
-import {
-  adminServiceGetCurrentUser,
-  getAdminServiceGetCurrentUserQueryKey,
-  getAdminServiceGetProjectQueryKey,
-} from "../../client";
-import { ADMIN_URL } from "../../client/http-client";
+import type { RpcStatus } from "../../client";
+import { getAdminServiceGetProjectQueryKey } from "../../client";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
 
-    // Let the magic link page handle all errors
-    const onMagicLinkPage = isMagicLinkPage(get(page));
-    if (onMagicLinkPage) {
+    const onPublicURLPage = isPublicURLPage(get(page));
+    if (onPublicURLPage) {
       // When a token is expired, show a specific error page
       if (
         error.response?.status === 401 &&
@@ -42,38 +38,26 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         return;
       }
 
-      // Let the magic link page handle all other errors
+      // Let the Public URL page handle all other errors
       return;
     }
 
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
-      // Check for a logged-in user
-      const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
-        queryKey: getAdminServiceGetCurrentUserQueryKey(),
-        queryFn: () => adminServiceGetCurrentUser(),
-      });
-      const isLoggedIn = !!userQuery.user;
-
-      // If not logged in, redirect to the login page
-      if (!isLoggedIn) {
-        await goto(
-          `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-        );
+      if (await checkUserAccess()) {
         return;
       }
     }
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      await goto(
-        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-      );
+      redirectToLogin();
       return;
     }
 
-    // Special handling for some errors on the Project page
     const onProjectPage = isProjectPage(get(page));
+
+    // Special handling for some errors on the Project page
     if (onProjectPage) {
       if (error.response?.status === 400) {
         // If "repository not found", ignore the error and show the page
@@ -128,6 +112,14 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       if (error.response?.status === 401) {
         return;
       }
+    }
+
+    // do not block on request access failures
+    if (
+      isProjectRequestAccessPage(get(page)) &&
+      error.response?.status !== 403
+    ) {
+      return;
     }
 
     // Create a pretty message for the error page

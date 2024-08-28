@@ -106,8 +106,8 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 
 func checkGoVersion() error {
 	v := version.Must(version.NewVersion(strings.TrimPrefix(runtime.Version(), "go")))
-	min := version.Must(version.NewVersion(minGoVersion))
-	if v.LessThan(min) {
+	minVersion := version.Must(version.NewVersion(minGoVersion))
+	if v.LessThan(minVersion) {
 		return fmt.Errorf("Go version %s or higher is required", minGoVersion)
 	}
 	return nil
@@ -120,8 +120,8 @@ func checkNodeVersion(ctx context.Context) error {
 	}
 
 	v := version.Must(version.NewVersion(strings.TrimSpace(string(out))))
-	min := version.Must(version.NewVersion(minNodeVersion))
-	if v.LessThan(min) {
+	minVersion := version.Must(version.NewVersion(minNodeVersion))
+	if v.LessThan(minVersion) {
 		return fmt.Errorf("node.js version %s or higher is required", minNodeVersion)
 	}
 
@@ -633,7 +633,7 @@ func (s local) runRuntime(ctx context.Context, verbose, reset bool) error {
 	logInfo.Printf("Starting runtime\n")
 	defer func() { logInfo.Printf("Stopped runtime\n") }()
 
-	args := []string{"run", "cli/main.go", "start", stateDirLocal, "--no-ui", "--debug"}
+	args := []string{"run", "cli/main.go", "start", stateDirLocal, "--no-ui", "--debug", "--allowed-origins", "http://localhost:3001"}
 	if verbose {
 		args = append(args, "--verbose")
 	}
@@ -691,7 +691,7 @@ func (s local) runUI(ctx context.Context) (err error) {
 }
 
 func (s local) awaitUI(ctx context.Context) error {
-	uiURL := "http://localhost:3000"
+	uiURL := "http://localhost:3001"
 	for {
 		resp, err := http.Get(uiURL)
 		if err == nil {

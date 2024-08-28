@@ -94,18 +94,83 @@ func (o *Orb) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	return nil, ErrNotFound
 }
 
-func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization) (string, error) {
+func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error) {
+	var paymentProviderType orb.CustomerNewParamsPaymentProvider
+	switch provider {
+	case PaymentProviderStripe:
+		paymentProviderType = orb.CustomerNewParamsPaymentProviderStripeCharge
+	default:
+		return nil, fmt.Errorf("unsupported payment provider: %s", provider)
+	}
+
 	customer, err := o.client.Customers.New(ctx, orb.CustomerNewParams{
-		Email:              orb.String(SupportEmail), // TODO use creators email or capture organization billing email
+		Email:              orb.String(Email(organization)),
 		Name:               orb.String(organization.Name),
 		ExternalCustomerID: orb.String(organization.ID),
 		Timezone:           orb.String(DefaultTimeZone),
+		PaymentProvider:    orb.F(paymentProviderType),
+		PaymentProviderID:  orb.String(organization.PaymentCustomerID),
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return customer.ExternalCustomerID, nil
+	return &Customer{
+		ID:                customer.ExternalCustomerID,
+		Email:             customer.Email,
+		Name:              customer.Name,
+		PaymentProviderID: customer.PaymentProviderID,
+		PortalURL:         customer.PortalURL,
+	}, nil
+}
+
+func (o *Orb) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
+	customer, err := o.client.Customers.FetchByExternalID(ctx, customerID)
+	if err != nil {
+		var orbErr *orb.Error
+		if errors.As(err, &orbErr) {
+			if orbErr.Status == orb.ErrorStatus404 {
+				return nil, ErrNotFound
+			}
+		}
+		return nil, err
+	}
+
+	return &Customer{
+		ID:                customer.ExternalCustomerID,
+		Email:             customer.Email,
+		Name:              customer.Name,
+		PaymentProviderID: customer.PaymentProviderID,
+		PortalURL:         customer.PortalURL,
+	}, nil
+}
+
+func (o *Orb) UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error {
+	var paymentProviderType orb.CustomerUpdateByExternalIDParamsPaymentProvider
+	switch provider {
+	case PaymentProviderStripe:
+		paymentProviderType = orb.CustomerUpdateByExternalIDParamsPaymentProviderStripeCharge
+	default:
+		return fmt.Errorf("unsupported payment provider: %s", provider)
+	}
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		PaymentProvider:   orb.F(paymentProviderType),
+		PaymentProviderID: orb.String(paymentProviderID),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Orb) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		Email: orb.String(email),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
@@ -118,8 +183,14 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 	}
 
 	return &Subscription{
-		ID:                           sub.ID,
-		CustomerID:                   sub.Customer.ExternalCustomerID,
+		ID: sub.ID,
+		Customer: &Customer{
+			ID:                sub.Customer.ExternalCustomerID,
+			Email:             sub.Customer.Email,
+			Name:              sub.Customer.Name,
+			PaymentProviderID: sub.Customer.PaymentProviderID,
+			PortalURL:         sub.Customer.PortalURL,
+		},
 		Plan:                         plan,
 		StartDate:                    sub.StartDate,
 		EndDate:                      sub.EndDate,
@@ -142,22 +213,12 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	var subscriptions []*Subscription
 	for i := 0; i < len(sub.Data); i++ {
 		s := sub.Data[i]
-		plan, err := getBillingPlanFromOrbPlan(&s.Plan)
+		billingSub, err := getBillingSubscriptionFromOrbSubscription(&s)
 		if err != nil {
 			return nil, err
 		}
 
-		subscriptions = append(subscriptions, &Subscription{
-			ID:                           s.ID,
-			CustomerID:                   s.Customer.ExternalCustomerID,
-			Plan:                         plan,
-			StartDate:                    s.StartDate,
-			EndDate:                      s.EndDate,
-			CurrentBillingCycleStartDate: s.CurrentBillingPeriodStartDate,
-			CurrentBillingCycleEndDate:   s.CurrentBillingPeriodEndDate,
-			TrialEndDate:                 s.TrialInfo.EndDate,
-			Metadata:                     s.Metadata,
-		})
+		subscriptions = append(subscriptions, billingSub)
 	}
 	return subscriptions, nil
 }
@@ -171,8 +232,14 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 		return nil, err
 	}
 	return &Subscription{
-		ID:                           s.ID,
-		CustomerID:                   s.Customer.ExternalCustomerID,
+		ID: s.ID,
+		Customer: &Customer{
+			ID:                s.Customer.ExternalCustomerID,
+			Email:             s.Customer.Email,
+			Name:              s.Customer.Name,
+			PaymentProviderID: s.Customer.PaymentProviderID,
+			PortalURL:         s.Customer.PortalURL,
+		},
 		Plan:                         plan,
 		StartDate:                    s.StartDate,
 		EndDate:                      s.EndDate,
@@ -227,6 +294,42 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 		}
 	}
 	return nil
+}
+
+func (o *Orb) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error) {
+	plan, err := o.GetDefaultPlan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if plan.TrialPeriodDays == 0 {
+		return nil, nil
+	}
+
+	var ended []*Subscription
+	// look back 2 days before and after the trial period
+	lookBackStart := time.Now().Add(-time.Duration(plan.TrialPeriodDays+2) * 24 * time.Hour)
+	lookBackEnd := time.Now().Add(-time.Duration(plan.TrialPeriodDays-2) * 24 * time.Hour)
+	subs := o.client.Subscriptions.ListAutoPaging(ctx, orb.SubscriptionListParams{
+		CreatedAtGt: orb.F(lookBackStart),
+		CreatedAtLt: orb.F(lookBackEnd),
+		Status:      orb.F(orb.SubscriptionListParamsStatusActive),
+	})
+	// Automatically fetches more pages as needed.
+	for subs.Next() {
+		sub := subs.Current()
+		if sub.Plan.ID == plan.ID && sub.TrialInfo.EndDate.Before(time.Now()) {
+			s, err := getBillingSubscriptionFromOrbSubscription(&sub)
+			if err != nil {
+				return nil, err
+			}
+			ended = append(ended, s)
+		}
+	}
+	if err := subs.Err(); err != nil {
+		return nil, err
+	}
+	return ended, nil
 }
 
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
@@ -357,6 +460,30 @@ func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 		Metadata:        p.Metadata,
 	}
 	return billingPlan, nil
+}
+
+func getBillingSubscriptionFromOrbSubscription(s *orb.Subscription) (*Subscription, error) {
+	plan, err := getBillingPlanFromOrbPlan(&s.Plan)
+	if err != nil {
+		return nil, err
+	}
+	return &Subscription{
+		ID: s.ID,
+		Customer: &Customer{
+			ID:                s.Customer.ExternalCustomerID,
+			Email:             s.Customer.Email,
+			Name:              s.Customer.Name,
+			PaymentProviderID: s.Customer.PaymentProviderID,
+			PortalURL:         s.Customer.PortalURL,
+		},
+		Plan:                         plan,
+		StartDate:                    s.StartDate,
+		EndDate:                      s.EndDate,
+		CurrentBillingCycleStartDate: s.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   s.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 s.TrialInfo.EndDate,
+		Metadata:                     s.Metadata,
+	}, nil
 }
 
 // retryErrClassifier classifies 429 and 500 errors as retryable and all other errors as non retryable

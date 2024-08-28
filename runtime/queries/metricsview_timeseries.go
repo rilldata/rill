@@ -29,8 +29,10 @@ type MetricsViewTimeSeries struct {
 	Offset          int64                        `json:"offset,omitempty"`
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Where           *runtimev1.Expression        `json:"where,omitempty"`
+	WhereSQL        string                       `json:"where_sql,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"` // backwards compatibility
 	Having          *runtimev1.Expression        `json:"having,omitempty"`
+	HavingSQL       string                       `json:"having_sql,omitempty"`
 	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
 	TimeZone        string                       `json:"time_zone,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
@@ -91,7 +93,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	res, _, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, nil)
 	if err != nil {
 		return err
 	}
@@ -203,7 +205,9 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 		case int64:
 			t = time.UnixMilli(v)
 		default:
-			panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
+			if v != nil {
+				panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
+			}
 		}
 		delete(rowMap, tsAlias)
 
@@ -249,7 +253,7 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 
 func (q *MetricsViewTimeSeries) generateFilename() string {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil || q.Having != nil {
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil || q.Having != nil || q.WhereSQL != "" || q.HavingSQL != "" {
 		filename += "_filtered"
 	}
 	return filename
@@ -327,12 +331,15 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 		q.Where = convertFilterToExpression(q.Filter)
 	}
 
-	if q.Where != nil {
-		qry.Where = metricsview.NewExpressionFromProto(q.Where)
+	var err error
+	qry.Where, err = metricViewExpression(q.Where, q.WhereSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error converting where clause: %w", err)
 	}
 
-	if q.Having != nil {
-		qry.Having = metricsview.NewExpressionFromProto(q.Having)
+	qry.Having, err = metricViewExpression(q.Having, q.HavingSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error converting having clause: %w", err)
 	}
 
 	qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{

@@ -1,93 +1,46 @@
 <script lang="ts">
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Spinner from "../../entity-management/Spinner.svelte";
-  import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
+  import { SortType } from "../proto-state/derived-types";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import { SortType } from "../proto-state/derived-types";
-  import { getStateManagers } from "../state-managers/state-managers";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
+  export let isTimeComparisonActive: boolean;
+  export let isValidPercentOfTotal: boolean;
+  export let dimensionDescription: string;
+  export let isBeingCompared: boolean;
+  export let sortedAscending: boolean;
+  export let displayName: string;
   export let hovered: boolean;
-
-  const {
-    selectors: {
-      contextColumn: {
-        contextColumn,
-        isDeltaAbsolute,
-        isDeltaPercent,
-        isPercentOfTotal,
-        isHidden,
-      },
-      dimensions: { getDimensionDisplayName, getDimensionDescription },
-      sorting: { sortedAscending, sortType },
-      comparison: { isBeingCompared: isBeingComparedReadable },
-    },
-    actions: {
-      sorting: { toggleSort, toggleSortByActiveContextColumn },
-      dimensions: { setPrimaryDimension },
-    },
-    contextColumnWidths,
-  } = getStateManagers();
-
-  let widthPx = "0px";
-  $: widthPx = $contextColumn
-    ? $contextColumnWidths[$contextColumn] + "px"
-    : "0px";
-
-  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
-  $: displayName = $getDimensionDisplayName(dimensionName);
-  $: dimensionDescription = $getDimensionDescription(dimensionName);
-
-  $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
+  export let sortType: SortType;
+  export let toggleSort: (sortType: SortType) => void;
+  export let setPrimaryDimension: (dimensionName: string) => void;
 </script>
 
-<div class="flex flex-row items-center">
-  <div class="grid place-items-center" style:height="22px" style:width="22px">
-    {#if isFetching}
-      <Spinner size="16px" status={EntityStatus.Running} />
-    {:else if hovered || isBeingCompared}
-      <div style="position:relative; height:100%; width:100%; ">
-        <div style="position: absolute; ">
-          <DimensionCompareMenu {dimensionName} />
-        </div>
-      </div>
-    {/if}
-  </div>
+<thead>
+  <tr>
+    <th aria-label="Comparison column">
+      {#if isFetching}
+        <DelayedSpinner isLoading={isFetching} size="16px" />
+      {:else if hovered || isBeingCompared}
+        <DimensionCompareMenu {dimensionName} />
+      {/if}
+    </th>
 
-  <div
-    class="
-        pr-2
-        grid justify-between items-center
-        w-full
-        border-b
-        border-gray-200
-        rounded-t
-        surface
-        ui-copy-muted
-        font-semibold
-        truncate
-    "
-    style="max-width: calc(100% - 22px);"
-    style:flex="1"
-    style:grid-template-columns="1fr max-content"
-    style:height="32px"
-  >
-    <div style:width="100%">
+    <th>
       <Tooltip distance={16} location="top">
         <button
-          on:click={() => setPrimaryDimension(dimensionName)}
-          class="ui-header-primary pl-2 truncate flex justify-start"
-          style="max-width: calc(315px - 60px);"
-          style:width="100%"
+          class="ui-header-primary"
           aria-label="Open dimension details"
+          on:click={() => setPrimaryDimension(dimensionName)}
         >
           {displayName}
         </button>
@@ -112,37 +65,77 @@
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
-    </div>
+    </th>
 
-    <div class="shrink flex flex-row items-center gap-x-4">
+    <th>
       <button
-        on:click={() => toggleSort(SortType.VALUE)}
-        class="shrink flex flex-row items-center justify-end min-w-[40px]"
         aria-label="Toggle sort leaderboards by value"
+        on:click={() => toggleSort(SortType.VALUE)}
       >
-        #{#if $sortType === SortType.VALUE}
-          <ArrowDown transform={arrowTransform} />
+        #{#if sortType === SortType.VALUE}
+          <ArrowDown flip={sortedAscending} />
         {/if}
       </button>
+    </th>
 
-      {#if !$isHidden}
+    {#if isTimeComparisonActive}
+      <th>
         <button
-          on:click={toggleSortByActiveContextColumn}
-          class="shrink flex flex-row items-center justify-end"
-          aria-label="Toggle sort leaderboards by context column"
-          style:width={widthPx}
+          aria-label="Toggle sort leaderboards by absolute change"
+          on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
         >
-          {#if $isDeltaPercent}
-            <Delta /> %
-          {:else if $isDeltaAbsolute}
-            <Delta />
-          {:else if $isPercentOfTotal}
-            <PieChart /> %
-          {/if}{#if $sortType !== SortType.VALUE}
-            <ArrowDown transform={arrowTransform} />
+          <Delta />
+          {#if sortType === SortType.DELTA_ABSOLUTE}
+            <ArrowDown flip={sortedAscending} />
           {/if}
         </button>
-      {/if}
-    </div>
-  </div>
-</div>
+      </th>
+
+      <th>
+        <button
+          aria-label="Toggle sort leaderboards by percent change"
+          on:click={() => toggleSort(SortType.DELTA_PERCENT)}
+        >
+          <Delta /> %
+          {#if sortType === SortType.DELTA_PERCENT}
+            <ArrowDown flip={sortedAscending} />
+          {/if}
+        </button>
+      </th>
+    {:else if isValidPercentOfTotal}
+      <th>
+        <button
+          aria-label="Toggle sort leaderboards by percent of total"
+          on:click={() => toggleSort(SortType.PERCENT)}
+        >
+          <PieChart /> %
+          {#if sortType === SortType.PERCENT}
+            <ArrowDown flip={sortedAscending} />
+          {/if}
+        </button>
+      </th>
+    {/if}
+  </tr>
+</thead>
+
+<style lang="postcss">
+  button {
+    @apply px-2 flex items-center justify-start size-full;
+  }
+
+  th {
+    @apply p-0 text-right h-8;
+  }
+
+  th:first-of-type {
+    @apply text-left;
+  }
+
+  th:not(:first-of-type) {
+    @apply border-b;
+  }
+
+  th:not(:nth-of-type(2)) button {
+    @apply justify-end;
+  }
+</style>

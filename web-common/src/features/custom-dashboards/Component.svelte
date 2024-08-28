@@ -39,11 +39,17 @@
     componentName,
     ResourceKind.Component,
   );
-
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
-    componentResource?.component?.spec ?? {});
+  $: ({
+    renderer,
+    rendererProperties,
+    resolverProperties,
+    input,
+    output,
+    title,
+    subtitle,
+  } = componentResource?.component?.spec ?? {});
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -104,14 +110,16 @@
         {/if}
         <Chart
           {chartView}
+          {input}
           vegaSpec={rendererProperties?.spec}
           chartName={componentName}
-          {resolverProperties}
         />
       {:else if renderer && rendererProperties}
         <TemplateRenderer
           {chartView}
           {renderer}
+          {input}
+          {output}
           {rendererProperties}
           {resolverProperties}
           {componentName}

@@ -21,11 +21,11 @@ type PriorityQueue[V any] struct {
 }
 
 // New creates a new priority queue.
-// If min is true, items with lower priority are returned first.
-// If min is false, items with higher priority are returned first.
-func New[V any](min bool) *PriorityQueue[V] {
+// If minFirst is true, items with lower priority are returned first.
+// If minFirst is false, items with higher priority are returned first.
+func New[V any](minFirst bool) *PriorityQueue[V] {
 	pq := &PriorityQueue[V]{}
-	pq.heap.min = min
+	pq.heap.min = minFirst
 	heap.Init(&pq.heap)
 	return pq
 }

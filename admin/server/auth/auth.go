@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin"
@@ -16,8 +15,6 @@ type AuthenticatorOptions struct {
 	AuthDomain       string
 	AuthClientID     string
 	AuthClientSecret string
-	ExternalURL      string
-	FrontendURL      string
 }
 
 // Authenticator wraps functionality for admin server auth.
@@ -39,16 +36,10 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cooki
 		return nil, err
 	}
 
-	// Auth callback URL is fixed. See RegisterEndpoints.
-	redirectURL, err := url.JoinPath(opts.ExternalURL, "/auth/callback")
-	if err != nil {
-		return nil, err
-	}
-
 	oauth2Config := oauth2.Config{
 		ClientID:     opts.AuthClientID,
 		ClientSecret: opts.AuthClientSecret,
-		RedirectURL:  redirectURL,
+		RedirectURL:  adm.URLs.AuthLoginCallback(),
 		Endpoint:     oidcProvider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
 	}

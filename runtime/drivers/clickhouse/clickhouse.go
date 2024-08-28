@@ -32,43 +32,8 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			NoPrompt:    true,
 		},
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-			Placeholder: "localhost",
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "9000",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-			Placeholder: "default",
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
@@ -109,6 +74,13 @@ var spec = drivers.Spec{
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
 		},
+		{
+			Key:         "cluster",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "cluster",
+			Description: "Cluster name",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -126,6 +98,8 @@ type configProperties struct {
 	Port     int    `mapstructure:"port"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
+	// Cluster name. Required for running distributed queries.
+	Cluster string `mapstructure:"cluster"`
 	// EnableCache controls whether to enable cache for Clickhouse queries.
 	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
@@ -325,7 +299,10 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c, opts}, true
+		return &selfToSelfExecutor{c}, true
+	}
+	if opts.InputHandle.Driver() == "s3" && opts.OutputHandle == c {
+		return &s3ToSelfExecutor{opts.InputHandle, c}, true
 	}
 	return nil, false
 }
@@ -345,6 +322,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
 // AsSQLStore implements drivers.Connection.
 // Use OLAPStore instead.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
@@ -354,10 +336,6 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
 }
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {

@@ -38,8 +38,9 @@ type MetricsViewYAML struct {
 		Expression  string
 		Property    string // For backwards compatibility
 		Description string
-		Ignore      bool `yaml:"ignore"`
+		Ignore      bool `yaml:"ignore"` // Deprecated
 		Unnest      bool
+		URI         string
 	}
 	DefaultDimensions []string `yaml:"default_dimensions"`
 	Measures          []*struct {
@@ -53,7 +54,7 @@ type MetricsViewYAML struct {
 		Description         string
 		FormatPreset        string `yaml:"format_preset"`
 		FormatD3            string `yaml:"format_d3"`
-		Ignore              bool   `yaml:"ignore"`
+		Ignore              bool   `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
 	DefaultMeasures   []string `yaml:"default_measures"`
@@ -554,15 +555,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		tmp.Title = tmp.DisplayName
 	}
 
-	var table string
-	if tmp.Table == "" {
-		table = tmp.Model
-	} else if tmp.Model == "" {
-		table = tmp.Table
-	} else {
+	if tmp.Table != "" && tmp.Model != "" {
 		return fmt.Errorf(`cannot set both the "model" field and the "table" field`)
 	}
-	if table == "" {
+	if tmp.Table == "" && tmp.Model == "" {
 		return fmt.Errorf(`must set a value for either the "model" field or the "table" field`)
 	}
 
@@ -814,7 +810,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return err
 	}
 
-	node.Refs = append(node.Refs, ResourceName{Name: table})
+	if tmp.Model != "" {
+		// Not setting Kind because for backwards compatibility, it may actually be a source or an external table.
+		node.Refs = append(node.Refs, ResourceName{Name: tmp.Model})
+	}
 	if tmp.DefaultTheme != "" {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
@@ -829,7 +828,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Connector = node.Connector
 	spec.Database = tmp.Database
 	spec.DatabaseSchema = tmp.DatabaseSchema
-	spec.Table = table
+	spec.Table = tmp.Table
+	spec.Model = tmp.Model
 	spec.Title = tmp.Title
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
@@ -853,6 +853,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Label:       dim.Label,
 			Description: dim.Description,
 			Unnest:      dim.Unnest,
+			Uri:         dim.URI,
 		})
 	}
 	spec.DefaultDimensions = tmp.DefaultDimensions

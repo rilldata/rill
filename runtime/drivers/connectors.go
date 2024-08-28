@@ -32,6 +32,7 @@ type Spec struct {
 	ImplementsObjectStore bool
 	ImplementsFileStore   bool
 	ImplementsNotifier    bool
+	ImplementsWarehouse   bool
 }
 
 // PropertySpec provides metadata about a single connector property.
@@ -46,6 +47,7 @@ type PropertySpec struct {
 	Default     string
 	Placeholder string
 	Secret      bool
+	NoPrompt    bool
 }
 
 // PropertyType is an enum of types supported for connector properties.

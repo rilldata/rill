@@ -33,7 +33,12 @@ export function setDefaultTimeRange(
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   // This function implementation mirrors some code in the metricsExplorer.init() function
-  if (!fullTimeRange) return;
+  if (
+    !fullTimeRange ||
+    !fullTimeRange.timeRangeSummary?.min ||
+    !fullTimeRange.timeRangeSummary?.max
+  )
+    return;
   const timeZone = get(getLocalUserPreferences()).timeZone;
   const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
   const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
@@ -86,10 +91,16 @@ function setDefaultComparisonTimeRange(
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
-  if (!fullTimeRange) return;
+  if (
+    !fullTimeRange ||
+    !fullTimeRange.timeRangeSummary?.min ||
+    !fullTimeRange.timeRangeSummary?.max
+  )
+    return;
   metricsExplorer.showTimeComparison = true;
 
   const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
+  if (!preset) return;
   const comparisonOption = DEFAULT_TIME_RANGES[preset]
     ?.defaultComparison as TimeComparisonOption;
   if (!comparisonOption) return;
@@ -100,10 +111,15 @@ function setDefaultComparisonTimeRange(
     comparisonOption,
     fullTimeStart,
     fullTimeEnd,
-    metricsExplorer.selectedTimeRange.start,
-    metricsExplorer.selectedTimeRange.end,
+    metricsExplorer.selectedTimeRange?.start,
+    metricsExplorer.selectedTimeRange?.end,
   );
-  if (!comparisonRange.isComparisonRangeAvailable) return;
+  if (
+    !comparisonRange.isComparisonRangeAvailable ||
+    !comparisonRange.start ||
+    !comparisonRange.end
+  )
+    return;
 
   metricsExplorer.selectedComparisonTimeRange = {
     name: comparisonOption,
@@ -162,6 +178,7 @@ export function getDefaultMetricsExplorerEntity(
     dashboardSortType: SortType.VALUE,
     sortDirection: SortDirection.DESCENDING,
     selectedTimezone: "UTC",
+    selectedTimeRange: null,
 
     activePage: DashboardState_ActivePage.DEFAULT,
 

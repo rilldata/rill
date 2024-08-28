@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -208,82 +209,84 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
-	if view {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
-			Priority: 100,
-		})
-	}
-
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
 		return fmt.Errorf("failed to parse output properties: %w", err)
 	}
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+
+	if outputProps.Typ == "VIEW" {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(name), onClusterClause, sql),
+			Priority: 100,
+		})
+	} else if outputProps.Typ == "DICTIONARY" {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.Config),
+			Priority: 100,
+		})
+	}
 
 	var create strings.Builder
 	create.WriteString("CREATE OR REPLACE TABLE ")
-	create.WriteString(safeSQLName(name))
-
-	// see if there is any column override
-	if outputProps.Columns != "" {
-		create.WriteString(outputProps.Columns)
-	}
-
-	// engine with default
-	create.WriteString(" ENGINE = ")
-	var engine string
-	if outputProps.Engine != "" {
-		engine = outputProps.Engine
+	if c.config.Cluster != "" {
+		// need to create a local table on the cluster first
+		fmt.Fprintf(&create, "%s %s", safelocalTableName(outputProps.Table), onClusterClause)
 	} else {
-		engine = "MergeTree"
-	}
-	create.WriteString(engine)
-
-	// order_by
-	if outputProps.OrderBy != "" {
-		create.WriteString(" ORDER BY ")
-		create.WriteString(outputProps.OrderBy)
-	} else if engine == "MergeTree" {
-		// need ORDER BY for MergeTree
-		// it is optional for other engines
-		create.WriteString(" ORDER BY tuple() ")
+		create.WriteString(safeSQLName(name))
 	}
 
-	// partition_by
-	if outputProps.PartitionBy != "" {
-		create.WriteString(" PARTITION BY ")
-		create.WriteString(outputProps.PartitionBy)
+	if outputProps.Columns == "" {
+		// infer columns
+		v := tempName("view")
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
+		if err != nil {
+			return err
+		}
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+			defer cancel()
+			_ = c.Exec(ctx, &drivers.Statement{Query: "DROP VIEW " + v})
+		}()
+		// create table with same schema as view
+		fmt.Fprintf(&create, " AS %s ", v)
+	} else {
+		fmt.Fprintf(&create, " %s ", outputProps.Columns)
+	}
+	create.WriteString(outputProps.tblConfig())
+
+	// create table
+	// on replicated databases `create table t as select * from ...` is prohibited
+	// so we need to create a table first and then insert data into it
+	err := c.Exec(ctx, &drivers.Statement{Query: create.String(), Priority: 100})
+	if err != nil {
+		return err
 	}
 
-	// primary_key
-	if outputProps.PrimaryKey != "" {
-		create.WriteString(" PRIMARY KEY ")
-		create.WriteString(outputProps.PrimaryKey)
+	if c.config.Cluster != "" {
+		// create the distributed table
+		var distributed strings.Builder
+		fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
+		fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, currentDatabase(), %s", safeSQLName(c.config.Cluster), safelocalTableName(name))
+		if outputProps.DistributedShardingKey != "" {
+			fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
+		}
+		distributed.WriteString(")")
+		if outputProps.DistributedSettings != "" {
+			fmt.Fprintf(&distributed, " SETTINGS %s", outputProps.DistributedSettings)
+		}
+		err = c.Exec(ctx, &drivers.Statement{Query: distributed.String(), Priority: 100})
+		if err != nil {
+			return err
+		}
 	}
 
-	// sample_by
-	if outputProps.SampleBy != "" {
-		create.WriteString(" SAMPLE BY ")
-		create.WriteString(outputProps.SampleBy)
-	}
-
-	// ttl
-	if outputProps.TTL != "" {
-		create.WriteString(" TTL ")
-		create.WriteString(outputProps.TTL)
-	}
-
-	// settings
-	if outputProps.Settings != "" {
-		create.WriteString(" SETTINGS ")
-		create.WriteString(outputProps.Settings)
-	}
-
-	// write sql query
-	create.WriteString(" AS ")
-	create.WriteString(sql)
+	// insert into table
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    create.String(),
+		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 		Priority: 100,
 	})
 }
@@ -306,31 +309,111 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 // DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
-	var typ string
-	if view {
-		typ = "VIEW"
-	} else {
-		typ = "TABLE"
+func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
+	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
+	if err != nil {
+		return err
 	}
-	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP %s %s", typ, safeSQLName(name)),
-		Priority: 100,
-	})
+	var onClusterClause string
+	if onCluster {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+	switch typ {
+	case "VIEW", "DICTIONARY":
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP %s %s %s", typ, safeSQLName(name), onClusterClause),
+			Priority: 100,
+		})
+	case "TABLE":
+		// drop the main table
+		err := c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(name), onClusterClause),
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+		// then drop the local table in case of cluster
+		if onCluster {
+			return c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safelocalTableName(name), onClusterClause),
+				Priority: 100,
+			})
+		}
+		return nil
+	default:
+		return fmt.Errorf("clickhouse: unknown entity type %q", typ)
+	}
 }
 
 // RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
-	if !view {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("RENAME TABLE %s TO %s", safeSQLName(name), safeSQLName(newName)),
-			Priority: 100,
-		})
+func (c *connection) RenameTable(ctx context.Context, oldName, newName string, view bool) error {
+	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", oldName)
+	if err != nil {
+		return err
+	}
+	var onClusterClause string
+	if onCluster {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	}
 
+	switch typ {
+	case "VIEW":
+		return c.renameView(ctx, oldName, newName)
+	case "DICTIONARY":
+		return c.renameTable(ctx, oldName, newName, onClusterClause)
+	case "TABLE":
+		if !onCluster {
+			return c.renameTable(ctx, oldName, newName, onClusterClause)
+		}
+		// rename the local table
+		err := c.renameTable(ctx, localTableName(oldName), localTableName(newName), onClusterClause)
+		if err != nil {
+			return err
+		}
+		// recreate the distributed table
+		res, err := c.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("SHOW CREATE TABLE %s", safeSQLName(oldName)),
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+
+		var sql string
+		if res.Next() {
+			if err := res.Scan(&sql); err != nil {
+				res.Close()
+				return err
+			}
+		}
+		res.Close()
+
+		// replace the old local table name with new local table name
+		// this makes an assumption that cluster name is different from table names
+		sql = strings.ReplaceAll(sql, localTableName(oldName), safelocalTableName(newName))
+		sql = strings.ReplaceAll(sql, oldName, safeSQLName(newName))
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:    sql,
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+		// drop the old distributed table
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(oldName), onClusterClause),
+			Priority: 100,
+		})
+	default:
+		return fmt.Errorf("clickhouse: unknown entity type %q", typ)
+	}
+}
+
+func (c *connection) renameView(ctx context.Context, oldName, newName string) error {
 	// clickhouse does not support renaming views so we capture the OLD view DDL and use it to create new view
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(name)),
+		Query:    fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(oldName)),
 		Priority: 100,
 	})
 	if err != nil {
@@ -347,7 +430,7 @@ func (c *connection) RenameTable(ctx context.Context, name, newName string, view
 	res.Close()
 
 	// create new view
-	sql = strings.Replace(sql, name, safeSQLName(newName), 1)
+	sql = strings.Replace(sql, oldName, safeSQLName(newName), 1)
 	err = c.Exec(ctx, &drivers.Statement{
 		Query:    sql,
 		Priority: 100,
@@ -358,13 +441,36 @@ func (c *connection) RenameTable(ctx context.Context, name, newName string, view
 
 	// drop old view
 	err = c.Exec(context.Background(), &drivers.Statement{
-		Query:    fmt.Sprintf("DROP VIEW %s", safeSQLName(name)),
+		Query:    fmt.Sprintf("DROP VIEW %s", safeSQLName(oldName)),
 		Priority: 100,
 	})
 	if err != nil {
-		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", name), zap.Error(err))
+		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", oldName), zap.Error(err))
 	}
 	return nil
+}
+
+func (c *connection) renameTable(ctx context.Context, oldName, newName, onCluster string) error {
+	var exists bool
+	err := c.db.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("RENAME TABLE %s TO %s %s", safeSQLName(oldName), safeSQLName(newName), onCluster),
+			Priority: 100,
+		})
+	}
+	err = c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("EXCHANGE TABLES %s AND %s %s", safeSQLName(oldName), safeSQLName(newName), onCluster),
+		Priority: 100,
+	})
+	if err != nil {
+		return err
+	}
+	// drop the old table
+	return c.DropTable(context.Background(), oldName, false)
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
@@ -638,3 +744,15 @@ func splitBaseAndArgs(s string) (string, string, bool) {
 }
 
 var errUnsupportedType = errors.New("encountered unsupported clickhouse type")
+
+func tempName(prefix string) string {
+	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
+func safelocalTableName(name string) string {
+	return safeSQLName(name + "_local")
+}
+
+func localTableName(name string) string {
+	return name + "_local"
+}

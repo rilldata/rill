@@ -1,7 +1,7 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import {
-  mapExprToMeasureFilter,
   MeasureFilterEntry,
+  mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
@@ -44,6 +44,7 @@ import {
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotRowJoinType,
   DashboardTimeRange,
+  PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimensionV2,
@@ -339,6 +340,26 @@ function fromPivotProto(
     title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
     type: PivotChipType.Time,
   });
+  const mapAllDimension: (dimension: PivotElement) => PivotChipData = (
+    dimension: PivotElement,
+  ) => {
+    if (dimension?.element.case === "pivotTimeDimension") {
+      const grain = dimension?.element.value as TimeGrain;
+      return {
+        id: FromProtoTimeGrainMap[grain],
+        title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
+        type: PivotChipType.Time,
+      };
+    } else {
+      const name = dimension?.element.value as string;
+      return {
+        id: name,
+        title: dimensionsMap.get(name)?.label || "Unknown",
+        type: PivotChipType.Dimension,
+      };
+    }
+  };
+
   const measuresMap = getMapFromArray(
     metricsView.measures ?? [],
     (m) => m.name,
@@ -349,26 +370,45 @@ function fromPivotProto(
     type: PivotChipType.Measure,
   });
 
+  let rowDimensions: PivotChipData[] = [];
+  let colDimensions: PivotChipData[] = [];
+  if (
+    dashboard.pivotRowAllDimensions?.length ||
+    dashboard.pivotColumnAllDimensions?.length
+  ) {
+    rowDimensions = dashboard.pivotRowAllDimensions.map(mapAllDimension);
+    colDimensions = dashboard.pivotColumnAllDimensions.map(mapAllDimension);
+  } else if (
+    // backwards compatibility for old URLs
+    dashboard.pivotRowDimensions?.length ||
+    dashboard.pivotRowTimeDimensions?.length ||
+    dashboard.pivotColumnDimensions?.length ||
+    dashboard.pivotColumnTimeDimensions?.length
+  ) {
+    rowDimensions = [
+      ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
+      ...dashboard.pivotRowDimensions.map(mapDimension),
+    ];
+    colDimensions = [
+      ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
+      ...dashboard.pivotColumnDimensions.map(mapDimension),
+    ];
+  }
+
   return {
     active: dashboard.pivotIsActive ?? false,
     rows: {
-      dimension: [
-        ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
-        ...dashboard.pivotRowDimensions.map(mapDimension),
-      ],
+      dimension: rowDimensions,
     },
     columns: {
-      dimension: [
-        ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
-        ...dashboard.pivotColumnDimensions.map(mapDimension),
-      ],
+      dimension: colDimensions,
       measure: dashboard.pivotColumnMeasures.map(mapMeasure),
     },
     expanded: dashboard.pivotExpanded,
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,
-    enableComparison: dashboard.pivotEnableComparison ?? true,
+    enableComparison: dashboard.pivotEnableComparison ?? false,
     rowJoinType:
       FromProtoPivotRowJoinTypeMap[
         dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST

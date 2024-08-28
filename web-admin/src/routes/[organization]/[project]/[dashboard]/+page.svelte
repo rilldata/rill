@@ -3,7 +3,8 @@
   import { page } from "$app/stores";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
-  import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
+  import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
+  import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -14,23 +15,46 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { errorStore } from "../../../../features/errors/error-store";
 
-  $: instanceId = $runtime?.instanceId;
-
-  $: orgName = $page.params.organization;
-  $: projectName = $page.params.project;
-  $: dashboardName = $page.params.dashboard;
-
   const user = createAdminServiceGetCurrentUser();
 
-  $: dashboard = useDashboard(instanceId, dashboardName);
+  const PollIntervalWhenDashboardFirstReconciling = 1000;
+  const PollIntervalWhenDashboardErrored = 5000;
+  // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
+
+  $: instanceId = $runtime?.instanceId;
+
+  $: ({
+    organization: orgName,
+    project: projectName,
+    dashboard: dashboardName,
+  } = $page.params);
+
+  $: dashboard = useDashboard(instanceId, dashboardName, {
+    refetchInterval: () => {
+      if (isDashboardReconcilingForFirstTime) {
+        return PollIntervalWhenDashboardFirstReconciling;
+      } else if (isDashboardErrored) {
+        return PollIntervalWhenDashboardErrored;
+      } else {
+        return false;
+      }
+    },
+  });
+
   $: isDashboardNotFound =
     !$dashboard.data &&
     $dashboard.isError &&
     $dashboard.error?.response?.status === 404;
+  $: isDashboardReconcilingForFirstTime =
+    $dashboard?.data?.metricsView?.state?.validSpec === null &&
+    !$dashboard?.data?.meta?.reconcileError;
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
-  $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
+  $: isDashboardErrored =
+    $dashboard?.data?.metricsView?.state?.validSpec === null &&
+    !!$dashboard?.data?.meta?.reconcileError;
+  $: metricViewName = $dashboard.data?.meta.name.name;
 
   // If no dashboard is found, show a 404 page
   $: if (isDashboardNotFound) {
@@ -53,28 +77,27 @@
   <title>{dashboardName} - Rill</title>
 </svelte:head>
 
-<!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
-  because dashboard #1 is errored, but dashboard #2 could be OK.  -->
-
 {#if $dashboard.isSuccess}
-  {#if isDashboardErrored}
-    <ProjectErrored organization={orgName} project={projectName} />
-  {:else}
-    {#key dashboardName}
-      <StateManagersProvider metricsViewName={dashboardName}>
+  {#if isDashboardReconcilingForFirstTime}
+    <DashboardBuilding />
+  {:else if isDashboardErrored}
+    <DashboardErrored organization={orgName} project={projectName} />
+  {:else if metricViewName}
+    {#key metricViewName}
+      <StateManagersProvider metricsViewName={metricViewName}>
         {#if $user.isSuccess && $user.data.user}
-          <DashboardBookmarksStateProvider metricViewName={dashboardName}>
-            <DashboardURLStateProvider metricViewName={dashboardName}>
+          <DashboardBookmarksStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard metricViewName={dashboardName} />
+                <Dashboard {metricViewName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardBookmarksStateProvider>
         {:else}
-          <DashboardStateProvider metricViewName={dashboardName}>
-            <DashboardURLStateProvider metricViewName={dashboardName}>
+          <DashboardStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard metricViewName={dashboardName} />
+                <Dashboard {metricViewName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardStateProvider>

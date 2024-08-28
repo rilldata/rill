@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/mitchellh/mapstructure"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 )
@@ -31,7 +30,6 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
 	}
-
 	if props.SQL == "" {
 		return nil, errors.New(`metrics SQL: missing required property "sql"`)
 	}
@@ -41,8 +39,8 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	var finalRefs []*runtimev1.ResourceName
-	props.SQL, finalRefs, err = resolveTemplate(props.SQL, opts.Args, instance, opts.Claims.UserAttributes, opts.ForExport)
+	// todo handle refs
+	props.SQL, _, err = resolveTemplate(props.SQL, opts.Args, instance, opts.Claims.UserAttributes, opts.ForExport)
 	if err != nil {
 		return nil, err
 	}
@@ -58,26 +56,23 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.Claims, sqlArgs.Priority)
-	sql, connector, refs, err := compiler.Compile(ctx, props.SQL)
+	query, err := compiler.Rewrite(ctx, props.SQL)
 	if err != nil {
 		return nil, err
 	}
-	if refs != nil {
-		finalRefs = append(finalRefs, refs...)
-		finalRefs = normalizeRefs(finalRefs)
-	}
 
-	// Build the options for the regular SQL resolver
-	sqlResolverOpts := &runtime.ResolverOptions{
+	// Build the options for the metrics resolver
+	metricProps := map[string]any{}
+	if err := mapstructure.WeakDecode(query, &metricProps); err != nil {
+		return nil, err
+	}
+	resolverOpts := &runtime.ResolverOptions{
 		Runtime:    opts.Runtime,
 		InstanceID: opts.InstanceID,
-		Properties: map[string]any{
-			"connector": connector,
-			"sql":       sql,
-		},
-		Args:      opts.Args,
-		Claims:    opts.Claims,
-		ForExport: opts.ForExport,
+		Properties: metricProps,
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  opts.ForExport,
 	}
-	return newSQLSimple(ctx, sqlResolverOpts, finalRefs)
+	return newMetrics(ctx, resolverOpts)
 }

@@ -1,14 +1,15 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
+  import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type Row } from "@tanstack/svelte-table";
   import { createEventDispatcher } from "svelte";
   import Table from "../../../components/table/Table.svelte";
+  import Toolbar from "../../../components/table/Toolbar.svelte";
   import DashboardsError from "./DashboardsError.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
-  import DashboardsTableEmpty from "./DashboardsTableEmpty.svelte";
-  import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
   import { useDashboardsV2, type DashboardResource } from "./selectors";
 
@@ -85,13 +86,13 @@
   const dispatch = createEventDispatcher();
 
   function handleClickRow(e: CustomEvent<Row<DashboardResource>>) {
-    dispatch("select-dashboard", e.detail.original.resource.meta.name.name);
+    dispatch("select-resource", e.detail.original.resource.meta.name);
   }
 </script>
 
 {#if $dashboards.isLoading}
   <div class="m-auto mt-20">
-    <Spinner status={EntityStatus.Running} size="24px" />
+    <DelayedSpinner isLoading={$dashboards.isLoading} size="24px" />
   </div>
 {:else if $dashboards.isError}
   <DashboardsError />
@@ -105,8 +106,13 @@
       {columnVisibility}
       on:click-row={handleClickRow}
     >
-      <DashboardsTableHeader slot="header" />
-      <DashboardsTableEmpty slot="empty" />
+      <Toolbar slot="toolbar" />
+      <ResourceHeader
+        kind="dashboard"
+        icon={MetricsExplorerIcon}
+        slot="header"
+      />
+      <ResourceTableEmpty kind="dashboard" slot="empty" />
     </Table>
   {/if}
 {/if}

@@ -44,7 +44,6 @@ export type StateManagers = {
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
   queryClient: QueryClient;
-  setMetricsViewName: (s: string) => void;
   updateDashboard: DashboardCallbackExecutor;
   /**
    * A collection of Readables that can be used to select data from the dashboard.
@@ -91,13 +90,19 @@ export function createStateManagers({
   const metricsSpecStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {
-    useResource(
-      r.instanceId,
-      metricViewName,
-      ResourceKind.MetricsView,
-      (data) => data.metricsView?.state?.validSpec,
+    useResource(r.instanceId, metricViewName, ResourceKind.MetricsView, {
       queryClient,
-    ).subscribe(set);
+    }).subscribe((result) => {
+      // In case the store was created with a name that has incorrect casing
+      if (result.data?.meta?.name?.name) {
+        metricsViewNameStore.set(result.data.meta.name.name);
+      }
+
+      return set({
+        ...result,
+        data: result.data?.metricsView?.state?.validSpec,
+      });
+    });
   });
 
   const timeRangeSummaryStore: Readable<
@@ -141,9 +146,7 @@ export function createStateManagers({
     timeRangeSummaryStore,
     queryClient,
     dashboardStore,
-    setMetricsViewName: (name) => {
-      metricsViewNameStore.set(name);
-    },
+
     updateDashboard,
     /**
      * A collection of Readables that can be used to select data from the dashboard.

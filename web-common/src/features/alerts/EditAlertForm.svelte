@@ -40,7 +40,8 @@
   $: project = $page.params.project;
   $: alertName = $page.params.alert;
   const queryArgsJson = JSON.parse(
-    alertSpec.queryArgsJson as string,
+    (alertSpec.resolverProperties?.query_args_json ??
+      alertSpec.queryArgsJson) as string,
   ) as V1MetricsViewAggregationRequest;
 
   $: metricsViewSpec = useMetricsView($runtime?.instanceId, metricsViewName);

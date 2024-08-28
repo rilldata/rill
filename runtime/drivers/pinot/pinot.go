@@ -30,43 +30,8 @@ var spec = drivers.Spec{
 			DisplayName: "Connection string",
 			Placeholder: "http(s)://username:password@localhost:9000",
 			Secret:      true,
+			NoPrompt:    true,
 		},
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "9000",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-			Placeholder: "username",
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-			Default:     "true",
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
@@ -284,6 +249,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 

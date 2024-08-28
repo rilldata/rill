@@ -15,9 +15,9 @@ import (
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
+	"github.com/rilldata/rill/cli/cmd/publicurl"
 	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/service"
-	"github.com/rilldata/rill/cli/cmd/shareurl"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
 	"github.com/rilldata/rill/cli/cmd/uninstall"
@@ -37,10 +37,6 @@ import (
 func init() {
 	cobra.EnableCommandSorting = false
 }
-
-// defaultAdminURL is the default admin server URL.
-// Users can override it with the "--api-url" flag or by setting "api-url" in ~/.rill/config.yaml.
-const defaultAdminURL = "https://admin.rilldata.com"
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -76,37 +72,26 @@ func Execute(ctx context.Context, ver cmdutil.Version) {
 }
 
 func runCmd(ctx context.Context, ver cmdutil.Version) error {
-	// Load admin token from .rill (may later be overridden by flag --api-token)
-	adminTokenDefault, err := dotrill.GetAccessToken()
+	// Create cmdutil Helper
+	ch := &cmdutil.Helper{
+		Printer:     printer.NewPrinter(printer.FormatHuman),
+		Version:     ver,
+		Interactive: true,
+	}
+	defer ch.Close()
+
+	// Load base admin config from ~/.rill
+	err := ch.ReloadAdminConfig()
 	if err != nil {
-		return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
+		return err
 	}
 
-	// Load admin URL from .rill (override with --api-url)
-	adminURL, err := dotrill.GetDefaultAdminURL()
-	if err != nil {
-		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
-	}
-	if adminURL == "" {
-		adminURL = defaultAdminURL
-	}
-
-	// Load default org from .rill
+	// Load default org
 	defaultOrg, err := dotrill.GetDefaultOrg()
 	if err != nil {
 		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
 	}
-
-	// Create cmdutil Helper
-	ch := &cmdutil.Helper{
-		Printer:           printer.NewPrinter(printer.FormatHuman),
-		Version:           ver,
-		AdminURL:          adminURL,
-		AdminTokenDefault: adminTokenDefault,
-		Org:               defaultOrg,
-		Interactive:       true,
-	}
-	defer ch.Close()
+	ch.Org = defaultOrg
 
 	// Check version
 	err = update.CheckVersion(ctx, ver.Number)
@@ -132,7 +117,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
 	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", true, "Prompt for missing required parameters")
 	rootCmd.PersistentFlags().Var(&ch.Printer.Format, "format", `Output format (options: "human", "json", "csv")`)
-	rootCmd.PersistentFlags().StringVar(&ch.AdminURL, "api-url", ch.AdminURL, "Base URL for the cloud API")
+	rootCmd.PersistentFlags().StringVar(&ch.AdminURLOverride, "api-url", ch.AdminURLOverride, "Base URL for the cloud API")
 	if !ch.IsDev() {
 		if err := rootCmd.PersistentFlags().MarkHidden("api-url"); err != nil {
 			panic(err)
@@ -150,7 +135,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		usergroup.UsergroupCmd(ch),
 		org.OrgCmd(ch),
 		project.ProjectCmd(ch),
-		shareurl.ShareURLCmd(ch),
+		publicurl.PublicURLCmd(ch),
 		service.ServiceCmd(ch),
 		auth.LoginCmd(ch),
 		auth.LogoutCmd(ch),

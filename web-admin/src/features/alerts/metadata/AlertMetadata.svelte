@@ -43,7 +43,9 @@
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
 
   $: metricsViewAggregationRequest = JSON.parse(
-    alertSpec?.queryArgsJson ?? "{}",
+    alertSpec?.resolverProperties?.query_args_json ??
+      alertSpec?.queryArgsJson ??
+      "{}",
   ) as V1MetricsViewAggregationRequest;
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);

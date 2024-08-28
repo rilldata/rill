@@ -5,7 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"net/url"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -173,11 +172,28 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
 }
 
+type Informational struct {
+	ToEmail string
+	ToName  string
+	Subject string
+	Title   string
+	Body    template.HTML
+}
+
+func (c *Client) SendInformational(opts *Informational) error {
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("informational.html").Execute(buf, opts)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+}
+
 type OrganizationInvite struct {
 	ToEmail       string
 	ToName        string
-	AdminURL      string
-	FrontendURL   string
+	AcceptURL     string
 	OrgName       string
 	RoleName      string
 	InvitedByName string
@@ -188,11 +204,6 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 		opts.InvitedByName = "Rill"
 	}
 
-	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ org frontend URL }}"
-	queryParams := url.Values{}
-	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName))
-	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
-
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
@@ -200,14 +211,14 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 		Title:      "Accept your invitation to Rill",
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to join <b>%s</b> as a %s for their Rill account. Get started interacting with fast, exploratory dashboards by clicking the button below to sign in and accept your invitation.", opts.InvitedByName, opts.OrgName, opts.RoleName)),
 		ButtonText: "Accept invitation",
-		ButtonLink: finalURL,
+		ButtonLink: opts.AcceptURL,
 	})
 }
 
 type OrganizationAddition struct {
 	ToEmail       string
 	ToName        string
-	FrontendURL   string
+	OpenURL       string
 	OrgName       string
 	RoleName      string
 	InvitedByName string
@@ -225,15 +236,14 @@ func (c *Client) SendOrganizationAddition(opts *OrganizationAddition) error {
 		Title:      fmt.Sprintf("%s has added you to %s", opts.InvitedByName, opts.OrgName),
 		Body:       template.HTML(fmt.Sprintf("%s has added you as a %s for <b>%s</b>. Click the button below to view and collaborate on Rill dashboard projects for %s.", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.OrgName)),
 		ButtonText: "View account",
-		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName),
+		ButtonLink: opts.OpenURL,
 	})
 }
 
 type ProjectInvite struct {
 	ToEmail       string
 	ToName        string
-	AdminURL      string
-	FrontendURL   string
+	AcceptURL     string
 	OrgName       string
 	ProjectName   string
 	RoleName      string
@@ -245,11 +255,6 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 		opts.InvitedByName = "Rill"
 	}
 
-	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ project frontend URL }}"
-	queryParams := url.Values{}
-	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName))
-	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
-
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
@@ -257,14 +262,14 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 		Title:      fmt.Sprintf("You have been invited to the %s/%s project", opts.OrgName, opts.ProjectName),
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s/%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.ProjectName)),
 		ButtonText: "Accept invitation",
-		ButtonLink: finalURL,
+		ButtonLink: opts.AcceptURL,
 	})
 }
 
 type ProjectAddition struct {
 	ToEmail       string
 	ToName        string
-	FrontendURL   string
+	OpenURL       string
 	OrgName       string
 	ProjectName   string
 	RoleName      string
@@ -283,14 +288,70 @@ func (c *Client) SendProjectAddition(opts *ProjectAddition) error {
 		Title:      fmt.Sprintf("You have been added to the %s/%s project", opts.OrgName, opts.ProjectName),
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.ProjectName)),
 		ButtonText: "View account",
-		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName),
+		ButtonLink: opts.OpenURL,
 	})
 }
 
-func mustJoinURLPath(base string, elem ...string) string {
-	res, err := url.JoinPath(base, elem...)
-	if err != nil {
-		panic(err)
+type ProjectAccessRequest struct {
+	Title       string
+	Body        template.HTML
+	ToEmail     string
+	ToName      string
+	Email       string
+	OrgName     string
+	ProjectName string
+	ApproveLink string
+	DenyLink    string
+}
+
+func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
+	subject := fmt.Sprintf("%s would like to view %s/%s", opts.Email, opts.OrgName, opts.ProjectName)
+	if opts.Body == "" {
+		opts.Body = template.HTML(fmt.Sprintf("<b>%s</b> would like to view <b>%s/%s</b>", opts.Email, opts.OrgName, opts.ProjectName))
 	}
-	return res
+
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("project_access_request.html").Execute(buf, opts)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+}
+
+type ProjectAccessGranted struct {
+	ToEmail     string
+	ToName      string
+	OpenURL     string
+	OrgName     string
+	ProjectName string
+}
+
+func (c *Client) SendProjectAccessGranted(opts *ProjectAccessGranted) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your request to %s/%s has been approved", opts.OrgName, opts.ProjectName),
+		Title:      "",
+		Body:       template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been approved", opts.OrgName, opts.ProjectName)),
+		ButtonText: "View project in Rill",
+		ButtonLink: opts.OpenURL,
+	})
+}
+
+type ProjectAccessRejected struct {
+	ToEmail     string
+	ToName      string
+	OrgName     string
+	ProjectName string
+}
+
+func (c *Client) SendProjectAccessRejected(opts *ProjectAccessRejected) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your request to %s/%s has been denied", opts.OrgName, opts.ProjectName),
+		Title:   "",
+		Body:    template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been denied. Contact your project admin for help.", opts.OrgName, opts.ProjectName)),
+	})
 }

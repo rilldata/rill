@@ -93,6 +93,7 @@ export function getPivotConfig(
         timeRangeSummary,
         dashboardStore,
       ]);
+
       const time: PivotTimeConfig = {
         timeStart: timeControl.timeStart,
         timeEnd: timeControl.timeEnd,
@@ -104,7 +105,7 @@ export function getPivotConfig(
         canEnablePivotComparison(
           dashboardStore.pivot,
           timeControl.comparisonTimeStart,
-        ) && dashboardStore.pivot.enableComparison;
+        ) && !!timeControl.showTimeComparison;
 
       let comparisonTime: TimeRangeString | undefined = undefined;
       if (enableComparison) {
@@ -232,6 +233,7 @@ export function createTableCellQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
+    config,
     measureBody,
     dimensionBody,
     mergedFilter,
@@ -287,11 +289,16 @@ let expandedTableMap: Record<string, PivotDataRow[]> = {};
  *     v
  * Table data and column definitions
  */
-function createPivotDataStore(ctx: StateManagers): PivotDataStore {
+export function createPivotDataStore(
+  ctx: StateManagers,
+  configStore: Readable<PivotDataStoreConfig> | undefined = undefined,
+): PivotDataStore {
   /**
    * Derive a store using pivot config
    */
-  return derived(getPivotConfig(ctx), (config, configSet) => {
+
+  if (!configStore) configStore = getPivotConfig(ctx);
+  return derived(configStore, (config, configSet) => {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
@@ -373,6 +380,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         if (rowDimensionNames.length && measureNames.length) {
           globalTotalsQuery = createPivotAggregationRowQuery(
             ctx,
+            config,
             config.measureNames.map((m) => ({ name: m })),
             [],
             config.whereFilter,

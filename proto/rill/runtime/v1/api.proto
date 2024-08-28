@@ -179,6 +179,11 @@ service RuntimeService {
   rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resource"};
   }
+
+  // GetModelSplits returns the splits of a model
+  rpc GetModelSplits(GetModelSplitsRequest) returns (GetModelSplitsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/splits"};
+  }
   
   // CreateTrigger creates a trigger in the catalog.
   // Triggers are ephemeral resources that will be cleaned up by the controller.
@@ -297,7 +302,7 @@ message Connector {
 
 // Request message for RuntimeService.ListInstances
 message ListInstancesRequest {
-  uint32 page_size = 1;
+  uint32 page_size = 1; 
   string page_token = 2;
 }
 
@@ -573,6 +578,15 @@ enum ResourceEvent {
   RESOURCE_EVENT_DELETE = 2;
 }
 
+message ModelSplit {
+  string key = 1;
+  google.protobuf.Struct data = 2;
+  google.protobuf.Timestamp watermark = 3;
+  google.protobuf.Timestamp executed_on = 4;
+  string error = 5;
+  uint32 elapsed_ms = 6;
+}
+
 message GetLogsRequest {
   string instance_id = 1;
   bool ascending = 2;
@@ -630,6 +644,18 @@ message GetResourceResponse {
   Resource resource = 1;
 }
 
+message GetModelSplitsRequest {
+  string instance_id = 1;
+  string model = 2;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
+  string page_token = 4;
+}
+
+message GetModelSplitsResponse {
+  repeated ModelSplit splits = 1;
+  string next_page_token = 2;
+}
+
 message CreateTriggerRequest {
   string instance_id = 1;
   oneof trigger {
@@ -677,6 +703,8 @@ message ConnectorDriver {
     string placeholder = 9;
     // If true, the property is a secret and should not be displayed in UIs
     bool secret = 10;
+    // If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+    bool no_prompt = 11;
   }
   // Name is the name of the connector
   string name = 1;
@@ -699,6 +727,7 @@ message ConnectorDriver {
   bool implements_object_store = 17;
   bool implements_file_store = 18;
   bool implements_notifier = 19;
+  bool implements_warehouse = 20;
 }
 
 // AnalyzedConnector contains information about a connector that is referenced in the project files.

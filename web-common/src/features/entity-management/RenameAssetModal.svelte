@@ -10,6 +10,9 @@
     useDirectoryNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string } from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
   import { removeLeadingSlash } from "./entity-mappers";
@@ -18,9 +21,6 @@
     VALID_NAME_PATTERN,
     isDuplicateName,
   } from "./name-utils";
-  import { superForm, defaults } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
-  import { object, string } from "yup";
 
   export let closeModal: () => void;
   export let filePath: string;
@@ -101,7 +101,7 @@
         }
         closeModal();
       } catch (err) {
-        error = err.response.data.message;
+        error = err.response.data?.message;
       }
     },
   });

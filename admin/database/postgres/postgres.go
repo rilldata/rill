@@ -96,6 +96,15 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	return res, nil
 }
 
+func (c *connection) FindOrganizationByCustomDomain(ctx context.Context, domain string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE lower(custom_domain)=lower($1)", domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
@@ -122,9 +131,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -142,7 +151,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, updated_on=now() WHERE id=$10 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, display_name=$2, description=$3, custom_domain=$4, quota_projects=$5, quota_deployments=$6, quota_slots_total=$7, quota_slots_per_deployment=$8, quota_outstanding_invites=$9, quota_storage_limit_bytes_per_deployment=$10, billing_customer_id=$11, payment_customer_id=$12, billing_email=$13, updated_on=now() WHERE id=$14 RETURNING *", opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -378,9 +387,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, prod_ttl_seconds=$12, annotations=$13, prod_version=$14, updated_on=now()
-		WHERE id=$15 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, updated_on=now()
+		WHERE id=$16 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -725,7 +734,7 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 
 func (c *connection) UpdateUsergroupName(ctx context.Context, name, groupID string) (*database.Usergroup, error) {
 	res := &database.Usergroup{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET name=$1 WHERE id=$2 RETURNING *", name, groupID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET name=$1, updated_on=now() WHERE id=$2 RETURNING *", name, groupID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}
@@ -734,7 +743,7 @@ func (c *connection) UpdateUsergroupName(ctx context.Context, name, groupID stri
 
 func (c *connection) UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*database.Usergroup, error) {
 	res := &database.Usergroup{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET description=$1 WHERE id=$2 RETURNING *", description, groupID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET description=$1, updated_on=now() WHERE id=$2 RETURNING *", description, groupID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}
@@ -795,6 +804,15 @@ func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afte
 func (c *connection) DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
 	return checkDeleteRow("usergroup member", res, err)
+}
+
+func (c *connection) CheckUsergroupExists(ctx context.Context, groupID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM usergroups WHERE id=$1)", groupID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
+	}
+	return res, nil
 }
 
 func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
@@ -1090,6 +1108,15 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*databa
 	return res.AsModel()
 }
 
+func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
+	res := &magicAuthTokenWithUserDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return res.AsModel()
+}
+
 func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
@@ -1101,9 +1128,9 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 
 	res := &magicAuthTokenDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields,
+		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
@@ -1320,6 +1347,21 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 	return count, nil
 }
 
+func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
+	var res []*database.MemberUser
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+			JOIN users_orgs_roles uor ON u.id = uor.user_id
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id=$1 AND r.manage_org_members=true
+		ORDER BY lower(u.email)
+	`, orgID)
+	if err != nil {
+		return nil, parseErr("org members", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -1473,21 +1515,29 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 }
 
 func (c *connection) FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*database.OrganizationInvite, error) {
-	var res []*database.OrganizationInvite
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
+	var dtos []*organizationInviteDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
 	if err != nil {
 		return nil, parseErr("org invites", err)
+	}
+	res := make([]*database.OrganizationInvite, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsModel()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
 
 func (c *connection) FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*database.OrganizationInvite, error) {
-	res := &database.OrganizationInvite{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(res)
+	dto := &organizationInviteDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("org invite", err)
 	}
-	return res, nil
+	return dto.AsModel()
 }
 
 func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *database.InsertOrganizationInviteOptions) error {
@@ -1500,6 +1550,11 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return parseErr("org invite", err)
 	}
 	return nil
+}
+
+func (c *connection) UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET usergroup_ids = $1 WHERE id = $2`, groupIDs, id)
+	return checkUpdateRow("org invite", res, err)
 }
 
 func (c *connection) DeleteOrganizationInvite(ctx context.Context, id string) error {
@@ -1580,6 +1635,66 @@ func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1 WHERE id = $2`, roleID, id)
 	return checkUpdateRow("project invite", res, err)
+}
+
+func (c *connection) FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*database.ProjectAccessRequest, error) {
+	var res []*database.ProjectAccessRequest
+	var err error
+	if afterID != "" {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT par.user_id
+			FROM project_access_requests par
+			WHERE par.project_id = $1 AND par.user_id > $2
+			ORDER BY par.user_id LIMIT $3
+		`, projectID, afterID, limit)
+	} else {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT par.user_id
+			FROM project_access_requests par
+			WHERE par.project_id = $1
+			ORDER BY par.user_id LIMIT $2
+		`, projectID, limit)
+	}
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*database.ProjectAccessRequest, error) {
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_requests WHERE user_id = $1 AND project_id = $2", userID, projectID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectAccessRequestByID(ctx context.Context, id string) (*database.ProjectAccessRequest, error) {
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_requests WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertProjectAccessRequest(ctx context.Context, opts *database.InsertProjectAccessRequestOptions) (*database.ProjectAccessRequest, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO project_access_requests (user_id, project_id) VALUES ($1, $2) RETURNING *", opts.UserID, opts.ProjectID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM project_access_requests WHERE id = $1", id)
+	return checkDeleteRow("project access request", res, err)
 }
 
 // FindBookmarks returns a list of bookmarks for a user per project
@@ -1784,6 +1899,15 @@ func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageRepo
 	return checkUpdateRow("billing usage", res, err)
 }
 
+func (c *connection) FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*database.Organization, error) {
+	var res []*database.Organization
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
+	if err != nil {
+		return nil, parseErr("billing orgs without payment id", err)
+	}
+	return res, nil
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
@@ -1855,6 +1979,20 @@ func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser,
 	}
 
 	return m.MagicAuthTokenWithUser, nil
+}
+
+type organizationInviteDTO struct {
+	*database.OrganizationInvite
+	UsergroupIDs pgtype.TextArray `db:"usergroup_ids"`
+}
+
+func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) {
+	err := o.UsergroupIDs.AssignTo(&o.OrganizationInvite.UsergroupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return o.OrganizationInvite, nil
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {
