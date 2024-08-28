@@ -35,7 +35,7 @@
   const OVERSCAN = 60;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
-  const MEASURE_PADDING = 16;
+  const MEASURE_PADDING = 20;
   const MIN_COL_WIDTH = 150;
   const MAX_COL_WIDTH = 600;
   const MAX_INIT_COL_WIDTH = 400;
@@ -300,16 +300,18 @@
     style:width="{totalLength + firstColumnWidth}px"
     style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
   >
-    <div style:width="{firstColumnWidth}px" class="flex-none relative flex">
+    <div
+      style:width="{firstColumnWidth}px"
+      class="sticky left-0 flex-none flex"
+    >
       <Resizer
         side="right"
         direction="EW"
+        justify="end"
         min={MIN_COL_WIDTH}
         max={MAX_COL_WIDTH}
         dimension={firstColumnWidth}
-        onUpdate={(d) => {
-          firstColumnWidth = d;
-        }}
+        onUpdate={(d) => (firstColumnWidth = d)}
         onMouseDown={(e) => {
           resizingMeasure = false;
           resizing = true;
@@ -320,9 +322,10 @@
           resizingMeasure = false;
         }}
       >
-        <div class="w-1 h-full bg-primary-500"></div>
+        <div class="resize-bar" />
       </Resizer>
     </div>
+
     {#each measureGroups as _, i (i)}
       <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
         {#each measureLengths as length, measureIndex (measureIndex)}
@@ -330,12 +333,11 @@
             <Resizer
               side="right"
               direction="EW"
+              justify="end"
               min={MIN_MEASURE_WIDTH}
               max={MAX_MEAUSRE_WIDTH}
               dimension={length}
-              onUpdate={(d) => {
-                measureLengths[measureIndex] = d;
-              }}
+              onUpdate={(d) => (measureLengths[measureIndex] = d)}
               onMouseDown={(e) => {
                 resizingMeasure = true;
                 resizing = true;
@@ -347,34 +349,33 @@
                 resizingMeasure = false;
               }}
             >
-              <div class="w-1 h-full bg-primary-500"></div>
+              <div class="resize-bar" />
             </Resizer>
           </div>
         {/each}
       </div>
     {/each}
   </div>
+
   <table
-    style:width="{totalLength}px"
+    style:width="{totalLength + firstColumnWidth}px"
     on:click={modified({ shift: handleClick })}
     role="presentation"
   >
-    {#if firstColumnName && firstColumnWidth}
-      <colgroup>
+    <colgroup>
+      {#if firstColumnName && firstColumnWidth}
         <col
           style:width="{firstColumnWidth}px"
           style:max-width="{firstColumnWidth}px"
         />
-      </colgroup>
-    {/if}
+      {/if}
 
-    {#each measureGroups as _}
-      <colgroup>
-        {#each measureLengths as length}
+      {#each measureGroups as _, i (i)}
+        {#each measureLengths as length, i (i)}
           <col style:width="{length}px" style:max-width="{length}px" />
         {/each}
-      </colgroup>
-    {/each}
+      {/each}
+    </colgroup>
 
     <thead>
       {#each headerGroups as headerGroup (headerGroup.id)}
@@ -426,7 +427,10 @@
               data-value={cell.getValue()}
               class:totals-column={i > 0 && i <= measureCount}
             >
-              <div class="cell pointer-events-none" role="presentation">
+              <div
+                class="cell pointer-events-none truncate"
+                role="presentation"
+              >
                 {#if result?.component && result?.props}
                   <svelte:component
                     this={result.component}
@@ -551,5 +555,9 @@
 
   .totals-column {
     @apply bg-slate-50 font-semibold;
+  }
+
+  .resize-bar {
+    @apply bg-primary-500 w-1 h-full;
   }
 </style>

@@ -18,6 +18,7 @@
   export let onUpdate: ((dimension: number) => void) | null = null;
   export let onMouseUp: (() => void) | null = null;
   export let disabled = false;
+  export let justify: "center" | "start" | "end" = "center";
 
   let start = 0;
   let startingDimension = dimension;
@@ -79,7 +80,7 @@
 <button
   {disabled}
   class:absolute
-  class="{direction} {side}"
+  class="{direction} {side} justify-{justify}"
   on:mousedown|stopPropagation|preventDefault={handleMousedown}
   on:dblclick={handleDoubleClick}
   on:mouseenter={() => {
@@ -101,7 +102,7 @@
   button {
     @apply z-50 flex-none;
     @apply pointer-events-auto;
-    @apply flex items-center justify-center;
+    @apply flex items-center;
     /* @apply bg-red-500; */
   }
 
@@ -140,7 +141,7 @@
   }
 
   .right {
-    @apply -right-1;
+    @apply -right-0;
   }
 
   .top {
