@@ -7,7 +7,7 @@
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
-  import { useValidVisualizations } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
@@ -22,6 +22,7 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
+  import { useDashboardsV2 } from "../dashboards/listing/selectors";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
   import { usePublicURLMetricsView } from "../public-urls/selectors";
@@ -29,8 +30,8 @@
   import {
     isMetricsExplorerPage,
     isProjectPage,
-    withinOrganization,
     isPublicURLPage,
+    withinOrganization,
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
@@ -75,7 +76,7 @@
     },
   });
 
-  $: visualizationsQuery = useValidVisualizations(instanceId);
+  $: visualizationsQuery = useDashboardsV2(instanceId);
 
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
@@ -100,20 +101,17 @@
     new Map<string, PathOption>(),
   );
 
-  $: visualizationPaths = visualizations.reduce(
-    (map, { meta, metricsView, dashboard }) => {
-      const name = meta.name.name;
-      const isMetricsExplorer = !!metricsView;
-      return map.set(name.toLowerCase(), {
-        label:
-          (isMetricsExplorer
-            ? metricsView?.state?.validSpec?.title
-            : dashboard?.spec?.title) || name,
-        section: isMetricsExplorer ? undefined : "-/dashboards",
-      });
-    },
-    new Map<string, PathOption>(),
-  );
+  $: visualizationPaths = visualizations.reduce((map, { resource }) => {
+    const name = resource.meta.name.name;
+    const isMetricsExplorer = !!resource?.metricsView;
+    return map.set(name.toLowerCase(), {
+      label:
+        (isMetricsExplorer
+          ? resource?.metricsView?.spec?.title
+          : resource?.dashboard?.spec?.title) || name,
+      section: isMetricsExplorer ? undefined : "-/dashboards",
+    });
+  }, new Map<string, PathOption>());
 
   $: alertPaths = alerts.reduce((map, alert) => {
     const name = alert.meta.name.name;
@@ -137,6 +135,11 @@
     visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];
+
+  $: dashboardQuery = useDashboard(instanceId, dashboardParam, {
+    enabled: !!instanceId && onMetricsExplorerPage,
+  });
+  $: isDashboardValid = !!$dashboardQuery.data?.metricsView?.state?.validSpec;
 
   // Public URLs do not have the metrics view name in the URL. However, the magic token's metadata includes the metrics view name.
   $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
@@ -181,7 +184,7 @@
     {#if onProjectPage && manageProjectMembers}
       <UserInviteButton {organization} {project} />
     {/if}
-    {#if onMetricsExplorerPage || onPublicURLPage}
+    {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
       <StateManagersProvider metricsViewName={dashboard}>
         <LastRefreshedDate {dashboard} />
         <GlobalDimensionSearch metricsViewName={dashboard} />
