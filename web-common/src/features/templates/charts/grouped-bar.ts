@@ -1,4 +1,7 @@
-import { ScrubBoxColor } from "../../dashboards/time-series/chart-colors";
+import {
+  ScrubBoxColor,
+  ScrubMutedColor,
+} from "../../dashboards/time-series/chart-colors";
 import { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
 
@@ -22,9 +25,13 @@ export function buildGroupedBar(
       value: 0.8,
     },
     color: {
-      field: nominalField.name,
-      type: "nominal",
-      legend: null,
+      condition: {
+        param: "brush",
+        field: nominalField.name,
+        type: "nominal",
+        legend: null,
+      },
+      value: ScrubMutedColor,
     },
     xOffset: {
       field: nominalField.name,

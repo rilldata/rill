@@ -4,7 +4,10 @@ import {
   sanitizeValueForVega,
   sanitizeValuesForSpec,
 } from "./utils";
-import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import {
+  ScrubBoxColor,
+  ScrubMutedColor,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 /** Temporary solution for the lack of vega lite type exports */
 interface TooltipValue {
@@ -64,7 +67,15 @@ export function buildStackedArea(
       type: "quantitative",
       stack: "zero",
     },
-    color: { field: nominalField?.name, type: "nominal", legend: null },
+    color: {
+      condition: {
+        param: "brush",
+        field: nominalField.name,
+        type: "nominal",
+        legend: null,
+      },
+      value: ScrubMutedColor,
+    },
   };
 
   if (nominalField?.values?.length) {

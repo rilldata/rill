@@ -93,9 +93,7 @@
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
   let previousChartType: TDDDefaultCharts | undefined;
-  let hasSwitchedChart = false;
   $: if (chartType !== previousChartType && hasSubrangeSelected) {
-    hasSwitchedChart = true;
     previousChartType = chartType;
 
     clearScrubRange();

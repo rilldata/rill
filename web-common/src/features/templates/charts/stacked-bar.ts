@@ -1,6 +1,9 @@
 import { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
-import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import {
+  ScrubBoxColor,
+  ScrubMutedColor,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildStackedBar(
   timeField: ChartField,
@@ -23,9 +26,13 @@ export function buildStackedBar(
       value: 0.8,
     },
     color: {
-      field: nominalField.name,
-      type: "nominal",
-      legend: null,
+      condition: {
+        param: "brush",
+        field: nominalField.name,
+        type: "nominal",
+        legend: null,
+      },
+      value: ScrubMutedColor,
     },
     tooltip: [
       {
