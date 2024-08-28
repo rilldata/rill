@@ -18,7 +18,7 @@
   import { createEventDispatcher, onDestroy } from "svelte";
   import { View } from "svelte-vega";
   import { TopLevelSpec } from "vega-lite";
-  import { TDDAlternateCharts, TDDChart, TDDDefaultCharts } from "../types";
+  import { TDDAlternateCharts, TDDChart } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
@@ -54,11 +54,8 @@
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
   let previousChartType: TDDChart | undefined;
-  let hasSwitchedChart = false;
   $: if (chartType !== previousChartType && hasSubrangeSelected) {
-    hasSwitchedChart = true;
     previousChartType = chartType;
-
     clearScrubRange();
   }
 
