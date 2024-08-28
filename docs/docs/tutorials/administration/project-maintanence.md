@@ -34,4 +34,51 @@ Seeing as this is ClickHouse model, it is likely that the credentials or connect
 
 Whether it's the source or the model that is erroring and causing the dashboard to fail, you may need to [check the credentials](credential-mangement.md) back in Rill Developer.
 
+### Incremental Models are failing 
 
+Additionally, you may need to troubleshoot your incremental model's splits. As seen in the above image, our model, S3-incremental, is erroring with the following:
+
+```bash
+failed to sync splits: blob (code=Unknown): AccessDenied: Access Denied status code:...
+```
+
+Depending on the error, you might not be able to determine the cause of the issue and will need to return to the CLI to check each split. This can be done by running:
+
+```bash
+rill project splits <name_of_model> --project <your-project>
+```
+
+```
+ KEY (50)                           DATA                                                                                                                                                                 EXECUTED ON            ELAPSED   ERROR  
+ ---------------------------------- -------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------- --------- ------- 
+  39b3f0a233c2ac07897fa07a1d823437   {"path":"github-analytics/Clickhouse/2018/03/commits_2018_03.parquet","uri":"s3://rilldata-public-s3/github-analytics/Clickhouse/2018/03/commits_2018_03.parquet"}   2024-08-28T04:50:06Z   1.216s           
+  4fd7e315006050de98adf812fa830036   {"path":"github-analytics/Clickhouse/2018/04/commits_2018_04.parquet","uri":"s3://rilldata-public-s3/github-analytics/Clickhouse/2018/04/commits_2018_04.parquet"}   2024-08-28T04:50:08Z   1.268s           
+  962cfd66eabc5edf8def23ef5397ddf6   {"path":"github-analytics/Clickhouse/2018/05/commits_2018_05.parquet","uri":"s3://rilldata-public-s3/github-analytics/Clickhouse/2018/05/commits_2018_05.parquet"}   2024-08-28T04:50:09Z   1.072s           
+  da86ef9b082147b580145b6590e300e2   {"path":"github-analytics/Clickhouse/2018/06/commits_2018_06.parquet","uri":"s3://rilldata-public-s3/github-analytics/Clickhouse/2018/06/commits_2018_06.parquet"}   2024-08-28T04:50:10Z   1.104s           
+```
+
+In this case, the issue was a permission issue on the file in S3, and was resolved by setting the file to public within the S3 bucket.
+
+### Data is not up to date
+
+While you may have set up source refresh to automatically ingest new data, seen on the last column of the status page, there might be times where you are unable to view the new data due to external factors or you have updated the underlying data and dont want to wait for the next refresh. In these cases, you will want to run a project refresh to ingest the data again.
+
+```bash
+rill project refresh
+```
+This triggers a refresh and you should see all the Last refresh dates change. You can either check this in Rill Cloud or by running the following:
+
+```bash
+rill project status --project <your-project-id>
+```
+
+## Alerts
+
+import ComingSoon from '@site/src/components/ComingSoon';
+
+<ComingSoon />
+
+<div class='contents_to_overlay'>
+Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
+
+</div>

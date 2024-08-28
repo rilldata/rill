@@ -6,7 +6,7 @@ sidebar_label: "GitHub"
 
 
 ## Connect to GitHub
-
+After deploying to Rill Cloud, you will have the ability to sync your project to a GitHub repository. 
 
 ### via UI
 
