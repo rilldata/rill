@@ -49,9 +49,7 @@
     <button
       class:hide={visibleIndex !== 0}
       class="hover:opacity-50"
-      on:click={() => {
-        onPan(-1);
-      }}
+      on:click={onPan(-1)}
     >
       <ChevronLeft size="14px" />
     </button>
@@ -83,7 +81,10 @@
     {/each}
     {#each days as date (date.toISO())}
       {@const isEnd = areSameDay(inclusiveEnd, date)}
-      {@const inRange = date >= interval.start && date <= inclusiveEnd}
+      {@const isStart = areSameDay(interval.start, date)}
+      {@const afterEnd = date > inclusiveEnd}
+      {@const beforeStart = date < interval.start}
+      {@const inRange = !afterEnd && !beforeStart}
       {@const inPotentialRange =
         (potentialEnd && date > interval.start && date < potentialEnd) ||
         (potentialStart && date > potentialStart && date < inclusiveEnd)}
@@ -96,19 +97,26 @@
           resetPotentialDates();
         }}
         on:mouseenter={() => {
-          if (selectingStart) {
+          if (selectingStart || date < interval.start) {
             potentialStart = date;
           } else {
             potentialEnd = date;
           }
         }}
+        on:mouseleave={resetPotentialDates}
         class:!font-normal={outOfMonth}
         class:text-gray-500={weekend}
-        class:!text-gray-300={outOfMonth}
+        class:!text-gray-300={outOfMonth || (beforeStart && !selectingStart)}
         class:in-range={inRange}
         class:in-potential-range={inPotentialRange}
-        class:is-start={areSameDay(interval.start, date)}
+        class:is-start={isStart}
         class:is-end={isEnd}
+        class:before-start={beforeStart}
+        class:after-end={afterEnd}
+        class:end-cap={!selectingStart && !beforeStart}
+        class:start-cap={selectingStart || (!selectingStart && beforeStart)}
+        class:next-day={potentialStart &&
+          areSameDay(potentialStart.plus({ day: 1 }), date)}
       >
         {date.day}
       </button>
@@ -123,13 +131,18 @@
     @apply flex items-center justify-center border border-transparent border-l-0 border-r-0;
   }
 
-  :not(.selecting-start) .day:not(.is-start):not(.is-end):hover {
-    @apply rounded-r-sm border border-primary-200 bg-primary-300 border-dashed;
+  .day:hover {
+    @apply bg-primary-600;
+    @apply border-primary-600;
+    color: white !important;
   }
 
-  .selecting-start .day:not(.is-start):not(.is-end):hover {
+  .end-cap:hover {
+    @apply rounded-r-md;
+  }
+
+  .start-cap:hover {
     @apply rounded-l-md;
-    @apply bg-primary-600 border-primary-600 border-l border-r-0 text-white rounded-r-none;
   }
 
   .weekday {
@@ -152,16 +165,18 @@
     @apply bg-primary-50 border-dashed border-primary-200;
   }
 
-  .is-start {
-    @apply rounded-l-md;
-    @apply border-l border-r-0;
-  }
-
   .is-end {
     @apply bg-primary-600 border-primary-700 text-white;
   }
 
   .is-start {
     @apply bg-primary-600 border-primary-600 text-white;
+    @apply rounded-l-md;
+    @apply border-l border-r-0;
+  }
+
+  .next-day:not(.in-potential-range) {
+    @apply border-dashed border-t border-b border-primary-200;
+    @apply bg-gradient-to-r from-primary-100 to-transparent;
   }
 </style>
