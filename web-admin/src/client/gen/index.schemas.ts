@@ -90,7 +90,10 @@ export type AdminServiceUpdateProjectBody = {
   prodVersion?: string;
 };
 
-export type AdminServiceGetProjectParams = { accessTokenTtlSeconds?: number };
+export type AdminServiceGetProjectParams = {
+  accessTokenTtlSeconds?: number;
+  issueSuperuserToken?: boolean;
+};
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
 

@@ -2088,6 +2088,8 @@ func (m *GetProjectRequest) validate(all bool) error {
 
 	// no validation rules for AccessTokenTtlSeconds
 
+	// no validation rules for IssueSuperuserToken
+
 	if len(errors) > 0 {
 		return GetProjectRequestMultiError(errors)
 	}

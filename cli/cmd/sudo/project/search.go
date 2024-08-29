@@ -202,8 +202,15 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	}
 
 	// check if there are any parser errors
+	if parser == nil {
+		return &projectStatusTableRow{
+			Org:              org,
+			Project:          project,
+			DeploymentStatus: "Parser not found (corrupted)",
+		}, nil
+	}
 	if parser.State != nil && len(parser.State.ParseErrors) != 0 {
-		parseErrorsCount++
+		parseErrorsCount = len(parser.State.ParseErrors)
 	}
 
 	return &projectStatusTableRow{

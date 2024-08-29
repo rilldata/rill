@@ -219,10 +219,19 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
 	}
 
+	var systemPermissions []runtimeauth.Permission
+	if req.IssueSuperuserToken {
+		if !claims.Superuser(ctx) {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
+		}
+		systemPermissions = append(systemPermissions, runtimeauth.ManageInstances)
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: depl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
-		TTL:         ttlDuration,
+		AudienceURL:       depl.RuntimeAudience,
+		Subject:           claims.OwnerID(),
+		TTL:               ttlDuration,
+		SystemPermissions: systemPermissions,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			depl.RuntimeInstanceID: instancePermissions,
 		},
