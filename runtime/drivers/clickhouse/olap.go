@@ -329,7 +329,7 @@ func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
 	case "TABLE":
 		// drop the main table
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s SYNC", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
 		if err != nil {
@@ -338,7 +338,7 @@ func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
 		// then drop the local table in case of cluster
 		if onCluster && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s SYNC", safelocalTableName(name), onClusterClause),
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safelocalTableName(name), onClusterClause),
 				Priority: 100,
 			})
 		}
@@ -388,7 +388,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		res.Close()
 		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
 
-		// build the column type statement
+		// build the column type clause
 		var columnClause strings.Builder
 		res, err = c.Execute(ctx, &drivers.Statement{
 			Query:    "SELECT name, type FROM system.columns WHERE database = currentDatabase() AND table = ?",
@@ -431,7 +431,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 		// drop the old table
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s SYNC", safeSQLName(oldName), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(oldName), onClusterClause),
 			Priority: 100,
 		})
 	default:
