@@ -279,6 +279,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("error loading database encryption keyring", zap.Error(err))
 			}
 
+			if len(databaseEncryptionKeyring) == 0 {
+				logger.Fatal("no encryption keys found in database encryption keyring")
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:     conf.DatabaseDriver,
