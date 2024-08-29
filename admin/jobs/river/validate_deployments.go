@@ -17,8 +17,8 @@ type ValidateDeploymentsArgs struct{}
 func (ValidateDeploymentsArgs) Kind() string { return "validate_deployments" }
 
 type ValidateDeploymentsWorker struct {
-	admin *admin.Service
 	river.WorkerDefaults[ValidateDeploymentsArgs]
+	admin *admin.Service
 }
 
 func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[ValidateDeploymentsArgs]) error {

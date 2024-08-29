@@ -27,7 +27,7 @@ var (
 	jobLatencyHistogram = observability.Must(meter.Int64Histogram("job_latency", metric.WithUnit("ms")))
 )
 
-type RiverClient struct {
+type Client struct {
 	dbPool      *pgxpool.Pool
 	riverClient *river.Client[pgx.Tx]
 }
@@ -81,20 +81,29 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		return nil, err
 	}
 
-	return &RiverClient{
+	return &Client{
 		dbPool:      dbPool,
 		riverClient: riverClient,
 	}, nil
 }
 
-func (c *RiverClient) Close(ctx context.Context) error {
+func (c *Client) Close(ctx context.Context) error {
 	err := c.riverClient.Stop(ctx)
 	c.dbPool.Close()
 	return err
 }
 
-func (c *RiverClient) Work(ctx context.Context) error {
+func (c *Client) Work(ctx context.Context) error {
 	err := c.riverClient.Start(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// NOTE: Add new job trigger functions here
+func (c *Client) ResetAllDeployments(ctx context.Context) error {
+	_, err := c.riverClient.Insert(ctx, ResetAllDeploymentsArgs{}, nil)
 	if err != nil {
 		return err
 	}
@@ -132,14 +141,5 @@ func work(ctx context.Context, logger *zap.Logger, name string, fn func(context.
 		return err
 	}
 	logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
-	return nil
-}
-
-// NOTE: Add new job trigger functions here
-func (c *RiverClient) ResetAllDeployments(ctx context.Context) error {
-	_, err := c.riverClient.Insert(ctx, ResetAllDeploymentsArgs{}, nil)
-	if err != nil {
-		return err
-	}
 	return nil
 }

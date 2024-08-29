@@ -15,8 +15,8 @@ type ResetAllDeploymentsArgs struct{}
 func (ResetAllDeploymentsArgs) Kind() string { return "reset_all_deployments" }
 
 type ResetAllDeploymentsWorker struct {
-	admin *admin.Service
 	river.WorkerDefaults[ResetAllDeploymentsArgs]
+	admin *admin.Service
 }
 
 func (w *ResetAllDeploymentsWorker) Work(ctx context.Context, job *river.Job[ResetAllDeploymentsArgs]) error {
