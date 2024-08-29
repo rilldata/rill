@@ -13,6 +13,7 @@ import (
 )
 
 func TestClickhouseCrudOps(t *testing.T) {
+	// t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 	if testing.Short() {
 		t.Skip("clickhouse: skipping test in short mode")
 	}
@@ -30,9 +31,12 @@ func testClickhouseSingleHost(t *testing.T, dsn string) {
 
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
-
+	t.Run("RenameView", func(t *testing.T) {
+		testRenameView(t, olap)
+	})
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
+
 }
 
 func testClickhouseCluster(t *testing.T, dsn, cluster string) {
@@ -45,8 +49,39 @@ func testClickhouseCluster(t *testing.T, dsn, cluster string) {
 
 	prepareClusterConn(t, olap, cluster)
 
+	t.Run("RenameView", func(t *testing.T) {
+		testRenameView(t, olap)
+	})
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
+}
+
+func testRenameView(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	err := olap.CreateTableAsSelect(ctx, "foo_view", true, "SELECT 1 AS id", map[string]any{"type": "VIEW"})
+	require.NoError(t, err)
+
+	err = olap.CreateTableAsSelect(ctx, "bar_view", true, "SELECT 'city' AS name", map[string]any{"type": "VIEW"})
+	require.NoError(t, err)
+
+	// rename to unknown view
+	err = olap.RenameTable(ctx, "foo_view", "foo_view1", true)
+	require.NoError(t, err)
+
+	// rename to existing view
+	err = olap.RenameTable(ctx, "foo_view1", "bar_view", true)
+	require.NoError(t, err)
+
+	// check that views no longer exist
+	notExists(t, olap, "foo_view")
+	notExists(t, olap, "foo_view1")
+
+	res, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT id FROM bar_view"})
+	require.NoError(t, err)
+	require.True(t, res.Next())
+	var id int
+	require.NoError(t, res.Scan(&id))
+	require.Equal(t, 1, id)
 }
 
 func testRenameTable(t *testing.T, olap drivers.OLAPStore) {
@@ -57,11 +92,11 @@ func testRenameTable(t *testing.T, olap drivers.OLAPStore) {
 	err = olap.RenameTable(ctx, "foo1", "bar", false)
 	require.NoError(t, err)
 
-	tableNotExists(t, olap, "foo")
-	tableNotExists(t, olap, "foo1")
+	notExists(t, olap, "foo")
+	notExists(t, olap, "foo1")
 }
 
-func tableNotExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
+func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	result, err := olap.Execute(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
