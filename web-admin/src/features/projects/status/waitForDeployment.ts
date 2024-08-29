@@ -31,7 +31,7 @@ export class WaitForDeployment {
 
   private readonly unsub: Unsubscriber;
 
-  private static instance: WaitForDeployment;
+  private static instance: WaitForDeployment | undefined;
 
   private constructor(
     private readonly organization: string,
@@ -43,7 +43,7 @@ export class WaitForDeployment {
         this.unsub?.();
         if (status.error) {
           this.errored = true;
-        } else {
+        } else if (status.data) {
           const resources = await fetchResources(queryClient, status.data);
           // prefer a metrics view, if there are none select a custom dashboard
           this.redirectToResource =
@@ -147,29 +147,27 @@ function deploymentListener(
         return;
       }
 
-      derived(
-        useRefetchingProjectParser(
-          projectResp.data?.prodDeployment?.runtimeInstanceId,
-        ),
-        (projectParserResp) => {
-          if (
-            projectParserResp.isLoading ||
-            projectParserResp.data?.meta?.reconcileStatus !==
-              V1ReconcileStatus.RECONCILE_STATUS_IDLE
-          ) {
-            return {
-              isFetching: true,
-              error: undefined,
-            };
-          }
+      const instanceId =
+        projectResp.data?.prodDeployment?.runtimeInstanceId ?? "";
 
+      derived(useRefetchingProjectParser(instanceId), (projectParserResp) => {
+        if (
+          projectParserResp.isLoading ||
+          projectParserResp.data?.meta?.reconcileStatus !==
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE
+        ) {
           return {
-            isFetching: false,
-            error: projectParserResp.data?.meta?.reconcileError,
-            data: projectResp.data?.prodDeployment?.runtimeInstanceId,
+            isFetching: true,
+            error: undefined,
           };
-        },
-      ).subscribe(set);
+        }
+
+        return {
+          isFetching: false,
+          error: projectParserResp.data?.meta?.reconcileError,
+          data: instanceId,
+        };
+      }).subscribe(set);
     },
   );
 }
