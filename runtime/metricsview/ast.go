@@ -159,7 +159,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 				if tg.ToTimeutil() < minGrain.ToTimeutil() {
 					minGrain = tg
 				}
-
 			}
 		}
 	}
@@ -1232,25 +1231,4 @@ func hasMeasure(n *SelectNode, name string) bool {
 		}
 	}
 	return false
-}
-
-// smallestTimeGrain returns the smallest time grain applied to the given dimension in the provided fields.
-func smallestTimeGrain(dims []FieldNode, name string) TimeGrain {
-	minGrain := TimeGrainUnspecified
-	for _, f := range dims {
-		if f.Name != name {
-			continue
-		}
-		if f.TimeGrain == TimeGrainUnspecified {
-			continue
-		}
-		if minGrain == TimeGrainUnspecified {
-			minGrain = f.TimeGrain
-			continue
-		}
-		if f.TimeGrain.ToProto() < minGrain.ToProto() {
-			minGrain = f.TimeGrain
-		}
-	}
-	return minGrain
 }
