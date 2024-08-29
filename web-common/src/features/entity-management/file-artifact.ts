@@ -238,8 +238,9 @@ export class FileArtifact {
         instanceId,
         name?.name as string,
         name?.kind as ResourceKind,
-        undefined,
-        queryClient,
+        {
+          queryClient,
+        },
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
   };

@@ -1,7 +1,7 @@
 <script lang="ts">
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
-  import ProjectAccessControls from "./ProjectAccessControls.svelte";
+  import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
 
   export let organization: string;
   export let project: string;

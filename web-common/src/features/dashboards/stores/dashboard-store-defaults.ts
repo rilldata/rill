@@ -204,6 +204,7 @@ export function getDefaultMetricsExplorerEntity(
       rowPage: 1,
       enableComparison: true,
       columnPage: 1,
+      activeCell: null,
     },
     contextColumnWidths: { ...contextColWidthDefaults },
   };

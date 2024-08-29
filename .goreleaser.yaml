@@ -64,6 +64,25 @@ builds:
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
 
+  - id: linux_aarch64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - linux
+    goarch:
+      - arm64
+    env:
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+      - CGO_CFLAGS=--sysroot=/sysroot/linux/arm64
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/arm64
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/arm64
+      - PKG_CONFIG_PATH=/sysroot/linux/arm64/usr/local/lib/pkgconfig
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
 blobs:
   - provider: gs
     bucket: prod-cdn.rilldata.com
