@@ -63,7 +63,7 @@ type ModelOutputProperties struct {
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
 	if p.EngineFull != "" {
 		if p.Engine != "" || p.OrderBy != "" || p.PartitionBy != "" || p.PrimaryKey != "" || p.SampleBy != "" || p.TTL != "" || p.TableSettings != "" {
-			return fmt.Errorf("`config` property cannot be used with individual properties")
+			return fmt.Errorf("`engine_full ` property cannot be used with individual properties")
 		}
 	}
 	p.Typ = strings.ToUpper(p.Typ)
