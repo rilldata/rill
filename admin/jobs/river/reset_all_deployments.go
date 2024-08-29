@@ -20,7 +20,7 @@ type ResetAllDeploymentsWorker struct {
 }
 
 func (w *ResetAllDeploymentsWorker) Work(ctx context.Context, job *river.Job[ResetAllDeploymentsArgs]) error {
-	return w.resetAllDeployments(ctx)
+	return work(ctx, w.admin.Logger, job.Kind, w.resetAllDeployments)
 }
 
 func (w *ResetAllDeploymentsWorker) resetAllDeployments(ctx context.Context) error {
