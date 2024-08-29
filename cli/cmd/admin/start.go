@@ -44,6 +44,7 @@ import (
 type Config struct {
 	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
 	DatabaseURL            string                 `split_words:"true"`
+	RiverDatabaseURL       string                 `split_words:"true"`
 	RedisURL               string                 `default:"" split_words:"true"`
 	ProvisionerSetJSON     string                 `split_words:"true"`
 	DefaultProvisioner     string                 `split_words:"true"`
@@ -291,7 +292,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer adm.Close()
 
 			// Init river jobs client
-			jobs, err := river.New(cmd.Context(), conf.DatabaseURL, adm)
+			jobs, err := river.New(cmd.Context(), conf.RiverDatabaseURL, adm)
 			if err != nil {
 				logger.Fatal("error creating river jobs client", zap.Error(err))
 			}
