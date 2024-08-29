@@ -112,7 +112,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	if c.config.SettingsOverride != "" {
 		stmt.Query += "\n SETTINGS " + c.config.SettingsOverride
 	} else {
-		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC'"
+		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1"
 		if c.config.EnableCache {
 			stmt.Query += ", use_query_cache = 1"
 		}
@@ -225,7 +225,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		})
 	} else if outputProps.Typ == "DICTIONARY" {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.Config),
+			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.EngineFull),
 			Priority: 100,
 		})
 	}
@@ -234,7 +234,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	if c.config.Cluster != "" {
 		// need to create a local table on the cluster first
-		fmt.Fprintf(&create, "%s %s", safelocalTableName(outputProps.Table), onClusterClause)
+		fmt.Fprintf(&create, "%s %s", safelocalTableName(name), onClusterClause)
 	} else {
 		create.WriteString(safeSQLName(name))
 	}
@@ -249,7 +249,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 			defer cancel()
-			_ = c.Exec(ctx, &drivers.Statement{Query: "DROP VIEW " + v})
+			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW %s %s", v, onClusterClause)})
 		}()
 		// create table with same schema as view
 		fmt.Fprintf(&create, " AS %s ", v)
@@ -273,6 +273,8 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, currentDatabase(), %s", safeSQLName(c.config.Cluster), safelocalTableName(name))
 		if outputProps.DistributedShardingKey != "" {
 			fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
+		} else {
+			fmt.Fprintf(&distributed, ", rand()")
 		}
 		distributed.WriteString(")")
 		if outputProps.DistributedSettings != "" {
@@ -334,7 +336,7 @@ func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
 			return err
 		}
 		// then drop the local table in case of cluster
-		if onCluster {
+		if onCluster && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("DROP TABLE %s %s", safelocalTableName(name), onClusterClause),
 				Priority: 100,
@@ -359,48 +361,75 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 	switch typ {
 	case "VIEW":
-		return c.renameView(ctx, oldName, newName)
+		return c.renameView(ctx, oldName, newName, onClusterClause)
 	case "DICTIONARY":
 		return c.renameTable(ctx, oldName, newName, onClusterClause)
 	case "TABLE":
 		if !onCluster {
 			return c.renameTable(ctx, oldName, newName, onClusterClause)
 		}
-		// rename the local table
-		err := c.renameTable(ctx, localTableName(oldName), localTableName(newName), onClusterClause)
-		if err != nil {
-			return err
-		}
-		// recreate the distributed table
+		// capture the full engine of the old distributed table
+		var engineFull string
 		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("SHOW CREATE TABLE %s", safeSQLName(oldName)),
+			Query:    "SELECT engine_full FROM system.tables WHERE database = currentDatabase() AND name = ?",
+			Args:     []any{oldName},
 			Priority: 100,
 		})
 		if err != nil {
 			return err
 		}
 
-		var sql string
-		if res.Next() {
-			if err := res.Scan(&sql); err != nil {
+		for res.Next() {
+			if err := res.Scan(&engineFull); err != nil {
 				res.Close()
 				return err
 			}
 		}
 		res.Close()
+		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
 
-		// replace the old local table name with new local table name
-		// this makes an assumption that cluster name is different from table names
-		sql = strings.ReplaceAll(sql, localTableName(oldName), safelocalTableName(newName))
-		sql = strings.ReplaceAll(sql, oldName, safeSQLName(newName))
-		err = c.Exec(ctx, &drivers.Statement{
-			Query:    sql,
+		// build the column type clause
+		var columnClause strings.Builder
+		res, err = c.Execute(ctx, &drivers.Statement{
+			Query:    "SELECT name, type FROM system.columns WHERE database = currentDatabase() AND table = ?",
+			Args:     []any{oldName},
 			Priority: 100,
 		})
 		if err != nil {
 			return err
 		}
-		// drop the old distributed table
+
+		var col, typ string
+		for res.Next() {
+			if err := res.Scan(&col, &typ); err != nil {
+				res.Close()
+				return err
+			}
+			if columnClause.Len() > 0 {
+				columnClause.WriteString(", ")
+			}
+			columnClause.WriteString(safeSQLName(col))
+			columnClause.WriteString(" ")
+			columnClause.WriteString(typ)
+		}
+		res.Close()
+
+		// rename the local table
+		err = c.renameTable(ctx, localTableName(oldName), localTableName(newName), onClusterClause)
+		if err != nil {
+			return err
+		}
+
+		// recreate the distributed table
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s (%s) Engine = %s", safeSQLName(newName), onClusterClause, columnClause.String(), engineFull),
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+
+		// drop the old table
 		return c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(oldName), onClusterClause),
 			Priority: 100,
@@ -410,10 +439,11 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	}
 }
 
-func (c *connection) renameView(ctx context.Context, oldName, newName string) error {
-	// clickhouse does not support renaming views so we capture the OLD view DDL and use it to create new view
+func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster string) error {
+	// clickhouse does not support renaming views so we capture the OLD view's select statement and use it to create new view
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(oldName)),
+		Query:    "SELECT as_select FROM system.tables WHERE database = currentDatabase() AND name = ?",
+		Args:     []any{oldName},
 		Priority: 100,
 	})
 	if err != nil {
@@ -430,9 +460,8 @@ func (c *connection) renameView(ctx context.Context, oldName, newName string) er
 	res.Close()
 
 	// create new view
-	sql = strings.Replace(sql, oldName, safeSQLName(newName), 1)
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:    sql,
+		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(newName), onCluster, sql),
 		Priority: 100,
 	})
 	if err != nil {
@@ -440,8 +469,8 @@ func (c *connection) renameView(ctx context.Context, oldName, newName string) er
 	}
 
 	// drop old view
-	err = c.Exec(context.Background(), &drivers.Statement{
-		Query:    fmt.Sprintf("DROP VIEW %s", safeSQLName(oldName)),
+	err = c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("DROP VIEW %s %s", safeSQLName(oldName), onCluster),
 		Priority: 100,
 	})
 	if err != nil {
