@@ -100,3 +100,4 @@ Let's navigate to our project, my-rill-tutorial, to see some differences between
 For a detailed description of the differences between `admin` and `viewer`, please refer to our <a href='https://docs.rilldata.com/manage/roles-permissions' target=' blank'> Roles and permissions documentation. </a>
 
 Note that after you add the user to the organization, you can now see the user when running `rill user list`.
+

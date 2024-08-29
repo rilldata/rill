@@ -106,7 +106,6 @@ When listing users in the CLI, you need to ensure that you are listing at the _*
 Next let's review user groups.
 
 
-
 import DocsRating from '@site/src/components/DocsRating';
 
 ---

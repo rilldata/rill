@@ -30,7 +30,7 @@ const sidebars = {
           {
             type: 'category',
             label: 'Rill Developer to Rill Cloud in 5 steps!',
-            description: 'Rill 100 series: Rill Developer to  to Rill Cloud',
+            description: 'Rill Developer to  to Rill Cloud',
 
             items: [
                 'tutorials/rill_learn_100/launch',
@@ -47,7 +47,7 @@ const sidebars = {
           {
             type: 'category',
             label: "Rill's Advanced Features",
-            description: 'Rill 300 series: Advanced use cases and beyond',
+            description: 'Advanced Features and beyond',
             link: {
               type: 'doc',
               id: 'tutorials/rill_learn_300/overview',
@@ -102,7 +102,7 @@ const sidebars = {
           {
             type: 'category',
             label: 'Administration Topics',
-            description: 'Rill Admin series: Rill Cloud Administration',
+            description: 'Rill Administration Topics',
             link: {
               type: 'doc',
               id: 'tutorials/administration/index',
@@ -157,7 +157,7 @@ const sidebars = {
           {
             type: 'category',
             label: 'Other Concepts',
-            description: 'For Guides not quite Rill related but needs consideration',
+            description: 'For guides that are not quite Rill related but needs consideration',
             items: [
                 'tutorials/avg_avg',    
 
