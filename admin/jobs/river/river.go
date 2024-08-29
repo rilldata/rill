@@ -120,7 +120,10 @@ func (c *Client) ResetAllDeployments(ctx context.Context) (*jobs.InsertResult, e
 	if err != nil {
 		return nil, err
 	}
-	return &jobs.InsertResult{ID: res.Job.ID}, nil
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
 }
 
 type ErrorHandler struct {

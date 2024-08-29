@@ -14,5 +14,6 @@ type Client interface {
 }
 
 type InsertResult struct {
-	ID int64
+	ID        int64
+	Duplicate bool
 }
