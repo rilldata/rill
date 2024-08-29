@@ -12,9 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type ValidateDeploymentsArgs struct {
-	Msg string
-}
+type ValidateDeploymentsArgs struct{}
 
 func (ValidateDeploymentsArgs) Kind() string { return "validate_deployments" }
 
