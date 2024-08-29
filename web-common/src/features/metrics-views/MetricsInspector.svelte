@@ -10,6 +10,10 @@
   const queryClient = useQueryClient();
 
   export let filePath: string;
+  export let connector: string;
+  export let database: string;
+  export let databaseSchema: string;
+  export let table: string;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: ({ remoteContent } = fileArtifact);
@@ -21,12 +25,6 @@
     data: resourceData,
   } = $resource);
   $: resourceReconcileError = resourceData?.meta?.reconcileError;
-
-  $: connector = $resource.data?.metricsView?.state?.validSpec?.connector ?? "";
-  $: database = $resource.data?.metricsView?.state?.validSpec?.database ?? "";
-  $: databaseSchema =
-    $resource.data?.metricsView?.state?.validSpec?.databaseSchema ?? "";
-  $: table = $resource.data?.metricsView?.state?.validSpec?.table ?? "";
 
   $: tableQuery = createConnectorServiceOLAPGetTable(
     {

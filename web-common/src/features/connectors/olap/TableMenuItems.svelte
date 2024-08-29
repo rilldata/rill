@@ -16,7 +16,7 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "./createModel";
-  import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
+  import { useIsModelingSupportedForOlapDriver } from "./selectors";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -26,8 +26,10 @@
   export let databaseSchema: string = "";
   export let table: string;
 
-  $: isModelingSupportedForCurrentOlapDriver =
-    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
+  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
+    $runtime.instanceId,
+    connector,
+  );
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     connector,
@@ -63,7 +65,7 @@
   }
 </script>
 
-{#if $isModelingSupportedForCurrentOlapDriver}
+{#if $isModelingSupportedForOlapDriver}
   <NavigationMenuItem on:click={handleCreateModel}>
     <Model slot="icon" />
     Create new model
