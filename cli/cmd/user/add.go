@@ -17,7 +17,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	addCmd := &cobra.Command{
 		Use:   "add",
-		Short: "Add",
+		Short: "Add user to a project, organization or group",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if group == "" {
 				err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
