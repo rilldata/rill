@@ -2578,7 +2578,10 @@ func TestMetricsViewsAggregation_comparison_multiple_time_dim_cross_max_grain_bo
 	require.Equal(t, 2, len(rows))
 
 	i = 0
-	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+	require.Equal(t, "Google,news.google.com,2022-01-01T23:00:00Z,2022-01-01T00:00:00Z,9.00,3.00", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_day", "measure_0", "measure_0__p"))
+	i++
+	require.Equal(t, "Google,news.google.com,2022-01-02T00:00:00Z,2022-01-02T00:00:00Z,4.00,16.00", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_day", "measure_0", "measure_0__p"))
+
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_no_time_dim(t *testing.T) {
