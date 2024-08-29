@@ -5,7 +5,7 @@
     createAdminServiceCreateProjectWhitelistedDomain,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import { shouldWaitForDeployment } from "@rilldata/web-admin/features/projects/status/waitForDeployment";
+  import { WaitForDeployment } from "@rilldata/web-admin/features/projects/status/waitForDeployment";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-invite/CopyInviteLinkButton.svelte";
   import {
     getUserDomain,
@@ -17,6 +17,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { AxiosError } from "axios";
+  import { onMount } from "svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -47,11 +48,14 @@
         });
       }
     }
-    shouldWaitForDeployment.set(true);
     return goto(`/${organization}/${project}`);
   }
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
+
+  onMount(() => {
+    WaitForDeployment.create(organization, project);
+  });
 </script>
 
 <div class="flex flex-col gap-5 w-[600px] my-16 sm:my-32 md:my-64 mx-auto">
