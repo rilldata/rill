@@ -13,14 +13,46 @@
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { errorStore } from "../../../../features/errors/error-store";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
+  import { parseFilterString } from "@rilldata/web-common/lib/url/parsing";
 
-  $: instanceId = $runtime?.instanceId;
+  $: ({ instanceId } = $runtime);
 
   $: ({
     organization: orgName,
     project: projectName,
     dashboard: dashboardName,
   } = $page.params);
+
+  $: ({ searchParams } = $page.url);
+
+  $: filter = searchParams.get("filter") ?? "";
+
+  $: dimensionNames =
+    $dashboard?.data?.metricsView?.state?.validSpec?.dimensions.map(
+      (d) => d.name,
+    ) ?? [];
+
+  $: ({ initDimensions, errorMessage } = parseFilterString(
+    filter,
+    dimensionNames,
+  ));
+
+  $: if (errorMessage) {
+    asyncWait(300)
+      .then(() => {
+        eventBus.emit("notification", {
+          message: errorMessage,
+          detail: `Filter: ${filter ?? ""}`,
+          type: "error",
+          options: { persisted: true },
+        });
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  }
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -68,7 +100,7 @@
           <DashboardBookmarksStateProvider {metricViewName}>
             <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard {metricViewName} />
+                <Dashboard {metricViewName} {initDimensions} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardBookmarksStateProvider>
@@ -76,7 +108,7 @@
           <DashboardStateProvider {metricViewName}>
             <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard {metricViewName} />
+                <Dashboard {metricViewName} {initDimensions} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardStateProvider>

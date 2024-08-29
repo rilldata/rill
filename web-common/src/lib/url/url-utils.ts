@@ -7,8 +7,9 @@ export function getUrlForPath(path: string, retainParams = ["features"]): URL {
   const newUrl = new URL(`${url.protocol}//${url.host}${path}`);
 
   for (const param of retainParams) {
-    if (!url.searchParams.has(param)) continue;
-    newUrl.searchParams.set(param, url.searchParams.get(param));
+    const value = url.searchParams.get(param);
+    if (!value) continue;
+    newUrl.searchParams.set(param, value);
   }
   return newUrl;
 }

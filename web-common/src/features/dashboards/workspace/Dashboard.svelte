@@ -24,7 +24,7 @@
   export let initDimensions: Map<
     string,
     { values: string[]; exclude: boolean }
-  >;
+  > = new Map();
 
   const { cloudDataViewer, readOnly } = featureFlags;
 

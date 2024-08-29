@@ -1,7 +1,7 @@
 import {
   getFullUrlForPath,
   getUrlForPath,
-} from "@rilldata/web-common/lib/url-utils";
+} from "@rilldata/web-common/lib/url/url-utils";
 import type { Page } from "@sveltejs/kit";
 import { Readable, writable } from "svelte/store";
 import { beforeAll, describe, it, SpyInstance, vi, expect } from "vitest";

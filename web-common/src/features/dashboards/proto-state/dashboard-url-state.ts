@@ -8,7 +8,7 @@ import {
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
+import { getUrlForPath } from "@rilldata/web-common/lib/url/url-utils";
 import type { V1StructType } from "@rilldata/web-common/runtime-client";
 import { Readable, derived, get } from "svelte/store";
 
