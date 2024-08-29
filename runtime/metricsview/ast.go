@@ -3,7 +3,6 @@ package metricsview
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -20,11 +19,13 @@ type AST struct {
 	CTEs []*SelectNode
 
 	// Cached internal state for building the AST
-	underlyingTable *string
-	underlyingWhere *ExprNode
-	dimFields       []FieldNode
-	unnests         []string
-	nextIdentifier  int
+	underlyingTable     *string
+	underlyingWhere     *ExprNode
+	dimFields           []FieldNode
+	comparisonDimFields []FieldNode
+
+	unnests        []string
+	nextIdentifier int
 
 	// Contextual info for building the AST
 	metricsView *runtimev1.MetricsViewSpec
@@ -137,6 +138,32 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	// Build dimensions to apply against the underlying SELECT.
 	// We cache these in the AST type because when resolving expressions and adding new JOINs, we need the ability to reference these.
 	ast.dimFields = make([]FieldNode, 0, len(ast.query.Dimensions))
+	ast.comparisonDimFields = make([]FieldNode, 0, len(ast.query.Dimensions))
+
+	// If the comparison time dimension is in DimFields, we need to add the time interval between the base and comparison time ranges to it.
+	// This makes the time dimension values comparable across the base and comparison select, so they can be joined on.
+	// Note that estimating the time interval between the two time ranges is best effort and may not always be possible.
+	// Also note that the comparison time range currently always targets a.metricsView.TimeDimension, so we only apply the correction for that dimension.
+	minGrain := TimeGrainUnspecified
+	for _, qd := range ast.query.Dimensions {
+		if qd.Compute != nil && qd.Compute.TimeFloor != nil {
+			tg := qd.Compute.TimeFloor.Grain
+			if qd.Compute.TimeFloor.Dimension == ast.metricsView.TimeDimension {
+				if tg == TimeGrainUnspecified {
+					continue
+				}
+				if minGrain == TimeGrainUnspecified {
+					minGrain = tg
+					continue
+				}
+				if tg.ToTimeutil() < minGrain.ToTimeutil() {
+					minGrain = tg
+				}
+
+			}
+		}
+	}
+
 	for _, qd := range ast.query.Dimensions {
 		dim, err := ast.resolveDimension(qd, true)
 		if err != nil {
@@ -147,10 +174,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			Name:  dim.Name,
 			Label: dim.Label,
 			Expr:  ast.dialect.MetricsViewDimensionExpression(dim),
-		}
-
-		if qd.Compute != nil && qd.Compute.TimeFloor != nil {
-			f.TimeGrain = qd.Compute.TimeFloor.Grain
 		}
 
 		if dim.Unnest {
@@ -169,7 +192,19 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			}
 		}
 
+		cf := f
+		if qd.Compute != nil && qd.Compute.TimeFloor != nil {
+			f.TimeGrain = qd.Compute.TimeFloor.Grain
+			if qd.Compute.TimeFloor.Dimension == ast.metricsView.TimeDimension {
+				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, f.TimeGrain, minGrain)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
 		ast.dimFields = append(ast.dimFields, f)
+		ast.comparisonDimFields = append(ast.comparisonDimFields, cf)
 	}
 
 	// Build underlying SELECT
@@ -571,11 +606,15 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 func (a *AST) buildBaseSelect(alias string, tr *TimeRange) (*SelectNode, error) {
 	n := &SelectNode{
 		Alias:     alias,
-		DimFields: slices.Clone(a.dimFields),
+		DimFields: a.dimFields,
 		Unnests:   a.unnests,
 		Group:     true,
 		FromTable: a.underlyingTable,
 		Where:     a.underlyingWhere,
+	}
+
+	if alias == "comparison" {
+		n.DimFields = a.comparisonDimFields
 	}
 
 	a.addTimeRange(n, tr)
@@ -813,28 +852,6 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 		csn, err := a.buildBaseSelect("comparison", a.query.ComparisonTimeRange)
 		if err != nil {
 			return err
-		}
-
-		// If the comparison time dimension is in DimFields, we need to add the time interval between the base and comparison time ranges to it.
-		// This makes the time dimension values comparable across the base and comparison select, so they can be joined on.
-		// Note that estimating the time interval between the two time ranges is best effort and may not always be possible.
-		// Also note that the comparison time range currently always targets a.metricsView.TimeDimension, so we only apply the correction for that dimension.
-		minGrain := smallestTimeGrain(csn.DimFields, a.metricsView.TimeDimension)
-		for i, f := range csn.DimFields {
-			if f.Name != a.metricsView.TimeDimension {
-				continue
-			}
-			if f.TimeGrain == TimeGrainUnspecified { // If for some reason TimeFloor was not used with the time dimension
-				continue
-			}
-
-			expr, err := a.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, f.TimeGrain, minGrain)
-			if err != nil {
-				return fmt.Errorf("failed to compare by dimension %q: %w", f.Name, err)
-			}
-
-			f.Expr = expr
-			csn.DimFields[i] = f
 		}
 
 		n.JoinComparisonSelect = csn
@@ -1155,8 +1172,24 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g
 		}
 		dateDiff = res
 	} else {
-		// g > mg -> zero diff
-		dateDiff = "0"
+		// larger time grain values can change as well
+		res, err := a.dialect.DateDiff(mg.ToProto(), start1, start2)
+		if err != nil {
+			return "", err
+		}
+		dateDiff = res
+
+		// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
+		tc := a.dialect.EscapeIdentifier(a.metricsView.TimeDimension)
+		expr := fmt.Sprintf("(%s - INTERVAL (%s) %s)", tc, dateDiff, a.dialect.ConvertToDateTruncSpecifier(mg.ToProto()))
+		dim := &runtimev1.MetricsViewSpec_DimensionV2{
+			Expression: expr,
+		}
+		expr, err = a.dialect.DateTruncExpr(dim, g.ToProto(), a.query.TimeZone, int(a.metricsView.FirstDayOfWeek), int(a.metricsView.FirstMonthOfYear))
+		if err != nil {
+			return "", fmt.Errorf(`failed to compute time floor: %w`, err)
+		}
+		return expr, nil
 	}
 
 	return fmt.Sprintf("(%s - INTERVAL (%s) %s)", expr, dateDiff, a.dialect.ConvertToDateTruncSpecifier(g.ToProto())), nil
