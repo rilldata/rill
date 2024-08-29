@@ -2546,7 +2546,7 @@ func TestMetricsViewsAggregation_comparison_multiple_time_dim_cross_max_grain_bo
 
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 23, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 2, 2, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 1, 0, 0, 0, time.UTC)),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 2, 1, 0, 0, 0, time.UTC)),
