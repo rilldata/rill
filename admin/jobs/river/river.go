@@ -32,7 +32,7 @@ type RiverClient struct {
 	riverClient *river.Client[pgx.Tx]
 }
 
-func NewRiverJobsClient(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, error) {
+func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, error) {
 	dbPool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return nil, err

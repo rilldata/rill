@@ -291,7 +291,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer adm.Close()
 
 			// Init river jobs client
-			jobs, err := river.NewRiverJobsClient(cmd.Context(), conf.DatabaseURL, adm)
+			jobs, err := river.New(cmd.Context(), conf.DatabaseURL, adm)
 			if err != nil {
 				logger.Fatal("error creating river jobs client", zap.Error(err))
 			}
