@@ -2,6 +2,7 @@ package river
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -13,11 +14,12 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
+	"github.com/riverqueue/river/rivertype"
 	"github.com/robfig/cron/v3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -76,6 +78,9 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		},
 		Workers:      workers,
 		PeriodicJobs: periodicJobs,
+		JobTimeout:   time.Hour,
+		MaxAttempts:  3,
+		ErrorHandler: &ErrorHandler{logger: adm.Logger},
 	})
 	if err != nil {
 		return nil, err
@@ -101,13 +106,40 @@ func (c *Client) Work(ctx context.Context) error {
 	return nil
 }
 
-// NOTE: Add new job trigger functions here
-func (c *Client) ResetAllDeployments(ctx context.Context) error {
-	_, err := c.riverClient.Insert(ctx, ResetAllDeploymentsArgs{}, nil)
+func (c *Client) CancelJob(ctx context.Context, jobID int64) error {
+	_, err := c.riverClient.JobCancel(ctx, jobID)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// NOTE: Add new job trigger functions here
+func (c *Client) ResetAllDeployments(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, ResetAllDeploymentsArgs{}, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{ID: res.Job.ID}, nil
+}
+
+type ErrorHandler struct {
+	logger *zap.Logger
+}
+
+func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, err error) *river.ErrorHandlerResult {
+	var args string
+	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
+	h.logger.Error("Job errored", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.String("kind", job.Kind), zap.String("args", args), zap.Error(err))
+	return nil
+}
+
+func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, panicVal any, trace string) *river.ErrorHandlerResult {
+	var args string
+	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
+	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
+	// Set the job to be immediately cancelled
+	return &river.ErrorHandlerResult{SetCancelled: true}
 }
 
 func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) *river.PeriodicJob {
@@ -129,7 +161,7 @@ func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) *ri
 
 // Observability work wrapper for the job workers
 func work(ctx context.Context, logger *zap.Logger, name string, fn func(context.Context) error) error {
-	ctx, span := tracer.Start(ctx, fmt.Sprintf("runJob %s", name), trace.WithAttributes(attribute.String("name", name)))
+	ctx, span := tracer.Start(ctx, fmt.Sprintf("runJob %s", name), oteltrace.WithAttributes(attribute.String("name", name)))
 	defer span.End()
 
 	start := time.Now()

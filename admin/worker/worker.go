@@ -106,7 +106,8 @@ func (w *Worker) RunJob(ctx context.Context, name string) error {
 	case "check_provisioner_capacity":
 		return w.runJob(ctx, name, w.checkProvisionerCapacity)
 	case "reset_all_deployments":
-		return w.jobs.ResetAllDeployments(ctx)
+		_, err := w.jobs.ResetAllDeployments(ctx)
+		return err
 	// NOTE: Add new ad-hoc jobs here
 	default:
 		return fmt.Errorf("unknown job: %s", name)
