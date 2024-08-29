@@ -50,7 +50,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		VersionCommit:      "",
 	}
 
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop(), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -19,13 +21,13 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new database connection.
-func Open(driver, dsn string) (DB, error) {
+func Open(driver, dsn string, encryptionKeyring []*EncryptionKey) (DB, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)
 	}
 
-	db, err := d.Open(dsn)
+	db, err := d.Open(dsn, encryptionKeyring)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +37,7 @@ func Open(driver, dsn string) (DB, error) {
 
 // Driver is the interface for DB drivers.
 type Driver interface {
-	Open(dsn string) (DB, error)
+	Open(dsn string, encryptionKeyring []*EncryptionKey) (DB, error)
 }
 
 // DB is the interface for a database connection.
@@ -339,21 +341,22 @@ type Project struct {
 	Provisioner     string
 	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
-	ArchiveAssetID       *string           `db:"archive_asset_id"`
-	GithubURL            *string           `db:"github_url"`
-	GithubInstallationID *int64            `db:"github_installation_id"`
-	Subpath              string            `db:"subpath"`
-	ProdVersion          string            `db:"prod_version"`
-	ProdBranch           string            `db:"prod_branch"`
-	ProdVariables        map[string]string `db:"prod_variables"`
-	ProdOLAPDriver       string            `db:"prod_olap_driver"`
-	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
-	ProdSlots            int               `db:"prod_slots"`
-	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string           `db:"prod_deployment_id"`
-	Annotations          map[string]string `db:"annotations"`
-	CreatedOn            time.Time         `db:"created_on"`
-	UpdatedOn            time.Time         `db:"updated_on"`
+	ArchiveAssetID               *string           `db:"archive_asset_id"`
+	GithubURL                    *string           `db:"github_url"`
+	GithubInstallationID         *int64            `db:"github_installation_id"`
+	Subpath                      string            `db:"subpath"`
+	ProdVersion                  string            `db:"prod_version"`
+	ProdBranch                   string            `db:"prod_branch"`
+	ProdVariables                map[string]string `db:"prod_variables"`
+	ProdOLAPDriver               string            `db:"prod_olap_driver"`
+	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
+	ProdSlots                    int               `db:"prod_slots"`
+	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID             *string           `db:"prod_deployment_id"`
+	Annotations                  map[string]string `db:"annotations"`
+	ProdVariablesEncryptionKeyID *string           `db:"prod_variables_encryption_key_id"`
+	CreatedOn                    time.Time         `db:"created_on"`
+	UpdatedOn                    time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -917,4 +920,34 @@ type Asset struct {
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+type EncryptionKey struct {
+	ID     string `json:"key_id"`
+	Secret []byte `json:"key"`
+}
+
+// UnmarshalJSON custom method for EncryptionKey
+func (e *EncryptionKey) UnmarshalJSON(data []byte) error {
+	// Create a temporary structure to unmarshal into
+	type Alias EncryptionKey
+	aux := &struct {
+		Key string `json:"key"`
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Decode the base64 encoded key into the Secret field
+	decodedSecret, err := base64.StdEncoding.DecodeString(aux.Key)
+	if err != nil {
+		return err
+	}
+
+	e.Secret = decodedSecret
+	return nil
 }

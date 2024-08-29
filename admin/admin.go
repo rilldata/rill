@@ -49,9 +49,9 @@ type Service struct {
 	PaymentProvider  payment.Provider
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider, databaseEncryptionKeyring []*database.EncryptionKey) (*Service, error) {
 	// Init db
-	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
+	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN, databaseEncryptionKeyring)
 	if err != nil {
 		logger.Fatal("error connecting to database", zap.Error(err))
 	}

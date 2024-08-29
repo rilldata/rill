@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"crypto/rand"
 	"testing"
 	"time"
 
@@ -18,7 +19,15 @@ func TestPostgres(t *testing.T) {
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
-	db, err := database.Open("postgres", pg.DatabaseURL)
+	secret := make([]byte, 32) // 32 bytes for AES-256
+	_, err := rand.Read(secret)
+	require.NoError(t, err)
+
+	encKeyRing := []*database.EncryptionKey{
+		{ID: "test", Secret: secret},
+	}
+
+	db, err := database.Open("postgres", pg.DatabaseURL, encKeyRing)
 	require.NoError(t, err)
 	require.NotNil(t, db)
 

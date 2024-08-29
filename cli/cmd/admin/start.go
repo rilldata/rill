@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -88,6 +90,8 @@ type Config struct {
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
+	// json encoded array of database.EncryptionKey
+	DatabaseEncryptionKeyring string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -269,6 +273,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				p = payment.NewNoop()
 			}
 
+			// Load database encryption keyring
+			databaseEncryptionKeyring, err := loadDatabaseEncryptionKeyring(conf.DatabaseEncryptionKeyring)
+			if err != nil {
+				logger.Fatal("error loading database encryption keyring", zap.Error(err))
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:     conf.DatabaseDriver,
@@ -283,7 +293,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectName: metricsProjectName,
 				AutoscalerCron:     conf.AutoscalerCron,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p, databaseEncryptionKeyring)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -376,4 +386,19 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 	return startCmd
+}
+
+func loadDatabaseEncryptionKeyring(keyRingConfig string) ([]*database.EncryptionKey, error) {
+	if keyRingConfig == "" {
+		return nil, nil
+	}
+
+	var keyRing []*database.EncryptionKey
+
+	err := json.Unmarshal([]byte(keyRingConfig), &keyRing)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse encryption keyring: %w", err)
+	}
+
+	return keyRing, nil
 }

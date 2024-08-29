@@ -64,6 +64,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		nil,
 		billing.NewNoop(),
 		payment.NewNoop(),
+		nil,
 	)
 	require.NoError(t, err)
 

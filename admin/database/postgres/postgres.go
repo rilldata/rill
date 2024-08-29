@@ -2,9 +2,14 @@ package postgres
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -25,7 +30,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string) (database.DB, error) {
+func (d driver) Open(dsn string, encryptionKeyring []*database.EncryptionKey) (database.DB, error) {
 	db, err := otelsql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
@@ -37,11 +42,12 @@ func (d driver) Open(dsn string) (database.DB, error) {
 	}
 
 	dbx := sqlx.NewDb(db, "pgx")
-	return &connection{db: dbx}, nil
+	return &connection{db: dbx, encKeyring: encryptionKeyring}, nil
 }
 
 type connection struct {
-	db *sqlx.DB
+	db         *sqlx.DB
+	encKeyring []*database.EncryptionKey
 }
 
 func (c *connection) Close() error {
@@ -218,7 +224,7 @@ func (c *connection) FindProjects(ctx context.Context, afterName string, limit i
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return projectsFromDTOs(res, c.encKeyring)
 }
 
 func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*database.Project, error) {
@@ -227,7 +233,7 @@ func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterNa
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return projectsFromDTOs(res, c.encKeyring)
 }
 
 func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
@@ -274,7 +280,7 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return projectsFromDTOs(res, c.encKeyring)
 }
 
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -287,7 +293,7 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return projectsFromDTOs(res, c.encKeyring)
 }
 
 func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -303,7 +309,7 @@ func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userI
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return projectsFromDTOs(res, c.encKeyring)
 }
 
 func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -316,7 +322,7 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return projectsFromDTOs(res, c.encKeyring)
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
@@ -325,7 +331,7 @@ func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL stri
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return projectsFromDTOs(res, c.encKeyring)
 }
 
 func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
@@ -334,7 +340,7 @@ func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id 
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return projectsFromDTOs(res, c.encKeyring)
 }
 
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {
@@ -343,7 +349,7 @@ func (c *connection) FindProject(ctx context.Context, id string) (*database.Proj
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return res.AsModel(c.encKeyring)
 }
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
@@ -352,7 +358,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return res.AsModel(c.encKeyring)
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -360,16 +366,34 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		return nil, err
 	}
 
+	// encrypt the prod variables and store the key id used for encryption
+	if len(c.encKeyring) == 0 {
+		return nil, errors.New("no encryption key found")
+	}
+
+	var encKeyID *string
+	// copy the prod variables to avoid modifying the original map
+	vars := make(map[string]string, len(opts.ProdVariables))
+	for k, v := range opts.ProdVariables {
+		// used the first key in the keyring for encryption
+		encKeyID = &c.encKeyring[0].ID
+		encrypted, err := encrypt([]byte(v), c.encKeyring[0].Secret)
+		if err != nil {
+			return nil, err
+		}
+		vars[k] = encrypted
+	}
+
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version, prod_variables_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, vars, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion, encKeyID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return res.AsModel(c.encKeyring)
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
@@ -385,16 +409,33 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.Annotations = make(map[string]string, 0)
 	}
 
+	// encrypt the prod variables and store the key id used for encryption
+	if len(c.encKeyring) == 0 {
+		return nil, errors.New("no encryption key found")
+	}
+	var encKeyID *string
+	// copy the prod variables to avoid modifying the original map
+	vars := make(map[string]string, len(opts.ProdVariables))
+	for k, v := range opts.ProdVariables {
+		// used the first key in the keyring for encryption
+		encKeyID = &c.encKeyring[0].ID
+		encrypted, err := encrypt([]byte(v), c.encKeyring[0].Secret)
+		if err != nil {
+			return nil, err
+		}
+		vars[k] = encrypted
+	}
+
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, updated_on=now()
-		WHERE id=$16 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, prod_variables_encryption_key_id=$16, updated_on=now()
+		WHERE id=$17 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, vars, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, encKeyID, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return res.AsModel(c.encKeyring)
 }
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -1915,10 +1956,31 @@ type projectDTO struct {
 	Annotations   pgtype.JSON `db:"annotations"`
 }
 
-func (p *projectDTO) AsModel() (*database.Project, error) {
+func (p *projectDTO) AsModel(encKeyRing []*database.EncryptionKey) (*database.Project, error) {
 	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
 	if err != nil {
 		return nil, err
+	}
+	// decrypt the prod variables if they are encrypted
+	if p.Project.ProdVariablesEncryptionKeyID != nil {
+		var encKey *database.EncryptionKey
+		for _, key := range encKeyRing {
+			if key.ID == *p.Project.ProdVariablesEncryptionKeyID {
+				encKey = key
+				break
+			}
+		}
+		if encKey == nil {
+			return nil, fmt.Errorf("encryption key id %s not found for project %s", *p.Project.ProdVariablesEncryptionKeyID, p.Project.ID)
+		}
+
+		for k, v := range p.Project.ProdVariables {
+			decrypted, err := decrypt(v, encKey.Secret)
+			if err != nil {
+				return nil, err
+			}
+			p.Project.ProdVariables[k] = string(decrypted)
+		}
 	}
 
 	err = p.Annotations.AssignTo(&p.Project.Annotations)
@@ -1929,11 +1991,11 @@ func (p *projectDTO) AsModel() (*database.Project, error) {
 	return p.Project, nil
 }
 
-func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
+func projectsFromDTOs(dtos []*projectDTO, encKeyRing []*database.EncryptionKey) ([]*database.Project, error) {
 	res := make([]*database.Project, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsModel()
+		res[i], err = dto.AsModel(encKeyRing)
 		if err != nil {
 			return nil, err
 		}
@@ -2105,4 +2167,50 @@ func (e *wrappedError) Error() string {
 
 func (e *wrappedError) Unwrap() error {
 	return e.err
+}
+
+func encrypt(plaintext, key []byte) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+
+	// nonce is prepended to the ciphertext, so it can be used for decryption
+	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+
+func decrypt(ciphertextBase64 string, key []byte) ([]byte, error) {
+	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextBase64)
+	if err != nil {
+		return nil, err
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceSize := aesGCM.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return nil, errors.New("ciphertext too short")
+	}
+
+	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+	return aesGCM.Open(nil, nonce, ciphertext, nil)
 }
