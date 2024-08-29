@@ -30,14 +30,14 @@ type ModelOutputProperties struct {
 	// It is also possible to set indexes with this property.
 	// Example : (id UInt32, username varchar, email varchar, created_at datetime, INDEX idx1 username TYPE set(100) GRANULARITY 3)
 	Columns string `mapstructure:"columns"`
-	// Config can be used to set the table parameters like engine, partition key in SQL format without setting individual properties.
+	// EngineFull can be used to set the table parameters like engine, partition key in SQL format without setting individual properties.
 	// It also allows creating dictionaries using a source.
 	// Example:
 	//  ENGINE = MergeTree
 	//	PARTITION BY toYYYYMM(__time)
 	//	ORDER BY __time
 	//	TTL d + INTERVAL 1 MONTH DELETE
-	Config string `mapstructure:"config"`
+	EngineFull string `mapstructure:"engine_full"`
 	// Engine sets the table engine. Default: MergeTree
 	Engine string `mapstructure:"engine"`
 	// OrderBy sets the order by clause. Default: tuple() for MergeTree and not set for other engines
@@ -61,7 +61,7 @@ type ModelOutputProperties struct {
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
-	if p.Config != "" {
+	if p.EngineFull != "" {
 		if p.Engine != "" || p.OrderBy != "" || p.PartitionBy != "" || p.PrimaryKey != "" || p.SampleBy != "" || p.TTL != "" || p.TableSettings != "" {
 			return fmt.Errorf("`config` property cannot be used with individual properties")
 		}
@@ -104,8 +104,8 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 }
 
 func (p *ModelOutputProperties) tblConfig() string {
-	if p.Config != "" {
-		return p.Config
+	if p.EngineFull != "" {
+		return p.EngineFull
 	}
 	var sb strings.Builder
 	// engine with default

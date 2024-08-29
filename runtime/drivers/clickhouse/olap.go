@@ -225,7 +225,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		})
 	} else if outputProps.Typ == "DICTIONARY" {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.Config),
+			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.EngineFull),
 			Priority: 100,
 		})
 	}
