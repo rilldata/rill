@@ -6,8 +6,11 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
+  RpcStatus,
   V1Expression,
+  V1GetResourceResponse,
   V1MetricsViewSpec,
+  V1Resource,
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
   type V1MetricsViewTimeRangeResponse,
@@ -17,9 +20,23 @@ import type {
   CreateQueryResult,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
+import { ErrorType } from "../../runtime-client/http-client";
 
-export function useDashboard(instanceId: string, metricViewName: string) {
-  return useResource(instanceId, metricViewName, ResourceKind.MetricsView);
+export function useDashboard(
+  instanceId: string,
+  metricViewName: string,
+  queryOptions?: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    V1Resource
+  >,
+) {
+  return useResource(
+    instanceId,
+    metricViewName,
+    ResourceKind.MetricsView,
+    queryOptions,
+  );
 }
 
 export function useValidDashboards(instanceId: string) {
@@ -55,15 +72,12 @@ export const useMetricsView = <T = V1MetricsViewSpec>(
   metricViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
 ) => {
-  return useResource<T>(
-    instanceId,
-    metricViewName,
-    ResourceKind.MetricsView,
-    (data) =>
+  return useResource<T>(instanceId, metricViewName, ResourceKind.MetricsView, {
+    select: (data) =>
       selector
-        ? selector(data.metricsView?.state?.validSpec)
-        : (data.metricsView?.state?.validSpec as T),
-  );
+        ? selector(data.resource?.metricsView?.state?.validSpec)
+        : (data.resource?.metricsView?.state?.validSpec as T),
+  });
 };
 
 // TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange

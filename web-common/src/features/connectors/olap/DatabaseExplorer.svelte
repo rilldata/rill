@@ -19,7 +19,7 @@
   {#if isLoading}
     <span class="message">Loading tables...</span>
   {:else if error}
-    <span class="message">Error: {error.response.data.message}</span>
+    <span class="message">Error: {error.response.data?.message}</span>
   {:else if data}
     {#if data.length === 0}
       <span class="message">No tables found</span>

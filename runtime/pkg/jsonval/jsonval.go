@@ -57,6 +57,14 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		}
 		return v, nil
 	case string:
+		if t != nil && t.Code == runtimev1.Type_CODE_DECIMAL {
+			// Evil cast to float until frontend can deal with bigs:
+			v2, ok := new(big.Float).SetString(v)
+			if ok {
+				f, _ := v2.Float64()
+				return f, nil
+			}
+		}
 		return strings.ToValidUTF8(v, "�"), nil
 	case []byte:
 		if t != nil && t.Code == runtimev1.Type_CODE_UUID {

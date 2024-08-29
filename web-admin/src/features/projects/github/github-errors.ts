@@ -14,7 +14,9 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
     };
   }
 
-  if (err.response.data.message.includes("worktree has additional contents")) {
+  if (
+    err.response.data?.message?.includes("worktree has additional contents")
+  ) {
     return {
       message: "",
       notEmpty: true,
@@ -22,7 +24,7 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
   }
 
   return {
-    message: err.response.data.message,
+    message: err.response.data?.message,
     notEmpty: false,
   };
 }
@@ -41,13 +43,13 @@ export function extractGithubDisconnectError(err: AxiosError<RpcStatus>) {
   }
 
   const isLoginError =
-    err.response.data.message.includes("refresh token is empty") ||
-    err.response.data.message.includes(
+    err.response.data?.message?.includes("refresh token is empty") ||
+    err.response.data?.message?.includes(
       "refresh token passed is incorrect or expired.",
     );
 
   return {
-    message: err.response.data.message,
+    message: err.response.data?.message,
     isLoginError,
   };
 }

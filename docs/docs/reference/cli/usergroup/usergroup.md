@@ -23,7 +23,7 @@ Manage user groups
 * [rill usergroup delete](delete.md)	 - Delete a user group
 * [rill usergroup edit](edit.md)	 - Edit a user group
 * [rill usergroup list](list.md)	 - List user groups
-* [rill usergroup remove](remove.md)	 - Remove role of a user group in an organization or prodject
+* [rill usergroup remove](remove.md)	 - Remove role of a user group in an organization or project
 * [rill usergroup rename](rename.md)	 - Rename a user group
 * [rill usergroup set](set.md)	 - Set role to a user group in an organization or project
 * [rill usergroup show](show.md)	 - Show a user group
