@@ -133,23 +133,25 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		dialect:     dialect,
 	}
 
-	// Determine the minimum time grain for a time floor dimension in the query.
+	// Determine the minimum time grain for the time dimension in the query.
 	minGrain := TimeGrainUnspecified
 	for _, qd := range ast.query.Dimensions {
-		if qd.Compute != nil && qd.Compute.TimeFloor != nil {
-			tg := qd.Compute.TimeFloor.Grain
-			if qd.Compute.TimeFloor.Dimension == ast.metricsView.TimeDimension {
-				if tg == TimeGrainUnspecified {
-					continue
-				}
-				if minGrain == TimeGrainUnspecified {
-					minGrain = tg
-					continue
-				}
-				if tg.ToTimeutil() < minGrain.ToTimeutil() {
-					minGrain = tg
-				}
-			}
+		if qd.Compute == nil || qd.Compute.TimeFloor == nil {
+			continue
+		}
+		if !strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.metricsView.TimeDimension) {
+			continue
+		}
+		tg := qd.Compute.TimeFloor.Grain
+		if tg == TimeGrainUnspecified {
+			continue
+		}
+		if minGrain == TimeGrainUnspecified {
+			minGrain = tg
+			continue
+		}
+		if tg.ToTimeutil() < minGrain.ToTimeutil() {
+			minGrain = tg
 		}
 	}
 
