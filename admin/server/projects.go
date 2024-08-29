@@ -224,6 +224,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		if !claims.Superuser(ctx) {
 			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
 		}
+		// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
 		systemPermissions = append(systemPermissions, runtimeauth.ManageInstances)
 	}
 
