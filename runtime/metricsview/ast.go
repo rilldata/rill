@@ -1149,6 +1149,7 @@ func (a *AST) sqlForAnyInGroup(expr string) string {
 }
 
 // sqlForExpression returns the provided time expression adjusted by the fixed time offset between the current query's base and comparison time ranges.
+// The timestamp column (ie a.metricsView.TimeDimension) is expected to be the base timestamp for `expr` (in case of multiple metrics view time dimensions defined).
 func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g, mg TimeGrain) (string, error) {
 	if a.query.TimeRange == nil || a.query.TimeRange.Start.IsZero() || a.query.ComparisonTimeRange == nil || a.query.ComparisonTimeRange.Start.IsZero() {
 		return "", errors.New("must specify an explicit start time for both the base and comparison time range when comparing by a time dimension")
