@@ -37,11 +37,16 @@ export function parseFilterString(filterString: string, dimensions: string[]) {
       const values: string[] = [];
 
       if (valueString.startsWith("(") && valueString.endsWith(")")) {
-        let match: RegExpExecArray | null;
+        const rawValues = valueString.slice(1, -1).split(",");
 
-        while ((match = dimensionValueRegex.exec(valueString)) !== null) {
-          values.push(match[1]);
-        }
+        rawValues.forEach((value) => {
+          if (!value.match(dimensionValueRegex)) {
+            errorMessage = `Value missing quotes: ${value}`;
+            return;
+          } else {
+            values.push(value.slice(1, -1));
+          }
+        });
       } else if (valueString.match(dimensionValueRegex)) {
         values.push(valueString.slice(1, -1));
       } else {
@@ -49,10 +54,10 @@ export function parseFilterString(filterString: string, dimensions: string[]) {
         return;
       }
 
-      if (!dimensions.includes(dimension)) {
+      if (!dimensions.includes(dimension) && !errorMessage) {
         errorMessage = `Invalid dimension: ${dimension}`;
         return;
-      } else if (values.length === 0) {
+      } else if (values.length === 0 && !errorMessage) {
         errorMessage = `Invalid values: ${valueString}`;
         return;
       }
