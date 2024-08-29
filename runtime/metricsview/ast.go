@@ -194,10 +194,12 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		cf := f
 		if qd.Compute != nil && qd.Compute.TimeFloor != nil {
 			f.TimeGrain = qd.Compute.TimeFloor.Grain
-			if qd.Compute.TimeFloor.Dimension == ast.metricsView.TimeDimension {
-				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, f.TimeGrain, minGrain)
-				if err != nil {
-					return nil, err
+			if ast.query.ComparisonTimeRange != nil {
+				if qd.Compute.TimeFloor.Dimension == ast.metricsView.TimeDimension {
+					cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, f.TimeGrain, minGrain)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 		}
