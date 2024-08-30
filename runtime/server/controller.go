@@ -272,17 +272,6 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Backwards compatibility for req.Trigger (deprecated)
-	if req.Trigger != nil {
-		switch trg := req.Trigger.(type) {
-		case *runtimev1.CreateTriggerRequest_PullTriggerSpec:
-			req.Parser = true
-		case *runtimev1.CreateTriggerRequest_RefreshTriggerSpec:
-			req.Resources = trg.RefreshTriggerSpec.Resources
-			req.Models = trg.RefreshTriggerSpec.Models
-		}
-	}
-
 	// Build refresh trigger spec
 	spec := &runtimev1.RefreshTriggerSpec{
 		Resources: req.Resources,
