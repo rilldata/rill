@@ -10,7 +10,6 @@
 
   export let showPanels = true;
   export let isFetching = false;
-  // export let removeActiveCell: () => void;
 
   const { adminServer, exports } = featureFlags;
 
@@ -49,10 +48,7 @@
   // }
 </script>
 
-<div
-  class="flex items-center gap-x-4 select-none pointer-events-none"
-  role="presentation"
->
+<div class="flex items-center gap-x-4 select-none pointer-events-none">
   <Button
     square
     type="secondary"
