@@ -14059,7 +14059,7 @@ type Project struct {
 	ProdOlapDsn      string                 `protobuf:"bytes,11,opt,name=prod_olap_dsn,json=prodOlapDsn,proto3" json:"prod_olap_dsn,omitempty"`
 	ProdSlots        int64                  `protobuf:"varint,12,opt,name=prod_slots,json=prodSlots,proto3" json:"prod_slots,omitempty"`
 	ProdDeploymentId string                 `protobuf:"bytes,13,opt,name=prod_deployment_id,json=prodDeploymentId,proto3" json:"prod_deployment_id,omitempty"`
-	FrontendUrl      string                 `protobuf:"bytes,16,opt,name=frontend_url,json=frontendUrl,proto3" json:"frontend_url,omitempty"`
+	FrontendUrl      string                 `protobuf:"bytes,16,opt,name=frontend_url,json=frontendUrl,proto3" json:"frontend_url,omitempty"` // Note: Does NOT incorporate the parent org's custom domain.
 	ProdTtlSeconds   int64                  `protobuf:"varint,18,opt,name=prod_ttl_seconds,json=prodTtlSeconds,proto3" json:"prod_ttl_seconds,omitempty"`
 	Annotations      map[string]string      `protobuf:"bytes,20,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	ProdVersion      string                 `protobuf:"bytes,21,opt,name=prod_version,json=prodVersion,proto3" json:"prod_version,omitempty"`

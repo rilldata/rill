@@ -4263,6 +4263,7 @@ definitions:
         type: string
       frontendUrl:
         type: string
+        description: 'Note: Does NOT incorporate the parent org''s custom domain.'
       prodTtlSeconds:
         type: string
         format: int64

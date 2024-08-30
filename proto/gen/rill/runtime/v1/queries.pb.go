@@ -1291,11 +1291,11 @@ type MetricsViewAggregationRequest struct {
 	Aliases []*MetricsViewComparisonMeasureAlias `protobuf:"bytes,18,rep,name=aliases,proto3" json:"aliases,omitempty"`
 	// Optional
 	Where *Expression `protobuf:"bytes,8,opt,name=where,proto3" json:"where,omitempty"`
-	// Optional. Either where or where_sql should be set
+	// Optional. If both where and where_sql are set, both will be applied with an AND between them.
 	WhereSql string `protobuf:"bytes,19,opt,name=where_sql,json=whereSql,proto3" json:"where_sql,omitempty"`
 	// Optional
 	Having *Expression `protobuf:"bytes,13,opt,name=having,proto3" json:"having,omitempty"`
-	// Optional. Either having or having_sql should be set
+	// Optional. If both having and having_sql are set, both will be applied with an AND between them.
 	HavingSql string `protobuf:"bytes,20,opt,name=having_sql,json=havingSql,proto3" json:"having_sql,omitempty"`
 	// Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
 	Limit int64 `protobuf:"varint,9,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -2355,11 +2355,11 @@ type MetricsViewComparisonRequest struct {
 	ComparisonTimeRange *TimeRange `protobuf:"bytes,7,opt,name=comparison_time_range,json=comparisonTimeRange,proto3" json:"comparison_time_range,omitempty"`
 	// Optional
 	Where *Expression `protobuf:"bytes,8,opt,name=where,proto3" json:"where,omitempty"`
-	// Optional. Either where or where_sql should be set
+	// Optional. If both where and where_sql are set, both will be applied with an AND between them.
 	WhereSql string `protobuf:"bytes,17,opt,name=where_sql,json=whereSql,proto3" json:"where_sql,omitempty"`
 	// Optional
 	Having *Expression `protobuf:"bytes,12,opt,name=having,proto3" json:"having,omitempty"`
-	// Optional. Either having or having_sql should be set
+	// Optional. If both having and having_sql are set, both will be applied with an AND between them.
 	HavingSql string `protobuf:"bytes,18,opt,name=having_sql,json=havingSql,proto3" json:"having_sql,omitempty"`
 	// Optional
 	Aliases []*MetricsViewComparisonMeasureAlias `protobuf:"bytes,15,rep,name=aliases,proto3" json:"aliases,omitempty"`
@@ -2968,11 +2968,11 @@ type MetricsViewTimeSeriesRequest struct {
 	TimeGranularity TimeGrain `protobuf:"varint,6,opt,name=time_granularity,json=timeGranularity,proto3,enum=rill.runtime.v1.TimeGrain" json:"time_granularity,omitempty"`
 	// Optional
 	Where *Expression `protobuf:"bytes,7,opt,name=where,proto3" json:"where,omitempty"`
-	// Optional. Either where or where_sql should be set
+	// Optional. If both where and where_sql are set, both will be applied with an AND between them.
 	WhereSql string `protobuf:"bytes,13,opt,name=where_sql,json=whereSql,proto3" json:"where_sql,omitempty"`
 	// Optional
 	Having *Expression `protobuf:"bytes,11,opt,name=having,proto3" json:"having,omitempty"`
-	// Optional. Either having or having_sql should be set
+	// Optional. If both having and having_sql are set, both will be applied with an AND between them.
 	HavingSql string `protobuf:"bytes,14,opt,name=having_sql,json=havingSql,proto3" json:"having_sql,omitempty"`
 	// Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
 	TimeZone string             `protobuf:"bytes,10,opt,name=time_zone,json=timeZone,proto3" json:"time_zone,omitempty"`
@@ -3174,7 +3174,7 @@ type MetricsViewTotalsRequest struct {
 	TimeEnd *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=time_end,json=timeEnd,proto3" json:"time_end,omitempty"`
 	// Optional
 	Where *Expression `protobuf:"bytes,7,opt,name=where,proto3" json:"where,omitempty"`
-	// Optional. Either where or where_sql should be set
+	// Optional. If both where and where_sql are set, both will be applied with an AND between them.
 	WhereSql string             `protobuf:"bytes,11,opt,name=where_sql,json=whereSql,proto3" json:"where_sql,omitempty"`
 	Priority int32              `protobuf:"varint,8,opt,name=priority,proto3" json:"priority,omitempty"`
 	Filter   *MetricsViewFilter `protobuf:"bytes,10,opt,name=filter,proto3" json:"filter,omitempty"` // Deprecated. should be removed once UI is moved to use new filters
