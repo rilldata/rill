@@ -61,6 +61,7 @@
     @apply border-r z-0;
     transition-property: height;
     will-change: height;
+    @apply select-none;
   }
 
   .header-row {
