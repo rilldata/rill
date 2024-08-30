@@ -1,13 +1,4 @@
 import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
-import {
-  MeasureFilterOperation,
-  MeasureFilterType,
-} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { toggleDimensionValueSelection } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
-import { setPrimaryDimension } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimensions";
-import { setMeasureFilter } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
-import { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";

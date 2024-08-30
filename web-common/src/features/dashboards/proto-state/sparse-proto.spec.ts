@@ -67,7 +67,7 @@ const TestCases: {
     keys: ["activePage", "pivot"],
   },
 ];
-// mutation that reverts all mutations from the above mutations
+// list of mutations that reverts all mutations from the above test cases
 const TestCasesOppositeMutations = [
   AD_BIDS_REMOVE_PUB_DIMENSION_FILTER,
   AD_BIDS_APPLY_DOM_DIMENSION_FILTER,
