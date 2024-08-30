@@ -1,8 +1,25 @@
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import type { Page } from "playwright";
 import { updateCodeEditor } from "web-local/tests/utils/commonHelpers";
 
 const ResourceWatcherLogRegex = /^\[(.*)] rill\.runtime\.v1\.(.*)\/(.*)$/;
+
+/**
+ * Logs the resource status to the browser console during e2e tests. Our e2e tests use these logs
+ * to assert resource status.
+ *
+ * In the future, the e2e tests should make UI-based assertions!
+ */
+export function consoleLogResourceStatusInPlaywrightTests(
+  res: V1WatchResourcesResponse,
+) {
+  if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
+    console.log(
+      `[${res.resource?.meta?.reconcileStatus}] ${res.name?.kind}/${res.name?.name}`,
+    );
+  }
+}
 
 export class ResourceWatcher {
   private statuses = new Map<string, string>();

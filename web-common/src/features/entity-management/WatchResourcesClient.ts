@@ -1,5 +1,4 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-import { refreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -8,7 +7,6 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
-  V1Resource,
   V1ResourceEvent,
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -16,247 +14,235 @@ import {
   invalidateComponentData,
   invalidateMetricsViewData,
   invalidateProfilingQueries,
-  invalidationForMetricsViewData,
 } from "@rilldata/web-common/runtime-client/invalidation";
-import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/connector-explorer-store";
-import { getConnectorNameForResource } from "../connectors/utils";
-
-const MainResourceKinds: {
-  [kind in ResourceKind]?: true;
-} = {
-  [ResourceKind.Connector]: true,
-  [ResourceKind.Source]: true,
-  [ResourceKind.Model]: true,
-  [ResourceKind.MetricsView]: true,
-  [ResourceKind.Component]: true,
-  [ResourceKind.Dashboard]: true,
-};
-const UsedResourceKinds: {
-  [kind in ResourceKind]?: true;
-} = {
-  [ResourceKind.ProjectParser]: true,
-  [ResourceKind.Theme]: true,
-  ...MainResourceKinds,
-};
 
 export class WatchResourcesClient {
   public readonly client: WatchRequestClient<V1WatchResourcesResponse>;
-  private readonly tables = new Map<string, string>();
+  private readonly instanceId = get(runtime).instanceId;
+  private readonly connectorNames = new Set<string>();
+  private readonly softDeletedTableConnectors = new Map<string, string>();
 
   public constructor() {
     this.client = new WatchRequestClient<V1WatchResourcesResponse>();
     this.client.on("response", (res) => this.handleWatchResourceResponse(res));
-    this.client.on("reconnect", () => this.invalidateAllResources());
+    this.client.on("reconnect", () => this.invalidateAllRuntimeQueries());
   }
 
   private handleWatchResourceResponse(res: V1WatchResourcesResponse) {
-    // only process for the `ResourceKind` present in `UsedResourceKinds`
-    if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind]) {
-      if (res.event === V1ResourceEvent.RESOURCE_EVENT_DELETE && res.name) {
-        fileArtifacts.deleteResource(res.name);
-      }
-      return;
-    }
-
-    const instanceId = get(runtime).instanceId;
-    if (
-      MainResourceKinds[res.name.kind] &&
-      this.shouldSkipResource(instanceId, res.resource)
-    ) {
-      return;
-    }
-
-    // Reconcile does a soft delete 1st by populating deletedOn
-    // We then get an event with DELETE after reconcile ends, but without a resource object.
-    // So we need to check for deletedOn to be able to use resource.meta, especially the filePaths
-    const isSoftDelete = !!res.resource?.meta?.deletedOn;
-
+    // consoleLogResourceStatusInPlaywrightTests(res);
     if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
       console.log(
-        `[${res.resource.meta?.reconcileStatus}] ${res.name.kind}/${res.name.name}`,
+        `[${res.resource?.meta?.reconcileStatus}] ${res.name?.kind}/${res.name?.name}`,
       );
     }
 
-    // invalidations will wait until the re-fetched query is completed
-    // so, we should not `await` here
-    if (!isSoftDelete) {
-      void this.invalidateResource(instanceId, res.resource);
-    } else {
-      this.invalidateRemovedResource(instanceId, res.resource);
+    console.log("res", res);
+
+    // Type guards
+    if (!res?.event || !res?.name || !res?.name?.name || !res?.name?.kind) {
+      return;
     }
 
-    // only re-fetch list queries for kinds in `MainResources`
-    if (!MainResourceKinds[res.name.kind]) return;
-    void queryClient.refetchQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+    // Update the resource in the query cache
+    queryClient.setQueryData(
+      getRuntimeServiceGetResourceQueryKey(this.instanceId, {
+        "name.name": res.name.name,
+        "name.kind": res.name.kind,
+      }),
+      {
+        resource: res?.resource,
+      },
     );
-    return queryClient.refetchQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId, {
+
+    // Invalidate `ListResources` queries
+    void queryClient.invalidateQueries(
+      getRuntimeServiceListResourcesQueryKey(this.instanceId, undefined),
+    );
+    void queryClient.invalidateQueries(
+      getRuntimeServiceListResourcesQueryKey(this.instanceId, {
         kind: res.name.kind,
       }),
     );
-  }
 
-  private shouldSkipResource(instanceId: string, res: V1Resource) {
-    switch (res.meta?.reconcileStatus) {
-      case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
-        return true;
-
-      case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
-      case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-        void refreshResource(queryClient, instanceId, res);
-        fileArtifacts.updateReconciling(res);
-        return true;
-    }
-
-    return false;
-  }
-
-  private invalidateResource(instanceId: string, resource: V1Resource) {
-    if (!resource.meta) return;
-    void refreshResource(queryClient, instanceId, resource);
-    if (!resource.meta?.filePaths?.[0]) return;
-
-    const lastStateUpdatedOn = fileArtifacts.getFileArtifact(
-      resource.meta?.filePaths?.[0],
-    ).lastStateUpdatedOn;
-    if (
-      resource.meta.reconcileStatus !==
-        V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
-      !lastStateUpdatedOn
-    ) {
-      // When a resource is created it can send an event with status = IDLE just before it is queued for reconcile.
-      // So handle the case when it is 1st queued and status != IDLE
-      fileArtifacts.updateLastUpdated(resource);
-      return;
-    }
-
-    // avoid refreshing for cases where event is sent for a resource that has not changed since we last saw it
-    if (
-      resource.meta.reconcileStatus !==
-        V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
-      lastStateUpdatedOn === resource.meta.stateUpdatedOn
-    )
-      return;
-
-    if (this.shouldInvalidateOLAPTables(resource)) {
-      void queryClient.invalidateQueries(
-        getConnectorServiceOLAPListTablesQueryKey({
-          instanceId: get(runtime).instanceId,
-          connector: getConnectorNameForResource(resource),
-        }),
-      );
-    }
-    fileArtifacts.updateArtifacts(resource);
-    this.updateForResource(resource);
-    const failed = !!resource.meta.reconcileError;
-
-    const name = resource.meta?.name?.name ?? "";
-    let table: string | undefined;
-    switch (resource.meta.name?.kind) {
-      case ResourceKind.Connector:
-        void queryClient.invalidateQueries(
-          getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId),
-        );
-        return;
-      case ResourceKind.Source:
-      case ResourceKind.Model:
-        table =
-          resource.source?.state?.table ?? resource.model?.state?.resultTable;
-        if (table && resource.meta.name?.name === table)
-          // make sure table is populated
-          return invalidateProfilingQueries(queryClient, name, failed);
+    // Update the file artifacts client-side cache (which maps files to resources)
+    switch (res.event) {
+      case V1ResourceEvent.RESOURCE_EVENT_WRITE:
+        if (res.resource) {
+          fileArtifacts.updateArtifacts(res.resource);
+        }
         break;
-
-      case ResourceKind.MetricsView:
-        return invalidateMetricsViewData(queryClient, name, failed);
-
-      case ResourceKind.Component:
-        return invalidateComponentData(queryClient, name, failed);
-      case ResourceKind.Dashboard:
-      // TODO
-    }
-  }
-
-  private invalidateRemovedResource(instanceId: string, resource: V1Resource) {
-    const name = resource.meta?.name?.name ?? "";
-    queryClient.setQueryData(
-      getRuntimeServiceGetResourceQueryKey(instanceId, {
-        "name.name": name,
-        "name.kind": resource.meta?.name?.kind,
-      }),
-      {
-        resource: undefined,
-      },
-    );
-    fileArtifacts.softDeleteResource(resource);
-    // cancel queries to make sure any pending requests are cancelled.
-    // There could still be some errors because of the race condition between a view/table deleted and we getting the event
-    switch (resource?.meta?.name?.kind) {
-      case ResourceKind.Source:
-      case ResourceKind.Model:
-        void queryClient.cancelQueries({
-          predicate: (query) => isProfilingQuery(query, name),
-        });
-        void queryClient.invalidateQueries(
-          getConnectorServiceOLAPListTablesQueryKey(),
-        );
-        break;
-      case ResourceKind.MetricsView:
-        void queryClient.cancelQueries({
-          predicate: (query) => invalidationForMetricsViewData(query, name),
-        });
-        break;
-      case ResourceKind.Connector:
-        connectorExplorerStore.deleteItem(name);
+      case V1ResourceEvent.RESOURCE_EVENT_DELETE:
+        fileArtifacts.deleteResource(res.name);
         break;
     }
+
+    switch (res.event) {
+      case V1ResourceEvent.RESOURCE_EVENT_WRITE: {
+        // Type guards
+        if (
+          !res?.resource ||
+          !res?.resource?.meta ||
+          !res?.resource?.meta?.reconcileStatus
+        ) {
+          return;
+        }
+
+        // Proceed to query invalidations only if the resource has finished reconciling
+        if (
+          res.resource.meta.reconcileStatus !==
+          V1ReconcileStatus.RECONCILE_STATUS_IDLE
+        )
+          return;
+
+        switch (res.name.kind as ResourceKind) {
+          case ResourceKind.Connector:
+            // Invalidate the list of connectors
+            void queryClient.invalidateQueries(
+              getRuntimeServiceAnalyzeConnectorsQueryKey(this.instanceId),
+            );
+
+            // Invalidate the connector's list of tables
+            void queryClient.invalidateQueries(
+              getConnectorServiceOLAPListTablesQueryKey({
+                instanceId: this.instanceId,
+                connector: res.name.name,
+              }),
+            );
+
+            // Done
+            return;
+
+          case ResourceKind.Source:
+          case ResourceKind.Model: {
+            // TODO: differentiate between a Source's sourceConnector and sinkConnector
+            // TODO: differentiate between a Model's inputConnector, stageConnector, and outputConnector
+            const connectorName =
+              (res.name.kind as ResourceKind) === ResourceKind.Source
+                ? res.resource.source?.spec?.sinkConnector
+                : res.resource.model?.spec?.outputConnector;
+
+            // The following invalidations are only needed if the Source/Model has a defined connector
+            if (!connectorName) return;
+
+            // If the connector is new, invalidate the list of connectors
+            // (This is needed because Sources and Models can implicitly create Connectors)
+            if (!this.connectorNames.has(connectorName)) {
+              this.connectorNames.add(connectorName);
+              void queryClient.invalidateQueries(
+                getRuntimeServiceAnalyzeConnectorsQueryKey(this.instanceId),
+              );
+            }
+
+            // Invalidate the connector's list of tables
+            void queryClient.invalidateQueries(
+              getConnectorServiceOLAPListTablesQueryKey({
+                instanceId: this.instanceId,
+                connector: connectorName,
+              }),
+            );
+
+            // Note: Sources/Models that fail to ingest will not have a table name
+            const tableName =
+              (res.name.kind as ResourceKind) === ResourceKind.Source
+                ? res.resource.source?.state?.table
+                : res.resource.model?.state?.resultTable;
+
+            // The following invalidations are only needed if the Source/Model has an active table
+            if (!tableName) return;
+
+            // Invalidate profiling queries
+            const failed = !!res.resource.meta?.reconcileError;
+            void invalidateProfilingQueries(queryClient, tableName, failed);
+
+            // Record the connector name for soft deleted tables, so we can invalidate the
+            // connector's list of tables once the table is hard deleted
+            const isSoftDelete = !!res.resource.meta?.deletedOn;
+            if (isSoftDelete) {
+              this.softDeletedTableConnectors.set(tableName, connectorName);
+            }
+
+            // Done
+            return;
+          }
+
+          case ResourceKind.MetricsView: {
+            const failed = !!res.resource.meta?.reconcileError;
+            void invalidateMetricsViewData(queryClient, res.name.name, failed);
+
+            // Done
+            return;
+          }
+
+          case ResourceKind.Component: {
+            const failed = !!res.resource.meta?.reconcileError;
+            void invalidateComponentData(queryClient, res.name.name, failed);
+
+            // Done
+            return;
+          }
+
+          default:
+            // No specific handling for the given resource kind
+            return;
+        }
+      }
+
+      /**
+       * Note: Resource "deletes" occur in two stages:
+       * 1. A `WRITE` event marks the resource for deletion by setting the `deletedOn` property ("soft" delete).
+       * 2. A `DELETE` event signals that the resource has actually been deleted ("hard" delete).
+       */
+      case V1ResourceEvent.RESOURCE_EVENT_DELETE:
+        switch (res.name.kind as ResourceKind) {
+          case ResourceKind.Connector:
+            // Invalidate the list of connectors
+            void queryClient.invalidateQueries(
+              getRuntimeServiceAnalyzeConnectorsQueryKey(this.instanceId),
+            );
+
+            // Remove the connector's state from the connector explorer store
+            connectorExplorerStore.deleteItem(res.name.name);
+
+            // Done
+            return;
+
+          case ResourceKind.Source:
+          case ResourceKind.Model: {
+            // Get the connector name
+            const connectorName = this.softDeletedTableConnectors.get(
+              res.name.name,
+            );
+
+            // Invalidate the connector's list of tables
+            void queryClient.invalidateQueries(
+              getConnectorServiceOLAPListTablesQueryKey({
+                instanceId: this.instanceId,
+                connector: connectorName,
+              }),
+            );
+
+            // Remove the soft-deleted table from our record
+            this.softDeletedTableConnectors.delete(res.name.name);
+
+            // Done
+            return;
+          }
+
+          default:
+            // No specific handling for the given resource kind
+            return;
+        }
+    }
   }
 
-  private invalidateAllResources() {
+  private invalidateAllRuntimeQueries() {
     return queryClient.invalidateQueries({
       predicate: (query) =>
         query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
-    });
-  }
-
-  private shouldInvalidateOLAPTables(resource: V1Resource) {
-    if (resource.meta?.name?.kind === ResourceKind.Connector) {
-      return true;
-    }
-
-    if (
-      resource.meta?.name?.kind !== ResourceKind.Source &&
-      resource.meta?.name?.kind !== ResourceKind.Model
-    ) {
-      return false;
-    }
-
-    const newTable =
-      resource.model?.state?.resultTable ?? resource.source?.state?.table ?? "";
-    return resource.meta?.filePaths?.some(
-      (f) => this.tables.get(f) !== newTable,
-    );
-  }
-
-  private updateForResource(resource: V1Resource) {
-    if (
-      // we only need the data for sources and model right now.
-      // ignore the rest of the kinds
-      resource.meta?.name?.kind !== ResourceKind.Source &&
-      resource.meta?.name?.kind !== ResourceKind.Model
-    ) {
-      return false;
-    }
-
-    const newTable =
-      resource.model?.state?.resultTable ?? resource.source?.state?.table ?? "";
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.tables.set(filePath, newTable);
     });
   }
 }
