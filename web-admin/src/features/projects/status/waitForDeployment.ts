@@ -4,12 +4,13 @@ import {
   V1DeploymentStatus,
   type V1GetProjectResponse,
 } from "@rilldata/web-admin/client";
+import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/status/selectors";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import {
   fetchResources,
   ResourceKind,
   SingletonProjectParserName,
-  useResourceV2,
+  useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -179,18 +180,7 @@ function useRefetchingProject(organization: string, project: string) {
     undefined,
     {
       query: {
-        refetchInterval: (data) => {
-          if (
-            !data?.prodDeployment?.status ||
-            data.prodDeployment.status ===
-              V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED ||
-            data.prodDeployment.status ===
-              V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING
-          ) {
-            return PollTime;
-          }
-          return false;
-        },
+        ...baseGetProjectQueryOptions,
         queryClient,
       },
     },
@@ -198,7 +188,7 @@ function useRefetchingProject(organization: string, project: string) {
 }
 
 function useRefetchingProjectParser(instanceId: string) {
-  return useResourceV2(
+  return useResource(
     instanceId,
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
