@@ -180,7 +180,8 @@ type AdminServiceClient interface {
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error)
-	// TriggerRedeploy creates a new production deployment for a project. If the project currently has another production deployment, it will be deprovisioned.
+	// RedeployProject creates a new production deployment for a project.
+	// If the project currently has another production deployment, the old deployment will be deprovisioned.
 	// This RPC can be used to redeploy a project that has been hibernated.
 	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
@@ -1629,7 +1630,8 @@ type AdminServiceServer interface {
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error)
-	// TriggerRedeploy creates a new production deployment for a project. If the project currently has another production deployment, it will be deprovisioned.
+	// RedeployProject creates a new production deployment for a project.
+	// If the project currently has another production deployment, the old deployment will be deprovisioned.
 	// This RPC can be used to redeploy a project that has been hibernated.
 	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.

@@ -2619,7 +2619,8 @@ export const createAdminServiceSetProjectMemberUserRole = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary TriggerRedeploy creates a new production deployment for a project. If the project currently has another production deployment, it will be deprovisioned.
+ * @summary RedeployProject creates a new production deployment for a project.
+If the project currently has another production deployment, the old deployment will be deprovisioned.
 This RPC can be used to redeploy a project that has been hibernated.
  */
 export const adminServiceRedeployProject = (

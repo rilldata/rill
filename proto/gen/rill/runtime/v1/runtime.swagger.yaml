@@ -2527,10 +2527,6 @@ paths:
                 description: |-
                   Convenience flag to trigger all sources and models.
                   Will trigger models with RefreshModelTrigger.full set to true.
-              pullTriggerSpec:
-                $ref: '#/definitions/v1PullTriggerSpec'
-              refreshTriggerSpec:
-                $ref: '#/definitions/v1RefreshTriggerSpec'
       tags:
         - RuntimeService
   /v1/olap/tables:

@@ -671,11 +671,6 @@ message CreateTriggerRequest {
   // Convenience flag to trigger all sources and models.
   // Will trigger models with RefreshModelTrigger.full set to true.
   bool all_sources_models_full = 8;
-  // DEPRECATED (2024-08-28): Kept for backwards compatibility.
-  oneof trigger {
-    PullTriggerSpec pull_trigger_spec = 2;
-    RefreshTriggerSpec refresh_trigger_spec = 3;
-  }
 }
 
 message CreateTriggerResponse {}

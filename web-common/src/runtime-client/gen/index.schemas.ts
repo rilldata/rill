@@ -50,8 +50,6 @@ Triggering the project parser ensures a pull of the repository and a full parse 
   /** Convenience flag to trigger all sources and models.
 Will trigger models with RefreshModelTrigger.full set to true. */
   allSourcesModelsFull?: boolean;
-  pullTriggerSpec?: V1PullTriggerSpec;
-  refreshTriggerSpec?: V1RefreshTriggerSpec;
 };
 
 export type RuntimeServiceWatchResources200 = {

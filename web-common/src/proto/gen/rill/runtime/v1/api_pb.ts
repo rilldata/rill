@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
-import { PullTriggerSpec, RefreshModelTrigger, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
+import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -3130,25 +3130,6 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
    */
   allSourcesModelsFull = false;
 
-  /**
-   * DEPRECATED (2024-08-28): Kept for backwards compatibility.
-   *
-   * @generated from oneof rill.runtime.v1.CreateTriggerRequest.trigger
-   */
-  trigger: {
-    /**
-     * @generated from field: rill.runtime.v1.PullTriggerSpec pull_trigger_spec = 2;
-     */
-    value: PullTriggerSpec;
-    case: "pullTriggerSpec";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.RefreshTriggerSpec refresh_trigger_spec = 3;
-     */
-    value: RefreshTriggerSpec;
-    case: "refreshTriggerSpec";
-  } | { case: undefined; value?: undefined } = { case: undefined };
-
   constructor(data?: PartialMessage<CreateTriggerRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3163,8 +3144,6 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
     { no: 6, name: "parser", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "all_sources_models", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "all_sources_models_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "pull_trigger_spec", kind: "message", T: PullTriggerSpec, oneof: "trigger" },
-    { no: 3, name: "refresh_trigger_spec", kind: "message", T: RefreshTriggerSpec, oneof: "trigger" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTriggerRequest {

@@ -23,6 +23,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// timeLayoutUnseparated formats an absolute timestamp as a string with millisecond precision without any separators.
+// E.g. for "2006-01-02T15:04:05.999Z" it outputs "200601021504059999".
+const timeLayoutUnseparated = "200601021504059999"
+
 // ListResources implements runtimev1.RuntimeServiceServer
 func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResourcesRequest) (*runtimev1.ListResourcesResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -316,7 +320,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	}
 
 	// Create the trigger resource
-	name := fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999"))
+	name := fmt.Sprintf("trigger_adhoc_%s", time.Now().Format(timeLayoutUnseparated))
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: name}
 	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
 	err = ctrl.Create(ctx, n, nil, nil, nil, true, r)

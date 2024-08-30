@@ -1155,7 +1155,8 @@ paths:
   /v1/organizations/{organization}/projects/{project}/redeploy:
     post:
       summary: |-
-        TriggerRedeploy creates a new production deployment for a project. If the project currently has another production deployment, it will be deprovisioned.
+        RedeployProject creates a new production deployment for a project.
+        If the project currently has another production deployment, the old deployment will be deprovisioned.
         This RPC can be used to redeploy a project that has been hibernated.
       operationId: AdminService_RedeployProject
       responses:
