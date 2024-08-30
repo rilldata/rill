@@ -13,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -22,75 +20,87 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
 
-func Ignore_TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
+func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
+	// t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 	if testing.Short() {
 		t.Skip("clickhouse: skipping test in short mode")
 	}
-
-	ctx := context.Background()
-	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
-		clickhouse.WithUsername("clickhouse"),
-		clickhouse.WithPassword("clickhouse"),
-		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := clickHouseContainer.Terminate(ctx)
-		require.NoError(t, err)
+	rt, instanceID := testruntime.NewInstanceWithClickhouseProject(t, true)
+	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testMetricsViewAggregation_measure_filters(t, rt, instanceID) })
+	// t.Run("testMetricsViewsAggregation_timezone", func(t *testing.T) { testMetricsViewsAggregation_timezone(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter", func(t *testing.T) { testMetricsViewsAggregation_filter(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_with_timestamp", func(t *testing.T) { testMetricsViewsAggregation_filter_with_timestamp(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_2dims", func(t *testing.T) { testMetricsViewsAggregation_filter_2dims(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_gt", func(t *testing.T) { testMetricsViewsAggregation_having_gt(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_same_name", func(t *testing.T) { testMetricsViewsAggregation_having_same_name(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having", func(t *testing.T) { testMetricsViewsAggregation_having(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_where", func(t *testing.T) { testMetricsViewsAggregation_where(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_having_measure", func(t *testing.T) { testMetricsViewsAggregation_filter_having_measure(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_with_where_and_having_measure", func(t *testing.T) {
+		testMetricsViewsAggregation_filter_with_where_and_having_measure(t, rt, instanceID)
 	})
-
-	host, err := clickHouseContainer.Host(ctx)
-	require.NoError(t, err)
-	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
-	require.NoError(t, err)
-
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
-
-	t.Run("TestMetricsViewsAggregation", func(t *testing.T) { TestMetricsViewsAggregation(t) })
-	t.Run("TestMetricsViewsAggregation_no_limit", func(t *testing.T) { TestMetricsViewsAggregation_no_limit(t) })
-	t.Run("TestMetricsViewsAggregation_no_limit_pivot", func(t *testing.T) { TestMetricsViewsAggregation_no_limit_pivot(t) })
-	t.Run("TestMetricsViewsAggregation_pivot", func(t *testing.T) { TestMetricsViewsAggregation_pivot(t) })
-	t.Run("TestMetricsViewsAggregation_pivot_2_measures", func(t *testing.T) { TestMetricsViewsAggregation_pivot_2_measures(t) })
-	t.Run("TestMetricsViewsAggregation_pivot_2_measures_and_filter", func(t *testing.T) { TestMetricsViewsAggregation_pivot_2_measures_and_filter(t) })
-	t.Run("TestMetricsViewsAggregation_pivot_dim_and_measure", func(t *testing.T) { TestMetricsViewsAggregation_pivot_dim_and_measure(t) })
-	t.Run("TestMetricsViewAggregation_measure_filters", func(t *testing.T) { TestMetricsViewAggregation_measure_filters(t) })
-	t.Run("TestMetricsViewsAggregation_timezone", func(t *testing.T) { TestMetricsViewsAggregation_timezone(t) })
-	t.Run("TestMetricsViewAggregationClickhouseEnum", func(t *testing.T) { testMetricsViewAggregationClickhouseEnum(t) })
+	t.Run("testMetricsViewsAggregation_2time_aggregations", func(t *testing.T) { testMetricsViewsAggregation_2time_aggregations(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_no_time_dim", func(t *testing.T) { testMetricsViewsAggregation_comparison_no_time_dim(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_no_dims", func(t *testing.T) { testMetricsViewsAggregation_comparison_no_dims(t, rt, instanceID) })
 	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure", func(t *testing.T) {
-		TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t)
+		testMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t, rt, instanceID)
 	})
-	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
-		TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t)
+	t.Run("testMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t, rt, instanceID)
 	})
-	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_totals", func(t *testing.T) {
-		TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t)
+	t.Run("testMetricsViewsAggregation_comparison_measure_filter_with_totals", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_measure_filter_with_totals(t, rt, instanceID)
 	})
-	// t.Run("TestMetricsViewsAggregation_comparison_measure_filter", func(t *testing.T) {
-	// 	TestMetricsViewsAggregation_comparison_measure_filter(t)
-	// })
-	// t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_having", func(t *testing.T) {
-	// 	TestMetricsViewsAggregation_comparison_measure_filter_with_having(t)
-	// })
-	// t.Run("TestMetricsViewsAggregation_comparison", func(t *testing.T) {
-	// 	TestMetricsViewsAggregation_comparison(t)
-	// })
-	t.Run("TestMetricsViewsAggregation_comparison_pivot", func(t *testing.T) {
-		TestMetricsViewsAggregation_comparison_pivot(t)
+	t.Run("testMetricsViewsAggregation_comparison_with_offset", func(t *testing.T) { testMetricsViewsAggregation_comparison_with_offset(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_percent_of_totals", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_percent_of_totals_with_limit", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals_with_limit(t, rt, instanceID) })
+}
+
+func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_measure_filters", func(t *testing.T) { testMetricsViewAggregation_measure_filters(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_timezone", func(t *testing.T) { testMetricsViewsAggregation_timezone(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter", func(t *testing.T) { testMetricsViewsAggregation_filter(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_with_timestamp", func(t *testing.T) { testMetricsViewsAggregation_filter_with_timestamp(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_2dims", func(t *testing.T) { testMetricsViewsAggregation_filter_2dims(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_gt", func(t *testing.T) { testMetricsViewsAggregation_having_gt(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_same_name", func(t *testing.T) { testMetricsViewsAggregation_having_same_name(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having", func(t *testing.T) { testMetricsViewsAggregation_having(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_where", func(t *testing.T) { testMetricsViewsAggregation_where(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_having_measure", func(t *testing.T) { testMetricsViewsAggregation_filter_having_measure(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_filter_with_where_and_having_measure", func(t *testing.T) {
+		testMetricsViewsAggregation_filter_with_where_and_having_measure(t, rt, instanceID)
 	})
-	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
-		TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t)
+	t.Run("testMetricsViewsAggregation_2time_aggregations", func(t *testing.T) { testMetricsViewsAggregation_2time_aggregations(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_no_time_dim", func(t *testing.T) { testMetricsViewsAggregation_comparison_no_time_dim(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_no_dims", func(t *testing.T) { testMetricsViewsAggregation_comparison_no_dims(t, rt, instanceID) })
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t, rt, instanceID)
 	})
+	t.Run("testMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsAggregation_comparison_measure_filter_with_totals", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_measure_filter_with_totals(t, rt, instanceID)
+	})
+	t.Run("testMetricsViewsAggregation_comparison_with_offset", func(t *testing.T) { testMetricsViewsAggregation_comparison_with_offset(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_percent_of_totals", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals(t, rt, instanceID) })
+	t.Run("testMetricsViewAggregation_percent_of_totals_with_limit", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals_with_limit(t, rt, instanceID) })
 }
 
 func testClaims() *runtime.SecurityClaims {
 	return &runtime.SecurityClaims{SkipChecks: true}
 }
 
-func TestMetricsViewsAggregation(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -154,9 +164,7 @@ func TestMetricsViewsAggregation(t *testing.T) {
 	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 }
 
-func TestMetricsViewsAggregation_export_day(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -198,9 +206,7 @@ func TestMetricsViewsAggregation_export_day(t *testing.T) {
 	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "timestamp (day)"))
 }
 
-func TestMetricsViewsAggregation_export_hour(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -242,9 +248,7 @@ func TestMetricsViewsAggregation_export_hour(t *testing.T) {
 	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "timestamp (hour)"))
 }
 
-func TestMetricsViewsAggregation_no_limit(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_no_limit(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1288,9 +1292,7 @@ func Ignore_TestMetricsViewsAggregation_Druid_measure_filter(t *testing.T) {
 
 }
 
-func TestMetricsViewAggregation_measure_filters(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewAggregation_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
@@ -1355,9 +1357,7 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 	require.NotEmpty(t, "instagram.com", q.Result.Data[2].AsMap()["dom"])
 }
 
-func TestMetricsViewsAggregation_timezone(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_timezone(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -1414,9 +1414,7 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 	require.Equal(t, "Microsoft,2022-01-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 }
 
-func TestMetricsViewsAggregation_filter(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_filter(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1488,9 +1486,7 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
-func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_filter_with_timestamp(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1574,9 +1570,7 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,54", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 }
 
-func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_filter_2dims(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1654,9 +1648,7 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 	require.Equal(t, "Google,google.com,null", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 }
 
-func TestMetricsViewsAggregation_having_gt(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_having_gt(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1708,9 +1700,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 	require.Equal(t, "null,32897", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
-func TestMetricsViewsAggregation_having_same_name(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_having_same_name(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1762,9 +1752,7 @@ func TestMetricsViewsAggregation_having_same_name(t *testing.T) {
 	require.Equal(t, "msn.com,3", fieldsToString(rows[i], "dom", "bid_price"))
 }
 
-func TestMetricsViewsAggregation_having(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_having(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1813,9 +1801,7 @@ func TestMetricsViewsAggregation_having(t *testing.T) {
 	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_0"))
 }
 
-func TestMetricsViewsAggregation_where(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_where(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1866,9 +1852,7 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
-func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_filter_having_measure(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -1986,9 +1970,7 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 	require.Equal(t, "null,4296", fieldsToString(rows[i], "pub", "measure_0"))
 }
 
-func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -2091,9 +2073,7 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_0"))
 }
 
-func TestMetricsViewsAggregation_2time_aggregations(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_2time_aggregations(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -2383,9 +2363,7 @@ func TestMetricsViewsAggregation_Druid_comparison_no_time_dim(t *testing.T) {
 	require.Equal(t, "Yahoo,news.yahoo.com,106.00,106.00,1.50,1.50", fieldsToString2digits(rows[i], "pub", "dom", "measure_0", "measure_0__p", "measure_1", "m1"))
 }
 
-func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_comparison_no_time_dim(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -2543,9 +2521,7 @@ func TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
 	require.Equal(t, "463.00,464.00,3.20,3.20", fieldsToString2digits(rows[i], "measure_0", "measure_0__p", "measure_1", "m1"))
 }
 
-func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_comparison_no_dims(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -2713,9 +2689,7 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *
 	require.Equal(t, "Yahoo,sports.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
 }
 
-func TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -2909,9 +2883,7 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_no_duplicates(t
 	require.Equal(t, "Yahoo,null", fieldsToString2digits(rows[i], "pub", "m1_p"))
 }
 
-func TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -3000,9 +2972,7 @@ func TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t *test
 	require.Equal(t, "Yahoo,null", fieldsToString2digits(rows[i], "pub", "m1_p"))
 }
 
-func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -4284,9 +4254,7 @@ func TestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
 	require.Equal(t, "news.google.com,3.55,3.74", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
 }
 
-func TestMetricsViewsAggregation_comparison_with_offset(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewsAggregation_comparison_with_offset(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(2)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -4356,9 +4324,7 @@ func TestMetricsViewsAggregation_comparison_with_offset(t *testing.T) {
 	require.Equal(t, "news.google.com,3.59,3.69", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
 }
 
-func TestMetricsViewAggregation_percent_of_totals(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewAggregation_percent_of_totals(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics_view",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -4417,9 +4383,7 @@ func TestMetricsViewAggregation_percent_of_totals(t *testing.T) {
 	require.Equal(t, "facebook.com,77.00,0.07", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 }
 
-func TestMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
+func testMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	limit := int64(2)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics_view",

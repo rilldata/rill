@@ -1,0 +1,45 @@
+model: ad_bids
+display_name: Ad bids
+description:
+
+timeseries: timestamp
+
+dimensions:
+  - label: Publisher
+    name: pub
+    property: publisher
+    description: ""
+  - label: Domain
+    name: dom
+    property: domain
+    description: ""
+  - name: nolabel_pub
+    property: publisher
+  - label: Space Label
+    name: space_label
+    expression: "publisher"
+  - label: TLD
+    name: tld
+    expression: "regexp_extract(domain, '(.*\\.)\\?(.*\\.com)', 2)"
+  - label: Null Publisher
+    name: null_publisher
+    expression: case when publisher is null then true else false end
+
+measures:
+  - label: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: ""
+  - label: "Average bid price"
+    expression: avg(bid_prices)
+    description: ""
+    format_preset: ""
+  - name: m1 
+    expression: avg(bid_prices)
+    description: ""
+    format_preset: ""
+  - name: "bid_price"
+    expression: avg(bid_prices)
+    description: ""
+    format_preset: ""
+
