@@ -36,8 +36,6 @@
   $: chartData = $chartDataQuery?.data?.data;
   $: isFetching = $chartDataQuery?.isFetching ?? false;
   $: errorMessage = $chartDataQuery?.error?.response?.data?.message;
-
-  $: console.log($chartDataQuery, resolverProperties, errorMessage, chartData);
 </script>
 
 {#if resolverProperties}
