@@ -44,9 +44,21 @@ export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,
   kind: ResourceKind,
-  selector?: (data: V1Resource) => T,
-  queryClient?: QueryClient,
+  queryOptions?: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    T // T is the return type of the `select` function
+  >,
 ) {
+  const defaultQueryOptions: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    T
+  > = {
+    select: (data) => data?.resource as T,
+    enabled: !!instanceId && !!name && !!kind,
+  };
+
   return createRuntimeServiceGetResource(
     instanceId,
     {
@@ -55,10 +67,8 @@ export function useResource<T = V1Resource>(
     },
     {
       query: {
-        select: (data) =>
-          (selector ? selector(data?.resource) : data?.resource) as T,
-        enabled: !!instanceId && !!name && !!kind,
-        queryClient,
+        ...defaultQueryOptions,
+        ...queryOptions,
       },
     },
   );
@@ -107,8 +117,9 @@ export function useProjectParser(queryClient: QueryClient, instanceId: string) {
     instanceId,
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
-    undefined,
-    queryClient,
+    {
+      queryClient,
+    },
   );
 }
 
