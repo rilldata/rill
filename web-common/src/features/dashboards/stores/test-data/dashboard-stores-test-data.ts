@@ -1,4 +1,13 @@
 import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
+import {
+  MeasureFilterOperation,
+  MeasureFilterType,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
+import { toggleDimensionValueSelection } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
+import { setPrimaryDimension } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimensions";
+import { setMeasureFilter } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
+import { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -12,8 +21,8 @@ import {
   getOffset,
   getStartOfPeriod,
 } from "@rilldata/web-common/lib/time/transforms";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
+  DashboardTimeControls,
   Period,
   TimeOffsetType,
   TimeRangePreset,
@@ -25,12 +34,14 @@ import {
   TypeCode,
   V1Expression,
   V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   type V1StructType,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/query-core";
-import { QueryClient } from "@tanstack/svelte-query";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { QueryClient } from "@tanstack/svelte-query";
+import { deepClone } from "@vitest/utils";
 import { get, writable } from "svelte/store";
 import { expect } from "vitest";
 
@@ -149,6 +160,13 @@ export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
   name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
 };
+export const AD_BIDS_TIME_RANGE_SUMMARY: V1MetricsViewTimeRangeResponse = {
+  timeRangeSummary: {
+    min: TestTimeConstants.LAST_DAY.toISOString(),
+    max: TestTimeConstants.NOW.toISOString(),
+    interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+  },
+};
 
 export const AD_BIDS_INIT: V1MetricsViewSpec = {
   title: "AdBids",
@@ -255,13 +273,11 @@ export function resetDashboardStore() {
 }
 
 export function initAdBidsInStore() {
-  metricsExplorerStore.init(AD_BIDS_NAME, AD_BIDS_INIT, {
-    timeRangeSummary: {
-      min: TestTimeConstants.LAST_DAY.toISOString(),
-      max: TestTimeConstants.NOW.toISOString(),
-      interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
-    },
-  });
+  metricsExplorerStore.init(
+    AD_BIDS_NAME,
+    AD_BIDS_INIT,
+    AD_BIDS_TIME_RANGE_SUMMARY,
+  );
 }
 export function initAdBidsMirrorInStore() {
   metricsExplorerStore.init(
@@ -270,13 +286,7 @@ export function initAdBidsMirrorInStore() {
       measures: AD_BIDS_INIT_MEASURES,
       dimensions: AD_BIDS_INIT_DIMENSIONS,
     },
-    {
-      timeRangeSummary: {
-        min: TestTimeConstants.LAST_DAY.toISOString(),
-        max: TestTimeConstants.NOW.toISOString(),
-        interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
-      },
-    },
+    AD_BIDS_TIME_RANGE_SUMMARY,
   );
 }
 
@@ -463,3 +473,15 @@ export const CUSTOM_TEST_CONTROLS = {
   start: TestTimeConstants.LAST_18_HOURS,
   end: TestTimeConstants.LAST_12_HOURS,
 } as DashboardTimeControls;
+
+export function getPartialDashboard(
+  name: string,
+  keys: (keyof MetricsExplorerEntity)[],
+) {
+  const dashboard = get(metricsExplorerStore).entities[name];
+  const partialDashboard = {} as MetricsExplorerEntity;
+  keys.forEach(
+    (key) => ((partialDashboard as any)[key] = deepClone(dashboard[key])),
+  );
+  return partialDashboard;
+}

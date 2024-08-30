@@ -75,7 +75,7 @@ export function getProtoFromDashboardState(
   if (metrics.whereFilter) {
     state.where = toExpressionProto(metrics.whereFilter);
   }
-  if (metrics.dimensionThresholdFilters.length) {
+  if (metrics.dimensionThresholdFilters?.length) {
     state.having = metrics.dimensionThresholdFilters.map(
       ({ name, filters }) =>
         new DashboardDimensionFilter({
