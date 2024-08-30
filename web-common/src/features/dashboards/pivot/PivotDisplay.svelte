@@ -28,12 +28,17 @@
   {#if showPanels}
     <PivotSidebar />
   {/if}
-  <div class="content">
+  <div class="flex flex-col size-full overflow-hidden">
     {#if showPanels}
       <PivotHeader />
     {/if}
-    <PivotToolbar {isFetching} bind:showPanels {removeActiveCell} />
-    <div class="table-view">
+    <div
+      class="content"
+      role="presentation"
+      on:mousedown|self={removeActiveCell}
+    >
+      <PivotToolbar {isFetching} bind:showPanels />
+
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <PivotEmpty {assembled} {isFetching} />
       {:else}
@@ -49,12 +54,7 @@
   }
 
   .content {
-    @apply flex w-full flex-col bg-slate-100 overflow-hidden;
-  }
-
-  .table-view {
-    @apply p-2 pt-0 w-full h-full;
-    @apply flex items-start;
-    @apply overflow-hidden;
+    @apply flex w-full flex-col bg-slate-100 overflow-hidden size-full;
+    @apply p-2 gap-y-2;
   }
 </style>
