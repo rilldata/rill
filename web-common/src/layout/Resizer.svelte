@@ -64,9 +64,7 @@
     });
   }
 
-  function handleMouseUp(e) {
-    e.stopPropagation();
-
+  function handleMouseUp() {
     resizing = false;
     hover = false;
     if (onMouseUp) onMouseUp();
@@ -85,7 +83,7 @@
   class:absolute
   class="{direction} {side} justify-{justify}"
   class:hang
-  on:mousedown|stopPropagation|preventDefault|capture={handleMousedown}
+  on:mousedown|stopPropagation|preventDefault={handleMousedown}
   on:dblclick|stopPropagation={handleDoubleClick}
   on:mouseenter={() => {
     if (timeout) clearTimeout(timeout);
