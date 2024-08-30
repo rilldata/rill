@@ -2,11 +2,13 @@ package database
 
 import (
 	"context"
-	"encoding/base64"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Drivers is a registry of drivers
@@ -20,14 +22,23 @@ func Register(name string, driver Driver) {
 	Drivers[name] = driver
 }
 
-// Open opens a new database connection.
-func Open(driver, dsn string, encryptionKeyring []*EncryptionKey) (DB, error) {
+// Open opens a new database connection. encryptionKeyring is for client-side column-level encryption
+func Open(driver, dsn, encKeyringConfig string) (DB, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)
 	}
 
-	db, err := d.Open(dsn, encryptionKeyring)
+	encKeyring, err := ParseEncryptionKeyring(encKeyringConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing encryption keyring: %w", err)
+	}
+
+	if len(encKeyring) == 0 {
+		return nil, errors.New("encryption keyring is empty")
+	}
+
+	db, err := d.Open(dsn, encKeyring)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +48,7 @@ func Open(driver, dsn string, encryptionKeyring []*EncryptionKey) (DB, error) {
 
 // Driver is the interface for DB drivers.
 type Driver interface {
-	Open(dsn string, encryptionKeyring []*EncryptionKey) (DB, error)
+	Open(dsn string, encKeyring []*EncryptionKey) (DB, error)
 }
 
 // DB is the interface for a database connection.
@@ -348,13 +359,13 @@ type Project struct {
 	ProdVersion                  string            `db:"prod_version"`
 	ProdBranch                   string            `db:"prod_branch"`
 	ProdVariables                map[string]string `db:"prod_variables"`
+	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
 	ProdOLAPDriver               string            `db:"prod_olap_driver"`
 	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
 	ProdSlots                    int               `db:"prod_slots"`
 	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
 	ProdDeploymentID             *string           `db:"prod_deployment_id"`
 	Annotations                  map[string]string `db:"annotations"`
-	ProdVariablesEncryptionKeyID *string           `db:"prod_variables_encryption_key_id"`
 	CreatedOn                    time.Time         `db:"created_on"`
 	UpdatedOn                    time.Time         `db:"updated_on"`
 }
@@ -927,27 +938,26 @@ type EncryptionKey struct {
 	Secret []byte `json:"key"`
 }
 
-// UnmarshalJSON custom method for EncryptionKey
-func (e *EncryptionKey) UnmarshalJSON(data []byte) error {
-	// Create a temporary structure to unmarshal into
-	type Alias EncryptionKey
-	aux := &struct {
-		Key string `json:"key"`
-		*Alias
-	}{
-		Alias: (*Alias)(e),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	// Decode the base64 encoded key into the Secret field
-	decodedSecret, err := base64.StdEncoding.DecodeString(aux.Key)
+func ParseEncryptionKeyring(keyring string) ([]*EncryptionKey, error) {
+	var encKeyring []*EncryptionKey
+	err := json.Unmarshal([]byte(keyring), &encKeyring)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	e.Secret = decodedSecret
-	return nil
+	return encKeyring, nil
+}
+
+func NewRandomKeyring() ([]*EncryptionKey, error) {
+	secret := make([]byte, 32) // 32 bytes for AES-256
+	_, err := rand.Read(secret)
+	if err != nil {
+		return nil, err
+	}
+
+	encKeyRing := []*EncryptionKey{
+		{ID: uuid.New().String(), Secret: secret},
+	}
+
+	return encKeyRing, nil
 }

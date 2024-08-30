@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -18,7 +17,6 @@ import (
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
-	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -273,31 +271,22 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				p = payment.NewNoop()
 			}
 
-			// Load database encryption keyring
-			databaseEncryptionKeyring, err := loadDatabaseEncryptionKeyring(conf.DatabaseEncryptionKeyring)
-			if err != nil {
-				logger.Fatal("error loading database encryption keyring", zap.Error(err))
-			}
-
-			if len(databaseEncryptionKeyring) == 0 {
-				logger.Fatal("no encryption keys found in database encryption keyring")
-			}
-
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:     conf.DatabaseDriver,
-				DatabaseDSN:        conf.DatabaseURL,
-				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
-				FrontendURL:        conf.FrontendURL,
-				ProvisionerSetJSON: conf.ProvisionerSetJSON,
-				DefaultProvisioner: conf.DefaultProvisioner,
-				VersionNumber:      ch.Version.Number,
-				VersionCommit:      ch.Version.Commit,
-				MetricsProjectOrg:  metricsProjectOrg,
-				MetricsProjectName: metricsProjectName,
-				AutoscalerCron:     conf.AutoscalerCron,
+				DatabaseDriver:            conf.DatabaseDriver,
+				DatabaseDSN:               conf.DatabaseURL,
+				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
+				FrontendURL:               conf.FrontendURL,
+				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
+				DefaultProvisioner:        conf.DefaultProvisioner,
+				VersionNumber:             ch.Version.Number,
+				VersionCommit:             ch.Version.Commit,
+				MetricsProjectOrg:         metricsProjectOrg,
+				MetricsProjectName:        metricsProjectName,
+				AutoscalerCron:            conf.AutoscalerCron,
+				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p, databaseEncryptionKeyring)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -390,19 +379,4 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 	return startCmd
-}
-
-func loadDatabaseEncryptionKeyring(keyRingConfig string) ([]*database.EncryptionKey, error) {
-	if keyRingConfig == "" {
-		return nil, nil
-	}
-
-	var keyRing []*database.EncryptionKey
-
-	err := json.Unmarshal([]byte(keyRingConfig), &keyRing)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse encryption keyring: %w", err)
-	}
-
-	return keyRing, nil
 }
