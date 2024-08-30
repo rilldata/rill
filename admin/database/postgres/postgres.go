@@ -366,11 +366,6 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		return nil, err
 	}
 
-	// encrypt the prod variables and store the key id used for encryption
-	if len(c.encKeyring) == 0 {
-		return nil, errors.New("no encryption key found")
-	}
-
 	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
 	if err != nil {
 		return nil, err
@@ -399,11 +394,6 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	}
 	if opts.Annotations == nil {
 		opts.Annotations = make(map[string]string, 0)
-	}
-
-	// encrypt the prod variables and store the key id used for encryption
-	if len(c.encKeyring) == 0 {
-		return nil, errors.New("no encryption key found")
 	}
 
 	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
@@ -1972,13 +1962,17 @@ func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, 
 	return res, nil
 }
 
-// returns the map with encrypted values and the encryption key id used
+// returns the map with encrypted values and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the values are returned as is.
 func (c *connection) encryptMap(m map[string]string) (map[string]string, string, error) {
+	if len(c.encKeyring) == 0 {
+		return m, "", nil
+	}
+
 	encKeyID := ""
 	// copy the map to avoid modifying the original map
 	vars := make(map[string]string, len(m))
 	for k, v := range m {
-		// used the first key in the keyring for encryption
+		// use the first key in the keyring for encryption
 		encKeyID = c.encKeyring[0].ID
 		encrypted, err := encrypt(v, c.encKeyring[0].Secret)
 		if err != nil {

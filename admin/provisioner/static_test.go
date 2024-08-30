@@ -2,7 +2,6 @@ package provisioner
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/c2h5oh/datasize"
@@ -18,12 +17,7 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
-	encKeyRing, err := database.NewRandomKeyring()
-	require.NoError(t, err)
-	conf, err := json.Marshal(encKeyRing)
-	require.NoError(t, err)
-
-	db, err := database.Open("postgres", pg.DatabaseURL, string(conf))
+	db, err := database.Open("postgres", pg.DatabaseURL, "")
 	require.NoError(t, err)
 	require.NotNil(t, db)
 	defer db.Close()

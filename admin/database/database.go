@@ -34,10 +34,6 @@ func Open(driver, dsn, encKeyringConfig string) (DB, error) {
 		return nil, fmt.Errorf("error parsing encryption keyring: %w", err)
 	}
 
-	if len(encKeyring) == 0 {
-		return nil, errors.New("encryption keyring is empty")
-	}
-
 	db, err := d.Open(dsn, encKeyring)
 	if err != nil {
 		return nil, err
@@ -939,6 +935,10 @@ type EncryptionKey struct {
 }
 
 func ParseEncryptionKeyring(keyring string) ([]*EncryptionKey, error) {
+	if keyring == "" {
+		return nil, nil
+	}
+
 	var encKeyring []*EncryptionKey
 	err := json.Unmarshal([]byte(keyring), &encKeyring)
 	if err != nil {

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"net"
 	"strconv"
 	"testing"
@@ -54,20 +53,14 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
 
-	dbEncKeyring, err := database.NewRandomKeyring()
-	require.NoError(t, err)
-	encKeyringConf, err := json.Marshal(dbEncKeyring)
-	require.NoError(t, err)
-
 	service, err := admin.New(context.Background(),
 		&admin.Options{
-			DatabaseDriver:            "postgres",
-			DatabaseDSN:               pg.DatabaseURL,
-			ProvisionerSetJSON:        provisionerSetJSON,
-			DefaultProvisioner:        "static",
-			ExternalURL:               "http://localhost:9090",
-			VersionNumber:             "",
-			DatabaseEncryptionKeyring: string(encKeyringConf),
+			DatabaseDriver:     "postgres",
+			DatabaseDSN:        pg.DatabaseURL,
+			ProvisionerSetJSON: provisionerSetJSON,
+			DefaultProvisioner: "static",
+			ExternalURL:        "http://localhost:9090",
+			VersionNumber:      "",
 		},
 		logger,
 		issuer,
