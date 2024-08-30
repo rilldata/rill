@@ -1,5 +1,5 @@
 ---
-title: "Source to Dashboard in 5 Steps."
+title: "Source to Dashboard on Rill Cloud in 5 Steps"
 sidebar_label: "1. Launching Rill Developer"
 position: 1
 collapsed: false
@@ -8,6 +8,10 @@ sidebar_position: 1
 :::note prerequisites
 You will need to [install Rill](https://docs.rilldata.com/home/install).
 :::
+
+By the end of this course, you will have a deployed instance of your project in Rill Cloud, and your [30 day 
+trial](./launch) will start. This also prepares you for the [Advanced Features Course](../rill_advanced_features/overview.md) that builds ontop of this project.
+
 ## Start Rill Developer
 
 ```yaml

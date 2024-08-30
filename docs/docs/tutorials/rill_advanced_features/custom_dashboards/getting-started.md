@@ -10,7 +10,7 @@ sidebar_position: 6
 In this section, we'll cover how to create custom dashboards in Rill Developer and publish these to Rill Cloud,
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
-### Step 1: Let's return to our project my-rill-tutorial.
+### Step 1: Let's return to our project my-rill-tutorial in Rill Developer.
 
 :::note Friends from ClickHouse
 If you are coming from the Rill and ClickHouse course, we are using the following datasets!

@@ -14,7 +14,7 @@ If you need to make any changes in Rill Cloud, you will need to do so via Rill D
 
 ### Re-deploy for UI
 
-You'll notice that the `Deploy to share` button has now changes to `redeploy`. When you have made changes that you'd like to push to Rill Cloud, you can select this button. We'll take care of the background tasks for you and navigate you to the project dashboard page.
+You'll notice that the `Deploy to share` button has now changes to `Update`. When you have made changes that you'd like to push to Rill Cloud, you can select this button. We'll take care of the background tasks for you and navigate you to the project dashboard page.
 
 <img src = '/img/tutorials/204/redeploy.gif' class='rounded-gif' />
 <br />

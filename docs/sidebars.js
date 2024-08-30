@@ -33,12 +33,12 @@ const sidebars = {
             description: 'Rill Developer to  to Rill Cloud',
 
             items: [
-                'tutorials/rill_learn_100/launch',
-                'tutorials/rill_learn_100/import',
-                'tutorials/rill_learn_100/model',
-                'tutorials/rill_learn_100/dashboard',
-                'tutorials/rill_learn_100/deploy',
-                'tutorials/rill_learn_100/success',
+                'tutorials/rill_basics/launch',
+                'tutorials/rill_basics/import',
+                'tutorials/rill_basics/model',
+                'tutorials/rill_basics/dashboard',
+                'tutorials/rill_basics/deploy',
+                'tutorials/rill_basics/success',
                 ]
           },
 
@@ -50,7 +50,7 @@ const sidebars = {
             description: 'Advanced Features and beyond',
             link: {
               type: 'doc',
-              id: 'tutorials/rill_learn_300/overview',
+              id: 'tutorials/rill_advanced_features/overview',
     
             },
            
@@ -61,9 +61,9 @@ const sidebars = {
                   label: 'Back to Rill Developer',
                   description: 'Make some changes to our SQL model and Dashboard',
                   items: [
-                    'tutorials/rill_learn_300/advanced_developer/advanced-modeling',
-                    'tutorials/rill_learn_300/advanced_developer/advanced-dashboard',
-                    'tutorials/rill_learn_300/advanced_developer/update-rill-cloud',
+                    'tutorials/rill_advanced_features/advanced_developer/advanced-modeling',
+                    'tutorials/rill_advanced_features/advanced_developer/advanced-dashboard',
+                    'tutorials/rill_advanced_features/advanced_developer/update-rill-cloud',
 
                       ]
                 },
@@ -71,20 +71,20 @@ const sidebars = {
                 type: 'category',
                 label: 'Rill Custom Dashboards',
                 items: [
-                  'tutorials/rill_learn_300/custom_dashboards/getting-started',
-                  'tutorials/rill_learn_300/custom_dashboards/template-charts',
-                  'tutorials/rill_learn_300/custom_dashboards/vega-lite',
-                  'tutorials/rill_learn_300/custom_dashboards/vega-lite2',
-                  'tutorials/rill_learn_300/custom_dashboards/custom-dashboard',       
+                  'tutorials/rill_advanced_features/custom_dashboards/getting-started',
+                  'tutorials/rill_advanced_features/custom_dashboards/template-charts',
+                  'tutorials/rill_advanced_features/custom_dashboards/vega-lite',
+                  'tutorials/rill_advanced_features/custom_dashboards/vega-lite2',
+                  'tutorials/rill_advanced_features/custom_dashboards/custom-dashboard',       
                 ]
               },
               {
                 type: 'category',
                 label: 'Incremental Models',
                 items: [
-                  'tutorials/rill_learn_300/incremental_models/cloud-storage-splits',
-                  'tutorials/rill_learn_300/incremental_models/data-warehouse-splits',
-                  'tutorials/rill_learn_300/incremental_models/staging-connectors'
+                  'tutorials/rill_advanced_features/incremental_models/cloud-storage-splits',
+                  'tutorials/rill_advanced_features/incremental_models/data-warehouse-splits',
+                  'tutorials/rill_advanced_features/incremental_models/staging-connectors'
                   
                 ]
               },
@@ -92,9 +92,9 @@ const sidebars = {
                 type: 'category',
                 label: 'Custom APIs',
                 items: [
-                  'tutorials/rill_learn_300/custom_api/getting-started',
-                  'tutorials/rill_learn_300/custom_api/create-api',
-                  'tutorials/rill_learn_300/custom_api/test-api',
+                  'tutorials/rill_advanced_features/custom_api/getting-started',
+                  'tutorials/rill_advanced_features/custom_api/create-api',
+                  'tutorials/rill_advanced_features/custom_api/test-api',
                 ]
               },
               ]

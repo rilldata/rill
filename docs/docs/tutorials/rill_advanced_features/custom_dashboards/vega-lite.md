@@ -23,7 +23,7 @@ Let's start by creating a chart for our custom dashboard.
 Let's use the `advanced_commits__model` table to obtain our data.
 
 :::note Coming from Rill and ClickHouse course?
-The advanced_commits_model file is created with the following contents, assuming you have already imported the data from [the first page](/tutorials/rill_learn_100/import).
+The advanced_commits_model file is created with the following contents, assuming you have already imported the data from [the first page](/tutorials/rill_basics/import).
 
 <details>
   <summary>Click me for SQL</summary>

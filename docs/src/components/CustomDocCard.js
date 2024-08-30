@@ -3,11 +3,11 @@ import Link from '@docusaurus/Link';
 
 // Define images or colors for specific documents
 const cardStyles = {
-  'tutorials/rill_learn_100': {
+  'tutorials/rill_basics': {
     backgroundImage: 'url(/img/guide-image.jpg)',
     backgroundColor: '#f9f9f9',
   },
-  'tutorials/rill_learn_300/overview': {
+  'tutorials/rill_advanced_features/overview': {
     backgroundImage: 'url(/img/overview-image.jpg)',
     backgroundColor: '#eef5f9',
   },
