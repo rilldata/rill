@@ -39,6 +39,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_having_same_name", func(t *testing.T) { testMetricsViewsAggregation_having_same_name(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_having", func(t *testing.T) { testMetricsViewsAggregation_having(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_where", func(t *testing.T) { testMetricsViewsAggregation_where(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_whereAndSQLBoth", func(t *testing.T) { testMetricsViewsAggregation_whereAndSQLBoth(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_filter_having_measure", func(t *testing.T) { testMetricsViewsAggregation_filter_having_measure(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_filter_with_where_and_having_measure", func(t *testing.T) {
 		testMetricsViewsAggregation_filter_with_where_and_having_measure(t, rt, instanceID)
@@ -75,6 +76,7 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_having_same_name", func(t *testing.T) { testMetricsViewsAggregation_having_same_name(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_having", func(t *testing.T) { testMetricsViewsAggregation_having(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_where", func(t *testing.T) { testMetricsViewsAggregation_where(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_whereAndSQLBoth", func(t *testing.T) { testMetricsViewsAggregation_whereAndSQLBoth(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_filter_having_measure", func(t *testing.T) { testMetricsViewsAggregation_filter_having_measure(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_filter_with_where_and_having_measure", func(t *testing.T) {
 		testMetricsViewsAggregation_filter_with_where_and_having_measure(t, rt, instanceID)
@@ -1850,6 +1852,56 @@ func testMetricsViewsAggregation_where(t *testing.T, rt *runtime.Runtime, instan
 	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
 	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "inline_1"))
+}
+
+func testMetricsViewsAggregation_whereAndSQLBoth(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "inline_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		WhereSQL: "pub like '%cro%'",
+		Where: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_LIKE,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "pub",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewStringValue("%c%"),
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[0], "pub", "inline_1"))
+	require.Equal(t, len(q.Result.Data), 1)
 }
 
 func testMetricsViewsAggregation_filter_having_measure(t *testing.T, rt *runtime.Runtime, instanceID string) {
