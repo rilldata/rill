@@ -6,6 +6,7 @@
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
   import { usePivotDataStore } from "./pivot-data-store";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 
   const stateManagers = getStateManagers();
 
@@ -13,8 +14,14 @@
 
   $: pivotDataStore = usePivotDataStore(stateManagers);
 
-  $: isFetching = $pivotDataStore.isFetching;
-  $: assembled = $pivotDataStore.assembled;
+  $: ({ isFetching, assembled } = $pivotDataStore);
+
+  $: ({ metricsViewName, dashboardStore } = stateManagers);
+
+  function removeActiveCell() {
+    if (!$dashboardStore.pivot.activeCell) return;
+    metricsExplorerStore.removePivotActiveCell($metricsViewName);
+  }
 </script>
 
 <div class="layout">
@@ -25,7 +32,7 @@
     {#if showPanels}
       <PivotHeader />
     {/if}
-    <PivotToolbar {isFetching} bind:showPanels />
+    <PivotToolbar {isFetching} bind:showPanels {removeActiveCell} />
     <div class="table-view">
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <PivotEmpty {assembled} {isFetching} />
@@ -46,7 +53,7 @@
   }
 
   .table-view {
-    @apply p-2 w-full h-full;
+    @apply p-2 pt-0 w-full h-full;
     @apply flex items-start;
     @apply overflow-hidden;
   }

@@ -1,15 +1,18 @@
+<script lang="ts" context="module">
+  import { writable } from "svelte/store";
+  const measureLengths = writable(new Map<string, number>());
+</script>
+
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
-  import { rowViewerStore } from "@rilldata/web-common/features/dashboards/rows-viewer/row-viewer-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { clamp } from "@rilldata/web-common/lib/clamp";
@@ -43,9 +46,9 @@
   const MIN_COL_WIDTH = 150;
   const MAX_COL_WIDTH = 600;
   const MAX_INIT_COL_WIDTH = 400;
-  const MIN_MEASURE_WIDTH = 60;
+  const MIN_MEASURE_WIDTH = 70;
   const MAX_MEAUSRE_WIDTH = 300;
-  const INIT_MEASURE_WIDTH = 60;
+  const INIT_MEASURE_WIDTH = 100;
 
   export let pivotDataStore: PivotDataStore;
 
@@ -99,6 +102,7 @@
   let initScrollOnResize = 0;
   let percentOfChangeDuringResize = 0;
   let resizingMeasure = false;
+  let resizing = false;
 
   $: ({
     expanded,
@@ -114,16 +118,39 @@
   $: assembled = $pivotDataStore.assembled;
 
   $: measures = getMeasureColumnProps($config);
-  $: measureNames = measures.map((m) => m.label) ?? [];
-  $: measureCount = measureNames.length;
-  $: measureLengths = measureNames.map((name) =>
-    Math.max(INIT_MEASURE_WIDTH, name.length * 7 + MEASURE_PADDING),
-  );
-  $: measureGroups = headerGroups[headerGroups.length - 2]?.headers?.slice(
-    hasDimension ? 1 : 0,
-  ) ?? [null];
+  $: measureCount = measures.length;
+  $: measures.forEach(({ name, label }) => {
+    if (!$measureLengths.has(name)) {
+      measureLengths.update((measureLengths) => {
+        return measureLengths.set(
+          name,
+          Math.max(MIN_MEASURE_WIDTH, label.length * 7 + MEASURE_PADDING),
+        );
+      });
+    }
+  });
+
+  $: subHeaders = [
+    {
+      subHeaders: measures.map((m) => ({
+        column: { columnDef: { name: m.name } },
+      })),
+    },
+  ];
+
+  let measureGroups: {
+    subHeaders: { column: { columnDef: { name: string } } }[];
+  }[];
+  // @ts-expect-error - I have manually added the name property in pivot-column-definition.ts
+  $: measureGroups =
+    headerGroups[headerGroups.length - 2]?.headers?.slice(
+      hasDimension ? 1 : 0,
+    ) ?? subHeaders;
   $: measureGroupsLength = measureGroups.length;
-  $: totalMeasureWidth = measureLengths.reduce((acc, val) => acc + val, 0);
+  $: totalMeasureWidth = measures.reduce(
+    (acc, { name }) => acc + ($measureLengths.get(name) ?? 0),
+    0,
+  );
   $: totalLength = measureGroupsLength * totalMeasureWidth;
 
   $: headerGroups = $table.getHeaderGroups();
@@ -245,9 +272,9 @@
       e.clientX -
       containerRefElement.getBoundingClientRect().left -
       firstColumnWidth -
-      measureLengths.reduce((rollingSum, length, i) => {
+      measures.reduce((rollingSum, { name }, i) => {
         return i <= initialMeasureIndexOnResize
-          ? rollingSum + length
+          ? rollingSum + ($measureLengths.get(name) ?? 0)
           : rollingSum;
       }, 0) +
       4;
@@ -318,10 +345,6 @@
       cell.column.id === activeCell?.columnId
     );
   }
-  function removeActiveCell() {
-    metricsExplorerStore.removePivotActiveCell($metricsViewName);
-  }
-  let resizing = false;
 </script>
 
 <div
@@ -346,8 +369,6 @@
       <Resizer
         side="right"
         direction="EW"
-        justify="end"
-        hang={false}
         min={MIN_COL_WIDTH}
         max={MAX_COL_WIDTH}
         dimension={firstColumnWidth}
@@ -366,23 +387,31 @@
       </Resizer>
     </div>
 
-    {#each measureGroups as _, i (i)}
+    {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
       <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
-        {#each measureLengths as length, measureIndex (measureIndex)}
+        {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
+          {@const length = $measureLengths.get(name) ?? INIT_MEASURE_WIDTH}
+          {@const last =
+            i === subHeaders.length - 1 &&
+            groupIndex === measureGroups.length - 1}
           <div style:width="{length}px" class="h-full relative">
             <Resizer
               side="right"
               direction="EW"
-              justify="end"
-              hang={false}
               min={MIN_MEASURE_WIDTH}
               max={MAX_MEAUSRE_WIDTH}
               dimension={length}
-              onUpdate={(d) => (measureLengths[measureIndex] = d)}
+              justify={last ? "end" : "center"}
+              hang={!last}
+              onUpdate={(d) => {
+                measureLengths.update((measureLengths) => {
+                  return measureLengths.set(name, d);
+                });
+              }}
               onMouseDown={(e) => {
                 resizingMeasure = true;
                 resizing = true;
-                initialMeasureIndexOnResize = measureIndex;
+                initialMeasureIndexOnResize = i;
                 onResizeStart(e);
               }}
               onMouseUp={() => {
@@ -399,10 +428,9 @@
   </div>
 
   <table
+    role="presentation"
     style:width="{totalLength + firstColumnWidth}px"
     on:click={modified({ shift: handleClick })}
-    role="presentation"
-    use:clickOutside={[$rowViewerStore, () => removeActiveCell()]}
   >
     <colgroup>
       {#if firstColumnName && firstColumnWidth}
@@ -412,8 +440,9 @@
         />
       {/if}
 
-      {#each measureGroups as _, i (i)}
-        {#each measureLengths as length, i (i)}
+      {#each measureGroups as { subHeaders }, i (i)}
+        {#each subHeaders as { column: { columnDef: { name } } } (name)}
+          {@const length = $measureLengths.get(name) ?? INIT_MEASURE_WIDTH}
           <col style:width="{length}px" style:max-width="{length}px" />
         {/each}
       {/each}

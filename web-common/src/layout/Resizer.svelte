@@ -105,7 +105,7 @@
     @apply z-50 flex-none;
     @apply pointer-events-auto;
     @apply flex items-center;
-    /* @apply bg-red-500; */
+    /* @apply bg-red-500 opacity-50; */
   }
 
   button:disabled {
@@ -118,7 +118,7 @@
   }
 
   .EW {
-    @apply w-3 h-full;
+    @apply w-2 h-full;
     @apply cursor-col-resize;
   }
 
