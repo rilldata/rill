@@ -113,7 +113,7 @@
   }
 
   .NS {
-    @apply w-full h-3 pr-8;
+    @apply w-full h-2 pr-8;
     @apply cursor-row-resize;
   }
 
