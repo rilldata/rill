@@ -169,11 +169,13 @@ export class FileArtifact {
   };
 
   saveLocalContent = async () => {
-    const local = get(this.localContent);
-    if (local === null) return;
-
     const blob = get(this.localContent);
+    if (blob === null) return;
 
+    await this.saveContent(blob);
+  };
+
+  saveContent = async (blob: string) => {
     const instanceId = get(runtime).instanceId;
     const key = getRuntimeServiceGetFileQueryKey(instanceId, {
       path: this.path,
@@ -186,7 +188,7 @@ export class FileArtifact {
     try {
       await runtimeServicePutFile(instanceId, {
         path: this.path,
-        blob: local,
+        blob,
       }).catch(console.error);
 
       this.updateLocalContent(null);

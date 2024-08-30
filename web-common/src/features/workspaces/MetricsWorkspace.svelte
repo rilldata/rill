@@ -19,9 +19,8 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
-  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
   import VisualMetrics from "./VisualMetrics.svelte";
+  import ViewSelector from "../custom-dashboards/ViewSelector.svelte";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -35,10 +34,8 @@
     autoSave,
     path: filePath,
     remoteContent,
-    localContent,
+
     fileName,
-    updateLocalContent,
-    saveLocalContent,
   } = fileArtifact);
 
   $: metricsViewName = getNameFromFile(filePath);
@@ -86,38 +83,14 @@
     if (newRoute) await goto(newRoute);
   }
 
-  async function reorderList(initIndex: number, newIndex: number) {
-    console.log({ initIndex, newIndex });
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const measures = parsedDocument.get("measures") as YAMLSeq;
-
-    const items = measures.items as Array<YAMLMap>;
-
-    console.log({ measures });
-
-    console.log({ items });
-
-    items.splice(newIndex, 0, items.splice(initIndex, 1)[0]);
-
-    parsedDocument.set("measures", items);
-
-    updateLocalContent(parsedDocument.toString(), true);
-
-    await saveLocalContent();
-
-    console.log(parsedDocument.toString());
-  }
+  let selectedView: "code" | "viz" = "code";
 </script>
 
-<!-- <MetricsTable {metricsViewName} {reorderList} /> -->
-
-<VisualMetrics {fileArtifact} />
-
-<WorkspaceContainer inspector={isModelingSupported}>
+<WorkspaceContainer inspector={isModelingSupported && selectedView === "code"}>
   <WorkspaceHeader
     hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
-    showInspectorToggle={isModelingSupported}
+    showInspectorToggle={selectedView === "code" && isModelingSupported}
     slot="header"
     titleInput={fileName}
   >
@@ -127,19 +100,31 @@
         status={previewStatus}
         disabled={previewDisabled}
       />
+
       <DeployDashboardCta />
       <LocalAvatarButton />
+      <ViewSelector split={false} bind:selectedView />
     </div>
   </WorkspaceHeader>
 
-  <MetricsEditor
-    slot="body"
-    bind:autoSave={$autoSave}
-    {fileArtifact}
-    {filePath}
-    {allErrors}
-    metricViewName={metricsViewName}
-  />
+  <svelte:fragment slot="body">
+    {#if selectedView === "code"}
+      <MetricsEditor
+        bind:autoSave={$autoSave}
+        {fileArtifact}
+        {filePath}
+        {allErrors}
+        metricViewName={metricsViewName}
+      />
+    {:else}
+      <VisualMetrics
+        {fileArtifact}
+        switchView={() => {
+          selectedView = "code";
+        }}
+      />
+    {/if}
+  </svelte:fragment>
 
   <MetricsInspector {filePath} slot="inspector" />
 </WorkspaceContainer>

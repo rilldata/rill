@@ -1,234 +1,174 @@
+<script context="module" lang="ts">
+  import { writable } from "svelte/store";
+
+  export const insertIndex = writable<number | null>(null);
+</script>
+
 <script lang="ts">
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type {
+    MetricsViewSpecDimensionV2,
+    MetricsViewSpecMeasureV2,
+  } from "@rilldata/web-common/runtime-client";
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import { measureChipColors as colors } from "@rilldata/web-common/components/chip/chip-types";
-  import { Mouse } from "lucide-svelte";
   import EditControls from "./EditControls.svelte";
-  import { GripVerticalIcon, GripVertical } from "lucide-svelte";
+  import { GripVertical } from "lucide-svelte";
   import Checkbox from "./Checkbox.svelte";
+  import { editingItem } from "../workspaces/VisualMetrics.svelte";
+  import {
+    defaultChipColors,
+    measureChipColors,
+  } from "@rilldata/web-common/components/chip/chip-types";
+
   const ROW_HEIGHT = 40;
 
-  export let measure: MetricsViewSpecMeasureV2;
-  export let reorderList: (initIndex: number, newIndex: number) => void;
+  export let item: MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
   export let i: number;
+  export let selected: boolean;
+  export let length: number;
+  export let reorderList: (initIndex: number, newIndex: number) => void;
+  export let onCheckedChange: (checked: boolean) => void;
 
-  //   export let swapRows: (i: number) => void;
+  export let onDuplicate: (index: number) => void;
+  export let scrollLeft: number;
+  export let tableWidth: number;
+  export let type: "measures" | "dimensions";
 
   let row: HTMLTableRowElement;
   let initialY = 0;
-  let dragging = false;
-  let rowDelta = 0;
-  let swaps = 0;
-  let y = 0;
+  let clone: HTMLTableRowElement;
 
   function handleClick(e: MouseEvent) {
     if (e.button !== 0) return;
     initialY = e.clientY;
-    dragging = true;
+
+    clone = row.cloneNode(true) as HTMLTableRowElement;
+
+    clone.style.opacity = "0.6";
+    row.parentElement?.appendChild(clone);
+
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
-
-    // const cloned = row.cloneNode(true) as HTMLTableRowElement;
-    // cloned.style.position = "absolute";
-    // cloned.style.width = "100%";
-    // row.parentElement?.appendChild(cloned);d
   }
 
-  function swapRows(down: boolean) {
-    console.log({ down });
-    const swapRow = (
-      down ? row.nextElementSibling : row.previousElementSibling
-    ) as HTMLTableRowElement;
+  function handleMouseMove(e: MouseEvent) {
+    const movement = e.clientY - initialY;
+    const rowDelta = Math.floor(movement / 40);
 
-    // console.log({ swapRow });
-    initialY = swapRow.getBoundingClientRect().y + 20.5;
-
-    // console.log({ initialY });
-    // console.log(tbody.children[i + swaps + 2]);
-    row.insertAdjacentElement(down ? "beforebegin" : "afterend", swapRow);
-    // row.style.transform = `translateY(${down ? "-" : ""}20.5px)`;
-    y = down ? -20.5 : 20.5;
-    // tbody.insertBefore(nextRow, row);
-  }
-
-  function handleMouseMove(event: MouseEvent) {
-    event.preventDefault();
-    const { clientY } = event;
-    y = clientY - initialY;
-    console.log({ y, clientY, initialY });
-
-    // rowDelta = Math.floor((y + 20) / 40);
-
-    // console.log({ y });
-
-    // console.log(y);
-    // console.log({ rowDelta });
-
-    if (y > 20.5 || y < -20.5) {
-      console.log({ y });
-      swapRows(y > 0);
-      swaps += y > 0 ? -1 : 1;
-      //   console.log({ initialY });
-
-      //   y = -20;
-    }
+    insertIndex.set(i + rowDelta);
+    clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
   }
 
   function handleMouseUp() {
     window.removeEventListener("mousemove", handleMouseMove);
     window.removeEventListener("mouseup", handleMouseUp);
 
-    const newIndex = i + swaps;
-    if (newIndex !== i) {
-      reorderList(i, newIndex);
+    if ($insertIndex !== i && $insertIndex !== null) {
+      reorderList(i, $insertIndex < i ? $insertIndex + 1 : $insertIndex);
     }
 
-    y = 0;
-    rowDelta = 0;
-    dragging = false;
-    swaps = 0;
+    clone.remove();
+    insertIndex.set(null);
   }
   let hovered = false;
+
+  function isMeasure(
+    item: MetricsViewSpecDimensionV2 | MetricsViewSpecMeasureV2,
+  ): item is MetricsViewSpecMeasureV2 {
+    return "formatPreset" in item;
+  }
 </script>
 
 <tr
-  id={measure.name}
-  class:dragging
+  id={item?.name || item?.label}
+  style:transform="translateY(0px)"
+  class="relative"
+  style:height="{ROW_HEIGHT}px"
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
   bind:this={row}
-  style:transform="translateY({y}px)"
-  class="relative"
+  class:insert={$insertIndex === i}
 >
   <td class="!pl-0">
-    <div class="h-10 pl-1 gap-x-0.5 flex items-center w-14">
-      <button on:mousedown={handleClick}>
+    <div class="gap-x-0.5 flex items-center w-14 pl-1">
+      <button
+        on:mousedown={handleClick}
+        class:opacity-0={!hovered}
+        disabled={!hovered}
+      >
         <GripVertical size="14px" />
       </button>
-      <Checkbox />
+      <Checkbox onChange={onCheckedChange} checked={selected} />
     </div>
   </td>
+  <td class="max-w-64"> {item?.name || item?.label}</td>
+
+  <td class="expression max-w-72">{item?.expression || item?.name}</td>
   <td>
     <Chip
       {...colors}
+      slideDuration={0}
       extraRounded={false}
       extraPadding={false}
-      label={measure.name}
+      {...isMeasure(item) ? measureChipColors : defaultChipColors}
+      label={item?.label || item?.label}
       outline
     >
-      <span slot="body" class="font-bold truncate">{measure.label}</span>
+      <span slot="body" class="font-bold truncate"
+        >{item?.label || item?.label}</span
+      >
     </Chip>
   </td>
-  <td class="expression">{measure.expression}</td>
-  <td class="capitalize">{measure.formatPreset || measure.formatD3 || "-"}</td>
-  <td>{measure.description || "-"}</td>
+  {#if isMeasure(item)}
+    <td class="capitalize"> {item?.formatPreset || item?.formatD3 || "-"}</td>
+  {/if}
+  <td class="max-w-72">{item?.description || item?.description || "-"}</td>
 
   {#if hovered}
-    <EditControls />
+    <EditControls
+      right={Math.max(0, tableWidth - scrollLeft)}
+      first={i === 0}
+      last={i === length - 1}
+      onEdit={() => {
+        editingItem.set({ data: item, index: i, type });
+      }}
+      onMoveToBottom={() => {
+        reorderList(i, length - 1);
+      }}
+      onMoveToTop={() => {
+        reorderList(i, 0);
+      }}
+      onDuplicate={() => {
+        onDuplicate(i);
+      }}
+      onDelete={() => {}}
+    />
   {/if}
 </tr>
 
 <style lang="postcss">
   tr {
-    @apply border-b bg-background;
-    height: 40px;
+    @apply bg-background;
+    /* @apply -z-10; */
   }
 
   tr:hover {
     @apply bg-gray-50;
   }
 
-  td {
-    @apply pl-4 truncate;
+  td:not(.dragging) {
+    @apply pl-4 truncate border-b;
+  }
+
+  .insert td {
+    @apply border-b border-primary-500;
+  }
+
+  tr:last-of-type td {
+    @apply border-b-0;
   }
 
   .expression {
     font-family: "Source Code Variable", monospace;
-    text-transform: uppercase;
-  }
-
-  .dragging {
-    /* position: absolute; */
-    width: 100%;
-    /* display: block; */
-    /* display: table-row; */
-    /* border: 1px solid #f1f1f1; */
-    z-index: 50;
-    cursor: grabbing;
-    /* -webkit-box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05); */
-    /* box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05); */
-
-    opacity: 1;
-  }
-
-  .dragging td {
-    z-index: 50;
-  }
-
-  .container input {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    height: 0;
-    width: 0;
-  }
-
-  .checkmark {
-    /* position: absolute;
-    top: 0;
-    left: 0; */
-    height: 16px;
-    width: 16px;
-    @apply rounded-sm border border-gray-300;
-    @apply bg-gray-50;
-  }
-
-  .container {
-    @apply bg-green-400;
-    @apply size-4;
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-
-  .checkbox {
-    @apply size-4 bg-gray-50 border border-gray-300;
-  }
-
-  /* On mouse-over, add a grey background color */
-  .container:hover input ~ .checkmark {
-    background-color: #ccc;
-  }
-
-  /* When the checkbox is checked, add a blue background */
-  .container input:checked ~ .checkmark {
-    background-color: #2196f3;
-  }
-
-  /* Create the checkmark/indicator (hidden when not checked) */
-  .checkmark:after {
-    content: "";
-    position: absolute;
-    display: none;
-  }
-
-  /* Show the checkmark when checked */
-  .container input:checked ~ .checkmark:after {
-    display: block;
-  }
-
-  /* Style the checkmark/indicator */
-  .container .checkmark:after {
-    left: 9px;
-    top: 5px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 3px 3px 0;
-    -webkit-transform: rotate(45deg);
-    -ms-transform: rotate(45deg);
-    transform: rotate(45deg);
   }
 </style>

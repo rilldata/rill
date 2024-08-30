@@ -36,7 +36,7 @@
 
   let customDashboardName: string;
   let selectedChartFileArtifact: FileArtifact | undefined;
-  let selectedView = "split";
+  let selectedView: "code" | "split" | "viz" = "split";
   let showGrid = true;
   let showChartEditor = false;
   let containerWidth: number;

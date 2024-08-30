@@ -1,12 +1,19 @@
 <script lang="ts">
   export let checked = false;
   export let disabled = false;
-  export let onChange = () => {};
+  export let onChange: (checked: boolean) => void;
   export let size: number = 16;
 </script>
 
 <label class="form-control" style:--height="{size}px">
-  <input type="checkbox" {checked} {disabled} on:change={onChange} />
+  <input
+    type="checkbox"
+    {checked}
+    {disabled}
+    on:change={(event) => {
+      onChange(event.currentTarget.checked);
+    }}
+  />
 </label>
 
 <style lang="postcss">
@@ -21,7 +28,8 @@
     line-height: 1.1;
     display: grid;
     grid-template-columns: 1em auto;
-    gap: 0.5em;
+    width: var(--height);
+    height: var(--height);
   }
 
   input[type="checkbox"] {
@@ -54,7 +62,7 @@
     clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
     transform: scale(0);
     transform-origin: bottom left;
-    transition: 120ms transform ease-in-out;
+
     box-shadow: inset 1em 1em rgb(133, 126, 194);
     /* Windows High Contrast Mode */
     background-color: CanvasText;

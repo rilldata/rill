@@ -127,7 +127,7 @@
     @apply flex justify-center items-center overflow-hidden;
     @apply h-8 pl-2 w-full;
 
-    @apply border border-gray-300 rounded-sm;
+    @apply border border-gray-300 rounded-[2px];
     @apply text-xs;
     @apply cursor-pointer;
   }
