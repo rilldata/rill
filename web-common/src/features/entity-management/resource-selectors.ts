@@ -132,7 +132,7 @@ export function useFilteredResources<T = Array<V1Resource>>(
   return createRuntimeServiceListResources(
     instanceId,
     {
-      kind,
+      kind: kind,
     },
     {
       query: {
