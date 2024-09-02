@@ -91,7 +91,8 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 }
 
 func (e *embedClickHouse) stop() error {
-	e.logger.Info("Stopping ClickHouse server: " + fmt.Sprintf("localhost:%d", e.tcpPort))
+	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
+	e.logger.Info("Stopping embedded ClickHouse server", zap.String("addr", addr))
 	if e.cmd == nil || e.cmd.Process == nil {
 		return nil
 	}
