@@ -217,10 +217,6 @@ export class FileArtifact {
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
-  softDeleteResource() {
-    this.reconciling.set(false);
-  }
-
   hardDeleteResource() {
     // To avoid a workspace flicker, first infer the *intended* resource kind
     this.inferredResourceKind.set(

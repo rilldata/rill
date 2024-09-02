@@ -59,13 +59,6 @@ export class FileArtifacts {
     resource.meta?.filePaths?.forEach((filePath) => {
       this.getFileArtifact(filePath)?.updateAll(resource);
     });
-
-    // Q: I wonder if this is even needed. It only sets the file artifacts to "not reconciling". I think
-    // the above `updateAll` function already does this.
-    const softDeleted = resource.meta?.deletedOn;
-    if (softDeleted) {
-      this.softDeleteResource(resource);
-    }
   }
 
   updateReconciling(resource: V1Resource) {
