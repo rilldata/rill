@@ -33,7 +33,8 @@ export class WatchResourcesClient {
   }
 
   private handleWatchResourceResponse(res: V1WatchResourcesResponse) {
-    // consoleLogResourceStatusInPlaywrightTests(res);
+    // Log resource status to the browser console during e2e tests. Currently, our e2e tests make assertions
+    // based on these logs. However, the e2e tests really should make UI-based assertions.
     if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
       console.log(
         `[${res.resource?.meta?.reconcileStatus}] ${res.name?.kind}/${res.name?.name}`,
