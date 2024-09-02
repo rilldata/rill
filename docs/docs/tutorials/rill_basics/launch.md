@@ -10,7 +10,7 @@ You will need to [install Rill](https://docs.rilldata.com/home/install).
 :::
 
 By the end of this course, you will have a deployed instance of your project in Rill Cloud, and your [30 day 
-trial](./launch) will start. This also prepares you for the [Advanced Features Course](../rill_advanced_features/overview.md) that builds ontop of this project.
+trial](./launch) will start. This also prepares you for the [Advanced Features Course](../rill_advanced_features/overview.md) that builds on top of this project.
 
 ## Start Rill Developer
 
