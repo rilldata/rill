@@ -116,7 +116,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringSliceVar(&models, "model", nil, "Refresh a model")
 	refreshCmd.Flags().StringSliceVar(&modelSplits, "split", nil, "Refresh a model split (must set --model)")
 	refreshCmd.Flags().BoolVar(&erroredSplits, "errored-splits", false, "Refresh all model splits with errors (must set --model)")
-	refreshCmd.Flags().StringSliceVar(&sources, "source", nil, " Refresh a source")
+	refreshCmd.Flags().StringSliceVar(&sources, "source", nil, "Refresh a source")
 	refreshCmd.Flags().StringSliceVar(&alerts, "alert", nil, "Refresh an alert")
 	refreshCmd.Flags().StringSliceVar(&reports, "report", nil, "Refresh a report")
 	refreshCmd.Flags().BoolVar(&parser, "parser", false, "Refresh the parser (forces a pull from Github)")

@@ -44,6 +44,7 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
+				return nil
 			}
 
 			// Redeploy
