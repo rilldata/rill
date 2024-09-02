@@ -41,8 +41,6 @@ export class WatchResourcesClient {
       );
     }
 
-    console.log("res", res);
-
     // Type guards
     if (!res?.event || !res?.name || !res?.name?.name || !res?.name?.kind) {
       return;
