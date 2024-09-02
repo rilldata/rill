@@ -17,12 +17,13 @@ import (
 	"github.com/orbcorp/orb-go"
 	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
 	"github.com/riverqueue/river"
+	"go.uber.org/zap"
 )
 
 // WebhookHeaderTimestampFormat is the format of the header X-Orb-Timestamp for webhook requests sent by Orb.
 const WebhookHeaderTimestampFormat = "2006-01-02T15:04:05.999999999"
 
-var interestingEvents = []string{"invoice.payment_succeeded", "invoice.payment_failed"}
+var interestingEvents = []string{"invoice.payment_succeeded", "invoice.payment_failed", "invoice.issue_failed"}
 
 func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	const MaxBodyBytes = int64(65536)
@@ -78,6 +79,14 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "error handling event", http.StatusInternalServerError)
 			return
 		}
+	case "invoice.issue_failed":
+		var ie invoiceEvent
+		err = json.Unmarshal(payload, &ie)
+		if err != nil {
+			http.Error(w, "error parsing event data", http.StatusBadRequest)
+			return
+		}
+		o.logger.Warn("invoice issue failed", zap.String("customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.String("invoice_id", ie.OrbInvoice.ID), zap.String("props", fmt.Sprintf("%v", ie.Properties)))
 	default:
 		// do nothing
 	}

@@ -263,7 +263,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var biller billing.Biller
 			if conf.OrbAPIKey != "" {
-				biller = billing.NewOrb(conf.OrbAPIKey, conf.OrbWebhookSecret)
+				biller = billing.NewOrb(conf.OrbAPIKey, conf.OrbWebhookSecret, logger)
 			} else {
 				biller = billing.NewNoop()
 			}

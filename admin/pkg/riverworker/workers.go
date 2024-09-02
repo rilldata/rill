@@ -159,9 +159,8 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[riverut
 	}
 
 	if sub[0].TrialEndDate.After(time.Now().UTC()) {
-		// just relying on trial period days to check if still on trial plan, may need explicit flag for this in the plan
 		// trial period is ending soon, log warn and send email
-		w.admin.Logger.Warn("Trial period is ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.Time("trial_end_date", sub[0].TrialEndDate))
+		w.admin.Logger.Warn("trial period is ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.Time("trial_end_date", sub[0].TrialEndDate))
 
 		// send email
 		err = w.admin.Email.SendInformational(&email.Informational{
@@ -174,10 +173,10 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[riverut
 		if err != nil {
 			return fmt.Errorf("failed to send trial ending soon email for org %q: %w", org.Name, err)
 		}
-		w.admin.Logger.Info("Email sent for trial period ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		w.admin.Logger.Info("email sent for trial period ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	} else {
 		// this cannot happen but woke up after schedule or some error in calculating scheduling time
-		w.admin.Logger.Warn("Trial period has already ended before check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		w.admin.Logger.Warn("trial period has already ended before check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	}
 
 	return nil
@@ -221,9 +220,9 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[riverutil
 		return nil
 	}
 
-	if sub[0].TrialEndDate.Before(sub[0].TrialEndDate.Add(time.Hour * 1)) {
-		// trial period has ended, log error, send email and schedule a job to hibernate projects after grace period days if still on trial
-		w.admin.Logger.Error("Trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+	if time.Now().UTC().After(sub[0].TrialEndDate) {
+		// trial period has ended, log warn, send email and schedule a job to hibernate projects after grace period days if still on trial
+		w.admin.Logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
 		gracePeriodEndDate := sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)
 		// schedule a job to check if the org is still on trial after 7 days
@@ -265,9 +264,9 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[riverutil
 		if err != nil {
 			return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
 		}
-		w.admin.Logger.Info("Email sent for trial period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		w.admin.Logger.Info("email sent for trial period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	} else {
-		w.admin.Logger.Warn("Trial period has not ended when check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		w.admin.Logger.Warn("trial period has not ended when check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	}
 
 	return nil
@@ -328,7 +327,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[r
 	}
 
 	if time.Now().UTC().After(sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)) {
-		// trial grace period has ended, log error, send email and hibernate projects
+		// trial grace period has ended, log warn, send email and hibernate projects
 		limit := 10
 		afterProjectName := ""
 		for {
@@ -349,7 +348,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[r
 				break
 			}
 		}
-		w.admin.Logger.Info("Projects hibernated due to trial grace period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		w.admin.Logger.Warn("projects hibernated due to trial grace period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
 		// send email
 		err = w.admin.Email.SendInformational(&email.Informational{
@@ -362,9 +361,10 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[r
 		if err != nil {
 			return fmt.Errorf("failed to send trial grace period ended email for org %q: %w", org.Name, err)
 		}
-		w.admin.Logger.Info("Email sent for projects hibernated", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		w.admin.Logger.Info("email sent for projects hibernated", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	} else {
-		w.admin.Logger.Warn("Trial grace period has not ended when check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		// review should we return an error so its retried later
+		w.admin.Logger.Warn("trial grace period has not ended when check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	}
 	return nil
 }
@@ -405,7 +405,9 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[ri
 	if be != nil {
 		metadata = be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed)
 	} else {
-		metadata = &database.BillingErrorMetadataInvoicePaymentFailed{}
+		metadata = &database.BillingErrorMetadataInvoicePaymentFailed{
+			Invoices: make(map[string]database.InvoicePaymentFailedMeta),
+		}
 	}
 
 	metadata.Invoices[job.Args.InvoiceID] = database.InvoicePaymentFailedMeta{
@@ -441,7 +443,7 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[ri
 	if err != nil {
 		return fmt.Errorf("failed to send invoice payment failed email for org %q: %w", org.Name, err)
 	}
-	w.admin.Logger.Info("Email sent for invoice payment failed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+	w.admin.Logger.Info("email sent for invoice payment failed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
 	return nil
 }
@@ -472,7 +474,6 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[r
 	// delete the invoice failed error
 	if be != nil {
 		failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
-
 		// if found remove the invoice from the failed invoices
 		if i, ok := failedInvoices[job.Args.InvoiceID]; ok {
 			// remove any scheduled job for invoice payment failed grace period check
@@ -544,22 +545,30 @@ func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, j
 			return fmt.Errorf("failed to get invoice %q: %w", job.Args.InvoiceID, err)
 		}
 
-		if !w.admin.Biller.IsInvoiceValid(ctx, invoice) {
-			w.admin.Logger.Warn("Invoice is invalid clearing billing error", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
-			// invoice is invalid, delete the billing error
-			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
-			if err != nil {
-				return fmt.Errorf("failed to delete billing error: %w", err)
-			}
-			return nil
-		}
+		if w.admin.Biller.IsInvoicePaid(ctx, invoice) || !w.admin.Biller.IsInvoiceValid(ctx, invoice) {
+			w.admin.Logger.Warn("Invoice was already paid or invalid but billing error was not cleared", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_status", invoice.Status))
 
-		if w.admin.Biller.IsInvoicePaid(ctx, invoice) {
-			w.admin.Logger.Warn("Invoice was already paid but billing error was not cleared", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
-			// invoice is paid, delete the billing error
-			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
-			if err != nil {
-				return fmt.Errorf("failed to delete billing error: %w", err)
+			// clearing the billing error for this invoice
+			failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
+			delete(failedInvoices, job.Args.InvoiceID)
+
+			// if no more failed invoices, delete the billing error
+			if len(failedInvoices) == 0 {
+				err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+				if err != nil {
+					return fmt.Errorf("failed to delete billing error: %w", err)
+				}
+			} else {
+				// update the metadata
+				_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+					OrgID:     org.ID,
+					Type:      database.BillingErrorTypeInvoicePaymentFailed,
+					Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: failedInvoices},
+					EventTime: be.EventTime,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to update billing error: %w", err)
+				}
 			}
 			return nil
 		}
@@ -593,12 +602,12 @@ func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, j
 			ToName:  org.Name,
 			Subject: "No valid payment method found",
 			Title:   "",
-			Body:    "Your account does not have any payment method, your projects have been hibernated. Please visit the billing portal to enter payment method and then run `rill project reconcile` to unhibernate each project.",
+			Body:    "We did not receive any payment for the unpaid invoice, your projects have been hibernated. Please visit the billing portal to enter payment method and then run `rill project reconcile` to unhibernate each project.",
 		})
 		if err != nil {
 			return fmt.Errorf("failed to send payment method expired email for org %q: %w", org.Name, err)
 		}
-		w.admin.Logger.Info("Email sent for projects hibernated", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		w.admin.Logger.Info("email sent for projects hibernated", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	}
 
 	return nil
@@ -672,6 +681,11 @@ func (w *HandlePlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[r
 	}
 
 	if besc != nil {
+		jobID := besc.Metadata.(*database.BillingErrorMetadataSubscriptionCancelled).SubEndJobID
+		if jobID > 0 {
+			// cancel the subscription end check job, ignore errors.
+			_, _ = riverutils.InsertOnlyRiverClient.JobCancel(ctx, jobID)
+		}
 		err = w.admin.DB.DeleteBillingError(ctx, besc.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete billing error: %w", err)
@@ -805,7 +819,7 @@ func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, p
 	var args string
 	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore errors
 	h.Logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
-	// Set the job to be immediately cancelled.
+	// Set the job to be immediately cancelled. TODO review if we should retry or cancel the job
 	return &river.ErrorHandlerResult{SetCancelled: true}
 }
 

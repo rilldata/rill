@@ -460,7 +460,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 	}
 
 	// schedule subscription cancellation job at end of the current subscription term
-	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandleSubscriptionCancellationArgs{
+	j, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandleSubscriptionCancellationArgs{
 		OrgID:  org.ID,
 		SubID:  subs[0].ID,
 		PlanID: plan.ID,
@@ -479,7 +479,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		OrgID: org.ID,
 		Type:  database.BillingErrorTypeSubscriptionCancelled,
 		Metadata: database.BillingErrorMetadataSubscriptionCancelled{
-			EndDate: subEndDate,
+			EndDate:     subEndDate,
+			SubEndJobID: j.Job.ID,
 		},
 		EventTime: time.Now(),
 	})
@@ -1462,7 +1463,7 @@ func billingErrorMetadataToDTO(t database.BillingErrorType, m database.BillingEr
 		}
 	case database.BillingErrorTypeInvoicePaymentFailed:
 		invoicePaymentFailed := m.(*database.BillingErrorMetadataInvoicePaymentFailed)
-		invoices := make([]*adminv1.InvoicePaymentFailedMeta, len(invoicePaymentFailed.Invoices))
+		invoices := make([]*adminv1.InvoicePaymentFailedMeta, 0)
 		for k := range invoicePaymentFailed.Invoices {
 			invoices = append(invoices, &adminv1.InvoicePaymentFailedMeta{
 				InvoiceId:     invoicePaymentFailed.Invoices[k].ID,

@@ -976,7 +976,8 @@ type BillingErrorMetadataTrialEnded struct {
 }
 
 type BillingErrorMetadataSubscriptionCancelled struct {
-	EndDate time.Time `json:"end_date"`
+	EndDate     time.Time `json:"end_date"`
+	SubEndJobID int64     `json:"sub_end_job_id"`
 }
 
 type UpsertBillingErrorOptions struct {

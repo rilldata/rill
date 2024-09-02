@@ -42,39 +42,39 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodAttached):
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
-			s.logger.Error(fmt.Sprintf("error parsing payment method data: %v", err))
+			s.logger.Error("error parsing payment method data", zap.Error(err))
 			http.Error(w, "error parsing payment method data", http.StatusBadRequest)
 			return
 		}
 		if paymentMethod.Customer == nil {
-			// just log error and send http ok as we can't do anything without customer id
-			s.logger.Error(fmt.Sprintf("no customer info sent for payment method added event id: %s, data: %s", event.ID, string(event.Data.Raw)))
+			// just log warn and send http ok as we can't do anything without customer id
+			s.logger.Warn("no customer info sent for payment method added event", zap.String("event_id", event.ID), zap.String("raw_event", string(event.Data.Raw)))
 		}
 		err = s.handlePaymentMethodAdded(r.Context(), &paymentMethod)
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("Error handling payment_method.attached event: %v", err))
+			s.logger.Error("Error handling payment_method.attached event", zap.Error(err))
 			http.Error(w, "Error handling payment_method.attached event", http.StatusInternalServerError)
 			return
 		}
 	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodDetached):
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
-			s.logger.Error(fmt.Sprintf("Error parsing payment method data: %v", err))
+			s.logger.Error("Error parsing payment method data", zap.Error(err))
 			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
 			return
 		}
 		if event.Data.PreviousAttributes["customer"] == nil {
-			// just log error and send http ok as we can't do anything without customer id
-			s.logger.Error(fmt.Sprintf("no customer info sent for payment method removed event id: %s, data: %s", event.ID, string(event.Data.Raw)))
+			// just log warn and send http ok as we can't do anything without customer id
+			s.logger.Warn("no customer info sent for payment method detached event", zap.String("event_id", event.ID), zap.String("raw_event", string(event.Data.Raw)))
 		}
 		err = s.handlePaymentMethodRemoved(r.Context(), event.Data.PreviousAttributes["customer"].(string), &paymentMethod)
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("error handling payment_method.detached event: %v", err))
+			s.logger.Error("error handling payment_method.detached event", zap.Error(err))
 			http.Error(w, "error handling payment_method.detached event", http.StatusInternalServerError)
 			return
 		}
 	default:
-		s.logger.Warn(fmt.Sprintf("unhandled event type: %s\n", event.Type))
+		s.logger.Warn("unhandled stripe event type", zap.String("type", string(event.Type)))
 	}
 
 	// Acknowledge receipt of the event

@@ -13,6 +13,7 @@ import (
 	"github.com/orbcorp/orb-go"
 	"github.com/orbcorp/orb-go/option"
 	"github.com/rilldata/rill/admin/database"
+	"go.uber.org/zap"
 )
 
 const (
@@ -25,12 +26,13 @@ var _ Biller = &Orb{}
 type Orb struct {
 	client        *orb.Client
 	webhookSecret string
+	logger        *zap.Logger
 }
 
-func NewOrb(orbKey, webhookSecret string) Biller {
+func NewOrb(orbKey, webhookSecret string, logger *zap.Logger) Biller {
 	c := orb.NewClient(option.WithAPIKey(orbKey), option.WithRequestTimeout(requestTimeout))
 
-	return &Orb{client: c, webhookSecret: webhookSecret}
+	return &Orb{client: c, webhookSecret: webhookSecret, logger: logger}
 }
 
 func (o *Orb) Name() string {
