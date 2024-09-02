@@ -1,7 +1,9 @@
 package clickhouse
 
 import (
+	"archive/tar"
 	"bufio"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net"
@@ -16,8 +18,9 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"go.uber.org/zap"
-	"golang.org/x/sys/cpu"
 )
+
+const embedVersion = "24.7.4.51"
 
 type embedClickHouse struct {
 	tcpPort int
@@ -89,11 +92,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 
 func (e *embedClickHouse) stop() error {
 	e.logger.Info("Stopping ClickHouse server: " + fmt.Sprintf("localhost:%d", e.tcpPort))
-	if e.cmd == nil {
-		return nil
-	}
-
-	if e.cmd.Process == nil {
+	if e.cmd == nil || e.cmd.Process == nil {
 		return nil
 	}
 
@@ -106,7 +105,8 @@ func (e *embedClickHouse) stop() error {
 }
 
 func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, error) {
-	destPath := filepath.Join(destDir, "clickhouse")
+	release := "v" + embedVersion + "-stable"
+	destPath := filepath.Join(destDir, embedVersion, "clickhouse")
 
 	if _, err := os.Stat(destDir); os.IsNotExist(err) {
 		err = os.MkdirAll(destDir, os.ModePerm)
@@ -123,41 +123,41 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
-	dir := ""
 
 	// The following OS and platform matching mostly repeats the logic in the ClickHouse installation script
 	// https://github.com/ClickHouse/ClickHouse/blob/master/docs/_includes/install/universal.sh
 	switch goos {
-	case "linux":
-		switch goarch {
-		case "amd64":
-			if cpu.X86.HasSSE42 {
-				dir = "amd64"
-			} else {
-				dir = "amd64compat"
-			}
-
-		case "arm64":
-			if cpu.ARM64.HasASIMD && cpu.ARM64.HasSHA1 && cpu.ARM64.HasAES &&
-				cpu.ARM64.HasATOMICS && cpu.ARM64.HasLRCPC {
-				dir = "aarch64"
-			} else {
-				dir = "aarch64v80compat"
-			}
-		}
 	case "darwin":
+		fileName := ""
 		switch goarch {
 		case "amd64":
-			dir = "macos"
+			fileName = "clickhouse-macos"
 		case "arm64":
-			dir = "macos-aarch64"
+			fileName = "clickhouse-macos-aarch64"
 		}
-	}
-
-	url := fmt.Sprintf("https://builds.clickhouse.com/master/%s/clickhouse", dir)
-	logger.Info(fmt.Sprintf("Will download %s into %s\n", url, destPath))
-	if err := downloadFile(destPath, url); err != nil {
-		return "", fmt.Errorf("error downloading ClickHouse: %w", err)
+		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
+		logger.Info(fmt.Sprintf("Will download %s into %s\n", url, destPath))
+		if err := downloadFile(destPath, url); err != nil {
+			return "", fmt.Errorf("error downloading ClickHouse: %w", err)
+		}
+	case "linux":
+		fileName := ""
+		switch goarch {
+		case "amd64":
+			fileName = "clickhouse-common-static-24.7.4.51-amd64.tgz"
+		case "arm64":
+			fileName = "clickhouse-common-static-24.7.4.51-arm64.tgz"
+		}
+		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
+		destTgzPath := filepath.Join(destDir, release, fileName)
+		logger.Info(fmt.Sprintf("Will download %s into %s\n", url, destTgzPath))
+		if err := downloadFile(destTgzPath, url); err != nil {
+			return "", fmt.Errorf("error downloading ClickHouse: %w", err)
+		}
+		fileToExtract := filepath.Join("clickhouse-common-static-"+embedVersion, "usr", "bin", "clickhouse")
+		if err := extractFileFromTgz(destTgzPath, fileToExtract, destPath); err != nil {
+			return "", fmt.Errorf("error extracting ClickHouse: %w", err)
+		}
 	}
 
 	err := os.Chmod(destPath, 0x755)
@@ -289,6 +289,10 @@ func (e *embedClickHouse) startAndWaitUntilReady() error {
 }
 
 func downloadFile(path, url string) error {
+	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+		return err
+	}
+
 	out, err := os.Create(path)
 	if err != nil {
 		return err
@@ -307,6 +311,58 @@ func downloadFile(path, url string) error {
 
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+// extractFileFromTgz extracts a file from a .tgz archive.
+// The function searches for the file with the given name in the archive and extracts it to the destination path.
+func extractFileFromTgz(tgzPath, fileName, destPath string) error {
+	file, err := os.Open(tgzPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	gz, err := gzip.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+
+	tarReader := tar.NewReader(gz)
+
+	// Iterate through the files in the tar archive
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return err
+		}
+
+		if header.Typeflag == tar.TypeReg && header.Name == fileName {
+			if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+				return err
+			}
+
+			destFile, err := os.Create(destPath)
+			if err != nil {
+				return err
+			}
+
+			if _, err := io.Copy(destFile, tarReader); err != nil { //nolint:gosec // Source is trusted, no risk of G110: Potential DoS vulnerability
+				destFile.Close()
+				return err
+			}
+
+			if err := destFile.Close(); err != nil {
+				return err
+			}
+			break
+		}
+	}
+
+	return nil
 }
 
 func getFreePort() (int, error) {
