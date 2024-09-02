@@ -175,7 +175,7 @@ func NewInstanceForResolvers(t TestingT, opts InstanceOptionsForResolvers) (*run
 	case "clickhouse":
 		ctx := context.Background()
 		clickHouseContainer, err := clickhouse.RunContainer(ctx,
-			testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+			testcontainers.WithImage("clickhouse/clickhouse-server:24.7.4.51-alpine"),
 			clickhouse.WithUsername("clickhouse"),
 			clickhouse.WithPassword("clickhouse"),
 			clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
