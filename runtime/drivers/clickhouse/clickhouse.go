@@ -117,9 +117,9 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	var embed *embedClickHouse
 	// build clickhouse options
 	var opts *clickhouse.Options
+	var embed *embedClickHouse
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
