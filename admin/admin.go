@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -31,6 +32,7 @@ type Options struct {
 
 type Service struct {
 	DB               database.DB
+	Jobs             jobs.Client
 	URLs             *URLs
 	ProvisionerSet   map[string]provisioner.Provisioner
 	Email            *email.Client
