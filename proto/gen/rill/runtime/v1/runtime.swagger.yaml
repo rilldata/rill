@@ -1287,13 +1287,13 @@ paths:
                 title: Optional
               whereSql:
                 type: string
-                title: Optional. Either where or where_sql should be set
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
               havingSql:
                 type: string
-                title: Optional. Either having or having_sql should be set
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               limit:
                 type: string
                 format: int64
@@ -1391,13 +1391,13 @@ paths:
                 title: Optional
               whereSql:
                 type: string
-                title: Optional. Either where or where_sql should be set
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
               havingSql:
                 type: string
-                title: Optional. Either having or having_sql should be set
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               aliases:
                 type: array
                 items:
@@ -1671,13 +1671,13 @@ paths:
                 title: Optional
               whereSql:
                 type: string
-                title: Optional. Either where or where_sql should be set
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
               havingSql:
                 type: string
-                title: Optional. Either having or having_sql should be set
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               timeZone:
                 type: string
                 title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -1807,7 +1807,7 @@ paths:
                 title: Optional
               whereSql:
                 type: string
-                title: Optional. Either where or where_sql should be set
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               priority:
                 type: integer
                 format: int32
@@ -4349,13 +4349,13 @@ definitions:
         title: Optional
       whereSql:
         type: string
-        title: Optional. Either where or where_sql should be set
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
       havingSql:
         type: string
-        title: Optional. Either having or having_sql should be set
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       limit:
         type: string
         format: int64
@@ -4464,13 +4464,13 @@ definitions:
         title: Optional
       whereSql:
         type: string
-        title: Optional. Either where or where_sql should be set
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
       havingSql:
         type: string
-        title: Optional. Either having or having_sql should be set
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       aliases:
         type: array
         items:
@@ -4785,13 +4785,13 @@ definitions:
         title: Optional
       whereSql:
         type: string
-        title: Optional. Either where or where_sql should be set
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
       havingSql:
         type: string
-        title: Optional. Either having or having_sql should be set
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -4899,7 +4899,7 @@ definitions:
         title: Optional
       whereSql:
         type: string
-        title: Optional. Either where or where_sql should be set
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       priority:
         type: integer
         format: int32

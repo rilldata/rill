@@ -11,7 +11,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	createCmd := &cobra.Command{
 		Use:   "rename [<name>]",
-		Short: "Rename a user group",
+		Short: "Rename a group",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()

@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
+	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -43,6 +44,7 @@ import (
 type Config struct {
 	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
 	DatabaseURL            string                 `split_words:"true"`
+	RiverDatabaseURL       string                 `split_words:"true"`
 	RedisURL               string                 `default:"" split_words:"true"`
 	ProvisionerSetJSON     string                 `split_words:"true"`
 	DefaultProvisioner     string                 `split_words:"true"`
@@ -289,6 +291,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			defer adm.Close()
 
+			// Init river jobs client
+			jobs, err := river.New(cmd.Context(), conf.RiverDatabaseURL, adm)
+			if err != nil {
+				logger.Fatal("error creating river jobs client", zap.Error(err))
+			}
+			defer jobs.Close(cmd.Context())
+
+			// Set initialized jobs client on admin so jobs can be triggered from admin
+			adm.Jobs = jobs
+
 			// Parse session keys as hex strings
 			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
 			for idx, keyHex := range conf.SessionKeyPairs {
@@ -349,7 +361,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init and run worker
 			if runWorker || runJobs {
-				wkr := worker.New(logger, adm)
+				wkr := worker.New(logger, adm, jobs)
 				if runWorker {
 					group.Go(func() error { return wkr.Run(cctx) })
 					if !runServer {

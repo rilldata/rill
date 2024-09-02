@@ -4,7 +4,6 @@ import {
   useClientFilteredResources,
   useFilteredResources,
   useResource,
-  useResourceV2,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   RpcStatus,
@@ -32,7 +31,7 @@ export function useDashboard(
     V1Resource
   >,
 ) {
-  return useResourceV2(
+  return useResource(
     instanceId,
     metricViewName,
     ResourceKind.MetricsView,
@@ -73,15 +72,12 @@ export const useMetricsView = <T = V1MetricsViewSpec>(
   metricViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
 ) => {
-  return useResource<T>(
-    instanceId,
-    metricViewName,
-    ResourceKind.MetricsView,
-    (data) =>
+  return useResource<T>(instanceId, metricViewName, ResourceKind.MetricsView, {
+    select: (data) =>
       selector
-        ? selector(data.metricsView?.state?.validSpec)
-        : (data.metricsView?.state?.validSpec as T),
-  );
+        ? selector(data.resource?.metricsView?.state?.validSpec)
+        : (data.resource?.metricsView?.state?.validSpec as T),
+  });
 };
 
 // TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange

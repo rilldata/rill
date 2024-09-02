@@ -1,3 +1,4 @@
+import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
 import {
   createAndExpression,
   createInExpression,
@@ -20,6 +21,7 @@ import { mergeFilters } from "./pivot-merge-filters";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  PivotFilter,
   PivotState,
   type PivotDataRow,
   type PivotDataStoreConfig,
@@ -295,69 +297,15 @@ export function sortAcessors(accessors: string[]) {
   });
 }
 
-/**
- * For a given accessor created by getAccessorForCell, get the filter
- * that can be applied to the table to get sorted data based on the
- * accessor.
- */
-export function getSortForAccessor(
-  anchorDimension: string,
+function getColumnFiltersFromMinimizedAccessor(
   config: PivotDataStoreConfig,
+  accessor: string,
   columnDimensionAxes: Record<string, string[]> = {},
-): {
-  where?: V1Expression;
-  sortPivotBy: V1MetricsViewAggregationSort[];
-  timeRange: TimeRangeString;
-} {
-  let sortPivotBy: V1MetricsViewAggregationSort[] = [];
-
-  const defaultTimeRange = {
-    start: config.time.timeStart,
-    end: config.time.timeEnd,
-  };
-
-  // Return un-changed filter if no sorting is applied
-  if (config.pivot?.sorting?.length === 0) {
-    return {
-      sortPivotBy,
-      timeRange: defaultTimeRange,
-    };
-  }
-
-  const { rowDimensionNames, colDimensionNames, measureNames } = config;
-  const accessor = config.pivot.sorting[0].id;
-
-  // For the first column, the accessor is the row dimension name
-  const firstDimension = rowDimensionNames?.[0];
-  if (firstDimension === accessor) {
-    sortPivotBy = [
-      {
-        desc: config.pivot.sorting[0].desc,
-        name: anchorDimension,
-      },
-    ];
-    return {
-      sortPivotBy,
-      timeRange: defaultTimeRange,
-    };
-  }
-
-  // For the row totals, the accessor is the measure name
-  if (measureNames.includes(accessor)) {
-    sortPivotBy = [
-      {
-        desc: config.pivot.sorting[0].desc,
-        name: accessor,
-      },
-    ];
-    return {
-      sortPivotBy,
-      timeRange: defaultTimeRange,
-    };
-  }
+) {
+  const { colDimensionNames } = config;
 
   // Strip the measure string from the accessor
-  const [accessorWithoutMeasure, measureIndex] = accessor.split("m");
+  const [accessorWithoutMeasure] = accessor.split("m");
   const accessorParts = accessorWithoutMeasure.split("_");
 
   let colDimensionFilters: V1Expression[];
@@ -393,10 +341,84 @@ export function getSortForAccessor(
   }
 
   let filterForSort: V1Expression | undefined;
+
   if (colDimensionFilters.length) {
     filterForSort = createAndExpression(colDimensionFilters);
   }
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
+  return {
+    filters: filterForSort,
+    timeRange,
+  };
+}
+
+/**
+ * For a given accessor created by getAccessorForCell, get the filter
+ * that can be applied to the table to get sorted data based on the
+ * accessor.
+ */
+export function getSortForAccessor(
+  anchorDimension: string,
+  config: PivotDataStoreConfig,
+  columnDimensionAxes: Record<string, string[]> = {},
+): {
+  where?: V1Expression;
+  sortPivotBy: V1MetricsViewAggregationSort[];
+  timeRange: TimeRangeString;
+} {
+  let sortPivotBy: V1MetricsViewAggregationSort[] = [];
+
+  const defaultTimeRange = {
+    start: config.time.timeStart,
+    end: config.time.timeEnd,
+  };
+
+  // Return un-changed filter if no sorting is applied
+  if (config.pivot?.sorting?.length === 0) {
+    return {
+      sortPivotBy,
+      timeRange: defaultTimeRange,
+    };
+  }
+
+  const { rowDimensionNames, measureNames } = config;
+  const accessor = config.pivot.sorting[0].id;
+
+  // For the first column, the accessor is the row dimension name
+  const firstDimension = rowDimensionNames?.[0];
+  if (firstDimension === accessor) {
+    sortPivotBy = [
+      {
+        desc: config.pivot.sorting[0].desc,
+        name: anchorDimension,
+      },
+    ];
+    return {
+      sortPivotBy,
+      timeRange: defaultTimeRange,
+    };
+  }
+
+  // For the row totals, the accessor is the measure name
+  if (measureNames.includes(accessor)) {
+    sortPivotBy = [
+      {
+        desc: config.pivot.sorting[0].desc,
+        name: accessor,
+      },
+    ];
+    return {
+      sortPivotBy,
+      timeRange: defaultTimeRange,
+    };
+  }
+
+  const measureIndex = accessor.split("m")[1];
+  const { filters, timeRange } = getColumnFiltersFromMinimizedAccessor(
+    config,
+    accessor,
+    columnDimensionAxes,
+  );
 
   sortPivotBy = [
     {
@@ -406,7 +428,7 @@ export function getSortForAccessor(
   ];
 
   return {
-    where: filterForSort,
+    where: filters,
     sortPivotBy,
     timeRange,
   };
@@ -494,4 +516,77 @@ export function getSortFilteredMeasureBody(
   }
 
   return { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor };
+}
+
+export function getFiltersForCell(
+  config: PivotDataStoreConfig,
+  rowId: string,
+  colId: string,
+  colDimensionAxes: Record<string, string[]> = {},
+  tableData: PivotDataRow[],
+): PivotFilter {
+  const { rowDimensionNames, measureNames } = config;
+  const defaultTimeRange = {
+    start: config.time.timeStart,
+    end: config.time.timeEnd,
+  };
+
+  const values = getValuesForExpandedKey(
+    tableData,
+    rowDimensionNames,
+    rowId,
+    measureNames.length > 0,
+  );
+
+  const rowNestTimeFilters: TimeFilters[] = [];
+  const rowNestFilters = values
+    .map((value, index) =>
+      createInExpression(rowDimensionNames[index], [value]),
+    )
+    .filter((f) => {
+      if (
+        isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
+      ) {
+        rowNestTimeFilters.push({
+          timeStart: f.cond?.exprs?.[1].val as string,
+          interval: getTimeGrainFromDimension(
+            f.cond?.exprs?.[0].ident as string,
+          ),
+        });
+        return false;
+      } else return true;
+    });
+
+  let rowFilters: V1Expression | undefined = undefined;
+  if (rowNestFilters.length) {
+    rowFilters = createAndExpression(rowNestFilters);
+  }
+
+  const timeRangeRow: TimeRangeString = getTimeForQuery(
+    config.time,
+    rowNestTimeFilters,
+  );
+
+  // Get filters for column dimensions
+  let columnFilters: V1Expression | undefined;
+  let timeRangeCol: TimeRangeString;
+  const firstDimension = rowDimensionNames?.[0];
+  if (firstDimension === colId || measureNames.includes(colId)) {
+    columnFilters = undefined;
+    timeRangeCol = defaultTimeRange;
+  } else {
+    const { filters, timeRange } = getColumnFiltersFromMinimizedAccessor(
+      config,
+      colId,
+      colDimensionAxes,
+    );
+    columnFilters = filters;
+    timeRangeCol = timeRange;
+  }
+
+  const timeRange = mergeTimeStrings(timeRangeRow, timeRangeCol);
+  const cellFilters = mergeFilters(rowFilters, columnFilters);
+  const filters = mergeFilters(cellFilters, config.whereFilter);
+
+  return { filters, timeRange };
 }

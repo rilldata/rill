@@ -313,7 +313,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	if planDowngrade(plan, org) {
 		if claims.Superuser(ctx) {
-			s.logger.Warn("plan downgrade", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan", subs[0].Plan.Name), zap.String("new_plan", plan.Name))
+			s.logger.Warn("plan downgraded", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
 		} else {
 			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
 		}
@@ -341,6 +341,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
+
+	s.logger.Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -927,6 +929,9 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		Domain:    req.Domain,
 	})
 	if err != nil {
+		if errors.Is(err, database.ErrNotUnique) {
+			return nil, status.Errorf(codes.AlreadyExists, err.Error())
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

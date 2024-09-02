@@ -9,13 +9,13 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   RpcStatus,
+  V1MetricsViewComparisonResponse,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
-  createQueryServiceMetricsViewTimeRange,
-  createQueryServiceMetricsViewSchema,
-  type V1MetricsViewSchemaResponse,
   createQueryServiceMetricsViewComparison,
-  V1MetricsViewComparisonResponse,
+  createQueryServiceMetricsViewSchema,
+  createQueryServiceMetricsViewTimeRange,
+  type V1MetricsViewSchemaResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryResult,
@@ -35,11 +35,13 @@ export const useMetricsView = <T = V1MetricsViewSpec>(
         runtime.instanceId,
         metricViewName,
         ResourceKind.MetricsView,
-        (data) =>
-          selector
-            ? selector(data.metricsView?.state?.validSpec)
-            : data.metricsView?.state?.validSpec,
-        ctx.queryClient,
+        {
+          select: (data) =>
+            selector
+              ? selector(data.resource?.metricsView?.state?.validSpec)
+              : data.resource?.metricsView?.state?.validSpec,
+          queryClient: ctx.queryClient,
+        },
       ).subscribe(set);
     },
   );
