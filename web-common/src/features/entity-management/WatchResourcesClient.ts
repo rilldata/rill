@@ -58,11 +58,11 @@ export class WatchResourcesClient {
       },
     );
 
-    // Invalidate `ListResources` queries
-    void queryClient.invalidateQueries(
+    // Refetch `ListResources` queries
+    void queryClient.refetchQueries(
       getRuntimeServiceListResourcesQueryKey(this.instanceId, undefined),
     );
-    void queryClient.invalidateQueries(
+    void queryClient.refetchQueries(
       getRuntimeServiceListResourcesQueryKey(this.instanceId, {
         kind: res.name.kind,
       }),
