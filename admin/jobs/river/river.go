@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/exp/zapslog"
 )
 
 var (
@@ -72,12 +74,18 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&ValidateDeploymentsArgs{}, "* */6 * * *", true),
 	}
 
+	// Wire our zap logger to a slog logger for the river client
+	logger := slog.New(zapslog.NewHandler(adm.Logger.Core(), &zapslog.HandlerOptions{
+		AddSource: true,
+	}))
+
 	riverClient, err := river.NewClient(riverpgxv5.New(dbPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
 			river.QueueDefault: {MaxWorkers: 100},
 		},
 		Workers:      workers,
 		PeriodicJobs: periodicJobs,
+		Logger:       logger,
 		JobTimeout:   time.Hour,
 		MaxAttempts:  3,
 		ErrorHandler: &ErrorHandler{logger: adm.Logger},
