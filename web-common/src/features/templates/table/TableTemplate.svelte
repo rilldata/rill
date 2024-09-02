@@ -75,7 +75,7 @@
   }
 </script>
 
-<div>
+<div class="overflow-y-scroll">
   {#if !isValidSchema}
     <div>{$tableSchema.error}</div>
   {:else if pivotDataStore && pivotConfig && $pivotConfig}

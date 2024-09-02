@@ -871,7 +871,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   where?: Expression;
 
   /**
-   * Optional. Either where or where_sql should be set
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string where_sql = 19;
    */
@@ -885,7 +885,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   having?: Expression;
 
   /**
-   * Optional. Either having or having_sql should be set
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string having_sql = 20;
    */
@@ -1693,7 +1693,7 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   where?: Expression;
 
   /**
-   * Optional. Either where or where_sql should be set
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string where_sql = 17;
    */
@@ -1707,7 +1707,7 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   having?: Expression;
 
   /**
-   * Optional. Either having or having_sql should be set
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string having_sql = 18;
    */
@@ -2198,7 +2198,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   where?: Expression;
 
   /**
-   * Optional. Either where or where_sql should be set
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string where_sql = 13;
    */
@@ -2212,7 +2212,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   having?: Expression;
 
   /**
-   * Optional. Either having or having_sql should be set
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string having_sql = 14;
    */
@@ -2365,7 +2365,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   where?: Expression;
 
   /**
-   * Optional. Either where or where_sql should be set
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string where_sql = 11;
    */

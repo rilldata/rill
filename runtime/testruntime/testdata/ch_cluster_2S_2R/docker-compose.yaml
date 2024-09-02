@@ -8,6 +8,7 @@ services:
     volumes:
       - ./fs/volumes/clickhouse-01/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./fs/volumes/clickhouse-01/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./fs/volumes/data/:/var/lib/clickhouse/user_files/
     ports:
       - "8123"
       - "9000"
@@ -21,6 +22,7 @@ services:
     volumes:
       - ./fs/volumes/clickhouse-02/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./fs/volumes/clickhouse-02/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./fs/volumes/data/:/var/lib/clickhouse/user_files/
     ports:
       - "8123"
       - "9000"
@@ -34,6 +36,7 @@ services:
     volumes:
       - ./fs/volumes/clickhouse-03/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./fs/volumes/clickhouse-03/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./fs/volumes/data/:/var/lib/clickhouse/user_files/
     ports:
       - "8123"
       - "9000"
@@ -47,6 +50,7 @@ services:
     volumes:
       - ./fs/volumes/clickhouse-04/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./fs/volumes/clickhouse-04/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./fs/volumes/data/:/var/lib/clickhouse/user_files/
     ports:
         - "8123"
         - "9000"

@@ -183,6 +183,7 @@ export type QueryServiceMetricsViewTotalsBody = {
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
@@ -210,8 +211,10 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   timeZone?: string;
   priority?: number;
@@ -255,8 +258,10 @@ export type QueryServiceMetricsViewComparisonBody = {
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
@@ -277,8 +282,10 @@ export type QueryServiceMetricsViewAggregationBody = {
   pivotOn?: string[];
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   limit?: string;
   offset?: string;
@@ -1162,6 +1169,7 @@ export interface V1MetricsViewTotalsRequest {
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
@@ -1187,8 +1195,10 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   timeZone?: string;
   priority?: number;
@@ -1391,8 +1401,10 @@ export interface V1MetricsViewAggregationRequest {
   pivotOn?: string[];
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   limit?: string;
   offset?: string;
@@ -1455,8 +1467,10 @@ export interface V1MetricsViewComparisonRequest {
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;

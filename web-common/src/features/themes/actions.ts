@@ -20,7 +20,6 @@ function updateColorVars(
   const root = document.querySelector(ThemeBoundarySelector) as HTMLElement;
   if (!root) return;
 
-  console.log(userThemeColor);
   // get the color from the theme primary color
   const inputColor = chroma.rgb(
     (userThemeColor.red ?? 0) * 256,

@@ -67,7 +67,7 @@
   data-index={i}
   class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
-  style:z-index={localZIndex}
+  style:z-index={renderer === "select" ? 100 : localZIndex}
   style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"
