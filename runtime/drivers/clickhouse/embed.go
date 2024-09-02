@@ -82,7 +82,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	}
 
 	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
-	e.logger.Info("ClickHouse server: " + "clickhouse://" + addr)
+	e.logger.Info("Running an embedded ClickHouse server", zap.String("addr", addr))
 
 	return &clickhouse.Options{
 		Protocol: clickhouse.Native,
