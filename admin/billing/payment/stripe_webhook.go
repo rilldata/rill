@@ -22,7 +22,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading request body", http.StatusServiceUnavailable)
+		http.Error(w, "error reading request body", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -30,8 +30,8 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	sigHeader := r.Header.Get("Stripe-Signature")
 	event, err := webhook.ConstructEventWithOptions(payload, sigHeader, endpointSecret, webhook.ConstructEventOptions{IgnoreAPIVersionMismatch: true})
 	if err != nil {
-		s.logger.Error("Error verifying webhook signature", zap.Error(err))
-		http.Error(w, "Error verifying webhook signature", http.StatusBadRequest)
+		s.logger.Error("error verifying webhook signature", zap.Error(err))
+		http.Error(w, "error verifying webhook signature", http.StatusBadRequest)
 		return
 	}
 
@@ -42,14 +42,13 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodAttached):
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
-			s.logger.Error(fmt.Sprintf("Error parsing payment method data: %v", err))
-			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
+			s.logger.Error(fmt.Sprintf("error parsing payment method data: %v", err))
+			http.Error(w, "error parsing payment method data", http.StatusBadRequest)
 			return
 		}
 		if paymentMethod.Customer == nil {
-			s.logger.Error(fmt.Sprintf("No customer info sent for payment method %s", paymentMethod.ID))
-			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
-			return
+			// just log error and send http ok as we can't do anything without customer id
+			s.logger.Error(fmt.Sprintf("no customer info sent for payment method added event id: %s, data: %s", event.ID, string(event.Data.Raw)))
 		}
 		err = s.handlePaymentMethodAdded(r.Context(), &paymentMethod)
 		if err != nil {
@@ -65,18 +64,17 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if event.Data.PreviousAttributes["customer"] == nil {
-			s.logger.Error(fmt.Sprintf("No customer info sent for payment method %s", paymentMethod.ID))
-			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
-			return
+			// just log error and send http ok as we can't do anything without customer id
+			s.logger.Error(fmt.Sprintf("no customer info sent for payment method removed event id: %s, data: %s", event.ID, string(event.Data.Raw)))
 		}
 		err = s.handlePaymentMethodRemoved(r.Context(), event.Data.PreviousAttributes["customer"].(string), &paymentMethod)
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("Error handling payment_method.detached event: %v", err))
-			http.Error(w, "Error handling payment_method.detached event", http.StatusInternalServerError)
+			s.logger.Error(fmt.Sprintf("error handling payment_method.detached event: %v", err))
+			http.Error(w, "error handling payment_method.detached event", http.StatusInternalServerError)
 			return
 		}
 	default:
-		s.logger.Warn(fmt.Sprintf("Unhandled event type: %s\n", event.Type))
+		s.logger.Warn(fmt.Sprintf("unhandled event type: %s\n", event.Type))
 	}
 
 	// Acknowledge receipt of the event
@@ -98,7 +96,7 @@ func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.Pa
 		return fmt.Errorf("failed to add payment method added: %w", err)
 	}
 	if res.UniqueSkippedAsDuplicate {
-		s.logger.Debug("Duplicate payment method added event", zap.String("customer_id", method.Customer.ID))
+		s.logger.Debug("duplicate payment method added event", zap.String("customer_id", method.Customer.ID))
 		return nil
 	}
 	return nil
@@ -118,7 +116,7 @@ func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, customerID stri
 		return fmt.Errorf("failed to add payment method added: %w", err)
 	}
 	if res.UniqueSkippedAsDuplicate {
-		s.logger.Debug("Duplicate payment method added event", zap.String("customer_id", customerID))
+		s.logger.Debug("duplicate payment method added event", zap.String("customer_id", customerID))
 		return nil
 	}
 	return nil

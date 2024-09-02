@@ -29,7 +29,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading request body", http.StatusServiceUnavailable)
+		http.Error(w, "error reading request body", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -37,7 +37,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	var e genericEvent
 	err = json.Unmarshal(payload, &e)
 	if err != nil {
-		http.Error(w, "Error parsing event data", http.StatusBadRequest)
+		http.Error(w, "error parsing event data", http.StatusBadRequest)
 		return
 	}
 
@@ -49,7 +49,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	err = o.verifySignature(payload, r.Header, now)
 	if err != nil {
-		http.Error(w, "Error verifying webhook signature", http.StatusBadRequest)
+		http.Error(w, "error verifying webhook signature", http.StatusBadRequest)
 		return
 	}
 
@@ -58,29 +58,28 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		var ie invoiceEvent
 		err = json.Unmarshal(payload, &ie)
 		if err != nil {
-			http.Error(w, "Error parsing event data", http.StatusBadRequest)
+			http.Error(w, "error parsing event data", http.StatusBadRequest)
 			return
 		}
 		err = o.handleInvoicePaymentSucceeded(r.Context(), ie)
 		if err != nil {
-			http.Error(w, "Error handling event", http.StatusInternalServerError)
+			http.Error(w, "error handling event", http.StatusInternalServerError)
 			return
 		}
 	case "invoice.payment_failed":
 		var ie invoiceEvent
 		err = json.Unmarshal(payload, &ie)
 		if err != nil {
-			http.Error(w, "Error parsing event data", http.StatusBadRequest)
+			http.Error(w, "error parsing event data", http.StatusBadRequest)
 			return
 		}
 		err = o.handleInvoicePaymentFailed(r.Context(), ie)
 		if err != nil {
-			http.Error(w, "Error handling event", http.StatusInternalServerError)
+			http.Error(w, "error handling event", http.StatusInternalServerError)
 			return
 		}
-
 	default:
-		http.Error(w, "Unknown event type", http.StatusBadRequest)
+		// do nothing
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -136,7 +135,7 @@ func (o *Orb) verifySignature(payload []byte, headers http.Header, now time.Time
 		return fmt.Errorf("invalid timestamp headers: %w", err)
 	}
 
-	if timestamp.Before(now.Add(-21 * time.Hour)) {
+	if timestamp.Before(now.Add(-5 * time.Minute)) {
 		return errors.New("value from X-Orb-Timestamp header too old")
 	}
 	if timestamp.After(now.Add(5 * time.Minute)) {
