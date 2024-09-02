@@ -37,6 +37,9 @@ func newEmbedClickHouse(tcpPort int, dataDir, tempDir string, logger *zap.Logger
 // start installs (depending on OS and platform) and starts ClickHouse server.
 // The destination directory for the ClickHouse binary is .rill/clickhouse.
 // The function returns the DSN for the ClickHouse server and close function.
+// 
+// TODO: Since this can be a long-running process, we should accept a `ctx`,
+// but the `drivers.Open` function currently doesn't propagate that.
 func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	// Store the ClickHouse binary under .rill/clickhouse so that every project can use the same binary
 	destDir, err := dotrill.ResolveFilename("clickhouse", true)
