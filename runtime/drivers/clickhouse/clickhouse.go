@@ -252,15 +252,14 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return errors.Join(
-		c.db.Close(),
-		func() error {
-			if c.embed != nil {
-				return c.embed.stop()
-			}
-			return nil
-		}(),
-	)
+	errDB := c.db.Close()
+
+	var errEmbed error
+	if c.embed != nil {
+		errEmbed = c.embed.stop()
+	}
+
+	return errors.Join(errDB, errEmbed)
 }
 
 // Registry implements drivers.Connection.
