@@ -2,16 +2,19 @@
 all: cli
 
 .PHONY: cli
-cli: cli.prepare
+cli: cli.prepare.ui cli.prepare
 	go build -o rill cli/main.go 
 
-.PHONY: cli.prepare
-cli.prepare:
+.PHONY: cli.prepare.ui
+cli.prepare.ui:
 	npm install
 	npm run build
 	rm -rf cli/pkg/web/embed/dist || true
 	mkdir -p cli/pkg/web/embed/dist
 	cp -r web-local/build/* cli/pkg/web/embed/dist
+
+.PHONY: cli.prepare
+cli.prepare:
 	rm -rf runtime/pkg/examples/embed/dist || true
 	mkdir -p runtime/pkg/examples/embed/dist
 	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist

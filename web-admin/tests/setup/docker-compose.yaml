@@ -1,0 +1,45 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - '6379:6379'
+
+  runtime:
+    image: rilldata/runtime
+    build:
+      context: ../../../
+      dockerfile: web-admin/tests/setup/runtime/Dockerfile
+    ports:
+      - '8081:8081'
+      - '9091:9091'
+
+  admin:
+    image: rilldata/admin
+    build:
+      context: ../../../
+      dockerfile: web-admin/tests/setup/admin/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - '8080:8080'
+
+  cloud:
+    image: rilldata/cloud
+    build:
+      context: ../../../
+      dockerfile: web-admin/tests/setup/cloud/Dockerfile
+    depends_on:
+      - admin
+    ports:
+      - '3000:3000'
