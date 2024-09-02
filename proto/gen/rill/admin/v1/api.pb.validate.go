@@ -34352,6 +34352,47 @@ func (m *BillingErrorMetadata) validate(all bool) error {
 			}
 		}
 
+	case *BillingErrorMetadata_SubscriptionCancelled:
+		if v == nil {
+			err := BillingErrorMetadataValidationError{
+				field:  "Metadata",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetSubscriptionCancelled()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingErrorMetadataValidationError{
+						field:  "SubscriptionCancelled",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingErrorMetadataValidationError{
+						field:  "SubscriptionCancelled",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetSubscriptionCancelled()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BillingErrorMetadataValidationError{
+					field:  "SubscriptionCancelled",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -34565,43 +34606,38 @@ func (m *BillingErrorMetadataInvoicePaymentFailed) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InvoiceId
+	for idx, item := range m.GetInvoices() {
+		_, _ = idx, item
 
-	// no validation rules for InvoiceNumber
-
-	// no validation rules for InvoiceUrl
-
-	// no validation rules for AmountDue
-
-	// no validation rules for Currency
-
-	if all {
-		switch v := interface{}(m.GetDueDate()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, BillingErrorMetadataInvoicePaymentFailedValidationError{
-					field:  "DueDate",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingErrorMetadataInvoicePaymentFailedValidationError{
+						field:  fmt.Sprintf("Invoices[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingErrorMetadataInvoicePaymentFailedValidationError{
+						field:  fmt.Sprintf("Invoices[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
 			}
-		case interface{ Validate() error }:
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				errors = append(errors, BillingErrorMetadataInvoicePaymentFailedValidationError{
-					field:  "DueDate",
+				return BillingErrorMetadataInvoicePaymentFailedValidationError{
+					field:  fmt.Sprintf("Invoices[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
-				})
+				}
 			}
 		}
-	} else if v, ok := interface{}(m.GetDueDate()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return BillingErrorMetadataInvoicePaymentFailedValidationError{
-				field:  "DueDate",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
+
 	}
 
 	if len(errors) > 0 {
@@ -34685,6 +34721,147 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = BillingErrorMetadataInvoicePaymentFailedValidationError{}
+
+// Validate checks the field values on InvoicePaymentFailedMeta with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *InvoicePaymentFailedMeta) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on InvoicePaymentFailedMeta with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// InvoicePaymentFailedMetaMultiError, or nil if none found.
+func (m *InvoicePaymentFailedMeta) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *InvoicePaymentFailedMeta) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InvoiceId
+
+	// no validation rules for InvoiceNumber
+
+	// no validation rules for InvoiceUrl
+
+	// no validation rules for AmountDue
+
+	// no validation rules for Currency
+
+	if all {
+		switch v := interface{}(m.GetDueDate()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, InvoicePaymentFailedMetaValidationError{
+					field:  "DueDate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, InvoicePaymentFailedMetaValidationError{
+					field:  "DueDate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDueDate()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return InvoicePaymentFailedMetaValidationError{
+				field:  "DueDate",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return InvoicePaymentFailedMetaMultiError(errors)
+	}
+
+	return nil
+}
+
+// InvoicePaymentFailedMetaMultiError is an error wrapping multiple validation
+// errors returned by InvoicePaymentFailedMeta.ValidateAll() if the designated
+// constraints aren't met.
+type InvoicePaymentFailedMetaMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m InvoicePaymentFailedMetaMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m InvoicePaymentFailedMetaMultiError) AllErrors() []error { return m }
+
+// InvoicePaymentFailedMetaValidationError is the validation error returned by
+// InvoicePaymentFailedMeta.Validate if the designated constraints aren't met.
+type InvoicePaymentFailedMetaValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e InvoicePaymentFailedMetaValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e InvoicePaymentFailedMetaValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e InvoicePaymentFailedMetaValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e InvoicePaymentFailedMetaValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e InvoicePaymentFailedMetaValidationError) ErrorName() string {
+	return "InvoicePaymentFailedMetaValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e InvoicePaymentFailedMetaValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sInvoicePaymentFailedMeta.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = InvoicePaymentFailedMetaValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = InvoicePaymentFailedMetaValidationError{}
 
 // Validate checks the field values on BillingErrorMetadataTrialEnded with the
 // rules defined in the proto definition for this message. If any rules are
@@ -34818,24 +34995,24 @@ var _ interface {
 	ErrorName() string
 } = BillingErrorMetadataTrialEndedValidationError{}
 
-// Validate checks the field values on BillingErrorMetadataSubscriptionEndDate
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the first error encountered is returned, or nil if
-// there are no violations.
-func (m *BillingErrorMetadataSubscriptionEndDate) Validate() error {
+// Validate checks the field values on
+// BillingErrorMetadataSubscriptionCancelled with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *BillingErrorMetadataSubscriptionCancelled) Validate() error {
 	return m.validate(false)
 }
 
 // ValidateAll checks the field values on
-// BillingErrorMetadataSubscriptionEndDate with the rules defined in the proto
-// definition for this message. If any rules are violated, the result is a
-// list of violation errors wrapped in
-// BillingErrorMetadataSubscriptionEndDateMultiError, or nil if none found.
-func (m *BillingErrorMetadataSubscriptionEndDate) ValidateAll() error {
+// BillingErrorMetadataSubscriptionCancelled with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// BillingErrorMetadataSubscriptionCancelledMultiError, or nil if none found.
+func (m *BillingErrorMetadataSubscriptionCancelled) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *BillingErrorMetadataSubscriptionEndDate) validate(all bool) error {
+func (m *BillingErrorMetadataSubscriptionCancelled) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -34846,7 +35023,7 @@ func (m *BillingErrorMetadataSubscriptionEndDate) validate(all bool) error {
 		switch v := interface{}(m.GetEndDate()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, BillingErrorMetadataSubscriptionEndDateValidationError{
+				errors = append(errors, BillingErrorMetadataSubscriptionCancelledValidationError{
 					field:  "EndDate",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -34854,7 +35031,7 @@ func (m *BillingErrorMetadataSubscriptionEndDate) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, BillingErrorMetadataSubscriptionEndDateValidationError{
+				errors = append(errors, BillingErrorMetadataSubscriptionCancelledValidationError{
 					field:  "EndDate",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -34863,7 +35040,7 @@ func (m *BillingErrorMetadataSubscriptionEndDate) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetEndDate()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return BillingErrorMetadataSubscriptionEndDateValidationError{
+			return BillingErrorMetadataSubscriptionCancelledValidationError{
 				field:  "EndDate",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -34872,20 +35049,20 @@ func (m *BillingErrorMetadataSubscriptionEndDate) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return BillingErrorMetadataSubscriptionEndDateMultiError(errors)
+		return BillingErrorMetadataSubscriptionCancelledMultiError(errors)
 	}
 
 	return nil
 }
 
-// BillingErrorMetadataSubscriptionEndDateMultiError is an error wrapping
+// BillingErrorMetadataSubscriptionCancelledMultiError is an error wrapping
 // multiple validation errors returned by
-// BillingErrorMetadataSubscriptionEndDate.ValidateAll() if the designated
+// BillingErrorMetadataSubscriptionCancelled.ValidateAll() if the designated
 // constraints aren't met.
-type BillingErrorMetadataSubscriptionEndDateMultiError []error
+type BillingErrorMetadataSubscriptionCancelledMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m BillingErrorMetadataSubscriptionEndDateMultiError) Error() string {
+func (m BillingErrorMetadataSubscriptionCancelledMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -34894,12 +35071,12 @@ func (m BillingErrorMetadataSubscriptionEndDateMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m BillingErrorMetadataSubscriptionEndDateMultiError) AllErrors() []error { return m }
+func (m BillingErrorMetadataSubscriptionCancelledMultiError) AllErrors() []error { return m }
 
-// BillingErrorMetadataSubscriptionEndDateValidationError is the validation
-// error returned by BillingErrorMetadataSubscriptionEndDate.Validate if the
+// BillingErrorMetadataSubscriptionCancelledValidationError is the validation
+// error returned by BillingErrorMetadataSubscriptionCancelled.Validate if the
 // designated constraints aren't met.
-type BillingErrorMetadataSubscriptionEndDateValidationError struct {
+type BillingErrorMetadataSubscriptionCancelledValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -34907,24 +35084,24 @@ type BillingErrorMetadataSubscriptionEndDateValidationError struct {
 }
 
 // Field function returns field value.
-func (e BillingErrorMetadataSubscriptionEndDateValidationError) Field() string { return e.field }
+func (e BillingErrorMetadataSubscriptionCancelledValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e BillingErrorMetadataSubscriptionEndDateValidationError) Reason() string { return e.reason }
+func (e BillingErrorMetadataSubscriptionCancelledValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e BillingErrorMetadataSubscriptionEndDateValidationError) Cause() error { return e.cause }
+func (e BillingErrorMetadataSubscriptionCancelledValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e BillingErrorMetadataSubscriptionEndDateValidationError) Key() bool { return e.key }
+func (e BillingErrorMetadataSubscriptionCancelledValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e BillingErrorMetadataSubscriptionEndDateValidationError) ErrorName() string {
-	return "BillingErrorMetadataSubscriptionEndDateValidationError"
+func (e BillingErrorMetadataSubscriptionCancelledValidationError) ErrorName() string {
+	return "BillingErrorMetadataSubscriptionCancelledValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e BillingErrorMetadataSubscriptionEndDateValidationError) Error() string {
+func (e BillingErrorMetadataSubscriptionCancelledValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -34936,14 +35113,14 @@ func (e BillingErrorMetadataSubscriptionEndDateValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sBillingErrorMetadataSubscriptionEndDate.%s: %s%s",
+		"invalid %sBillingErrorMetadataSubscriptionCancelled.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = BillingErrorMetadataSubscriptionEndDateValidationError{}
+var _ error = BillingErrorMetadataSubscriptionCancelledValidationError{}
 
 var _ interface {
 	Field() string
@@ -34951,7 +35128,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = BillingErrorMetadataSubscriptionEndDateValidationError{}
+} = BillingErrorMetadataSubscriptionCancelledValidationError{}
 
 // Validate checks the field values on BillingWarning with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

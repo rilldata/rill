@@ -3488,24 +3488,24 @@ definitions:
         $ref: '#/definitions/v1BillingErrorMetadataInvoicePaymentFailed'
       trialEnded:
         $ref: '#/definitions/v1BillingErrorMetadataTrialEnded'
+      subscriptionCancelled:
+        $ref: '#/definitions/v1BillingErrorMetadataSubscriptionCancelled'
   v1BillingErrorMetadataInvoicePaymentFailed:
     type: object
     properties:
-      invoiceId:
-        type: string
-      invoiceNumber:
-        type: string
-      invoiceUrl:
-        type: string
-      amountDue:
-        type: string
-      currency:
-        type: string
-      dueDate:
-        type: string
-        format: date-time
+      invoices:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1InvoicePaymentFailedMeta'
   v1BillingErrorMetadataNoPaymentMethod:
     type: object
+  v1BillingErrorMetadataSubscriptionCancelled:
+    type: object
+    properties:
+      endDate:
+        type: string
+        format: date-time
   v1BillingErrorMetadataTrialEnded:
     type: object
     properties:
@@ -3996,6 +3996,22 @@ definitions:
     default: GITHUB_PERMISSION_UNSPECIFIED
   v1HibernateProjectResponse:
     type: object
+  v1InvoicePaymentFailedMeta:
+    type: object
+    properties:
+      invoiceId:
+        type: string
+      invoiceNumber:
+        type: string
+      invoiceUrl:
+        type: string
+      amountDue:
+        type: string
+      currency:
+        type: string
+      dueDate:
+        type: string
+        format: date-time
   v1IssueMagicAuthTokenResponse:
     type: object
     properties:

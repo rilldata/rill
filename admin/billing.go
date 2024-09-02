@@ -229,7 +229,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 }
 
 func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) error {
-	if trialEndDate.After(time.Now()) {
+	if trialEndDate.Before(time.Now()) {
 		return nil
 	}
 
@@ -254,13 +254,50 @@ func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, p
 		SubID:  subID,
 		PlanID: planID,
 	}, &river.InsertOpts{
-		ScheduledAt: trialEndDate.Add(time.Hour * 25), // add buffer of 1 hour to ensure the job runs after trial period days
+		ScheduledAt: trialEndDate.AddDate(0, 0, 1).Add(time.Hour * 1), // add buffer of 1 hour to ensure the job runs after trial period days
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to schedule trial end check job: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) CheckBillingErrors(ctx context.Context, orgID string) error {
+	be, err := s.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeTrialEnded)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
+
+	if be != nil {
+		return fmt.Errorf("trial has ended")
+	}
+
+	be, err = s.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeInvoicePaymentFailed)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
+
+	if be != nil { // should we allow any grace period here?
+		return fmt.Errorf("invoice payment failed")
+	}
+
+	be, err = s.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeSubscriptionCancelled)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
+
+	if be != nil && be.Metadata.(*database.BillingErrorMetadataSubscriptionCancelled).EndDate.AddDate(0, 0, 1).After(time.Now()) {
+		return fmt.Errorf("subscription cancelled")
 	}
 
 	return nil

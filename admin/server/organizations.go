@@ -428,47 +428,44 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if plan.ID == subs[0].Plan.ID {
-		return &adminv1.CancelBillingSubscriptionResponse{}, nil
-	}
-
-	// TODO move below to background job
 	subEndDate := subs[0].CurrentBillingCycleEndDate
-	if len(subs) == 1 {
-		// schedule plan change
-		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionEndOfSubscriptionTerm)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	} else {
-		// multiple subscriptions, cancel them first immediately and assign default plan to start at the end of the current subscription term
-		latestEndDate := time.Time{}
-		for _, sub := range subs {
-			if sub.CurrentBillingCycleEndDate.After(latestEndDate) {
-				latestEndDate = sub.CurrentBillingCycleEndDate
-			}
-			err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
+	if plan.ID != subs[0].Plan.ID {
+		// schedule plan change to default plan at end of the current subscription term
+		if len(subs) == 1 {
+			_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionEndOfSubscriptionTerm)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-		}
+		} else {
+			// multiple subscriptions, cancel them first immediately and assign default plan to start at the end of the current subscription term
+			latestEndDate := time.Time{}
+			for _, sub := range subs {
+				if sub.CurrentBillingCycleEndDate.After(latestEndDate) {
+					latestEndDate = sub.CurrentBillingCycleEndDate
+				}
+				err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
+				if err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+			}
 
-		// create new subscription with default plan to start at the end of the current subscription term
-		_, err = s.admin.Biller.CreateSubscriptionInFuture(ctx, org.BillingCustomerID, plan, latestEndDate.AddDate(0, 0, 1))
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+			// create new subscription with default plan to start at the end of the current subscription term
+			_, err = s.admin.Biller.CreateSubscriptionInFuture(ctx, org.BillingCustomerID, plan, latestEndDate.AddDate(0, 0, 1))
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 
-		subEndDate = latestEndDate
+			subEndDate = latestEndDate
+		}
 	}
 
-	// schedule plan change by API job
-	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandlePlanChangeByAPIArgs{
+	// schedule subscription cancellation job at end of the current subscription term
+	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandleSubscriptionCancellationArgs{
 		OrgID:  org.ID,
 		SubID:  subs[0].ID,
 		PlanID: plan.ID,
 	}, &river.InsertOpts{
-		ScheduledAt: subEndDate.AddDate(0, 0, 1),
+		ScheduledAt: subEndDate.AddDate(0, 0, 1).Add(1 * time.Hour), // 1 hour after the end of the current subscription term
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
@@ -1290,6 +1287,7 @@ func (s *Server) ListOrganizationBillingErrors(ctx context.Context, req *adminv1
 		dtos = append(dtos, &adminv1.BillingError{
 			Organization: org.Name,
 			Type:         billingErrorTypeToDTO(e.Type),
+			Metadata:     billingErrorMetadataToDTO(e.Type, e.Metadata),
 			EventTime:    timestamppb.New(e.EventTime),
 			CreatedOn:    timestamppb.New(e.CreatedOn),
 		})
@@ -1441,6 +1439,55 @@ func dtoBillingWarningTypeToDB(t adminv1.BillingWarningType) (database.BillingWa
 		return database.BillingWarningTypeTrialEnding, nil
 	default:
 		return database.BillingWarningTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing warning type")
+	}
+}
+
+func billingErrorMetadataToDTO(t database.BillingErrorType, m database.BillingErrorMetadata) *adminv1.BillingErrorMetadata {
+	switch t {
+	case database.BillingErrorTypeUnspecified:
+		return &adminv1.BillingErrorMetadata{}
+	case database.BillingErrorTypeNoPaymentMethod:
+		return &adminv1.BillingErrorMetadata{
+			Metadata: &adminv1.BillingErrorMetadata_NoPaymentMethod{
+				NoPaymentMethod: &adminv1.BillingErrorMetadataNoPaymentMethod{},
+			},
+		}
+	case database.BillingErrorTypeTrialEnded:
+		return &adminv1.BillingErrorMetadata{
+			Metadata: &adminv1.BillingErrorMetadata_TrialEnded{
+				TrialEnded: &adminv1.BillingErrorMetadataTrialEnded{
+					GracePeriodEndDate: timestamppb.New(m.(*database.BillingErrorMetadataTrialEnded).GracePeriodEndDate),
+				},
+			},
+		}
+	case database.BillingErrorTypeInvoicePaymentFailed:
+		invoicePaymentFailed := m.(*database.BillingErrorMetadataInvoicePaymentFailed)
+		invoices := make([]*adminv1.InvoicePaymentFailedMeta, len(invoicePaymentFailed.Invoices))
+		for k := range invoicePaymentFailed.Invoices {
+			invoices = append(invoices, &adminv1.InvoicePaymentFailedMeta{
+				InvoiceId:     invoicePaymentFailed.Invoices[k].ID,
+				InvoiceNumber: invoicePaymentFailed.Invoices[k].Number,
+				InvoiceUrl:    invoicePaymentFailed.Invoices[k].URL,
+				AmountDue:     invoicePaymentFailed.Invoices[k].Amount,
+				Currency:      invoicePaymentFailed.Invoices[k].Currency,
+				DueDate:       timestamppb.New(invoicePaymentFailed.Invoices[k].DueDate),
+			})
+		}
+		return &adminv1.BillingErrorMetadata{
+			Metadata: &adminv1.BillingErrorMetadata_InvoicePaymentFailed{
+				InvoicePaymentFailed: &adminv1.BillingErrorMetadataInvoicePaymentFailed{
+					Invoices: invoices,
+				},
+			},
+		}
+	case database.BillingErrorTypeSubscriptionCancelled:
+		return &adminv1.BillingErrorMetadata{
+			Metadata: &adminv1.BillingErrorMetadata_SubscriptionCancelled{
+				SubscriptionCancelled: &adminv1.BillingErrorMetadataSubscriptionCancelled{},
+			},
+		}
+	default:
+		return &adminv1.BillingErrorMetadata{}
 	}
 }
 

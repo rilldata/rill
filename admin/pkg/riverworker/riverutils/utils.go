@@ -87,3 +87,11 @@ type HandlePlanChangeByAPIArgs struct {
 }
 
 func (HandlePlanChangeByAPIArgs) Kind() string { return "handle_plan_change_by_api" }
+
+type HandleSubscriptionCancellationArgs struct {
+	OrgID  string
+	SubID  string
+	PlanID string
+}
+
+func (HandleSubscriptionCancellationArgs) Kind() string { return "handle_subscription_cancellation" }

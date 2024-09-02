@@ -447,6 +447,11 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -500,11 +505,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -911,6 +911,15 @@ export interface V1IssueMagicAuthTokenResponse {
   url?: string;
 }
 
+export interface V1InvoicePaymentFailedMeta {
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoiceUrl?: string;
+  amountDue?: string;
+  currency?: string;
+  dueDate?: string;
+}
+
 export interface V1HibernateProjectResponse {
   [key: string]: any;
 }
@@ -1297,23 +1306,23 @@ export interface V1BillingErrorMetadataTrialEnded {
   gracePeriodEndDate?: string;
 }
 
+export interface V1BillingErrorMetadataSubscriptionCancelled {
+  endDate?: string;
+}
+
 export interface V1BillingErrorMetadataNoPaymentMethod {
   [key: string]: any;
 }
 
 export interface V1BillingErrorMetadataInvoicePaymentFailed {
-  invoiceId?: string;
-  invoiceNumber?: string;
-  invoiceUrl?: string;
-  amountDue?: string;
-  currency?: string;
-  dueDate?: string;
+  invoices?: V1InvoicePaymentFailedMeta[];
 }
 
 export interface V1BillingErrorMetadata {
   noPaymentMethod?: V1BillingErrorMetadataNoPaymentMethod;
   invoicePaymentFailed?: V1BillingErrorMetadataInvoicePaymentFailed;
   trialEnded?: V1BillingErrorMetadataTrialEnded;
+  subscriptionCancelled?: V1BillingErrorMetadataSubscriptionCancelled;
 }
 
 export interface V1BillingError {

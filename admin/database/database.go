@@ -960,19 +960,19 @@ type BillingErrorMetadataInvoicePaymentFailed struct {
 }
 
 type InvoicePaymentFailedMeta struct {
-	ID                 string    `json:"id"`
-	Number             string    `json:"invoice_number"`
-	URL                string    `json:"invoice_url"`
-	Amount             string    `json:"amount"`
-	Currency           string    `json:"currency"`
-	DueDate            time.Time `json:"due_date"`
-	FailedOn           time.Time `json:"failed_on"`
-	TriggersRiverJobID int64     `json:"triggers_river_job_id"`
+	ID                  string    `json:"id"`
+	Number              string    `json:"invoice_number"`
+	URL                 string    `json:"invoice_url"`
+	Amount              string    `json:"amount"`
+	Currency            string    `json:"currency"`
+	DueDate             time.Time `json:"due_date"`
+	FailedOn            time.Time `json:"failed_on"`
+	GracePeriodEndJobID int64     `json:"grace_period_end_job_id"`
 }
 
 type BillingErrorMetadataTrialEnded struct {
-	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
-	TriggersRiverJobID int64     `json:"triggers_river_job_id"`
+	GracePeriodEndDate  time.Time `json:"grace_period_end_date"`
+	GracePeriodEndJobID int64     `json:"grace_period_end_job_id"`
 }
 
 type BillingErrorMetadataSubscriptionCancelled struct {

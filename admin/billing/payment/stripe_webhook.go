@@ -64,12 +64,12 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
 			return
 		}
-		if paymentMethod.Customer == nil {
+		if event.Data.PreviousAttributes["customer"] == nil {
 			s.logger.Error(fmt.Sprintf("No customer info sent for payment method %s", paymentMethod.ID))
 			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
 			return
 		}
-		err = s.handlePaymentMethodRemoved(r.Context(), &paymentMethod)
+		err = s.handlePaymentMethodRemoved(r.Context(), event.Data.PreviousAttributes["customer"].(string), &paymentMethod)
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Error handling payment_method.detached event: %v", err))
 			http.Error(w, "Error handling payment_method.detached event", http.StatusInternalServerError)
@@ -88,7 +88,7 @@ func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.Pa
 		ID:                method.ID,
 		PaymentCustomerID: method.Customer.ID,
 		PaymentType:       string(method.Type),
-		EventTime:         time.UnixMilli(method.Created),
+		EventTime:         time.UnixMilli(method.Created * 1000),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -98,17 +98,17 @@ func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, method *stripe.Pa
 		return fmt.Errorf("failed to add payment method added: %w", err)
 	}
 	if res.UniqueSkippedAsDuplicate {
-		s.logger.Debug("Duplicate payment method added event", zap.String("customer_id", method.Customer.ID), zap.String("customer_name", method.Customer.Name), zap.String("customer_email", method.Customer.Email))
+		s.logger.Debug("Duplicate payment method added event", zap.String("customer_id", method.Customer.ID))
 		return nil
 	}
 	return nil
 }
 
-func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, method *stripe.PaymentMethod) error {
+func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, customerID string, method *stripe.PaymentMethod) error {
 	res, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.PaymentMethodRemovedArgs{
 		ID:                method.ID,
-		PaymentCustomerID: method.Customer.ID,
-		EventTime:         time.UnixMilli(method.Created),
+		PaymentCustomerID: customerID,
+		EventTime:         time.UnixMilli(method.Created * 1000),
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -118,7 +118,7 @@ func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, method *stripe.
 		return fmt.Errorf("failed to add payment method added: %w", err)
 	}
 	if res.UniqueSkippedAsDuplicate {
-		s.logger.Debug("Duplicate payment method added event", zap.String("customer_id", method.Customer.ID), zap.String("customer_name", method.Customer.Name), zap.String("customer_email", method.Customer.Email))
+		s.logger.Debug("Duplicate payment method added event", zap.String("customer_id", customerID))
 		return nil
 	}
 	return nil

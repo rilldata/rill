@@ -12683,6 +12683,12 @@ export class BillingErrorMetadata extends Message<BillingErrorMetadata> {
      */
     value: BillingErrorMetadataTrialEnded;
     case: "trialEnded";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.BillingErrorMetadataSubscriptionCancelled subscription_cancelled = 4;
+     */
+    value: BillingErrorMetadataSubscriptionCancelled;
+    case: "subscriptionCancelled";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<BillingErrorMetadata>) {
@@ -12696,6 +12702,7 @@ export class BillingErrorMetadata extends Message<BillingErrorMetadata> {
     { no: 1, name: "no_payment_method", kind: "message", T: BillingErrorMetadataNoPaymentMethod, oneof: "metadata" },
     { no: 2, name: "invoice_payment_failed", kind: "message", T: BillingErrorMetadataInvoicePaymentFailed, oneof: "metadata" },
     { no: 3, name: "trial_ended", kind: "message", T: BillingErrorMetadataTrialEnded, oneof: "metadata" },
+    { no: 4, name: "subscription_cancelled", kind: "message", T: BillingErrorMetadataSubscriptionCancelled, oneof: "metadata" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadata {
@@ -12751,6 +12758,43 @@ export class BillingErrorMetadataNoPaymentMethod extends Message<BillingErrorMet
  */
 export class BillingErrorMetadataInvoicePaymentFailed extends Message<BillingErrorMetadataInvoicePaymentFailed> {
   /**
+   * @generated from field: repeated rill.admin.v1.InvoicePaymentFailedMeta invoices = 1;
+   */
+  invoices: InvoicePaymentFailedMeta[] = [];
+
+  constructor(data?: PartialMessage<BillingErrorMetadataInvoicePaymentFailed>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingErrorMetadataInvoicePaymentFailed";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "invoices", kind: "message", T: InvoicePaymentFailedMeta, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadataInvoicePaymentFailed {
+    return new BillingErrorMetadataInvoicePaymentFailed().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingErrorMetadataInvoicePaymentFailed {
+    return new BillingErrorMetadataInvoicePaymentFailed().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingErrorMetadataInvoicePaymentFailed {
+    return new BillingErrorMetadataInvoicePaymentFailed().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingErrorMetadataInvoicePaymentFailed | PlainMessage<BillingErrorMetadataInvoicePaymentFailed> | undefined, b: BillingErrorMetadataInvoicePaymentFailed | PlainMessage<BillingErrorMetadataInvoicePaymentFailed> | undefined): boolean {
+    return proto3.util.equals(BillingErrorMetadataInvoicePaymentFailed, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.InvoicePaymentFailedMeta
+ */
+export class InvoicePaymentFailedMeta extends Message<InvoicePaymentFailedMeta> {
+  /**
    * @generated from field: string invoice_id = 1;
    */
   invoiceId = "";
@@ -12780,13 +12824,13 @@ export class BillingErrorMetadataInvoicePaymentFailed extends Message<BillingErr
    */
   dueDate?: Timestamp;
 
-  constructor(data?: PartialMessage<BillingErrorMetadataInvoicePaymentFailed>) {
+  constructor(data?: PartialMessage<InvoicePaymentFailedMeta>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.BillingErrorMetadataInvoicePaymentFailed";
+  static readonly typeName = "rill.admin.v1.InvoicePaymentFailedMeta";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "invoice_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "invoice_number", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -12796,20 +12840,20 @@ export class BillingErrorMetadataInvoicePaymentFailed extends Message<BillingErr
     { no: 6, name: "due_date", kind: "message", T: Timestamp },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadataInvoicePaymentFailed {
-    return new BillingErrorMetadataInvoicePaymentFailed().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InvoicePaymentFailedMeta {
+    return new InvoicePaymentFailedMeta().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingErrorMetadataInvoicePaymentFailed {
-    return new BillingErrorMetadataInvoicePaymentFailed().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InvoicePaymentFailedMeta {
+    return new InvoicePaymentFailedMeta().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingErrorMetadataInvoicePaymentFailed {
-    return new BillingErrorMetadataInvoicePaymentFailed().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InvoicePaymentFailedMeta {
+    return new InvoicePaymentFailedMeta().fromJsonString(jsonString, options);
   }
 
-  static equals(a: BillingErrorMetadataInvoicePaymentFailed | PlainMessage<BillingErrorMetadataInvoicePaymentFailed> | undefined, b: BillingErrorMetadataInvoicePaymentFailed | PlainMessage<BillingErrorMetadataInvoicePaymentFailed> | undefined): boolean {
-    return proto3.util.equals(BillingErrorMetadataInvoicePaymentFailed, a, b);
+  static equals(a: InvoicePaymentFailedMeta | PlainMessage<InvoicePaymentFailedMeta> | undefined, b: InvoicePaymentFailedMeta | PlainMessage<InvoicePaymentFailedMeta> | undefined): boolean {
+    return proto3.util.equals(InvoicePaymentFailedMeta, a, b);
   }
 }
 
@@ -12851,39 +12895,39 @@ export class BillingErrorMetadataTrialEnded extends Message<BillingErrorMetadata
 }
 
 /**
- * @generated from message rill.admin.v1.BillingErrorMetadataSubscriptionEndDate
+ * @generated from message rill.admin.v1.BillingErrorMetadataSubscriptionCancelled
  */
-export class BillingErrorMetadataSubscriptionEndDate extends Message<BillingErrorMetadataSubscriptionEndDate> {
+export class BillingErrorMetadataSubscriptionCancelled extends Message<BillingErrorMetadataSubscriptionCancelled> {
   /**
    * @generated from field: google.protobuf.Timestamp end_date = 1;
    */
   endDate?: Timestamp;
 
-  constructor(data?: PartialMessage<BillingErrorMetadataSubscriptionEndDate>) {
+  constructor(data?: PartialMessage<BillingErrorMetadataSubscriptionCancelled>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.BillingErrorMetadataSubscriptionEndDate";
+  static readonly typeName = "rill.admin.v1.BillingErrorMetadataSubscriptionCancelled";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "end_date", kind: "message", T: Timestamp },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadataSubscriptionEndDate {
-    return new BillingErrorMetadataSubscriptionEndDate().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadataSubscriptionCancelled {
+    return new BillingErrorMetadataSubscriptionCancelled().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingErrorMetadataSubscriptionEndDate {
-    return new BillingErrorMetadataSubscriptionEndDate().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingErrorMetadataSubscriptionCancelled {
+    return new BillingErrorMetadataSubscriptionCancelled().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingErrorMetadataSubscriptionEndDate {
-    return new BillingErrorMetadataSubscriptionEndDate().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingErrorMetadataSubscriptionCancelled {
+    return new BillingErrorMetadataSubscriptionCancelled().fromJsonString(jsonString, options);
   }
 
-  static equals(a: BillingErrorMetadataSubscriptionEndDate | PlainMessage<BillingErrorMetadataSubscriptionEndDate> | undefined, b: BillingErrorMetadataSubscriptionEndDate | PlainMessage<BillingErrorMetadataSubscriptionEndDate> | undefined): boolean {
-    return proto3.util.equals(BillingErrorMetadataSubscriptionEndDate, a, b);
+  static equals(a: BillingErrorMetadataSubscriptionCancelled | PlainMessage<BillingErrorMetadataSubscriptionCancelled> | undefined, b: BillingErrorMetadataSubscriptionCancelled | PlainMessage<BillingErrorMetadataSubscriptionCancelled> | undefined): boolean {
+    return proto3.util.equals(BillingErrorMetadataSubscriptionCancelled, a, b);
   }
 }
 

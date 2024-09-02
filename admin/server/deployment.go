@@ -88,10 +88,10 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// check if org has any of the following billing errors and return error if it does
-	err = s.checkBillingErrors(ctx, org.ID)
+	// check if org has blocking billing errors and return error if it does
+	err = s.admin.CheckBillingErrors(ctx, org.ID)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// For backwards compatibility, this RPC supports passing either DeploymentId or Organization+Project names
@@ -397,41 +397,4 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 	}
 
 	return attr, nil
-}
-
-func (s *Server) checkBillingErrors(ctx context.Context, orgID string) error {
-	be, err := s.admin.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeTrialEnded)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return status.Error(codes.Internal, err.Error())
-		}
-	}
-
-	if be != nil {
-		return status.Error(codes.InvalidArgument, "trial has ended")
-	}
-
-	be, err = s.admin.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeInvoicePaymentFailed)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return status.Error(codes.Internal, err.Error())
-		}
-	}
-
-	if be != nil { // should we allow any grace period here?
-		return status.Error(codes.InvalidArgument, "invoice payment failed")
-	}
-
-	be, err = s.admin.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeSubscriptionCancelled)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return status.Error(codes.Internal, err.Error())
-		}
-	}
-
-	if be != nil && be.Metadata.(database.BillingErrorMetadataSubscriptionCancelled).EndDate.AddDate(0, 0, 1).After(time.Now()) {
-		return status.Error(codes.InvalidArgument, "subscription cancelled")
-	}
-
-	return nil
 }

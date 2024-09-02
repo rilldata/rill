@@ -2298,12 +2298,17 @@ message BillingErrorMetadata {
     BillingErrorMetadataNoPaymentMethod no_payment_method = 1;
     BillingErrorMetadataInvoicePaymentFailed invoice_payment_failed = 2;
     BillingErrorMetadataTrialEnded trial_ended = 3;
+    BillingErrorMetadataSubscriptionCancelled subscription_cancelled = 4;
   }
 }
 
 message BillingErrorMetadataNoPaymentMethod {}
 
 message BillingErrorMetadataInvoicePaymentFailed {
+  repeated InvoicePaymentFailedMeta invoices = 1;
+}
+
+message InvoicePaymentFailedMeta {
   string invoice_id = 1;
   string invoice_number = 2;
   string invoice_url = 3;
@@ -2316,7 +2321,7 @@ message BillingErrorMetadataTrialEnded {
   google.protobuf.Timestamp grace_period_end_date = 1;
 }
 
-message BillingErrorMetadataSubscriptionEndDate {
+message BillingErrorMetadataSubscriptionCancelled {
   google.protobuf.Timestamp end_date = 1;
 }
 
