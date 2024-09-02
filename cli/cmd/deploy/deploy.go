@@ -71,7 +71,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}()
 
-			err = app.Serve(httpPort, grpcPort, true, false, false, userID, "", "")
+			err = app.Serve(httpPort, grpcPort, true, false, false, true, userID, "", "")
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}

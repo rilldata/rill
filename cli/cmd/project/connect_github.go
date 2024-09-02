@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -62,17 +63,6 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
 		}
-	}
-
-	// 2024-07-27: We have deprecated configuration of the OLAP DB using flags in favor of using rill.yaml.
-	// When the migration is complete, we can remove the flags as well as the admin-server support for them.
-	deployCmd.Flags().StringVar(&opts.DBDriver, "prod-db-driver", "duckdb", "Database driver")
-	deployCmd.Flags().StringVar(&opts.DBDSN, "prod-db-dsn", "", "Database driver configuration")
-	if err := deployCmd.Flags().MarkHidden("prod-db-driver"); err != nil {
-		panic(err)
-	}
-	if err := deployCmd.Flags().MarkHidden("prod-db-dsn"); err != nil {
-		panic(err)
 	}
 
 	return deployCmd
@@ -231,8 +221,8 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Description:      opts.Description,
 		Provisioner:      opts.Provisioner,
 		ProdVersion:      opts.ProdVersion,
-		ProdOlapDriver:   opts.DBDriver,
-		ProdOlapDsn:      opts.DBDSN,
+		ProdOlapDriver:   local.DefaultOLAPDriver,
+		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
 		Subpath:          opts.SubPath,
 		ProdBranch:       opts.ProdBranch,

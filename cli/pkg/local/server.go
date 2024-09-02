@@ -96,6 +96,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		Readonly:         s.metadata.Readonly,
 		GrpcPort:         int32(s.metadata.GRPCPort),
 		LoginUrl:         s.app.localURL + "/auth",
+		DeployOnly:       s.metadata.DeployOnly,
 	}), nil
 }
 
@@ -412,6 +413,13 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
+	if s.metadata.DeployOnly {
+		go func() {
+			_ = <-ctx.Done()
+			s.app.Close()
+		}()
+	}
+
 	return connect.NewResponse(&localv1.DeployProjectResponse{
 		DeployId:    projResp.Project.ProdDeploymentId,
 		Org:         projResp.Project.OrgName,
@@ -457,6 +465,13 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if s.metadata.DeployOnly {
+		go func() {
+			_ = <-ctx.Done()
+			s.app.Close()
+		}()
 	}
 
 	// TODO : Add other update project fields
@@ -700,6 +715,7 @@ type localMetadata struct {
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
+	DeployOnly       bool   `json:"deploy_only"`
 	GRPCPort         int    `json:"grpc_port"`
 }
 

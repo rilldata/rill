@@ -1,13 +1,15 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import { RillTheme } from "@rilldata/web-common/layout";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
-  import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
@@ -34,19 +36,25 @@
 
   let removeJavascriptListeners: () => void;
 
-  onMount(async () => {
-    const config = await runtimeServiceGetConfig();
-    await initMetrics(config);
-    removeJavascriptListeners = errorEventHandler.addJavascriptErrorListeners();
+  $: metadata = createLocalServiceGetMetadata({
+    query: {
+      queryClient,
+    },
+  });
+  $: if ($metadata.data) {
+    initMetrics($metadata.data).then(() => {
+      removeJavascriptListeners =
+        errorEventHandler.addJavascriptErrorListeners();
+    });
 
     featureFlags.set(false, "adminServer");
-    featureFlags.set(config.readonly, "readOnly");
+    featureFlags.set($metadata.data.readonly, "readOnly");
 
     appBuildMetaStore.set({
-      version: config.version,
-      commitHash: config.build_commit,
+      version: $metadata.data.version,
+      commitHash: $metadata.data.buildCommit,
     });
-  });
+  }
 
   /**
    * Async mount doesnt support an unsubscribe method.
@@ -61,12 +69,21 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <ResourceWatcher {host} {instanceId}>
-      <div class="body h-screen w-screen overflow-hidden absolute">
-        <RepresentingUserBanner />
-        <slot />
-      </div>
-    </ResourceWatcher>
+    {#if !$metadata.data?.deployOnly || $page.route.id === "/(misc)/deploy"}
+      <ResourceWatcher {host} {instanceId}>
+        <div class="body h-screen w-screen overflow-hidden absolute">
+          <RepresentingUserBanner />
+          <slot />
+        </div>
+      </ResourceWatcher>
+    {:else}
+      <ErrorPage
+        fatal
+        statusCode={500}
+        header="Deploy only"
+        body="This is a deploy only server. Please stop the server and reload the page."
+      />
+    {/if}
   </QueryClientProvider>
 </RillTheme>
 

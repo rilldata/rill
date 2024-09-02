@@ -24,7 +24,6 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 				SubPath:     "rill-openrtb-prog-ads",
 				Name:        "rill-openrtb-prog-ads",
 				ProdVersion: "latest",
-				DBDriver:    "duckdb",
 				Slots:       2,
 			})
 		},

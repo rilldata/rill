@@ -105,7 +105,7 @@ func LoginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL str
 	if err := Login(ctx, ch, redirectURL); err != nil {
 		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
 			ch.PrintfWarn("Rill login has timed out as the code was not confirmed in the browser.\n")
-			ch.PrintfWarn("Run `rill deploy` again.\n")
+			ch.PrintfWarn("Run the command again.\n")
 			return nil
 		} else if errors.Is(err, deviceauth.ErrCodeRejected) {
 			ch.PrintfError("Login failed: Confirmation code rejected\n")
