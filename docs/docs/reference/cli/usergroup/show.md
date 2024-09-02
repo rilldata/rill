@@ -4,7 +4,7 @@ title: rill usergroup show
 ---
 ## rill usergroup show
 
-Show a user group
+Show group
 
 ```
 rill usergroup show <name> [flags]

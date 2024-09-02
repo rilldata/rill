@@ -4,7 +4,7 @@ title: rill usergroup edit
 ---
 ## rill usergroup edit
 
-Edit a user group
+Edit a group
 
 ```
 rill usergroup edit [<name>] [flags]
@@ -13,7 +13,8 @@ rill usergroup edit [<name>] [flags]
 ### Flags
 
 ```
-      --org string   Organization
+      --description string   Description
+      --org string           Organization
 ```
 
 ### Global flags

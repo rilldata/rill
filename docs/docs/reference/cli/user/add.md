@@ -4,7 +4,7 @@ title: rill user add
 ---
 ## rill user add
 
-Add
+Add user to a project, organization or group
 
 ```
 rill user add [flags]
