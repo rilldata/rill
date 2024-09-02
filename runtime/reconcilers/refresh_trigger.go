@@ -113,6 +113,10 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		if len(mt.Splits) > 0 || mt.AllErroredSplits {
 			mdl := mr.GetModel()
 			modelID := mdl.State.SplitsModelId
+			if !mdl.Spec.Incremental {
+				r.C.Logger.Warn("Skipped splits trigger for model because it is not incremental", zap.String("model", mt.Model))
+				continue
+			}
 			if modelID == "" {
 				r.C.Logger.Warn("Skipped splits trigger for model because no splits have been ingested yet", zap.String("model", mt.Model))
 				continue
@@ -178,12 +182,15 @@ func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *r
 		source.Spec.Trigger = true
 	case runtime.ResourceKindModel:
 		model := res.GetModel()
-		if model.Spec.Trigger {
-			return nil
-		}
 		if full {
+			if model.Spec.TriggerFull {
+				return nil
+			}
 			model.Spec.TriggerFull = true
 		} else {
+			if model.Spec.Trigger || model.Spec.TriggerFull {
+				return nil
+			}
 			model.Spec.Trigger = true
 		}
 	case runtime.ResourceKindAlert:

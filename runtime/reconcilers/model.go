@@ -226,14 +226,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
 
-	// On resets, clear all split state from the catalog
-	if triggerReset {
-		err := r.clearSplits(ctx, model)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
-		}
-	}
-
 	// If the output connector has changed, drop data in the old output connector (if any).
 	// If only the output properties have changed, the executor will handle dropping existing data (to comply with StageChanges).
 	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector {
@@ -801,6 +793,7 @@ func (r *ModelReconciler) clearSplits(ctx context.Context, mdl *runtimev1.ModelV
 }
 
 // executeAll executes all splits (if any) of a model with the given execution options.
+// Note that triggerReset only denotes if a reset is required. Even if it is false, the model will still be reset if it's not an incremental model.
 func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.ModelV2, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, error) {
 	// Prepare the incremental state to pass to the executor
 	useSplits := model.Spec.SplitsResolver != ""
@@ -842,6 +835,14 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	// On non-incremental runs, we need to clear all split state from the catalog
+	if !incrementalRun {
+		err := r.clearSplits(ctx, model)
+		if err != nil {
+			return "", nil, err
+		}
+	}
 
 	// Get executor(s)
 	executor, release, err := r.acquireExecutor(ctx, self, model, env)

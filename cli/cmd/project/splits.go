@@ -16,7 +16,7 @@ func SplitsCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	splitsCmd := &cobra.Command{
 		Use:   "splits [<project>] <model>",
-		Args:  cobra.MaximumNArgs(2),
+		Args:  cobra.RangeArgs(1, 2),
 		Short: "List splits for a model",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 1 {

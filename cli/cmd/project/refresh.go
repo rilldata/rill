@@ -25,7 +25,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				project = args[0]
 			}
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+			if !local && !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
@@ -67,11 +67,26 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Build model triggers
-			if len(modelSplits) > 0 && len(models) != 1 {
-				return fmt.Errorf("must specify exactly one --model when using --split")
-			}
-			if erroredSplits && len(models) != 1 {
-				return fmt.Errorf("must specify exactly one --model when using --errored-splits")
+			if len(modelSplits) > 0 || erroredSplits {
+				// If splits are specified, ensure exactly one model is specified.
+				if len(models) != 1 {
+					return fmt.Errorf("must specify exactly one --model when using --split or --errored-splits")
+				}
+
+				// Since it's a common error, do an early check to ensure the model is incremental.
+				// (This error will also be logged by the reconciler, but surfacing it here is more user-friendly.)
+				mn := models[0]
+				resp, err := rt.GetResource(cmd.Context(), &runtimev1.GetResourceRequest{
+					InstanceId: instanceID,
+					Name:       &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: mn},
+				})
+				if err != nil {
+					return fmt.Errorf("failed to get model %q: %w", mn, err)
+				}
+				m := resp.Resource.GetModel()
+				if !m.Spec.Incremental {
+					return fmt.Errorf("can't refresh splits on model %q because it is not incremental", mn)
+				}
 			}
 			var modelTriggers []*runtimev1.RefreshModelTrigger
 			for _, m := range models {
