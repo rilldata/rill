@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
-	// TODO This can be moved to a background job - schedule trial end check job to the river queue
+	// TODO This can be moved to a background job and repair org billing job can be removed in the next version. We need repair job to fix existing orgs but afterwards background job wil ensure that all orgs are in sync with billing system
 	// create payment customer
 	pc, err := s.PaymentProvider.CreateCustomer(ctx, org)
 	if err != nil {
