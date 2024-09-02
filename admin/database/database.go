@@ -971,8 +971,12 @@ type InvoicePaymentFailedMeta struct {
 }
 
 type BillingErrorMetadataTrialEnded struct {
-	GracePeriodEndsOn  time.Time `json:"grace_period_ends_on"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
 	TriggersRiverJobID int64     `json:"triggers_river_job_id"`
+}
+
+type BillingErrorMetadataSubscriptionCancelled struct {
+	EndDate time.Time `json:"end_date"`
 }
 
 type UpsertBillingErrorOptions struct {

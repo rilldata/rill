@@ -2945,6 +2945,7 @@ paths:
             - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
             - BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
             - BILLING_ERROR_TYPE_TRIAL_ENDED
+            - BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED
       tags:
         - AdminService
   /v1/superuser/organizations/{organization}/billing/warnings/{type}:
@@ -3508,7 +3509,7 @@ definitions:
   v1BillingErrorMetadataTrialEnded:
     type: object
     properties:
-      gracePeriodEndsOn:
+      gracePeriodEndDate:
         type: string
         format: date-time
   v1BillingErrorType:
@@ -3518,6 +3519,7 @@ definitions:
       - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
       - BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
       - BILLING_ERROR_TYPE_TRIAL_ENDED
+      - BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED
     default: BILLING_ERROR_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object

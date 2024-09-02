@@ -2144,6 +2144,8 @@ func (b *billingErrorDTO) AsModel() *database.BillingError {
 		metadata = &database.BillingErrorMetadataInvoicePaymentFailed{}
 	case database.BillingErrorTypeTrialEnded:
 		metadata = &database.BillingErrorMetadataTrialEnded{}
+	case database.BillingErrorTypeSubscriptionCancelled:
+		metadata = &database.BillingErrorMetadataSubscriptionCancelled{}
 	default:
 		metadata = nil
 	}

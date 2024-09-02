@@ -83,12 +83,12 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		attribute.String("args.deployment_id", req.DeploymentId),
 	)
 
-	// check if org has any of the following billing errors and return error if it does
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// check if org has any of the following billing errors and return error if it does
 	err = s.checkBillingErrors(ctx, org.ID)
 	if err != nil {
 		return nil, err
@@ -418,7 +418,7 @@ func (s *Server) checkBillingErrors(ctx context.Context, orgID string) error {
 		}
 	}
 
-	if be != nil {
+	if be != nil { // should we allow any grace period here?
 		return status.Error(codes.InvalidArgument, "invoice payment failed")
 	}
 
@@ -429,7 +429,7 @@ func (s *Server) checkBillingErrors(ctx context.Context, orgID string) error {
 		}
 	}
 
-	if be != nil {
+	if be != nil && be.Metadata.(database.BillingErrorMetadataSubscriptionCancelled).EndDate.AddDate(0, 0, 1).After(time.Now()) {
 		return status.Error(codes.InvalidArgument, "subscription cancelled")
 	}
 

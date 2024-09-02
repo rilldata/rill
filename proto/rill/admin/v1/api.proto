@@ -1250,6 +1250,7 @@ enum BillingErrorType {
   BILLING_ERROR_TYPE_NO_PAYMENT_METHOD = 1;
   BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 2;
   BILLING_ERROR_TYPE_TRIAL_ENDED = 3;
+  BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 4;
 }
 
 message SudoDeleteOrganizationBillingWarningRequest {
@@ -2312,7 +2313,11 @@ message BillingErrorMetadataInvoicePaymentFailed {
 }
 
 message BillingErrorMetadataTrialEnded {
-  google.protobuf.Timestamp grace_period_ends_on = 1;
+  google.protobuf.Timestamp grace_period_end_date = 1;
+}
+
+message BillingErrorMetadataSubscriptionEndDate {
+  google.protobuf.Timestamp end_date = 1;
 }
 
 message BillingWarning {

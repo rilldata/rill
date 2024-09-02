@@ -31,6 +31,11 @@ export enum BillingErrorType {
    * @generated from enum value: BILLING_ERROR_TYPE_TRIAL_ENDED = 3;
    */
   TRIAL_ENDED = 3,
+
+  /**
+   * @generated from enum value: BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 4;
+   */
+  SUBSCRIPTION_CANCELLED = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingErrorType)
 proto3.util.setEnumType(BillingErrorType, "rill.admin.v1.BillingErrorType", [
@@ -38,6 +43,7 @@ proto3.util.setEnumType(BillingErrorType, "rill.admin.v1.BillingErrorType", [
   { no: 1, name: "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD" },
   { no: 2, name: "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED" },
   { no: 3, name: "BILLING_ERROR_TYPE_TRIAL_ENDED" },
+  { no: 4, name: "BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED" },
 ]);
 
 /**
@@ -12812,9 +12818,9 @@ export class BillingErrorMetadataInvoicePaymentFailed extends Message<BillingErr
  */
 export class BillingErrorMetadataTrialEnded extends Message<BillingErrorMetadataTrialEnded> {
   /**
-   * @generated from field: google.protobuf.Timestamp grace_period_ends_on = 1;
+   * @generated from field: google.protobuf.Timestamp grace_period_end_date = 1;
    */
-  gracePeriodEndsOn?: Timestamp;
+  gracePeriodEndDate?: Timestamp;
 
   constructor(data?: PartialMessage<BillingErrorMetadataTrialEnded>) {
     super();
@@ -12824,7 +12830,7 @@ export class BillingErrorMetadataTrialEnded extends Message<BillingErrorMetadata
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.BillingErrorMetadataTrialEnded";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "grace_period_ends_on", kind: "message", T: Timestamp },
+    { no: 1, name: "grace_period_end_date", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadataTrialEnded {
@@ -12841,6 +12847,43 @@ export class BillingErrorMetadataTrialEnded extends Message<BillingErrorMetadata
 
   static equals(a: BillingErrorMetadataTrialEnded | PlainMessage<BillingErrorMetadataTrialEnded> | undefined, b: BillingErrorMetadataTrialEnded | PlainMessage<BillingErrorMetadataTrialEnded> | undefined): boolean {
     return proto3.util.equals(BillingErrorMetadataTrialEnded, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingErrorMetadataSubscriptionEndDate
+ */
+export class BillingErrorMetadataSubscriptionEndDate extends Message<BillingErrorMetadataSubscriptionEndDate> {
+  /**
+   * @generated from field: google.protobuf.Timestamp end_date = 1;
+   */
+  endDate?: Timestamp;
+
+  constructor(data?: PartialMessage<BillingErrorMetadataSubscriptionEndDate>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingErrorMetadataSubscriptionEndDate";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "end_date", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadataSubscriptionEndDate {
+    return new BillingErrorMetadataSubscriptionEndDate().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingErrorMetadataSubscriptionEndDate {
+    return new BillingErrorMetadataSubscriptionEndDate().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingErrorMetadataSubscriptionEndDate {
+    return new BillingErrorMetadataSubscriptionEndDate().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingErrorMetadataSubscriptionEndDate | PlainMessage<BillingErrorMetadataSubscriptionEndDate> | undefined, b: BillingErrorMetadataSubscriptionEndDate | PlainMessage<BillingErrorMetadataSubscriptionEndDate> | undefined): boolean {
+    return proto3.util.equals(BillingErrorMetadataSubscriptionEndDate, a, b);
   }
 }
 

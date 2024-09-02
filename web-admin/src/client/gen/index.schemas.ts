@@ -1289,10 +1289,12 @@ export const V1BillingErrorType = {
   BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED:
     "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED",
   BILLING_ERROR_TYPE_TRIAL_ENDED: "BILLING_ERROR_TYPE_TRIAL_ENDED",
+  BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED:
+    "BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED",
 } as const;
 
 export interface V1BillingErrorMetadataTrialEnded {
-  gracePeriodEndsOn?: string;
+  gracePeriodEndDate?: string;
 }
 
 export interface V1BillingErrorMetadataNoPaymentMethod {

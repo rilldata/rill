@@ -45,7 +45,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 
 	// can be done in same tx as UpdateOrganization using InsertTx but river driver expects sql.Tx and does not work with the Tx implementation we have
 	// scheduling it before the update as repair billing job can take care of the update if update fails
-	err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.TrialEndDate)
+	err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.TrialEndDate)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -102,7 +102,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			subs = append(subs, sub)
 
 			// schedule trial end check job to the river queue, if it was already scheduled it will be ignored
-			err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.TrialEndDate)
+			err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.TrialEndDate)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -189,7 +189,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		subs = append(subs, sub)
 
 		// schedule trial end check job to the river queue
-		err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.TrialEndDate)
+		err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.TrialEndDate)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -228,36 +228,39 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 	return org, subs, nil
 }
 
-func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID string, trialEndDate time.Time) error {
+func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) error {
 	if trialEndDate.After(time.Now()) {
 		return nil
 	}
 
-	mid := (trialEndDate.UnixMilli() - time.Now().UnixMilli()) / 2
-	hours := mid / 3600000
+	// schedule trial ending soon job 7 days before trial end date
+	_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndingSoonArgs{
+		OrgID:  orgID,
+		SubID:  subID,
+		PlanID: planID,
+	}, &river.InsertOpts{
+		ScheduledAt: trialEndDate.AddDate(0, 0, -7),
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to schedule trial ending soon job: %w", err)
+	}
 
-	if hours > 24 {
-		trialEndingSoon := time.Now().Add(time.Duration(hours) * time.Hour)
-		_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndingSoonArgs{OrgID: orgID}, &river.InsertOpts{
-			ScheduledAt: trialEndingSoon,
-			UniqueOpts: river.UniqueOpts{
-				ByArgs: true,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to schedule trial ending soon job: %w", err)
-		}
-	} else {
-		// this should not happen but just in case directly schedule the trial end check job
-		_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndCheckArgs{OrgID: orgID}, &river.InsertOpts{
-			ScheduledAt: trialEndDate.Add(time.Hour * 25), // add buffer of 1 hour to ensure the job runs after trial period days
-			UniqueOpts: river.UniqueOpts{
-				ByArgs: true,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to schedule trial end check job: %w", err)
-		}
+	// schedule trial end check job on trial end date
+	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndCheckArgs{
+		OrgID:  orgID,
+		SubID:  subID,
+		PlanID: planID,
+	}, &river.InsertOpts{
+		ScheduledAt: trialEndDate.Add(time.Hour * 25), // add buffer of 1 hour to ensure the job runs after trial period days
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to schedule trial end check job: %w", err)
 	}
 
 	return nil

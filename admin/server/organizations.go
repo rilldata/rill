@@ -329,6 +329,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
+	// TODO move below to background job
 	if len(subs) == 1 {
 		// schedule plan change
 		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionImmediate)
@@ -431,6 +432,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return &adminv1.CancelBillingSubscriptionResponse{}, nil
 	}
 
+	// TODO move below to background job
+	subEndDate := subs[0].CurrentBillingCycleEndDate
 	if len(subs) == 1 {
 		// schedule plan change
 		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionEndOfSubscriptionTerm)
@@ -455,29 +458,32 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
+		subEndDate = latestEndDate
 	}
 
-	_, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		Description:                         org.Description,
-		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
+	// schedule plan change by API job
+	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandlePlanChangeByAPIArgs{
+		OrgID:  org.ID,
+		SubID:  subs[0].ID,
+		PlanID: plan.ID,
+	}, &river.InsertOpts{
+		ScheduledAt: subEndDate.AddDate(0, 0, 1),
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// raise a billing error of the subscription cancellation
 	_, err = s.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-		OrgID:     org.ID,
-		Type:      database.BillingErrorTypeSubscriptionCancelled,
+		OrgID: org.ID,
+		Type:  database.BillingErrorTypeSubscriptionCancelled,
+		Metadata: database.BillingErrorMetadataSubscriptionCancelled{
+			EndDate: subEndDate,
+		},
 		EventTime: time.Now(),
 	})
 	if err != nil {
@@ -1392,6 +1398,8 @@ func billingErrorTypeToDTO(t database.BillingErrorType) adminv1.BillingErrorType
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED
 	case database.BillingErrorTypeInvoicePaymentFailed:
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
+	case database.BillingErrorTypeSubscriptionCancelled:
+		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED
 	default:
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_UNSPECIFIED
 	}
@@ -1407,6 +1415,8 @@ func dtoBillingErrorTypeToDB(t adminv1.BillingErrorType) (database.BillingErrorT
 		return database.BillingErrorTypeTrialEnded, nil
 	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED:
 		return database.BillingErrorTypeInvoicePaymentFailed, nil
+	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED:
+		return database.BillingErrorTypeSubscriptionCancelled, nil
 	default:
 		return database.BillingErrorTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
 	}

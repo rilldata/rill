@@ -160,19 +160,8 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[riverut
 
 	if sub[0].TrialEndDate.After(time.Now().UTC()) {
 		// just relying on trial period days to check if still on trial plan, may need explicit flag for this in the plan
-		// trial period is ending soon, log error, schedule trial end check job and send email
-		w.admin.Logger.Info("Trial period is ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.Time("trial_end_date", sub[0].TrialEndDate))
-
-		// this should not happen but just in case directly schedule the trial end check job
-		_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndCheckArgs{OrgID: org.ID}, &river.InsertOpts{
-			ScheduledAt: sub[0].TrialEndDate.Add(time.Hour * 25), // add buffer of 1 hour to ensure the job runs after trial period days
-			UniqueOpts: river.UniqueOpts{
-				ByArgs: true,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to schedule trial end check job: %w", err)
-		}
+		// trial period is ending soon, log warn and send email
+		w.admin.Logger.Warn("Trial period is ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.Time("trial_end_date", sub[0].TrialEndDate))
 
 		// send email
 		err = w.admin.Email.SendInformational(&email.Informational{
@@ -253,7 +242,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[riverutil
 			OrgID: org.ID,
 			Type:  database.BillingErrorTypeTrialEnded,
 			Metadata: &database.BillingErrorMetadataTrialEnded{
-				GracePeriodEndsOn:  gracePeriodEndDate,
+				GracePeriodEndDate: gracePeriodEndDate,
 				TriggersRiverJobID: j.Job.ID,
 			},
 			EventTime: sub[0].TrialEndDate.AddDate(0, 0, 1),
@@ -335,7 +324,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[r
 		return nil
 	}
 
-	if sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays).Before(time.Now().UTC()) {
+	if time.Now().UTC().After(sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)) {
 		// trial grace period has ended, log error, send email and hibernate projects
 		limit := 10
 		afterProjectName := ""
@@ -650,36 +639,37 @@ func (w *HandlePlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[r
 		return nil
 	}
 
-	// if the new plan is still a trial plan, can happen if manually assigned new trial plan for example to extend trial period, if yes then schedule trail job checks
+	// delete any trial related billing errors and warnings if any irrespective of the new plan
+	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeTrialEnded)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	if be != nil {
+		metadata, ok := be.Metadata.(*database.BillingErrorMetadataTrialEnded)
+		if ok && metadata.TriggersRiverJobID > 0 {
+			// cancel the trial end grace check job, ignore errors
+			_, _ = riverutils.InsertOnlyRiverClient.JobCancel(ctx, metadata.TriggersRiverJobID)
+		}
+		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	}
+
+	// if the new plan is still a trial plan, can happen if manually assigned new trial plan for example to extend trial period, if yes then schedule trial job checks
 	if !sub[0].TrialEndDate.IsZero() {
 		if sub[0].TrialEndDate.Before(time.Now().UTC()) {
+			// if user cancels the subscription then moved to default plan in that case trial will already be ended, ignore
 			return nil
 		}
-		err = w.admin.ScheduleTrialEndCheckJobs(ctx, org.ID, sub[0].TrialEndDate)
+		err = w.admin.ScheduleTrialEndCheckJobs(ctx, org.ID, sub[0].ID, sub[0].Plan.ID, sub[0].TrialEndDate)
 		if err != nil {
 			return fmt.Errorf("failed to schedule trial end check job: %w", err)
 		}
 	} else {
-		// if new plan is paid then delete any trial related billing errors and warnings if any
-		be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeTrialEnded)
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return fmt.Errorf("failed to find billing errors: %w", err)
-			}
-		}
-
-		if be != nil {
-			metadata, ok := be.Metadata.(*database.BillingErrorMetadataTrialEnded)
-			if ok && metadata.TriggersRiverJobID > 0 {
-				// cancel the trial end grace check job, ignore errors
-				_, _ = riverutils.InsertOnlyRiverClient.JobCancel(ctx, metadata.TriggersRiverJobID)
-			}
-			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
-			if err != nil {
-				return fmt.Errorf("failed to delete billing error: %w", err)
-			}
-		}
-
 		// delete any subscription cancellation error if any
 		be, err = w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
 		if err != nil {
@@ -694,6 +684,24 @@ func (w *HandlePlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[r
 				return fmt.Errorf("failed to delete billing error: %w", err)
 			}
 		}
+	}
+
+	// update quotas
+	_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		Description:                         org.Description,
+		QuotaProjects:                       valOrDefault(sub[0].Plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    valOrDefault(sub[0].Plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     valOrDefault(sub[0].Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             valOrDefault(sub[0].Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             valOrDefault(sub[0].Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub[0].Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -716,4 +724,11 @@ func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, p
 	h.Logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
 	// Set the job to be immediately cancelled.
 	return &river.ErrorHandlerResult{SetCancelled: true}
+}
+
+func valOrDefault[T any](ptr *T, def T) T {
+	if ptr != nil {
+		return *ptr
+	}
+	return def
 }
