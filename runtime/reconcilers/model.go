@@ -205,7 +205,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Decide if we should trigger a reset
-	triggerReset := model.State.ResultConnector == "" // If its nil, ResultProperties/ResultTable will also be nil
+	triggerReset := model.Spec.TriggerFull
+	triggerReset = triggerReset || model.State.ResultConnector == "" // If its nil, ResultProperties/ResultTable will also be nil
 	triggerReset = triggerReset || model.State.RefreshedOn == nil
 	triggerReset = triggerReset || model.State.SpecHash != specHash
 	triggerReset = triggerReset || !exists
@@ -223,14 +224,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			return runtime.ReconcileResult{Err: errSplitsHaveErrors, Retrigger: refreshOn}
 		}
 		return runtime.ReconcileResult{Retrigger: refreshOn}
-	}
-
-	// On resets, clear all split state from the catalog
-	if triggerReset {
-		err := r.clearSplits(ctx, model)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
-		}
 	}
 
 	// If the output connector has changed, drop data in the old output connector (if any).
@@ -302,8 +295,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: errors.Join(ctx.Err(), execErr)}
 	}
 
-	// Reset spec.Trigger
-	if model.Spec.Trigger {
+	// Reset spec.Trigger and spec.TriggerFull
+	if model.Spec.Trigger || model.Spec.TriggerFull {
 		err := r.updateTriggerFalse(ctx, n)
 		if err != nil {
 			return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
@@ -551,7 +544,7 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }
 
-// updateTriggerFalse sets the model's spec.Trigger to false.
+// updateTriggerFalse sets the model's spec.Trigger and spec.TriggerFull to false.
 // Unlike the State, the Spec may be edited concurrently with a Reconcile call, so we need to read and edit it under a lock.
 func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.ResourceName) error {
 	r.C.Lock(ctx)
@@ -568,6 +561,7 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 	}
 
 	model.Spec.Trigger = false
+	model.Spec.TriggerFull = false
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
@@ -799,6 +793,7 @@ func (r *ModelReconciler) clearSplits(ctx context.Context, mdl *runtimev1.ModelV
 }
 
 // executeAll executes all splits (if any) of a model with the given execution options.
+// Note that triggerReset only denotes if a reset is required. Even if it is false, the model will still be reset if it's not an incremental model.
 func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.ModelV2, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, error) {
 	// Prepare the incremental state to pass to the executor
 	useSplits := model.Spec.SplitsResolver != ""
@@ -840,6 +835,14 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	// On non-incremental runs, we need to clear all split state from the catalog
+	if !incrementalRun {
+		err := r.clearSplits(ctx, model)
+		if err != nil {
+			return "", nil, err
+		}
+	}
 
 	// Get executor(s)
 	executor, release, err := r.acquireExecutor(ctx, self, model, env)
@@ -1220,6 +1223,13 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 		return nil, nil, err
 	}
 
+	// Acquire the final result manager
+	finalResultManager, ok := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
+	if !ok {
+		finalRelease()
+		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
+	}
+
 	// Wrap the executors
 	wrapped := &wrappedModelExecutor{
 		finalConnector:     finalConnector,
@@ -1229,6 +1239,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 		stage:              stage,
 		stageOpts:          stageOpts,
 		stageResultManager: stageResultManager,
+		finalResultManager: finalResultManager,
 	}
 	release := func() {
 		stageRelease()

@@ -17,13 +17,13 @@
 </script>
 
 <svelte:head>
-  <title>Github connected successfully</title>
+  <title>GitHub connected successfully</title>
 </svelte:head>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <GithubSuccess />
-    <CtaHeader>Github connected successfully</CtaHeader>
+    <CtaHeader>GitHub connected successfully</CtaHeader>
     <CtaMessage>Close this page and continue setup in the Rill CLI.</CtaMessage>
   </CtaContentContainer>
 </CtaLayoutContainer>

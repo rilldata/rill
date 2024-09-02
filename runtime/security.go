@@ -374,6 +374,10 @@ func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, cla
 					return allowAccessRule
 				}
 			}
+			// Note - A hack to allow slack channel users to access the alert. This also means that any alert configured with a slack channel will be viewable by any user part of the project and will appear in their alert list.
+			if len(props.Channels) > 0 {
+				return allowAccessRule
+			}
 		}
 	}
 

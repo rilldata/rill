@@ -120,13 +120,13 @@ message DashboardState {
    * Pivot related fields
    */
   optional bool pivot_is_active = 22;
-  // List of time dimensions selected for rows
+  /*
+  * These pivot fields are preserved to support backward
+  * compatibility with existing URLs
+  */
   repeated rill.runtime.v1.TimeGrain pivot_row_time_dimensions = 23;
-  // List of dimensions selected for rows
   repeated string pivot_row_dimensions = 24;
-  // List of time dimensions selected for columns
   repeated rill.runtime.v1.TimeGrain pivot_column_time_dimensions = 25;
-  // List of time dimensions selected for columns
   repeated string pivot_column_dimensions = 26;
   // List of time measures selected for columns
   repeated string pivot_column_measures = 27;
@@ -139,6 +139,11 @@ message DashboardState {
   optional PivotRowJoinType pivot_row_join_type = 31;
   // Enable comparison for pivot
   optional bool pivot_enable_comparison = 34;
+
+  // List of all dimensions selected for rows
+  repeated PivotElement pivot_row_all_dimensions = 35;
+  // List of all dimensions selected for columns
+  repeated PivotElement pivot_column_all_dimensions = 36;
 }
 
 message DashboardTimeRange {
@@ -155,4 +160,11 @@ message DashboardDimensionFilter {
 message PivotColumnSort {
   bool desc = 1;
   string id = 2;
+}
+
+message PivotElement {
+  oneof element {
+    rill.runtime.v1.TimeGrain pivot_time_dimension = 1;
+    string pivot_dimension = 2;
+  }
 }

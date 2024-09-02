@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import { RillTheme } from "@rilldata/web-common/layout";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
@@ -15,6 +16,8 @@
   import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
+
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
    */
@@ -27,6 +30,7 @@
     error: AxiosError,
     query: Query,
   ) => errorEventHandler?.requestErrorEventHandler(error, query);
+  initPylonWidget();
 
   let removeJavascriptListeners: () => void;
 
@@ -59,6 +63,7 @@
   <QueryClientProvider client={queryClient}>
     <ResourceWatcher {host} {instanceId}>
       <div class="body h-screen w-screen overflow-hidden absolute">
+        <RepresentingUserBanner />
         <slot />
       </div>
     </ResourceWatcher>

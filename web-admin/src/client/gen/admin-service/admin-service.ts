@@ -26,6 +26,7 @@ import type {
   V1ListGithubUserReposResponse,
   V1RevokeMagicAuthTokenResponse,
   V1GetCurrentMagicAuthTokenResponse,
+  V1GetOrganizationNameForDomainResponse,
   V1ListOrganizationsResponse,
   AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
@@ -74,6 +75,7 @@ import type {
   V1AddProjectMemberUserResponse,
   V1RemoveProjectMemberUserResponse,
   V1SetProjectMemberUserRoleResponse,
+  V1RedeployProjectResponse,
   V1CreateReportResponse,
   AdminServiceCreateReportBodyBody,
   V1GenerateReportYAMLResponse,
@@ -86,6 +88,7 @@ import type {
   AdminServiceListMagicAuthTokensParams,
   V1IssueMagicAuthTokenResponse,
   AdminServiceIssueMagicAuthTokenBody,
+  V1UploadProjectAssetsResponse,
   V1RemoveProjectMemberUsergroupResponse,
   V1AddProjectMemberUsergroupResponse,
   V1SetProjectMemberUsergroupRoleResponse,
@@ -160,6 +163,8 @@ import type {
   V1SetSuperuserRequest,
   V1SudoUpdateOrganizationBillingCustomerResponse,
   V1SudoUpdateOrganizationBillingCustomerRequest,
+  V1SudoUpdateOrganizationCustomDomainResponse,
+  V1SudoUpdateOrganizationCustomDomainRequest,
   V1SudoUpdateAnnotationsResponse,
   V1SudoUpdateAnnotationsRequest,
   V1SearchProjectNamesResponse,
@@ -249,7 +254,8 @@ export const createAdminServiceListPublicBillingPlans = <
 };
 
 /**
- * @summary TriggerReconcile triggers reconcile for the project's prod deployment
+ * @summary TriggerReconcile triggers reconcile for the project's prod deployment.
+DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
  */
 export const adminServiceTriggerReconcile = (
   deploymentId: string,
@@ -300,7 +306,8 @@ export const createAdminServiceTriggerReconcile = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary TriggerRefreshSources refresh the source for production deployment
+ * @summary TriggerRefreshSources refresh the source for production deployment.
+DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
  */
 export const adminServiceTriggerRefreshSources = (
   deploymentId: string,
@@ -608,6 +615,70 @@ export const createAdminServiceGetCurrentMagicAuthToken = <
     TData,
     TError
   > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetOrganizationNameForDomain finds the org name for a custom domain.
+If the application detects it is running on a non-default domain, it can use this to find the org to present.
+It can be called without being authenticated.
+ */
+export const adminServiceGetOrganizationNameForDomain = (
+  domain: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetOrganizationNameForDomainResponse>({
+    url: `/v1/organization-for-domain/${domain}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetOrganizationNameForDomainQueryKey = (
+  domain: string,
+) => [`/v1/organization-for-domain/${domain}`];
+
+export type AdminServiceGetOrganizationNameForDomainQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>
+>;
+export type AdminServiceGetOrganizationNameForDomainQueryError = RpcStatus;
+
+export const createAdminServiceGetOrganizationNameForDomain = <
+  TData = Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+  TError = RpcStatus,
+>(
+  domain: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetOrganizationNameForDomainQueryKey(domain);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>
+  > = ({ signal }) => adminServiceGetOrganizationNameForDomain(domain, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationNameForDomain>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!domain,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryKey;
 
@@ -2548,6 +2619,56 @@ export const createAdminServiceSetProjectMemberUserRole = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary RedeployProject creates a new production deployment for a project.
+If the project currently has another production deployment, the old deployment will be deprovisioned.
+This RPC can be used to redeploy a project that has been hibernated.
+ */
+export const adminServiceRedeployProject = (
+  organization: string,
+  project: string,
+) => {
+  return httpClient<V1RedeployProjectResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/redeploy`,
+    method: "post",
+  });
+};
+
+export type AdminServiceRedeployProjectMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRedeployProject>>
+>;
+
+export type AdminServiceRedeployProjectMutationError = RpcStatus;
+
+export const createAdminServiceRedeployProject = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRedeployProject>>,
+    TError,
+    { organization: string; project: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRedeployProject>>,
+    { organization: string; project: string }
+  > = (props) => {
+    const { organization, project } = props ?? {};
+
+    return adminServiceRedeployProject(organization, project);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRedeployProject>>,
+    TError,
+    { organization: string; project: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
  */
 export const adminServiceCreateReport = (
@@ -3138,6 +3259,71 @@ export const createAdminServiceIssueMagicAuthToken = <
       organization: string;
       project: string;
       data: AdminServiceIssueMagicAuthTokenBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary Converts a project connected to github to a rill managed project.
+Uploads the current project to assets.
+ */
+export const adminServiceUploadProjectAssets = (
+  organization: string,
+  project: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1UploadProjectAssetsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/upload-assets`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceUploadProjectAssetsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>
+>;
+export type AdminServiceUploadProjectAssetsMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceUploadProjectAssetsMutationError = RpcStatus;
+
+export const createAdminServiceUploadProjectAssets = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceUploadProjectAssets(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
@@ -5597,7 +5783,8 @@ export const createAdminServiceDenyProjectAccess = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+ * @summary TriggerRedeploy is similar to RedeployProject.
+DEPRECATED: Use RedeployProject instead.
  */
 export const adminServiceTriggerRedeploy = (
   v1TriggerRedeployRequest: V1TriggerRedeployRequest,
@@ -6192,6 +6379,60 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
     >,
     TError,
     { data: V1SudoUpdateOrganizationBillingCustomerRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+It only updates the custom domain in the database, which is used to ensure correct redirects.
+The DNS records and ingress TLS must be configured separately.
+ */
+export const adminServiceSudoUpdateOrganizationCustomDomain = (
+  v1SudoUpdateOrganizationCustomDomainRequest: V1SudoUpdateOrganizationCustomDomainRequest,
+) => {
+  return httpClient<V1SudoUpdateOrganizationCustomDomainResponse>({
+    url: `/v1/superuser/organization/custom-domain`,
+    method: "patch",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateOrganizationCustomDomainRequest,
+  });
+};
+
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>
+  >;
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationBody =
+  V1SudoUpdateOrganizationCustomDomainRequest;
+export type AdminServiceSudoUpdateOrganizationCustomDomainMutationError =
+  RpcStatus;
+
+export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    TError,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoUpdateOrganizationCustomDomain(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
+    TError,
+    { data: V1SudoUpdateOrganizationCustomDomainRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

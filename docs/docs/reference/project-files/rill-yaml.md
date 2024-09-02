@@ -21,6 +21,10 @@ The `rill.yaml` file contains metadata about your project.
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`. This setting is configurable using the `olap_connector` property (and will otherwise revert to `duckdb` if not specified). 
 
+```yaml
+olap_connector: clickhouse
+```
+
 :::info Curious about OLAP Engines?
 
 Please see our reference documentation on [OLAP Engines](../olap-engines/olap-engines.md).
@@ -112,5 +116,30 @@ ignore_paths:
 :::tip
 
 Don't forget the leading `/` when specifying the path for `ignore_paths` and this path is also assuming the relative path from your project root.
+
+:::
+
+## Testing access policies 
+
+During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+
+```yaml
+mock_users:
+- email: john@yourcompany.com
+  name: John Doe
+  admin: true
+- email: jane@partnercompany.com
+  groups:
+    - partners
+- email: anon@unknown.com
+```
+
+
+![View as User](/img/reference/project-files/View-as.png)
+
+
+:::info The View as selector is not visible in my dashboard, why?
+
+This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by every user.
 
 :::

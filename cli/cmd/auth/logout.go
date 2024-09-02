@@ -36,6 +36,10 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func Logout(ctx context.Context, ch *cmdutil.Helper) error {
+	if !ch.IsAuthenticated() {
+		return nil
+	}
+
 	client, err := ch.Client()
 	if err != nil {
 		return err
@@ -69,7 +73,10 @@ func Logout(ctx context.Context, ch *cmdutil.Helper) error {
 		return err
 	}
 
-	ch.AdminTokenDefault = ""
+	err = ch.ReloadAdminConfig()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

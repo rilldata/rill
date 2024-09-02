@@ -10,6 +10,7 @@ const (
 	// Instance-level permissions
 	ReadInstance  Permission = 0x11
 	EditInstance  Permission = 0x12
+	EditTrigger   Permission = 0x20
 	ReadRepo      Permission = 0x13
 	EditRepo      Permission = 0x14
 	ReadObjects   Permission = 0x15

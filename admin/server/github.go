@@ -18,6 +18,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
@@ -68,27 +69,17 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	}
 	if user.GithubUsername == "" {
 		// If we don't have user's github username we navigate user to installtion assuming they never installed github app
-		grantAccessURL, err := urlutil.WithQuery(s.urls.githubConnect, nil)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
-		}
-
 		return &adminv1.GetGithubUserStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: grantAccessURL,
+			GrantAccessUrl: s.admin.URLs.GithubConnect(""),
 		}, nil
 	}
 	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
 	if err != nil {
 		// token not valid or expired, take auth again
-		grantAccessURL, err := urlutil.WithQuery(s.urls.githubAuth, nil)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
-		}
-
 		return &adminv1.GetGithubUserStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: grantAccessURL,
+			GrantAccessUrl: s.admin.URLs.GithubAuth(""),
 		}, nil
 	}
 
@@ -169,7 +160,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 
 	return &adminv1.GetGithubUserStatusResponse{
 		HasAccess:                           true,
-		GrantAccessUrl:                      s.urls.githubConnect,
+		GrantAccessUrl:                      s.admin.URLs.GithubConnect(""),
 		AccessToken:                         token,
 		Account:                             user.GithubUsername,
 		Organizations:                       allOrgs,
@@ -197,10 +188,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 		}
 
 		// If no access, return instructions for granting access
-		grantAccessURL, err := urlutil.WithQuery(s.urls.githubConnect, map[string]string{"remote": req.GithubUrl})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
-		}
+		grantAccessURL := s.admin.URLs.GithubConnect(req.GithubUrl)
 
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
@@ -218,14 +206,9 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// user has not authorized github app
 	if user.GithubUsername == "" {
-		redirectURL, err := urlutil.WithQuery(s.urls.githubAuth, map[string]string{"remote": req.GithubUrl})
-		if err != nil {
-			return nil, err
-		}
-
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: redirectURL,
+			GrantAccessUrl: s.admin.URLs.GithubAuth(req.GithubUrl),
 		}
 		return res, nil
 	}
@@ -235,14 +218,9 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
 			// may be user authorised from another username
-			redirectURL, err := urlutil.WithQuery(s.urls.githubAuthRetry, map[string]string{"remote": req.GithubUrl, "githubUsername": user.GithubUsername})
-			if err != nil {
-				return nil, err
-			}
-
 			res := &adminv1.GetGithubRepoStatusResponse{
 				HasAccess:      false,
-				GrantAccessUrl: redirectURL,
+				GrantAccessUrl: s.admin.URLs.GithubRetryAuthUI(req.GithubUrl, user.GithubUsername),
 			}
 			return res, nil
 		}
@@ -410,7 +388,7 @@ func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	observability.MuxHandle(inner, "/github/webhook", http.HandlerFunc(s.githubWebhook))
 	observability.MuxHandle(inner, "/github/connect", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("/github/connect"), http.HandlerFunc(s.githubConnect))))
 	observability.MuxHandle(inner, "/github/connect/callback", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("/github/connect/callback"), http.HandlerFunc(s.githubConnectCallback))))
-	observability.MuxHandle(inner, "/github/auth/login", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/auth/login"), http.HandlerFunc(s.githubAuthLogin))))
+	observability.MuxHandle(inner, "/github/auth/login", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/auth/login"), http.HandlerFunc(s.githubAuth))))
 	observability.MuxHandle(inner, "/github/auth/callback", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/auth/callback"), http.HandlerFunc(s.githubAuthCallback))))
 	observability.MuxHandle(inner, "/github/post-auth-redirect", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/post-auth-redirect"), http.HandlerFunc(s.githubStatus))))
 	mux.Handle("/github/", observability.Middleware("admin", s.logger, inner))
@@ -430,19 +408,10 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	remote := query.Get("remote")
-	if remote == "" {
-		http.Redirect(w, r, s.urls.githubAppInstallation, http.StatusTemporaryRedirect)
-		return
-	}
-
-	redirectURL, err := urlutil.WithQuery(s.urls.githubAppInstallation, map[string]string{"state": remote})
-	if err != nil {
-		http.Error(w, "failed to generate URL", http.StatusInternalServerError)
-		return
-	}
+	remote := query.Get("remote") // May not be set
 
 	// Redirect to Github App for installation
+	redirectURL := s.githubAppInstallationURL(remote)
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
@@ -483,12 +452,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectRequest, map[string]string{"remote": qry.Get("state")})
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to create retry request url: %s", err.Error()), http.StatusInternalServerError)
-			return
-		}
-
+		redirectURL := s.admin.URLs.GithubConnectRequestUI(qry.Get("state"))
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -531,12 +495,8 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	if remoteURL == "autoclose" {
 		// signal from UI flow to autoclose the confirmation dialog
 		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
-		connectSuccessURL, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http.Redirect(w, r, connectSuccessURL, http.StatusTemporaryRedirect)
+		redirectURL := s.admin.URLs.GithubConnectSuccessUI(true)
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -545,18 +505,13 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		// request without state can come in multiple ways like
 		// 	- if user changes app installation directly on the settings page
 		//  - if admin user accepts the installation request
-		http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 		return
 	}
 
 	if setupAction == "request" {
 		// access requested
-		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectRequest, map[string]string{"remote": remoteURL})
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to create connect request url: %s", err.Error()), http.StatusInternalServerError)
-			return
-		}
-
+		redirectURL := s.admin.URLs.GithubConnectRequestUI(remoteURL)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -569,13 +524,8 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !isCollaborator {
-		redirectURL, err := urlutil.WithQuery(s.urls.githubAuthRetry, map[string]string{"remote": remoteURL, "githubUsername": user.GithubUsername})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		// Redirect to retry page
+		redirectURL := s.admin.URLs.GithubRetryAuthUI(remoteURL, user.GithubUsername)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -591,18 +541,13 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 
 		// no access
 		// Redirect to UI retry page
-		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectRetry, map[string]string{"remote": remoteURL})
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to create retry request url: %s", err.Error()), http.StatusInternalServerError)
-			return
-		}
-
+		redirectURL := s.admin.URLs.GithubConnectRetryUI(remoteURL)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
 	// Redirect to UI success page
-	http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 }
 
 // githubAuthLogin starts user authorization of github app.
@@ -610,7 +555,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 // where this flow comes into picture.
 // Some implementation details are copied from auth package.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/auth/login.
-func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request) {
+func (s *Server) githubAuth(w http.ResponseWriter, r *http.Request) {
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(r.Context())
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -647,7 +592,7 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request) {
 		ClientID:     s.opts.GithubClientID,
 		ClientSecret: s.opts.GithubClientSecret,
 		Endpoint:     githuboauth.Endpoint,
-		RedirectURL:  s.urls.githubAuthCallback,
+		RedirectURL:  s.admin.URLs.GithubAuthCallback(),
 	}
 	// Redirect to github login page
 	http.Redirect(w, r, oauthConf.AuthCodeURL(state, oauth2.AccessTypeOnline), http.StatusTemporaryRedirect)
@@ -730,18 +675,14 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if remote == "autoclose" {
 		// signal from UI flow to autoclose the confirmation dialog
 		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
-		connectSuccessURL, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http.Redirect(w, r, connectSuccessURL, http.StatusTemporaryRedirect)
+		redirectURL := s.admin.URLs.GithubConnectSuccessUI(true)
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
 	account, repo, ok := gitutil.SplitGithubURL(remote)
 	if !ok {
-		http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -752,13 +693,8 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !ok {
-		redirectURL, err := urlutil.WithQuery(s.urls.githubAuthRetry, map[string]string{"remote": remote, "githubUsername": user.GithubUsername})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		// Redirect to retry page
+		redirectURL := s.admin.URLs.GithubRetryAuthUI(remote, user.GithubUsername)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 	}
 
@@ -769,7 +705,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect to UI success page
-	http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 }
 
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.
@@ -839,16 +775,11 @@ func (s *Server) githubStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if hasAccess {
-		http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 		return
 	}
 
-	redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect": grantAccessURL})
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	redirectURL := s.admin.URLs.GithubConnectUI(grantAccessURL)
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
@@ -890,12 +821,7 @@ func (s *Server) isCollaborator(ctx context.Context, owner, repo string, client 
 }
 
 func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
-	redirectURL, err := urlutil.WithQuery(s.urls.authLogin, map[string]string{"redirect": r.URL.RequestURI()})
-	if err != nil {
-		http.Error(w, "failed to generate URL", http.StatusInternalServerError)
-		return
-	}
-
+	redirectURL := s.admin.URLs.AuthLogin(r.URL.RequestURI())
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
@@ -1103,8 +1029,21 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 
+	client := github.NewTokenClient(ctx, token)
+	user, _, err := client.Users.Get(ctx, "")
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{
+		All: true,
+		Author: &object.Signature{
+			Name:  safeStr(user.Name),
+			Email: safeStr(user.Email),
+			When:  time.Now(),
+		},
+	})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
@@ -1124,6 +1063,14 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	}
 
 	return nil
+}
+
+func (s *Server) githubAppInstallationURL(state string) string {
+	res := fmt.Sprintf("https://github.com/apps/%s/installations/new", s.opts.GithubAppName)
+	if state != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"state": state})
+	}
+	return res
 }
 
 func fromStringPtr(s *string) string {

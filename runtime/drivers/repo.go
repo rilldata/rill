@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -47,6 +48,13 @@ type DirEntry struct {
 	Path  string
 	IsDir bool
 }
+
+// RepoListLimit is the maximum number of files that can be listed in a call to RepoStore.ListRecursive.
+// This limit is effectively a cap on the number of files in a project because `rill start` lists the project directory using a "**" glob.
+const RepoListLimit = 2000
+
+// ErrRepoListLimitExceeded should be returned when RepoListLimit is exceeded.
+var ErrRepoListLimitExceeded = fmt.Errorf("glob exceeded limit of %d matched files", RepoListLimit)
 
 // ignoredPaths is a list of paths that are ignored by the parser.
 var ignoredPaths = []string{

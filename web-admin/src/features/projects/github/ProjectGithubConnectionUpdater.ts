@@ -1,14 +1,11 @@
 import {
   createAdminServiceConnectProjectToGithub,
-  getAdminServiceGetGithubUserStatusQueryKey,
-  getAdminServiceGetProjectQueryKey,
   type ListGithubUserReposResponseRepo,
 } from "@rilldata/web-admin/client";
 import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { invalidateProjectQueries } from "@rilldata/web-admin/features/projects/invalidations";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-import { invalidateRuntimeQueries } from "@rilldata/web-common/runtime-client/invalidation";
 import { get, writable } from "svelte/store";
 
 /**
@@ -29,20 +26,26 @@ export class ProjectGithubConnectionUpdater {
   public constructor(
     private readonly organization: string,
     private readonly project: string,
-    githubUrl: string,
-    subpath: string,
-    branch: string,
+    private readonly currentGithubUrl: string,
+    private readonly currentSubpath: string,
+    private readonly currentBranch: string,
   ) {
-    this.githubUrl.set(githubUrl);
-    this.subpath.set(subpath);
-    this.branch.set(branch);
-    this.isConnected = !!githubUrl;
+    this.githubUrl.set(currentGithubUrl);
+    this.subpath.set(currentSubpath);
+    this.branch.set(currentBranch);
+    this.isConnected = !!currentGithubUrl;
   }
 
   public onSelectedRepoChange(repo: ListGithubUserReposResponseRepo) {
     this.subpath.set("");
     this.branch.set(repo.defaultBranch ?? "");
     this.defaultBranch = repo.defaultBranch ?? "";
+  }
+
+  public reset() {
+    this.githubUrl.set(this.currentGithubUrl);
+    this.subpath.set(this.currentSubpath);
+    this.branch.set(this.currentBranch);
   }
 
   public async update({
@@ -79,18 +82,13 @@ export class ProjectGithubConnectionUpdater {
           is_fresh_connection: this.isConnected,
         },
       );
+      this.reset();
 
-      void queryClient.refetchQueries(
-        getAdminServiceGetProjectQueryKey(this.organization, this.project),
-        {
-          // avoid refetching createAdminServiceGetProjectWithBearerToken
-          exact: true,
-        },
+      void invalidateProjectQueries(
+        instanceId,
+        this.organization,
+        this.project,
       );
-      void queryClient.refetchQueries(
-        getAdminServiceGetGithubUserStatusQueryKey(),
-      );
-      void invalidateRuntimeQueries(queryClient, instanceId);
     } catch (e) {
       const err = extractGithubConnectError(e);
       if (!force && err.notEmpty) {

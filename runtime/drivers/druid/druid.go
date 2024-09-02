@@ -110,7 +110,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	dsn, err := dnsFromConfig(conf)
+	dsn, err := dsnFromConfig(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -257,25 +257,11 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
 }
 
-func GetDSN(config map[string]string) (string, error) {
-	conf := &configProperties{}
-	err := mapstructure.WeakDecode(config, conf)
-	if err != nil {
-		return "", err
-	}
-
-	return dnsFromConfig(conf)
-}
-
-func dnsFromConfig(conf *configProperties) (string, error) {
+func dsnFromConfig(conf *configProperties) (string, error) {
 	var dsn string
 	var err error
 	if conf.DSN != "" {

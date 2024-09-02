@@ -287,11 +287,7 @@
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
-  <table
-    style:width="{totalLength}px"
-    on:click={modified({ shift: handleClick })}
-    role="presentation"
-  >
+  <table on:click={modified({ shift: handleClick })} role="presentation">
     {#if firstColumnName && firstColumnWidth}
       <colgroup>
         <col
@@ -430,7 +426,8 @@
 
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
-    @apply border rounded-md z-40;
+    @apply border z-40;
+    width: calc(100% - 5px);
   }
 
   /* Pin header */

@@ -10,9 +10,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name string
 	var description string
 
-	createCmd := &cobra.Command{
+	editCmd := &cobra.Command{
 		Use:   "edit [<name>]",
-		Short: "Edit a user group",
+		Short: "Edit a group",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
@@ -24,7 +24,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			description, err = cmdutil.InputPrompt("Enter description", "")
+			err = cmdutil.StringPromptIfEmpty(&description, "Enter description")
 			if err != nil {
 				return err
 			}
@@ -44,7 +44,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	createCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
+	editCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
+	editCmd.Flags().StringVar(&description, "description", "", "Description")
 
-	return createCmd
+	return editCmd
 }

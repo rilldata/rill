@@ -29,7 +29,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("can't switch environment when assuming another user (run `rill sudo user unassume` and try again)")
 			}
 
-			fromEnv, err := adminenv.Infer(ch.AdminURL)
+			fromEnv, err := adminenv.Infer(ch.AdminURL())
 			if err != nil {
 				return err
 			}
@@ -78,14 +78,17 @@ func switchEnv(ch *cmdutil.Helper, fromEnv, toEnv string) error {
 	if err != nil {
 		return err
 	}
-	ch.AdminTokenDefault = toToken // Also set the cfg's token to the one we just got
 
 	toURL := adminenv.AdminURL(toEnv)
 	err = dotrill.SetDefaultAdminURL(toURL)
 	if err != nil {
 		return err
 	}
-	ch.AdminURL = toURL
+
+	err = ch.ReloadAdminConfig()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -93,7 +96,7 @@ func switchEnv(ch *cmdutil.Helper, fromEnv, toEnv string) error {
 // switchEnvToDevTemporarily switches the CLI to the "dev" environment (if not already there),
 // and then switches it back and returns when the context is cancelled.
 func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
-	env, err := adminenv.Infer(ch.AdminURL)
+	env, err := adminenv.Infer(ch.AdminURL())
 	if err != nil {
 		logWarn.Printf("Did not switch CLI to dev environment: failed to infer environment (error: %v)\n", err)
 		return
@@ -127,8 +130,10 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 	} else {
 		// Since dev environments are frequently reset, clear the token if it's invalid
 		_ = dotrill.SetAccessToken("")
+		_ = ch.ReloadAdminConfig()
+
 		_ = dotrill.SetDefaultOrg("")
-		ch.AdminTokenDefault = ""
+		ch.Org = ""
 	}
 
 	// Wait for ctx cancellation, then switch back to the previous environment before returning.

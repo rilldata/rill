@@ -24,6 +24,13 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{name}"};
   }
 
+  // GetOrganizationNameForDomain finds the org name for a custom domain.
+  // If the application detects it is running on a non-default domain, it can use this to find the org to present.
+  // It can be called without being authenticated.
+  rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
+    option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
+  }
+
   // CreateOrganization creates a new organization
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
     option (google.api.http) = {
@@ -107,12 +114,20 @@ service AdminService {
     };
   }
 
+  // RedeployProject creates a new production deployment for a project.
+  // If the project currently has another production deployment, the old deployment will be deprovisioned.
+  // This RPC can be used to redeploy a project that has been hibernated.
+  rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {
+    option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/redeploy"};
+  }
+
   // HibernateProject hibernates a project by tearing down its deployments.
   rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
     option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
   }
 
-  // TriggerReconcile triggers reconcile for the project's prod deployment
+  // TriggerReconcile triggers reconcile for the project's prod deployment.
+  // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/reconcile",
@@ -120,7 +135,8 @@ service AdminService {
     };
   }
 
-  // TriggerRefreshSources refresh the source for production deployment
+  // TriggerRefreshSources refresh the source for production deployment.
+  // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerRefreshSources(TriggerRefreshSourcesRequest) returns (TriggerRefreshSourcesResponse) {
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/refresh",
@@ -128,7 +144,8 @@ service AdminService {
     };
   }
 
-  // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+  // TriggerRedeploy is similar to RedeployProject.
+  // DEPRECATED: Use RedeployProject instead.
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
       post: "/v1/projects/-/redeploy",
@@ -354,6 +371,15 @@ service AdminService {
     };
   }
 
+  // Converts a project connected to github to a rill managed project.
+  // Uploads the current project to assets.
+  rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
+      body: "*"
+    };
+  }
+
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -449,6 +475,17 @@ service AdminService {
       body: "*"
     };
   }
+
+  // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+  // It only updates the custom domain in the database, which is used to ensure correct redirects.
+  // The DNS records and ingress TLS must be configured separately.
+  rpc SudoUpdateOrganizationCustomDomain(SudoUpdateOrganizationCustomDomainRequest) returns (SudoUpdateOrganizationCustomDomainResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/custom-domain",
+      body: "*"
+    };
+  }
+
 
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
@@ -779,6 +816,14 @@ message GetOrganizationResponse {
   OrganizationPermissions permissions = 2;
 }
 
+message GetOrganizationNameForDomainRequest {
+  string domain = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetOrganizationNameForDomainResponse {
+  string name = 1;
+}
+
 message CreateOrganizationRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
@@ -798,6 +843,8 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
+  optional string display_name = 5;
+  optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
 message UpdateOrganizationResponse {
@@ -1042,6 +1089,13 @@ message CreateAssetResponse {
   map<string, string> signing_headers = 3;
 }
 
+message RedeployProjectRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message RedeployProjectResponse {}
+
 message HibernateProjectRequest {
   string organization = 1;
   string project = 2;
@@ -1161,12 +1215,12 @@ message SudoGetResourceResponse {
 
 message SudoUpdateOrganizationQuotasRequest {
   string org_name = 1;
-  optional uint32 projects = 2;
-  optional uint32 deployments = 3;
-  optional uint32 slots_total = 4;
-  optional uint32 slots_per_deployment = 5;
-  optional uint32 outstanding_invites = 6;
-  optional uint64 storage_limit_bytes_per_deployment = 7;
+  optional int32 projects = 2;
+  optional int32 deployments = 3;
+  optional int32 slots_total = 4;
+  optional int32 slots_per_deployment = 5;
+  optional int32 outstanding_invites = 6;
+  optional int64 storage_limit_bytes_per_deployment = 7;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -1183,9 +1237,18 @@ message SudoUpdateOrganizationBillingCustomerResponse {
   repeated Subscription subscriptions = 2;
 }
 
+message SudoUpdateOrganizationCustomDomainRequest {
+  string name = 1;
+  string custom_domain = 2;
+}
+
+message SudoUpdateOrganizationCustomDomainResponse {
+  Organization organization = 1;
+}
+
 message SudoUpdateUserQuotasRequest {
   string email = 1;
-  optional uint32 singleuser_orgs = 2;
+  optional int32 singleuser_orgs = 2;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1626,6 +1689,13 @@ message ConnectProjectToGithubRequest {
 
 message ConnectProjectToGithubResponse {}
 
+message UploadProjectAssetsRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message UploadProjectAssetsResponse {}
+
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
   GITHUB_PERMISSION_READ = 1;
@@ -1873,7 +1943,6 @@ message GetBillingSubscriptionResponse {
   Organization organization = 1;
   Subscription subscription = 2;
   string billing_portal_url = 3;
-  bool has_payment_method = 4;
 }
 
 message UpdateBillingSubscriptionRequest {
@@ -1962,10 +2031,13 @@ message Service {
 message Organization {
   string id = 1;
   string name = 2; // Globally unique
+  string display_name = 11;
   string description = 3;
+  string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
+  string billing_email = 9;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -1983,16 +2055,16 @@ message Subscription {
 }
 
 message UserQuotas {
-  uint32 singleuser_orgs = 1;
+  int32 singleuser_orgs = 1;
 }
 
 message OrganizationQuotas {
-  uint32 projects = 1;
-  uint32 deployments = 2;
-  uint32 slots_total = 3;
-  uint32 slots_per_deployment = 4;
-  uint32 outstanding_invites = 5;
-  uint64 storage_limit_bytes_per_deployment = 6;
+  int32 projects = 1;
+  int32 deployments = 2;
+  int32 slots_total = 3;
+  int32 slots_per_deployment = 4;
+  int32 outstanding_invites = 5;
+  int64 storage_limit_bytes_per_deployment = 6;
 }
 
 message Project {
@@ -2012,7 +2084,7 @@ message Project {
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
-  string frontend_url = 16;
+  string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
   map<string, string> annotations = 20;
   string prod_version = 21;

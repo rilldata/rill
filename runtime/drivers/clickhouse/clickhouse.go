@@ -74,6 +74,13 @@ var spec = drivers.Spec{
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
 		},
+		{
+			Key:         "cluster",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "cluster",
+			Description: "Cluster name",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -91,6 +98,8 @@ type configProperties struct {
 	Port     int    `mapstructure:"port"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
+	// Cluster name. Required for running distributed queries.
+	Cluster string `mapstructure:"cluster"`
 	// EnableCache controls whether to enable cache for Clickhouse queries.
 	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
@@ -327,10 +336,6 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
 }
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {

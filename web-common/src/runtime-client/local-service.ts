@@ -4,7 +4,7 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_connect";
 import {
   DeployProjectRequest,
-  DeployValidationRequest,
+  GetCurrentProjectRequest,
   GetCurrentUserRequest,
   GetMetadataRequest,
   GetVersionRequest,
@@ -87,31 +87,6 @@ export function createLocalServiceGetVersion<
     ...queryOptions,
     queryKey: queryOptions?.queryKey ?? getLocalServiceGetVersionQueryKey(),
     queryFn: queryOptions?.queryFn ?? localServiceGetVersion,
-  });
-}
-
-export function localServiceDeployValidation() {
-  return getClient().deployValidation(new DeployValidationRequest());
-}
-export const getLocalServiceDeployValidationQueryKey = () => [
-  `/v1/local/deploy-validation`,
-];
-export function createLocalServiceDeployValidation<
-  TData = Awaited<ReturnType<typeof localServiceDeployValidation>>,
-  TError = ConnectError,
->(options?: {
-  query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof localServiceDeployValidation>>,
-    TError,
-    TData
-  >;
-}) {
-  const { query: queryOptions } = options ?? {};
-  return createQuery({
-    ...queryOptions,
-    queryKey:
-      queryOptions?.queryKey ?? getLocalServiceDeployValidationQueryKey(),
-    queryFn: queryOptions?.queryFn ?? localServiceDeployValidation,
   });
 }
 
@@ -209,5 +184,30 @@ export function createLocalServiceGetCurrentUser<
     ...queryOptions,
     queryKey: queryOptions?.queryKey ?? getLocalServiceGetCurrentUserQueryKey(),
     queryFn: queryOptions?.queryFn ?? localServiceGetCurrentUser,
+  });
+}
+
+export function localServiceGetCurrentProject() {
+  return getClient().getCurrentProject(new GetCurrentProjectRequest());
+}
+export const getLocalServiceGetCurrentProjectQueryKey = () => [
+  `/v1/local/get-project`,
+];
+export function createLocalServiceGetCurrentProject<
+  TData = Awaited<ReturnType<typeof localServiceGetCurrentProject>>,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceGetCurrentProject>>,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ?? getLocalServiceGetCurrentProjectQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceGetCurrentProject,
   });
 }

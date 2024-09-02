@@ -76,7 +76,7 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
-					OnlyNames: []*runtimev1.ResourceName{n},
+					Resources: []*runtimev1.ResourceName{n},
 				},
 			},
 		},

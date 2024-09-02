@@ -6,7 +6,7 @@
   import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
   import { ProjectGithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/ProjectGithubConnectionUpdater";
   import { getGithubData } from "@rilldata/web-admin/features/projects/github/GithubData";
-  import GithubOverwriteConfirmationDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmationDialog.svelte";
+  import GithubOverwriteConfirmDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmDialog.svelte";
   import {
     Dialog,
     DialogContent,
@@ -28,8 +28,8 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
+  import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import type { AxiosError } from "axios";
 
   export let open = false;
@@ -67,6 +67,7 @@
   $: githubUrl = githubConnectionUpdater.githubUrl;
   $: subpath = githubConnectionUpdater.subpath;
   $: branch = githubConnectionUpdater.branch;
+  $: disableContinue = !$githubUrl || !$branch || $status.isFetching;
 
   function onSelectedRepoChange(newUrl: string) {
     const repo = $userRepos.data?.repos?.find((r) => r.url === newUrl);
@@ -84,6 +85,7 @@
   }
 
   async function updateGithubUrl(force: boolean) {
+    let url = $githubUrl;
     const updateSucceeded = await githubConnectionUpdater.update({
       instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
       force,
@@ -91,7 +93,7 @@
     if (!updateSucceeded) return;
 
     eventBus.emit("notification", {
-      message: `Set github repo to ${$githubUrl}`,
+      message: `Set github repo to ${url}`,
       type: "success",
     });
     open = false;
@@ -102,20 +104,29 @@
     ($status.error ??
       $connectToGithubMutation.error) as unknown as AxiosError<RpcStatus>,
   );
+
+  function handleDialogClose() {
+    githubConnectionUpdater.reset();
+  }
 </script>
 
-<Dialog bind:open>
+<Dialog
+  bind:open
+  onOpenChange={(o) => {
+    if (!o) handleDialogClose();
+  }}
+>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent>
+  <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
       <div class="flex flex-row gap-x-2 items-center">
         <Github size="40px" />
         <div class="flex flex-col gap-y-1">
-          <DialogTitle>Select Github repository</DialogTitle>
+          <DialogTitle>Select GitHub repository</DialogTitle>
           <DialogDescription>
-            Choose a GitHub repo to house this project.
+            Choose a GitHub repo to push this project to.
           </DialogDescription>
         </div>
       </div>
@@ -135,17 +146,17 @@
           on:change={({ detail: newUrl }) => onSelectedRepoChange(newUrl)}
         />
         <span class="text-gray-500 mt-1">
-          <span class="font-semibold">Note:</span> Contents of this repo will replace
-          your current Rill project.
+          <span class="font-semibold">Note:</span> This current project will replace
+          contents of the selected repo.
         </span>
       {/if}
       <Collapsible bind:open={advancedOpened}>
         <CollapsibleTrigger asChild let:builder>
           <Button builders={[builder]} type="text">
             {#if advancedOpened}
-              <CaretUpIcon size="16px" />
+              <CaretDownFilledIcon size="12px" />
             {:else}
-              <CaretDownIcon size="16px" />
+              <CaretRightFilledIcon size="12px" />
             {/if}
             <span class="text-sm">Advanced options</span>
           </Button>
@@ -168,24 +179,34 @@
       {/if}
     </DialogHeader>
     <DialogFooter class="mt-3">
+      <!-- temporarily show this only during edit. in the long run we will not have edit -->
+      {#if $githubUrl}
+        <Button
+          outline={false}
+          type="link"
+          on:click={() => githubData.reselectRepos()}
+        >
+          Choose other repos
+        </Button>
+      {/if}
       <Button
-        outline={false}
-        type="link"
-        on:click={() => githubData.reselectRepos()}
+        type="secondary"
+        on:click={() => {
+          open = false;
+          handleDialogClose();
+        }}>Cancel</Button
       >
-        Choose other repos
-      </Button>
-      <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
       <Button
         type="primary"
         loading={$connectToGithubMutation.isLoading}
+        disabled={disableContinue}
         on:click={() => updateGithubUrl(false)}>Continue</Button
       >
     </DialogFooter>
   </DialogContent>
 </Dialog>
 
-<GithubOverwriteConfirmationDialog
+<GithubOverwriteConfirmDialog
   bind:open={$showOverwriteConfirmation}
   loading={$connectToGithubMutation.isLoading}
   {error}

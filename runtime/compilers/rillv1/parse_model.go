@@ -106,10 +106,6 @@ func (p *Parser) parseModel(node *Node) error {
 		inputProps["sql"] = sql
 	}
 
-	// Validate input details
-	if len(inputProps) == 0 {
-		return errors.New(`model does not identify any input properties (try entering a SQL query)`)
-	}
 	inputPropsPB, err := structpb.NewStruct(inputProps)
 	if err != nil {
 		return fmt.Errorf(`found invalid input property type: %w`, err)

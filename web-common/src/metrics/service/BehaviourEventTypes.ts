@@ -30,6 +30,7 @@ export enum BehaviourEventAction {
   GithubConnectSuccess = "ghconnected-success",
   GithubConnectOverwritePrompt = "ghconnected-overwrite-prompt",
   GithubConnectFailure = "ghconnected-failure",
+  GithubDisconnect = "ghconnected-disconnect",
 }
 
 export enum BehaviourEventMedium {

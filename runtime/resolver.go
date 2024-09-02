@@ -127,7 +127,6 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 	if !resolver.Cacheable() {
 		return resolver.ResolveInteractive(ctx)
 	}
-
 	// Build cache key based on the resolver's key and refs
 	ctrl, err := r.Controller(ctx, opts.InstanceID)
 	if err != nil {

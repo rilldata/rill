@@ -4,7 +4,7 @@ title: rill usergroup remove
 ---
 ## rill usergroup remove
 
-Remove role of a user group in an organization or prodject
+Remove role of a user group in an organization or project
 
 ```
 rill usergroup remove [flags]

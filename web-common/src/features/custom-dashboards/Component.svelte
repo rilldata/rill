@@ -39,11 +39,17 @@
     componentName,
     ResourceKind.Component,
   );
-
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
-    componentResource?.component?.spec ?? {});
+  $: ({
+    renderer,
+    rendererProperties,
+    resolverProperties,
+    input,
+    output,
+    title,
+    subtitle,
+  } = componentResource?.component?.spec ?? {});
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -61,7 +67,7 @@
   data-index={i}
   class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
-  style:z-index={localZIndex}
+  style:z-index={renderer === "select" ? 100 : localZIndex}
   style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"
@@ -87,7 +93,7 @@
     {/if}
 
     <div
-      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none"
+      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none bg-white"
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
@@ -104,14 +110,16 @@
         {/if}
         <Chart
           {chartView}
+          {input}
           vegaSpec={rendererProperties?.spec}
           chartName={componentName}
-          {resolverProperties}
         />
       {:else if renderer && rendererProperties}
         <TemplateRenderer
           {chartView}
           {renderer}
+          {input}
+          {output}
           {rendererProperties}
           {resolverProperties}
           {componentName}

@@ -12,7 +12,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	removeCmd := &cobra.Command{
 		Use:   "remove",
-		Short: "Remove role of a user group in an organization or prodject",
+		Short: "Remove a group's role on a project or organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := cmdutil.StringPromptIfEmpty(&groupName, "Enter user group name")
 			if err != nil {

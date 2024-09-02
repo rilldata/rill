@@ -29,7 +29,7 @@ func TestSimpleMetricsSQLApi(t *testing.T) {
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
-	require.Equal(t, 2, len(rows))
+	require.Equal(t, 1, len(rows))
 	require.Equal(t, 2, len(rows[0]))
 	require.Equal(t, "msn.com", rows[0]["dom"])
 	require.Equal(t, "Microsoft", rows[0]["pub"])
