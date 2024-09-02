@@ -10,7 +10,7 @@ import ComingSoon from '@site/src/components/ComingSoon';
 
 ## Create Usergroups
 
-### Via UI:
+### Managing User Groups on Rill Cloud:
 
 <ComingSoon />
 
@@ -20,7 +20,7 @@ Historically (pre 0.48), user management was only possible via the CLI. Now, it 
 </div>
 
 
-### Via CLI:
+### Managing User Groups via the CLI:
 _**Let's see the Rill commands**_
 
 ```

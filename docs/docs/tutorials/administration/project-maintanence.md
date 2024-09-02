@@ -5,7 +5,10 @@ sidebar_label: "Project Maintanence"
 
 ---
 
-## Status Page
+import ComingSoon from '@site/src/components/ComingSoon';
+
+
+## Status
 
 The Status Page gives us an overview of all the components within Rill Cloud, including the underlying source and models. While you will not be able to make any direct changes, the Status page is a good place to start when dashboards are acting strange.
 
@@ -32,7 +35,7 @@ connection: dial tcp 127.0.0.1:9000: connect: connection refused
 
 Seeing as this is ClickHouse model, it is likely that the credentials or connections are not correct for this connection. 
 
-Whether it's the source or the model that is erroring and causing the dashboard to fail, you may need to [check the credentials](credential-mangement.md) back in Rill Developer.
+Whether it's the source or the model that is erroring and causing the dashboard to fail, you may need to [check the credentials](credential-envvariable-mangement.md) back in Rill Developer.
 
 ### Incremental Models are failing 
 
@@ -74,11 +77,33 @@ rill project status --project <your-project-id>
 
 ## Alerts
 
-import ComingSoon from '@site/src/components/ComingSoon';
+[Alerts created on individual dashboards](https://docs.rilldata.com/explore/alerts/) can be viewed from a project's alert page. As an admin, you can edit or delete the alert as needed.
 
+![alerts](/img/tutorials/admin/alert-admin.png)
+
+
+
+## Settings
 <ComingSoon />
 
 <div class='contents_to_overlay'>
 Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
 
+
+
+### Public URL Management
+<ComingSoon />
+
+<div class='contents_to_overlay'>
+Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
+
+</div>
+
+### Environmental Variable Management
+<ComingSoon />
+
+<div class='contents_to_overlay'>
+Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
+
+</div>
 </div>

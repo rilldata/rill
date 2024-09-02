@@ -122,8 +122,7 @@ const sidebars = {
                 label: 'Project Management',
                 items: [
                   'tutorials/administration/project-maintanence',
-    
-                  'tutorials/administration/credential-mangement', 
+                  'tutorials/administration/credential-envvariable-mangement', 
                   'tutorials/administration/github',
 
                   

@@ -5,7 +5,7 @@ sidebar_label: "Creating Users"
 sidebar_position: 12
 ---
 
-## How to manage the users?
+## How to manage Users?
 
 Maintaining user access is a vital role for administrators. There are a few key concepts within Rill that should be read and understood before proceeding:
 
@@ -15,7 +15,7 @@ Maintaining user access is a vital role for administrators. There are a few key 
 
 ## Create a User
 
-### Via UI
+### Managing Users via Rill Cloud
 Starting from 0.48, we are starting to roll out some UI features for user managment with more features coming soon.
 
 Please refer to the <a href='https://docs.rilldata.com/manage/user-management#via-the-ui' target = "blank">documentation how a user can request access to project, or how an admin can invite a user to the project. </a>
@@ -32,7 +32,7 @@ Historically (pre 0.48), user management was only possible via the CLI. Now, it 
 
 </div>
 
-### Via CLI
+### Managing Users via the CLI
 
 For our friends who'd rather use the CLI, there are two commands that you will need to use for user management in rill is `user` and `usergroup`.
 
