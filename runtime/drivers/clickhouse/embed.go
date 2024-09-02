@@ -151,7 +151,7 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		}
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		destTgzPath := filepath.Join(destDir, release, fileName)
-		logger.Info(fmt.Sprintf("Will download %s into %s\n", url, destTgzPath))
+		logger.Info("Downloading ClickHouse binary", zap.String("url", url), zap.String("dst", destTgzPath))
 		if err := downloadFile(destTgzPath, url); err != nil {
 			return "", fmt.Errorf("error downloading ClickHouse: %w", err)
 		}
