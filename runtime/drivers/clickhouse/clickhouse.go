@@ -68,13 +68,6 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 		{
-			Key:         "cluster",
-			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "Cluster",
-			Description: "Cluster name",
-		},
-		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
 			Required:    true,
