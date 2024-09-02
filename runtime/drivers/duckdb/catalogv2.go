@@ -213,6 +213,10 @@ func (c *connection) UpdateModelSplit(ctx context.Context, modelID string, split
 	return drivers.ErrNotImplemented
 }
 
+func (c *connection) UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error {
+	return drivers.ErrNotImplemented
+}
+
 func (c *connection) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
 	return drivers.ErrNotImplemented
 }

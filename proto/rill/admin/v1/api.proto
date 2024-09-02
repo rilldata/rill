@@ -114,12 +114,20 @@ service AdminService {
     };
   }
 
+  // RedeployProject creates a new production deployment for a project.
+  // If the project currently has another production deployment, the old deployment will be deprovisioned.
+  // This RPC can be used to redeploy a project that has been hibernated.
+  rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {
+    option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/redeploy"};
+  }
+
   // HibernateProject hibernates a project by tearing down its deployments.
   rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
     option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
   }
 
-  // TriggerReconcile triggers reconcile for the project's prod deployment
+  // TriggerReconcile triggers reconcile for the project's prod deployment.
+  // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/reconcile",
@@ -127,7 +135,8 @@ service AdminService {
     };
   }
 
-  // TriggerRefreshSources refresh the source for production deployment
+  // TriggerRefreshSources refresh the source for production deployment.
+  // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerRefreshSources(TriggerRefreshSourcesRequest) returns (TriggerRefreshSourcesResponse) {
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/refresh",
@@ -135,7 +144,8 @@ service AdminService {
     };
   }
 
-  // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+  // TriggerRedeploy is similar to RedeployProject.
+  // DEPRECATED: Use RedeployProject instead.
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
       post: "/v1/projects/-/redeploy",
@@ -1078,6 +1088,13 @@ message CreateAssetResponse {
   string signed_url = 2;
   map<string, string> signing_headers = 3;
 }
+
+message RedeployProjectRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message RedeployProjectResponse {}
 
 message HibernateProjectRequest {
   string organization = 1;

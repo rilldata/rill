@@ -17,9 +17,7 @@ export async function refreshSource(
 ) {
   if (connector !== "local_file") {
     return runtimeServiceCreateTrigger(instanceId, {
-      refreshTriggerSpec: {
-        onlyNames: [{ kind: ResourceKind.Source, name: sourceName }],
-      },
+      resources: [{ kind: ResourceKind.Source, name: sourceName }],
     });
   }
 

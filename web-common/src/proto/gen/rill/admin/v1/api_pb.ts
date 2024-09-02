@@ -2420,6 +2420,80 @@ export class CreateAssetResponse extends Message<CreateAssetResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.RedeployProjectRequest
+ */
+export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<RedeployProjectRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RedeployProjectRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RedeployProjectRequest | PlainMessage<RedeployProjectRequest> | undefined, b: RedeployProjectRequest | PlainMessage<RedeployProjectRequest> | undefined): boolean {
+    return proto3.util.equals(RedeployProjectRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RedeployProjectResponse
+ */
+export class RedeployProjectResponse extends Message<RedeployProjectResponse> {
+  constructor(data?: PartialMessage<RedeployProjectResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RedeployProjectResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RedeployProjectResponse | PlainMessage<RedeployProjectResponse> | undefined, b: RedeployProjectResponse | PlainMessage<RedeployProjectResponse> | undefined): boolean {
+    return proto3.util.equals(RedeployProjectResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.HibernateProjectRequest
  */
 export class HibernateProjectRequest extends Message<HibernateProjectRequest> {

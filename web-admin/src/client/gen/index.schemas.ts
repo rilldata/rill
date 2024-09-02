@@ -461,6 +461,11 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
   customDomain?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -506,11 +511,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -641,6 +641,10 @@ export interface V1RemoveOrganizationMemberUserResponse {
 }
 
 export interface V1RemoveBookmarkResponse {
+  [key: string]: any;
+}
+
+export interface V1RedeployProjectResponse {
   [key: string]: any;
 }
 
