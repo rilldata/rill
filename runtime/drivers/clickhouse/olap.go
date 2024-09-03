@@ -614,7 +614,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 // databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
 // Refer the list of types here: https://clickhouse.com/docs/en/sql-reference/data-types
-// NOTE: Doesn't handle aggregation function types, nested data structures, tuples, geo types, special data types.
+// NOTE: Doesn't handle aggregation function types, nested data structures, geo types, special data types.
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	dbt = strings.ToUpper(dbt)
 
@@ -686,6 +686,18 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_STRING
 	case "OTHER":
 		t.Code = runtimev1.Type_CODE_JSON
+	case "POINT":
+		return databaseTypeToPB("Tuple(Float64, Float64)", nullable)
+	case "RING":
+		return databaseTypeToPB("Array(Point)", nullable)
+	case "LINESTRING":
+		return databaseTypeToPB("Array(Point)", nullable)
+	case "MULTILINESTRING":
+		return databaseTypeToPB("Array(LineString)", nullable)
+	case "POLYGON":
+		return databaseTypeToPB("Array(Ring)", nullable)
+	case "MULTIPOLYGON":
+		return databaseTypeToPB("Array(Polygon)", nullable)
 	default:
 		match = false
 	}
@@ -749,6 +761,36 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "ENUM", "ENUM8", "ENUM16":
 		// Representing enums as strings
 		t.Code = runtimev1.Type_CODE_STRING
+	case "TUPLE":
+		t.Code = runtimev1.Type_CODE_STRUCT
+		t.StructType = &runtimev1.StructType{}
+		fields := splitCommasUnlessQuotedOrNestedInParens(args)
+		_, _, isNamed := splitStructFieldStr(fields[0])
+		for i, fieldStr := range fields {
+			if isNamed {
+				name, typ, ok := splitStructFieldStr(fieldStr)
+				if !ok {
+					return nil, errUnsupportedType
+				}
+				fieldType, err := databaseTypeToPB(typ, false)
+				if err != nil {
+					return nil, err
+				}
+				t.StructType.Fields = append(t.StructType.Fields, &runtimev1.StructType_Field{
+					Name: name,
+					Type: fieldType,
+				})
+			} else {
+				fieldType, err := databaseTypeToPB(fieldStr, true)
+				if err != nil {
+					return nil, err
+				}
+				t.StructType.Fields = append(t.StructType.Fields, &runtimev1.StructType_Field{
+					Name: fmt.Sprintf("%d", i),
+					Type: fieldType,
+				})
+			}
+		}
 	default:
 		return nil, errUnsupportedType
 	}
@@ -770,6 +812,112 @@ func splitBaseAndArgs(s string) (string, string, bool) {
 	rest = rest[0 : len(rest)-1]
 
 	return base, rest, true
+}
+
+// Splits a comma-separated list, but ignores commas inside strings or nested in parentheses.
+// (NOTE: DuckDB escapes strings by replacing `"` with `""`. Example: hello "world" -> "hello ""world""".)
+//
+// Examples:
+//
+//	`10,20` -> [`10`, `20`]
+//	`VARCHAR, INT` -> [`VARCHAR`, `INT`]
+//	`"foo "",""" INT, "bar" STRUCT("a" INT, "b" INT)` -> [`"foo "",""" INT`, `"bar" STRUCT("a" INT, "b" INT)`]
+func splitCommasUnlessQuotedOrNestedInParens(s string) []string {
+	// Result slice
+	splits := []string{}
+	// Starting idx of current split
+	fromIdx := 0
+	// True if quote level is unmatched (this is sufficient for escaped quotes since they will immediately flip again)
+	quoted := false
+	// Nesting level
+	nestCount := 0
+
+	// Consume input character-by-character
+	for idx, char := range s {
+		// Toggle quoted
+		if char == '"' {
+			quoted = !quoted
+			continue
+		}
+		// If quoted, don't parse for nesting or commas
+		if quoted {
+			continue
+		}
+		// Increase nesting on opening paren
+		if char == '(' {
+			nestCount++
+			continue
+		}
+		// Decrease nesting on closing paren
+		if char == ')' {
+			nestCount--
+			continue
+		}
+		// If nested, don't parse for commas
+		if nestCount != 0 {
+			continue
+		}
+		// If not nested and there's a comma, add split to result
+		if char == ',' {
+			splits = append(splits, s[fromIdx:idx])
+			fromIdx = idx + 1
+			continue
+		}
+		// If not nested, and there's a space at the start of the split, skip it
+		if fromIdx == idx && char == ' ' {
+			fromIdx++
+			continue
+		}
+	}
+
+	// Add last split to result and return
+	splits = append(splits, s[fromIdx:])
+	return splits
+}
+
+// splitStructFieldStr splits a single struct name/type pair.
+// It expects fieldStr to have the format `name TYPE` or `"name" TYPE`.
+// If the name string is quoted and contains escaped quotes `""`, they'll be replaced by `"`.
+// For example: splitStructFieldStr(`"hello "" world" VARCHAR`) -> (`hello " world`, `VARCHAR`, true).
+func splitStructFieldStr(fieldStr string) (string, string, bool) {
+	// If the string DOES NOT start with a `"`, we can just split on the first space.
+	if fieldStr == "" || fieldStr[0] != '"' {
+		return strings.Cut(fieldStr, " ")
+	}
+
+	// Find end of quoted string (skipping `""` since they're escaped quotes)
+	idx := 1
+	found := false
+	for !found && idx < len(fieldStr) {
+		// Continue if not a quote
+		if fieldStr[idx] != '"' {
+			idx++
+			continue
+		}
+
+		// Skip two ahead if it's two quotes in a row (i.e. an escaped quote)
+		if len(fieldStr) > idx+1 && fieldStr[idx+1] == '"' {
+			idx += 2
+			continue
+		}
+
+		// It's the last quote of the string. We're done.
+		idx++
+		found = true
+	}
+
+	// If not found, format was unexpected
+	if !found {
+		return "", "", false
+	}
+
+	// Remove surrounding `"` and replace escaped quotes `""` with `"`
+	nameStr := strings.ReplaceAll(fieldStr[1:idx-1], `""`, `"`)
+
+	// The rest of the string is the type, minus the initial space
+	typeStr := strings.TrimLeft(fieldStr[idx:], " ")
+
+	return nameStr, typeStr, true
 }
 
 var errUnsupportedType = errors.New("encountered unsupported clickhouse type")
