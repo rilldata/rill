@@ -18,7 +18,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"go.uber.org/zap"
 
@@ -178,8 +177,9 @@ func NewInstanceForResolvers(t TestingT, opts InstanceOptionsForResolvers) (*run
 	switch opts.OLAPDriver {
 	case "clickhouse":
 		ctx := context.Background()
-		clickHouseContainer, err := clickhouse.RunContainer(ctx,
-			testcontainers.WithImage("clickhouse/clickhouse-server:24.7.4.51-alpine"),
+		clickHouseContainer, err := clickhouse.Run(
+			ctx,
+			"clickhouse/clickhouse-server:24.6.2.17",
 			clickhouse.WithUsername("clickhouse"),
 			clickhouse.WithPassword("clickhouse"),
 			clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
