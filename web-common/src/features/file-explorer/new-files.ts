@@ -14,10 +14,10 @@ export async function handleEntityCreate(kind: ResourceKind) {
   const allNames =
     kind === ResourceKind.Source || kind === ResourceKind.Model
       ? // sources and models share the name
-        [
-          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-        ]
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ]
       : fileArtifacts.getNamesForKind(kind);
   const { name, extension, baseContent } = ResourceKindMap[kind];
   const newName = getName(name, allNames);
@@ -95,7 +95,7 @@ metrics_sql: |
 `,
   },
   [ResourceKind.Component]: {
-    name: "chart",
+    name: "component",
     extension: ".yaml",
     baseContent: `# Chart YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/charts
@@ -144,7 +144,7 @@ vega_lite: |
   }`,
   },
   [ResourceKind.Dashboard]: {
-    name: "custom-dashboard",
+    name: "canvas-dashboard",
     extension: ".yaml",
     baseContent: `type: dashboard
 columns: 10
