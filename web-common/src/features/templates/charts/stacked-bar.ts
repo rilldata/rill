@@ -1,6 +1,8 @@
 import { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
 import {
+  BarColor,
+  ScrubArea0Color,
   ScrubBoxColor,
   ScrubMutedColor,
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
@@ -22,17 +24,24 @@ export function buildStackedBar(
     x: { field: timeField.name, type: "temporal", bandPosition: 0 },
     y: { field: quantitativeField.name, type: "quantitative" },
     opacity: {
-      condition: { param: "hover", empty: false, value: 1 },
-      value: 0.8,
+      condition: [
+        {
+          param: "hover",
+          empty: false,
+          value: 1,
+        },
+        {
+          param: "brush",
+          empty: false,
+          value: 1,
+        },
+      ],
+      value: 0.7,
     },
     color: {
-      condition: {
-        param: "brush",
-        field: nominalField.name,
-        type: "nominal",
-        legend: null,
-      },
-      value: ScrubMutedColor,
+      field: nominalField.name,
+      type: "nominal",
+      legend: null,
     },
     tooltip: [
       {
