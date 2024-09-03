@@ -209,7 +209,7 @@
 
 {#if hasBrushParam(sanitizedVegaLiteSpec) && data}
   <VegaRenderer
-    bind:viewVL
+    bind:view={viewVL}
     data={{ table: data }}
     spec={vegaSpec}
     {signalListeners}
