@@ -36,7 +36,7 @@ func RequireOLAPTableCount(t testing.TB, rt *runtime.Runtime, id, name string, c
 	_, err = olap.InformationSchema().Lookup(context.Background(), "", "", name)
 	require.NoError(t, err)
 
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: fmt.Sprintf(`SELECT count(*) FROM "%s"`, name)})
+	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: fmt.Sprintf(`SELECT count(*) FROM %s`, drivers.DialectDuckDB.EscapeIdentifier(name))})
 	require.NoError(t, err)
 	defer rows.Close()
 

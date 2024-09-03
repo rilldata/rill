@@ -91,12 +91,19 @@ type configProperties struct {
 	Port     int    `mapstructure:"port"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
+	// Cluster name. Required for running distributed queries.
+	Cluster string `mapstructure:"cluster"`
 	// EnableCache controls whether to enable cache for Clickhouse queries.
 	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
 	SettingsOverride string `mapstructure:"settings_override"`
+	// EmbedPort is the port to run Clickhouse locally (0 is random port).
+	EmbedPort int `mapstructure:"embed_port"`
+	// DataDir is the path to directory where db files will be created.
+	DataDir string `mapstructure:"data_dir"`
+	TempDir string `mapstructure:"temp_dir"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -114,6 +121,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 
 	// build clickhouse options
 	var opts *clickhouse.Options
+	var embed *embedClickHouse
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -146,7 +154,12 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 			opts.Auth.Username = conf.Username
 		}
 	} else {
-		return nil, fmt.Errorf("clickhouse connection parameters not set. Set `dsn` or individual properties")
+		// run clickhouse locally
+		embed = newEmbedClickHouse(conf.EmbedPort, conf.DataDir, conf.TempDir, logger)
+		opts, err = embed.start()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	db := sqlx.NewDb(clickhouse.OpenDB(opts), "clickhouse")
@@ -182,6 +195,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		metaSem: semaphore.NewWeighted(1),
 		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
 		opts:    opts,
+		embed:   embed,
 	}
 	return conn, nil
 }
@@ -217,6 +231,8 @@ type connection struct {
 
 	// options used to open clickhouse connections
 	opts *clickhouse.Options
+	// embed is embedded clickhouse server for local run
+	embed *embedClickHouse
 }
 
 // Ping implements drivers.Handle.
@@ -238,7 +254,14 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return c.db.Close()
+	errDB := c.db.Close()
+
+	var errEmbed error
+	if c.embed != nil {
+		errEmbed = c.embed.stop()
+	}
+
+	return errors.Join(errDB, errEmbed)
 }
 
 // Registry implements drivers.Connection.

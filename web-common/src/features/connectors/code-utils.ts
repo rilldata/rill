@@ -22,13 +22,13 @@ driver: ${connector.name}`;
 
   // Get the secret property keys
   const secretPropertyKeys =
-    connector.sourceProperties
+    connector.configProperties
       ?.filter((property) => property.secret)
       .map((property) => property.key) || [];
 
   // Get the string property keys
   const stringPropertyKeys =
-    connector.sourceProperties
+    connector.configProperties
       ?.filter(
         (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
       )
@@ -85,7 +85,7 @@ export async function updateDotEnvWithSecrets(
   }
 
   // Get the secret keys
-  const secretKeys = connector.sourceProperties
+  const secretKeys = connector.configProperties
     ?.filter((property) => property.secret)
     .map((property) => property.key);
 

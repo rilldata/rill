@@ -354,11 +354,11 @@ message MetricsViewAggregationRequest {
   repeated MetricsViewComparisonMeasureAlias aliases = 18;
   // Optional
   Expression where = 8;
-  // Optional. Either where or where_sql should be set
+  // Optional. If both where and where_sql are set, both will be applied with an AND between them.
   string where_sql = 19;
   // Optional
   Expression having = 13;
-  // Optional. Either having or having_sql should be set
+  // Optional. If both having and having_sql are set, both will be applied with an AND between them.
   string having_sql = 20;
   // Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
   int64 limit = 9 [(validate.rules).int64.gte = 0];
@@ -487,11 +487,11 @@ message MetricsViewComparisonRequest {
   TimeRange comparison_time_range = 7;
   // Optional
   Expression where = 8;
-  // Optional. Either where or where_sql should be set
+  // Optional. If both where and where_sql are set, both will be applied with an AND between them.
   string where_sql = 17;
   // Optional
   Expression having = 12;
-  // Optional. Either having or having_sql should be set
+  // Optional. If both having and having_sql are set, both will be applied with an AND between them.
   string having_sql = 18;
   // Optional
   repeated MetricsViewComparisonMeasureAlias aliases = 15;
@@ -594,11 +594,11 @@ message MetricsViewTimeSeriesRequest {
   }];
   // Optional
   Expression where = 7;
-  // Optional. Either where or where_sql should be set
+  // Optional. If both where and where_sql are set, both will be applied with an AND between them.
   string where_sql = 13;
   // Optional
   Expression having = 11;
-  // Optional. Either having or having_sql should be set
+  // Optional. If both having and having_sql are set, both will be applied with an AND between them.
   string having_sql = 14;
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 10;
@@ -623,7 +623,7 @@ message MetricsViewTotalsRequest {
   google.protobuf.Timestamp time_end = 5;
   // Optional
   Expression where = 7;
-  // Optional. Either where or where_sql should be set
+  // Optional. If both where and where_sql are set, both will be applied with an AND between them.
   string where_sql = 11;
   int32 priority = 8;
   MetricsViewFilter filter = 10; // Deprecated. should be removed once UI is moved to use new filters
@@ -759,12 +759,15 @@ message ResolveComponentRequest {
 }
 
 message ResolveComponentResponse {
+  // Show property with templating resolved for the provided args.
+  // If it resolves to false, the other fields are not set.
+  bool show = 1;
   // Schema of the resolved component data
-  StructType schema = 1;
+  StructType schema = 2;
   // Resolved component data
-  repeated google.protobuf.Struct data = 2;
+  repeated google.protobuf.Struct data = 3;
   // Renderer properties with templating resolved for the provided args
-  google.protobuf.Struct renderer_properties = 3;
+  google.protobuf.Struct renderer_properties = 4;
 }
 
 // **********

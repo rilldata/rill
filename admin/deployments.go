@@ -121,6 +121,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		RuntimeAudience:   alloc.Audience,
 		RuntimeVersion:    runtimeVersion,
 		Status:            database.DeploymentStatusPending,
+		StatusMessage:     "",
 	})
 	if err != nil {
 		return nil, err
@@ -436,7 +437,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 		AudienceURL:       aud,
 		Subject:           "admin-service",
 		TTL:               time.Hour,
-		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
+		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.EditTrigger, auth.ReadObjects},
 	})
 	if err != nil {
 		return "", err
@@ -451,6 +452,8 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		orgName:         org.Name,
 		projID:          proj.ID,
 		projName:        proj.Name,
+		projProdSlots:   fmt.Sprint(proj.ProdSlots),
+		projProvisioner: proj.Provisioner,
 		projAnnotations: proj.Annotations,
 	}
 }
@@ -460,6 +463,8 @@ type DeploymentAnnotations struct {
 	orgName         string
 	projID          string
 	projName        string
+	projProdSlots   string
+	projProvisioner string
 	projAnnotations map[string]string
 }
 
@@ -472,5 +477,7 @@ func (da *DeploymentAnnotations) ToMap() map[string]string {
 	res["organization_name"] = da.orgName
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
+	res["project_prod_slots"] = da.projProdSlots
+	res["project_provisioner"] = da.projProvisioner
 	return res
 }

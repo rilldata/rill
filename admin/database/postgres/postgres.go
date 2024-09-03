@@ -2,10 +2,15 @@ package postgres
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -28,7 +33,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string) (database.DB, error) {
+func (d driver) Open(dsn string, encKeyring []*database.EncryptionKey) (database.DB, error) {
 	db, err := otelsql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
@@ -40,14 +45,12 @@ func (d driver) Open(dsn string) (database.DB, error) {
 	}
 
 	dbx := sqlx.NewDb(db, "pgx")
-	return &connection{
-		db:          dbx,
-		riverDriver: riverdatabasesql.New(dbx.DB),
-	}, nil
+	return &connection{db: dbx, riverDriver: riverdatabasesql.New(dbx.DB), encKeyring: encKeyring}, nil
 }
 
 type connection struct {
 	db          *sqlx.DB
+	encKeyring  []*database.EncryptionKey
 	riverDriver riverdriver.Driver[*sql.Tx]
 }
 
@@ -107,6 +110,15 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	return res, nil
 }
 
+func (c *connection) FindOrganizationByCustomDomain(ctx context.Context, domain string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE lower(custom_domain)=lower($1)", domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
@@ -133,9 +145,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -153,7 +165,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, payment_customer_id=$10, billing_email=$11, updated_on=now() WHERE id=$12 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, display_name=$2, description=$3, custom_domain=$4, quota_projects=$5, quota_deployments=$6, quota_slots_total=$7, quota_slots_per_deployment=$8, quota_outstanding_invites=$9, quota_storage_limit_bytes_per_deployment=$10, billing_customer_id=$11, payment_customer_id=$12, billing_email=$13, updated_on=now() WHERE id=$14 RETURNING *", opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -220,7 +232,7 @@ func (c *connection) FindProjects(ctx context.Context, afterName string, limit i
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*database.Project, error) {
@@ -229,7 +241,7 @@ func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterNa
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
@@ -276,7 +288,7 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -289,7 +301,7 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -305,7 +317,7 @@ func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userI
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -318,7 +330,7 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
@@ -327,7 +339,7 @@ func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL stri
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
@@ -336,7 +348,7 @@ func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id 
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {
@@ -345,7 +357,7 @@ func (c *connection) FindProject(ctx context.Context, id string) (*database.Proj
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return c.projectFromDTO(res)
 }
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
@@ -354,7 +366,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return c.projectFromDTO(res)
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -362,16 +374,21 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		return nil, err
 	}
 
+	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &projectDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version, prod_variables_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, vars, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion, encKeyID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return c.projectFromDTO(res)
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
@@ -387,16 +404,21 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.Annotations = make(map[string]string, 0)
 	}
 
+	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &projectDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, updated_on=now()
-		WHERE id=$16 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, prod_variables_encryption_key_id=$16, updated_on=now()
+		WHERE id=$17 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, vars, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, encKeyID, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return c.projectFromDTO(res)
 }
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -806,6 +828,15 @@ func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afte
 func (c *connection) DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
 	return checkDeleteRow("usergroup member", res, err)
+}
+
+func (c *connection) CheckUsergroupExists(ctx context.Context, groupID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM usergroups WHERE id=$1)", groupID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
+	}
+	return res, nil
 }
 
 func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
@@ -1508,21 +1539,29 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 }
 
 func (c *connection) FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*database.OrganizationInvite, error) {
-	var res []*database.OrganizationInvite
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
+	var dtos []*organizationInviteDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, "SELECT * FROM org_invites WHERE lower(email) = lower($1)", userEmail)
 	if err != nil {
 		return nil, parseErr("org invites", err)
+	}
+	res := make([]*database.OrganizationInvite, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsModel()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
 
 func (c *connection) FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*database.OrganizationInvite, error) {
-	res := &database.OrganizationInvite{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(res)
+	dto := &organizationInviteDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("org invite", err)
 	}
-	return res, nil
+	return dto.AsModel()
 }
 
 func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *database.InsertOrganizationInviteOptions) error {
@@ -1535,6 +1574,11 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return parseErr("org invite", err)
 	}
 	return nil
+}
+
+func (c *connection) UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET usergroup_ids = $1 WHERE id = $2`, groupIDs, id)
+	return checkUpdateRow("org invite", res, err)
 }
 
 func (c *connection) DeleteOrganizationInvite(ctx context.Context, id string) error {
@@ -2031,30 +2075,85 @@ type projectDTO struct {
 	Annotations   pgtype.JSON `db:"annotations"`
 }
 
-func (p *projectDTO) AsModel() (*database.Project, error) {
-	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
+func (c *connection) projectFromDTO(dto *projectDTO) (*database.Project, error) {
+	err := dto.ProdVariables.AssignTo(&dto.Project.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+	m, err := c.decryptMap(dto.Project.ProdVariables, dto.Project.ProdVariablesEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+	dto.Project.ProdVariables = m
+
+	err = dto.Annotations.AssignTo(&dto.Project.Annotations)
 	if err != nil {
 		return nil, err
 	}
 
-	err = p.Annotations.AssignTo(&p.Project.Annotations)
-	if err != nil {
-		return nil, err
-	}
-
-	return p.Project, nil
+	return dto.Project, nil
 }
 
-func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
+func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
 	res := make([]*database.Project, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsModel()
+		res[i], err = c.projectFromDTO(dto)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return res, nil
+}
+
+// returns the map with encrypted values and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the values are returned as is.
+func (c *connection) encryptMap(m map[string]string) (map[string]string, string, error) {
+	if len(c.encKeyring) == 0 {
+		return m, "", nil
+	}
+
+	encKeyID := ""
+	// copy the map to avoid modifying the original map
+	vars := make(map[string]string, len(m))
+	for k, v := range m {
+		// use the first key in the keyring for encryption
+		encKeyID = c.encKeyring[0].ID
+		encrypted, err := encrypt(v, c.encKeyring[0].Secret)
+		if err != nil {
+			return nil, "", err
+		}
+		vars[k] = encrypted
+	}
+	return vars, encKeyID, nil
+}
+
+// returns the map with decrypted values and the encryption key id used
+func (c *connection) decryptMap(m map[string]string, encKeyID string) (map[string]string, error) {
+	if encKeyID == "" {
+		return m, nil
+	}
+
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+
+	// copy the map to avoid modifying the original map
+	vars := make(map[string]string, len(m))
+	for k, v := range m {
+		decrypted, err := decrypt(v, encKey.Secret)
+		if err != nil {
+			return nil, err
+		}
+		vars[k] = decrypted
+	}
+	return vars, nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
@@ -2095,6 +2194,20 @@ func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser,
 	}
 
 	return m.MagicAuthTokenWithUser, nil
+}
+
+type organizationInviteDTO struct {
+	*database.OrganizationInvite
+	UsergroupIDs pgtype.TextArray `db:"usergroup_ids"`
+}
+
+func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) {
+	err := o.UsergroupIDs.AssignTo(&o.OrganizationInvite.UsergroupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return o.OrganizationInvite, nil
 }
 
 type billingErrorDTO struct {
@@ -2275,4 +2388,56 @@ func (e *wrappedError) Error() string {
 
 func (e *wrappedError) Unwrap() error {
 	return e.err
+}
+
+// encrypts plaintext using AES-GCM with the given key and returns the base64 encoded ciphertext
+func encrypt(plaintext string, key []byte) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+
+	// nonce is prepended to the ciphertext, so it can be used for decryption
+	ciphertext := aesGCM.Seal(nonce, nonce, []byte(plaintext), nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+
+// decrypts the base64 encoded ciphertext using AES-GCM with the given key and returns the plaintext
+func decrypt(ciphertextBase64 string, key []byte) (string, error) {
+	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextBase64)
+	if err != nil {
+		return "", err
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonceSize := aesGCM.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return "", errors.New("ciphertext too short")
+	}
+
+	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+	d, err := aesGCM.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(d), nil
 }

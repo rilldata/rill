@@ -45,6 +45,7 @@ type CatalogStore interface {
 	CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error)
 	InsertModelSplit(ctx context.Context, modelID string, split ModelSplit) error
 	UpdateModelSplit(ctx context.Context, modelID string, split ModelSplit) error
+	UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error
 	UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error
 	DeleteModelSplits(ctx context.Context, modelID string) error
 }

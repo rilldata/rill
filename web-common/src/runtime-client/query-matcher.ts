@@ -1,4 +1,24 @@
 import type { Query } from "@tanstack/query-core";
+import { ResourceKind } from "../features/entity-management/resource-selectors";
+
+export function isRuntimeQuery(query: Query): boolean {
+  const [apiPath] = query.queryKey as string[];
+  return apiPath.startsWith("/v1/instances/");
+}
+
+export function isGetResourceMetricsViewQuery(query: Query): boolean {
+  const [apiPath, queryParams] = query.queryKey; // Renamed for clarity
+  if (
+    typeof apiPath !== "string" ||
+    typeof queryParams !== "object" ||
+    queryParams === null
+  )
+    return false;
+  return (
+    apiPath.startsWith("/v1/instances/") &&
+    queryParams["name.kind"] === ResourceKind.MetricsView
+  );
+}
 
 export enum QueryRequestType {
   MetricsViewTopList = "toplist",

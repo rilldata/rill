@@ -1,5 +1,6 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
+import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
 import { extractDeployError } from "@rilldata/web-common/features/project/deploy-errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -84,10 +85,9 @@ export class ProjectDeployer {
     const userResp = get(this.user).data as GetCurrentUserResponse;
     if (!userResp.user) {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
-      window.open(
-        `${metadata.loginUrl}/?redirect=${get(page).url.toString()}`,
-        "_self",
-      );
+      const u = new URL(metadata.loginUrl);
+      u.searchParams.set("redirect", get(page).url.toString());
+      window.open(u.toString(), "_self");
     } else {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
     }
@@ -144,7 +144,7 @@ export class ProjectDeployer {
         queryKey: getLocalServiceGetCurrentUserQueryKey(),
         queryFn: localServiceGetCurrentUser,
       });
-      org = userResp.user!.displayName.replace(/ /g, "");
+      org = this.getOrgNameFromEmail(userResp.user?.email ?? "");
       checkNextOrg = true;
     }
     return { org, checkNextOrg };
@@ -165,7 +165,8 @@ export class ProjectDeployer {
           org: `${org}${i === 0 ? "" : "-" + i}`,
           upload: true,
         });
-        void behaviourEvent?.fireDeployEvent(
+        // wait for the telemetry to finish since the page will be redirected after a deploy success
+        await behaviourEvent?.fireDeployEvent(
           BehaviourEventAction.DeploySuccess,
         );
         return resp.frontendUrl;
@@ -178,5 +179,9 @@ export class ProjectDeployer {
         }
       }
     }
+  }
+
+  private getOrgNameFromEmail(email: string): string {
+    return sanitizeOrgName(email.split("@")[0] ?? "");
   }
 }

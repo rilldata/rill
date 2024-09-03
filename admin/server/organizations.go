@@ -68,39 +68,30 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !claims.Superuser(ctx) {
-		// check if the org has any public projects, this works for anonymous users as well
-		hasPublicProject, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		// these are the permissions for public and for outside members
-		publicPermissions := &adminv1.OrganizationPermissions{ReadOrg: true, ReadProjects: true}
-		if hasPublicProject {
-			return &adminv1.GetOrganizationResponse{
-				Organization: organizationToDTO(org),
-				Permissions:  publicPermissions,
-			}, nil
-		}
-		// check if the user is outside members of a project in the org
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			exists, err := s.admin.DB.CheckOrganizationHasOutsideUser(ctx, org.ID, claims.OwnerID())
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			if exists {
-				return &adminv1.GetOrganizationResponse{
-					Organization: organizationToDTO(org),
-					Permissions:  publicPermissions,
-				}, nil
-			}
-		}
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
 	}
 
 	return &adminv1.GetOrganizationResponse{
 		Organization: organizationToDTO(org),
 		Permissions:  claims.OrganizationPermissions(ctx, org.ID),
+	}, nil
+}
+
+func (s *Server) GetOrganizationNameForDomain(ctx context.Context, req *adminv1.GetOrganizationNameForDomainRequest) (*adminv1.GetOrganizationNameForDomainResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.domain", req.Domain))
+
+	org, err := s.admin.DB.FindOrganizationByCustomDomain(ctx, req.Domain)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// NOTE: Not checking auth on purpose. This needs to be a public endpoint.
+
+	return &adminv1.GetOrganizationNameForDomainResponse{
+		Name: org.Name,
 	}, nil
 }
 
@@ -195,7 +186,9 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	emailChanged := req.BillingEmail != nil && *req.BillingEmail != org.BillingEmail
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                valOrDefault(req.NewName, org.Name),
+		DisplayName:                         valOrDefault(req.DisplayName, org.DisplayName),
 		Description:                         valOrDefault(req.Description, org.Description),
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -336,7 +329,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	if planDowngrade(plan, org) {
 		if claims.Superuser(ctx) {
-			s.logger.Warn("plan downgrade", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan", subs[0].Plan.Name), zap.String("new_plan", plan.Name))
+			s.logger.Warn("plan downgraded", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
 		} else {
 			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
 		}
@@ -366,6 +359,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
+	s.logger.Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
+
 	// schedule plan change by API job
 	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandlePlanChangeByAPIArgs{
 		OrgID:  org.ID,
@@ -382,7 +377,9 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
@@ -679,8 +676,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		err = s.admin.Email.SendOrganizationInvite(&email.OrganizationInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
-			AdminURL:      s.opts.ExternalURL,
-			FrontendURL:   s.opts.FrontendURL,
+			AcceptURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).OrganizationInviteAccept(org.Name),
 			OrgName:       org.Name,
 			RoleName:      role.Name,
 			InvitedByName: invitedByName,
@@ -729,7 +725,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
-		FrontendURL:   s.opts.FrontendURL,
+		OpenURL:       s.admin.URLs.WithCustomDomain(org.CustomDomain).Organization(org.Name),
 		OrgName:       org.Name,
 		RoleName:      role.Name,
 		InvitedByName: invitedByName,
@@ -1055,6 +1051,9 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		Domain:    req.Domain,
 	})
 	if err != nil {
+		if errors.Is(err, database.ErrNotUnique) {
+			return nil, status.Errorf(codes.AlreadyExists, err.Error())
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -1179,7 +1178,9 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 
 	opts := &database.UpdateOrganizationOptions{
 		Name:                                req.OrgName,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
 		QuotaSlotsTotal:                     int(valOrDefault(req.SlotsTotal, int32(org.QuotaSlotsTotal))),
@@ -1203,8 +1204,10 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 
 // SudoUpdateOrganizationBillingCustomer updates the billing customer id for an organization. May be useful if customer is initialized manually in billing system
 func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingCustomerRequest) (*adminv1.SudoUpdateOrganizationBillingCustomerResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
-	observability.AddRequestAttributes(ctx, attribute.String("args.billing_customer_id", req.BillingCustomerId))
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.OrgName),
+		attribute.String("args.billing_customer_id", req.BillingCustomerId),
+	)
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
@@ -1222,7 +1225,9 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 
 	opts := &database.UpdateOrganizationOptions{
 		Name:                                req.OrgName,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -1253,6 +1258,46 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
 		Organization:  organizationToDTO(org),
 		Subscriptions: subscriptions,
+	}, nil
+}
+
+func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *adminv1.SudoUpdateOrganizationCustomDomainRequest) (*adminv1.SudoUpdateOrganizationCustomDomainResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Name),
+		attribute.String("args.custom_domain", req.CustomDomain),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage custom domains")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
+		Description:                         org.Description,
+		CustomDomain:                        req.CustomDomain,
+		QuotaProjects:                       org.QuotaProjects,
+		QuotaDeployments:                    org.QuotaDeployments,
+		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoUpdateOrganizationCustomDomainResponse{
+		Organization: organizationToDTO(org),
 	}, nil
 }
 
@@ -1517,9 +1562,11 @@ func billingErrorMetadataToDTO(t database.BillingErrorType, m database.BillingEr
 
 func organizationToDTO(o *database.Organization) *adminv1.Organization {
 	return &adminv1.Organization{
-		Id:          o.ID,
-		Name:        o.Name,
-		Description: o.Description,
+		Id:           o.ID,
+		Name:         o.Name,
+		DisplayName:  o.DisplayName,
+		Description:  o.Description,
+		CustomDomain: o.CustomDomain,
 		Quotas: &adminv1.OrganizationQuotas{
 			Projects:                       int32(o.QuotaProjects),
 			Deployments:                    int32(o.QuotaDeployments),

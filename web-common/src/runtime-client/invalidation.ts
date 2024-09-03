@@ -118,22 +118,23 @@ export async function invalidateProfilingQueries(
   });
 }
 
-export async function invalidateChartData(
+export async function invalidateComponentData(
   queryClient: QueryClient,
   name: string,
   failed: boolean,
 ) {
-  const chartAPIRegex = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/charts/${name}`,
+  const componentAPIRegex = new RegExp(
+    `/v1/instances/[a-zA-Z0-9-]+/queries/components/${name}/resolve`,
   );
+
   queryClient.removeQueries({
-    predicate: (query) => chartAPIRegex.test(query.queryHash),
+    predicate: (query) => componentAPIRegex.test(query.queryHash),
     type: "inactive",
   });
   if (failed) return;
 
   return queryClient.resetQueries({
-    predicate: (query) => chartAPIRegex.test(query.queryHash),
+    predicate: (query) => componentAPIRegex.test(query.queryHash),
     type: "active",
   });
 }

@@ -38,8 +38,18 @@ export type ConnectorServiceOLAPListTablesParams = {
 };
 
 export type RuntimeServiceCreateTriggerBody = {
-  pullTriggerSpec?: V1PullTriggerSpec;
-  refreshTriggerSpec?: V1RefreshTriggerSpec;
+  /** Resources to trigger. See RefreshTriggerSpec for details. */
+  resources?: V1ResourceName[];
+  /** Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger. */
+  models?: V1RefreshModelTrigger[];
+  /** Parser is a convenience flag to trigger the global project parser.
+Triggering the project parser ensures a pull of the repository and a full parse of all files. */
+  parser?: boolean;
+  /** Convenience flag to trigger all sources and models. */
+  allSourcesModels?: boolean;
+  /** Convenience flag to trigger all sources and models.
+Will trigger models with RefreshModelTrigger.full set to true. */
+  allSourcesModelsFull?: boolean;
 };
 
 export type RuntimeServiceWatchResources200 = {
@@ -183,6 +193,7 @@ export type QueryServiceMetricsViewTotalsBody = {
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
@@ -210,8 +221,10 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   timeZone?: string;
   priority?: number;
@@ -255,8 +268,10 @@ export type QueryServiceMetricsViewComparisonBody = {
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
@@ -277,8 +292,10 @@ export type QueryServiceMetricsViewAggregationBody = {
   pivotOn?: string[];
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   limit?: string;
   offset?: string;
@@ -554,6 +571,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -581,12 +604,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -685,11 +702,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -701,6 +713,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -795,25 +812,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  dashboard?: V1Dashboard;
-  api?: V1API;
-  connector?: V1ConnectorV2;
-}
-
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -821,6 +819,9 @@ export type V1ResolveComponentResponseRendererProperties = {
 export type V1ResolveComponentResponseDataItem = { [key: string]: any };
 
 export interface V1ResolveComponentResponse {
+  /** Show property with templating resolved for the provided args.
+If it resolves to false, the other fields are not set. */
+  show?: boolean;
   schema?: V1StructType;
   data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
@@ -875,12 +876,47 @@ export interface V1RefreshTriggerState {
 }
 
 export interface V1RefreshTriggerSpec {
-  onlyNames?: V1ResourceName[];
+  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
+  resources?: V1ResourceName[];
+  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
+  models?: V1RefreshModelTrigger[];
 }
 
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  dashboard?: V1Dashboard;
+  api?: V1API;
+  connector?: V1ConnectorV2;
+}
+
+export interface V1RefreshModelTrigger {
+  /** The model to refresh. */
+  model?: string;
+  /** If true, the current table and state will be dropped before refreshing.
+For non-incremental models, this is equivalent to a normal refresh. */
+  full?: boolean;
+  /** Keys of specific splits to refresh. */
+  splits?: string[];
+  /** If true, it will refresh all splits that errored on their last execution. */
+  allErroredSplits?: boolean;
 }
 
 export type V1ReconcileStatus =
@@ -893,28 +929,6 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
-
-export interface V1QueryResult {
-  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
-  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
-  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
-  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
-  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
-  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
-  columnTopKResponse?: V1ColumnTopKResponse;
-  columnNullCountResponse?: V1ColumnNullCountResponse;
-  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
-  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
-  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
-  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
-  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
-  columnCardinalityResponse?: V1ColumnCardinalityResponse;
-  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
-  tableCardinalityResponse?: V1TableCardinalityResponse;
-  tableColumnsResponse?: V1TableColumnsResponse;
-  tableRowsResponse?: V1TableRowsResponse;
-}
 
 export type V1QueryResponseDataItem = { [key: string]: any };
 
@@ -963,6 +977,9 @@ export interface V1PullTriggerSpec {
   [key: string]: any;
 }
 
+/**
+ * DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
+ */
 export interface V1PullTrigger {
   spec?: V1PullTriggerSpec;
   state?: V1PullTriggerState;
@@ -1099,11 +1116,6 @@ export interface V1ModelState {
   splitsHaveErrors?: boolean;
 }
 
-export interface V1ModelV2 {
-  spec?: V1ModelSpec;
-  state?: V1ModelState;
-}
-
 export type V1ModelSplitData = { [key: string]: any };
 
 export interface V1ModelSplit {
@@ -1145,6 +1157,12 @@ export interface V1ModelSpec {
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
+  triggerFull?: boolean;
+}
+
+export interface V1ModelV2 {
+  spec?: V1ModelSpec;
+  state?: V1ModelState;
 }
 
 export interface V1MigrationState {
@@ -1181,12 +1199,18 @@ export interface V1MetricsViewTotalsRequest {
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 }
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
 
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
@@ -1201,8 +1225,10 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   timeZone?: string;
   priority?: number;
@@ -1218,6 +1244,8 @@ export interface V1MetricsViewSpec {
   database?: string;
   databaseSchema?: string;
   table?: string;
+  /** Name of the model the metrics view is based on. Either table or model should be set. */
+  model?: string;
   title?: string;
   description?: string;
   timeDimension?: string;
@@ -1255,6 +1283,24 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  whereSql?: string;
+  having?: V1Expression;
+  havingSql?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewSearchResponse {
   results?: MetricsViewSearchResponseSearchResult[];
 }
@@ -1273,24 +1319,6 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  whereSql?: string;
-  having?: V1Expression;
-  havingSql?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1372,36 +1400,10 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  whereSql?: string;
-  having?: V1Expression;
-  havingSql?: string;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1429,8 +1431,10 @@ export interface V1MetricsViewAggregationRequest {
   pivotOn?: string[];
   aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
   whereSql?: string;
   having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
   havingSql?: string;
   limit?: string;
   offset?: string;
@@ -1481,6 +1485,29 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
+}
+
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MapType {
@@ -1754,6 +1781,7 @@ export interface V1DashboardSpec {
   title?: string;
   columns?: number;
   gap?: number;
+  variables?: V1ComponentVariable[];
   items?: V1DashboardItem[];
 }
 
@@ -1860,6 +1888,12 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
+export interface V1ComponentVariable {
+  name?: string;
+  type?: string;
+  defaultValue?: unknown;
+}
+
 export interface V1ComponentState {
   [key: string]: any;
 }
@@ -1870,12 +1904,16 @@ export type V1ComponentSpecResolverProperties = { [key: string]: any };
 
 export interface V1ComponentSpec {
   title?: string;
+  subtitle?: string;
   resolver?: string;
   resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
+  input?: V1ComponentVariable[];
+  output?: V1ComponentVariable;
+  /** Templated string that should evaluate to a boolean. */
+  show?: string;
   definedInDashboard?: boolean;
-  subtitle?: string;
 }
 
 export interface V1Component {
@@ -2021,6 +2059,28 @@ export interface V1ColumnDescriptiveStatisticsRequest {
 
 export interface V1ColumnCardinalityResponse {
   categoricalSummary?: V1CategoricalSummary;
+}
+
+export interface V1QueryResult {
+  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
+  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
+  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
+  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
+  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
+  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
+  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
+  columnTopKResponse?: V1ColumnTopKResponse;
+  columnNullCountResponse?: V1ColumnNullCountResponse;
+  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
+  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
+  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
+  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
+  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
+  columnCardinalityResponse?: V1ColumnCardinalityResponse;
+  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
+  tableCardinalityResponse?: V1TableCardinalityResponse;
+  tableColumnsResponse?: V1TableColumnsResponse;
+  tableRowsResponse?: V1TableRowsResponse;
 }
 
 export interface V1ColumnCardinalityRequest {
@@ -2229,7 +2289,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

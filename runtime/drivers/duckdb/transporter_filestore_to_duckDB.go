@@ -47,11 +47,6 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		return fmt.Errorf("no files to ingest")
 	}
 
-	size := fileSize(localPaths)
-	if !sizeWithinStorageLimits(t.to, size) {
-		return drivers.ErrStorageLimitExceeded
-	}
-
 	var format string
 	if srcCfg.Format != "" {
 		format = fmt.Sprintf(".%s", srcCfg.Format)

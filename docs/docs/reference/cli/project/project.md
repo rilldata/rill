@@ -31,7 +31,7 @@ Manage projects
 * [rill project logs](logs.md)	 - Show project logs
 * [rill project refresh](refresh.md)	 - Refresh the project's data sources
 * [rill project rename](rename.md)	 - Rename project
-* [rill project reset](reset.md)	 - Re-deploy project
 * [rill project show](show.md)	 - Show project details
+* [rill project splits](splits.md)	 - List splits for a model
 * [rill project status](status.md)	 - Project deployment status
 

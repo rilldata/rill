@@ -49,7 +49,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 ## Cloud deployment
 
-When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires a JSON key file to be explicitly provided for a Google Cloud service account with appropriate read access / permissions to the buckets used in your project. 
+When deploying a project to Rill Cloud, Rill requires a JSON key file to be explicitly provided for a Google Cloud service account with appropriate read access / permissions to the buckets used in your project. 
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication. 
 

@@ -29,7 +29,7 @@
 <ul class="table-schema-list">
   {#if isError}
     <div>
-      Error loading schema: {error?.response.data.message}
+      Error loading schema: {error?.response.data?.message}
     </div>
   {:else if data && data.profileColumns}
     {#each data.profileColumns as column (column)}

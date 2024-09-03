@@ -54,6 +54,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 		OrgID:     org.ID,
 		Type:      database.BillingErrorTypeNoPaymentMethod,
+		Metadata:  &database.BillingErrorMetadataNoPaymentMethod{},
 		EventTime: org.CreatedOn,
 	})
 	if err != nil {
@@ -64,6 +65,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 		OrgID:     org.ID,
 		Type:      database.BillingErrorTypeNoBillableAddress,
+		Metadata:  &database.BillingErrorMetadataNoBillableAddress{},
 		EventTime: org.CreatedOn,
 	})
 	if err != nil {
@@ -72,7 +74,9 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
@@ -121,6 +125,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 				OrgID:     org.ID,
 				Type:      database.BillingErrorTypeNoPaymentMethod,
+				Metadata:  &database.BillingErrorMetadataNoPaymentMethod{},
 				EventTime: org.CreatedOn,
 			})
 			if err != nil {
@@ -131,6 +136,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 				OrgID:     org.ID,
 				Type:      database.BillingErrorTypeNoBillableAddress,
+				Metadata:  &database.BillingErrorMetadataNoBillableAddress{},
 				EventTime: org.CreatedOn,
 			})
 			if err != nil {
@@ -218,6 +224,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingErrorTypeNoPaymentMethod,
+			Metadata:  &database.BillingErrorMetadataNoPaymentMethod{},
 			EventTime: org.CreatedOn,
 		})
 		if err != nil {
@@ -228,6 +235,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingErrorTypeNoBillableAddress,
+			Metadata:  &database.BillingErrorMetadataNoBillableAddress{},
 			EventTime: org.CreatedOn,
 		})
 		if err != nil {
@@ -241,7 +249,9 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),

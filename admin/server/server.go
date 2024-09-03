@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -48,8 +46,6 @@ var (
 type Options struct {
 	HTTPPort               int
 	GRPCPort               int
-	ExternalURL            string
-	FrontendURL            string
 	AllowedOrigins         []string
 	SessionKeyPairs        [][]byte
 	ServePrometheus        bool
@@ -74,7 +70,6 @@ type Server struct {
 	cookies       *cookies.Store
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
-	urls          *externalURLs
 	limiter       ratelimit.Limiter
 	activity      *activity.Client
 }
@@ -86,11 +81,6 @@ var _ adminv1.AIServiceServer = (*Server)(nil)
 var _ adminv1.TelemetryServiceServer = (*Server)(nil)
 
 func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, activityClient *activity.Client, opts *Options) (*Server, error) {
-	externalURL, err := url.Parse(opts.ExternalURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse external URL: %w", err)
-	}
-
 	if len(opts.SessionKeyPairs) == 0 {
 		return nil, fmt.Errorf("provided SessionKeyPairs is empty")
 	}
@@ -101,7 +91,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	cookieStore.MaxAge(60 * 60 * 24 * 365 * 10) // 10 years
 
 	// Set Secure if the admin service is served over HTTPS (will resolve to true in production and false in local dev environments).
-	cookieStore.Options.Secure = externalURL.Scheme == "https"
+	cookieStore.Options.Secure = adm.URLs.IsHTTPS()
 
 	// Only the admin server reads its cookies, so we can set HttpOnly (i.e. UI should not access cookie contents).
 	cookieStore.Options.HttpOnly = true
@@ -125,8 +115,6 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		AuthDomain:       opts.AuthDomain,
 		AuthClientID:     opts.AuthClientID,
 		AuthClientSecret: opts.AuthClientSecret,
-		ExternalURL:      opts.ExternalURL,
-		FrontendURL:      opts.FrontendURL,
 	})
 	if err != nil {
 		return nil, err
@@ -139,7 +127,6 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		cookies:       cookieStore,
 		authenticator: authenticator,
 		issuer:        issuer,
-		urls:          newURLRegistry(opts),
 		limiter:       limiter,
 		activity:      activityClient,
 	}, nil
@@ -388,6 +375,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	case
 		"/rill.admin.v1.AdminService/CreateProject",
 		"/rill.admin.v1.AdminService/UpdateProject",
+		"/rill.admin.v1.AdminService/RedeployProject",
 		"/rill.admin.v1.AdminService/TriggerRedeploy":
 		return time.Minute * 5
 	}
@@ -455,70 +443,4 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 	}
 
 	return ctx, nil
-}
-
-type externalURLs struct {
-	external              string
-	frontend              string
-	githubConnectUI       string
-	githubConnect         string
-	githubConnectRetry    string
-	githubConnectRequest  string
-	githubConnectSuccess  string
-	githubAppInstallation string
-	githubAuth            string
-	githubAuthCallback    string
-	githubAuthRetry       string
-	authLogin             string
-}
-
-func newURLRegistry(opts *Options) *externalURLs {
-	return &externalURLs{
-		external:              opts.ExternalURL,
-		frontend:              opts.FrontendURL,
-		githubConnectUI:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect"),
-		githubConnect:         urlutil.MustJoinURL(opts.ExternalURL, "/github/connect"),
-		githubConnectRetry:    urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-install"),
-		githubConnectRequest:  urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/request"),
-		githubConnectSuccess:  urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/success"),
-		githubAppInstallation: fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName),
-		githubAuth:            urlutil.MustJoinURL(opts.ExternalURL, "/github/auth/login"),
-		githubAuthCallback:    urlutil.MustJoinURL(opts.ExternalURL, "/github/auth/callback"),
-		githubAuthRetry:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-auth"),
-		authLogin:             urlutil.MustJoinURL(opts.ExternalURL, "/auth/login"),
-	}
-}
-
-func (u *externalURLs) reportOpen(org, project, report string, executionTime time.Time) string {
-	reportURL := urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report, "open")
-	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
-	return reportURL
-}
-
-func (u *externalURLs) reportExport(org, project, report string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report, "export")
-}
-
-func (u *externalURLs) reportEdit(org, project, report string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report)
-}
-
-func (u *externalURLs) alertOpen(org, project, alert string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert, "open")
-}
-
-func (u *externalURLs) alertEdit(org, project, alert string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
-}
-
-func (u *externalURLs) magicAuthTokenOpen(org, project, token string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, "-", "share", token)
-}
-
-func (u *externalURLs) approveProjectAccess(org, project, id string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, "-", "request-access", id, "approve")
-}
-
-func (u *externalURLs) denyProjectAccess(org, project, id string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, "-", "request-access", id, "deny")
 }

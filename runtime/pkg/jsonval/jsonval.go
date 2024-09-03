@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
+	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
@@ -57,6 +58,14 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		}
 		return v, nil
 	case string:
+		if t != nil && t.Code == runtimev1.Type_CODE_DECIMAL {
+			// Evil cast to float until frontend can deal with bigs:
+			v2, ok := new(big.Float).SetString(v)
+			if ok {
+				f, _ := v2.Float64()
+				return f, nil
+			}
+		}
 		return strings.ToValidUTF8(v, "�"), nil
 	case []byte:
 		if t != nil && t.Code == runtimev1.Type_CODE_UUID {
@@ -104,6 +113,8 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		return map[string]any{"months": v.Months, "days": v.Days, "micros": v.Micros}, nil
 	case net.IP:
 		return v.String(), nil
+	case orb.Point:
+		return []any{v[0], v[1]}, nil
 	case *net.IP:
 		if v != nil {
 			return ToValue(*v, t)

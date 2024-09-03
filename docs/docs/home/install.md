@@ -1,6 +1,6 @@
 ---
 title: How to install Rill
-sidebar_label: Install  
+sidebar_label: Install Rill
 sidebar_position: 01
 ---
 
@@ -24,6 +24,20 @@ rill --help
 If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](#install) in your cloned location locally to make deployment easier. 
 
 More details on deploying Rill via Git in our [Deploy section](../deploy/existing-project//existing-project.md).
+:::
+
+### Upgrade
+
+To ensure you're on the latest version of Rill, you can upgrade Rill Developer easily via the command line.
+
+```bash
+rill upgrade
+```
+
+:::info What about Rill Cloud?
+
+Rill Cloud is always on the latest and stable version of Rill Cloud. To check the latest version available, please see our [Releases](https://github.com/rilldata/rill/releases) page.
+
 :::
 
 ## Nightly Releases

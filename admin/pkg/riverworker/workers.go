@@ -99,6 +99,7 @@ func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[ri
 		_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingErrorTypeNoPaymentMethod,
+			Metadata:  &database.BillingErrorMetadataNoPaymentMethod{},
 			EventTime: job.Args.EventTime,
 		})
 		if err != nil {
@@ -736,7 +737,9 @@ func (w *HandlePlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[r
 	// update quotas
 	_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(sub[0].Plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(sub[0].Plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     valOrDefault(sub[0].Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
@@ -796,7 +799,9 @@ func (w *HandleSubscriptionCancellationWorker) Work(ctx context.Context, job *ri
 	// update quotas to the default plan and hibernate all projects
 	_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(sub[0].Plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(sub[0].Plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     valOrDefault(sub[0].Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),

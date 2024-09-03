@@ -2,11 +2,14 @@ package database
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/riverqueue/river/riverdriver"
 )
 
@@ -22,13 +25,19 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new database connection.
-func Open(driver, dsn string) (DB, error) {
+// See ParseEncryptionKeyring for the expected format for encKeyringConfig.
+func Open(driver, dsn, encKeyringConfig string) (DB, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)
 	}
 
-	db, err := d.Open(dsn)
+	encKeyring, err := ParseEncryptionKeyring(encKeyringConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing encryption keyring: %w", err)
+	}
+
+	db, err := d.Open(dsn, encKeyring)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +47,7 @@ func Open(driver, dsn string) (DB, error) {
 
 // Driver is the interface for DB drivers.
 type Driver interface {
-	Open(dsn string) (DB, error)
+	Open(dsn string, encKeyring []*EncryptionKey) (DB, error)
 }
 
 // DB is the interface for a database connection.
@@ -55,6 +64,7 @@ type DB interface {
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
+	FindOrganizationByCustomDomain(ctx context.Context, domain string) (*Organization, error)
 	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
@@ -130,6 +140,7 @@ type DB interface {
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
+	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -211,6 +222,7 @@ type DB interface {
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
+	UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
@@ -293,7 +305,9 @@ var ErrNotUnique = errors.New("database: violates unique constraint")
 type Organization struct {
 	ID                                  string
 	Name                                string
+	DisplayName                         string `db:"display_name"`
 	Description                         string
+	CustomDomain                        string    `db:"custom_domain"`
 	AllUsergroupID                      *string   `db:"all_usergroup_id"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
@@ -311,7 +325,9 @@ type Organization struct {
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
 	Name                                string `validate:"slug"`
+	DisplayName                         string
 	Description                         string
+	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -326,7 +342,9 @@ type InsertOrganizationOptions struct {
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
 	Name                                string `validate:"slug"`
+	DisplayName                         string
 	Description                         string
+	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -350,21 +368,22 @@ type Project struct {
 	Provisioner     string
 	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
-	ArchiveAssetID       *string           `db:"archive_asset_id"`
-	GithubURL            *string           `db:"github_url"`
-	GithubInstallationID *int64            `db:"github_installation_id"`
-	Subpath              string            `db:"subpath"`
-	ProdVersion          string            `db:"prod_version"`
-	ProdBranch           string            `db:"prod_branch"`
-	ProdVariables        map[string]string `db:"prod_variables"`
-	ProdOLAPDriver       string            `db:"prod_olap_driver"`
-	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
-	ProdSlots            int               `db:"prod_slots"`
-	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string           `db:"prod_deployment_id"`
-	Annotations          map[string]string `db:"annotations"`
-	CreatedOn            time.Time         `db:"created_on"`
-	UpdatedOn            time.Time         `db:"updated_on"`
+	ArchiveAssetID               *string           `db:"archive_asset_id"`
+	GithubURL                    *string           `db:"github_url"`
+	GithubInstallationID         *int64            `db:"github_installation_id"`
+	Subpath                      string            `db:"subpath"`
+	ProdVersion                  string            `db:"prod_version"`
+	ProdBranch                   string            `db:"prod_branch"`
+	ProdVariables                map[string]string `db:"prod_variables"`
+	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
+	ProdOLAPDriver               string            `db:"prod_olap_driver"`
+	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
+	ProdSlots                    int               `db:"prod_slots"`
+	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID             *string           `db:"prod_deployment_id"`
+	Annotations                  map[string]string `db:"annotations"`
+	CreatedOn                    time.Time         `db:"created_on"`
+	UpdatedOn                    time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -765,6 +784,7 @@ type OrganizationInvite struct {
 	Email           string
 	OrgID           string    `db:"org_id"`
 	OrgRoleID       string    `db:"org_role_id"`
+	UsergroupIDs    []string  `db:"usergroup_ids"`
 	InvitedByUserID string    `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
@@ -803,7 +823,7 @@ type OrganizationWhitelistedDomain struct {
 type InsertOrganizationWhitelistedDomainOptions struct {
 	OrgID     string `validate:"required"`
 	OrgRoleID string `validate:"required"`
-	Domain    string `validate:"domain"`
+	Domain    string `validate:"fqdn"`
 }
 
 // OrganizationWhitelistedDomainWithJoinedRoleNames convenience type used for display-friendly representation of an OrganizationWhitelistedDomain.
@@ -824,7 +844,7 @@ type ProjectWhitelistedDomain struct {
 type InsertProjectWhitelistedDomainOptions struct {
 	ProjectID     string `validate:"required"`
 	ProjectRoleID string `validate:"required"`
-	Domain        string `validate:"domain"`
+	Domain        string `validate:"fqdn"`
 }
 
 type ProjectWhitelistedDomainWithJoinedRoleNames struct {
@@ -927,6 +947,45 @@ type Asset struct {
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+// EncryptionKey represents an encryption key for column-level encryption/decryption.
+// Column-level encryption provides an extra layer of security for highly sensitive columns in the database.
+// It is implemented on the application side before writes to and after reads from the database.
+type EncryptionKey struct {
+	ID     string `json:"key_id"`
+	Secret []byte `json:"key"`
+}
+
+// ParseEncryptionKeyring parses a JSON string containing an array of EncryptionKey objects.
+// If the provided string is empty, an empty keyring is returned.
+// When using an empty keyring, columns will be read and written without applying encryption/decryption.
+func ParseEncryptionKeyring(keyring string) ([]*EncryptionKey, error) {
+	if keyring == "" {
+		return nil, nil
+	}
+
+	var encKeyring []*EncryptionKey
+	err := json.Unmarshal([]byte(keyring), &encKeyring)
+	if err != nil {
+		return nil, err
+	}
+
+	return encKeyring, nil
+}
+
+func NewRandomKeyring() ([]*EncryptionKey, error) {
+	secret := make([]byte, 32) // 32 bytes for AES-256
+	_, err := rand.Read(secret)
+	if err != nil {
+		return nil, err
+	}
+
+	encKeyRing := []*EncryptionKey{
+		{ID: uuid.New().String(), Secret: secret},
+	}
+
+	return encKeyRing, nil
 }
 
 type BillingErrorType int

@@ -86,6 +86,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		Dimensions:          []Dimension{sub.Dimension},
 		Measures:            sub.Measures,
 		PivotOn:             nil,
+		Spine:               nil,
 		Sort:                nil,
 		TimeRange:           outer.TimeRange,
 		ComparisonTimeRange: outer.ComparisonTimeRange,
@@ -95,7 +96,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		Offset:              nil,
 		TimeZone:            outer.TimeZone,
 		Label:               false,
-	}
+	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
 	innerAST, err := NewAST(b.ast.metricsView, b.ast.security, inner, b.ast.dialect)
@@ -213,11 +214,11 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// Generate unnest join
 		unnestTableAlias := b.ast.generateIdentifier()
-		unnestFrom, ok, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
+		unnestFrom, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}

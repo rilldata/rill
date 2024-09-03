@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
+	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/pkg/riverworker"
 	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
 	"github.com/rilldata/rill/admin/server"
@@ -30,7 +31,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
-	"github.com/riverqueue/river"
+	riverlib "github.com/riverqueue/river"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -47,6 +48,7 @@ import (
 type Config struct {
 	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
 	DatabaseURL            string                 `split_words:"true"`
+	RiverDatabaseURL       string                 `split_words:"true"`
 	RedisURL               string                 `default:"" split_words:"true"`
 	ProvisionerSetJSON     string                 `split_words:"true"`
 	DefaultProvisioner     string                 `split_words:"true"`
@@ -94,6 +96,8 @@ type Config struct {
 	OrbWebhookSecret                  string `split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
+	// json encoded array of database.EncryptionKey
+	DatabaseEncryptionKeyring string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -277,16 +281,18 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:     conf.DatabaseDriver,
-				DatabaseDSN:        conf.DatabaseURL,
-				ProvisionerSetJSON: conf.ProvisionerSetJSON,
-				DefaultProvisioner: conf.DefaultProvisioner,
-				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
-				VersionNumber:      ch.Version.Number,
-				VersionCommit:      ch.Version.Commit,
-				MetricsProjectOrg:  metricsProjectOrg,
-				MetricsProjectName: metricsProjectName,
-				AutoscalerCron:     conf.AutoscalerCron,
+				DatabaseDriver:            conf.DatabaseDriver,
+				DatabaseDSN:               conf.DatabaseURL,
+				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
+				FrontendURL:               conf.FrontendURL,
+				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
+				DefaultProvisioner:        conf.DefaultProvisioner,
+				VersionNumber:             ch.Version.Number,
+				VersionCommit:             ch.Version.Commit,
+				MetricsProjectOrg:         metricsProjectOrg,
+				MetricsProjectName:        metricsProjectName,
+				AutoscalerCron:            conf.AutoscalerCron,
+				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
 			if err != nil {
@@ -313,13 +319,23 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("database driver does not support river")
 			}
 
-			client, err := river.NewClient[*sql.Tx](riverDriver, &river.Config{
+			client, err := riverlib.NewClient[*sql.Tx](riverDriver, &riverlib.Config{
 				Workers: riverworker.Workers,
 			})
 			if err != nil {
 				logger.Fatal("error creating insert only river client", zap.Error(err))
 			}
 			riverutils.InsertOnlyRiverClient = client
+
+			// Init river jobs client
+			jobs, err := river.New(cmd.Context(), conf.RiverDatabaseURL, adm)
+			if err != nil {
+				logger.Fatal("error creating river jobs client", zap.Error(err))
+			}
+			defer jobs.Close(cmd.Context())
+
+			// Set initialized jobs client on admin so jobs can be triggered from admin
+			adm.Jobs = jobs
 
 			// Parse session keys as hex strings
 			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
@@ -357,8 +373,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
-					ExternalURL:            conf.ExternalURL,
-					FrontendURL:            conf.FrontendURL,
 					AllowedOrigins:         conf.AllowedOrigins,
 					SessionKeyPairs:        keyPairs,
 					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
@@ -383,7 +397,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init and run worker
 			if runWorker || runJobs {
-				wkr := worker.New(logger, adm, riverDriver, riverDBPool)
+				wkr := worker.New(logger, adm, jobs, riverDriver, riverDBPool)
 				if runWorker {
 					group.Go(func() error { return wkr.Run(cctx) })
 					if !runServer {

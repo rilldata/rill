@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/url"
 	"strings"
 	"time"
 
@@ -211,16 +210,31 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
+	instancePermissions := []runtimeauth.Permission{
+		runtimeauth.ReadObjects,
+		runtimeauth.ReadMetrics,
+		runtimeauth.ReadAPI,
+	}
+	if permissions.ManageProject {
+		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
+	}
+
+	var systemPermissions []runtimeauth.Permission
+	if req.IssueSuperuserToken {
+		if !claims.Superuser(ctx) {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
+		}
+		// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
+		systemPermissions = append(systemPermissions, runtimeauth.ManageInstances)
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: depl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
-		TTL:         ttlDuration,
+		AudienceURL:       depl.RuntimeAudience,
+		Subject:           claims.OwnerID(),
+		TTL:               ttlDuration,
+		SystemPermissions: systemPermissions,
 		InstancePermissions: map[string][]runtimeauth.Permission{
-			depl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-			},
+			depl.RuntimeInstanceID: instancePermissions,
 		},
 		Attributes:    attr,
 		SecurityRules: rules,
@@ -386,18 +400,23 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	opts := &database.InsertProjectOptions{
-		OrganizationID:  org.ID,
-		Name:            req.Name,
-		Description:     req.Description,
-		Public:          req.Public,
-		CreatedByUserID: userID,
-		Provisioner:     req.Provisioner,
-		ProdVersion:     req.ProdVersion,
-		ProdOLAPDriver:  req.ProdOlapDriver,
-		ProdOLAPDSN:     req.ProdOlapDsn,
-		ProdSlots:       int(req.ProdSlots),
-		ProdVariables:   req.Variables,
-		ProdTTLSeconds:  prodTTL,
+		OrganizationID:       org.ID,
+		Name:                 req.Name,
+		Description:          req.Description,
+		Public:               req.Public,
+		CreatedByUserID:      userID,
+		Provisioner:          req.Provisioner,
+		ArchiveAssetID:       nil,         // Populated below
+		GithubURL:            nil,         // Populated below
+		GithubInstallationID: nil,         // Populated below
+		ProdBranch:           "",          // Populated below
+		Subpath:              req.Subpath, // Populated below
+		ProdVersion:          req.ProdVersion,
+		ProdOLAPDriver:       req.ProdOlapDriver,
+		ProdOLAPDSN:          req.ProdOlapDsn,
+		ProdSlots:            int(req.ProdSlots),
+		ProdVariables:        req.Variables,
+		ProdTTLSeconds:       prodTTL,
 	}
 
 	if req.GithubUrl != "" {
@@ -517,6 +536,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	githubURL := proj.GithubURL
 	githubInstID := proj.GithubInstallationID
+	subpath := valOrDefault(req.Subpath, proj.Subpath)
+	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
@@ -545,6 +566,10 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		if !s.hasAssetUsagePermission(ctx, *archiveAssetID, org.ID, claims.OwnerID()) {
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
+		githubURL = nil
+		githubInstID = nil
+		subpath = ""
+		prodBranch = ""
 	}
 
 	prodTTLSeconds := proj.ProdTTLSeconds
@@ -563,9 +588,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: githubInstID,
-		Subpath:              valOrDefault(req.Subpath, proj.Subpath),
+		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
-		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
+		ProdBranch:           prodBranch,
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
@@ -791,8 +816,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		err = s.admin.Email.SendProjectInvite(&email.ProjectInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
-			AdminURL:      s.opts.ExternalURL,
-			FrontendURL:   s.opts.FrontendURL,
+			AcceptURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).ProjectInviteAccept(org.Name, proj.Name),
 			OrgName:       org.Name,
 			ProjectName:   proj.Name,
 			RoleName:      role.Name,
@@ -816,7 +840,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
-		FrontendURL:   s.opts.FrontendURL,
+		OpenURL:       s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
 		OrgName:       org.Name,
 		ProjectName:   proj.Name,
 		RoleName:      role.Name,
@@ -1040,8 +1064,8 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 			Email:       user.Email,
 			OrgName:     org.Name,
 			ProjectName: proj.Name,
-			ApproveLink: s.urls.approveProjectAccess(org.Name, proj.Name, accessReq.ID),
-			DenyLink:    s.urls.denyProjectAccess(org.Name, proj.Name, accessReq.ID),
+			ApproveLink: s.admin.URLs.WithCustomDomain(org.CustomDomain).ApproveProjectAccess(org.Name, proj.Name, accessReq.ID),
+			DenyLink:    s.admin.URLs.WithCustomDomain(org.CustomDomain).DenyProjectAccess(org.Name, proj.Name, accessReq.ID),
 		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -1130,7 +1154,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	err = s.admin.Email.SendProjectAccessGranted(&email.ProjectAccessGranted{
 		ToEmail:     user.Email,
 		ToName:      user.DisplayName,
-		FrontendURL: s.opts.FrontendURL,
+		OpenURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
 		OrgName:     org.Name,
 		ProjectName: proj.Name,
 	})
@@ -1439,6 +1463,49 @@ func (s *Server) ListProjectWhitelistedDomains(ctx context.Context, req *adminv1
 	return &adminv1.ListProjectWhitelistedDomainsResponse{Domains: dtos}, nil
 }
 
+func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProjectRequest) (*adminv1.RedeployProjectResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// check if org has blocking billing errors and return error if it does
+	err = s.admin.CheckBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var depl *database.Deployment
+	if proj.ProdDeploymentID != nil {
+		depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
+	}
+
+	_, err = s.admin.RedeployProject(ctx, proj, depl)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.RedeployProjectResponse{}, nil
+}
+
 func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernateProjectRequest) (*adminv1.HibernateProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
@@ -1466,9 +1533,68 @@ func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernatePro
 	return &adminv1.HibernateProjectResponse{}, nil
 }
 
-func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
-	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
+// Deprecated: See api.proto for details.
+func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedeployRequest) (*adminv1.TriggerRedeployResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
 
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// check if org has blocking billing errors and return error if it does
+	err = s.admin.CheckBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// For backwards compatibility, this RPC supports passing either DeploymentId or Organization+Project names
+	var proj *database.Project
+	var depl *database.Deployment
+	if req.DeploymentId != "" {
+		var err error
+		depl, err = s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		proj, err = s.admin.DB.FindProject(ctx, depl.ProjectID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	} else {
+		var err error
+		proj, err = s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		if proj.ProdDeploymentID != nil {
+			depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+			if err != nil {
+				return nil, status.Error(codes.InvalidArgument, err.Error())
+			}
+		}
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
+	}
+
+	_, err = s.admin.RedeployProject(ctx, proj, depl)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.TriggerRedeployResponse{}, nil
+}
+
+func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	return &adminv1.Project{
 		Id:               p.ID,
 		Name:             p.Name,
@@ -1488,7 +1614,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
-		FrontendUrl:      frontendURL,
+		FrontendUrl:      s.admin.URLs.Project(orgName, p.Name),
 		Annotations:      p.Annotations,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),

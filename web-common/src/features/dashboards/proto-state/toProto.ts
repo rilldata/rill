@@ -8,6 +8,7 @@ import {
 import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
+  PivotChipData,
   PivotChipType,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -38,6 +39,7 @@ import {
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotRowJoinType,
   DashboardTimeRange,
+  PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -73,7 +75,7 @@ export function getProtoFromDashboardState(
   if (metrics.whereFilter) {
     state.where = toExpressionProto(metrics.whereFilter);
   }
-  if (metrics.dimensionThresholdFilters.length) {
+  if (metrics.dimensionThresholdFilters?.length) {
     state.having = metrics.dimensionThresholdFilters.map(
       ({ name, filters }) =>
         new DashboardDimensionFilter({
@@ -269,6 +271,28 @@ function toPbValue(val: unknown) {
   }
 }
 
+const mapPivotDimensions: (
+  dimension: PivotChipData,
+) => PartialMessage<PivotElement> = (dimension: PivotChipData) => {
+  if (dimension.type === PivotChipType.Dimension) {
+    return {
+      element: {
+        case: "pivotDimension",
+        value: dimension.id,
+      },
+    };
+  } else if (dimension.type === PivotChipType.Time) {
+    return {
+      element: {
+        case: "pivotTimeDimension",
+        value: ToProtoTimeGrainMap[dimension.id as V1TimeGrain],
+      },
+    };
+  } else {
+    throw new Error("Unsupported pivot dimension type");
+  }
+};
+
 function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
   if (!pivotState.active)
     return {
@@ -278,20 +302,10 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     };
   return {
     pivotIsActive: true,
+    pivotRowAllDimensions: pivotState.rows.dimension.map(mapPivotDimensions),
+    pivotColumnAllDimensions:
+      pivotState.columns.dimension.map(mapPivotDimensions),
 
-    pivotRowTimeDimensions: pivotState.rows.dimension
-      .filter((d) => d.type === PivotChipType.Time)
-      .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
-    pivotRowDimensions: pivotState.rows.dimension
-      .filter((d) => d.type === PivotChipType.Dimension)
-      .map((d) => d.id),
-
-    pivotColumnTimeDimensions: pivotState.columns.dimension
-      .filter((d) => d.type === PivotChipType.Time)
-      .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
-    pivotColumnDimensions: pivotState.columns.dimension
-      .filter((d) => d.type === PivotChipType.Dimension)
-      .map((d) => d.id),
     pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
 
     // pivotExpanded: pivotState.expanded,
