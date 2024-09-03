@@ -404,15 +404,7 @@
               {dimensionData}
               xMin={startValue}
               xMax={endValue}
-              {scrubStart}
-              {scrubEnd}
               isTimeComparison={showComparison}
-              clearScrubRange={() => {
-                metricsExplorerStore.setSelectedScrubRange(
-                  metricViewName,
-                  undefined,
-                );
-              }}
               on:chart-hover={(e) => {
                 const { dimension, ts } = e.detail;
 
@@ -473,13 +465,6 @@
               validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
                 ? bigNum
                 : null}
-              chartType={tddChartType}
-              clearScrubRange={() => {
-                metricsExplorerStore.setSelectedScrubRange(
-                  metricViewName,
-                  undefined,
-                );
-              }}
               mouseoverTimeFormat={(value) => {
                 /** format the date according to the time grain */
 
