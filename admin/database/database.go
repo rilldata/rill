@@ -22,7 +22,8 @@ func Register(name string, driver Driver) {
 	Drivers[name] = driver
 }
 
-// Open opens a new database connection. encryptionKeyring is for client-side column-level encryption
+// Open opens a new database connection.
+// See ParseEncryptionKeyring for the expected format for encKeyringConfig.
 func Open(driver, dsn, encKeyringConfig string) (DB, error) {
 	d, ok := Drivers[driver]
 	if !ok {
