@@ -109,16 +109,18 @@ func (p *ModelOutputProperties) tblConfig() string {
 	}
 	var sb strings.Builder
 	// engine with default
+	var engine string
 	if p.Engine != "" {
-		fmt.Fprintf(&sb, "ENGINE = %s", p.Engine)
+		engine = p.Engine
 	} else {
-		fmt.Fprintf(&sb, "ENGINE = MergeTree")
+		engine = "MergeTree"
 	}
+	fmt.Fprintf(&sb, "ENGINE = %s", engine)
 
 	// order_by
 	if p.OrderBy != "" {
 		fmt.Fprintf(&sb, " ORDER BY %s", p.OrderBy)
-	} else if p.Engine == "MergeTree" {
+	} else if engine == "MergeTree" {
 		// need ORDER BY for MergeTree
 		// it is optional for many other engines
 		fmt.Fprintf(&sb, " ORDER BY tuple()")
