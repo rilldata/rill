@@ -4,10 +4,7 @@ import {
   sanitizeValueForVega,
   sanitizeValuesForSpec,
 } from "./utils";
-import {
-  ScrubBoxColor,
-  ScrubMutedColor,
-} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 /** Temporary solution for the lack of vega lite type exports */
 interface TooltipValue {
