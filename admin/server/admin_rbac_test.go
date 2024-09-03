@@ -35,7 +35,12 @@ func TestAdmin_RBAC(t *testing.T) {
 	defer pg.Terminate(t)
 
 	ctx := context.Background()
-	logger := zap.NewNop()
+
+	// Setup an error logger
+	cfg := zap.NewProductionConfig()
+	cfg.Level.SetLevel(zap.ErrorLevel)
+	logger, err := cfg.Build()
+	require.NoError(t, err)
 
 	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
 	require.NoError(t, err)
@@ -55,7 +60,8 @@ func TestAdmin_RBAC(t *testing.T) {
 			ProvisionerSetJSON: provisionerSetJSON,
 			DefaultProvisioner: "static",
 			ExternalURL:        "http://localhost:9090",
-			VersionNumber:      ""},
+			VersionNumber:      "",
+		},
 		logger,
 		issuer,
 		emailClient,
