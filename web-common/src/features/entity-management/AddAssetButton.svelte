@@ -276,14 +276,6 @@
           <DropdownMenu.Separator />
         </DropdownMenu.Item>
         {#if $customDashboards}
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Component]}
-              className="text-gray-900"
-              size="16px"
-            />
-            Chart
-          </DropdownMenu.Item>
           <DropdownMenu.Item
             class="flex gap-x-2"
             on:click={handleAddCustomDashboard}
@@ -293,7 +285,15 @@
               className="text-gray-900"
               size="16px"
             />
-            Custom Dashboard
+            Canvas Dashboard
+          </DropdownMenu.Item>
+          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Component]}
+              className="text-gray-900"
+              size="16px"
+            />
+            Component
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>

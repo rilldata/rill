@@ -4,7 +4,7 @@ import type {
   PickActionFunctions,
 } from "@rilldata/web-common/metrics/service/ServiceBase";
 import { getActionMethods } from "@rilldata/web-common/metrics/service/ServiceBase";
-import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+import { GetMetadataResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import MD5 from "crypto-js/md5";
 import { v4 as uuidv4 } from "uuid";
 import type { BehaviourEventFactory } from "./BehaviourEventFactory";
@@ -55,19 +55,19 @@ export class MetricsService
     });
   }
 
-  public loadLocalFields(localConfig: V1RuntimeGetConfig) {
-    const projectPathParts = localConfig.project_path.split("/");
+  public loadLocalFields(localConfig: GetMetadataResponse) {
+    const projectPathParts = localConfig.projectPath.split("/");
     this.commonFields = {
       service_name: "web-local",
       app_name: "rill-developer",
-      install_id: localConfig.install_id,
+      install_id: localConfig.installId,
       client_id: this.getOrSetClientID(),
-      build_id: localConfig.build_commit,
+      build_id: localConfig.buildCommit,
       version: localConfig.version,
-      is_dev: localConfig.is_dev,
+      is_dev: localConfig.isDev,
       project_id: MD5(projectPathParts[projectPathParts.length - 1]).toString(),
-      user_id: localConfig.user_id,
-      analytics_enabled: localConfig.analytics_enabled,
+      user_id: localConfig.userId,
+      analytics_enabled: localConfig.analyticsEnabled,
       mode: localConfig.readonly ? "read-only" : "edit",
     };
   }
@@ -108,7 +108,7 @@ export class MetricsService
     let clientId = localStorage.getItem(ClientIDStorageKey);
     if (clientId) return clientId;
 
-    clientId = uuidv4() as string;
+    clientId = uuidv4();
     localStorage.setItem(ClientIDStorageKey, clientId);
     return clientId;
   }

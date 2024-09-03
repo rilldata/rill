@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill usergroup set
+title: rill usergroup set-role
 ---
-## rill usergroup set
+## rill usergroup set-role
 
-Set role to a user group in an organization or project
+Change a group's role on a project or organization
 
 ```
-rill usergroup set [flags]
+rill usergroup set-role [flags]
 ```
 
 ### Flags
