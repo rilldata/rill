@@ -270,9 +270,6 @@ type DB interface {
 	UpsertBillingWarning(ctx context.Context, opts *UpsertBillingWarningOptions) (*BillingWarning, error)
 	DeleteBillingWarning(ctx context.Context, id string) error
 	DeleteBillingWarningByType(ctx context.Context, orgID string, warningType BillingWarningType) error
-
-	UpsertWebhookEventWatermark(ctx context.Context, opts *UpsertWebhookEventOptions) (*WebhookEventWatermark, error)
-	FindWebhookEventWatermark(ctx context.Context, orgID string, eventType WebhookEventType) (*WebhookEventWatermark, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.

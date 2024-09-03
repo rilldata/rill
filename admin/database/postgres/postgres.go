@@ -2024,35 +2024,6 @@ func (c *connection) DeleteBillingWarningByType(ctx context.Context, orgID strin
 	return checkDeleteRow("billing warning", res, err)
 }
 
-func (c *connection) UpsertWebhookEventWatermark(ctx context.Context, opts *database.UpsertWebhookEventOptions) (*database.WebhookEventWatermark, error) {
-	if err := database.Validate(opts); err != nil {
-		return nil, err
-	}
-
-	res := &database.WebhookEventWatermark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO webhook_event_watermarks (org_id, type, last_occurrence)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (org_id, type) DO UPDATE SET last_occurrence = EXCLUDED.last_occurrence
-		RETURNING *
-	`, opts.OrgID, opts.Type, opts.LastOccurrence).StructScan(res)
-	if err != nil {
-		return nil, parseErr("webhook event watermark", err)
-	}
-	return res, nil
-}
-
-func (c *connection) FindWebhookEventWatermark(ctx context.Context, orgID string, eventType database.WebhookEventType) (*database.WebhookEventWatermark, error) {
-	res := &database.WebhookEventWatermark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT * FROM webhook_event_watermarks WHERE org_id = $1 AND type = $2
-	`, orgID, eventType).StructScan(res)
-	if err != nil {
-		return nil, parseErr("webhook event watermark", err)
-	}
-	return res, nil
-}
-
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project

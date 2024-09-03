@@ -37,10 +37,14 @@ type PaymentMethodAddedWorker struct {
 func (w *PaymentMethodAddedWorker) Work(ctx context.Context, job *river.Job[riverutils.PaymentMethodAddedArgs]) error {
 	org, err := w.admin.DB.FindOrganizationForPaymentCustomerID(ctx, job.Args.PaymentCustomerID)
 	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// org got deleted, ignore
+			return nil
+		}
 		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
 	}
 
-	// check for no payment method billing error and delete if it is older than the event time
+	// check for no payment method billing error
 	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeNoPaymentMethod)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -48,22 +52,19 @@ func (w *PaymentMethodAddedWorker) Work(ctx context.Context, job *river.Job[rive
 		}
 	}
 
-	// delete the no payment method error if older than the event time
-	if be != nil && job.Args.EventTime.After(be.EventTime) {
-		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+	// delete the no payment method error if any payment method found for customer
+	if be != nil {
+		c, err := w.admin.PaymentProvider.FindCustomer(ctx, job.Args.PaymentCustomerID)
 		if err != nil {
-			return fmt.Errorf("failed to delete billing error: %w", err)
+			return fmt.Errorf("failed to find customer: %w", err)
 		}
-	}
 
-	// update latest event time for the org
-	_, err = w.admin.DB.UpsertWebhookEventWatermark(ctx, &database.UpsertWebhookEventOptions{
-		OrgID:          org.ID,
-		Type:           database.StripeWebhookEventTypePaymentMethodAttached,
-		LastOccurrence: job.Args.EventTime,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update webhook event watermark: %w", err)
+		if c.HasPaymentMethod {
+			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+			if err != nil {
+				return fmt.Errorf("failed to delete billing error: %w", err)
+			}
+		}
 	}
 
 	return nil
@@ -88,33 +89,21 @@ func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[ri
 		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
 	}
 
-	// check if there is any payment added event after this event, if yes then ignore this event
-	event, err := w.admin.DB.FindWebhookEventWatermark(ctx, org.ID, database.StripeWebhookEventTypePaymentMethodAttached)
+	// check payment provider if the customer has any payment method
+	c, err := w.admin.PaymentProvider.FindCustomer(ctx, job.Args.PaymentCustomerID)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find webhook event watermark: %w", err)
+		return fmt.Errorf("failed to find customer: %w", err)
+	}
+
+	if !c.HasPaymentMethod {
+		_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingErrorTypeNoPaymentMethod,
+			EventTime: job.Args.EventTime,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to add billing error: %w", err)
 		}
-	}
-	if event != nil && event.LastOccurrence.After(job.Args.EventTime) {
-		return nil
-	}
-
-	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-		OrgID:     org.ID,
-		Type:      database.BillingErrorTypeNoPaymentMethod,
-		EventTime: job.Args.EventTime,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to add billing error: %w", err)
-	}
-
-	_, err = w.admin.DB.UpsertWebhookEventWatermark(ctx, &database.UpsertWebhookEventOptions{
-		OrgID:          org.ID,
-		Type:           database.StripeWebhookEventTypePaymentMethodDetached,
-		LastOccurrence: job.Args.EventTime,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update webhook event watermark: %w", err)
 	}
 
 	return nil

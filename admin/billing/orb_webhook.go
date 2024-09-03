@@ -30,6 +30,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
+		o.logger.Error("error reading request body", zap.Error(err))
 		http.Error(w, "error reading request body", http.StatusServiceUnavailable)
 		return
 	}
@@ -38,6 +39,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	var e genericEvent
 	err = json.Unmarshal(payload, &e)
 	if err != nil {
+		o.logger.Error("error parsing event data", zap.Error(err))
 		http.Error(w, "error parsing event data", http.StatusBadRequest)
 		return
 	}
@@ -50,6 +52,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	err = o.verifySignature(payload, r.Header, now)
 	if err != nil {
+		o.logger.Error("error verifying webhook signature", zap.Error(err))
 		http.Error(w, "error verifying webhook signature", http.StatusBadRequest)
 		return
 	}
@@ -59,11 +62,13 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		var ie invoiceEvent
 		err = json.Unmarshal(payload, &ie)
 		if err != nil {
+			o.logger.Error("error parsing event data", zap.Error(err))
 			http.Error(w, "error parsing event data", http.StatusBadRequest)
 			return
 		}
 		err = o.handleInvoicePaymentSucceeded(r.Context(), ie)
 		if err != nil {
+			o.logger.Error("error handling event", zap.Error(err))
 			http.Error(w, "error handling event", http.StatusInternalServerError)
 			return
 		}
@@ -71,11 +76,13 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		var ie invoiceEvent
 		err = json.Unmarshal(payload, &ie)
 		if err != nil {
+			o.logger.Error("error parsing event data", zap.Error(err))
 			http.Error(w, "error parsing event data", http.StatusBadRequest)
 			return
 		}
 		err = o.handleInvoicePaymentFailed(r.Context(), ie)
 		if err != nil {
+			o.logger.Error("error handling event", zap.Error(err))
 			http.Error(w, "error handling event", http.StatusInternalServerError)
 			return
 		}
@@ -83,6 +90,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		var ie invoiceEvent
 		err = json.Unmarshal(payload, &ie)
 		if err != nil {
+			o.logger.Error("error parsing event data", zap.Error(err))
 			http.Error(w, "error parsing event data", http.StatusBadRequest)
 			return
 		}

@@ -48,13 +48,14 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		if paymentMethod.Customer == nil {
 			// just log warn and send http ok as we can't do anything without customer id
-			s.logger.Warn("no customer info sent for payment method added event", zap.String("event_id", event.ID), zap.String("raw_event", string(event.Data.Raw)))
-		}
-		err = s.handlePaymentMethodAdded(r.Context(), &paymentMethod)
-		if err != nil {
-			s.logger.Error("Error handling payment_method.attached event", zap.Error(err))
-			http.Error(w, "Error handling payment_method.attached event", http.StatusInternalServerError)
-			return
+			s.logger.Warn("no customer info sent for payment_method.attached event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
+		} else {
+			err = s.handlePaymentMethodAdded(r.Context(), &paymentMethod)
+			if err != nil {
+				s.logger.Error("Error handling payment_method.attached event", zap.Error(err))
+				http.Error(w, "Error handling payment_method.attached event", http.StatusInternalServerError)
+				return
+			}
 		}
 	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodDetached):
 		var paymentMethod stripe.PaymentMethod
@@ -70,9 +71,10 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "error handling payment_method.detached event", http.StatusInternalServerError)
 				return
 			}
+		} else {
+			// just log warn and send http ok as we can't do anything without customer id
+			s.logger.Warn("no customer info sent for payment method detached event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
 		}
-		// just log warn and send http ok as we can't do anything without customer id
-		s.logger.Warn("no customer info sent for payment method detached event", zap.String("event_id", event.ID), zap.String("raw_event", string(event.Data.Raw)))
 	case stripe.EventType(database.StripeWebhookEventTypeCustomerUpdated):
 		var customer stripe.Customer
 		if err := json.Unmarshal(event.Data.Raw, &customer); err != nil {
@@ -82,15 +84,16 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		if customer.ID == "" {
 			// just log warn and send http ok as we can't do anything without customer id
-			s.logger.Warn("no customer info sent for customer.updated event", zap.String("event_id", event.ID), zap.String("raw_event", string(event.Data.Raw)))
-		}
-		// we just care about address update, so check if address was update and now customer has a valid address
-		if _, ok := event.Data.PreviousAttributes["address"]; ok && customer.Address != nil {
-			err = s.handleCustomerAddressUpdated(r.Context(), &customer)
-			if err != nil {
-				s.logger.Error("error handling customer.updated event", zap.Error(err))
-				http.Error(w, "error handling customer.updated event", http.StatusInternalServerError)
-				return
+			s.logger.Warn("no customer info sent for customer.updated event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
+		} else {
+			// we just care about address update, so check if address was update and now customer has a valid address
+			if _, ok := event.Data.PreviousAttributes["address"]; ok && customer.Address != nil {
+				err = s.handleCustomerAddressUpdated(r.Context(), &customer)
+				if err != nil {
+					s.logger.Error("error handling customer.updated event", zap.Error(err))
+					http.Error(w, "error handling customer.updated event", http.StatusInternalServerError)
+					return
+				}
 			}
 		}
 	default:

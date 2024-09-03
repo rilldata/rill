@@ -19,12 +19,3 @@ CREATE TABLE billing_warnings (
     FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
     CONSTRAINT billing_warnings_org_id_type_unique UNIQUE (org_id, type)
 );
-
-CREATE TABLE webhook_event_watermarks (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    org_id UUID NOT NULL,
-    type TEXT NOT NULL,
-    last_occurrence TIMESTAMPTZ NOT NULL,
-    FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
-    CONSTRAINT webhook_event_watermark_org_id_type_unique UNIQUE (org_id, type)
-);
