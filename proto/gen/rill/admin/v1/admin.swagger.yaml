@@ -2309,6 +2309,10 @@ paths:
           required: false
           type: integer
           format: int64
+        - name: issueSuperuserToken
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
