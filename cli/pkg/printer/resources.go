@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -522,7 +523,7 @@ func toBillingErrorsTable(errs []*adminv1.BillingError) []*billingError {
 
 func toBillingErrorRow(e *adminv1.BillingError) *billingError {
 	meta, err := json.Marshal(e.Metadata)
-	if err != nil {
+	if err != nil || !utf8.Valid(meta) {
 		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
 	}
 	return &billingError{
@@ -560,7 +561,7 @@ func toBillingWarningsTable(warns []*adminv1.BillingWarning) []*billingWarning {
 
 func toBillingWarningRow(w *adminv1.BillingWarning) *billingWarning {
 	meta, err := json.Marshal(w.Metadata)
-	if err != nil {
+	if err != nil || !utf8.Valid(meta) {
 		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
 	}
 	return &billingWarning{
