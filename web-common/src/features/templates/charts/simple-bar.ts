@@ -4,6 +4,7 @@ import {
   ScrubBoxColor,
   ScrubMutedColor,
   ScrubArea0Color,
+  BarColor,
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildSimpleBarSingleLayer(
@@ -16,6 +17,7 @@ export function buildSimpleBarSingleLayer(
     type: "bar",
     width: { band: 0.75 },
     clip: true,
+    color: BarColor,
   };
 
   baseSpec.encoding = {
@@ -38,14 +40,7 @@ export function buildSimpleBarSingleLayer(
           value: 1,
         },
       ],
-      value: 0.8,
-    },
-    color: {
-      condition: {
-        param: "brush",
-        value: ScrubArea0Color,
-      },
-      value: ScrubMutedColor,
+      value: 0.7,
     },
     tooltip: [
       {

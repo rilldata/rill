@@ -68,13 +68,9 @@ export function buildStackedArea(
       stack: "zero",
     },
     color: {
-      condition: {
-        param: "brush",
-        field: nominalField.name,
-        type: "nominal",
-        legend: null,
-      },
-      value: ScrubMutedColor,
+      field: nominalField?.name,
+      type: "nominal",
+      legend: null,
     },
   };
 
@@ -94,10 +90,28 @@ export function buildStackedArea(
 
   baseSpec.layer = [
     {
-      mark: { type: "area", clip: true, opacity: 0.7 },
+      mark: {
+        type: "area",
+        clip: true,
+        opacity: 0.7,
+      },
+      encoding: {
+        opacity: {
+          condition: {
+            param: "brush",
+            empty: false,
+            value: 1,
+          },
+          value: 0.7,
+        },
+      },
     },
     {
-      mark: { type: "line", strokeWidth: 1, clip: true },
+      mark: {
+        type: "line",
+        strokeWidth: 1,
+        clip: true,
+      },
     },
     {
       transform: multiValueTooltipChannel?.length
@@ -109,22 +123,22 @@ export function buildStackedArea(
             },
           ]
         : [],
-
       mark: {
         type: "rule",
         clip: true,
       },
       encoding: {
         color: {
-          condition: {
-            param: "hover",
-            empty: false,
-            value: "var(--color-primary-300)",
-          },
+          condition: [
+            {
+              param: "hover",
+              empty: false,
+              value: "var(--color-primary-300)",
+            },
+          ],
           value: "transparent",
         },
         y: { value: -400 },
-
         tooltip: multiValueTooltipChannel?.length
           ? multiValueTooltipChannel
           : defaultTooltipChannel,
