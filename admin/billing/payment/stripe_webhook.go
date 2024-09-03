@@ -22,6 +22,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
+		s.logger.Error("error reading request body", zap.Error(err))
 		http.Error(w, "error reading request body", http.StatusServiceUnavailable)
 		return
 	}
