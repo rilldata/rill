@@ -163,32 +163,6 @@ export function buildSimpleBarMultiLayer(
             formatType: quantitativeField.formatterFunction || "number",
           },
         ],
-        // DEADCODE
-        // Do not show tooltip if there is brush selection
-        // NOTE: tooltip condition value wouldn't take array
-        // See: https://github.com/vega/vega-lite/issues/8750
-        // tooltip: {
-        //   condition: {
-        //     param: "brush",
-        //     value: [
-        //       {
-        //         field: timeField.tooltipName
-        //           ? timeField.tooltipName
-        //           : timeField.name,
-        //         type: "temporal",
-        //         title: "Time",
-        //         format: "%b %d, %Y %H:%M",
-        //       },
-        //       {
-        //         title: quantitativeField.label,
-        //         field: quantitativeField.name,
-        //         type: "quantitative",
-        //         formatType: quantitativeField.formatterFunction || "number",
-        //       },
-        //     ],
-        //   },
-        //   value: null,
-        // },
       },
     },
     // Main bar layer
