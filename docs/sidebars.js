@@ -158,7 +158,8 @@ const sidebars = {
             label: 'Other Concepts',
             description: 'For guides that are not quite Rill related but needs consideration',
             items: [
-                'tutorials/avg_avg',    
+                'tutorials/other/avg_avg',    
+                'tutorials/other/add-column-dimension', 
 
               ]
           },

@@ -37,6 +37,7 @@ Seeing as this is ClickHouse model, it is likely that the credentials or connect
 
 Whether it's the source or the model that is erroring and causing the dashboard to fail, you may need to [check the credentials](credential-envvariable-mangement.md) back in Rill Developer.
 
+
 ### Incremental Models are failing 
 
 Additionally, you may need to troubleshoot your incremental model's splits. As seen in the above image, our model, S3-incremental, is erroring with the following:
@@ -62,18 +63,35 @@ rill project splits <name_of_model> --project <your-project>
 
 In this case, the issue was a permission issue on the file in S3, and was resolved by setting the file to public within the S3 bucket.
 
+In order to refresh the full model, you can run the following:
+
+```bash
+rill project refresh --model <your_model> --full
+```
+
+If you notice that it is only a specific split that is broken you can use the KEY to refresh that specific split.
+```bash
+rill project refresh --model <your_model> --split SPLIT_KEY
+```
+
 ### Data is not up to date
 
 While you may have set up source refresh to automatically ingest new data, seen on the last column of the status page, there might be times where you are unable to view the new data due to external factors or you have updated the underlying data and dont want to wait for the next refresh. In these cases, you will want to run a project refresh to ingest the data again.
 
 ```bash
-rill project refresh
+rill project refresh --all --full
 ```
-This triggers a refresh and you should see all the Last refresh dates change. You can either check this in Rill Cloud or by running the following:
+This triggers a refresh of the full project and you should see all the last refresh dates change. You can either check this in Rill Cloud or by running the following:
 
 ```bash
 rill project status --project <your-project-id>
 ```
+
+If you only want to refresh a specific component, you can do so with the required flag `--source` or `--model`.
+```bash
+rill project refresh --source <your_source> [--model <your-model>]
+```
+
 
 ## Alerts
 
