@@ -10,10 +10,11 @@
   const headers = ["Name", "Definition", "Label", "Format", "Description"];
   const gutterWidth = 56;
 
-  export let reorderList: (initIndex: number, newIndex: number) => void;
   export let dimensions: boolean = false;
-  export let onDuplicate: (index: number) => void;
   export let items: MetricsViewSpecDimensionV2[] | MetricsViewSpecMeasureV2[];
+  export let reorderList: (initIndex: number, newIndex: number) => void;
+  export let onDuplicate: (index: number) => void;
+  export let onDelete: (index: number) => void;
 
   let tbody: HTMLTableSectionElement;
   let selected = new Set();
@@ -77,6 +78,7 @@
           }}
           selected={selected.has(i)}
           type={dimensions ? "dimensions" : "measures"}
+          {onDelete}
         />
       {:else}
         <tr style:height="40px" class="relative">

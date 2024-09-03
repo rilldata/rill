@@ -2,6 +2,7 @@
   import { writable } from "svelte/store";
 
   export const insertIndex = writable<number | null>(null);
+  export const table = writable<"dimensions" | "measures" | null>(null);
 </script>
 
 <script lang="ts">
@@ -28,7 +29,7 @@
   export let length: number;
   export let reorderList: (initIndex: number, newIndex: number) => void;
   export let onCheckedChange: (checked: boolean) => void;
-
+  export let onDelete: (index: number) => void;
   export let onDuplicate: (index: number) => void;
   export let scrollLeft: number;
   export let tableWidth: number;
@@ -38,13 +39,18 @@
   let initialY = 0;
   let clone: HTMLTableRowElement;
 
-  function handleClick(e: MouseEvent) {
+  function handleDragStart(e: MouseEvent) {
     if (e.button !== 0) return;
+    table.set(type);
     initialY = e.clientY;
 
     clone = row.cloneNode(true) as HTMLTableRowElement;
 
     clone.style.opacity = "0.6";
+    clone.style.position = "fixed";
+    clone.style.display = "table-row";
+    clone.style.width = "100%";
+    clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
     row.parentElement?.appendChild(clone);
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -68,6 +74,7 @@
     }
 
     clone.remove();
+    table.set(null);
     insertIndex.set(null);
   }
   let hovered = false;
@@ -87,12 +94,12 @@
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
   bind:this={row}
-  class:insert={$insertIndex === i}
+  class:insert={$table === type && $insertIndex === i}
 >
   <td class="!pl-0">
     <div class="gap-x-0.5 flex items-center w-14 pl-1">
       <button
-        on:mousedown={handleClick}
+        on:mousedown={handleDragStart}
         class:opacity-0={!hovered}
         disabled={!hovered}
       >
@@ -141,7 +148,9 @@
       onDuplicate={() => {
         onDuplicate(i);
       }}
-      onDelete={() => {}}
+      onDelete={() => {
+        onDelete(i);
+      }}
     />
   {/if}
 </tr>

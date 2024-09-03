@@ -20,7 +20,6 @@
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import { Plus } from "lucide-svelte";
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
   import { writable, Writable } from "svelte/store";
@@ -257,6 +256,7 @@
             items={option === "dimensions"
               ? filteredDimensions
               : filteredMeasures}
+            onDelete={deleteItem}
           />
           <!-- <Button type="text" fit>Show all {option}</Button> -->
         </div>
@@ -278,6 +278,12 @@
     />
   {/if}
 </div>
+
+<svelte:window
+  on:keydown={(e) => {
+    if (e.key === "Escape") editingItem.set(null);
+  }}
+/>
 
 <style lang="postcss">
   .wrapper {
