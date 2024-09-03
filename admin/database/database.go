@@ -937,6 +937,9 @@ type EncryptionKey struct {
 	Secret []byte `json:"key"`
 }
 
+// ParseEncryptionKeyring parses a JSON string containing an array of EncryptionKey objects.
+// If the provided string is empty, an empty keyring is returned.
+// When using an empty keyring, columns will be read and written without applying encryption/decryption.
 func ParseEncryptionKeyring(keyring string) ([]*EncryptionKey, error) {
 	if keyring == "" {
 		return nil, nil
