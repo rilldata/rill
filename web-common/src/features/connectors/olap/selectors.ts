@@ -10,7 +10,30 @@ import {
 import { featureFlags } from "../../feature-flags";
 import { OLAP_DRIVERS_WITHOUT_MODELING } from "./olap-config";
 
-export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
+export function useIsModelingSupportedForOlapDriver(
+  instanceId: string,
+  driver: string,
+) {
+  const { clickhouseModeling } = featureFlags;
+  return derived(
+    [createRuntimeServiceAnalyzeConnectors(instanceId), clickhouseModeling],
+    ([$connectorsQuery, $clickhouseModeling]) => {
+      const { connectors = [] } = $connectorsQuery.data || {};
+      const olapConnector = connectors.find(
+        (connector) => connector.name === driver,
+      );
+      const olapDriverName = olapConnector?.driver?.name ?? "";
+
+      if (olapDriverName === "clickhouse") {
+        return $clickhouseModeling;
+      }
+
+      return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName);
+    },
+  );
+}
+
+export function useIsModelingSupportedForDefaultOlapDriver(instanceId: string) {
   const { clickhouseModeling } = featureFlags;
   return derived(
     [
@@ -28,10 +51,12 @@ export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
       );
 
       const olapDriverName = olapConnector?.driver?.name ?? "";
-      return (
-        !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName) ||
-        $clickhouseModeling
-      );
+
+      if (olapDriverName === "clickhouse") {
+        return $clickhouseModeling;
+      }
+
+      return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName);
     },
   );
 }
