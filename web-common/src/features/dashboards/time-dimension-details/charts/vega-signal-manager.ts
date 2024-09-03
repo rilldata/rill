@@ -2,13 +2,21 @@ import { VegaSpec } from "svelte-vega";
 import { compile, TopLevelSpec } from "vega-lite";
 import { Signal } from "vega-typings";
 
-// WARN Config.customFormatTypes is not true, thus custom format type and format for channel y are dropped.
-// See: https://github.com/vega/vega-lite/pull/6448
 export class VegaSignalManager {
   private compiledSpec: VegaSpec;
 
   constructor(private sanitizedVegaLiteSpec: TopLevelSpec) {
-    this.compiledSpec = compile(this.sanitizedVegaLiteSpec).spec;
+    const specWithConfig: TopLevelSpec = {
+      ...this.sanitizedVegaLiteSpec,
+      config: {
+        ...this.sanitizedVegaLiteSpec.config,
+        // Force `customFormatTypes: true` to prevent Vega-Lite from dropping custom format types.
+        // See: https://github.com/vega/vega-lite/pull/6448
+        // See: https://github.com/vega/vega-lite/issues/6382
+        customFormatTypes: true,
+      },
+    };
+    this.compiledSpec = compile(specWithConfig).spec;
   }
 
   public updateVegaSpec() {
