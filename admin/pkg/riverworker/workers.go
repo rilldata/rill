@@ -120,6 +120,43 @@ func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[ri
 	return nil
 }
 
+func NewCustomerAddressUpdatedWorker(adm *admin.Service) *CustomerAddressUpdatedWorker {
+	return &CustomerAddressUpdatedWorker{admin: adm}
+}
+
+type CustomerAddressUpdatedWorker struct {
+	river.WorkerDefaults[riverutils.CustomerAddressUpdatedArgs]
+	admin *admin.Service
+}
+
+func (w *CustomerAddressUpdatedWorker) Work(ctx context.Context, job *river.Job[riverutils.CustomerAddressUpdatedArgs]) error {
+	org, err := w.admin.DB.FindOrganizationForPaymentCustomerID(ctx, job.Args.PaymentCustomerID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// org got deleted, ignore
+			return nil
+		}
+		return fmt.Errorf("failed to find organization for payment customer id: %w", err)
+	}
+
+	// look for no billable address billing error and remove it
+	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeNoBillableAddress)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	if be != nil {
+		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func NewTrialEndingSoonWorker(adm *admin.Service) *TrialEndingSoonWorker {
 	return &TrialEndingSoonWorker{admin: adm}
 }
@@ -381,6 +418,10 @@ type InvoicePaymentFailedWorker struct {
 func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[riverutils.InvoicePaymentFailedArgs]) error {
 	org, err := w.admin.DB.FindOrganizationForBillingCustomerID(ctx, job.Args.BillingCustomerID)
 	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// org got deleted, ignore
+			return nil
+		}
 		return fmt.Errorf("failed to find organization of billing customer id %q: %w", job.Args.BillingCustomerID, err)
 	}
 
@@ -460,6 +501,10 @@ type InvoicePaymentSuccessWorker struct {
 func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[riverutils.InvoicePaymentSuccessArgs]) error {
 	org, err := w.admin.DB.FindOrganizationForBillingCustomerID(ctx, job.Args.BillingCustomerID)
 	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// org got deleted, ignore
+			return nil
+		}
 		return fmt.Errorf("failed to find organization of billing customer id %q: %w", job.Args.BillingCustomerID, err)
 	}
 
@@ -798,9 +843,7 @@ func (w *HandleSubscriptionCancellationWorker) Work(ctx context.Context, job *ri
 			break
 		}
 	}
-
 	w.admin.Logger.Info("projects hibernated due to subscription cancellation", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
-
 	return nil
 }
 

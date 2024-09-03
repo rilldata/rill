@@ -2943,6 +2943,7 @@ paths:
           enum:
             - BILLING_ERROR_TYPE_UNSPECIFIED
             - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
+            - BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS
             - BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
             - BILLING_ERROR_TYPE_TRIAL_ENDED
             - BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED
@@ -3484,6 +3485,8 @@ definitions:
     properties:
       noPaymentMethod:
         $ref: '#/definitions/v1BillingErrorMetadataNoPaymentMethod'
+      noBillableAddress:
+        $ref: '#/definitions/v1BillingErrorMetadataNoBillableAddress'
       invoicePaymentFailed:
         $ref: '#/definitions/v1BillingErrorMetadataInvoicePaymentFailed'
       trialEnded:
@@ -3498,6 +3501,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1InvoicePaymentFailedMeta'
+  v1BillingErrorMetadataNoBillableAddress:
+    type: object
   v1BillingErrorMetadataNoPaymentMethod:
     type: object
   v1BillingErrorMetadataSubscriptionCancelled:
@@ -3517,6 +3522,7 @@ definitions:
     enum:
       - BILLING_ERROR_TYPE_UNSPECIFIED
       - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
+      - BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS
       - BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
       - BILLING_ERROR_TYPE_TRIAL_ENDED
       - BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED

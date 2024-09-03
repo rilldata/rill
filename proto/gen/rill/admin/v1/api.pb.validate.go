@@ -34270,6 +34270,47 @@ func (m *BillingErrorMetadata) validate(all bool) error {
 			}
 		}
 
+	case *BillingErrorMetadata_NoBillableAddress:
+		if v == nil {
+			err := BillingErrorMetadataValidationError{
+				field:  "Metadata",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetNoBillableAddress()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingErrorMetadataValidationError{
+						field:  "NoBillableAddress",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingErrorMetadataValidationError{
+						field:  "NoBillableAddress",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetNoBillableAddress()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BillingErrorMetadataValidationError{
+					field:  "NoBillableAddress",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *BillingErrorMetadata_InvoicePaymentFailed:
 		if v == nil {
 			err := BillingErrorMetadataValidationError{
@@ -34581,6 +34622,111 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = BillingErrorMetadataNoPaymentMethodValidationError{}
+
+// Validate checks the field values on BillingErrorMetadataNoBillableAddress
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *BillingErrorMetadataNoBillableAddress) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BillingErrorMetadataNoBillableAddress
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// BillingErrorMetadataNoBillableAddressMultiError, or nil if none found.
+func (m *BillingErrorMetadataNoBillableAddress) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BillingErrorMetadataNoBillableAddress) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return BillingErrorMetadataNoBillableAddressMultiError(errors)
+	}
+
+	return nil
+}
+
+// BillingErrorMetadataNoBillableAddressMultiError is an error wrapping
+// multiple validation errors returned by
+// BillingErrorMetadataNoBillableAddress.ValidateAll() if the designated
+// constraints aren't met.
+type BillingErrorMetadataNoBillableAddressMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BillingErrorMetadataNoBillableAddressMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BillingErrorMetadataNoBillableAddressMultiError) AllErrors() []error { return m }
+
+// BillingErrorMetadataNoBillableAddressValidationError is the validation error
+// returned by BillingErrorMetadataNoBillableAddress.Validate if the
+// designated constraints aren't met.
+type BillingErrorMetadataNoBillableAddressValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BillingErrorMetadataNoBillableAddressValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BillingErrorMetadataNoBillableAddressValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BillingErrorMetadataNoBillableAddressValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BillingErrorMetadataNoBillableAddressValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BillingErrorMetadataNoBillableAddressValidationError) ErrorName() string {
+	return "BillingErrorMetadataNoBillableAddressValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BillingErrorMetadataNoBillableAddressValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBillingErrorMetadataNoBillableAddress.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BillingErrorMetadataNoBillableAddressValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BillingErrorMetadataNoBillableAddressValidationError{}
 
 // Validate checks the field values on BillingErrorMetadataInvoicePaymentFailed
 // with the rules defined in the proto definition for this message. If any

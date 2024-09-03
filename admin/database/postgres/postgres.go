@@ -2140,6 +2140,8 @@ func (b *billingErrorDTO) AsModel() *database.BillingError {
 	switch b.Type {
 	case database.BillingErrorTypeNoPaymentMethod:
 		metadata = &database.BillingErrorMetadataNoPaymentMethod{}
+	case database.BillingErrorTypeNoBillableAddress:
+		metadata = &database.BillingErrorMetadataNoBillableAddress{}
 	case database.BillingErrorTypeInvoicePaymentFailed:
 		metadata = &database.BillingErrorMetadataInvoicePaymentFailed{}
 	case database.BillingErrorTypeTrialEnded:

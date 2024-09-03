@@ -60,6 +60,16 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
 	}
 
+	// raise no billable address billing error
+	_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+		OrgID:     org.ID,
+		Type:      database.BillingErrorTypeNoBillableAddress,
+		EventTime: org.CreatedOn,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
+	}
+
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		Description:                         org.Description,
@@ -111,6 +121,16 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 				OrgID:     org.ID,
 				Type:      database.BillingErrorTypeNoPaymentMethod,
+				EventTime: org.CreatedOn,
+			})
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
+			}
+
+			// raise no billable address billing error
+			_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingErrorTypeNoBillableAddress,
 				EventTime: org.CreatedOn,
 			})
 			if err != nil {
@@ -198,6 +218,16 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingErrorTypeNoPaymentMethod,
+			EventTime: org.CreatedOn,
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
+		}
+
+		// raise no billable address billing error
+		_, err = s.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingErrorTypeNoBillableAddress,
 			EventTime: org.CreatedOn,
 		})
 		if err != nil {

@@ -11,7 +11,7 @@ import (
 var InsertOnlyRiverClient *river.Client[*sql.Tx]
 
 type PaymentMethodAddedArgs struct {
-	ID                string // for deduplication
+	PaymentMethodID   string
 	PaymentCustomerID string
 	PaymentType       string
 	EventTime         time.Time
@@ -20,12 +20,19 @@ type PaymentMethodAddedArgs struct {
 func (PaymentMethodAddedArgs) Kind() string { return "payment_method_added" }
 
 type PaymentMethodRemovedArgs struct {
-	ID                string // for deduplication
+	PaymentMethodID   string
 	PaymentCustomerID string
 	EventTime         time.Time
 }
 
 func (PaymentMethodRemovedArgs) Kind() string { return "payment_method_removed" }
+
+type CustomerAddressUpdatedArgs struct {
+	PaymentCustomerID string
+	EventTime         time.Time
+}
+
+func (CustomerAddressUpdatedArgs) Kind() string { return "customer_address_updated" }
 
 type TrialEndingSoonArgs struct {
 	OrgID  string

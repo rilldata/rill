@@ -1295,6 +1295,8 @@ export type V1BillingErrorType =
 export const V1BillingErrorType = {
   BILLING_ERROR_TYPE_UNSPECIFIED: "BILLING_ERROR_TYPE_UNSPECIFIED",
   BILLING_ERROR_TYPE_NO_PAYMENT_METHOD: "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD",
+  BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS:
+    "BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS",
   BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED:
     "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED",
   BILLING_ERROR_TYPE_TRIAL_ENDED: "BILLING_ERROR_TYPE_TRIAL_ENDED",
@@ -1314,12 +1316,17 @@ export interface V1BillingErrorMetadataNoPaymentMethod {
   [key: string]: any;
 }
 
+export interface V1BillingErrorMetadataNoBillableAddress {
+  [key: string]: any;
+}
+
 export interface V1BillingErrorMetadataInvoicePaymentFailed {
   invoices?: V1InvoicePaymentFailedMeta[];
 }
 
 export interface V1BillingErrorMetadata {
   noPaymentMethod?: V1BillingErrorMetadataNoPaymentMethod;
+  noBillableAddress?: V1BillingErrorMetadataNoBillableAddress;
   invoicePaymentFailed?: V1BillingErrorMetadataInvoicePaymentFailed;
   trialEnded?: V1BillingErrorMetadataTrialEnded;
   subscriptionCancelled?: V1BillingErrorMetadataSubscriptionCancelled;

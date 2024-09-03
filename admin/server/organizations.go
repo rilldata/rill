@@ -312,13 +312,26 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	// plan change needed
-	// check for a payment method
-	c, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
+	// check for a payment method and a valid billing address
+	var validationErrs []string
+	pc, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if !c.HasPaymentMethod && !claims.Superuser(ctx) {
-		return nil, status.Errorf(codes.FailedPrecondition, "no payment method found for the organization")
+	if !pc.HasPaymentMethod {
+		validationErrs = append(validationErrs, "no payment method found")
+	}
+
+	bc, err := s.admin.Biller.FindCustomer(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !bc.HasBillableAddress {
+		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
+	}
+
+	if len(validationErrs) > 0 && !claims.Superuser(ctx) {
+		return nil, status.Errorf(codes.FailedPrecondition, "please fix following by visiting billing portal: %s", strings.Join(validationErrs, ", "))
 	}
 
 	if planDowngrade(plan, org) {
@@ -1393,6 +1406,8 @@ func billingErrorTypeToDTO(t database.BillingErrorType) adminv1.BillingErrorType
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_UNSPECIFIED
 	case database.BillingErrorTypeNoPaymentMethod:
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
+	case database.BillingErrorTypeNoBillableAddress:
+		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS
 	case database.BillingErrorTypeTrialEnded:
 		return adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED
 	case database.BillingErrorTypeInvoicePaymentFailed:
@@ -1410,6 +1425,8 @@ func dtoBillingErrorTypeToDB(t adminv1.BillingErrorType) (database.BillingErrorT
 		return database.BillingErrorTypeUnspecified, nil
 	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_PAYMENT_METHOD:
 		return database.BillingErrorTypeNoPaymentMethod, nil
+	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS:
+		return database.BillingErrorTypeNoBillableAddress, nil
 	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED:
 		return database.BillingErrorTypeTrialEnded, nil
 	case adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED:
@@ -1451,6 +1468,12 @@ func billingErrorMetadataToDTO(t database.BillingErrorType, m database.BillingEr
 		return &adminv1.BillingErrorMetadata{
 			Metadata: &adminv1.BillingErrorMetadata_NoPaymentMethod{
 				NoPaymentMethod: &adminv1.BillingErrorMetadataNoPaymentMethod{},
+			},
+		}
+	case database.BillingErrorTypeNoBillableAddress:
+		return &adminv1.BillingErrorMetadata{
+			Metadata: &adminv1.BillingErrorMetadata_NoBillableAddress{
+				NoBillableAddress: &adminv1.BillingErrorMetadataNoBillableAddress{},
 			},
 		}
 	case database.BillingErrorTypeTrialEnded:

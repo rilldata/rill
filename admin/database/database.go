@@ -937,6 +937,7 @@ type BillingErrorType int
 const (
 	BillingErrorTypeUnspecified BillingErrorType = iota
 	BillingErrorTypeNoPaymentMethod
+	BillingErrorTypeNoBillableAddress
 	BillingErrorTypeInvoicePaymentFailed
 	BillingErrorTypeTrialEnded
 	BillingErrorTypeSubscriptionCancelled
@@ -954,6 +955,8 @@ type BillingError struct {
 type BillingErrorMetadata interface{}
 
 type BillingErrorMetadataNoPaymentMethod struct{}
+
+type BillingErrorMetadataNoBillableAddress struct{}
 
 type BillingErrorMetadataInvoicePaymentFailed struct {
 	Invoices map[string]InvoicePaymentFailedMeta `json:"invoices"`
@@ -1035,4 +1038,5 @@ type WebhookEventType string
 const (
 	StripeWebhookEventTypePaymentMethodAttached WebhookEventType = "payment_method.attached"
 	StripeWebhookEventTypePaymentMethodDetached WebhookEventType = "payment_method.detached"
+	StripeWebhookEventTypeCustomerUpdated       WebhookEventType = "customer.updated"
 )

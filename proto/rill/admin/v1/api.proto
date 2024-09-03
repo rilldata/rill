@@ -1248,9 +1248,10 @@ message SudoDeleteOrganizationBillingErrorResponse {}
 enum BillingErrorType {
   BILLING_ERROR_TYPE_UNSPECIFIED = 0;
   BILLING_ERROR_TYPE_NO_PAYMENT_METHOD = 1;
-  BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 2;
-  BILLING_ERROR_TYPE_TRIAL_ENDED = 3;
-  BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 4;
+  BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS = 2;
+  BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 3;
+  BILLING_ERROR_TYPE_TRIAL_ENDED = 4;
+  BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 5;
 }
 
 message SudoDeleteOrganizationBillingWarningRequest {
@@ -2296,13 +2297,16 @@ message BillingError {
 message BillingErrorMetadata {
   oneof metadata {
     BillingErrorMetadataNoPaymentMethod no_payment_method = 1;
-    BillingErrorMetadataInvoicePaymentFailed invoice_payment_failed = 2;
-    BillingErrorMetadataTrialEnded trial_ended = 3;
-    BillingErrorMetadataSubscriptionCancelled subscription_cancelled = 4;
+    BillingErrorMetadataNoBillableAddress no_billable_address = 2;
+    BillingErrorMetadataInvoicePaymentFailed invoice_payment_failed = 3;
+    BillingErrorMetadataTrialEnded trial_ended = 4;
+    BillingErrorMetadataSubscriptionCancelled subscription_cancelled = 5;
   }
 }
 
 message BillingErrorMetadataNoPaymentMethod {}
+
+message BillingErrorMetadataNoBillableAddress {}
 
 message BillingErrorMetadataInvoicePaymentFailed {
   repeated InvoicePaymentFailedMeta invoices = 1;

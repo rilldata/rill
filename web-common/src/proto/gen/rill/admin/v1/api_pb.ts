@@ -23,27 +23,33 @@ export enum BillingErrorType {
   NO_PAYMENT_METHOD = 1,
 
   /**
-   * @generated from enum value: BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 2;
+   * @generated from enum value: BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS = 2;
    */
-  INVOICE_PAYMENT_FAILED = 2,
+  NO_BILLABLE_ADDRESS = 2,
 
   /**
-   * @generated from enum value: BILLING_ERROR_TYPE_TRIAL_ENDED = 3;
+   * @generated from enum value: BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 3;
    */
-  TRIAL_ENDED = 3,
+  INVOICE_PAYMENT_FAILED = 3,
 
   /**
-   * @generated from enum value: BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 4;
+   * @generated from enum value: BILLING_ERROR_TYPE_TRIAL_ENDED = 4;
    */
-  SUBSCRIPTION_CANCELLED = 4,
+  TRIAL_ENDED = 4,
+
+  /**
+   * @generated from enum value: BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 5;
+   */
+  SUBSCRIPTION_CANCELLED = 5,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingErrorType)
 proto3.util.setEnumType(BillingErrorType, "rill.admin.v1.BillingErrorType", [
   { no: 0, name: "BILLING_ERROR_TYPE_UNSPECIFIED" },
   { no: 1, name: "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD" },
-  { no: 2, name: "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED" },
-  { no: 3, name: "BILLING_ERROR_TYPE_TRIAL_ENDED" },
-  { no: 4, name: "BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED" },
+  { no: 2, name: "BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS" },
+  { no: 3, name: "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED" },
+  { no: 4, name: "BILLING_ERROR_TYPE_TRIAL_ENDED" },
+  { no: 5, name: "BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED" },
 ]);
 
 /**
@@ -12673,19 +12679,25 @@ export class BillingErrorMetadata extends Message<BillingErrorMetadata> {
     case: "noPaymentMethod";
   } | {
     /**
-     * @generated from field: rill.admin.v1.BillingErrorMetadataInvoicePaymentFailed invoice_payment_failed = 2;
+     * @generated from field: rill.admin.v1.BillingErrorMetadataNoBillableAddress no_billable_address = 2;
+     */
+    value: BillingErrorMetadataNoBillableAddress;
+    case: "noBillableAddress";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.BillingErrorMetadataInvoicePaymentFailed invoice_payment_failed = 3;
      */
     value: BillingErrorMetadataInvoicePaymentFailed;
     case: "invoicePaymentFailed";
   } | {
     /**
-     * @generated from field: rill.admin.v1.BillingErrorMetadataTrialEnded trial_ended = 3;
+     * @generated from field: rill.admin.v1.BillingErrorMetadataTrialEnded trial_ended = 4;
      */
     value: BillingErrorMetadataTrialEnded;
     case: "trialEnded";
   } | {
     /**
-     * @generated from field: rill.admin.v1.BillingErrorMetadataSubscriptionCancelled subscription_cancelled = 4;
+     * @generated from field: rill.admin.v1.BillingErrorMetadataSubscriptionCancelled subscription_cancelled = 5;
      */
     value: BillingErrorMetadataSubscriptionCancelled;
     case: "subscriptionCancelled";
@@ -12700,9 +12712,10 @@ export class BillingErrorMetadata extends Message<BillingErrorMetadata> {
   static readonly typeName = "rill.admin.v1.BillingErrorMetadata";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "no_payment_method", kind: "message", T: BillingErrorMetadataNoPaymentMethod, oneof: "metadata" },
-    { no: 2, name: "invoice_payment_failed", kind: "message", T: BillingErrorMetadataInvoicePaymentFailed, oneof: "metadata" },
-    { no: 3, name: "trial_ended", kind: "message", T: BillingErrorMetadataTrialEnded, oneof: "metadata" },
-    { no: 4, name: "subscription_cancelled", kind: "message", T: BillingErrorMetadataSubscriptionCancelled, oneof: "metadata" },
+    { no: 2, name: "no_billable_address", kind: "message", T: BillingErrorMetadataNoBillableAddress, oneof: "metadata" },
+    { no: 3, name: "invoice_payment_failed", kind: "message", T: BillingErrorMetadataInvoicePaymentFailed, oneof: "metadata" },
+    { no: 4, name: "trial_ended", kind: "message", T: BillingErrorMetadataTrialEnded, oneof: "metadata" },
+    { no: 5, name: "subscription_cancelled", kind: "message", T: BillingErrorMetadataSubscriptionCancelled, oneof: "metadata" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadata {
@@ -12750,6 +12763,37 @@ export class BillingErrorMetadataNoPaymentMethod extends Message<BillingErrorMet
 
   static equals(a: BillingErrorMetadataNoPaymentMethod | PlainMessage<BillingErrorMetadataNoPaymentMethod> | undefined, b: BillingErrorMetadataNoPaymentMethod | PlainMessage<BillingErrorMetadataNoPaymentMethod> | undefined): boolean {
     return proto3.util.equals(BillingErrorMetadataNoPaymentMethod, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingErrorMetadataNoBillableAddress
+ */
+export class BillingErrorMetadataNoBillableAddress extends Message<BillingErrorMetadataNoBillableAddress> {
+  constructor(data?: PartialMessage<BillingErrorMetadataNoBillableAddress>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingErrorMetadataNoBillableAddress";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingErrorMetadataNoBillableAddress {
+    return new BillingErrorMetadataNoBillableAddress().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingErrorMetadataNoBillableAddress {
+    return new BillingErrorMetadataNoBillableAddress().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingErrorMetadataNoBillableAddress {
+    return new BillingErrorMetadataNoBillableAddress().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingErrorMetadataNoBillableAddress | PlainMessage<BillingErrorMetadataNoBillableAddress> | undefined, b: BillingErrorMetadataNoBillableAddress | PlainMessage<BillingErrorMetadataNoBillableAddress> | undefined): boolean {
+    return proto3.util.equals(BillingErrorMetadataNoBillableAddress, a, b);
   }
 }
 
