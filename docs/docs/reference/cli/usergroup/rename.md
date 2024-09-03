@@ -4,7 +4,7 @@ title: rill usergroup rename
 ---
 ## rill usergroup rename
 
-Rename a user group
+Rename a group
 
 ```
 rill usergroup rename [<name>] [flags]

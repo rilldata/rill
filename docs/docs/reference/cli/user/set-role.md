@@ -4,7 +4,7 @@ title: rill user set-role
 ---
 ## rill user set-role
 
-Set Role
+Change a user's role
 
 ```
 rill user set-role [flags]

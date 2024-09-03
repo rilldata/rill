@@ -4,7 +4,7 @@ title: rill user remove
 ---
 ## rill user remove
 
-Remove
+Remove a user
 
 ```
 rill user remove [flags]

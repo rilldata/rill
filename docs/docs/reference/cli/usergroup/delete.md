@@ -4,7 +4,7 @@ title: rill usergroup delete
 ---
 ## rill usergroup delete
 
-Delete a user group
+Delete a group
 
 ```
 rill usergroup delete <name> [flags]
