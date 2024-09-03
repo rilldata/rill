@@ -18,6 +18,7 @@ import (
 type Options struct {
 	DatabaseDriver            string
 	DatabaseDSN               string
+	DatabaseEncryptionKeyring string
 	ExternalURL               string
 	FrontendURL               string
 	ProvisionerSetJSON        string
@@ -27,7 +28,6 @@ type Options struct {
 	MetricsProjectOrg         string
 	MetricsProjectName        string
 	AutoscalerCron            string
-	DatabaseEncryptionKeyring string
 }
 
 type Service struct {

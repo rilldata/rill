@@ -1985,30 +1985,31 @@ func (c *connection) encryptMap(m map[string]string) (map[string]string, string,
 
 // returns the map with decrypted values and the encryption key id used
 func (c *connection) decryptMap(m map[string]string, encKeyID string) (map[string]string, error) {
-	if encKeyID != "" {
-		var encKey *database.EncryptionKey
-		for _, key := range c.encKeyring {
-			if key.ID == encKeyID {
-				encKey = key
-				break
-			}
-		}
-		if encKey == nil {
-			return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
-		}
-
-		// copy the map to avoid modifying the original map
-		vars := make(map[string]string, len(m))
-		for k, v := range m {
-			decrypted, err := decrypt(v, encKey.Secret)
-			if err != nil {
-				return nil, err
-			}
-			vars[k] = decrypted
-		}
-		return vars, nil
+	if encKeyID == "" {
+		return m, nil
 	}
-	return m, nil
+
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+
+	// copy the map to avoid modifying the original map
+	vars := make(map[string]string, len(m))
+	for k, v := range m {
+		decrypted, err := decrypt(v, encKey.Secret)
+		if err != nil {
+			return nil, err
+		}
+		vars[k] = decrypted
+	}
+	return vars, nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
