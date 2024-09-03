@@ -1015,25 +1015,3 @@ type BillingWarningMetadata interface{}
 type BillingWarningMetadataTrialEnding struct {
 	TrialEndsOn time.Time `json:"trial_ends_on"`
 }
-
-type WebhookEventWatermark struct {
-	ID             string
-	OrgID          string           `db:"org_id"`
-	Type           WebhookEventType `db:"type"`
-	LastOccurrence time.Time        `db:"last_occurrence"`
-	CreatedOn      time.Time        `db:"created_on"`
-}
-
-type UpsertWebhookEventOptions struct {
-	OrgID          string           `validate:"required"`
-	Type           WebhookEventType `validate:"required"`
-	LastOccurrence time.Time        `validate:"required"`
-}
-
-type WebhookEventType string
-
-const (
-	StripeWebhookEventTypePaymentMethodAttached WebhookEventType = "payment_method.attached"
-	StripeWebhookEventTypePaymentMethodDetached WebhookEventType = "payment_method.detached"
-	StripeWebhookEventTypeCustomerUpdated       WebhookEventType = "customer.updated"
-)

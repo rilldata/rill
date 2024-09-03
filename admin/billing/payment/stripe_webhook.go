@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
 	"github.com/riverqueue/river"
 	"github.com/stripe/stripe-go/v79"
@@ -40,7 +39,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Handle the event based on its type
 	switch event.Type {
-	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodAttached):
+	case "payment_method.attached":
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
 			s.logger.Error("error parsing payment method data", zap.Error(err))
@@ -58,7 +57,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-	case stripe.EventType(database.StripeWebhookEventTypePaymentMethodDetached):
+	case "payment_method.detached":
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
 			s.logger.Error("Error parsing payment method data", zap.Error(err))
@@ -76,7 +75,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			// just log warn and send http ok as we can't do anything without customer id
 			s.logger.Warn("no customer info sent for payment method detached event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
 		}
-	case stripe.EventType(database.StripeWebhookEventTypeCustomerUpdated):
+	case "customer.updated":
 		var customer stripe.Customer
 		if err := json.Unmarshal(event.Data.Raw, &customer); err != nil {
 			s.logger.Error("error parsing customer data", zap.Error(err))
