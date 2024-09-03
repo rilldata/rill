@@ -1,4 +1,3 @@
-# syntax = docker/dockerfile:1.1-experimental
 FROM ubuntu
 
 WORKDIR /usr/src/app

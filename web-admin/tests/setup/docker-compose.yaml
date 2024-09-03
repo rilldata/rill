@@ -8,11 +8,37 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - '5432:5432'
+
   redis:
     image: redis
     restart: always
     ports:
       - '6379:6379'
+
+  oauth:
+    image: public.ecr.aws/primaassicurazioni/localauth0:0.8.0
+    restart: always
+    ports:
+      - '3010:3000'
+
+  git:
+    image: rilldata/git
+    build:
+      context: .
+      dockerfile: git/Dockerfile
+    ports:
+      - '9418:9418'
+    volumes:
+      - ./git/repos:/usr/src/app
+
+  email:
+    image: rilldata/email
+    build:
+      context: .
+      dockerfile: email/Dockerfile
+    ports:
+      - '1025:1025'
+      - '1080:1080'
 
   runtime:
     image: rilldata/runtime
