@@ -11,7 +11,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "deploy [<path>]",
 		Short: "Deploy project to Rill Cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ch.Println("\nThis command is no longer supported. Please start rill developer and visit http://localhost:9009/deploy to deploy the project\n")
+			ch.Println("\nThis command is no longer supported. Please start rill developer and visit http://localhost:9009/deploy to deploy the project")
 
 			return nil
 		},
