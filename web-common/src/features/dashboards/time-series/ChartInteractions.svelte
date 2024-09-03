@@ -19,6 +19,8 @@
   export let showComparison = false;
   export let timeGrain: V1TimeGrain | undefined;
 
+  let priorRange: DashboardTimeControls | null = null;
+
   const StateManagers = getStateManagers();
   const {
     dashboardStore,
@@ -64,6 +66,9 @@
       ) {
         metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
       }
+    } else if (priorRange && e.key === "z" && e.metaKey) {
+      e.preventDefault();
+      undoZoom();
     }
   }
 
@@ -95,6 +100,10 @@
       $dashboardStore?.selectedScrubRange?.start instanceof Date &&
       $dashboardStore?.selectedScrubRange?.end instanceof Date
     ) {
+      if ($dashboardStore.selectedTimeRange) {
+        priorRange = $dashboardStore.selectedTimeRange;
+      }
+
       const { start, end } = getOrderedStartEnd(
         $dashboardStore.selectedScrubRange.start,
         $dashboardStore.selectedScrubRange.end,
@@ -104,25 +113,57 @@
         start,
         end,
       });
+
+      window.addEventListener("click", cancelUndo, true);
     }
+  }
+
+  function clearPriorRange() {
+    priorRange = null;
+  }
+
+  function undoZoom() {
+    if (priorRange) {
+      metricsExplorerStore.setSelectedTimeRange(metricViewName, priorRange);
+      clearPriorRange();
+    }
+  }
+
+  function cancelUndo(e: MouseEvent) {
+    window.removeEventListener("click", cancelUndo, true);
+    if (
+      !priorRange ||
+      (e.target instanceof HTMLElement &&
+        e.target.getAttribute("aria-label") === "Undo zoom")
+    ) {
+      return;
+    }
+
+    clearPriorRange();
   }
 </script>
 
-{#if $dashboardStore?.selectedScrubRange?.end}
+{#if priorRange || $dashboardStore?.selectedScrubRange?.end}
   <div
     class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2 z-50 bg-white"
   >
-    <Button compact type="plain" on:click={() => zoomScrub()}>
-      <div class="flex items-center gap-x-2">
-        <span class="flex-none">
-          <Zoom size="16px" />
-        </span>
-        {#if subInterval?.isValid && timeGrain}
-          <RangeDisplay interval={subInterval} grain={timeGrain} />
-        {/if}
-        <span class="font-semibold">(Z)</span>
-      </div>
-    </Button>
+    {#if $dashboardStore?.selectedScrubRange?.end}
+      <Button compact type="plain" on:click={zoomScrub}>
+        <div class="flex items-center gap-x-2">
+          <span class="flex-none">
+            <Zoom size="16px" />
+          </span>
+          {#if subInterval?.isValid && timeGrain}
+            <RangeDisplay interval={subInterval} grain={timeGrain} />
+          {/if}
+          <span class="font-semibold">(Z)oom</span>
+        </div>
+      </Button>
+    {:else if priorRange}
+      <Button compact type="plain" on:click={undoZoom} label="Undo zoom">
+        (⌘Z) Undo Zoom
+      </Button>
+    {/if}
   </div>
 {/if}
 
