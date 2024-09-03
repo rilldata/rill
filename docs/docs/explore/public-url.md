@@ -37,7 +37,7 @@ In fact, users who click on a public shareable URL cannot see the parent filters
 ### How to manage public URLs via the CLI
 :::tip
 
-Starting from v.0.48, `share-url` has been rebranded to `public-url`.
+Starting from v.0.48, `public-url` has been rebranded to `public-url`.
 
 :::
 ```
@@ -81,3 +81,16 @@ rill public-url delete <id>
 ```
 
 If you are interested in creating a public URL directly from the CLI, you can do so by passing the required parameters. (You can use the --help flag to see what additional flags are required.)
+
+
+## Manage public URLs in Rill Cloud
+
+import ComingSoon from '@site/src/components/ComingSoon';
+
+
+<ComingSoon />
+
+<div class='contents_to_overlay'>
+Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
+
+</div>
