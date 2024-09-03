@@ -37,9 +37,6 @@
   export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
-  export let clearScrubRange: () => void;
-  export let scrubStart;
-  export let scrubEnd;
 
   let viewVL: View;
   let vegaSpec: any;
@@ -51,13 +48,6 @@
       dimensions: { comparisonDimension },
     },
   } = getStateManagers();
-
-  $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
-  let previousChartType: TDDChart | undefined;
-  $: if (chartType !== previousChartType && hasSubrangeSelected) {
-    previousChartType = chartType;
-    clearScrubRange();
-  }
 
   $: hasDimensionData = !!dimensionData?.length;
   $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;

@@ -42,7 +42,6 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import { TDDDefaultCharts } from "../time-dimension-details/types";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
@@ -65,8 +64,6 @@
   export let yAccessor = "value";
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
   export let validPercTotal: number | null = null;
-  export let chartType: TDDDefaultCharts;
-  export let clearScrubRange: () => void;
 
   // control point for scrub functionality.
   export let isScrubbing = false;
@@ -90,14 +87,7 @@
   $: hoveredTime =
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
     $tableInteractionStore.time;
-
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
-  let previousChartType: TDDDefaultCharts | undefined;
-  $: if (chartType !== previousChartType && hasSubrangeSelected) {
-    previousChartType = chartType;
-
-    clearScrubRange();
-  }
 
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);

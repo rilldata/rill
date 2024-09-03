@@ -39,6 +39,11 @@
   function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
     if (isDisabled) return;
     metricsExplorerStore.setTDDChartType(metricViewName, type);
+
+    // Reset scrub range when chart type changes
+    if (type !== chartType) {
+      metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+    }
   }
 
   // switch to default if current selected chart is not available
