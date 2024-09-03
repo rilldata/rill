@@ -58,7 +58,10 @@ export function buildStackedArea(
   }
 
   baseSpec.encoding = {
-    x: { field: timeField.name, type: "temporal" },
+    x: {
+      field: timeField.name,
+      type: "temporal",
+    },
     y: {
       field: quantitativeField.name,
       type: "quantitative",
@@ -90,7 +93,6 @@ export function buildStackedArea(
       mark: {
         type: "area",
         clip: true,
-        opacity: 0.7,
       },
       encoding: {
         opacity: {
