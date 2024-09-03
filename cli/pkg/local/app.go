@@ -70,7 +70,6 @@ type App struct {
 	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
 	localURL              string
 	allowedOrigins        []string
-	shutdown              context.CancelFunc
 }
 
 type AppOptions struct {
@@ -321,13 +320,11 @@ func (a *App) Close() error {
 		a.Logger.Info("Rill shutdown gracefully")
 	}
 
-	a.shutdown()
-
 	a.loggerCleanUp()
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, deployOnly bool, userID, tlsCertPath, tlsKeyPath string) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
@@ -347,7 +344,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, dep
 		IsDev:            a.ch.Version.IsDev(),
 		AnalyticsEnabled: enabled,
 		Readonly:         readonly,
-		DeployOnly:       deployOnly,
 	}
 
 	// Create the local server handler
@@ -358,10 +354,8 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, dep
 	}
 
 	// Prepare errgroup and context with graceful shutdown
-	cancelCtx, cancel := context.WithCancel(a.Context)
-	gctx := graceful.WithCancelOnTerminate(cancelCtx)
+	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
-	a.shutdown = cancel
 
 	// Create server logger for the runtime
 	runtimeServerLogger := a.BaseLogger

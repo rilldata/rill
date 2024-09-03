@@ -17,7 +17,6 @@ import {
   createQuery,
   type CreateMutationOptions,
   type CreateQueryOptions,
-  QueryClient,
 } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 

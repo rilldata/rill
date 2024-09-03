@@ -51,7 +51,6 @@ message GetMetadataResponse {
   bool readonly = 10;
   int32 grpc_port = 11;
   string login_url = 12;
-  bool deployOnly = 13;
 }
 
 message GetVersionRequest {}

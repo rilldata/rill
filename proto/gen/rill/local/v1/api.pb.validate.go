@@ -410,8 +410,6 @@ func (m *GetMetadataResponse) validate(all bool) error {
 
 	// no validation rules for LoginUrl
 
-	// no validation rules for DeployOnly
-
 	if len(errors) > 0 {
 		return GetMetadataResponseMultiError(errors)
 	}
