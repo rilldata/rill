@@ -47,12 +47,13 @@
   <Select.Root
     {selected}
     onSelectedChange={(newSelection) => {
+      if (!newSelection) return;
       value = newSelection.value;
       dispatch("change", newSelection.value);
     }}
     items={options}
   >
-    <Select.Trigger>
+    <Select.Trigger class="rounded-sm">
       <Select.Value
         {placeholder}
         class="text-[12px] {!selected ? 'text-gray-400' : ''}"
