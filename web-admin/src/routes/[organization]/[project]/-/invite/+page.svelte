@@ -5,7 +5,7 @@
     createAdminServiceCreateProjectWhitelistedDomain,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import { WaitForDeployment } from "@rilldata/web-admin/features/projects/status/waitForDeployment";
+  import { WaitForDeployment } from "@rilldata/web-admin/features/projects/status/WaitForDeployment";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-invite/CopyInviteLinkButton.svelte";
   import {
     getUserDomain,

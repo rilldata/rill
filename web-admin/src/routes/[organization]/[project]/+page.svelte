@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import { WaitForDeployment } from "@rilldata/web-admin/features/projects/status/waitForDeployment";
+  import { WaitForDeployment } from "@rilldata/web-admin/features/projects/status/WaitForDeployment";
   import { onMount } from "svelte";
   import DashboardsTable from "../../../features/dashboards/listing/DashboardsTable.svelte";
 

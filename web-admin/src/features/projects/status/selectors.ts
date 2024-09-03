@@ -43,6 +43,7 @@ export const baseGetProjectQueryOptions: QueryObserverOptions<
       case V1DeploymentStatus.DEPLOYMENT_STATUS_OK:
         return PollTimeWhenProjectDeploymentOk;
     }
+    return false;
   },
   refetchOnMount: true,
   refetchOnReconnect: true,

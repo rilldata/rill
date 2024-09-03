@@ -46,19 +46,21 @@ export class WaitForDeployment {
           this.errored = true;
         } else if (status.data) {
           const resources = await fetchResources(queryClient, status.data);
-          // prefer a metrics view, if there are none select a custom dashboard
-          this.redirectToResource =
-            resources.find(
-              (r) => r.meta?.name?.kind === ResourceKind.MetricsView,
-            ) ??
-            resources.find(
-              (r) => r.meta?.name?.kind === ResourceKind.Dashboard,
-            );
+          const visualizationErrored = resources.some(
+            (r) =>
+              (r.meta?.name?.kind === ResourceKind.MetricsView ||
+                r.meta?.name?.kind === ResourceKind.Dashboard) &&
+              !!r.meta?.reconcileError,
+          );
+          // only mark as errored if any visualization like metrics view or custom dashboard errored
+          if (visualizationErrored) {
+            this.errored = true;
+          }
         }
 
         if (this.shouldRedirect) {
           // if the user is on dashboards page before deployment was completed.
-          this.handlePostDeployment();
+          void this.handlePostDeployment();
         } else {
           // else do not do anything until user is out of invite page.
           this.shouldRedirect = true;
@@ -79,7 +81,7 @@ export class WaitForDeployment {
       this.instance.shouldRedirect = true;
     } else {
       // deployment is already complete.
-      this.instance.handlePostDeployment();
+      void this.instance.handlePostDeployment();
     }
 
     this.instance = undefined;
@@ -90,33 +92,12 @@ export class WaitForDeployment {
       eventBus.emit("notification", {
         message: "Failed to deploy project",
       });
-      void goto(`/${this.organization}/${this.project}`);
-    } else if (this.redirectToResource) {
-      let dashboardLink = "";
-      switch (this.redirectToResource.meta?.name?.kind) {
-        case ResourceKind.MetricsView:
-          dashboardLink = `/${this.organization}/${this.project}/${this.redirectToResource.meta.name.name}`;
-          break;
-
-        case ResourceKind.Dashboard:
-          dashboardLink = `/${this.organization}/${this.project}/-/dashboards/${this.redirectToResource.meta.name.name}`;
-          break;
-
-        // any new visual resource would need to be added here
-      }
-
-      eventBus.emit("notification", {
-        message: "Project shouldRedirect successfully",
-        ...(dashboardLink
-          ? {
-              link: {
-                text: "Go to dashboard",
-                href: dashboardLink,
-              },
-            }
-          : {}),
-      });
+      return goto(`/${this.organization}/${this.project}/-/status`);
     }
+
+    eventBus.emit("notification", {
+      message: "Project shouldRedirect successfully",
+    });
   }
 }
 
