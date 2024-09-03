@@ -1,11 +1,6 @@
 import { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
-import {
-  BarColor,
-  ScrubArea0Color,
-  ScrubBoxColor,
-  ScrubMutedColor,
-} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 export function buildStackedBar(
   timeField: ChartField,
