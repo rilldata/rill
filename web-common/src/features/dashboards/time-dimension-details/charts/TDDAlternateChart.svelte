@@ -120,8 +120,6 @@
     timeGrain,
   );
 
-  let isClearing = false;
-
   function updateAdaptiveScrubRange(interval) {
     let rafId: number | null = null;
     let lastUpdateTime = 0;
@@ -179,9 +177,6 @@
       // Update view to prevent race condition
       viewVL.runAsync();
 
-      // Skip if we're in the process of clearing
-      if (isClearing) return;
-
       updateAdaptiveScrubRange(interval);
     },
     brush_end: (_name: string, value: boolean) => {
@@ -191,16 +186,10 @@
     },
     brush_clear: (_name: string, value: boolean) => {
       if (value) {
-        isClearing = true;
         dispatch("chart-brush-clear", {
           start: undefined,
           end: undefined,
         });
-
-        // Allow other signals to process
-        setTimeout(() => {
-          isClearing = false;
-        }, 0);
       }
     },
   };
