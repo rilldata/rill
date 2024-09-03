@@ -133,7 +133,7 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) er
 
 	if len(res.Organizations) == 0 {
 		if interactive {
-			ch.PrintfWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.\n")
+			ch.PrintfWarn("You are not part of an org. Run `rill org create` to create one.\n")
 		}
 		return nil
 	}

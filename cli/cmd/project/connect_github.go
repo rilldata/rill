@@ -52,7 +52,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.SubPath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	deployCmd.Flags().StringVar(&opts.RemoteName, "remote", "", "Remote name (default: first Git remote)")
 	deployCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Org to deploy project in")
-	deployCmd.Flags().StringVar(&opts.Name, "project", "", "Project name (default: Git repo name)")
+	deployCmd.Flags().StringVar(&opts.Name, "name", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
@@ -142,7 +142,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 			return err
 		}
 		if !ok {
-			ch.PrintfBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
+			ch.PrintfBold("You can run `rill project connect-github` again when you have pushed your local changes to the remote.\n")
 			return nil
 		}
 	}
@@ -208,7 +208,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 			if strings.EqualFold(opts.Name, p) {
 				ch.PrintfWarn("Can't deploy project %q.\n", opts.Name)
 				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q\n", githubURL)
-				ch.PrintfWarn("If you want to deploy to a new project, use `rill deploy --project new-name`\n")
+				ch.PrintfWarn("If you want to deploy to a new project, use `rill project connect-github --name new-name`\n")
 				return nil
 			}
 		}
