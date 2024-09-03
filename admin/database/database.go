@@ -929,6 +929,9 @@ type Asset struct {
 	CreatedOn      time.Time `db:"created_on"`
 }
 
+// EncryptionKey represents an encryption key for column-level encryption/decryption.
+// Column-level encryption provides an extra layer of security for highly sensitive columns in the database.
+// It is implemented on the application side before writes to and after reads from the database.
 type EncryptionKey struct {
 	ID     string `json:"key_id"`
 	Secret []byte `json:"key"`
