@@ -45,7 +45,7 @@
     <Button builders={[builder]} type="secondary">
       <Plus class="flex items-center justify-center" size="16px" />
       <div class="flex gap-x-1 items-center">
-        Add chart
+        Add Component
         <ChevronDown size="14px" />
       </div>
     </Button>
@@ -60,7 +60,7 @@
         {/if}
       </DropdownMenu.Item> -->
       <DropdownMenu.Item on:click={handleAddChart}>
-        Create new chart
+        Create new component
       </DropdownMenu.Item>
     </DropdownMenu.Group>
 
@@ -71,7 +71,7 @@
     <DropdownMenu.Separator />
 
     <DropdownMenu.Label class="text-[11px] text-gray-500 py-0">
-      EXISTING CHARTS
+      EXISTING COMPONENTS
     </DropdownMenu.Label>
     <DropdownMenu.Group>
       {#each chartFileNames.filter( (n) => n.startsWith(value), ) as chartName (chartName)}
