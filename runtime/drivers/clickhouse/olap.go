@@ -614,7 +614,6 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 // databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
 // Refer the list of types here: https://clickhouse.com/docs/en/sql-reference/data-types
-// NOTE: Doesn't handle aggregation function types, nested data structures, geo types, special data types.
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	dbt = strings.ToUpper(dbt)
 
@@ -765,6 +764,9 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_STRUCT
 		t.StructType = &runtimev1.StructType{}
 		fields := splitCommasUnlessQuotedOrNestedInParens(args)
+		if len(fields) == 0 {
+			return nil, errUnsupportedType
+		}
 		_, _, isNamed := splitStructFieldStr(fields[0])
 		for i, fieldStr := range fields {
 			if isNamed {
