@@ -21,7 +21,7 @@
   export let customDashboard = false;
   export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
-  export let viewVL: View;
+  export let view: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let jwt = get(runtime).jwt;
@@ -29,11 +29,11 @@
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
 
-  $: if (viewVL && tooltipFormatter) {
+  $: if (view && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
-    viewVL.tooltip(handler.handleTooltip);
+    view.tooltip(handler.handleTooltip);
     // https://stackoverflow.com/questions/59255654/vega-wont-update-until-the-mouse-has-brushed-over-the-div-containing-the-chart
-    void viewVL.runAsync();
+    void view.runAsync();
   }
 
   $: options = <EmbedOptions>{
@@ -82,7 +82,7 @@
       {spec}
       {signalListeners}
       {options}
-      bind:view={viewVL}
+      bind:view
       on:onError={onError}
     />
   {/if}

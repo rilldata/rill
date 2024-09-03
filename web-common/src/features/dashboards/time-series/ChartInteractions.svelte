@@ -31,8 +31,6 @@
 
   $: ({ selectedScrubRange } = $dashboardStore);
 
-  // $: console.log("selectedScrubRange: ", selectedScrubRange);
-
   $: selectedSubRange =
     selectedScrubRange?.start && selectedScrubRange?.end
       ? getOrderedStartEnd(selectedScrubRange.start, selectedScrubRange.end)
