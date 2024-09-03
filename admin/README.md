@@ -18,7 +18,7 @@ go run ./cli admin start
 
 ### Using Github webhooks in development
 
-The local development environment is not capable of receiving Github webhooks. In most cases, you can just run `rill project reconcile` to manually trigger a reconcile after pushing changes to Github.
+The local development environment is not capable of receiving Github webhooks. In most cases, you can just run `rill project refresh --parser` to manually trigger a pull after pushing changes to Github.
 
 Continue reading only if you are making changes to the Github webhooks code and need to these changes specifically.
 

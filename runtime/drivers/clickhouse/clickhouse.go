@@ -74,13 +74,6 @@ var spec = drivers.Spec{
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
 		},
-		{
-			Key:         "cluster",
-			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "cluster",
-			Description: "Cluster name",
-		},
 	},
 	ImplementsOLAP: true,
 }

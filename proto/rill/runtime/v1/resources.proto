@@ -122,6 +122,7 @@ message ModelSpec {
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
+  bool trigger_full = 22;
   reserved 2, 3, 6, 7, 8;
 }
 
@@ -424,6 +425,7 @@ enum AssertionStatus {
   ASSERTION_STATUS_ERROR = 3;
 }
 
+// DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
 message PullTrigger {
   PullTriggerSpec spec = 1;
   PullTriggerState state = 2;
@@ -439,10 +441,26 @@ message RefreshTrigger {
 }
 
 message RefreshTriggerSpec {
-  repeated ResourceName only_names = 1;
+  // Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+  // If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes.
+  repeated ResourceName resources = 1;
+  // Models to refresh. These are specified separately to enable more fine-grained configuration.
+  repeated RefreshModelTrigger models = 2;
 }
 
 message RefreshTriggerState {}
+
+message RefreshModelTrigger {
+  // The model to refresh.
+  string model = 1;
+  // If true, the current table and state will be dropped before refreshing.
+  // For non-incremental models, this is equivalent to a normal refresh.
+  bool full = 2;
+  // Keys of specific splits to refresh.
+  repeated string splits = 3;
+  // If true, it will refresh all splits that errored on their last execution.
+  bool all_errored_splits = 4;
+}
 
 message BucketPlanner {
   BucketPlannerSpec spec = 1;

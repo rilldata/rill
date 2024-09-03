@@ -19,7 +19,7 @@
           To redeploy the project, run the following command in the Rill CLI:
         </CtaMessage>
         <CLICommandDisplay
-          command="rill project reconcile --project {project}"
+          command="rill project hibernate {project} --redeploy"
         />
       </svelte:fragment>
       <svelte:fragment slot="read-project">

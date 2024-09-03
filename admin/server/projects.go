@@ -210,16 +210,31 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
+	instancePermissions := []runtimeauth.Permission{
+		runtimeauth.ReadObjects,
+		runtimeauth.ReadMetrics,
+		runtimeauth.ReadAPI,
+	}
+	if permissions.ManageProject {
+		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
+	}
+
+	var systemPermissions []runtimeauth.Permission
+	if req.IssueSuperuserToken {
+		if !claims.Superuser(ctx) {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
+		}
+		// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
+		systemPermissions = append(systemPermissions, runtimeauth.ManageInstances)
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: depl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
-		TTL:         ttlDuration,
+		AudienceURL:       depl.RuntimeAudience,
+		Subject:           claims.OwnerID(),
+		TTL:               ttlDuration,
+		SystemPermissions: systemPermissions,
 		InstancePermissions: map[string][]runtimeauth.Permission{
-			depl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-			},
+			depl.RuntimeInstanceID: instancePermissions,
 		},
 		Attributes:    attr,
 		SecurityRules: rules,
@@ -1448,6 +1463,38 @@ func (s *Server) ListProjectWhitelistedDomains(ctx context.Context, req *adminv1
 	return &adminv1.ListProjectWhitelistedDomainsResponse{Domains: dtos}, nil
 }
 
+func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProjectRequest) (*adminv1.RedeployProjectResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var depl *database.Deployment
+	if proj.ProdDeploymentID != nil {
+		depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
+	}
+
+	_, err = s.admin.RedeployProject(ctx, proj, depl)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.RedeployProjectResponse{}, nil
+}
+
 func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernateProjectRequest) (*adminv1.HibernateProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
@@ -1473,6 +1520,56 @@ func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernatePro
 	}
 
 	return &adminv1.HibernateProjectResponse{}, nil
+}
+
+// Deprecated: See api.proto for details.
+func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedeployRequest) (*adminv1.TriggerRedeployResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
+	// For backwards compatibility, this RPC supports passing either DeploymentId or Organization+Project names
+	var proj *database.Project
+	var depl *database.Deployment
+	if req.DeploymentId != "" {
+		var err error
+		depl, err = s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		proj, err = s.admin.DB.FindProject(ctx, depl.ProjectID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	} else {
+		var err error
+		proj, err = s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		if proj.ProdDeploymentID != nil {
+			depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+			if err != nil {
+				return nil, status.Error(codes.InvalidArgument, err.Error())
+			}
+		}
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
+	}
+
+	_, err := s.admin.RedeployProject(ctx, proj, depl)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.TriggerRedeployResponse{}, nil
 }
 
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {

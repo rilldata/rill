@@ -181,12 +181,15 @@ export function getDefaultMetricsExplorerEntity(
     selectedTimeRange: null,
 
     activePage: DashboardState_ActivePage.DEFAULT,
+    selectedComparisonDimension: undefined,
+    selectedDimensionName: undefined,
 
     showTimeComparison: false,
     dimensionSearchText: "",
     temporaryFilterName: null,
     tdd: {
       chartType: TDDChart.DEFAULT,
+      expandedMeasureName: "",
       pinIndex: -1,
     },
     pivot: {

@@ -18,13 +18,13 @@ Manage user groups
 ### SEE ALSO
 
 * [rill](../cli.md)	 - Rill CLI
-* [rill usergroup add](add.md)	 - Add role to a user group in an organization or project
-* [rill usergroup create](create.md)	 - Create a user group
-* [rill usergroup delete](delete.md)	 - Delete a user group
-* [rill usergroup edit](edit.md)	 - Edit a user group
-* [rill usergroup list](list.md)	 - List user groups
-* [rill usergroup remove](remove.md)	 - Remove role of a user group in an organization or project
-* [rill usergroup rename](rename.md)	 - Rename a user group
-* [rill usergroup set](set.md)	 - Set role to a user group in an organization or project
-* [rill usergroup show](show.md)	 - Show a user group
+* [rill usergroup add](add.md)	 - Add a group to a project or organization
+* [rill usergroup create](create.md)	 - Create a group
+* [rill usergroup delete](delete.md)	 - Delete a group
+* [rill usergroup edit](edit.md)	 - Edit a group
+* [rill usergroup list](list.md)	 - List groups
+* [rill usergroup remove](remove.md)	 - Remove a group's role on a project or organization
+* [rill usergroup rename](rename.md)	 - Rename a group
+* [rill usergroup set-role](set-role.md)	 - Change a group's role on a project or organization
+* [rill usergroup show](show.md)	 - Show group
 

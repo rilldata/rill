@@ -90,7 +90,10 @@ export type AdminServiceUpdateProjectBody = {
   prodVersion?: string;
 };
 
-export type AdminServiceGetProjectParams = { accessTokenTtlSeconds?: number };
+export type AdminServiceGetProjectParams = {
+  accessTokenTtlSeconds?: number;
+  issueSuperuserToken?: boolean;
+};
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
 
@@ -461,6 +464,11 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
   customDomain?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -506,11 +514,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -644,6 +647,10 @@ export interface V1RemoveBookmarkResponse {
   [key: string]: any;
 }
 
+export interface V1RedeployProjectResponse {
+  [key: string]: any;
+}
+
 export interface V1RecordEventsResponse {
   [key: string]: any;
 }
@@ -708,6 +715,7 @@ export interface V1Project {
   prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
+  /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
   annotations?: V1ProjectAnnotations;

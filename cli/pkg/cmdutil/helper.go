@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -365,6 +366,51 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	}
 
 	return SelectPrompt("Select project", names, "")
+}
+
+// OpenRuntimeClient opens a client for the production deployment for the given project.
+// If local is true, it connects to the locally running runtime instead of the deployed project's runtime.
+// It returns the runtime client and instance ID for the project.
+func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, local bool) (*runtimeclient.Client, string, error) {
+	var host, instanceID, jwt string
+	if local {
+		// This is the default port that Rill localhost uses for gRPC.
+		// TODO: In the future, we should capture the gRPC port in ~/.rill and use it here.
+		host = "http://localhost:49009"
+		instanceID = "default"
+	} else {
+		adm, err := h.Client()
+		if err != nil {
+			return nil, "", err
+		}
+
+		proj, err := adm.GetProject(ctx, &adminv1.GetProjectRequest{
+			OrganizationName: org,
+			Name:             project,
+		})
+		if err != nil {
+			return nil, "", err
+		}
+
+		depl := proj.ProdDeployment
+		if depl == nil {
+			return nil, "", fmt.Errorf("project %q is not currently deployed", project)
+		}
+		if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
+			return nil, "", fmt.Errorf("deployment status not OK: %s", depl.Status.String())
+		}
+
+		host = depl.RuntimeHost
+		instanceID = depl.RuntimeInstanceId
+		jwt = proj.Jwt
+	}
+
+	rt, err := runtimeclient.New(host, jwt)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to connect to runtime: %w", err)
+	}
+
+	return rt, instanceID, nil
 }
 
 func hashStr(ss ...string) string {

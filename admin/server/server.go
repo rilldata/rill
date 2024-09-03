@@ -357,6 +357,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	case
 		"/rill.admin.v1.AdminService/CreateProject",
 		"/rill.admin.v1.AdminService/UpdateProject",
+		"/rill.admin.v1.AdminService/RedeployProject",
 		"/rill.admin.v1.AdminService/TriggerRedeploy":
 		return time.Minute * 5
 	}

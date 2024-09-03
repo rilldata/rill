@@ -22,7 +22,7 @@ import {
   LAST_6_HOURS_TEST_PARSED_CONTROLS,
   resetDashboardStore,
   TestTimeConstants,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
 import {
   createAndExpression,
   createInExpression,

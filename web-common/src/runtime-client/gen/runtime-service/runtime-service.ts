@@ -2001,7 +2001,7 @@ export const createRuntimeServiceWatchResources = <
 };
 
 /**
- * @summary CreateTrigger creates a trigger in the catalog.
+ * @summary CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 Triggers are ephemeral resources that will be cleaned up by the controller.
  */
 export const runtimeServiceCreateTrigger = (

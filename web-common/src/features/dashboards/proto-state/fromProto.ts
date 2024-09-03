@@ -170,6 +170,12 @@ export function getDashboardStateFromProto(
       chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: dashboard.expandedMeasure,
     };
+  } else if (dashboard.activePage !== undefined) {
+    entity.tdd = {
+      pinIndex: -1,
+      chartType: TDDChart.DEFAULT,
+      expandedMeasureName: "",
+    };
   }
 
   entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
@@ -328,11 +334,14 @@ function fromPivotProto(
     metricsView.dimensions ?? [],
     (d) => d.name,
   );
-  const mapDimension: (name: string) => PivotChipData = (name: string) => ({
-    id: name,
-    title: dimensionsMap.get(name)?.label || "Unknown",
-    type: PivotChipType.Dimension,
-  });
+  const mapDimension: (name: string) => PivotChipData = (name: string) => {
+    const dim = dimensionsMap.get(name);
+    return {
+      id: name,
+      title: dim?.label || dim?.name || "Unknown",
+      type: PivotChipType.Dimension,
+    };
+  };
   const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
     grain: TimeGrain,
   ) => ({
@@ -351,12 +360,7 @@ function fromPivotProto(
         type: PivotChipType.Time,
       };
     } else {
-      const name = dimension?.element.value as string;
-      return {
-        id: name,
-        title: dimensionsMap.get(name)?.label || "Unknown",
-        type: PivotChipType.Dimension,
-      };
+      return mapDimension(dimension?.element.value as string);
     }
   };
 
@@ -364,11 +368,14 @@ function fromPivotProto(
     metricsView.measures ?? [],
     (m) => m.name,
   );
-  const mapMeasure: (name: string) => PivotChipData = (name: string) => ({
-    id: name,
-    title: measuresMap.get(name)?.label || "Unknown",
-    type: PivotChipType.Measure,
-  });
+  const mapMeasure: (name: string) => PivotChipData = (name: string) => {
+    const mes = measuresMap.get(name);
+    return {
+      id: name,
+      title: mes?.label || mes?.name || "Unknown",
+      type: PivotChipType.Measure,
+    };
+  };
 
   let rowDimensions: PivotChipData[] = [];
   let colDimensions: PivotChipData[] = [];
@@ -408,11 +415,11 @@ function fromPivotProto(
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,
-    enableComparison: dashboard.pivotEnableComparison ?? false,
+    enableComparison: dashboard.pivotEnableComparison ?? true,
     activeCell: null,
     rowJoinType:
       FromProtoPivotRowJoinTypeMap[
-        dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST
+        dashboard.pivotRowJoinType || DashboardState_PivotRowJoinType.NEST
       ],
   };
 }

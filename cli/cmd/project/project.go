@@ -21,13 +21,13 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(ShowCmd(ch))
 	projectCmd.AddCommand(EditCmd(ch))
 	projectCmd.AddCommand(RenameCmd(ch))
+	projectCmd.AddCommand(HibernateCmd(ch))
 	projectCmd.AddCommand(DeleteCmd(ch))
 	projectCmd.AddCommand(StatusCmd(ch))
 	projectCmd.AddCommand(SplitsCmd(ch))
 	projectCmd.AddCommand(LogsCmd(ch))
 	projectCmd.AddCommand(DescribeCmd(ch))
 	projectCmd.AddCommand(RefreshCmd(ch))
-	projectCmd.AddCommand(ReconcileCmd(ch))
 	projectCmd.AddCommand(JwtCmd(ch))
 
 	return projectCmd
