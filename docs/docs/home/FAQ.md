@@ -63,6 +63,18 @@ import ComingSoon from '@site/src/components/ComingSoon';
 a
 </div>
 
+### How do I start more than one instance of Rill Developer?
+
+If you try to start two instances of Rill Developer, you will hit the following error:
+```bash
+Error: serve: server crashed: grpc port 49009 is in use by another process. Either kill that process or pass `--port-grpc PORT` to run Rill on another port
+```
+
+In other to run two instances, please use the following flags with a unique port number.
+```bash
+rill start --port 10010 --port-grpc 10011
+```
+
 ### How do I share my dashboard with my colleagues?
 
 You need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/deploy/existing-project/) to share your dashboard.
@@ -86,3 +98,17 @@ You can follow the same steps as above. The button will have changed from `deplo
 ### How do I share my dashboard to other users?
 
 You will need to [invite users to your organization/project](https://docs.rilldata.com/manage/user-management#option-1---admin-invites-user) or send them a URL for them to [request access to your dashboard](https://docs.rilldata.com/manage/user-management#option-2---user-requests-access). If you just want them to see the contents of your dashboard, you can look into using [public URLs](https://docs.rilldata.com/explore/share-url).
+
+## Rill Cloud Trial
+
+### What is Rill Cloud Trial?
+
+We now offer a self serve option for our users using Rill Cloud to get started. Before signing up for a [Teams plan](https://www.rilldata.com/pricing), you can create an account and start your free trial. 
+
+### How long does my Rill Cloud Trial last?
+
+Currently, a Rill Cloud Trial lasts for 30 days. If you have any comments or concerns, please reach out to us on our [various platforms](../contact.md)! 
+
+### What is included in the free trial? 
+
+The free trial is locked at 2 projects and up to 10GB of data each. You can invite as many users as required. 
