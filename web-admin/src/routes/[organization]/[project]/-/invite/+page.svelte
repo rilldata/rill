@@ -92,6 +92,6 @@
     wide
     class="mx-auto"
   >
-    Continue
+    Skip
   </Button>
 </div>

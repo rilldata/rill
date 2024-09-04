@@ -18,7 +18,7 @@
     createRuntimeServicePutFile,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { useIsModelingSupportedForCurrentOlapDriver } from "../connectors/olap/selectors";
+  import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
   import { featureFlags } from "../feature-flags";
   import { directoryState } from "../file-explorer/directory-store";
   import { handleEntityCreate } from "../file-explorer/new-files";
@@ -53,8 +53,8 @@
     currentDirectory,
   );
 
-  $: isModelingSupportedForCurrentOlapDriver =
-    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
+  $: isModelingSupportedForDefaultOlapDriver =
+    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
 
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
@@ -218,7 +218,7 @@
     </Button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-[240px]">
-    {#if $isModelingSupportedForCurrentOlapDriver}
+    {#if $isModelingSupportedForDefaultOlapDriver}
       <DropdownMenu.Item
         aria-label="Add Source"
         class="flex gap-x-2"

@@ -55,7 +55,7 @@
 
 <style lang="postcss">
   .header {
-    @apply flex flex-col border-b;
+    @apply flex flex-col border-b select-none;
     @apply bg-white justify-center py-2 gap-y-2;
     @apply flex flex-col flex-none relative overflow-hidden;
     @apply border-r z-0;
