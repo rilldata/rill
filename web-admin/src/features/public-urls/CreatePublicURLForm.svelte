@@ -100,7 +100,7 @@
           eventBus.emit("notification", {
             message: "Public URL created",
             link: {
-              href: `/${organization}/${project}/-/settings/#public-urls`,
+              href: `/${organization}/${project}/-/settings/public-urls`,
               text: "Go to public URLs",
             },
           });
