@@ -1,21 +1,24 @@
 <script lang="ts">
-  import { adminServiceRevokeMagicAuthToken } from "@rilldata/web-admin/client";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
 
   export let id: string;
+  export let onDelete: (deletedTokenId: string) => void;
 
   async function handleClick(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
 
-    adminServiceRevokeMagicAuthToken(id);
-
-    eventBus.emit("notification", {
-      message: `Magic auth token deleted`,
-    });
-
-    // TODO: refetch queries of public urls
+    try {
+      onDelete(id);
+      eventBus.emit("notification", { message: "Magic auth token deleted" });
+    } catch (error) {
+      console.error("Failed to delete magic auth token:", error);
+      eventBus.emit("notification", {
+        message: "Failed to delete magic auth token",
+        type: "error",
+      });
+    }
   }
 </script>
 

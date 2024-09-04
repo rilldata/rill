@@ -1,6 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { createAdminServiceIssueMagicAuthToken } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceIssueMagicAuthToken,
+    getAdminServiceListMagicAuthTokensQueryKey,
+  } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -11,6 +14,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import {
     convertDateToMinutes,
     getMetricsViewFields,
@@ -19,6 +23,7 @@
   } from "./form-utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
+  const queryClient = useQueryClient();
   const {
     dashboardStore,
     metricsViewName,
@@ -86,6 +91,10 @@
           copyToClipboard(
             `${window.location.origin}/${organization}/${project}/-/share/${token}`,
             "URL copied to clipboard",
+          );
+
+          void queryClient.refetchQueries(
+            getAdminServiceListMagicAuthTokensQueryKey(organization, project),
           );
 
           eventBus.emit("notification", {

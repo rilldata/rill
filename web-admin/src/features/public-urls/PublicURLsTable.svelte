@@ -10,30 +10,17 @@
   import { goto } from "$app/navigation";
   import PublicURLsDeleteRow from "./PublicURLsDeleteRow.svelte";
 
-  // TODO: to be added to orval in `web-common/src/runtime-client/gen/index.schemas.ts`
-  interface V1MagicAuthToken {
-    id?: string;
-    secretHash?: string;
-    projectId?: string;
-    createdOn?: string;
-    expiresOn?: string;
-    usedOn?: string;
-    createdByUserId?: string;
-    attributes?: { [key: string]: any };
-    metricsView?: string;
-    metricsViewFilterJSON?: string;
-    metricsViewFields?: string[];
-    state?: string;
-  }
-  export let magicAuthTokens: V1MagicAuthToken[];
-  $: console.log("magicAuthTokens: ", magicAuthTokens);
-
+  // TODO: import type { V1MagicAuthToken } from "@rilldata/web-common/runtime-client";
+  export let magicAuthTokens: any;
+  // $: console.log("magicAuthTokens: ", magicAuthTokens);
   export let organization: string;
   export let project: string;
+  export let onDelete: (deletedTokenId: string) => void;
 
   async function handleClickRow(row: any) {
     // TODO: revisit when token secret is available
     // `/${organization}/${project}/magic-link/${token.id}`
+    // http://localhost:3000/dev/rill-github-analytics/-/share/rill_mgc_4nLmVj83NhQ4zACJSww5OHhCGCf1CC97sfpfixe6Jfmu4TjkMMvveE
     await goto(`/${organization}/${project}/${row.original.metricsView}`);
   }
 
@@ -45,8 +32,20 @@
       header: "Dashboard name",
     }),
     table.column({
-      accessor: (token) => token.expiresOn ?? "-",
+      accessor: (token) => token.expiresOn,
       header: "Expires on",
+      cell: ({ value }) => {
+        if (!value) {
+          return "-";
+        }
+        return new Date(value).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+        });
+      },
     }),
     table.column({
       accessor: (token) => token.attributes.name,
@@ -71,7 +70,11 @@
     table.column({
       accessor: (token) => token.id,
       header: "",
-      cell: ({ value }) => createRender(PublicURLsDeleteRow, { id: value }),
+      cell: ({ value }) =>
+        createRender(PublicURLsDeleteRow, {
+          id: value,
+          onDelete,
+        }),
     }),
   ]);
 

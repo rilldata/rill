@@ -4,9 +4,16 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { page } from "$app/stores";
-  import { createAdminServiceListMagicAuthTokens } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceListMagicAuthTokens,
+    getAdminServiceListMagicAuthTokensQueryKey,
+    adminServiceRevokeMagicAuthToken,
+  } from "@rilldata/web-admin/client";
   import { onMount } from "svelte";
   import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+
+  const queryClient = useQueryClient();
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -15,7 +22,6 @@
     organization,
     project,
   );
-  $: magicAuthTokens = $magicAuthTokensQuery.data?.tokens ?? [];
 
   $: settingsNavs = [
     {
@@ -23,6 +29,14 @@
       hash: "#public-urls",
     },
   ];
+
+  async function handleDelete(deletedTokenId: string) {
+    await adminServiceRevokeMagicAuthToken(deletedTokenId);
+
+    queryClient.refetchQueries(
+      getAdminServiceListMagicAuthTokensQueryKey(organization, project),
+    );
+  }
 
   onMount(() => {
     const defaultNav = settingsNavs.find((nav) => nav.hash === "#public-urls");
@@ -64,7 +78,12 @@
             {#if $magicAuthTokensQuery.data.tokens.length === 0}
               <NoPublicURLCTA />
             {:else}
-              <PublicURLsTable {magicAuthTokens} {organization} {project} />
+              <PublicURLsTable
+                magicAuthTokens={$magicAuthTokensQuery.data.tokens}
+                {organization}
+                {project}
+                onDelete={handleDelete}
+              />
             {/if}
           {/if}
         {/if}
