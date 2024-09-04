@@ -252,12 +252,13 @@ func (c *Client) InvoicePaymentSuccess(ctx context.Context, billingCustomerID, i
 	}, nil
 }
 
-func (c *Client) InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, scheduleAt time.Time) (*jobs.InsertResult, error) {
+func (c *Client) InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, gracePeriodEndDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, InvoicePaymentFailedGracePeriodCheckArgs{
-		OrgID:     orgID,
-		InvoiceID: invoiceID,
+		OrgID:              orgID,
+		InvoiceID:          invoiceID,
+		GracePeriodEndDate: gracePeriodEndDate,
 	}, &river.InsertOpts{
-		ScheduledAt: scheduleAt,
+		ScheduledAt: gracePeriodEndDate.AddDate(0, 0, 1).Add(1 * time.Hour), // end of grace period date + 1 hour buffer
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
@@ -271,13 +272,13 @@ func (c *Client) InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID
 	}, nil
 }
 
-func (c *Client) TrialEndingSoon(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*jobs.InsertResult, error) {
+func (c *Client) TrialEndingSoon(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, TrialEndingSoonArgs{
 		OrgID:  orgID,
 		SubID:  subID,
 		PlanID: planID,
 	}, &river.InsertOpts{
-		ScheduledAt: scheduleAt,
+		ScheduledAt: trialEndDate.AddDate(0, 0, -7), // 7 days before trial end date
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
@@ -291,13 +292,13 @@ func (c *Client) TrialEndingSoon(ctx context.Context, orgID, subID, planID strin
 	}, nil
 }
 
-func (c *Client) TrialEndCheck(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*jobs.InsertResult, error) {
+func (c *Client) TrialEndCheck(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, TrialEndCheckArgs{
 		OrgID:  orgID,
 		SubID:  subID,
 		PlanID: planID,
 	}, &river.InsertOpts{
-		ScheduledAt: scheduleAt,
+		ScheduledAt: trialEndDate.AddDate(0, 0, 1).Add(time.Hour * 1), // end of trial end date + 1 hour
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
@@ -311,13 +312,14 @@ func (c *Client) TrialEndCheck(ctx context.Context, orgID, subID, planID string,
 	}, nil
 }
 
-func (c *Client) TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*jobs.InsertResult, error) {
+func (c *Client) TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID string, gracePeriodEndDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, TrialGracePeriodCheckArgs{
-		OrgID:  orgID,
-		SubID:  subID,
-		PlanID: planID,
+		OrgID:              orgID,
+		SubID:              subID,
+		PlanID:             planID,
+		GracePeriodEndDate: gracePeriodEndDate,
 	}, &river.InsertOpts{
-		ScheduledAt: scheduleAt,
+		ScheduledAt: gracePeriodEndDate.AddDate(0, 0, 1).Add(1 * time.Hour), // end of grace period end date + 1 hour
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
@@ -350,13 +352,14 @@ func (c *Client) PlanChangeByAPI(ctx context.Context, orgID, subID, planID strin
 	}, nil
 }
 
-func (c *Client) SubscriptionCancellation(ctx context.Context, orgID, subID, planID string, scheduledAt time.Time) (*jobs.InsertResult, error) {
+func (c *Client) SubscriptionCancellation(ctx context.Context, orgID, subID, planID string, subEndDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, SubscriptionCancellationArgs{
-		OrgID:  orgID,
-		SubID:  subID,
-		PlanID: planID,
+		OrgID:      orgID,
+		SubID:      subID,
+		PlanID:     planID,
+		SubEndDate: subEndDate,
 	}, &river.InsertOpts{
-		ScheduledAt: scheduledAt,
+		ScheduledAt: subEndDate.AddDate(0, 0, 1).Add(1 * time.Hour), // end of subscription end date + 1 hour
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},

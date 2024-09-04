@@ -460,7 +460,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 	}
 
 	// schedule subscription cancellation job at end of the current subscription term + 1 hour
-	j, err := s.admin.Jobs.SubscriptionCancellation(ctx, org.ID, subs[0].ID, plan.ID, subEndDate.AddDate(0, 0, 1).Add(1*time.Hour))
+	j, err := s.admin.Jobs.SubscriptionCancellation(ctx, org.ID, subs[0].ID, plan.ID, subEndDate)
 	if err != nil {
 		return nil, err
 	}

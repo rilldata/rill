@@ -124,53 +124,54 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 		return nil
 	}
 
-	if time.Now().UTC().After(sub[0].TrialEndDate) {
-		// trial period has ended, log warn, send email and schedule a job to hibernate projects after grace period days if still on trial
-		w.admin.Logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
-
-		gracePeriodEndDate := sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)
-		// schedule a job to check if the org is still on trial after end of 7 days + 1 hour buffer
-		j, err := w.admin.Jobs.TrialGracePeriodCheck(ctx, org.ID, sub[0].ID, sub[0].Plan.ID, gracePeriodEndDate.AddDate(0, 0, 1).Add(time.Hour*1))
-		if err != nil {
-			return fmt.Errorf("failed to schedule trial grace period check job: %w", err)
-		}
-
-		_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-			OrgID: org.ID,
-			Type:  database.BillingErrorTypeTrialEnded,
-			Metadata: &database.BillingErrorMetadataTrialEnded{
-				GracePeriodEndDate:  gracePeriodEndDate,
-				GracePeriodEndJobID: j.ID,
-			},
-			EventTime: sub[0].TrialEndDate.AddDate(0, 0, 1),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to add billing error: %w", err)
-		}
-
-		// send email
-		err = w.admin.Email.SendInformational(&email.Informational{
-			ToEmail: org.BillingEmail,
-			ToName:  org.Name,
-			Subject: "Your trial period has ended",
-			Title:   "",
-			Body:    template.HTML(fmt.Sprintf("Your trial period has ended, please visit the billing portal to enter payment method and upgrade your plan to continue using Rill. After %d days, your projects will be hibernated if you are still on trial.", gracePeriodDays)),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
-		}
-		w.admin.Logger.Info("email sent for trial period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
-	} else {
-		w.admin.Logger.Warn("trial period has not ended when check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+	if time.Now().UTC().Before(sub[0].TrialEndDate.AddDate(0, 0, 1)) {
+		return fmt.Errorf("trial end date %s not finished yet for org %q", sub[0].TrialEndDate, org.Name) // will be retried later
 	}
+
+	// trial period has ended, log warn, send email and schedule a job to hibernate projects after grace period days if still on trial
+	w.admin.Logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+
+	gracePeriodEndDate := sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)
+	// schedule a job to check if the org is still on trial after end grace period
+	j, err := w.admin.Jobs.TrialGracePeriodCheck(ctx, org.ID, sub[0].ID, sub[0].Plan.ID, gracePeriodEndDate)
+	if err != nil {
+		return fmt.Errorf("failed to schedule trial grace period check job: %w", err)
+	}
+
+	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+		OrgID: org.ID,
+		Type:  database.BillingErrorTypeTrialEnded,
+		Metadata: &database.BillingErrorMetadataTrialEnded{
+			GracePeriodEndDate:  gracePeriodEndDate,
+			GracePeriodEndJobID: j.ID,
+		},
+		EventTime: sub[0].TrialEndDate.AddDate(0, 0, 1),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add billing error: %w", err)
+	}
+
+	// send email
+	err = w.admin.Email.SendInformational(&email.Informational{
+		ToEmail: org.BillingEmail,
+		ToName:  org.Name,
+		Subject: "Your trial period has ended",
+		Title:   "",
+		Body:    template.HTML(fmt.Sprintf("Your trial period has ended, please visit the billing portal to enter payment method and upgrade your plan to continue using Rill. Your projects will be hibernated on %s, if you are still on trial.", gracePeriodEndDate)),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
+	}
+	w.admin.Logger.Info("email sent for trial period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
 	return nil
 }
 
 type TrialGracePeriodCheckArgs struct {
-	OrgID  string
-	SubID  string
-	PlanID string
+	OrgID              string
+	SubID              string
+	PlanID             string
+	GracePeriodEndDate time.Time
 }
 
 func (TrialGracePeriodCheckArgs) Kind() string { return "trial_grace_period_check" }
@@ -225,45 +226,44 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 		return nil
 	}
 
-	if time.Now().UTC().After(sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)) {
-		// trial grace period has ended, log warn, send email and hibernate projects
-		limit := 10
-		afterProjectName := ""
-		for {
-			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
-			if err != nil {
-				return err
-			}
-
-			for _, proj := range projs {
-				_, err = w.admin.HibernateProject(ctx, proj)
-				if err != nil {
-					return fmt.Errorf("failed to hibernate project %q: %w", proj.Name, err)
-				}
-				afterProjectName = proj.Name
-			}
-
-			if len(projs) < limit {
-				break
-			}
-		}
-		w.admin.Logger.Warn("projects hibernated due to trial grace period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
-
-		// send email
-		err = w.admin.Email.SendInformational(&email.Informational{
-			ToEmail: org.BillingEmail,
-			ToName:  org.Name,
-			Subject: "Your trial grace period has ended",
-			Title:   "",
-			Body:    "Your trial grace period has ended, your projects have been hibernated. Please visit the billing portal to enter payment method and upgrade your plan to continue using Rill.",
-		})
-		if err != nil {
-			return fmt.Errorf("failed to send trial grace period ended email for org %q: %w", org.Name, err)
-		}
-		w.admin.Logger.Info("email sent for projects hibernated", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
-	} else {
-		// review should we return an error so its retried later
-		w.admin.Logger.Warn("trial grace period has not ended when check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+	if time.Now().UTC().Before(job.Args.GracePeriodEndDate.AddDate(0, 0, 1)) {
+		return fmt.Errorf("grace period end date %s not finished yet for org %q", sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays), org.Name) // will be retried later
 	}
+
+	// trial grace period has ended, log warn, send email and hibernate projects
+	limit := 10
+	afterProjectName := ""
+	for {
+		projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
+		if err != nil {
+			return err
+		}
+
+		for _, proj := range projs {
+			_, err = w.admin.HibernateProject(ctx, proj)
+			if err != nil {
+				return fmt.Errorf("failed to hibernate project %q: %w", proj.Name, err)
+			}
+			afterProjectName = proj.Name
+		}
+
+		if len(projs) < limit {
+			break
+		}
+	}
+	w.admin.Logger.Warn("projects hibernated due to trial grace period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+
+	// send email
+	err = w.admin.Email.SendInformational(&email.Informational{
+		ToEmail: org.BillingEmail,
+		ToName:  org.Name,
+		Subject: "Your trial grace period has ended",
+		Title:   "",
+		Body:    "Your trial grace period has ended, your projects have been hibernated. Please visit the billing portal to enter payment method and upgrade your plan to continue using Rill.",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to send trial grace period ended email for org %q: %w", org.Name, err)
+	}
+	w.admin.Logger.Info("email sent for projects hibernated", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	return nil
 }

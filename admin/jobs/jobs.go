@@ -21,16 +21,16 @@ type Client interface {
 	// biller related workers
 	InvoicePaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error)
 	InvoicePaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*InsertResult, error)
-	InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, scheduleAt time.Time) (*InsertResult, error)
+	InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, gracePeriodEndDate time.Time) (*InsertResult, error)
 
 	// trial checks worker
-	TrialEndingSoon(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*InsertResult, error)
-	TrialEndCheck(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*InsertResult, error)
-	TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*InsertResult, error)
+	TrialEndingSoon(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) (*InsertResult, error)
+	TrialEndCheck(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) (*InsertResult, error)
+	TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID string, gracePeriodEndDate time.Time) (*InsertResult, error)
 
 	// subscription related workers
 	PlanChangeByAPI(ctx context.Context, orgID, subID, planID string) (*InsertResult, error)
-	SubscriptionCancellation(ctx context.Context, orgID, subID, planID string, scheduledAt time.Time) (*InsertResult, error)
+	SubscriptionCancellation(ctx context.Context, orgID, subID, planID string, subEndDate time.Time) (*InsertResult, error)
 }
 
 type InsertResult struct {

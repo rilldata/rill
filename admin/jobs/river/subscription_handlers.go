@@ -126,9 +126,10 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 }
 
 type SubscriptionCancellationArgs struct {
-	OrgID  string
-	SubID  string
-	PlanID string
+	OrgID      string
+	SubID      string
+	PlanID     string
+	SubEndDate time.Time
 }
 
 func (SubscriptionCancellationArgs) Kind() string { return "subscription_cancellation" }
@@ -166,6 +167,10 @@ func (w *SubscriptionCancellationWorker) Work(ctx context.Context, job *river.Jo
 	if sub[0].ID != job.Args.SubID || sub[0].Plan.ID != job.Args.PlanID {
 		// subscription or plan have changed, ignore
 		return nil
+	}
+
+	if time.Now().UTC().Before(job.Args.SubEndDate.AddDate(0, 0, 1)) {
+		return fmt.Errorf("subcription end date %s is not finished yet for org %q", job.Args.SubEndDate, org.Name)
 	}
 
 	// update quotas to the default plan and hibernate all projects

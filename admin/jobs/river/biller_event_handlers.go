@@ -43,9 +43,9 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[In
 		return fmt.Errorf("failed to find organization of billing customer id %q: %w", job.Args.BillingCustomerID, err)
 	}
 
-	// schedule a job to check if the invoice is paid after grace period days
-	// add a buffer of 1 hour to ensure the job runs after grace period days
-	j, err := w.admin.Jobs.InvoicePaymentFailedGracePeriodCheck(ctx, org.ID, job.Args.InvoiceID, time.Now().Truncate(24*time.Hour).AddDate(0, 0, gracePeriodDays+1).Add(time.Hour*1))
+	// schedule a job to check if the invoice is paid after end of grace period
+	gracePeriodEndDate := job.Args.FailedAt.Truncate(24*time.Hour).AddDate(0, 0, gracePeriodDays)
+	j, err := w.admin.Jobs.InvoicePaymentFailedGracePeriodCheck(ctx, org.ID, job.Args.InvoiceID, gracePeriodEndDate)
 	if err != nil {
 		return fmt.Errorf("failed to schedule invoice payment failed grace period check job: %w", err)
 	}
@@ -93,7 +93,7 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[In
 		ToName:  org.Name,
 		Subject: "Your invoice payment failed",
 		Title:   "",
-		Body:    template.HTML(fmt.Sprintf("Your invoice payment failed, please visit the billing portal to fix issues or contact support to continue using Rill. Your projects will be hibernated after %d days, if invoice still not paid.", gracePeriodDays)),
+		Body:    template.HTML(fmt.Sprintf("Your invoice payment failed, please visit the billing portal to fix issues or contact support to continue using Rill. Your projects will be hibernated on %s, if invoice still not paid.", gracePeriodEndDate)),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send invoice payment failed email for org %q: %w", org.Name, err)
@@ -174,8 +174,9 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[I
 }
 
 type InvoicePaymentFailedGracePeriodCheckArgs struct {
-	OrgID     string
-	InvoiceID string
+	OrgID              string
+	InvoiceID          string
+	GracePeriodEndDate time.Time
 }
 
 func (InvoicePaymentFailedGracePeriodCheckArgs) Kind() string {
@@ -195,6 +196,10 @@ func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, j
 			return nil
 		}
 		return fmt.Errorf("failed to find organization: %w", err)
+	}
+
+	if time.Now().UTC().Before(job.Args.GracePeriodEndDate.AddDate(0, 0, 1)) {
+		return fmt.Errorf("grace period date %s not finished yet for org %q", job.Args.GracePeriodEndDate, org.Name) // will be retried later
 	}
 
 	// check if the org has still invoice failed billing error

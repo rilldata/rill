@@ -271,14 +271,14 @@ func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, p
 		return nil
 	}
 
-	// schedule trial ending soon job 7 days before trial end date
-	_, err := s.Jobs.TrialEndingSoon(ctx, orgID, subID, planID, trialEndDate.AddDate(0, 0, -7))
+	// schedule trial ending soon job
+	_, err := s.Jobs.TrialEndingSoon(ctx, orgID, subID, planID, trialEndDate)
 	if err != nil {
 		return fmt.Errorf("failed to schedule trial ending soon job: %w", err)
 	}
 
-	// schedule trial end check job at end of trial end date + buffer of 1 hour to ensure the job runs after trial period days
-	_, err = s.Jobs.TrialEndCheck(ctx, orgID, subID, planID, trialEndDate.AddDate(0, 0, 1).Add(time.Hour*1))
+	// schedule trial end check job
+	_, err = s.Jobs.TrialEndCheck(ctx, orgID, subID, planID, trialEndDate)
 	if err != nil {
 		return fmt.Errorf("failed to schedule trial end check job: %w", err)
 	}
