@@ -277,49 +277,74 @@ func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsVi
 		return a.lookupDimension(qd.Name, visible)
 	}
 
-	// Handle computed dimension. This means "compute.time_floor" must be configured.
-
-	if qd.Compute.TimeFloor == nil {
-		return nil, errors.New(`unsupported "compute"`)
-	}
-
-	if !qd.Compute.TimeFloor.Grain.Valid() {
-		return nil, errors.New(`invalid "grain"`)
-	}
-	if qd.Compute.TimeFloor.Grain == TimeGrainUnspecified {
-		return nil, errors.New(`"grain" must be specified for time floor`)
-	}
-
-	dim, err := a.lookupDimension(qd.Compute.TimeFloor.Dimension, visible)
-	if err != nil {
-		return nil, err
-	}
-
-	if qd.Name != qd.Compute.TimeFloor.Dimension {
+	// Handle computed dimension.
+	if qd.Compute.URI != nil {
 		err := a.checkNameForComputedField(qd.Name)
 		if err != nil {
 			return nil, err
 		}
+
+		dim, err := a.lookupDimension(qd.Compute.URI.Dimension, visible)
+		if err != nil {
+			return nil, err
+		}
+
+		if dim.Uri == "" {
+			return nil, fmt.Errorf("`uri` not set for the dimension %v", qd.Compute.URI.Dimension)
+		}
+
+		label := dim.Label
+		if label == "" {
+			label = qd.Name
+		}
+		return &runtimev1.MetricsViewSpec_DimensionV2{
+			Name:       qd.Name,
+			Expression: dim.Uri,
+			Label:      label,
+		}, nil
+
 	}
 
-	grain := qd.Compute.TimeFloor.Grain.ToProto()
-	expr, err := a.dialect.DateTruncExpr(dim, grain, a.query.TimeZone, int(a.metricsView.FirstDayOfWeek), int(a.metricsView.FirstMonthOfYear))
-	if err != nil {
-		return nil, fmt.Errorf(`failed to compute time floor: %w`, err)
-	}
+	if qd.Compute.TimeFloor != nil {
+		if !qd.Compute.TimeFloor.Grain.Valid() {
+			return nil, errors.New(`invalid "grain"`)
+		}
+		if qd.Compute.TimeFloor.Grain == TimeGrainUnspecified {
+			return nil, errors.New(`"grain" must be specified for time floor`)
+		}
 
-	label := dim.Label
-	if label == "" {
-		label = qd.Name
-	}
-	label = fmt.Sprintf("%s (%s)", label, qd.Compute.TimeFloor.Grain)
+		dim, err := a.lookupDimension(qd.Compute.TimeFloor.Dimension, visible)
+		if err != nil {
+			return nil, err
+		}
 
-	return &runtimev1.MetricsViewSpec_DimensionV2{
-		Name:       qd.Name,
-		Expression: expr,
-		Label:      label,
-		Unnest:     dim.Unnest,
-	}, nil
+		if qd.Name != qd.Compute.TimeFloor.Dimension {
+			err := a.checkNameForComputedField(qd.Name)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		grain := qd.Compute.TimeFloor.Grain.ToProto()
+		expr, err := a.dialect.DateTruncExpr(dim, grain, a.query.TimeZone, int(a.metricsView.FirstDayOfWeek), int(a.metricsView.FirstMonthOfYear))
+		if err != nil {
+			return nil, fmt.Errorf(`failed to compute time floor: %w`, err)
+		}
+
+		label := dim.Label
+		if label == "" {
+			label = qd.Name
+		}
+		label = fmt.Sprintf("%s (%s)", label, qd.Compute.TimeFloor.Grain)
+
+		return &runtimev1.MetricsViewSpec_DimensionV2{
+			Name:       qd.Name,
+			Expression: expr,
+			Label:      label,
+			Unnest:     dim.Unnest,
+		}, nil
+	}
+	return nil, errors.New("unhandled compute operation")
 }
 
 // resolveMeasure returns a measure spec for the given measure query.
