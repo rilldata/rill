@@ -47,7 +47,7 @@
 </script>
 
 <article
-  class="flex flex-col h-screen w-full overflow-y-hidden dashboard-theme-boundary"
+  class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
   bind:clientWidth={exploreContainerWidth}
 >
   <div

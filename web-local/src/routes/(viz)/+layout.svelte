@@ -54,7 +54,7 @@
   $: metricsViewName = currentDashboard?.meta?.name?.name;
 </script>
 
-<div class="flex flex-col size-full">
+<div class="flex flex-col size-full overflow-hidden">
   <header class="py-3 w-full bg-white flex gap-x-2 items-center px-4 border-b">
     {#if $dashboardsQuery.data}
       <Breadcrumbs {pathParts} {currentPath}>

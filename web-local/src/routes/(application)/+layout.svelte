@@ -26,7 +26,7 @@
 
 <main
   role="application"
-  class="index-body absolute w-screen h-screen flex overflow-hidden"
+  class="index-body relative size-full flex overflow-hidden"
   on:drag|preventDefault|stopPropagation
   on:drop|preventDefault|stopPropagation
   on:dragenter|preventDefault|stopPropagation
