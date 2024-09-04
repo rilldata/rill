@@ -30,6 +30,10 @@ export function buildGroupedComparisonBar(
       calculate: `(datum['key'] === 'comparison_ts' ? datum['${nominalFieldName}'] + 'Comparison' : datum['${nominalFieldName}'])`,
       as: "nominalField",
     },
+    {
+      calculate: `datum.key === 'comparison_ts' ? 1 : 0`,
+      as: "sortOrder",
+    },
     // Add a time field to hold the right time value
     {
       calculate:
@@ -60,7 +64,7 @@ export function buildGroupedComparisonBar(
         },
         {
           test: `datum.key === 'comparison_ts'`,
-          value: 0.4,
+          value: 0.3,
         },
       ],
       value: 0.8,
@@ -72,6 +76,7 @@ export function buildGroupedComparisonBar(
     },
     xOffset: {
       field: "nominalField",
+      sort: { field: "sortOrder" },
     },
     tooltip: [
       {
