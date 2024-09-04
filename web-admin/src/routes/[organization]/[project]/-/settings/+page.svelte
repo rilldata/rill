@@ -6,4 +6,5 @@
 
 <div class="flex flex-col w-full">
   <!-- TODO: project settings general page -->
+  TODO
 </div>

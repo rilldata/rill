@@ -23,11 +23,11 @@
         }
 
         if (data.permissions.manageOrg) {
-          // TODO: should we gate this behind a feature flag?
-          tabs.push({
-            route: `/${organization}/-/settings`,
-            label: "Settings",
-          });
+          // TODO: once settings page is filled in we add these
+          // tabs.push({
+          //   route: `/${organization}/-/settings`,
+          //   label: "Settings",
+          // });
         }
 
         return tabs;

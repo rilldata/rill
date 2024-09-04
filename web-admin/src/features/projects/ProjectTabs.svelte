@@ -37,6 +37,10 @@
               route: `/${organization}/${project}/-/status`,
               label: "Status",
             },
+            // TODO: should we gate this behind a feature flag?
+            // [ ] General
+            // [ ] Environment variables
+            // [WIP] Public URLs
             {
               route: `/${organization}/${project}/-/settings`,
               label: "Settings",
