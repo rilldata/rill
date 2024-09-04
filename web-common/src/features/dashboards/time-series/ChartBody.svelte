@@ -90,7 +90,7 @@
         class:opacity-0={isDimValueHiglighted && !isHighlighted}
       >
         <ChunkedLine
-          lineType="dimension"
+          lineWidth={isHighlighted ? 2 : 1.5}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey
@@ -98,7 +98,6 @@
             : 200}
           lineColor={d?.color}
           data={d?.data || []}
-          {isHighlighted}
           {xAccessor}
           {yAccessor}
         />
@@ -106,8 +105,8 @@
       {#if isHighlighted && showComparison}
         <g class="transition-opacity">
           <ChunkedLine
-            lineType="dimension-time-comparison"
             lineColor={d?.color}
+            lineOpacity={0.5}
             delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
             duration={hasSubrangeSelected ||
             $timeRangeKey !== $previousTimeRangeKey
@@ -128,7 +127,7 @@
         class:opacity-40={!isHovering}
       >
         <ChunkedLine
-          lineType="time-comparison"
+          lineOpacity={0.5}
           lineColor={mainLineColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||

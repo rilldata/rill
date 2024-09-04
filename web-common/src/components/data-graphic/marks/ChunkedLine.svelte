@@ -31,12 +31,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let xAccessor: string;
   export let yAccessor: string;
 
-  export let lineType:
-    | "time"
-    | "time-comparison"
-    | "dimension"
-    | "dimension-time-comparison" = "time";
-
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
   export let duration = 400;
@@ -45,7 +39,9 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   // FIXME – this is a different prop than elsewhere
   export let lineColor = LineMutedColor;
   export let areaGradientColors: [string, string] | null = null;
-  export let isHighlighted = false;
+
+  export let lineOpacity = 1;
+  export let lineWidth = 1;
 
   $: area = areaGradientColors !== null;
 
@@ -97,28 +93,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
    */
   // let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
   // $: lineThickness.setData(data);
-
-  function getLineOpacity() {
-    switch (lineType) {
-      case "time":
-        return 1;
-      case "time-comparison":
-        return 0.5;
-      case "dimension":
-        return 1;
-      case "dimension-time-comparison":
-        return 0.5;
-      default:
-        return 1;
-    }
-  }
-
-  function getLineWidth() {
-    if (lineType === "dimension") {
-      return isHighlighted ? 2 : 1.5;
-    }
-    return 1;
-  }
 </script>
 
 <WithDelayedValue
@@ -156,8 +130,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     >
       <!-- line -->
       <path
-        opacity={getLineOpacity()}
-        stroke-width={getLineWidth()}
+        opacity={lineOpacity}
+        stroke-width={lineWidth}
         stroke={lineColor}
         d={dt}
         id="segments-line"
