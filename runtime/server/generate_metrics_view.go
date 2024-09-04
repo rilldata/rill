@@ -215,11 +215,10 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 	for _, measure := range doc.Measures {
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:         measure.Name,
-			Label:        measure.Label,
-			Expression:   measure.Expression,
-			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-			FormatPreset: measure.FormatPreset,
+			Name:       measure.Name,
+			Label:      measure.Label,
+			Expression: measure.Expression,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		})
 	}
 	validateResult, err := s.runtime.ValidateMetricsView(ctx, instanceID, spec)
@@ -269,12 +268,10 @@ func metricsViewYAMLSystemPrompt() string {
 		Title: "<human-friendly title based on the table name and column names>",
 		Measures: []*metricsViewMeasureYAML{
 			{
-				Name:                "<unique name for the metric in snake case, such as average_sales>",
-				Label:               "<short descriptive label for the metric>",
-				Expression:          "<SQL expression to calculate the KPI in the requested SQL dialect>",
-				Description:         "<short description of the metric>",
-				FormatPreset:        "<should always be 'humanize'>",
-				ValidPercentOfTotal: "<true if the metric is summable otherwise false>",
+				Name:        "<unique name for the metric in snake case, such as average_sales>",
+				Label:       "<short descriptive label for the metric>",
+				Expression:  "<SQL expression to calculate the KPI in the requested SQL dialect>",
+				Description: "<short description of the metric>",
 			},
 		},
 	}
@@ -350,9 +347,8 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID:
 			dims = append(dims, &metricsViewDimensionYAML{
-				Label:       identifierToTitle(f.Name),
-				Column:      f.Name,
-				Description: "",
+				Label:  identifierToTitle(f.Name),
+				Column: f.Name,
 			})
 		}
 	}
@@ -362,23 +358,19 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metricsViewMeasureYAML {
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
-		Name:                "total_records",
-		Label:               "Total records",
-		Expression:          "COUNT(*)",
-		Description:         "",
-		FormatPreset:        "humanize",
-		ValidPercentOfTotal: true,
+		Label:       "Total records",
+		Expression:  "COUNT(*)",
+		Name:        "total_records",
+		Description: "",
 	})
 	for _, f := range schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
 			measures = append(measures, &metricsViewMeasureYAML{
-				Name:                f.Name,
-				Label:               fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
-				Expression:          fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
-				Description:         "",
-				FormatPreset:        "humanize",
-				ValidPercentOfTotal: true,
+				Label:       fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
+				Expression:  fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
+				Name:        f.Name,
+				Description: "",
 			})
 		}
 	}
@@ -403,55 +395,40 @@ type metricsViewYAML struct {
 }
 
 type metricsViewDimensionYAML struct {
-	Label       string
-	Column      string
-	Description string
+	Label  string
+	Column string
 }
 
 type metricsViewMeasureYAML struct {
-	Name                string
-	Label               string
-	Expression          string
-	Description         string
-	FormatPreset        string `yaml:"format_preset"`
-	ValidPercentOfTotal any    `yaml:"valid_percent_of_total"`
+	Name        string
+	Label       string
+	Expression  string
+	Description string
+}
+
+func insertEmptyLinesInYaml(node *yaml.Node) {
+	for i := 0; i < len(node.Content); i++ {
+		if node.Content[i].Kind == yaml.MappingNode {
+			for j := 0; j < len(node.Content[i].Content); j += 2 {
+				keyNode := node.Content[i].Content[j]
+				valueNode := node.Content[i].Content[j+1]
+
+				if keyNode.Value == "title" || keyNode.Value == "dimensions" || keyNode.Value == "measures" {
+					keyNode.HeadComment = "\n"
+				}
+				insertEmptyLinesInYaml(valueNode)
+			}
+		} else if node.Content[i].Kind == yaml.SequenceNode {
+			for j := 0; j < len(node.Content[i].Content); j++ {
+				if node.Content[i].Content[j].Kind == yaml.MappingNode {
+					node.Content[i].Content[j].HeadComment = "\n"
+				}
+			}
+		}
+	}
 }
 
 func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error) {
-	doc.AvailableTimeZones = []string{
-		"America/Los_Angeles",
-		"America/Chicago",
-		"America/New_York",
-		"Europe/London",
-		"Europe/Paris",
-		"Asia/Jerusalem",
-		"Europe/Moscow",
-		"Asia/Kolkata",
-		"Asia/Shanghai",
-		"Asia/Tokyo",
-		"Australia/Sydney",
-	}
-
-	doc.AvailableTimeRanges = []string{
-		"PT6H",
-		"PT24H",
-		"P7D",
-		"P14D",
-		"P4W",
-		"P3M",
-		"P12M",
-		"rill-TD",
-		"rill-WTD",
-		"rill-MTD",
-		"rill-QTD",
-		"rill-YTD",
-		"rill-PDC",
-		"rill-PWC",
-		"rill-PMC",
-		"rill-PQC",
-		"rill-PYC",
-	}
-
 	buf := new(bytes.Buffer)
 
 	buf.WriteString("# Dashboard YAML\n")
@@ -461,11 +438,24 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 	}
 	buf.WriteString("\n")
 
-	enc := yaml.NewEncoder(buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(doc); err != nil {
+	yamlBytes, err := yaml.Marshal(doc)
+	if err != nil {
 		return "", err
 	}
+
+	var rootNode yaml.Node
+	if err := yaml.Unmarshal(yamlBytes, &rootNode); err != nil {
+		return "", err
+	}
+
+	insertEmptyLinesInYaml(&rootNode)
+
+	enc := yaml.NewEncoder(buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&rootNode); err != nil {
+		return "", err
+	}
+
 	if err := enc.Close(); err != nil {
 		return "", err
 	}
