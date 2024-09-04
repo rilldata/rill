@@ -17,7 +17,7 @@ Cloud datastores will typically require service keys to access data. Make sure t
 
 The flow diagram below shows two options for deploying an existing project. 
 
-**Deploy via the UI**: 
+**Deploy via the UI or CLI using `rill project upload`**: 
 ```mermaid
 graph LR;
     A(Local code files);
@@ -26,7 +26,7 @@ graph LR;
 
 ```
 ---
-**Deploy via the CLI**:
+**Deploy via the CLI via `rill project connect-github`**:
 ```mermaid
 graph LR;
     A(Local code files);
