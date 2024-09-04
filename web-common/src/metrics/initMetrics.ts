@@ -6,7 +6,7 @@ import { BehaviourEventFactory } from "@rilldata/web-common/metrics/service/Beha
 import { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import { ProductHealthEventFactory } from "@rilldata/web-common/metrics/service/ProductHealthEventFactory";
 import { RillIntakeClient } from "@rilldata/web-common/metrics/service/RillIntakeClient";
-import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+import { GetMetadataResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { get } from "svelte/store";
 import { ActiveEventHandler } from "./ActiveEventHandler";
 import { collectCommonUserFields } from "./collectCommonUserFields";
@@ -18,7 +18,7 @@ export let actionEvent: ActiveEventHandler;
 export let behaviourEvent: BehaviourEventHandler;
 export let errorEventHandler: ErrorEventHandler;
 
-export async function initMetrics(localConfig: V1RuntimeGetConfig) {
+export async function initMetrics(localConfig: GetMetadataResponse) {
   metricsService = new MetricsService(new RillIntakeClient(), [
     new ProductHealthEventFactory(),
     new BehaviourEventFactory(),
@@ -32,7 +32,7 @@ export async function initMetrics(localConfig: V1RuntimeGetConfig) {
   errorEventHandler = new ErrorEventHandler(
     metricsService,
     commonUserMetrics,
-    localConfig.is_dev,
+    localConfig.isDev,
     () => mapScreenName(get(page)),
   );
 }
@@ -44,4 +44,8 @@ export function setMetricsService(ms: MetricsService) {
 
 export function setErrorEvent(ev: ErrorEventHandler) {
   errorEventHandler = ev;
+}
+
+export function setBehaviourEvent(ev: BehaviourEventHandler) {
+  behaviourEvent = ev;
 }

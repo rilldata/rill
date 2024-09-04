@@ -1,12 +1,12 @@
 <script lang="ts">
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { fly } from "svelte/transition";
+  import Button from "../../button/Button.svelte";
+  import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import SearchableMenuContent from "./SearchableMenuContent.svelte";
-  import Button from "../../button/Button.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
@@ -18,7 +18,11 @@
   let active = false;
 
   $: {
-    if (selectableItems?.length !== selectedItems?.length) {
+    if (
+      selectableItems?.length > 0 &&
+      selectedItems?.length > 0 &&
+      selectableItems?.length !== selectedItems?.length
+    ) {
       throw new Error(
         "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length",
       );
@@ -47,7 +51,7 @@
     >
       <Button builders={[builder]} type="text" label={ariaLabel} on:click>
         <div
-          class="flex items-center gap-x-0.5 px-1.5 text-gray-700 hover:text-inherit"
+          class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >
           <strong>{`${numShownString} ${category}`}</strong>
           <span

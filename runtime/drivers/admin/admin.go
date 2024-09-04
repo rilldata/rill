@@ -19,6 +19,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/archive"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -108,13 +109,20 @@ type Handle struct {
 	repoMu               ctxsync.RWMutex
 	repoSF               *singleflight.Group
 	cloned               bool
+	syncErr              error
 	repoPath             string
 	projPath             string
-	gitURL               string
-	gitURLExpiresOn      time.Time
 	virtualNextPageToken string
 	virtualStashPath     string
 	ignorePaths          []string
+
+	// git related fields
+	// These will not be set if downloadURL is set
+	gitURL          string
+	gitURLExpiresOn time.Time
+
+	// downloadURL is set when using one-time uploads
+	downloadURL string
 }
 
 var _ drivers.Handle = &Handle{}
@@ -122,6 +130,19 @@ var _ drivers.Handle = &Handle{}
 // a smaller subset of relevant parts of rill.yaml
 type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
+	PublicPaths []string `yaml:"public_paths"`
+}
+
+// Ping implements drivers.Handle.
+func (h *Handle) Ping(ctx context.Context) error {
+	// check connectivity with admin service
+	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
+
+	if lockErr := h.repoMu.RLock(ctx); lockErr != nil {
+		return lockErr
+	}
+	defer h.repoMu.RUnlock()
+	return errors.Join(err, h.syncErr)
 }
 
 // Driver implements drivers.Handle.
@@ -191,6 +212,11 @@ func (h *Handle) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsFileStore implements drivers.Handle.
 func (h *Handle) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (h *Handle) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
@@ -267,13 +293,13 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		defer cancel()
 
 		r := retrier.New(retrier.ExponentialBackoff(pullRetryN, pullRetryWait), retryErrClassifier{})
-		err = r.Run(func() error { return h.cloneOrPullInner(ctx) })
-		if err != nil {
-			return nil, err
+		h.syncErr = r.Run(func() error { return h.cloneOrPullInner(ctx) })
+		if h.syncErr != nil {
+			return nil, h.syncErr
 		}
 
 		// Read rill.yaml and fill in `ignore_paths`
-		rawYaml, err := os.ReadFile(filepath.Join(h.projPath, "/rill.yaml"))
+		rawYaml, err := os.ReadFile(filepath.Join(h.projPath, "rill.yaml"))
 		if err == nil {
 			yml := &rillYAML{}
 			err = yaml.Unmarshal(rawYaml, yml)
@@ -297,6 +323,11 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 // Unsafe for concurrent use.
 func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if h.cloned {
+		if h.downloadURL != "" {
+			// in case of one-time uploads we edit instance and close handle when artifacts are updated
+			// so we just pull virtual files and return early.
+			return h.pullVirtual(ctx)
+		}
 		// Move the virtual directory out of the Git repository, and put it back after the pull.
 		// See stashVirtual for details on why this is needed.
 		err := h.stashVirtual()
@@ -311,6 +342,14 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	err = h.checkHandshake(ctx)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
+	}
+
+	if h.downloadURL != "" {
+		// download repo
+		if err := h.download(); err != nil {
+			return err
+		}
+		return h.pullVirtual(ctx)
 	}
 
 	if !h.cloned {
@@ -343,7 +382,6 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	if h.gitURLExpiresOn.After(time.Now()) {
 		return nil
 	}
-
 	meta, err := h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{
 		ProjectId: h.config.ProjectID,
 		Branch:    h.config.Branch,
@@ -368,6 +406,11 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 		h.projPath = h.repoPath
 	} else {
 		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
+	}
+
+	if meta.ArchiveDownloadUrl != "" {
+		h.downloadURL = meta.ArchiveDownloadUrl
+		return nil
 	}
 
 	h.gitURL = meta.GitUrl
@@ -569,6 +612,26 @@ func (h *Handle) unstashVirtual() error {
 	}
 
 	h.virtualStashPath = ""
+	return nil
+}
+
+// download repo when downloadURL is set.
+// Unsafe for concurrent use.
+func (h *Handle) download() error {
+	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
+	defer cancel()
+
+	// generate a temporary file to copy repo tar directory
+	downloadDst, err := generateTmpPath(h.config.TempDir, "admin_driver_zipped_repo", ".tar.gz")
+	if err != nil {
+		return fmt.Errorf("download: %w", err)
+	}
+
+	err = archive.Download(ctx, h.downloadURL, downloadDst, h.projPath, true)
+	if err != nil {
+		return err
+	}
+	h.cloned = true
 	return nil
 }
 

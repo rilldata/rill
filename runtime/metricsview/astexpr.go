@@ -36,6 +36,8 @@ type sqlExprBuilder struct {
 	args         []any
 }
 
+// writeExpression writes the SQL expression for the given expression.
+// The output is guaranteed to be wrapped in parentheses.
 func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 	if e == nil {
 		return nil
@@ -84,6 +86,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		Dimensions:          []Dimension{sub.Dimension},
 		Measures:            sub.Measures,
 		PivotOn:             nil,
+		Spine:               nil,
 		Sort:                nil,
 		TimeRange:           outer.TimeRange,
 		ComparisonTimeRange: outer.ComparisonTimeRange,
@@ -93,7 +96,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		Offset:              nil,
 		TimeZone:            outer.TimeZone,
 		Label:               false,
-	}
+	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
 	innerAST, err := NewAST(b.ast.metricsView, b.ast.security, inner, b.ast.dialect)
@@ -211,11 +214,11 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// Generate unnest join
 		unnestTableAlias := b.ast.generateIdentifier()
-		unnestFrom, ok, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
+		unnestFrom, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
@@ -246,7 +249,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		if err != nil {
 			return err
 		}
-		b.writeString(")")
+		b.writeByte(')')
 		return nil
 	}
 
@@ -281,6 +284,8 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 		return fmt.Errorf("invalid binary condition operator %q", op)
 	}
 
+	b.writeByte('(')
+
 	if leftOverride != "" {
 		b.writeParenthesizedString(leftOverride)
 	} else {
@@ -289,18 +294,31 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 			return err
 		}
 	}
+	if hasNilValue(right) {
+		// Special cases:
+		// "dim = NULL" should be written as "dim IS NULL"
+		// "dim != NULL" should be written as "dim IS NOT NULL"
+		if op == OperatorEq {
+			b.writeString(" IS NULL)")
+			return nil
+		} else if op == OperatorNeq {
+			b.writeString(" IS NOT NULL)")
+			return nil
+		}
+	}
 	b.writeString(joiner)
 	err := b.writeExpression(right)
 	if err != nil {
 		return err
 	}
+
+	b.writeByte(')')
+
 	return nil
 }
 
 func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverride string, not bool) error {
-	if not {
-		b.writeByte('(')
-	}
+	b.writeByte('(')
 
 	if b.ast.dialect.SupportsILike() {
 		// Output: <left> [NOT] ILIKE <right>
@@ -314,6 +332,10 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 			}
 		}
 
+		if b.ast.dialect.RequiresCastForLike() {
+			b.writeString("::TEXT")
+		}
+
 		if not {
 			b.writeString(" NOT ILIKE ")
 		} else {
@@ -323,6 +345,10 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		err := b.writeExpression(right)
 		if err != nil {
 			return err
+		}
+
+		if b.ast.dialect.RequiresCastForLike() {
+			b.writeString("::TEXT")
 		}
 	} else {
 		// Output: LOWER(<left>) [NOT] LIKE LOWER(<right>)
@@ -336,12 +362,15 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 				return err
 			}
 		}
-		b.writeString(")")
+		if b.ast.dialect.RequiresCastForLike() {
+			b.writeString("::TEXT")
+		}
+		b.writeByte(')')
 
 		if not {
-			b.writeString(" NOT ILIKE ")
+			b.writeString(" NOT LIKE ")
 		} else {
-			b.writeString(" ILIKE ")
+			b.writeString(" LIKE ")
 		}
 
 		b.writeString("LOWER(")
@@ -349,7 +378,10 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if err != nil {
 			return err
 		}
-		b.writeString(")")
+		if b.ast.dialect.RequiresCastForLike() {
+			b.writeString("::TEXT")
+		}
+		b.writeByte(')')
 	}
 
 	// When you have "dim NOT ILIKE <val>", then NULL values are always excluded. We need to explicitly include it.
@@ -366,10 +398,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		b.writeString(" IS NULL")
 	}
 
-	// Closes the parens opened at the start
-	if not {
-		b.writeByte(')')
-	}
+	b.writeByte(')')
 
 	return nil
 }
@@ -383,6 +412,8 @@ func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride 
 
 		return b.writeInConditionForValues(left, leftOverride, vals, not)
 	}
+
+	b.writeByte('(')
 
 	if leftOverride != "" {
 		b.writeParenthesizedString(leftOverride)
@@ -404,14 +435,20 @@ func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride 
 		return err
 	}
 
+	b.writeByte(')')
+
 	return nil
 }
 
 func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverride string, vals []any, not bool) error {
-	var hasNull bool
+	var hasNull, hasNonNull bool
 	for _, v := range vals {
 		if v == nil {
 			hasNull = true
+		} else {
+			hasNonNull = true
+		}
+		if hasNull && hasNonNull {
 			break
 		}
 	}
@@ -425,42 +462,48 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		return nil
 	}
 
-	wrapParens := not || hasNull
-	if wrapParens {
-		b.writeByte('(')
-	}
-
-	if leftOverride != "" {
-		b.writeParenthesizedString(leftOverride)
-	} else {
-		err := b.writeExpression(left)
-		if err != nil {
-			return err
-		}
-	}
-
-	if not {
-		b.writeString(" NOT IN ")
-	} else {
-		b.writeString(" IN ")
-	}
-
 	b.writeByte('(')
-	for i := 0; i < len(vals); i++ {
-		if i == 0 {
-			b.writeString("?")
+
+	if hasNonNull {
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
 		} else {
-			b.writeString(",?")
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
 		}
+
+		if not {
+			b.writeString(" NOT IN ")
+		} else {
+			b.writeString(" IN ")
+		}
+
+		b.writeByte('(')
+		var comma bool
+		for _, val := range vals {
+			if val == nil {
+				continue
+			}
+			if comma {
+				b.writeString(",?")
+			} else {
+				comma = true
+				b.writeString("?")
+			}
+			b.args = append(b.args, val)
+		}
+		b.writeByte(')')
 	}
-	b.writeByte(')')
-	b.args = append(b.args, vals...)
 
 	if hasNull {
-		if not {
-			b.writeString(" AND ")
-		} else {
-			b.writeString(" OR ")
+		if hasNonNull {
+			if not {
+				b.writeString(" AND ")
+			} else {
+				b.writeString(" OR ")
+			}
 		}
 
 		if leftOverride != "" {
@@ -493,9 +536,7 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		b.writeString(" IS NULL")
 	}
 
-	if wrapParens {
-		b.writeByte(')')
-	}
+	b.writeByte(')')
 
 	return nil
 }
@@ -521,12 +562,8 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err 
 		// First, search for the dimension in the ASTs dimension fields (this also covers any computed dimension)
 		for _, f := range b.ast.dimFields {
 			if f.Name == name {
-				if f.Unnest {
-					// Since it's unnested, we need to reference the unnested alias.
-					// Note that we return "false" for "unnest" because it will already have been unnested since it's one of the dimensions included in the query,
-					// so we can filter against it as if it's a normal dimension.
-					return b.ast.sqlForMember(f.UnnestAlias, f.Name), false, nil
-				}
+				// Note that we return "false" even though it may be an unnest dimension because it will already have been unnested since it's one of the dimensions included in the query.
+				// So we can filter against it as if it's a normal dimension.
 				return f.Expr, false, nil
 			}
 		}

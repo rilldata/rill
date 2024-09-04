@@ -21,8 +21,7 @@
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
@@ -32,6 +31,7 @@
   import { PivotChipType } from "../pivot/types";
   import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
+  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -165,8 +165,8 @@
 </script>
 
 <div class="tdd-header">
-  <div class="flex gap-x-3 items-center font-normal text-gray-500">
-    <div class="flex items-center gap-x-2">
+  <div class="flex gap-x-6 items-center font-normal text-gray-500">
+    <div class="flex items-center gap-x-4">
       <div class="flex items-center gap-x-1">
         <Row size="16px" /> Rows
       </div>
@@ -174,21 +174,24 @@
       <ComparisonSelector chipStyle {metricViewName} />
     </div>
 
-    <div class="flex items-center gap-x-2 pl-2">
+    <div class="flex items-center gap-x-4 pl-2">
       <div class="flex items-center gap-x-1">
         <Column size="16px" /> Columns
       </div>
-      <SearchableFilterChip
-        label={selectedMeasureLabel}
-        on:item-clicked={switchMeasure}
-        selectableItems={selectableMeasures}
-        {selectedItems}
-        tooltipText="Choose a measure to display"
-      />
+      <div class="flex items-center gap-x-2">
+        <TimeGrainSelector {metricViewName} pill />
+        <SearchableFilterChip
+          label={selectedMeasureLabel}
+          on:item-clicked={switchMeasure}
+          selectableItems={selectableMeasures}
+          {selectedItems}
+          tooltipText="Choose a measure to display"
+        />
+      </div>
     </div>
 
     {#if isFetching}
-      <Spinner size="18px" status={EntityStatus.Running} />
+      <DelayedSpinner isLoading={isFetching} size="18px" />
     {/if}
   </div>
 

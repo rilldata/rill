@@ -17,6 +17,10 @@ type mockConn struct {
 	closeCalled atomic.Bool
 }
 
+func (c *mockConn) Driver() string {
+	return "mock"
+}
+
 func (c *mockConn) Close() error {
 	c.closeCalled.Store(true)
 	time.Sleep(c.closeDelay)

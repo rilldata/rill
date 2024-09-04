@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/apache/arrow/go/v14/arrow/array"
 	"github.com/apache/arrow/go/v14/arrow/memory"
 	"github.com/apache/arrow/go/v14/parquet/pqarrow"
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -20,21 +22,29 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+const maxParquetRowGroupSize = 512 * int64(datasize.MB)
+
 type olapToSelfExecutor struct {
 	c    *connection
 	olap drivers.OLAPStore
-	opts *drivers.ModelExecutorOptions
 }
 
 var _ drivers.ModelExecutor = &olapToSelfExecutor{}
 
-func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
+func (e *olapToSelfExecutor) Concurrency(desired int) (int, bool) {
+	if desired > 1 {
+		return 0, false
+	}
+	return 1, true
+}
+
+func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Parse SQL from input properties
 	inputProps := &struct {
 		SQL  string `mapstructure:"sql"`
 		Args []any  `mapstructure:"args"`
 	}{}
-	if err := mapstructure.WeakDecode(e.opts.InputProperties, inputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if inputProps.SQL == "" {
@@ -43,7 +53,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 
 	// Parse output properties
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(e.opts.OutputProperties, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	if err := outputProps.Validate(); err != nil {
@@ -54,24 +64,39 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query:    inputProps.SQL,
 		Args:     inputProps.Args,
-		Priority: e.opts.Priority,
+		Priority: opts.Priority,
 	})
 	if err != nil {
 		return nil, err
 	}
 	defer res.Close()
 
+	f, err := os.Create(outputProps.Path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	var fw io.Writer = f
+	if outputProps.FileSizeLimitBytes > 0 {
+		fw = &limitedWriter{W: fw, N: outputProps.FileSizeLimitBytes}
+	}
+
 	switch outputProps.Format {
-	case "csv":
-		err = writeCSV(res, outputProps.Path)
-	case "xlsx":
-		err = writeXLSX(res, outputProps.Path)
-	case "parquet":
-		err = writeParquet(res, outputProps.Path)
+	case drivers.FileFormatParquet:
+		err = writeParquet(res, fw)
+	case drivers.FileFormatCSV:
+		err = writeCSV(res, fw)
+	case drivers.FileFormatJSON:
+		return nil, errors.New("json file output not currently supported")
+	case drivers.FileFormatXLSX:
+		err = writeXLSX(res, fw)
 	default:
 		return nil, fmt.Errorf("unsupported output format %q", outputProps.Format)
 	}
 	if err != nil {
+		if errors.Is(err, io.ErrShortWrite) {
+			return nil, fmt.Errorf("file exceeds size limit %q", datasize.ByteSize(outputProps.FileSizeLimitBytes).HumanReadable())
+		}
 		return nil, fmt.Errorf("failed to write format %q: %w", outputProps.Format, err)
 	}
 
@@ -86,25 +111,19 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		return nil, fmt.Errorf("failed to encode result properties: %w", err)
 	}
 	return &drivers.ModelResult{
-		Connector:  e.opts.OutputConnector,
+		Connector:  opts.OutputConnector,
 		Properties: resultPropsMap,
 	}, nil
 }
 
-func writeCSV(res *drivers.Result, path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	w := csv.NewWriter(f)
+func writeCSV(res *drivers.Result, fw io.Writer) error {
+	w := csv.NewWriter(fw)
 
 	strs := make([]string, len(res.Schema.Fields))
 	for i, f := range res.Schema.Fields {
 		strs[i] = f.Name
 	}
-	err = w.Write(strs)
+	err := w.Write(strs)
 	if err != nil {
 		return err
 	}
@@ -153,7 +172,7 @@ func writeCSV(res *drivers.Result, path string) error {
 	return nil
 }
 
-func writeXLSX(res *drivers.Result, path string) error {
+func writeXLSX(res *drivers.Result, fw io.Writer) error {
 	xf := excelize.NewFile()
 	defer func() { _ = xf.Close() }()
 
@@ -220,20 +239,14 @@ func writeXLSX(res *drivers.Result, path string) error {
 		return err
 	}
 
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	err = xf.Write(f)
+	err = xf.Write(fw)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func writeParquet(res *drivers.Result, path string) error {
+func writeParquet(res *drivers.Result, fw io.Writer) error {
 	fields := make([]arrow.Field, 0, len(res.Schema.Fields))
 	for _, f := range res.Schema.Fields {
 		arrowField := arrow.Field{}
@@ -272,6 +285,12 @@ func writeParquet(res *drivers.Result, path string) error {
 		vals[i] = new(any)
 	}
 
+	parquetwriter, err := pqarrow.NewFileWriter(schema, fw, nil, pqarrow.ArrowWriterProperties{})
+	if err != nil {
+		return err
+	}
+	defer parquetwriter.Close()
+	var rows int64
 	for res.Next() {
 		err := res.Scan(vals...)
 		if err != nil {
@@ -326,22 +345,51 @@ func writeParquet(res *drivers.Result, path string) error {
 				recordBuilder.Field(i).(*array.BinaryBuilder).Append(v)
 			}
 		}
+		rows++
+		if rows == 1000 {
+			rec := recordBuilder.NewRecord()
+			if err := parquetwriter.WriteBuffered(rec); err != nil {
+				rec.Release()
+				return err
+			}
+			rec.Release()
+			if parquetwriter.RowGroupTotalBytesWritten() >= maxParquetRowGroupSize {
+				// Also flushes the data to the disk freeing memory
+				parquetwriter.NewBufferedRowGroup()
+			}
+			rows = 0
+		}
 	}
 	if res.Err() != nil {
 		return res.Err()
 	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return err
+	if rows == 0 {
+		return nil
 	}
-	defer f.Close()
+	rec := recordBuilder.NewRecord()
+	err = parquetwriter.Write(rec)
+	// release the record before returning the error
+	rec.Release()
+	return err
+}
 
-	parquetwriter, err := pqarrow.NewFileWriter(schema, f, nil, pqarrow.ArrowWriterProperties{})
-	if err != nil {
-		return err
+// A limitedWriter writes to W but limits the amount of
+// data written to just N bytes.
+//
+// Modified from github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/util/ioutils/ioutils.go
+type limitedWriter struct {
+	W io.Writer // underlying writer
+	N int64     // max bytes remaining
+}
+
+func (l *limitedWriter) Write(p []byte) (n int, err error) {
+	if l.N <= 0 {
+		return 0, io.ErrShortWrite
 	}
-	defer parquetwriter.Close()
-
-	return parquetwriter.Write(recordBuilder.NewRecord())
+	if int64(len(p)) > l.N {
+		return 0, io.ErrShortWrite
+	}
+	n, err = l.W.Write(p)
+	l.N -= int64(n)
+	return
 }

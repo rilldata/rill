@@ -73,11 +73,6 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 	return iter, nil
 }
 
-// QueryAsFiles implements drivers.SQLStore
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
-	return nil, drivers.ErrNotImplemented
-}
-
 type rowIterator struct {
 	conn   *pgxpool.Conn
 	rows   pgx.Rows
@@ -115,11 +110,11 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 	}
 
 	for i := range r.schema.Fields {
-		mapper := r.fieldMappers[i]
 		if vals[i] == nil {
 			r.row[i] = nil
 			continue
 		}
+		mapper := r.fieldMappers[i]
 		r.row[i], err = mapper.value(vals[i])
 		if err != nil {
 			return nil, err

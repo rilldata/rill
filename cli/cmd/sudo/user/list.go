@@ -28,7 +28,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if projectName != "" {
-				members, err := client.ListProjectMembers(ctx, &adminv1.ListProjectMembersRequest{
+				members, err := client.ListProjectMemberUsers(ctx, &adminv1.ListProjectMemberUsersRequest{
 					Organization: orgName,
 					Project:      projectName,
 					PageSize:     pageSize,
@@ -38,14 +38,14 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				ch.PrintMembers(members.Members)
+				ch.PrintMemberUsers(members.Members)
 
 				if members.NextPageToken != "" {
 					cmd.Println()
 					cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
 				}
 			} else {
-				members, err := client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				members, err := client.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
 					Organization: orgName,
 					PageSize:     pageSize,
 					PageToken:    pageToken,
@@ -54,7 +54,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				ch.PrintMembers(members.Members)
+				ch.PrintMemberUsers(members.Members)
 
 				if members.NextPageToken != "" {
 					cmd.Println()

@@ -309,7 +309,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
 		GithubRefreshToken:  user.GithubRefreshToken,
-		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
+		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, int32(user.QuotaSingleuserOrgs))),
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
@@ -372,15 +372,15 @@ func userToPB(u *database.User) *adminv1.User {
 		DisplayName: u.DisplayName,
 		PhotoUrl:    u.PhotoURL,
 		Quotas: &adminv1.UserQuotas{
-			SingleuserOrgs: uint32(u.QuotaSingleuserOrgs),
+			SingleuserOrgs: int32(u.QuotaSingleuserOrgs),
 		},
 		CreatedOn: timestamppb.New(u.CreatedOn),
 		UpdatedOn: timestamppb.New(u.UpdatedOn),
 	}
 }
 
-func memberToPB(m *database.Member) *adminv1.Member {
-	return &adminv1.Member{
+func memberUserToPB(m *database.MemberUser) *adminv1.MemberUser {
+	return &adminv1.MemberUser{
 		UserId:    m.ID,
 		UserEmail: m.Email,
 		UserName:  m.DisplayName,

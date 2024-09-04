@@ -5,6 +5,7 @@
   import "./regular-table-style.css";
   import type { PivotPos, PivotRenderCallback } from "./types";
   import { isEmptyPos, range } from "./util";
+  import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
   const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
   const NULL_CELL = `<div class="null-cell text-gray-400">-</div>`;
@@ -16,6 +17,9 @@
   export let columnCount = 0;
   export let rowHeaderDepth = 0;
   export let columnHeaderDepth = 0;
+  export let formatter: ReturnType<
+    typeof createMeasureValueFormatter<null | undefined>
+  >;
   export let onMouseDown: undefined | ((evt: MouseEvent, table: any) => any) =
     undefined;
   export let onMouseHover: undefined | ((evt: MouseEvent, table: any) => any) =
@@ -83,16 +87,6 @@
     });
 
     let data = getBodyData({ x0, x1, y0, y1 });
-    // Replace undefined with loading placeholders and nulls with null placeholder
-    data.forEach((c, i) => {
-      c.forEach((r, j) => {
-        if (r === undefined) {
-          data[i][j] = LOADING_CELL;
-        } else if (r === null) {
-          data[i][j] = NULL_CELL;
-        }
-      });
-    });
 
     const dataSlice = {
       num_rows: rowCount,
@@ -110,10 +104,12 @@
     const numFixedCols = meta?.row_header?.length;
     const x = meta?.row_header_x;
     const y = meta?.y;
+    const value = meta?.value as unknown as { value?: string; spark?: string };
 
     if (typeof x !== "number" || typeof y !== "number") return;
     th.setAttribute("__col", String(x - numFixedCols!));
     th.setAttribute("__row", String(y));
+    if (value?.value) th.setAttribute("title", value?.value);
 
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
@@ -148,6 +144,8 @@
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
+    if (value) td.setAttribute("title", value.toString());
+
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {
       td.style.width = `${maybeWidth}px`;
@@ -155,11 +153,14 @@
       td.style.maxWidth = `${maybeWidth}px`;
     }
 
-    if (
-      typeof value === "string" &&
-      (value?.includes("loading-cell") || value?.includes("null-cell"))
-    ) {
+    if (typeof value === "string") {
       td.innerHTML = value;
+    } else if (value === null) {
+      td.innerHTML = NULL_CELL;
+    } else if (value === undefined) {
+      td.innerHTML = LOADING_CELL;
+    } else if (typeof value === "number") {
+      td.innerHTML = formatter(value) ?? "";
     }
 
     const maybeVal = renderCell({ x, y, value, element: td });

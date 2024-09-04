@@ -30,7 +30,6 @@ import type {
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
 import type { SvelteComponent } from "svelte";
-import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
 import { getFiltersForOtherDimensions } from "../selectors";
 import { SortType } from "../proto-state/derived-types";
@@ -255,7 +254,7 @@ export function prepareVirtualizedDimTableColumns(
     (m) => m.name === leaderboardMeasureName,
   );
 
-  const dimensionColumn = getDimensionColumn(dimension);
+  const dimensionColumn = dimension.name ?? "";
 
   // copy column names so we don't mutate the original
   const columnNames = [...dash.visibleMeasureKeys].filter((m) =>

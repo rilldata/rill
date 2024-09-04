@@ -16,9 +16,9 @@ import (
 )
 
 type MetricsViewTimeRange struct {
-	MetricsViewName    string                               `json:"name"`
-	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
-	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
+	MetricsViewName    string                     `json:"name"`
+	MetricsView        *runtimev1.MetricsViewSpec `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedSecurity  `json:"security"`
 
 	Result *runtimev1.MetricsViewTimeRangeResponse `json:"_"`
 }
@@ -58,7 +58,7 @@ func (q *MetricsViewTimeRange) UnmarshalResult(v any) error {
 func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	policyFilter := ""
 	if q.ResolvedMVSecurity != nil {
-		policyFilter = q.ResolvedMVSecurity.RowFilter
+		policyFilter = q.ResolvedMVSecurity.RowFilter()
 	}
 
 	if q.MetricsView.TimeDimension == "" {
@@ -258,22 +258,22 @@ func (q *MetricsViewTimeRange) resolveClickHouseAndPinot(ctx context.Context, ol
 
 	if rows.Next() {
 		summary := &runtimev1.TimeRangeSummary{}
-		var min, max *time.Time
-		err = rows.Scan(&min, &max)
+		var minVal, maxVal *time.Time
+		err = rows.Scan(&minVal, &maxVal)
 		if err != nil {
 			return err
 		}
 
-		if min != nil {
-			summary.Min = timestamppb.New(*min)
+		if minVal != nil {
+			summary.Min = timestamppb.New(*minVal)
 		}
-		if max != nil {
-			summary.Max = timestamppb.New(*max)
+		if maxVal != nil {
+			summary.Max = timestamppb.New(*maxVal)
 		}
-		if min != nil && max != nil {
+		if minVal != nil && maxVal != nil {
 			// ignoring months for now since its hard to compute and anyways not being used
 			summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
-			duration := max.Sub(*min)
+			duration := maxVal.Sub(*minVal)
 			hours := duration.Hours()
 			if hours >= hourInDay {
 				summary.Interval.Days = int32(hours / hourInDay)

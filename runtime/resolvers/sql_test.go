@@ -21,13 +21,15 @@ func TestSimpleSQLApi(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     nil,
+		Claims:             &runtime.SecurityClaims{},
 	})
 	require.NoError(t, err)
+	defer res.Close()
+
 	require.NotNil(t, res)
 
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res.Data, &rows))
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
 	require.Equal(t, 5, len(rows))
 	require.Equal(t, 5, len(rows[0]))
 	require.Equal(t, 4.09, rows[0]["bid_price"])
@@ -48,13 +50,15 @@ func TestTemplateSQLApi(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"domain": "sports.yahoo.com"},
-		UserAttributes:     nil,
+		Claims:             &runtime.SecurityClaims{},
 	})
 	require.NoError(t, err)
+	defer res.Close()
+
 	require.NotNil(t, res)
 
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res.Data, &rows))
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
 	require.Equal(t, 5, len(rows))
 	require.Equal(t, 5, len(rows[0]))
 	require.Equal(t, 1.81, rows[0]["bid_price"])
@@ -78,13 +82,15 @@ func TestTemplateSQLApi2(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"pageSize": 5},
-		UserAttributes:     map[string]any{"domain": "msn.com"},
+		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "msn.com"}},
 	})
 	require.NoError(t, err)
+	defer res.Close()
+
 	require.NotNil(t, res)
 
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res.Data, &rows))
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
 	require.Equal(t, 5, len(rows))
 	require.Equal(t, 5, len(rows[0]))
 	require.Equal(t, 4.09, rows[0]["bid_price"])
@@ -95,4 +101,11 @@ func TestTemplateSQLApi2(t *testing.T) {
 	for _, row := range rows {
 		require.Equal(t, "msn.com", row["domain"])
 	}
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

@@ -5,13 +5,22 @@ export function isOrganizationPage(page: Page): boolean {
   return page.route.id === "/[organization]";
 }
 
+export function withinOrganization(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]");
+}
+
 export function isProjectPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]" ||
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
-    page.route.id === "/[organization]/[project]/-/status"
+    page.route.id === "/[organization]/[project]/-/status" ||
+    !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
+}
+
+export function withinProject(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]/[project]");
 }
 
 export function isMetricsExplorerPage(page: Page): boolean {
@@ -45,6 +54,20 @@ export function isReportExportPage(page: Page): boolean {
     page.route.id ===
     "/[organization]/[project]/[dashboard]/-/reports/[report]/export"
   );
+}
+
+export function isPublicURLPage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/share/[token]";
+}
+
+export function isProjectRequestAccessPage(page: Page): boolean {
+  return !!page.route.id?.startsWith(
+    "/[organization]/[project]/-/request-access",
+  );
+}
+
+export function isProjectInvitePage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/invite";
 }
 
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {

@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
-import { PullTriggerSpec, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
+import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -184,6 +184,221 @@ export class PingResponse extends Message<PingResponse> {
 
   static equals(a: PingResponse | PlainMessage<PingResponse> | undefined, b: PingResponse | PlainMessage<PingResponse> | undefined): boolean {
     return proto3.util.equals(PingResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.HealthRequest
+ */
+export class HealthRequest extends Message<HealthRequest> {
+  constructor(data?: PartialMessage<HealthRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.HealthRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HealthRequest {
+    return new HealthRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HealthRequest {
+    return new HealthRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HealthRequest {
+    return new HealthRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: HealthRequest | PlainMessage<HealthRequest> | undefined, b: HealthRequest | PlainMessage<HealthRequest> | undefined): boolean {
+    return proto3.util.equals(HealthRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.HealthResponse
+ */
+export class HealthResponse extends Message<HealthResponse> {
+  /**
+   * @generated from field: string limiter_error = 1;
+   */
+  limiterError = "";
+
+  /**
+   * @generated from field: string conn_cache_error = 2;
+   */
+  connCacheError = "";
+
+  /**
+   * @generated from field: string metastore_error = 3;
+   */
+  metastoreError = "";
+
+  /**
+   * @generated from field: string network_error = 4;
+   */
+  networkError = "";
+
+  /**
+   * @generated from field: map<string, rill.runtime.v1.InstanceHealth> instances_health = 5;
+   */
+  instancesHealth: { [key: string]: InstanceHealth } = {};
+
+  constructor(data?: PartialMessage<HealthResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.HealthResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "limiter_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conn_cache_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "metastore_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "network_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "instances_health", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: InstanceHealth} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HealthResponse {
+    return new HealthResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HealthResponse {
+    return new HealthResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HealthResponse {
+    return new HealthResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: HealthResponse | PlainMessage<HealthResponse> | undefined, b: HealthResponse | PlainMessage<HealthResponse> | undefined): boolean {
+    return proto3.util.equals(HealthResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.InstanceHealthRequest
+ */
+export class InstanceHealthRequest extends Message<InstanceHealthRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<InstanceHealthRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InstanceHealthRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealthRequest {
+    return new InstanceHealthRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceHealthRequest {
+    return new InstanceHealthRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceHealthRequest {
+    return new InstanceHealthRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InstanceHealthRequest | PlainMessage<InstanceHealthRequest> | undefined, b: InstanceHealthRequest | PlainMessage<InstanceHealthRequest> | undefined): boolean {
+    return proto3.util.equals(InstanceHealthRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.InstanceHealthResponse
+ */
+export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.InstanceHealth instance_health = 1;
+   */
+  instanceHealth?: InstanceHealth;
+
+  constructor(data?: PartialMessage<InstanceHealthResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InstanceHealthResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_health", kind: "message", T: InstanceHealth },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealthResponse {
+    return new InstanceHealthResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceHealthResponse {
+    return new InstanceHealthResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceHealthResponse {
+    return new InstanceHealthResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InstanceHealthResponse | PlainMessage<InstanceHealthResponse> | undefined, b: InstanceHealthResponse | PlainMessage<InstanceHealthResponse> | undefined): boolean {
+    return proto3.util.equals(InstanceHealthResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.InstanceHealth
+ */
+export class InstanceHealth extends Message<InstanceHealth> {
+  /**
+   * @generated from field: string controller_error = 1;
+   */
+  controllerError = "";
+
+  /**
+   * @generated from field: string olap_error = 2;
+   */
+  olapError = "";
+
+  /**
+   * @generated from field: string repo_error = 3;
+   */
+  repoError = "";
+
+  constructor(data?: PartialMessage<InstanceHealth>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InstanceHealth";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "controller_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "olap_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InstanceHealth | PlainMessage<InstanceHealth> | undefined, b: InstanceHealth | PlainMessage<InstanceHealth> | undefined): boolean {
+    return proto3.util.equals(InstanceHealth, a, b);
   }
 }
 
@@ -2243,6 +2458,73 @@ export class Log extends Message<Log> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.ModelSplit
+ */
+export class ModelSplit extends Message<ModelSplit> {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct data = 2;
+   */
+  data?: Struct;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp watermark = 3;
+   */
+  watermark?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp executed_on = 4;
+   */
+  executedOn?: Timestamp;
+
+  /**
+   * @generated from field: string error = 5;
+   */
+  error = "";
+
+  /**
+   * @generated from field: uint32 elapsed_ms = 6;
+   */
+  elapsedMs = 0;
+
+  constructor(data?: PartialMessage<ModelSplit>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ModelSplit";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "data", kind: "message", T: Struct },
+    { no: 3, name: "watermark", kind: "message", T: Timestamp },
+    { no: 4, name: "executed_on", kind: "message", T: Timestamp },
+    { no: 5, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "elapsed_ms", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSplit {
+    return new ModelSplit().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelSplit {
+    return new ModelSplit().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelSplit {
+    return new ModelSplit().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ModelSplit | PlainMessage<ModelSplit> | undefined, b: ModelSplit | PlainMessage<ModelSplit> | undefined): boolean {
+    return proto3.util.equals(ModelSplit, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GetLogsRequest
  */
 export class GetLogsRequest extends Message<GetLogsRequest> {
@@ -2703,30 +2985,150 @@ export class GetResourceResponse extends Message<GetResourceResponse> {
 }
 
 /**
- * @generated from message rill.runtime.v1.CreateTriggerRequest
+ * @generated from message rill.runtime.v1.GetModelSplitsRequest
  */
-export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
+export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * @generated from oneof rill.runtime.v1.CreateTriggerRequest.trigger
+   * @generated from field: string model = 2;
    */
-  trigger: {
-    /**
-     * @generated from field: rill.runtime.v1.PullTriggerSpec pull_trigger_spec = 2;
-     */
-    value: PullTriggerSpec;
-    case: "pullTriggerSpec";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.RefreshTriggerSpec refresh_trigger_spec = 3;
-     */
-    value: RefreshTriggerSpec;
-    case: "refreshTriggerSpec";
-  } | { case: undefined; value?: undefined } = { case: undefined };
+  model = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<GetModelSplitsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetModelSplitsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelSplitsRequest {
+    return new GetModelSplitsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelSplitsRequest {
+    return new GetModelSplitsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelSplitsRequest {
+    return new GetModelSplitsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetModelSplitsRequest | PlainMessage<GetModelSplitsRequest> | undefined, b: GetModelSplitsRequest | PlainMessage<GetModelSplitsRequest> | undefined): boolean {
+    return proto3.util.equals(GetModelSplitsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GetModelSplitsResponse
+ */
+export class GetModelSplitsResponse extends Message<GetModelSplitsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.ModelSplit splits = 1;
+   */
+  splits: ModelSplit[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<GetModelSplitsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetModelSplitsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "splits", kind: "message", T: ModelSplit, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelSplitsResponse {
+    return new GetModelSplitsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelSplitsResponse {
+    return new GetModelSplitsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelSplitsResponse {
+    return new GetModelSplitsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetModelSplitsResponse | PlainMessage<GetModelSplitsResponse> | undefined, b: GetModelSplitsResponse | PlainMessage<GetModelSplitsResponse> | undefined): boolean {
+    return proto3.util.equals(GetModelSplitsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CreateTriggerRequest
+ */
+export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
+  /**
+   * Instance to target.
+   *
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Resources to trigger. See RefreshTriggerSpec for details.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName resources = 4;
+   */
+  resources: ResourceName[] = [];
+
+  /**
+   * Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+   *
+   * @generated from field: repeated rill.runtime.v1.RefreshModelTrigger models = 5;
+   */
+  models: RefreshModelTrigger[] = [];
+
+  /**
+   * Parser is a convenience flag to trigger the global project parser.
+   * Triggering the project parser ensures a pull of the repository and a full parse of all files.
+   *
+   * @generated from field: bool parser = 6;
+   */
+  parser = false;
+
+  /**
+   * Convenience flag to trigger all sources and models.
+   *
+   * @generated from field: bool all_sources_models = 7;
+   */
+  allSourcesModels = false;
+
+  /**
+   * Convenience flag to trigger all sources and models.
+   * Will trigger models with RefreshModelTrigger.full set to true.
+   *
+   * @generated from field: bool all_sources_models_full = 8;
+   */
+  allSourcesModelsFull = false;
 
   constructor(data?: PartialMessage<CreateTriggerRequest>) {
     super();
@@ -2737,8 +3139,11 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
   static readonly typeName = "rill.runtime.v1.CreateTriggerRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "pull_trigger_spec", kind: "message", T: PullTriggerSpec, oneof: "trigger" },
-    { no: 3, name: "refresh_trigger_spec", kind: "message", T: RefreshTriggerSpec, oneof: "trigger" },
+    { no: 4, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 5, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
+    { no: 6, name: "parser", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "all_sources_models", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "all_sources_models_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTriggerRequest {
@@ -2882,6 +3287,11 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
    */
   implementsNotifier = false;
 
+  /**
+   * @generated from field: bool implements_warehouse = 20;
+   */
+  implementsWarehouse = false;
+
   constructor(data?: PartialMessage<ConnectorDriver>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2905,6 +3315,7 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
     { no: 17, name: "implements_object_store", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "implements_file_store", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 19, name: "implements_notifier", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 20, name: "implements_warehouse", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver {
@@ -3000,6 +3411,13 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
    */
   secret = false;
 
+  /**
+   * If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+   *
+   * @generated from field: bool no_prompt = 11;
+   */
+  noPrompt = false;
+
   constructor(data?: PartialMessage<ConnectorDriver_Property>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3018,6 +3436,7 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
     { no: 8, name: "default", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "placeholder", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "secret", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "no_prompt", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver_Property {

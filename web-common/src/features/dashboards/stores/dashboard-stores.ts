@@ -252,6 +252,7 @@ const metricViewReducers = {
   setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot.rowPage = 1;
+      metricsExplorer.pivot.activeCell = null;
 
       const dimensions: PivotChipData[] = [];
 
@@ -278,6 +279,8 @@ const metricViewReducers = {
   setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot.rowPage = 1;
+      metricsExplorer.pivot.activeCell = null;
+      metricsExplorer.pivot.expanded = {};
 
       const dimensions: PivotChipData[] = [];
       const measures: PivotChipData[] = [];
@@ -308,6 +311,7 @@ const metricViewReducers = {
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot.rowPage = 1;
+      metricsExplorer.pivot.activeCell = null;
       if (value.type === PivotChipType.Measure) {
         metricsExplorer.pivot.columns.measure.push(value);
       } else {
@@ -339,6 +343,7 @@ const metricViewReducers = {
         sorting,
         rowPage: 1,
         expanded: {},
+        activeCell: null,
       };
     });
   },
@@ -361,6 +366,18 @@ const metricViewReducers = {
     });
   },
 
+  setPivotActiveCell(name: string, rowId: string, columnId: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.activeCell = { rowId, columnId };
+    });
+  },
+
+  removePivotActiveCell(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.activeCell = null;
+    });
+  },
+
   createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = {
@@ -372,6 +389,7 @@ const metricViewReducers = {
         sorting: [],
         columnPage: 1,
         rowPage: 1,
+        activeCell: null,
       };
     });
   },
@@ -435,11 +453,6 @@ const metricViewReducers = {
 
   setComparisonDimension(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (dimensionName === undefined) {
-        setDisplayComparison(metricsExplorer, true);
-      } else {
-        setDisplayComparison(metricsExplorer, false);
-      }
       metricsExplorer.selectedComparisonDimension = dimensionName;
       metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
         metricsExplorer,
@@ -451,7 +464,6 @@ const metricViewReducers = {
   disableAllComparisons(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedComparisonDimension = undefined;
-      setDisplayComparison(metricsExplorer, false);
     });
   },
 
@@ -461,7 +473,6 @@ const metricViewReducers = {
     metricsViewSpec: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setDisplayComparison(metricsExplorer, true);
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
       AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
@@ -484,7 +495,8 @@ const metricViewReducers = {
 
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setDisplayComparison(metricsExplorer, showTimeComparison);
+      metricsExplorer.showTimeComparison = showTimeComparison;
+      metricsExplorer.selectedComparisonDimension = undefined;
     });
   },
 
@@ -507,12 +519,6 @@ const metricViewReducers = {
       };
 
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
-
-      setDisplayComparison(
-        metricsExplorer,
-        metricsExplorer.selectedComparisonTimeRange !== undefined &&
-          metricsExplorer.selectedComparisonDimension === undefined,
-      );
 
       AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
@@ -538,40 +544,6 @@ export function useDashboardStore(
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
-}
-
-export function setDisplayComparison(
-  metricsExplorer: MetricsExplorerEntity,
-  showTimeComparison: boolean,
-) {
-  metricsExplorer.showTimeComparison = showTimeComparison;
-  if (showTimeComparison && !metricsExplorer.selectedComparisonTimeRange) {
-    metricsExplorer.selectedComparisonTimeRange = {} as any;
-  }
-
-  if (showTimeComparison) {
-    metricsExplorer.selectedComparisonDimension = undefined;
-  }
-
-  // if setting showTimeComparison===true and not currently
-  //  showing any context column, then show DELTA_PERCENT
-  if (
-    showTimeComparison &&
-    metricsExplorer.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN
-  ) {
-    metricsExplorer.leaderboardContextColumn =
-      LeaderboardContextColumn.DELTA_PERCENT;
-  }
-
-  // if setting showTimeComparison===false and currently
-  //  showing DELTA_PERCENT, then hide context column
-  if (
-    !showTimeComparison &&
-    metricsExplorer.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_PERCENT
-  ) {
-    metricsExplorer.leaderboardContextColumn = LeaderboardContextColumn.HIDDEN;
-  }
 }
 
 export function sortTypeForContextColumnType(

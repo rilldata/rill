@@ -1,14 +1,14 @@
 <script lang="ts" context="module">
-  import { onMount } from "svelte";
-  import type ResizeHandle from "./ResizeHandle.svelte";
-  import type { ComponentType } from "svelte";
+  import TemplateRenderer from "@rilldata/web-common/features/templates/TemplateRenderer.svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import Chart from "./Chart.svelte";
-  import Markdown from "./Markdown.svelte";
+  import type { ComponentType } from "svelte";
+  import { onMount } from "svelte";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
+  import Chart from "./Chart.svelte";
+  import type ResizeHandle from "./ResizeHandle.svelte";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -33,18 +33,23 @@
   export let chartView = false;
   export let componentName: string;
   export let instanceId: string;
-  export let fontSize: number = 20;
 
   $: resourceQuery = useResource(
     instanceId,
     componentName,
     ResourceKind.Component,
   );
-
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
-    componentResource?.component?.spec ?? {});
+  $: ({
+    renderer,
+    rendererProperties,
+    resolverProperties,
+    input,
+    output,
+    title,
+    subtitle,
+  } = componentResource?.component?.spec ?? {});
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -62,7 +67,7 @@
   data-index={i}
   class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
-  style:z-index={localZIndex}
+  style:z-index={renderer === "select" ? 100 : localZIndex}
   style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"
@@ -105,12 +110,20 @@
         {/if}
         <Chart
           {chartView}
+          {input}
           vegaSpec={rendererProperties?.spec}
           chartName={componentName}
-          {resolverProperties}
         />
-      {:else if renderer === "markdown" && rendererProperties?.content}
-        <Markdown markdown={rendererProperties.content} {fontSize} />
+      {:else if renderer && rendererProperties}
+        <TemplateRenderer
+          {chartView}
+          {renderer}
+          {input}
+          {output}
+          {rendererProperties}
+          {resolverProperties}
+          {componentName}
+        />
       {/if}
     </div>
   </div>

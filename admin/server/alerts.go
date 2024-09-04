@@ -16,11 +16,8 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -85,8 +82,8 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	}
 
 	return &adminv1.GetAlertMetaResponse{
-		OpenUrl:            s.urls.alertOpen(org.Name, proj.Name, req.Alert),
-		EditUrl:            s.urls.alertEdit(org.Name, proj.Name, req.Alert),
+		OpenUrl:            s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert),
+		EditUrl:            s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, req.Alert),
 		QueryForAttributes: attrPB,
 	}, nil
 }
@@ -144,7 +141,7 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, status.Errorf(codes.Internal, "failed to insert virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, name, runtime.ResourceKindAlert)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be created")
@@ -217,7 +214,7 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be updated")
@@ -276,22 +273,32 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	opts, err := recreateAlertOptionsFromSpec(spec)
+	file, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to recreate alert options: %s", err.Error())
+		return nil, err
+	}
+
+	// Unmarshal file data to alertYAML
+	var alert alertYAML
+	err = yaml.Unmarshal(file.Data, &alert)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal alert YAML: %s", err.Error())
 	}
 
 	found := false
-	for idx, email := range opts.EmailRecipients {
-		if strings.EqualFold(user.Email, email) {
-			opts.EmailRecipients = slices.Delete(opts.EmailRecipients, idx, idx+1)
+	// Exclude email recipient
+	for idx, recipient := range alert.Notify.Email.Recipients {
+		if strings.EqualFold(user.Email, recipient) {
+			alert.Notify.Email.Recipients = slices.Delete(alert.Notify.Email.Recipients, idx, idx+1)
 			found = true
 			break
 		}
 	}
-	for idx, email := range opts.SlackUsers {
+
+	// Exclude slack user
+	for idx, email := range alert.Notify.Slack.Users {
 		if strings.EqualFold(user.Email, email) {
-			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
+			alert.Notify.Slack.Users = slices.Delete(alert.Notify.Slack.Users, idx, idx+1)
 			found = true
 			break
 		}
@@ -301,13 +308,13 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to alert")
 	}
 
-	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
+	if len(alert.Notify.Email.Recipients) == 0 && len(alert.Notify.Slack.Users) == 0 && len(alert.Notify.Slack.Channels) == 0 && len(alert.Notify.Slack.Webhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
 	} else {
-		data, err := s.yamlForManagedAlert(opts, annotations.AdminOwnerUserID)
+		data, err := yaml.Marshal(alert)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 		}
@@ -323,7 +330,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		}
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be updated")
@@ -384,7 +391,7 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be deleted")
@@ -457,9 +464,15 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
+	if opts.Resolver != "" {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties,
+		}
+	}
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
+	res.For.UserID = ownerUserID
 	res.Query.For.UserID = ownerUserID
 	// Notification options
 	res.Renotify = opts.Renotify
@@ -471,6 +484,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
+	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
 }
 
@@ -491,6 +505,11 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
+	if opts.Resolver != "" {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties,
+		}
+	}
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	// Notification options
@@ -500,6 +519,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
 }
 
@@ -541,33 +561,6 @@ func randomAlertName(title string) string {
 	return name
 }
 
-func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOptions, error) {
-	opts := &adminv1.AlertOptions{}
-	opts.Title = spec.Title
-	opts.IntervalDuration = spec.IntervalsIsoDuration
-	opts.QueryName = spec.QueryName
-	opts.QueryArgsJson = spec.QueryArgsJson
-	opts.Renotify = spec.Renotify
-	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
-	for _, notifier := range spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				return nil, err
-			}
-			opts.SlackUsers = props.Users
-			opts.SlackChannels = props.Channels
-			opts.SlackWebhooks = props.Webhooks
-		default:
-			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
-		}
-	}
-	return opts, nil
-}
-
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
 	Type      string   `yaml:"type"`
@@ -577,6 +570,10 @@ type alertYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
+	Data map[string]any `yaml:"data,omitempty"`
+	For  struct {
+		UserID string `yaml:"user_id"`
+	} `yaml:"for"`
 	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
@@ -604,6 +601,7 @@ type alertAnnotations struct {
 	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
 	AdminManaged     bool   `yaml:"admin_managed"`
 	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
+	WebOpenState     string `yaml:"web_open_state"`
 }
 
 func parseAlertAnnotations(annotations map[string]string) alertAnnotations {

@@ -14,8 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var limit = 1000
-
 // Driver implements drivers.RepoStore.
 func (c *connection) Driver() string {
 	return "file"
@@ -39,7 +37,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 	}
 
 	fsRoot := os.DirFS(c.root)
-	glob = filepath.Clean(filepath.Join("./", glob))
+	glob = filepath.Clean(filepath.Join(".", glob))
 
 	var entries []drivers.DirEntry
 	err := doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
@@ -48,12 +46,12 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 		}
 
 		// Exit if we reached the limit
-		if len(entries) == limit {
-			return fmt.Errorf("glob exceeded limit of %d matched files", limit)
+		if len(entries) == drivers.RepoListLimit {
+			return drivers.ErrRepoListLimitExceeded
 		}
 
 		// Track file (p is already relative to the FS root)
-		p = filepath.Join("/", p)
+		p = filepath.Join(string(filepath.Separator), p)
 		// Do not send files for ignored paths
 		if drivers.IsIgnored(p, c.ignorePaths) {
 			return nil
@@ -74,10 +72,14 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 
 // Get implements drivers.RepoStore.
 func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
-	filePath = filepath.Join(c.root, filePath)
+	fp := filepath.Join(c.root, filePath)
 
-	b, err := os.ReadFile(filePath)
+	b, err := os.ReadFile(fp)
 	if err != nil {
+		// obscure the root directory location
+		if t, ok := err.(*fs.PathError); ok { // nolint:errorlint // we specifically check for a non-wrapped error
+			return "", fmt.Errorf("%s %s %s", t.Op, filePath, t.Err.Error())
+		}
 		return "", err
 	}
 

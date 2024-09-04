@@ -57,9 +57,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
-		ExportUrl: s.urls.reportExport(org.Name, proj.Name, req.Report),
-		EditUrl:   s.urls.reportEdit(org.Name, proj.Name, req.Report),
+		OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
+		ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
+		EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 	}, nil
 }
 
@@ -116,7 +116,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Errorf(codes.Internal, "failed to insert virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be created")
@@ -189,7 +189,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
@@ -295,7 +295,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
@@ -356,7 +356,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be deleted")
@@ -452,7 +452,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
-	res.Annotations.WebShowPage = opts.WebShowPage
+	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
 }
 
@@ -495,7 +495,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
-	res.Annotations.WebShowPage = opts.WebShowPage
+	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
 }
 
@@ -610,7 +610,7 @@ type reportAnnotations struct {
 	AdminManaged          bool   `yaml:"admin_managed"`
 	AdminNonce            string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
 	WebOpenProjectSubpath string `yaml:"web_open_project_subpath"`
-	WebShowPage           string `yaml:"web_show_page"`
+	WebOpenState          string `yaml:"web_open_state"`
 }
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {

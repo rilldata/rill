@@ -15,9 +15,9 @@ sidebar_position: 7
 
 ![Connecting to DuckDB/MotherDuck](/img/reference/connectors/motherduck/motherduck.png)
 
-## Connecting to DuckDB
+## Connecting to External DuckDB as a Source
 
-As noted above, if you wish to connect to a persistent DuckDB database to read existing tables, Rill will first need to be able to access the underlying DuckDB database. As DuckDB is an _in-memory_ database that's primarily used for local use cases, credentials are not required (and you will typically use Rill Developer). However, if the database file is <u>included</u> in your Git repository, then Rill Cloud will also be able to serve your DuckDB sourced dashboards.
+As noted above, if you wish to connect to a persistent DuckDB database to read existing tables, Rill will first need to be able to access the underlying DuckDB database. Once access has been established, the data will be read from your external databases into the built-in DuckDB database in Rill.
 
 ### Local credentials
 
@@ -42,7 +42,7 @@ If you plan to deploy a project containing a DuckDB source to Rill Cloud, it is 
 
 ### Cloud deployment
 
-Once a project with a DuckDB source has been deployed using `rill deploy`, Rill Cloud will need to be able to have access to and retrieve the underlying persisted database file. In most cases, this means that the corresponding DuckDB database file should be included within a directory in your Git repository, which will allow you to specify a relative path in your source definition (from the project root).
+Once a project with a DuckDB source has been deployed using, Rill Cloud will need to be able to have access to and retrieve the underlying persisted database file. In most cases, this means that the corresponding DuckDB database file should be included within a directory in your Git repository, which will allow you to specify a relative path in your source definition (from the project root).
 
 :::warning When Using An External DuckDB Database
 
@@ -80,7 +80,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 ### Cloud deployment
 
-Once a project with a MotherDuck source has been deployed using `rill deploy`, Rill requires you to explicitly provide the motherduck token using the following command:
+Once a project with a MotherDuck source has been deployed, Rill requires you to explicitly provide the motherduck token using the following command:
 
 ```
 rill env configure

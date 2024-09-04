@@ -158,7 +158,7 @@ func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (
 // The returned list is not sorted.
 // The returned list is always safe to manipulate (e.g. sort/filter), but the resource pointers must not be edited unless clone=true.
 // Unlike other catalog functions, it is safe to call list concurrently with calls to get and flush (i.e. under a read lock).
-func (c *catalogCache) list(kind, path string, withDeleted, clone bool) ([]*runtimev1.Resource, error) {
+func (c *catalogCache) list(kind, path string, withDeleted, clone bool) []*runtimev1.Resource {
 	// Estimate number of resources to list
 	n := 0
 	if path != "" {
@@ -209,7 +209,7 @@ func (c *catalogCache) list(kind, path string, withDeleted, clone bool) ([]*runt
 		}
 	}
 
-	return res, nil
+	return res
 }
 
 // create creates a resource in the catalog.

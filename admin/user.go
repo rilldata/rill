@@ -82,7 +82,26 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+
+		for _, usergroupID := range invite.UsergroupIDs {
+			// check if the user group exists, need to check explicitly as tx is not completed yet
+			exists, err := s.DB.CheckUsergroupExists(ctx, usergroupID)
+			if err != nil {
+				return nil, err
+			}
+
+			if !exists {
+				// ignore if usergroup does not exist, might have been deleted before invite was accepted
+				continue
+			}
+
+			err = s.DB.InsertUsergroupMemberUser(ctx, usergroupID, user.ID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +132,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -179,27 +198,40 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	return user, nil
 }
 
-func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string) (*database.Organization, error) {
-	ctx, tx, err := s.DB.NewTx(ctx)
+func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, orgName, description string) (*database.Organization, error) {
+	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	org, err := s.DB.InsertOrganization(ctx, &database.InsertOrganizationOptions{
-		Name:                    orgName,
-		Description:             description,
-		QuotaProjects:           database.DefaultQuotaProjects,
-		QuotaDeployments:        database.DefaultQuotaDeployments,
-		QuotaSlotsTotal:         database.DefaultQuotaSlotsTotal,
-		QuotaSlotsPerDeployment: database.DefaultQuotaSlotsPerDeployment,
-		QuotaOutstandingInvites: database.DefaultQuotaOutstandingInvites,
+	quotaProjects := database.DefaultQuotaProjects
+	quotaDeployments := database.DefaultQuotaDeployments
+	quotaSlotsTotal := database.DefaultQuotaSlotsTotal
+	quotaSlotsPerDeployment := database.DefaultQuotaSlotsPerDeployment
+	quotaOutstandingInvites := database.DefaultQuotaOutstandingInvites
+	quotaStorageLimitBytesPerDeployment := database.DefaultQuotaStorageLimitBytesPerDeployment
+
+	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
+		Name:                                orgName,
+		DisplayName:                         orgName,
+		Description:                         description,
+		CustomDomain:                        "",
+		QuotaProjects:                       quotaProjects,
+		QuotaDeployments:                    quotaDeployments,
+		QuotaSlotsTotal:                     quotaSlotsTotal,
+		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             quotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
+		BillingEmail:                        email,
+		BillingCustomerID:                   "", // Populated later
+		PaymentCustomerID:                   "", // Populated later
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	org, err = s.prepareOrganization(ctx, org.ID, userID)
+	org, err = s.prepareOrganization(txCtx, org.ID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +243,14 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
-	return org, nil
+	// create customer and subscription in the billing system, if it fails just log the error but don't fail the request
+	updatedOrg, _, err := s.InitOrganizationBilling(ctx, org)
+	if err != nil {
+		s.Logger.Error("failed to init org billing", zap.String("org_id", org.ID), zap.String("org_name", orgName), zap.Error(err))
+		return org, nil
+	}
+
+	return updatedOrg, nil
 }
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
@@ -240,7 +279,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, err
 	}
 	// Add user to all user group
-	err = s.DB.InsertUsergroupMember(ctx, userGroup.ID, userID)
+	err = s.DB.InsertUsergroupMemberUser(ctx, userGroup.ID, userID)
 	if err != nil {
 		return nil, err
 	}

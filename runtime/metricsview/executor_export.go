@@ -15,22 +15,16 @@ import (
 // executeExport works by simulating a model that outputs to a file.
 // This means it creates a ModelExecutor with the provided input connector and props as input,
 // and with the "file" driver as the output connector targeting a temporary output path.
-func (e *Executor) executeExport(ctx context.Context, format, inputConnector string, inputProps map[string]any) (string, error) {
+func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultExportTimeout)
 	defer cancel()
-
-	path := e.rt.TempDir(e.instanceID, "metrics_export")
-	err := os.MkdirAll(path, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
 
 	name, err := randomString("export-", 16)
 	if err != nil {
 		return "", err
 	}
-	name = fmt.Sprintf("%s.%s", name, format)
-	path = filepath.Join(path, name)
+	name = format.Filename(name)
+	path := filepath.Join(e.rt.TempDir(e.instanceID), name)
 
 	ic, ir, err := e.rt.AcquireHandle(ctx, e.instanceID, inputConnector)
 	if err != nil {
@@ -45,6 +39,12 @@ func (e *Executor) executeExport(ctx context.Context, format, inputConnector str
 	}
 	defer or()
 
+	outputProps := map[string]any{
+		"path":                  path,
+		"format":                format,
+		"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
+	}
+
 	opts := &drivers.ModelExecutorOptions{
 		Env: &drivers.ModelEnv{
 			AllowHostAccess: e.rt.AllowHostAccess(),
@@ -52,17 +52,13 @@ func (e *Executor) executeExport(ctx context.Context, format, inputConnector str
 				return e.rt.AcquireHandle(ctx, e.instanceID, name)
 			},
 		},
-		ModelName:       "metrics_export", // This isn't a real model; just setting for nicer log messages
-		InputHandle:     ic,
-		InputConnector:  inputConnector,
-		InputProperties: inputProps,
-		OutputHandle:    oc,
-		OutputConnector: "file",
-		OutputProperties: map[string]any{
-			"path":   path,
-			"format": format,
-		},
-		Priority: e.priority,
+		ModelName:                   "metrics_export", // This isn't a real model; just setting for nicer log messages
+		InputHandle:                 ic,
+		InputConnector:              inputConnector,
+		PreliminaryInputProperties:  inputProps,
+		OutputHandle:                oc,
+		OutputConnector:             "file",
+		PreliminaryOutputProperties: outputProps,
 	}
 
 	me, ok := ic.AsModelExecutor(e.instanceID, opts)
@@ -73,8 +69,14 @@ func (e *Executor) executeExport(ctx context.Context, format, inputConnector str
 		}
 	}
 
-	_, err = me.Execute(ctx)
+	_, err = me.Execute(ctx, &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: opts,
+		InputProperties:      inputProps,
+		OutputProperties:     outputProps,
+		Priority:             e.priority,
+	})
 	if err != nil {
+		_ = os.Remove(path)
 		return "", fmt.Errorf("failed to execute export: %w", err)
 	}
 

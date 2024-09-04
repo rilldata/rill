@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { Expression } from "./expression_pb.js";
@@ -769,6 +769,26 @@ export class ModelSpec extends Message<ModelSpec> {
   incrementalStateResolverProperties?: Struct;
 
   /**
+   * @generated from field: string splits_resolver = 18;
+   */
+  splitsResolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct splits_resolver_properties = 19;
+   */
+  splitsResolverProperties?: Struct;
+
+  /**
+   * @generated from field: string splits_watermark_field = 20;
+   */
+  splitsWatermarkField = "";
+
+  /**
+   * @generated from field: uint32 splits_concurrency_limit = 21;
+   */
+  splitsConcurrencyLimit = 0;
+
+  /**
    * @generated from field: string input_connector = 10;
    */
   inputConnector = "";
@@ -777,6 +797,18 @@ export class ModelSpec extends Message<ModelSpec> {
    * @generated from field: google.protobuf.Struct input_properties = 11;
    */
   inputProperties?: Struct;
+
+  /**
+   * stage_connector is optional.
+   *
+   * @generated from field: string stage_connector = 16;
+   */
+  stageConnector = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct stage_properties = 17;
+   */
+  stageProperties?: Struct;
 
   /**
    * @generated from field: string output_connector = 1;
@@ -793,6 +825,11 @@ export class ModelSpec extends Message<ModelSpec> {
    */
   trigger = false;
 
+  /**
+   * @generated from field: bool trigger_full = 22;
+   */
+  triggerFull = false;
+
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -806,11 +843,18 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 13, name: "incremental", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "incremental_state_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "incremental_state_resolver_properties", kind: "message", T: Struct },
+    { no: 18, name: "splits_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "splits_resolver_properties", kind: "message", T: Struct },
+    { no: 20, name: "splits_watermark_field", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "splits_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
+    { no: 16, name: "stage_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
@@ -835,49 +879,81 @@ export class ModelSpec extends Message<ModelSpec> {
  */
 export class ModelState extends Message<ModelState> {
   /**
+   * executor_connector is the ModelExecutor that produced the model's result.
+   *
    * @generated from field: string executor_connector = 6;
    */
   executorConnector = "";
 
   /**
+   * result_connector is the connector where the model's result is stored.
+   *
    * @generated from field: string result_connector = 1;
    */
   resultConnector = "";
 
   /**
+   * result_properties are returned by the executor and contains metadata about the result.
+   *
    * @generated from field: google.protobuf.Struct result_properties = 5;
    */
   resultProperties?: Struct;
 
   /**
+   * result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties.
+   *
    * @generated from field: string result_table = 2;
    */
   resultTable = "";
 
   /**
+   * spec_hash is a hash of those parts of the spec that affect the model's result.
+   *
    * @generated from field: string spec_hash = 3;
    */
   specHash = "";
 
   /**
+   * refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
+   *
    * @generated from field: string refs_hash = 9;
    */
   refsHash = "";
 
   /**
+   * refreshed_on is the time the model was last executed.
+   *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
    */
   refreshedOn?: Timestamp;
 
   /**
+   * incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
+   *
    * @generated from field: google.protobuf.Struct incremental_state = 7;
    */
   incrementalState?: Struct;
 
   /**
+   * incremental_state_schema contains a schema for the data in incremental_state.
+   *
    * @generated from field: rill.runtime.v1.StructType incremental_state_schema = 8;
    */
   incrementalStateSchema?: StructType;
+
+  /**
+   * splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
+   *
+   * @generated from field: string splits_model_id = 10;
+   */
+  splitsModelId = "";
+
+  /**
+   * splits_have_errors is true if one or more splits failed to execute.
+   *
+   * @generated from field: bool splits_have_errors = 11;
+   */
+  splitsHaveErrors = false;
 
   constructor(data?: PartialMessage<ModelState>) {
     super();
@@ -896,6 +972,8 @@ export class ModelState extends Message<ModelState> {
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
+    { no: 10, name: "splits_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "splits_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {
@@ -991,6 +1069,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   table = "";
 
   /**
+   * Name of the model the metrics view is based on. Either table or model should be set.
+   *
+   * @generated from field: string model = 24;
+   */
+  model = "";
+
+  /**
    * User friendly label for the dashboard
    *
    * @generated from field: string title = 3;
@@ -1070,9 +1155,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Security for the dashboard
    *
-   * @generated from field: rill.runtime.v1.MetricsViewSpec.SecurityV2 security = 11;
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 23;
    */
-  security?: MetricsViewSpec_SecurityV2;
+  securityRules: SecurityRule[] = [];
 
   /**
    * ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
@@ -1128,6 +1213,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1139,7 +1225,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "security", kind: "message", T: MetricsViewSpec_SecurityV2 },
+    { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 14, name: "default_comparison_mode", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_ComparisonMode) },
@@ -1267,6 +1353,11 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
    */
   unnest = false;
 
+  /**
+   * @generated from field: string uri = 7;
+   */
+  uri = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_DimensionV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1281,6 +1372,7 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
     { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionV2 {
@@ -1518,123 +1610,6 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
 }
 
 /**
- * Security for the dashboard
- *
- * @generated from message rill.runtime.v1.MetricsViewSpec.SecurityV2
- */
-export class MetricsViewSpec_SecurityV2 extends Message<MetricsViewSpec_SecurityV2> {
-  /**
-   * Dashboard level access condition
-   *
-   * @generated from field: string access = 1;
-   */
-  access = "";
-
-  /**
-   * SQL expression to apply in a WHERE clause against the underlying table
-   *
-   * @generated from field: string row_filter = 2;
-   */
-  rowFilter = "";
-
-  /**
-   * Dimension filter to apply to queries against the metrics view.
-   * Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
-   *
-   * @generated from field: rill.runtime.v1.Expression query_filter = 5;
-   */
-  queryFilter?: Expression;
-
-  /**
-   * either one of include or exclude will be specified
-   *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2 include = 3;
-   */
-  include: MetricsViewSpec_SecurityV2_FieldConditionV2[] = [];
-
-  /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2 exclude = 4;
-   */
-  exclude: MetricsViewSpec_SecurityV2_FieldConditionV2[] = [];
-
-  constructor(data?: PartialMessage<MetricsViewSpec_SecurityV2>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.SecurityV2";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "access", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "row_filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "query_filter", kind: "message", T: Expression },
-    { no: 3, name: "include", kind: "message", T: MetricsViewSpec_SecurityV2_FieldConditionV2, repeated: true },
-    { no: 4, name: "exclude", kind: "message", T: MetricsViewSpec_SecurityV2_FieldConditionV2, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewSpec_SecurityV2 | PlainMessage<MetricsViewSpec_SecurityV2> | undefined, b: MetricsViewSpec_SecurityV2 | PlainMessage<MetricsViewSpec_SecurityV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_SecurityV2, a, b);
-  }
-}
-
-/**
- * Dimension/measure level access condition
- *
- * @generated from message rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
- */
-export class MetricsViewSpec_SecurityV2_FieldConditionV2 extends Message<MetricsViewSpec_SecurityV2_FieldConditionV2> {
-  /**
-   * @generated from field: string condition = 1;
-   */
-  condition = "";
-
-  /**
-   * @generated from field: repeated string names = 2;
-   */
-  names: string[] = [];
-
-  constructor(data?: PartialMessage<MetricsViewSpec_SecurityV2_FieldConditionV2>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined, b: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_SecurityV2_FieldConditionV2, a, b);
-  }
-}
-
-/**
  * @generated from message rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
  */
 export class MetricsViewSpec_AvailableComparisonOffset extends Message<MetricsViewSpec_AvailableComparisonOffset> {
@@ -1721,6 +1696,214 @@ export class MetricsViewSpec_AvailableTimeRange extends Message<MetricsViewSpec_
 
   static equals(a: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined, b: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_AvailableTimeRange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRule
+ */
+export class SecurityRule extends Message<SecurityRule> {
+  /**
+   * @generated from oneof rill.runtime.v1.SecurityRule.rule
+   */
+  rule: {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleAccess access = 1;
+     */
+    value: SecurityRuleAccess;
+    case: "access";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleFieldAccess field_access = 2;
+     */
+    value: SecurityRuleFieldAccess;
+    case: "fieldAccess";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleRowFilter row_filter = 3;
+     */
+    value: SecurityRuleRowFilter;
+    case: "rowFilter";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<SecurityRule>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRule";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "access", kind: "message", T: SecurityRuleAccess, oneof: "rule" },
+    { no: 2, name: "field_access", kind: "message", T: SecurityRuleFieldAccess, oneof: "rule" },
+    { no: 3, name: "row_filter", kind: "message", T: SecurityRuleRowFilter, oneof: "rule" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRule {
+    return new SecurityRule().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRule {
+    return new SecurityRule().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRule {
+    return new SecurityRule().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRule | PlainMessage<SecurityRule> | undefined, b: SecurityRule | PlainMessage<SecurityRule> | undefined): boolean {
+    return proto3.util.equals(SecurityRule, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleAccess
+ */
+export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
+  /**
+   * @generated from field: string condition = 1;
+   */
+  condition = "";
+
+  /**
+   * @generated from field: bool allow = 2;
+   */
+  allow = false;
+
+  constructor(data?: PartialMessage<SecurityRuleAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleAccess | PlainMessage<SecurityRuleAccess> | undefined, b: SecurityRuleAccess | PlainMessage<SecurityRuleAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleAccess, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleFieldAccess
+ */
+export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
+  /**
+   * @generated from field: string condition = 1;
+   */
+  condition = "";
+
+  /**
+   * @generated from field: bool allow = 2;
+   */
+  allow = false;
+
+  /**
+   * @generated from field: repeated string fields = 3;
+   */
+  fields: string[] = [];
+
+  /**
+   * @generated from field: bool all_fields = 4;
+   */
+  allFields = false;
+
+  constructor(data?: PartialMessage<SecurityRuleFieldAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleFieldAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "all_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleFieldAccess | PlainMessage<SecurityRuleFieldAccess> | undefined, b: SecurityRuleFieldAccess | PlainMessage<SecurityRuleFieldAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleFieldAccess, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleRowFilter
+ */
+export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
+  /**
+   * @generated from field: string condition = 1;
+   */
+  condition = "";
+
+  /**
+   * Raw SQL expression to apply to the underlying table
+   *
+   * @generated from field: string sql = 2;
+   */
+  sql = "";
+
+  /**
+   * Regular query expression referencing dimension names
+   *
+   * @generated from field: rill.runtime.v1.Expression expression = 3;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<SecurityRuleRowFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleRowFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined, b: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleRowFilter, a, b);
   }
 }
 
@@ -2267,6 +2450,8 @@ export class AlertSpec extends Message<AlertSpec> {
   timeoutSeconds = 0;
 
   /**
+   * for alerts that have not been edited since resolver and resolver_properties have been added
+   *
    * @generated from field: string query_name = 9;
    */
   queryName = "";
@@ -2275,6 +2460,16 @@ export class AlertSpec extends Message<AlertSpec> {
    * @generated from field: string query_args_json = 10;
    */
   queryArgsJson = "";
+
+  /**
+   * @generated from field: string resolver = 22;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 23;
+   */
+  resolverProperties?: Struct;
 
   /**
    * @generated from oneof rill.runtime.v1.AlertSpec.query_for
@@ -2352,6 +2547,8 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 8, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 9, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 22, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "resolver_properties", kind: "message", T: Struct },
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
@@ -2525,6 +2722,13 @@ export class AlertExecution extends Message<AlertExecution> {
    */
   finishedOn?: Timestamp;
 
+  /**
+   * Stores the last notification time in suppressed alerts
+   *
+   * @generated from field: google.protobuf.Timestamp suppressed_since = 7;
+   */
+  suppressedSince?: Timestamp;
+
   constructor(data?: PartialMessage<AlertExecution>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2539,6 +2743,7 @@ export class AlertExecution extends Message<AlertExecution> {
     { no: 4, name: "execution_time", kind: "message", T: Timestamp },
     { no: 5, name: "started_on", kind: "message", T: Timestamp },
     { no: 6, name: "finished_on", kind: "message", T: Timestamp },
+    { no: 7, name: "suppressed_since", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertExecution {
@@ -2608,6 +2813,8 @@ export class AssertionResult extends Message<AssertionResult> {
 }
 
 /**
+ * DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
+ *
  * @generated from message rill.runtime.v1.PullTrigger
  */
 export class PullTrigger extends Message<PullTrigger> {
@@ -2760,9 +2967,19 @@ export class RefreshTrigger extends Message<RefreshTrigger> {
  */
 export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   /**
-   * @generated from field: repeated rill.runtime.v1.ResourceName only_names = 1;
+   * Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+   * If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName resources = 1;
    */
-  onlyNames: ResourceName[] = [];
+  resources: ResourceName[] = [];
+
+  /**
+   * Models to refresh. These are specified separately to enable more fine-grained configuration.
+   *
+   * @generated from field: repeated rill.runtime.v1.RefreshModelTrigger models = 2;
+   */
+  models: RefreshModelTrigger[] = [];
 
   constructor(data?: PartialMessage<RefreshTriggerSpec>) {
     super();
@@ -2772,7 +2989,8 @@ export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.RefreshTriggerSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "only_names", kind: "message", T: ResourceName, repeated: true },
+    { no: 1, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 2, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshTriggerSpec {
@@ -2820,6 +3038,70 @@ export class RefreshTriggerState extends Message<RefreshTriggerState> {
 
   static equals(a: RefreshTriggerState | PlainMessage<RefreshTriggerState> | undefined, b: RefreshTriggerState | PlainMessage<RefreshTriggerState> | undefined): boolean {
     return proto3.util.equals(RefreshTriggerState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.RefreshModelTrigger
+ */
+export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
+  /**
+   * The model to refresh.
+   *
+   * @generated from field: string model = 1;
+   */
+  model = "";
+
+  /**
+   * If true, the current table and state will be dropped before refreshing.
+   * For non-incremental models, this is equivalent to a normal refresh.
+   *
+   * @generated from field: bool full = 2;
+   */
+  full = false;
+
+  /**
+   * Keys of specific splits to refresh.
+   *
+   * @generated from field: repeated string splits = 3;
+   */
+  splits: string[] = [];
+
+  /**
+   * If true, it will refresh all splits that errored on their last execution.
+   *
+   * @generated from field: bool all_errored_splits = 4;
+   */
+  allErroredSplits = false;
+
+  constructor(data?: PartialMessage<RefreshModelTrigger>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RefreshModelTrigger";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "splits", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "all_errored_splits", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RefreshModelTrigger | PlainMessage<RefreshModelTrigger> | undefined, b: RefreshModelTrigger | PlainMessage<RefreshModelTrigger> | undefined): boolean {
+    return proto3.util.equals(RefreshModelTrigger, a, b);
   }
 }
 
@@ -3191,6 +3473,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
   title = "";
 
   /**
+   * @generated from field: string subtitle = 7;
+   */
+  subtitle = "";
+
+  /**
    * @generated from field: string resolver = 2;
    */
   resolver = "";
@@ -3211,14 +3498,26 @@ export class ComponentSpec extends Message<ComponentSpec> {
   rendererProperties?: Struct;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ComponentVariable input = 8;
+   */
+  input: ComponentVariable[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.ComponentVariable output = 9;
+   */
+  output?: ComponentVariable;
+
+  /**
+   * Templated string that should evaluate to a boolean.
+   *
+   * @generated from field: string show = 10;
+   */
+  show = "";
+
+  /**
    * @generated from field: bool defined_in_dashboard = 6;
    */
   definedInDashboard = false;
-
-  /**
-   * @generated from field: string subtitle = 7;
-   */
-  subtitle = "";
 
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
@@ -3229,12 +3528,15 @@ export class ComponentSpec extends Message<ComponentSpec> {
   static readonly typeName = "rill.runtime.v1.ComponentSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
+    { no: 9, name: "output", kind: "message", T: ComponentVariable },
+    { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
@@ -3282,6 +3584,55 @@ export class ComponentState extends Message<ComponentState> {
 
   static equals(a: ComponentState | PlainMessage<ComponentState> | undefined, b: ComponentState | PlainMessage<ComponentState> | undefined): boolean {
     return proto3.util.equals(ComponentState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ComponentVariable
+ */
+export class ComponentVariable extends Message<ComponentVariable> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string type = 2;
+   */
+  type = "";
+
+  /**
+   * @generated from field: google.protobuf.Value default_value = 3;
+   */
+  defaultValue?: Value;
+
+  constructor(data?: PartialMessage<ComponentVariable>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ComponentVariable";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "default_value", kind: "message", T: Value },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentVariable {
+    return new ComponentVariable().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ComponentVariable {
+    return new ComponentVariable().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ComponentVariable {
+    return new ComponentVariable().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ComponentVariable | PlainMessage<ComponentVariable> | undefined, b: ComponentVariable | PlainMessage<ComponentVariable> | undefined): boolean {
+    return proto3.util.equals(ComponentVariable, a, b);
   }
 }
 
@@ -3348,6 +3699,11 @@ export class DashboardSpec extends Message<DashboardSpec> {
   gap = 0;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
+   */
+  variables: ComponentVariable[] = [];
+
+  /**
    * @generated from field: repeated rill.runtime.v1.DashboardItem items = 4;
    */
   items: DashboardItem[] = [];
@@ -3363,6 +3719,7 @@ export class DashboardSpec extends Message<DashboardSpec> {
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: DashboardItem, repeated: true },
   ]);
 
@@ -3448,11 +3805,6 @@ export class DashboardItem extends Message<DashboardItem> {
    */
   height?: number;
 
-  /**
-   * @generated from field: uint32 font_size = 7;
-   */
-  fontSize = 0;
-
   constructor(data?: PartialMessage<DashboardItem>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3467,7 +3819,6 @@ export class DashboardItem extends Message<DashboardItem> {
     { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 7, name: "font_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardItem {
@@ -3546,6 +3897,21 @@ export class APISpec extends Message<APISpec> {
    */
   resolverProperties?: Struct;
 
+  /**
+   * @generated from field: string openapi_summary = 3;
+   */
+  openapiSummary = "";
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   */
+  openapiParameters: Struct[] = [];
+
+  /**
+   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   */
+  openapiResponseSchema?: Struct;
+
   constructor(data?: PartialMessage<APISpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3556,6 +3922,9 @@ export class APISpec extends Message<APISpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
+    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {

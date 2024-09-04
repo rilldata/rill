@@ -1,15 +1,21 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import type { EditorView } from "@codemirror/view";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
+  import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
+  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
+  import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
+  import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
@@ -21,13 +27,10 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { setContext } from "svelte";
   import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
-  import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
-  import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
-  import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
-  import type { EditorView } from "@codemirror/view";
 
   export let fileArtifact: FileArtifact;
 
@@ -50,6 +53,7 @@
   };
 
   $: customDashboardName = getNameFromFile(filePath);
+  $: setContext("rill::custom-dashboard:name", customDashboardName);
 
   $: ({ instanceId } = $runtime);
 
@@ -71,7 +75,7 @@
 
   $: spec = structuredClone($resourceQuery.data?.dashboard?.spec ?? spec);
 
-  $: ({ items = [], columns = 20, gap = 4 } = spec);
+  $: ({ items = [], columns = 20, gap = 4, variables = [] } = spec);
   $: if (
     items.filter(
       (item) =>
@@ -185,16 +189,16 @@
 />
 
 <WorkspaceContainer
-  bind:width={containerWidth}
   bind:height={containerHeight}
+  bind:width={containerWidth}
   inspector={false}
 >
   <WorkspaceHeader
+    hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
     showInspectorToggle={false}
     slot="header"
     titleInput={fileName}
-    hasUnsavedChanges={$hasUnsavedChanges}
   >
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />
@@ -215,6 +219,9 @@
         disabled={Boolean(errors.length)}
         type="custom"
       />
+
+      <DeployDashboardCta />
+      <LocalAvatarButton />
     </div>
   </WorkspaceHeader>
 
@@ -298,10 +305,12 @@
 
     {#if selectedView == "viz" || selectedView == "split"}
       <CustomDashboardPreview
+        {customDashboardName}
         {gap}
         {items}
         {columns}
         {showGrid}
+        {variables}
         bind:selectedChartName
         bind:selectedIndex
         on:update={handlePreviewUpdate}

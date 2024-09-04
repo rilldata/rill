@@ -1,7 +1,6 @@
 package metricsview
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -12,6 +11,22 @@ func (a *AST) SQL() (string, []any, error) {
 	b := &sqlBuilder{
 		ast: a,
 		out: &strings.Builder{},
+	}
+
+	if len(a.CTEs) > 0 {
+		b.out.WriteString("WITH ")
+		for i, cte := range a.CTEs {
+			if i > 0 {
+				b.out.WriteString(", ")
+			}
+			b.out.WriteString(cte.Alias)
+			b.out.WriteString(" AS (")
+			err := b.writeSelect(cte)
+			if err != nil {
+				return "", nil, err
+			}
+			b.out.WriteString(") ")
+		}
 	}
 
 	var err error
@@ -82,13 +97,8 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 
-		expr := f.Expr
-		if f.Unnest {
-			expr = b.ast.sqlForMember(f.UnnestAlias, f.Name)
-		}
-
 		b.out.WriteByte('(')
-		b.out.WriteString(expr)
+		b.out.WriteString(f.Expr)
 		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
@@ -108,31 +118,20 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	if n.FromTable != nil {
 		b.out.WriteString(*n.FromTable)
 
-		// Add unnest joins. We only and always apply these against FromPlain (ensuring they are already unnested when referenced in outer SELECTs).
-		for _, f := range n.DimFields {
-			if !f.Unnest {
-				continue
-			}
-
-			tblWithAlias, auto, err := b.ast.dialect.LateralUnnest(f.Expr, f.UnnestAlias, f.Name)
-			if err != nil {
-				return fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
-			}
-
-			if auto {
-				continue
-			}
-
+		// Add unnest joins. We only and always apply these against FromTable (ensuring they are already unnested when referenced in outer SELECTs).
+		for _, u := range n.Unnests {
 			b.out.WriteString(", ")
-			b.out.WriteString(tblWithAlias)
+			b.out.WriteString(u)
 		}
 	} else if n.FromSelect != nil {
-		b.out.WriteByte('(')
-		err := b.writeSelect(n.FromSelect)
-		if err != nil {
-			return err
+		if !n.FromSelect.IsCTE {
+			b.out.WriteByte('(')
+			err := b.writeSelect(n.FromSelect)
+			if err != nil {
+				return err
+			}
+			b.out.WriteString(") ")
 		}
-		b.out.WriteString(") ")
 		b.out.WriteString(n.FromSelect.Alias)
 
 		for _, ljs := range n.LeftJoinSelects {
@@ -142,6 +141,12 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			}
 		}
 
+		if n.SpineSelect != nil {
+			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
+			if err != nil {
+				return err
+			}
+		}
 		if n.JoinComparisonSelect != nil {
 			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
 			if err != nil {
@@ -149,7 +154,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			}
 		}
 	} else {
-		panic("internal: FromPlain and FromSelect are both nil")
+		panic("internal: FromTable and FromSelect are both nil")
 	}
 
 	var wroteWhere bool
@@ -164,10 +169,12 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		if wroteWhere {
 			b.out.WriteString(" AND (")
 		} else {
-			b.out.WriteString(" WHERE (")
+			b.out.WriteString(" WHERE ")
 		}
 		b.out.WriteString(n.Where.Expr)
-		b.out.WriteString(")")
+		if wroteWhere {
+			b.out.WriteString(")")
+		}
 		b.args = append(b.args, n.Where.Args...)
 	}
 
@@ -210,15 +217,19 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	return nil
 }
 
-func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNode) error {
+func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
 	b.out.WriteByte(' ')
-	b.out.WriteString(joinType)
-	b.out.WriteString(" JOIN (")
-	err := b.writeSelect(joinSelect)
-	if err != nil {
-		return err
+	b.out.WriteString(string(joinType))
+	b.out.WriteString(" JOIN ")
+	// If the join select is a CTE, then just add the CTE alias otherwise add the full select query
+	if !joinSelect.IsCTE {
+		b.out.WriteByte('(')
+		err := b.writeSelect(joinSelect)
+		if err != nil {
+			return err
+		}
+		b.out.WriteString(") ")
 	}
-	b.out.WriteString(") ")
 	b.out.WriteString(joinSelect.Alias)
 
 	if len(baseSelect.DimFields) == 0 {

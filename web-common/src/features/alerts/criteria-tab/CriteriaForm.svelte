@@ -1,17 +1,12 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { getTypeOptions } from "@rilldata/web-common/features/alerts/criteria-tab/getTypeOptions";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
   import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-  import {
-    MeasureFilterBaseTypeOptions,
-    MeasureFilterComparisonTypeOptions,
-    MeasureFilterType,
-  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-  import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -35,33 +30,24 @@
       label: measure?.label?.length ? measure.label : measure?.expression,
     },
   ];
+  $: selectedMeasure = $metricsView.data?.measures?.find(
+    (m) => m.name === $form["criteria"][index].measure,
+  );
 
-  $: hasComparison =
-    $form.comparisonTimeRange?.isoDuration ||
-    $form.comparisonTimeRange?.isoOffset;
-  $: comparisonLabel = $form.comparisonTimeRange
-    ? getComparisonLabel($form.comparisonTimeRange).toLowerCase()
-    : "";
-  $: typeOptions = hasComparison
-    ? MeasureFilterComparisonTypeOptions.map((o) => {
-        if (
-          o.value !== MeasureFilterType.AbsoluteChange &&
-          o.value !== MeasureFilterType.PercentChange
-        )
-          return o;
-        return {
-          ...o,
-          label: `${o.label} ${comparisonLabel}`,
-        };
-      })
-    : MeasureFilterBaseTypeOptions;
+  $: typeOptions = getTypeOptions($form, selectedMeasure);
 
-  // Debounce the update of value. This avoid constant refetches
+  // Debounce the update of value. This avoids constant refetches
   let value: string = $form["criteria"][index].value1;
   const valueUpdater = debounce(() => {
-    $form["criteria"][index].value1 = value;
+    if ($form["criteria"][index]) $form["criteria"][index].value1 = value;
     void validateField("criteria");
   }, 500);
+
+  // memoize `type` to avoid unnecessary calls to `validateField("criteria")`
+  $: type = $form["criteria"][index].type;
+  // changing type should re-trigger `criteria` validation,
+  // especially when changed to/from a percent type
+  $: if (type) void validateField("criteria");
 
   $: groupErr = parseCriteriaError($errors["criteria"], index);
 </script>

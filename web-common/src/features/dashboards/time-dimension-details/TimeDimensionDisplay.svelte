@@ -53,10 +53,11 @@
 
   $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
-  // Get labels for table headers
-  $: measureLabel =
-    $metricsView?.data?.measures?.find((m) => m.name === expandedMeasureName)
-      ?.label ?? "";
+  $: measure = $metricsView?.data?.measures?.find(
+    (m) => m.name === expandedMeasureName,
+  );
+
+  $: measureLabel = measure?.label ?? "";
 
   let dimensionLabel = "";
   $: if (comparing === "dimension") {
@@ -224,8 +225,9 @@
         </div>
       </div>
     </div>
-  {:else if formattedData && comparisonCopy}
+  {:else if formattedData && comparisonCopy && measure}
     <TDDTable
+      {measure}
       {excludeMode}
       {dimensionLabel}
       {measureLabel}
@@ -265,7 +267,7 @@
         </div>
       </div>
     </div>
-  {:else if comparing === "dimension" && formattedData.rowCount === 1}
+  {:else if comparing === "dimension" && formattedData?.rowCount === 1}
     <div class="w-full h-full">
       <div class="flex flex-col items-center h-full text-sm">
         <div class="text-gray-600">No search results to show</div>

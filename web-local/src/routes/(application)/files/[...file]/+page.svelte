@@ -1,19 +1,20 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
+  import type { EditorView } from "@codemirror/view";
+  import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
+  import ChartWorkspace from "@rilldata/web-common/features/workspaces/ChartWorkspace.svelte";
+  import CustomDashboardWorkspace from "@rilldata/web-common/features/workspaces/CustomDashboardWorkspace.svelte";
+  import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
+  import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
+  import SourceWorkspace from "@rilldata/web-common/features/workspaces/SourceWorkspace.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { onMount } from "svelte";
-  import type { EditorView } from "@codemirror/view";
-  import SourceWorkspace from "@rilldata/web-common/features/workspaces/SourceWorkspace.svelte";
-  import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
-  import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
-  import ChartWorkspace from "@rilldata/web-common/features/workspaces/ChartWorkspace.svelte";
-  import CustomDashboardWorkspace from "@rilldata/web-common/features/workspaces/CustomDashboardWorkspace.svelte";
 
   const workspaces = new Map([
     [ResourceKind.Source, SourceWorkspace],
@@ -21,6 +22,7 @@
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Component, ChartWorkspace],
     [ResourceKind.Dashboard, CustomDashboardWorkspace],
+    [null, null],
     [undefined, null],
   ]);
 
@@ -29,11 +31,22 @@
   let editor: EditorView;
 
   $: ({ filePath, fileArtifact } = data);
-  $: ({ autoSave, hasUnsavedChanges, fileName, name } = fileArtifact);
+  $: ({
+    autoSave,
+    hasUnsavedChanges,
+    fileName,
+    resourceName,
+    inferredResourceKind,
+  } = fileArtifact);
 
-  $: resourceKind = <ResourceKind | undefined>$name?.kind;
+  $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
 
-  $: workspace = workspaces.get(resourceKind);
+  $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
+
+  $: extensions =
+    resourceKind === ResourceKind.API
+      ? [customYAMLwithJSONandSQL]
+      : getExtensionsForFile(filePath);
 
   onMount(() => {
     expandDirectory(filePath);
@@ -69,7 +82,7 @@
     <WorkspaceEditorContainer slot="body">
       <Editor
         {fileArtifact}
-        extensions={getExtensionsForFile(filePath)}
+        {extensions}
         bind:editor
         bind:autoSave={$autoSave}
       />

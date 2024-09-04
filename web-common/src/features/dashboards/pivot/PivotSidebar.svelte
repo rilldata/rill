@@ -78,7 +78,7 @@
     <input
       type="text"
       placeholder="Search"
-      class="w-full h-full"
+      class="w-full h-full select-none"
       bind:value={searchText}
       bind:this={inputEl}
     />
@@ -115,6 +115,7 @@
     @apply h-full border-r z-0 w-60;
     transition-property: width;
     will-change: width;
+    @apply select-none;
   }
 
   .input-wrapper {

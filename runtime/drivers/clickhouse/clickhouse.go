@@ -32,43 +32,8 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			NoPrompt:    true,
 		},
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-			Placeholder: "localhost",
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "9000",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-			Placeholder: "default",
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
@@ -126,12 +91,19 @@ type configProperties struct {
 	Port     int    `mapstructure:"port"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
+	// Cluster name. Required for running distributed queries.
+	Cluster string `mapstructure:"cluster"`
 	// EnableCache controls whether to enable cache for Clickhouse queries.
 	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
 	SettingsOverride string `mapstructure:"settings_override"`
+	// EmbedPort is the port to run Clickhouse locally (0 is random port).
+	EmbedPort int `mapstructure:"embed_port"`
+	// DataDir is the path to directory where db files will be created.
+	DataDir string `mapstructure:"data_dir"`
+	TempDir string `mapstructure:"temp_dir"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -149,6 +121,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 
 	// build clickhouse options
 	var opts *clickhouse.Options
+	var embed *embedClickHouse
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -181,7 +154,12 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 			opts.Auth.Username = conf.Username
 		}
 	} else {
-		return nil, fmt.Errorf("clickhouse connection parameters not set. Set `dsn` or individual properties")
+		// run clickhouse locally
+		embed = newEmbedClickHouse(conf.EmbedPort, conf.DataDir, conf.TempDir, logger)
+		opts, err = embed.start()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	db := sqlx.NewDb(clickhouse.OpenDB(opts), "clickhouse")
@@ -217,6 +195,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		metaSem: semaphore.NewWeighted(1),
 		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
 		opts:    opts,
+		embed:   embed,
 	}
 	return conn, nil
 }
@@ -252,6 +231,13 @@ type connection struct {
 
 	// options used to open clickhouse connections
 	opts *clickhouse.Options
+	// embed is embedded clickhouse server for local run
+	embed *embedClickHouse
+}
+
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return c.db.PingContext(ctx)
 }
 
 // Driver implements drivers.Connection.
@@ -262,13 +248,20 @@ func (c *connection) Driver() string {
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return c.db.Close()
+	errDB := c.db.Close()
+
+	var errEmbed error
+	if c.embed != nil {
+		errEmbed = c.embed.stop()
+	}
+
+	return errors.Join(errDB, errEmbed)
 }
 
 // Registry implements drivers.Connection.
@@ -320,7 +313,10 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c, opts}, true
+		return &selfToSelfExecutor{c}, true
+	}
+	if opts.InputHandle.Driver() == "s3" && opts.OutputHandle == c {
+		return &s3ToSelfExecutor{opts.InputHandle, c}, true
 	}
 	return nil, false
 }
@@ -332,20 +328,16 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.(*connection)
-	if c == to {
-		switch from.Driver() {
-		case "s3":
-			return NewS3Transporter(from, olap, c.logger), true
-		case "https":
-			return NewHTTPTransporter(from, olap, c.logger), true
-		}
-	}
 	return nil, false
 }
 
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
@@ -358,10 +350,6 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
 }
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {

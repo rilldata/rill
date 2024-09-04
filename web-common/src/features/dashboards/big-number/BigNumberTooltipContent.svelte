@@ -9,6 +9,7 @@
   import { isClipboardApiSupported } from "../../../lib/actions/copy-to-clipboard";
 
   export let measure: MetricsViewSpecMeasureV2;
+  export let isMeasureExpanded = false;
   export let value = "";
 
   $: description =
@@ -30,8 +31,10 @@
   </TooltipDescription>
 
   <TooltipShortcutContainer>
-    <div>Expand measure</div>
-    <Shortcut>Click</Shortcut>
+    {#if !isMeasureExpanded}
+      <div>Expand measure</div>
+      <Shortcut>Click</Shortcut>
+    {/if}
     {#if isClipboardApiSupported()}
       <div>
         <StackingWord key="shift">Copy</StackingWord>

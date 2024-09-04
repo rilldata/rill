@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 
@@ -28,16 +27,11 @@ import (
 // recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
 const rowGroupBufferSize = int64(datasize.MB) * 512
 
-// Query implements drivers.SQLStore
-func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
-	return nil, drivers.ErrNotImplemented
-}
-
 // QueryAsFiles implements drivers.SQLStore.
 // Fetches query result in arrow batches.
 // As an alternative (or in case of memory issues) consider utilizing Snowflake "COPY INTO <location>" feature,
 // see https://docs.snowflake.com/en/sql-reference/sql/copy-into-location
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -46,18 +40,15 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	var dsn string
 	if srcProps.DSN != "" { // get from src properties
 		dsn = srcProps.DSN
-	} else if url, ok := c.config["dsn"].(string); ok && url != "" { // get from driver configs
-		dsn = url
+	} else if c.configProperties.DSN != "" { // get from driver configs
+		dsn = c.configProperties.DSN
 	} else {
 		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--var connector.snowflake.dsn=...' to 'rill start'")
 	}
 
 	parallelFetchLimit := 15
-	if limit, ok := c.config["parallel_fetch_limit"].(string); ok {
-		parallelFetchLimit, err = strconv.Atoi(limit)
-		if err != nil {
-			return nil, err
-		}
+	if c.configProperties.ParallelFetchLimit != 0 {
+		parallelFetchLimit = c.configProperties.ParallelFetchLimit
 	}
 
 	db, err := sql.Open("snowflake", dsn)
@@ -94,34 +85,32 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, drivers.ErrNoRows
 	}
 
-	// the number of returned rows is unknown at this point, only the number of batches and output files
-	p.Target(1, drivers.ProgressUnitFile)
-
+	tempDir, err := os.MkdirTemp(c.configProperties.TempDir, "snowflake")
+	if err != nil {
+		return nil, err
+	}
 	return &fileIterator{
 		ctx:                ctx,
 		db:                 db,
 		conn:               conn,
 		rows:               rows,
 		batches:            batches,
-		progress:           p,
-		limitInBytes:       opt.TotalLimitInBytes,
 		parallelFetchLimit: parallelFetchLimit,
 		logger:             c.logger,
+		tempDir:            tempDir,
 	}, nil
 }
 
 type fileIterator struct {
-	ctx          context.Context
-	db           *sql.DB
-	conn         *sql.Conn
-	rows         sqld.Rows
-	batches      []*sf.ArrowBatch
-	progress     drivers.Progress
-	limitInBytes int64
-	logger       *zap.Logger
+	ctx     context.Context
+	db      *sql.DB
+	conn    *sql.Conn
+	rows    sqld.Rows
+	batches []*sf.ArrowBatch
+	logger  *zap.Logger
+	tempDir string
 	// Computed while iterating
 	totalRecords int64
-	tempFilePath string
 	downloaded   bool
 	// Max number of batches to fetch in parallel
 	parallelFetchLimit int
@@ -129,7 +118,7 @@ type fileIterator struct {
 
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
-	return os.Remove(f.tempFilePath)
+	return os.RemoveAll(f.tempDir)
 }
 
 // Next implements drivers.FileIterator.
@@ -149,12 +138,11 @@ func (f *fileIterator) Next() ([]string, error) {
 	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
 	// create a temp file
-	fw, err := os.CreateTemp("", "temp*.parquet")
+	fw, err := os.CreateTemp(f.tempDir, "temp*.parquet")
 	if err != nil {
 		return nil, err
 	}
 	defer fw.Close()
-	f.tempFilePath = fw.Name()
 	f.downloaded = true
 
 	tf := time.Now()
@@ -207,44 +195,33 @@ func (f *fileIterator) Next() ([]string, error) {
 	// mutex to protect file writes
 	var mu sync.Mutex
 	batchesLeft := len(f.batches)
+	start := time.Now()
 
 	for _, batch := range f.batches {
 		b := batch
 		errGrp.Go(func() error {
-			fetchStart := time.Now()
 			records, err := b.Fetch()
 			if err != nil {
 				return err
 			}
-			f.logger.Debug(
-				"fetched an arrow batch",
-				zap.Duration("duration", time.Since(fetchStart)),
-				zap.Int("row_count", b.GetRowCount()),
-			)
 			mu.Lock()
 			defer mu.Unlock()
-			writeStart := time.Now()
+
 			for _, rec := range *records {
 				if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 					writer.NewBufferedRowGroup()
+					f.logger.Debug(
+						"starting writing to new parquet row group",
+						zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
+						zap.Int("total_records", int(f.totalRecords)),
+						zap.Duration("elapsed", time.Since(start)),
+					)
 				}
 				if err := writer.WriteBuffered(rec); err != nil {
 					return err
 				}
-				fileInfo, err := os.Stat(fw.Name())
-				if err == nil { // ignore error
-					if fileInfo.Size() > f.limitInBytes {
-						return drivers.ErrStorageLimitExceeded
-					}
-				}
 			}
 			batchesLeft--
-			f.logger.Debug(
-				"wrote an arrow batch to a parquet file",
-				zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
-				zap.Int("row_count", b.GetRowCount()),
-				zap.Duration("write_duration", time.Since(writeStart)),
-			)
 			f.totalRecords += int64(b.GetRowCount())
 			return nil
 		})
@@ -261,7 +238,6 @@ func (f *fileIterator) Next() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.progress.Observe(1, drivers.ProgressUnitFile)
 	f.logger.Debug("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }

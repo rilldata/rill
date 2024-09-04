@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -9,9 +10,16 @@ import (
 	"go.uber.org/zap"
 )
 
-const legacyRecommendTime = 24 * time.Hour
+const (
+	legacyRecommendTime   = 24 * time.Hour
+	scaleThreshold        = 0.10 // 10%
+	smallServiceThreshold = 10
+	minScalingSlots       = 5.0
 
-const scaleThreshold = 0.10
+	// Reasons for not scaling
+	scaledown      = "scaling down is temporarily disabled"
+	belowThreshold = "scaling change is below the threshold"
+)
 
 func (w *Worker) runAutoscaler(ctx context.Context) error {
 	recs, ok, err := w.allRecommendations(ctx)
@@ -44,17 +52,25 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 
 		projectOrg, err := w.admin.DB.FindOrganization(ctx, targetProject.OrganizationID)
 		if err != nil {
-			w.logger.Error("failed to find org for the project", zap.String("project_name", targetProject.Name), zap.String("org_id", targetProject.OrganizationID), zap.Error(err))
+			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("project_name", targetProject.Name), zap.String("org_id", targetProject.OrganizationID), zap.Error(err))
 			continue
 		}
 
-		if !shouldScale(targetProject.ProdSlots, rec.RecommendedSlots) {
-			w.logger.Debug("skipping autoscaler: target slots are within threshold of original slots",
+		if shouldScale, reason := shouldScale(targetProject.ProdSlots, rec.RecommendedSlots); !shouldScale {
+			logMessage := "skipping autoscaler: " + reason
+
+			logFields := []zap.Field{
 				zap.Int("project_slots", targetProject.ProdSlots),
 				zap.Int("recommend_slots", rec.RecommendedSlots),
 				zap.Float64("scale_threshold_percentage", scaleThreshold),
 				zap.String("project_name", targetProject.Name),
-			)
+			}
+
+			if reason == scaledown {
+				w.logger.Info(logMessage, logFields...)
+			} else {
+				w.logger.Debug(logMessage, logFields...)
+			}
 			continue
 		}
 
@@ -62,10 +78,12 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			Name:                 targetProject.Name,
 			Description:          targetProject.Description,
 			Public:               targetProject.Public,
+			ArchiveAssetID:       targetProject.ArchiveAssetID,
 			GithubURL:            targetProject.GithubURL,
 			GithubInstallationID: targetProject.GithubInstallationID,
 			ProdVersion:          targetProject.ProdVersion,
 			ProdBranch:           targetProject.ProdBranch,
+			Subpath:              targetProject.Subpath,
 			ProdVariables:        targetProject.ProdVariables,
 			ProdDeploymentID:     targetProject.ProdDeploymentID,
 			ProdSlots:            rec.RecommendedSlots,
@@ -74,15 +92,22 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			Annotations:          targetProject.Annotations,
 		})
 		if err != nil {
-			w.logger.Error("failed to autoscale", zap.String("project_name", targetProject.Name), zap.String("org_name", projectOrg.Name), zap.Error(err))
+			w.logger.Error("failed to autoscale: error updating the project", zap.String("project_name", targetProject.Name), zap.String("organization_name", projectOrg.Name), zap.Error(err))
 			continue
 		}
 
-		w.logger.Info("succeeded in autoscaling",
+		scaleMsg := "succeeded in autoscaling "
+		if updatedProject.ProdSlots > targetProject.ProdSlots {
+			scaleMsg += "up"
+		} else {
+			scaleMsg += "down"
+		}
+
+		w.logger.Info(scaleMsg,
 			zap.String("project_name", updatedProject.Name),
 			zap.Int("updated_slots", updatedProject.ProdSlots),
 			zap.Int("prev_slots", targetProject.ProdSlots),
-			zap.String("org_name", projectOrg.Name),
+			zap.String("organization_name", projectOrg.Name),
 		)
 	}
 
@@ -121,8 +146,32 @@ func (w *Worker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSl
 	return recs, true, nil
 }
 
-func shouldScale(originSlots, recommendSlots int) bool {
-	lowerBound := float64(originSlots) * (1 - scaleThreshold)
-	upperBound := float64(originSlots) * (1 + scaleThreshold)
-	return float64(recommendSlots) < lowerBound || float64(recommendSlots) > upperBound
+// shouldScale determines whether scaling operations should be initiated
+// based on the comparison of the current number of slots (originSlots)
+// and the recommended number of slots (recommendSlots).
+func shouldScale(originSlots, recommendSlots int) (bool, string) {
+	// NOTE(2024-07-23): Temporary measure to avoid autoscaling DOWN
+	if recommendSlots <= originSlots {
+		return false, scaledown
+	}
+
+	// Always allow scaling for small services
+	if originSlots < smallServiceThreshold {
+		return true, ""
+	}
+
+	// Calculate the absolute difference in slots
+	scalingSlots := math.Abs(float64(recommendSlots - originSlots))
+
+	// Avoid scaling if increase/decrease is less than 10%
+	if scalingSlots <= float64(originSlots)*scaleThreshold {
+		return false, belowThreshold
+	}
+
+	// Avoid scaling if increase/decrease is less than 5 slots
+	if scalingSlots < minScalingSlots {
+		return false, belowThreshold
+	}
+
+	return true, ""
 }

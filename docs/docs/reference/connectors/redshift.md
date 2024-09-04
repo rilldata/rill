@@ -48,7 +48,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 ## Cloud deployment
 
-When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires you to explicitly provide an access key and secret for an AWS service account with access to the Redshift database used in your project. 
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide an access key and secret for an AWS service account with access to the Redshift database used in your project. 
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication. If you subsequently add sources that require new credentials (or if you had simply input the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
 ```

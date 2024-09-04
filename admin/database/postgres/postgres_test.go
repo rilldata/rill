@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -18,7 +19,12 @@ func TestPostgres(t *testing.T) {
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
-	db, err := database.Open("postgres", pg.DatabaseURL)
+	encKeyRing, err := database.NewRandomKeyring()
+	require.NoError(t, err)
+	conf, err := json.Marshal(encKeyRing)
+	require.NoError(t, err)
+
+	db, err := database.Open("postgres", pg.DatabaseURL, string(conf))
 	require.NoError(t, err)
 	require.NotNil(t, db)
 

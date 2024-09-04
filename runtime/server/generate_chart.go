@@ -39,14 +39,15 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 		Resolver:           req.Resolver,
 		ResolverProperties: req.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     auth.GetClaims(ctx).Attributes(),
+		Claims:             auth.GetClaims(ctx).SecurityClaims(),
 	})
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 
 	start := time.Now()
-	renderer, props, err := s.generateRendererWithAI(ctx, req.InstanceId, req.Prompt, res.Schema)
+	renderer, props, err := s.generateRendererWithAI(ctx, req.InstanceId, req.Prompt, res.Schema())
 
 	var propsPB *structpb.Struct
 	if err == nil && props != nil {
@@ -54,7 +55,7 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 	}
 
 	s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_renderer",
-		attribute.Int("table_column_count", len(res.Schema.Fields)),
+		attribute.Int("table_column_count", len(res.Schema().Fields)),
 		attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()),
 		attribute.Bool("succeeded", err == nil),
 	)

@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 	goruntime "runtime"
 	"strconv"
+	"testing"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -61,12 +63,15 @@ func New(t TestingT) *runtime.Runtime {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 		AllowHostAccess:              true,
+		DataDir:                      t.TempDir(),
 	}
 
 	logger := zap.NewNop()
-	// nolint
-	// logger, err := zap.NewDevelopment()
-	// require.NoError(t, err)
+	var err error
+	if os.Getenv("DEBUG") == "1" {
+		logger, err = zap.NewDevelopment()
+		require.NoError(t, err)
+	}
 
 	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
@@ -223,11 +228,22 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	return rt, inst.ID
 }
 
-func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
+func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) {
+	_, currentFile, _, _ := goruntime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+	_, err := os.Stat(envPath)
+	if err == nil { // avoid .env in CI environment
+		require.NoError(t, godotenv.Load(envPath))
+	}
+	if os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN") == "" {
+		t.Skip("skipping the test without the test instance")
+	}
+
 	rt := New(t)
 
-	_, currentFile, _, _ := goruntime.Caller(0)
+	_, currentFile, _, _ = goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
+	dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 
 	inst := &drivers.Instance{
 		Environment:      "test",
@@ -244,7 +260,7 @@ func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
 			{
 				Type:   "druid",
 				Name:   "druid",
-				Config: map[string]string{"dsn": "http://localhost:8888/druid/v2/sql"},
+				Config: map[string]string{"dsn": dsn},
 			},
 			{
 				Type: "sqlite",
@@ -257,7 +273,7 @@ func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
 		// EmbedCatalog: true,
 	}
 
-	err := rt.CreateInstance(context.Background(), inst)
+	err = rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
@@ -270,5 +286,5 @@ func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
 	err = ctrl.WaitUntilIdle(context.Background(), false)
 	require.NoError(t, err)
 
-	return rt, inst.ID
+	return rt, inst.ID, nil
 }

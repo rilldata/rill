@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	cpuThreadRatio float64 = 0.5
-	poolSizeMin    int     = 2
-	poolSizeMax    int     = 5
+	poolSizeMin int = 2
+	poolSizeMax int = 5
 )
 
 // config represents the DuckDB driver config
@@ -38,8 +37,6 @@ type config struct {
 	CPU int `mapstructure:"cpu"`
 	// MemoryLimitGB is the amount of memory available for the DB
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// StorageLimitBytes is the amount of disk storage available for the DB
-	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
 	// MaxMemoryOverride sets a hard override for the "max_memory" DuckDB setting
 	MaxMemoryGBOverride int `mapstructure:"max_memory_gb_override"`
 	// ThreadsOverride sets a hard override for the "threads" DuckDB setting. Set to -1 for unlimited threads.
@@ -81,7 +78,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		// Override DSN.Path with config.Path
 		if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
 			uri.Path = cfg.Path
-		} else if cfg.DataDir != "" {
+		} else if cfg.DataDir != "" && uri.Path == "" { // if some path is set in DSN, honour that path and ignore DataDir
 			uri.Path = filepath.Join(cfg.DataDir, "main.db")
 		}
 
@@ -104,10 +101,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	if cfg.ThreadsOverride != 0 {
 		threads = cfg.ThreadsOverride
 	} else if cfg.CPU > 0 {
-		threads = int(cpuThreadRatio * float64(cfg.CPU))
-		if threads <= 0 {
-			threads = 1
-		}
+		threads = cfg.CPU
 	}
 	if threads > 0 { // NOTE: threads=0 or threads=-1 means no limit
 		qry.Add("threads", strconv.Itoa(threads))
@@ -154,18 +148,4 @@ func generateDSN(path, encodedQuery string) string {
 		return path
 	}
 	return path + "?" + encodedQuery
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

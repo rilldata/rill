@@ -22,7 +22,7 @@ import {
   LAST_6_HOURS_TEST_PARSED_CONTROLS,
   resetDashboardStore,
   TestTimeConstants,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
 import {
   createAndExpression,
   createInExpression,
@@ -183,13 +183,17 @@ describe("dashboard-stores", () => {
 
   it("Should work when time range is not available", () => {
     const AD_BIDS_NO_TIMESTAMP_NAME = "AdBids_no_timestamp";
-    const { stateManagers } = initStateManagers();
+    const { stateManagers } = initStateManagers(
+      undefined,
+      undefined,
+      AD_BIDS_NO_TIMESTAMP_NAME,
+    );
     const {
       actions: {
         dimensionsFilter: { toggleDimensionValueSelection },
       },
     } = stateManagers;
-    stateManagers.setMetricsViewName(AD_BIDS_NO_TIMESTAMP_NAME);
+
     metricsExplorerStore.init(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_INIT,
@@ -198,7 +202,7 @@ describe("dashboard-stores", () => {
     assertMetricsViewRaw(
       AD_BIDS_NO_TIMESTAMP_NAME,
       createAndExpression([]),
-      undefined,
+      null,
       AD_BIDS_IMPRESSIONS_MEASURE,
     );
 
@@ -209,7 +213,7 @@ describe("dashboard-stores", () => {
     assertMetricsViewRaw(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_BASE_FILTER,
-      undefined,
+      null,
       AD_BIDS_IMPRESSIONS_MEASURE,
     );
   });

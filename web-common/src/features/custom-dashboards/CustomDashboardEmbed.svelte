@@ -1,16 +1,24 @@
 <script lang="ts">
-  import { V1DashboardItem } from "@rilldata/web-common/runtime-client";
+  import { dashboardVariablesStore } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import {
+    V1ComponentVariable,
+    V1DashboardItem,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { setContext } from "svelte";
+  import Component from "./Component.svelte";
   import * as defaults from "./constants";
   import DashboardWrapper from "./DashboardWrapper.svelte";
-  import Component from "./Component.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
+  export let dashboardName: string;
   export let columns = 20;
   export let items: V1DashboardItem[];
   export let gap = 4;
   export let chartView = false;
+  export let variables: V1ComponentVariable[] = [];
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
+  setContext("rill::custom-dashboard:name", dashboardName);
 
   $: instanceId = $runtime.instanceId;
 
@@ -28,6 +36,10 @@
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
+
+  $: if (variables.length && dashboardName) {
+    dashboardVariablesStore.init(dashboardName, variables);
+  }
 </script>
 
 <DashboardWrapper
@@ -48,7 +60,6 @@
         {scale}
         {radius}
         padding={gapSize}
-        fontSize={component.fontSize}
         width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
         height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
           gridCell}

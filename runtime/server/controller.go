@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -11,17 +12,20 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// timeLayoutUnseparated formats an absolute timestamp as a string with millisecond precision without any separators.
+// E.g. for "2006-01-02T15:04:05.999Z" it outputs "200601021504059999".
+const timeLayoutUnseparated = "200601021504059999"
 
 // ListResources implements runtimev1.RuntimeServiceServer
 func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResourcesRequest) (*runtimev1.ListResourcesResponse, error) {
@@ -181,14 +185,15 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	return &runtimev1.GetResourceResponse{Resource: r}, nil
 }
 
-// CreateTrigger implements runtimev1.RuntimeServiceServer
-func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
+// GetModelSplits implements runtimev1.RuntimeServiceServer
+func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSplitsRequest) (*runtimev1.GetModelSplitsResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.model", req.Model),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
@@ -197,23 +202,116 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var kind string
-	r := &runtimev1.Resource{}
-
-	switch trg := req.Trigger.(type) {
-	case *runtimev1.CreateTriggerRequest_PullTriggerSpec:
-		kind = runtime.ResourceKindPullTrigger
-		r.Resource = &runtimev1.Resource_PullTrigger{PullTrigger: &runtimev1.PullTrigger{Spec: trg.PullTriggerSpec}}
-	case *runtimev1.CreateTriggerRequest_RefreshTriggerSpec:
-		kind = runtime.ResourceKindRefreshTrigger
-		r.Resource = &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: trg.RefreshTriggerSpec}}
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: req.Model}
+	r, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, "resource not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	n := &runtimev1.ResourceName{
-		Kind: kind,
-		Name: fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999")),
+	r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "resource not found")
 	}
 
+	splitsModelID := r.GetModel().State.SplitsModelId
+	if splitsModelID == "" {
+		return &runtimev1.GetModelSplitsResponse{}, nil
+	}
+
+	afterIdx := -1
+	afterKey := ""
+	if req.PageToken != "" {
+		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
+		}
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	defer release()
+
+	splits, err := catalog.FindModelSplits(ctx, splitsModelID, afterIdx, afterKey, validPageSize(req.PageSize))
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var nextPageToken string
+	if len(splits) == validPageSize(req.PageSize) {
+		last := splits[len(splits)-1]
+		nextPageToken = marshalPageToken(last.Index, last.Key)
+	}
+
+	return &runtimev1.GetModelSplitsResponse{
+		Splits:        modelSplitsToPB(splits),
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
+// CreateTrigger implements runtimev1.RuntimeServiceServer
+func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditTrigger) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Build refresh trigger spec
+	spec := &runtimev1.RefreshTriggerSpec{
+		Resources: req.Resources,
+		Models:    req.Models,
+	}
+
+	// Handle the convenience flag for the project parser.
+	if req.Parser {
+		spec.Resources = append(spec.Resources, runtime.GlobalProjectParserName)
+	}
+
+	// Handle the convenience flags for all sources and models.
+	if req.AllSourcesModels || req.AllSourcesModelsFull {
+		// Add all sources.
+		// Note: Don't need to handle "full" here since source refreshes are always full refreshes.
+		rs, err := ctrl.List(ctx, runtime.ResourceKindSource, "", false)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list sources: %w", err).Error())
+		}
+		for _, r := range rs {
+			spec.Resources = append(spec.Resources, r.Meta.Name)
+		}
+
+		// Add all models.
+		rs, err = ctrl.List(ctx, runtime.ResourceKindModel, "", false)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list models: %w", err).Error())
+		}
+		for _, r := range rs {
+			spec.Models = append(spec.Models, &runtimev1.RefreshModelTrigger{
+				Model: r.Meta.Name.Name,
+				Full:  req.AllSourcesModelsFull,
+			})
+		}
+	}
+
+	// Create the trigger resource
+	name := fmt.Sprintf("trigger_adhoc_%s", time.Now().Format(timeLayoutUnseparated))
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: name}
+	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
 	err = ctrl.Create(ctx, n, nil, nil, nil, true, r)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to create trigger: %w", err).Error())
@@ -225,257 +323,127 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 // applySecurityPolicy applies relevant security policies to the resource.
 // The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
 func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	switch r.Resource.(type) {
-	case *runtimev1.Resource_MetricsView:
-		return s.applySecurityPolicyMetricsView(ctx, instID, r)
-	case *runtimev1.Resource_Report:
-		return s.applySecurityPolicyReport(ctx, r)
-	case *runtimev1.Resource_Alert:
-		return s.applySecurityPolicyAlert(ctx, r)
-	default:
-		return r, true, nil
-	}
-}
-
-// applySecurityPolicyMetricsView applies relevant security policies to a metrics view.
-func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	ctx, span := tracer.Start(ctx, "applySecurityPolicyMetricsView", trace.WithAttributes(attribute.String("instance_id", instID), attribute.String("kind", r.Meta.Name.Kind), attribute.String("name", r.Meta.Name.Name)))
-	defer span.End()
-
-	mv := r.GetMetricsView()
-	attrs := auth.GetClaims(ctx).Attributes()
-	claimsPolicy := auth.GetClaims(ctx).SecurityPolicy()
-	var mvPolicy *runtimev1.MetricsViewSpec_SecurityV2
-	if mv.State.ValidSpec != nil {
-		mvPolicy = mv.State.ValidSpec.Security
-	}
-
-	if claimsPolicy == nil && mvPolicy == nil {
-		// Allow if there is no security policy to apply
-		return r, true, nil
-	}
-
-	security, err := s.runtime.ResolveMetricsViewSecurity(instID, attrs, r, mvPolicy, claimsPolicy)
+	security, err := s.runtime.ResolveSecurity(instID, auth.GetClaims(ctx).SecurityClaims(), r)
 	if err != nil {
 		return nil, false, err
 	}
 
-	if !security.Access {
+	if security == nil {
+		return r, true, nil
+	}
+
+	if !security.CanAccess() {
 		return nil, false, nil
 	}
 
-	mv, changed := s.applySecurityPolicyMetricsViewIncludesAndExcludes(mv, security)
-	if changed {
-		// We mustn't modify the resource in-place
-		r = &runtimev1.Resource{
-			Meta:     r.Meta,
-			Resource: &runtimev1.Resource_MetricsView{MetricsView: mv},
-		}
+	// Some resources may need deeper checks than just access.
+	switch r.Resource.(type) {
+	case *runtimev1.Resource_MetricsView:
+		// For metrics views, we need to remove fields excluded by the field access rules.
+		return s.applyMetricsViewSecurity(r, security), true, nil
+	default:
+		// The resource can be returned as is.
+		return r, true, nil
 	}
-
-	return r, true, nil
 }
 
-// applySecurityPolicyIncludesAndExcludes rewrites a metrics view based on the include/exclude conditions of a security policy.
-func (s *Server) applySecurityPolicyMetricsViewIncludesAndExcludes(mv *runtimev1.MetricsViewV2, policy *runtime.ResolvedMetricsViewSecurity) (*runtimev1.MetricsViewV2, bool) {
-	if policy == nil {
-		return mv, false
+// applyMetricsViewSecurity rewrites a metrics view based on the field access conditions of a security policy.
+func (s *Server) applyMetricsViewSecurity(r *runtimev1.Resource, security *runtime.ResolvedSecurity) *runtimev1.Resource {
+	if security.CanAccessAllFields() {
+		return r
 	}
+
+	mv := r.GetMetricsView()
+	specDims, specMeasures, specChanged := s.applyMetricsViewSpecSecurity(mv.Spec, security)
+	validSpecDims, validSpecMeasures, validSpecChanged := s.applyMetricsViewSpecSecurity(mv.State.ValidSpec, security)
+
+	if !specChanged && !validSpecChanged {
+		return r
+	}
+
 	mv = proto.Clone(mv).(*runtimev1.MetricsViewV2)
 
-	if policy.ExcludeAll {
-		mv.Spec.Measures = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-		mv.Spec.Dimensions = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-		if mv.State.ValidSpec != nil {
-			mv.State.ValidSpec.Measures = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-			mv.State.ValidSpec.Dimensions = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-		}
-		return mv, true
+	if specChanged {
+		mv.Spec.Dimensions = specDims
+		mv.Spec.Measures = specMeasures
 	}
 
-	if len(policy.Include) > 0 {
-		allowed := make(map[string]bool)
-		for _, include := range policy.Include {
-			allowed[include] = true
-		}
-
-		dims := make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-		for _, dim := range mv.Spec.Dimensions {
-			if allowed[dim.Name] {
-				dims = append(dims, dim)
-			}
-		}
-		mv.Spec.Dimensions = dims
-
-		ms := make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-		for _, m := range mv.Spec.Measures {
-			if allowed[m.Name] {
-				ms = append(ms, m)
-			}
-		}
-		mv.Spec.Measures = ms
-
-		if mv.State.ValidSpec != nil {
-			dims = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-			for _, dim := range mv.State.ValidSpec.Dimensions {
-				if allowed[dim.Name] {
-					dims = append(dims, dim)
-				}
-			}
-			mv.State.ValidSpec.Dimensions = dims
-
-			ms = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-			for _, m := range mv.State.ValidSpec.Measures {
-				if allowed[m.Name] {
-					ms = append(ms, m)
-				}
-			}
-			mv.State.ValidSpec.Measures = ms
-		}
+	if validSpecChanged {
+		mv.State.ValidSpec.Dimensions = validSpecDims
+		mv.State.ValidSpec.Measures = validSpecMeasures
 	}
 
-	if len(policy.Exclude) > 0 {
-		restricted := make(map[string]bool)
-		for _, exclude := range policy.Exclude {
-			restricted[exclude] = true
-		}
-
-		dims := make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-		for _, dim := range mv.Spec.Dimensions {
-			if !restricted[dim.Name] {
-				dims = append(dims, dim)
-			}
-		}
-		mv.Spec.Dimensions = dims
-
-		ms := make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-		for _, m := range mv.Spec.Measures {
-			if !restricted[m.Name] {
-				ms = append(ms, m)
-			}
-		}
-		mv.Spec.Measures = ms
-
-		if mv.State.ValidSpec != nil {
-			dims = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-			for _, dim := range mv.State.ValidSpec.Dimensions {
-				if !restricted[dim.Name] {
-					dims = append(dims, dim)
-				}
-			}
-			mv.State.ValidSpec.Dimensions = dims
-
-			ms = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-			for _, m := range mv.State.ValidSpec.Measures {
-				if !restricted[m.Name] {
-					ms = append(ms, m)
-				}
-			}
-			mv.State.ValidSpec.Measures = ms
-		}
+	// We mustn't modify the resource in-place
+	return &runtimev1.Resource{
+		Meta:     r.Meta,
+		Resource: &runtimev1.Resource_MetricsView{MetricsView: mv},
 	}
-
-	return mv, true
 }
 
-// applySecurityPolicyReport applies security policies to a report.
-// TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
-func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	report := r.GetReport()
-	claims := auth.GetClaims(ctx)
-
-	// Allow if the owner is accessing the report
-	if report.Spec.Annotations != nil && claims.Subject() == report.Spec.Annotations["admin_owner_user_id"] {
-		return r, true, nil
+// applyMetricsViewSpecSecurity rewrites a metrics view spec based on the field access conditions of a security policy.
+func (s *Server) applyMetricsViewSpecSecurity(spec *runtimev1.MetricsViewSpec, policy *runtime.ResolvedSecurity) ([]*runtimev1.MetricsViewSpec_DimensionV2, []*runtimev1.MetricsViewSpec_MeasureV2, bool) {
+	if spec == nil {
+		return nil, nil, false
 	}
 
-	// Extract admin attributes
-	var email string
-	admin := true // If no attributes are set, assume it's an admin
-	if attrs := claims.Attributes(); len(attrs) != 0 {
-		email, _ = attrs["email"].(string)
-		admin, _ = attrs["admin"].(bool)
-	}
-
-	// Allow if the user is an admin
-	if admin {
-		return r, true, nil
-	}
-
-	// Allow if the user is a recipient
-	for _, notifier := range report.Spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				if recipient == email {
-					return r, true, nil
-				}
-			}
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				return nil, false, err
-			}
-			for _, user := range props.Users {
-				if user == email {
-					return r, true, nil
-				}
-			}
+	var dims []*runtimev1.MetricsViewSpec_DimensionV2
+	for _, dim := range spec.Dimensions {
+		if policy.CanAccessField(dim.Name) {
+			dims = append(dims, dim)
 		}
 	}
 
-	// Don't allow
-	return nil, false, nil
+	var ms []*runtimev1.MetricsViewSpec_MeasureV2
+	for _, m := range spec.Measures {
+		if policy.CanAccessField(m.Name) {
+			ms = append(ms, m)
+		}
+	}
+
+	if len(dims) == len(spec.Dimensions) && len(ms) == len(spec.Measures) {
+		return nil, nil, false
+	}
+
+	return dims, ms, true
 }
 
-// applySecurityPolicyAlert applies security policies to an alert.
-// TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
-func (s *Server) applySecurityPolicyAlert(ctx context.Context, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	alert := r.GetAlert()
-	claims := auth.GetClaims(ctx)
+// modelSplitsToPB converts a slice of drivers.ModelSplit to a slice of runtimev1.ModelSplit.
+func modelSplitsToPB(splits []drivers.ModelSplit) []*runtimev1.ModelSplit {
+	pbs := make([]*runtimev1.ModelSplit, len(splits))
+	for i, split := range splits {
+		pbs[i] = modelSplitToPB(split)
+	}
+	return pbs
+}
 
-	// Allow if the owner is accessing the alert
-	if alert.Spec.Annotations != nil && claims.Subject() == alert.Spec.Annotations["admin_owner_user_id"] {
-		return r, true, nil
+// modelSplitToPB converts a drivers.ModelSplit to a runtimev1.ModelSplit.
+func modelSplitToPB(split drivers.ModelSplit) *runtimev1.ModelSplit {
+	var data map[string]interface{}
+	if err := json.Unmarshal(split.DataJSON, &data); err != nil {
+		panic(err)
 	}
 
-	// Extract admin attributes
-	var email string
-	admin := true // If no attributes are set, assume it's an admin
-	if attrs := claims.Attributes(); len(attrs) != 0 {
-		email, _ = attrs["email"].(string)
-		admin, _ = attrs["admin"].(bool)
+	var watermark, executedOn *timestamppb.Timestamp
+	if split.Watermark != nil {
+		watermark = timestamppb.New(*split.Watermark)
+	}
+	if split.ExecutedOn != nil {
+		executedOn = timestamppb.New(*split.ExecutedOn)
 	}
 
-	// Allow if the user is an admin
-	if admin {
-		return r, true, nil
+	return &runtimev1.ModelSplit{
+		Key:        split.Key,
+		Data:       must(structpb.NewStruct(data)),
+		Watermark:  watermark,
+		ExecutedOn: executedOn,
+		Error:      split.Error,
+		ElapsedMs:  uint32(split.Elapsed.Milliseconds()),
 	}
+}
 
-	// Allow if the user is an email recipient
-	for _, notifier := range alert.Spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				if recipient == email {
-					return r, true, nil
-				}
-			}
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				return nil, false, err
-			}
-			for _, user := range props.Users {
-				if user == email {
-					return r, true, nil
-				}
-			}
-		}
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
 	}
-
-	// Don't allow
-	return nil, false, nil
+	return v
 }

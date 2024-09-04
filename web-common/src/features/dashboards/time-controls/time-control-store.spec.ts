@@ -5,7 +5,7 @@ import {
   AD_BIDS_INIT_WITH_TIME,
   AD_BIDS_NAME,
   initStateManagers,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
 import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
 import {
   TimeControlState,
@@ -202,7 +202,6 @@ describe("time-control-store", () => {
       {} as any,
       AD_BIDS_INIT_WITH_TIME,
     );
-    expect(get(timeControlsStore).showComparison).toBeFalsy();
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_7_DAYS,

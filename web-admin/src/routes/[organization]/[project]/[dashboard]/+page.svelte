@@ -1,121 +1,103 @@
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import {
-    createAdminServiceGetCurrentUser,
-    V1DeploymentStatus,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
-  import { listDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
-  import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/status/selectors";
+  import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
+  import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
+  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { errorStore } from "../../../../features/errors/error-store";
-  import ProjectBuilding from "../../../../features/projects/ProjectBuilding.svelte";
-
-  const queryClient = useQueryClient();
-
-  $: instanceId = $runtime?.instanceId;
-
-  $: orgName = $page.params.organization;
-  $: projectName = $page.params.project;
-  $: dashboardName = $page.params.dashboard;
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName); // polls
-  $: isProjectPending =
-    $projectDeploymentStatus.data ===
-    V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
-  $: isProjectErrored =
-    $projectDeploymentStatus.data ===
-    V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
-  $: isProjectBuilt = isProjectOK || isProjectErrored;
+  const PollIntervalWhenDashboardFirstReconciling = 1000;
+  const PollIntervalWhenDashboardErrored = 5000;
+  // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
-  let isProjectOK: boolean;
+  $: instanceId = $runtime?.instanceId;
 
-  $: if ($projectDeploymentStatus.data) {
-    const projectWasNotOk = !isProjectOK;
+  $: ({
+    organization: orgName,
+    project: projectName,
+    dashboard: dashboardName,
+  } = $page.params);
 
-    isProjectOK =
-      $projectDeploymentStatus.data === V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
+  $: dashboard = useDashboard(instanceId, dashboardName, {
+    refetchInterval: () => {
+      if (isDashboardReconcilingForFirstTime) {
+        return PollIntervalWhenDashboardFirstReconciling;
+      } else if (isDashboardErrored) {
+        return PollIntervalWhenDashboardErrored;
+      } else {
+        return false;
+      }
+    },
+  });
 
-    if (projectWasNotOk && isProjectOK) {
-      getDashboardsAndInvalidate();
-
-      // Invalidate the query used to assess dashboard validity
-      queryClient.invalidateQueries(
-        getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.name": dashboardName,
-          "name.kind": ResourceKind.MetricsView,
-        }),
-      );
-    }
-  }
-
-  async function getDashboardsAndInvalidate() {
-    const dashboards = await listDashboards(queryClient, instanceId);
-    const dashboardNames = dashboards.map((d) => d.meta.name.name);
-    return invalidateDashboardsQueries(queryClient, dashboardNames);
-  }
-
-  $: dashboard = useDashboard(instanceId, dashboardName);
   $: isDashboardNotFound =
     !$dashboard.data &&
     $dashboard.isError &&
     $dashboard.error?.response?.status === 404;
+  $: isDashboardReconcilingForFirstTime =
+    $dashboard?.data?.metricsView?.state?.validSpec === null &&
+    !$dashboard?.data?.meta?.reconcileError;
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
-  $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
+  $: isDashboardErrored =
+    $dashboard?.data?.metricsView?.state?.validSpec === null &&
+    !!$dashboard?.data?.meta?.reconcileError;
+  $: metricViewName = $dashboard.data?.meta.name.name;
 
   // If no dashboard is found, show a 404 page
-  $: if (isProjectBuilt && isDashboardNotFound) {
+  $: if (isDashboardNotFound) {
     errorStore.set({
       statusCode: 404,
       header: "Dashboard not found",
       body: `The dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
     });
   }
+
+  onNavigate(() => {
+    // Temporary: clear the mocked user when navigating away.
+    // In the future, we should be able to handle the mocked user on all project pages.
+    viewAsUserStore.set(null);
+    errorStore.reset();
+  });
 </script>
 
 <svelte:head>
   <title>{dashboardName} - Rill</title>
 </svelte:head>
 
-<!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
-  because dashboard #1 is errored, but dashboard #2 could be OK.  -->
-
-{#if isProjectPending && isDashboardNotFound}
-  <ProjectBuilding organization={orgName} project={projectName} />
-{:else if $dashboard.isSuccess}
-  {#if isDashboardErrored}
-    <ProjectErrored organization={orgName} project={projectName} />
-  {:else}
-    {#key dashboardName}
-      <StateManagersProvider metricsViewName={dashboardName}>
+{#if $dashboard.isSuccess}
+  {#if isDashboardReconcilingForFirstTime}
+    <DashboardBuilding />
+  {:else if isDashboardErrored}
+    <DashboardErrored organization={orgName} project={projectName} />
+  {:else if metricViewName}
+    {#key metricViewName}
+      <StateManagersProvider metricsViewName={metricViewName}>
         {#if $user.isSuccess && $user.data.user}
-          <DashboardBookmarksStateProvider metricViewName={dashboardName}>
-            <DashboardURLStateProvider metricViewName={dashboardName}>
+          <DashboardBookmarksStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard metricViewName={dashboardName} />
+                <Dashboard {metricViewName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardBookmarksStateProvider>
         {:else}
-          <DashboardStateProvider metricViewName={dashboardName}>
-            <DashboardURLStateProvider metricViewName={dashboardName}>
+          <DashboardStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard metricViewName={dashboardName} />
+                <Dashboard {metricViewName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardStateProvider>

@@ -47,12 +47,6 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		return fmt.Errorf("no files to ingest")
 	}
 
-	size := fileSize(localPaths)
-	if !sizeWithinStorageLimits(t.to, size) {
-		return drivers.ErrStorageLimitExceeded
-	}
-	opts.Progress.Target(size, drivers.ProgressUnitByte)
-
 	var format string
 	if srcCfg.Format != "" {
 		format = fmt.Sprintf(".%s", srcCfg.Format)
@@ -66,10 +60,9 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		return err
 	}
 
-	err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
+	err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from), nil)
 	if err != nil {
 		return err
 	}
-	opts.Progress.Observe(size, drivers.ProgressUnitByte)
 	return nil
 }

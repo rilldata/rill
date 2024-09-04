@@ -2,9 +2,11 @@
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
-  import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
+  import ChartStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
+  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     ResourceKind,
@@ -13,12 +15,16 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
+  import {
+    createQueryServiceResolveComponent,
+    V1MetricsViewRowsResponseDataItem,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getContext } from "svelte";
 
   export let fileArtifact: FileArtifact;
+
+  const dashboardName = getContext("rill::custom-dashboard:name") as string;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -37,16 +43,23 @@
 
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({ resolverProperties } = componentResource?.component?.spec ?? {});
+  $: ({ resolverProperties, input } = componentResource?.component?.spec ?? {});
 
-  $: chartDataQuery = createRuntimeServiceGetChartData(
-    queryClient,
-    instanceId,
-    chartName,
-    resolverProperties,
-  );
+  $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
-  $: ({ isFetching: chartDataFetching, data: chartData } = $chartDataQuery);
+  $: chartDataQuery = resolverProperties
+    ? createQueryServiceResolveComponent(instanceId, chartName, {
+        args: $inputVariableParams,
+      })
+    : null;
+
+  let isFetching = false;
+  let chartData: V1MetricsViewRowsResponseDataItem[] | undefined = undefined;
+
+  $: if (chartDataQuery) {
+    isFetching = $chartDataQuery?.isFetching ?? false;
+    chartData = $chartDataQuery?.data?.data;
+  }
 </script>
 
 <WorkspaceContainer
@@ -75,49 +88,52 @@
       <ChartsEditor {filePath} />
     </div>
     <div class="size-full flex-col flex overflow-hidden">
-      <ChartPromptStatusDisplay {chartName}>
+      <ChartStatusDisplay {isFetching} {chartName}>
         <CustomDashboardEmbed
+          {dashboardName}
           chartView
           gap={8}
           columns={10}
           items={[{ width: 10, height: 10, x: 0, y: 0, component: chartName }]}
         />
-      </ChartPromptStatusDisplay>
+      </ChartStatusDisplay>
 
-      <div
-        class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
-        style:height="{tablePercentage * 100}%"
-      >
-        <Resizer
-          direction="NS"
-          dimension={tableHeight}
-          min={100}
-          max={0.65 * containerHeight}
-          onUpdate={(height) => (tablePercentage = height / containerHeight)}
-        />
-
-        {#if chartDataFetching}
-          <div
-            class="flex flex-col gap-y-2 size-full justify-center items-center"
-          >
-            <Spinner size="2em" status={EntityStatus.Running} />
-            <div>Loading chart data</div>
-          </div>
-        {:else if chartData}
-          <PreviewTable
-            rows={chartData}
-            name={chartName}
-            columnNames={Object.keys(chartData[0]).map((key) => ({
-              type: "VARCHAR",
-              name: key,
-            }))}
+      {#if chartDataQuery}
+        <div
+          class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
+          style:height="{tablePercentage * 100}%"
+        >
+          <Resizer
+            direction="NS"
+            dimension={tableHeight}
+            min={100}
+            max={0.65 * containerHeight}
+            onUpdate={(height) => (tablePercentage = height / containerHeight)}
           />
-        {:else}
-          <p class="text-lg size-full grid place-content-center">
-            Update YAML to view chart data
-          </p>
-        {/if}
-      </div>
+
+          {#if isFetching}
+            <div
+              class="flex flex-col gap-y-2 size-full justify-center items-center"
+            >
+              <Spinner size="2em" status={EntityStatus.Running} />
+              <div>Loading chart data</div>
+            </div>
+          {:else if chartData}
+            <PreviewTable
+              rows={chartData}
+              name={chartName}
+              columnNames={Object.keys(chartData[0]).map((key) => ({
+                type: "VARCHAR",
+                name: key,
+              }))}
+            />
+          {:else}
+            <p class="text-lg size-full grid place-content-center">
+              Update YAML to view chart data
+            </p>
+          {/if}
+        </div>
+      {/if}
     </div>
   </div>
 </WorkspaceContainer>

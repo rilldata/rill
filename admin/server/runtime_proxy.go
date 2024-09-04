@@ -64,6 +64,17 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			if err != nil {
 				return httputil.Error(http.StatusInternalServerError, err)
 			}
+		} else if claims.OwnerType() == auth.OwnerTypeService {
+			attr = map[string]any{"admin": true}
+		}
+
+		instancePermissions := []runtimeauth.Permission{
+			runtimeauth.ReadObjects,
+			runtimeauth.ReadMetrics,
+			runtimeauth.ReadAPI,
+		}
+		if permissions.ManageProject {
+			instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
 		}
 
 		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{
@@ -71,14 +82,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			Subject:     claims.OwnerID(),
 			TTL:         runtimeAccessTokenDefaultTTL,
 			InstancePermissions: map[string][]runtimeauth.Permission{
-				depl.RuntimeInstanceID: {
-					// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
-					runtimeauth.ReadObjects,
-					runtimeauth.ReadMetrics,
-					runtimeauth.ReadProfiling,
-					runtimeauth.ReadRepo,
-					runtimeauth.ReadAPI,
-				},
+				depl.RuntimeInstanceID: instancePermissions,
 			},
 			Attributes: attr,
 		})

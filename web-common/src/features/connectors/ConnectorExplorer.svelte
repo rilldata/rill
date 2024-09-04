@@ -6,15 +6,29 @@
   import { createRuntimeServiceAnalyzeConnectors } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import ConnectorEntry from "./ConnectorEntry.svelte";
+  import { connectorExplorerStore } from "./connector-explorer-store";
 
-  export let startingHeight: number;
+  export let containerHeight: number;
 
-  const MIN_HEIGHT = 43; // The height of the "Connectors" header
+  const MIN_HEIGHT = 31; // The height of the "Connectors" header
 
-  let showConnectors = true;
-  let sectionHeight = startingHeight;
+  let initialHeight = containerHeight / 2;
+  let sectionHeight = initialHeight;
 
-  $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId);
+  $: showConnectors = $connectorExplorerStore.showConnectors;
+
+  $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId, {
+    query: {
+      // sort alphabetically
+      select: (data) => {
+        if (!data?.connectors) return;
+        const connectors = data.connectors.sort((a, b) =>
+          (a?.name as string).localeCompare(b?.name as string),
+        );
+        return { connectors };
+      },
+    },
+  });
   $: ({ data, error } = $connectors);
 </script>
 
@@ -24,14 +38,10 @@
     direction="NS"
     side="top"
     min={10}
-    basis={showConnectors ? startingHeight : MIN_HEIGHT}
-    max={2000}
+    basis={showConnectors ? initialHeight : MIN_HEIGHT}
+    max={containerHeight * 0.9}
   />
-  <button
-    on:click={() => {
-      showConnectors = !showConnectors;
-    }}
-  >
+  <button on:click={connectorExplorerStore.toggleExplorer}>
     <h3>Connectors</h3>
     <CaretDownIcon
       className="transform transition-transform {showConnectors
@@ -64,6 +74,7 @@
 
 <style lang="postcss">
   section {
+    @apply shrink-0;
     @apply flex flex-col relative;
     @apply border-t border-t-gray-200;
   }

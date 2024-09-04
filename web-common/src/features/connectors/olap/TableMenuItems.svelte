@@ -10,22 +10,26 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "./createModel";
-  import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
+  import { useIsModelingSupportedForOlapDriver } from "./selectors";
 
   const { ai } = featureFlags;
+  const queryClient = useQueryClient();
 
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string = "";
   export let table: string;
 
-  $: isModelingSupportedForCurrentOlapDriver =
-    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
+  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
+    $runtime.instanceId,
+    connector,
+  );
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     connector,
@@ -41,6 +45,7 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await createModelFromTable(
+        queryClient,
         connector,
         database,
         databaseSchema,
@@ -60,7 +65,7 @@
   }
 </script>
 
-{#if $isModelingSupportedForCurrentOlapDriver}
+{#if $isModelingSupportedForOlapDriver}
   <NavigationMenuItem on:click={handleCreateModel}>
     <Model slot="icon" />
     Create new model

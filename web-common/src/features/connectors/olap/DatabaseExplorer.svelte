@@ -19,7 +19,7 @@
   {#if isLoading}
     <span class="message">Loading tables...</span>
   {:else if error}
-    <span class="message">Error: {error.response.data.message}</span>
+    <span class="message">Error: {error.response.data?.message}</span>
   {:else if data}
     {#if data.length === 0}
       <span class="message">No tables found</span>
@@ -39,6 +39,7 @@
   }
 
   .message {
-    @apply pl-2 pr-3.5 pt-2 pb-2 text-gray-500;
+    @apply pl-6 pr-3.5 py-2;
+    @apply text-gray-500;
   }
 </style>

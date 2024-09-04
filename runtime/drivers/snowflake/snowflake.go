@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
@@ -42,20 +43,41 @@ var spec = drivers.Spec{
 			Placeholder: "my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role",
 			Hint:        "Either set this or pass --var connector.snowflake.dsn=... to rill start",
 		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
-	ImplementsSQLStore: true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}
+
+type configProperties struct {
+	DSN                string `mapstructure:"dsn"`
+	ParallelFetchLimit int    `mapstructure:"parallel_fetch_limit"`
+	TempDir            string `mapstructure:"temp_dir"`
+}
 
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("snowflake driver can't be shared")
 	}
+
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, err
+	}
+
 	// actual db connection is opened during query
 	return &connection{
-		config: config,
-		logger: logger,
+		configProperties: conf,
+		logger:           logger,
 	}, nil
 }
 
@@ -72,8 +94,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config map[string]any
-	logger *zap.Logger
+	configProperties *configProperties
+	logger           *zap.Logger
+}
+
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return drivers.ErrNotImplemented
 }
 
 // Migrate implements drivers.Connection.
@@ -93,7 +120,9 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.configProperties, &m)
+	return m
 }
 
 // Close implements drivers.Connection.
@@ -138,6 +167,14 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.InputHandle == c {
+		if store, ok := opts.OutputHandle.AsObjectStore(); ok {
+			return &selfToObjectStoreExecutor{
+				c:     c,
+				store: store,
+			}, true
+		}
+	}
 	return nil, false
 }
 
@@ -156,9 +193,14 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return c, true
+}
+
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.

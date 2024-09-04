@@ -68,6 +68,9 @@ type Driver interface {
 // Handle represents a connection to an external service, such as a database, object store, etc.
 // It should implement one or more of the As...() functions.
 type Handle interface {
+	// Ping verifies a connection to an external service is healthy
+	Ping(ctx context.Context) error
+
 	// Driver name used to open the handle.
 	Driver() string
 
@@ -120,6 +123,10 @@ type Handle interface {
 	// A file store can store, list and retrieve local files.
 	// NOTE: The file store can probably be merged with the ObjectStore interface.
 	AsFileStore() (FileStore, bool)
+
+	// AsWarehouse returns a Warehouse if the driver can serve as such, otherwise returns false.
+	// A Warehouse represents a service that can execute SQL statements on cloud warehouses and return the result rows typically as files.
+	AsWarehouse() (Warehouse, bool)
 
 	// AsModelExecutor returns a ModelExecutor capable of building a model.
 	// Since models may move data between connectors, the model executor can be seem as a "meta driver" that uses handles on other connectors.

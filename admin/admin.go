@@ -4,8 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"cloud.google.com/go/storage"
 	"github.com/rilldata/rill/admin/ai"
+	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -13,24 +17,29 @@ import (
 )
 
 type Options struct {
-	DatabaseDriver     string
-	DatabaseDSN        string
-	ProvisionerSetJSON string
-	DefaultProvisioner string
-	ExternalURL        string
-	VersionNumber      string
-	VersionCommit      string
-	MetricsProjectOrg  string
-	MetricsProjectName string
-	AutoscalerCron     string
+	DatabaseDriver            string
+	DatabaseDSN               string
+	DatabaseEncryptionKeyring string
+	ExternalURL               string
+	FrontendURL               string
+	ProvisionerSetJSON        string
+	DefaultProvisioner        string
+	VersionNumber             string
+	VersionCommit             string
+	MetricsProjectOrg         string
+	MetricsProjectName        string
+	AutoscalerCron            string
 }
 
 type Service struct {
 	DB               database.DB
+	Jobs             jobs.Client
+	URLs             *URLs
 	ProvisionerSet   map[string]provisioner.Provisioner
 	Email            *email.Client
 	Github           Github
 	AI               ai.Client
+	Assets           *storage.BucketHandle
 	Used             *usedFlusher
 	Logger           *zap.Logger
 	opts             *Options
@@ -39,13 +48,21 @@ type Service struct {
 	VersionCommit    string
 	metricsProjectID string
 	AutoscalerCron   string
+	Biller           billing.Biller
+	PaymentProvider  payment.Provider
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
 	// Init db
-	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
+	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN, opts.DatabaseEncryptionKeyring)
 	if err != nil {
 		logger.Fatal("error connecting to database", zap.Error(err))
+	}
+
+	// Init URLs
+	urls, err := NewURLs(opts.ExternalURL, opts.FrontendURL)
+	if err != nil {
+		logger.Fatal("error parsing URLs", zap.Error(err))
 	}
 
 	// Auto-run migrations
@@ -91,10 +108,12 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 
 	return &Service{
 		DB:               db,
+		URLs:             urls,
 		ProvisionerSet:   provSet,
 		Email:            emailClient,
 		Github:           github,
 		AI:               aiClient,
+		Assets:           assets,
 		Used:             newUsedFlusher(logger, db),
 		Logger:           logger,
 		opts:             opts,
@@ -103,6 +122,8 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		VersionCommit:    opts.VersionCommit,
 		metricsProjectID: metricsProjectID,
 		AutoscalerCron:   opts.AutoscalerCron,
+		Biller:           biller,
+		PaymentProvider:  p,
 	}, nil
 }
 

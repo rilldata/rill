@@ -23,11 +23,12 @@
     $report.data?.resource?.report?.spec?.queryName,
     $report.data?.resource?.report?.spec?.queryArgsJson,
     executionTime,
+    $report.data?.resource?.report?.spec?.annotations ?? {},
   );
 
   $: if ($dashboardStateForReport.data) {
     goto(
-      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${$dashboardStateForReport.data.state}`,
+      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${encodeURIComponent($dashboardStateForReport.data.state)}`,
     );
   }
 

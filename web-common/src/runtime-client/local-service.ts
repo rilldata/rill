@@ -3,11 +3,13 @@ import { type ConnectError, createPromiseClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_connect";
 import {
-  DeployRequest,
-  DeployValidationRequest,
+  DeployProjectRequest,
+  GetCurrentProjectRequest,
+  GetCurrentUserRequest,
   GetMetadataRequest,
   GetVersionRequest,
   PushToGithubRequest,
+  RedeployProjectRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -88,31 +90,6 @@ export function createLocalServiceGetVersion<
   });
 }
 
-export function localServiceDeployValidation() {
-  return getClient().deployValidation(new DeployValidationRequest());
-}
-export const getLocalServiceDeployValidationQueryKey = () => [
-  `/v1/local/deploy-validation`,
-];
-export function createLocalServiceDeployValidation<
-  TData = Awaited<ReturnType<typeof localServiceDeployValidation>>,
-  TError = ConnectError,
->(options?: {
-  query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof localServiceDeployValidation>>,
-    TError,
-    TData
-  >;
-}) {
-  const { query: queryOptions } = options ?? {};
-  return createQuery({
-    ...queryOptions,
-    queryKey:
-      queryOptions?.queryKey ?? getLocalServiceDeployValidationQueryKey(),
-    queryFn: queryOptions?.queryFn ?? localServiceDeployValidation,
-  });
-}
-
 export function localServicePushToGithub(
   args: PartialMessage<PushToGithubRequest>,
 ) {
@@ -138,8 +115,8 @@ export function createLocalServicePushToGithub<
   >(localServicePushToGithub, mutationOptions);
 }
 
-export function localServiceDeploy(args: PartialMessage<DeployRequest>) {
-  return getClient().deploy(new DeployRequest(args));
+export function localServiceDeploy(args: PartialMessage<DeployProjectRequest>) {
+  return getClient().deployProject(new DeployProjectRequest(args));
 }
 export function createLocalServiceDeploy<
   TError = ConnectError,
@@ -148,7 +125,7 @@ export function createLocalServiceDeploy<
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof localServiceDeploy>>,
     TError,
-    PartialMessage<DeployRequest>,
+    PartialMessage<DeployProjectRequest>,
     TContext
   >;
 }) {
@@ -156,7 +133,81 @@ export function createLocalServiceDeploy<
   return createMutation<
     Awaited<ReturnType<typeof localServiceDeploy>>,
     unknown,
-    PartialMessage<DeployRequest>,
+    PartialMessage<DeployProjectRequest>,
     unknown
   >(localServiceDeploy, mutationOptions);
+}
+
+export function localServiceRedeploy(
+  args: PartialMessage<RedeployProjectRequest>,
+) {
+  return getClient().redeployProject(new RedeployProjectRequest(args));
+}
+export function createLocalServiceRedeploy<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof localServiceRedeploy>>,
+    TError,
+    PartialMessage<RedeployProjectRequest>,
+    TContext
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceRedeploy>>,
+    unknown,
+    PartialMessage<RedeployProjectRequest>,
+    unknown
+  >(localServiceRedeploy, mutationOptions);
+}
+
+export function localServiceGetCurrentUser() {
+  return getClient().getCurrentUser(new GetCurrentUserRequest());
+}
+export const getLocalServiceGetCurrentUserQueryKey = () => [
+  `/v1/local/get-user`,
+];
+export function createLocalServiceGetCurrentUser<
+  TData = Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey: queryOptions?.queryKey ?? getLocalServiceGetCurrentUserQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceGetCurrentUser,
+  });
+}
+
+export function localServiceGetCurrentProject() {
+  return getClient().getCurrentProject(new GetCurrentProjectRequest());
+}
+export const getLocalServiceGetCurrentProjectQueryKey = () => [
+  `/v1/local/get-project`,
+];
+export function createLocalServiceGetCurrentProject<
+  TData = Awaited<ReturnType<typeof localServiceGetCurrentProject>>,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceGetCurrentProject>>,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ?? getLocalServiceGetCurrentProjectQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceGetCurrentProject,
+  });
 }

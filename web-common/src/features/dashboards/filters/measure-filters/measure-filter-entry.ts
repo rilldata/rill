@@ -31,7 +31,8 @@ export function getEmptyMeasureFilterEntry(): MeasureFilterEntry {
 export const ComparisonDeltaPreviousSuffix = "_prev";
 export const ComparisonDeltaAbsoluteSuffix = "_delta";
 export const ComparisonDeltaRelativeSuffix = "_delta_perc";
-const HasSuffixRegex = /_delta(?:_perc)?/;
+export const ComparisonPercentOfTotal = "_percent_of_total";
+const HasSuffixRegex = /_delta(?:_perc)?|_percent_of_total/;
 
 export function mapExprToMeasureFilter(
   expr: V1Expression | undefined,
@@ -65,7 +66,10 @@ export function mapExprToMeasureFilter(
     case V1Operation.OPERATION_LTE:
       field = expr.cond.exprs?.[0].ident ?? "";
       value1 = (expr.cond.exprs?.[1].val as number) ?? 0;
-      if (field.endsWith(ComparisonDeltaRelativeSuffix)) {
+      if (
+        field.endsWith(ComparisonDeltaRelativeSuffix) ||
+        field.endsWith(ComparisonPercentOfTotal)
+      ) {
         // convert decimal to percent
         value1 *= 100;
       }
@@ -75,10 +79,18 @@ export function mapExprToMeasureFilter(
       break;
   }
 
-  if (field.endsWith(ComparisonDeltaAbsoluteSuffix)) {
-    type = MeasureFilterType.AbsoluteChange;
-  } else if (field.endsWith(ComparisonDeltaRelativeSuffix)) {
-    type = MeasureFilterType.PercentChange;
+  switch (true) {
+    case field.endsWith(ComparisonDeltaAbsoluteSuffix):
+      type = MeasureFilterType.AbsoluteChange;
+      break;
+
+    case field.endsWith(ComparisonDeltaRelativeSuffix):
+      type = MeasureFilterType.PercentChange;
+      break;
+
+    case field.endsWith(ComparisonPercentOfTotal):
+      type = MeasureFilterType.PercentOfTotal;
+      break;
   }
 
   return {
@@ -110,8 +122,9 @@ export function mapMeasureFilterToExpr(
       suffix = ComparisonDeltaRelativeSuffix;
       break;
     case MeasureFilterType.PercentOfTotal:
-      // TODO
-      return undefined;
+      value /= 100;
+      suffix = ComparisonPercentOfTotal;
+      break;
   }
 
   switch (measureFilter.operation) {

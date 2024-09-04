@@ -95,7 +95,7 @@ metrics_sql: |
 `,
   },
   [ResourceKind.Component]: {
-    name: "chart",
+    name: "component",
     extension: ".yaml",
     baseContent: `# Chart YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/charts
@@ -144,7 +144,7 @@ vega_lite: |
   }`,
   },
   [ResourceKind.Dashboard]: {
-    name: "custom-dashboard",
+    name: "canvas-dashboard",
     extension: ".yaml",
     baseContent: `type: dashboard
 columns: 10
@@ -152,8 +152,10 @@ gap: 2
 
 items:
   - component:
-      type: markdown
-      markdown: First component
+      markdown:
+        content: "First Component"
+        css:
+          font-size: "40px"
     width: 4
     height: 3
     x: 2

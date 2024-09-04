@@ -9,6 +9,11 @@
   const accessToken = $page.url.searchParams.get("access_token");
 </script>
 
-<RuntimeProvider host={runtimeHost} {instanceId} jwt={accessToken}>
+<RuntimeProvider
+  host={runtimeHost}
+  {instanceId}
+  jwt={accessToken}
+  authContext="embed"
+>
   <slot />
 </RuntimeProvider>

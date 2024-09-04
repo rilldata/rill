@@ -25,7 +25,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
 	return fmt.Errorf("pinot: data transformation not yet supported")
 }
 
@@ -50,10 +50,6 @@ func (c *connection) Dialect() drivers.Dialect {
 
 func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("pinot: WithConnection not supported")
-}
-
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {

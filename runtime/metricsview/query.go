@@ -13,6 +13,7 @@ type Query struct {
 	Dimensions          []Dimension `mapstructure:"dimensions"`
 	Measures            []Measure   `mapstructure:"measures"`
 	PivotOn             []string    `mapstructure:"pivot_on"`
+	Spine               *Spine      `mapstructure:"spine"`
 	Sort                []Sort      `mapstructure:"sort"`
 	TimeRange           *TimeRange  `mapstructure:"time_range"`
 	ComparisonTimeRange *TimeRange  `mapstructure:"comparison_time_range"`
@@ -49,6 +50,7 @@ type MeasureCompute struct {
 	ComparisonValue *MeasureComputeComparisonValue `mapstructure:"comparison_value"`
 	ComparisonDelta *MeasureComputeComparisonDelta `mapstructure:"comparison_delta"`
 	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
+	PercentOfTotal  *MeasureComputePercentOfTotal  `mapstructure:"percent_of_total"`
 }
 
 func (m *MeasureCompute) Validate() error {
@@ -66,6 +68,9 @@ func (m *MeasureCompute) Validate() error {
 		n++
 	}
 	if m.ComparisonRatio != nil {
+		n++
+	}
+	if m.PercentOfTotal != nil {
 		n++
 	}
 	if n == 0 {
@@ -91,6 +96,26 @@ type MeasureComputeComparisonDelta struct {
 
 type MeasureComputeComparisonRatio struct {
 	Measure string `mapstructure:"measure"`
+}
+
+type MeasureComputePercentOfTotal struct {
+	Measure string   `mapstructure:"measure"`
+	Total   *float64 `mapstructure:"total"`
+}
+
+type Spine struct {
+	Where     *WhereSpine `mapstructure:"where"`
+	TimeRange *TimeSpine  `mapstructure:"time"`
+}
+
+type WhereSpine struct {
+	Expression *Expression `mapstructure:"expr"`
+}
+
+type TimeSpine struct {
+	Start time.Time `mapstructure:"start"`
+	End   time.Time `mapstructure:"end"`
+	Grain TimeGrain `mapstructure:"grain"`
 }
 
 type Sort struct {

@@ -58,13 +58,15 @@ export const MeasureFilterComparisonTypeOptions = [
     description: "change",
   },
 ];
+export const MeasureFilterPercentOfTotalOption = {
+  value: MeasureFilterType.PercentOfTotal,
+  label: "% of total",
+  shortLabel: "% of total",
+  description: "% of total",
+};
 export const AllMeasureFilterTypeOptions = [
   ...MeasureFilterComparisonTypeOptions,
-  // TODO
-  // {
-  //   value: MeasureFilterType.PercentOfTotal,
-  //   label: "% of total",
-  // },
+  MeasureFilterPercentOfTotalOption,
 ];
 
 export const MeasureFilterOperationOptions = [

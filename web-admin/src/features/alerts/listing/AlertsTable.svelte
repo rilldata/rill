@@ -1,15 +1,16 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
+  import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { type ColumnDef, flexRender } from "@tanstack/svelte-table";
+  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { BellIcon } from "lucide-svelte";
   import Table from "../../../components/table/Table.svelte";
   import { useAlerts } from "../../alerts/selectors";
   import AlertsError from "./AlertsError.svelte";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
-  import AlertsTableEmpty from "./AlertsTableEmpty.svelte";
-  import AlertsTableHeader from "./AlertsTableHeader.svelte";
   import NoAlertsCTA from "./NoAlertsCTA.svelte";
 
   export let organization: string;
@@ -37,7 +38,8 @@
           id: info.row.original.meta.name.name,
           title: info.row.original.alert.spec.title,
           lastTrigger:
-            info.row.original.alert.state.executionHistory[0]?.executionTime,
+            info.row.original.alert.state.executionHistory[0]?.finishedOn ??
+            info.row.original.alert.state.executionHistory[0]?.startedOn,
           ownerId:
             info.row.original.alert.spec.annotations["admin_owner_user_id"],
           lastTriggerErrorMessage:
@@ -70,7 +72,7 @@
 
 {#if $alerts.isLoading}
   <div class="m-auto mt-20">
-    <Spinner status={EntityStatus.Running} size="24px" />
+    <DelayedSpinner isLoading={$alerts.isLoading} size="24px" />
   </div>
 {:else if $alerts.isError}
   <AlertsError />
@@ -79,8 +81,9 @@
     <NoAlertsCTA />
   {:else}
     <Table {columns} data={$alerts?.data?.resources} {columnVisibility}>
-      <AlertsTableHeader slot="header" />
-      <AlertsTableEmpty slot="empty" />
+      <Toolbar slot="toolbar" />
+      <ResourceHeader kind="alert" icon={BellIcon} slot="header" />
+      <ResourceTableEmpty kind="alert" slot="empty" />
     </Table>
   {/if}
 {/if}

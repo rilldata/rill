@@ -1,7 +1,6 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
-  import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -12,25 +11,12 @@
   export let showPanels = true;
   export let isFetching = false;
 
-  const { exports } = featureFlags;
+  const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const {
-    metricsViewName,
-    dashboardStore,
-    selectors: {
-      timeRangeSelectors: { timeControlsState },
-    },
-  } = stateManagers;
+  const { metricsViewName, dashboardStore } = stateManagers;
 
-  $: comparisonStart = $timeControlsState.comparisonTimeStart;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: comparisonEnabled = $dashboardStore?.pivot?.enableComparison;
-
-  $: canShowComparison = canEnablePivotComparison(
-    $dashboardStore?.pivot,
-    comparisonStart,
-  );
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -62,7 +48,7 @@
   // }
 </script>
 
-<div class="flex items-center gap-x-4 p-2 px-4">
+<div class="flex items-center gap-x-4 select-none pointer-events-none">
   <Button
     square
     type="secondary"
@@ -95,26 +81,12 @@
       Collapse All
     </Button>
   {/if}
-  {#if canShowComparison}
-    <Button
-      compact
-      type="text"
-      on:click={() => {
-        metricsExplorerStore.setPivotComparison(
-          $metricsViewName,
-          !comparisonEnabled,
-        );
-      }}
-    >
-      {comparisonEnabled ? "Hide comparisons" : "Show comparisons"}
-    </Button>
-  {/if}
 
   {#if isFetching}
     <Spinner size="18px" status={EntityStatus.Running} />
   {/if}
   <div class="grow" />
   {#if $exports}
-    <PivotExportButton />
+    <PivotExportButton includeScheduledReport={$adminServer} />
   {/if}
 </div>

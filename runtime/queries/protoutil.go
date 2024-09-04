@@ -13,6 +13,18 @@ func safeFieldType(t *runtimev1.StructType, i int) *runtimev1.Type {
 	return nil
 }
 
+// safeFieldTypeName returns the type of the field with name n, or nil if no type is found.
+func safeFieldTypeName(t *runtimev1.StructType, n string) *runtimev1.Type {
+	if t != nil {
+		for _, f := range t.Fields {
+			if f.Name == n {
+				return f.Type
+			}
+		}
+	}
+	return nil
+}
+
 // sizeProtoMessage returns size of serialized proto message
 func sizeProtoMessage(m proto.Message) int64 {
 	bytes, err := proto.Marshal(m)

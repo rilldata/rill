@@ -11,7 +11,6 @@ import type {
   V1MetricsViewAggregationMeasure,
   V1Expression,
   QueryServiceMetricsViewAggregationBody,
-  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { SortType } from "./proto-state/derived-types";
@@ -48,11 +47,6 @@ export function prepareSortedQueryBody(
   whereFilterForDimension: V1Expression,
   limit: number,
 ): QueryServiceMetricsViewAggregationBody {
-  let comparisonTimeRange: V1TimeRange | undefined = {
-    start: timeControls.comparisonTimeStart,
-    end: timeControls.comparisonTimeEnd,
-  };
-
   const measures = measureNames.map(
     (n) =>
       <V1MetricsViewAggregationMeasure>{
@@ -60,51 +54,32 @@ export function prepareSortedQueryBody(
       },
   );
 
-  // FIXME: As a temporary way of enabling sorting by dimension values,
-  // Benjamin and Egor put in a patch that will allow us to use the
-  // dimension name as the measure name. This will need to be updated
-  // once they have stabilized the API.
+  let apiSortName = sortMeasureName;
   if (sortType === SortType.DIMENSION || sortMeasureName === null) {
-    sortMeasureName = dimensionName;
-    // note also that we need to remove the comparison time range
-    // when sorting by dimension values, or the query errors
-    comparisonTimeRange = undefined;
+    apiSortName = dimensionName;
   }
 
   if (
-    comparisonTimeRange?.start &&
-    comparisonTimeRange?.end &&
+    timeControls.showTimeComparison &&
     !!timeControls.selectedComparisonTimeRange &&
     sortMeasureName
   ) {
-    measures.push(
-      {
-        name: sortMeasureName + ComparisonDeltaPreviousSuffix,
-        comparisonValue: {
-          measure: sortMeasureName,
-        },
-      },
-      {
-        name: sortMeasureName + ComparisonDeltaAbsoluteSuffix,
-        comparisonDelta: {
-          measure: sortMeasureName,
-        },
-      },
-      {
-        name: sortMeasureName + ComparisonDeltaRelativeSuffix,
-        comparisonRatio: {
-          measure: sortMeasureName,
-        },
-      },
+    // insert beside the correct measure
+    measures.splice(
+      measures.findIndex((m) => m.name === sortMeasureName),
+      0,
+      ...getComparisonRequestMeasures(sortMeasureName),
     );
-
-    switch (sortType) {
-      case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
-        sortMeasureName += ComparisonDeltaAbsoluteSuffix;
-        break;
-      case DashboardState_LeaderboardSortType.DELTA_PERCENT:
-        sortMeasureName += ComparisonDeltaRelativeSuffix;
-        break;
+    if (apiSortName === sortMeasureName) {
+      // only update if the sort was on measure
+      switch (sortType) {
+        case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
+          apiSortName += ComparisonDeltaAbsoluteSuffix;
+          break;
+        case DashboardState_LeaderboardSortType.DELTA_PERCENT:
+          apiSortName += ComparisonDeltaRelativeSuffix;
+          break;
+      }
     }
   }
 
@@ -119,15 +94,53 @@ export function prepareSortedQueryBody(
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
     },
-    comparisonTimeRange,
-    sort: [
-      {
-        desc: !sortAscending,
-        name: sortMeasureName,
-      },
-    ],
+    ...(timeControls.selectedComparisonTimeRange &&
+    timeControls.showTimeComparison
+      ? {
+          comparisonTimeRange: {
+            start: timeControls.comparisonTimeStart,
+            end: timeControls.comparisonTimeEnd,
+          },
+        }
+      : {}),
+    sort: apiSortName
+      ? [
+          {
+            desc: !sortAscending,
+            name: apiSortName,
+          },
+        ]
+      : [],
     where: sanitiseExpression(whereFilterForDimension, undefined),
     limit: limit.toString(),
     offset: "0",
   };
+}
+
+/**
+ * Gets comparison based measures used in MetricsViewAggregationRequest
+ */
+export function getComparisonRequestMeasures(
+  measureName: string,
+): V1MetricsViewAggregationMeasure[] {
+  return [
+    {
+      name: measureName + ComparisonDeltaPreviousSuffix,
+      comparisonValue: {
+        measure: measureName,
+      },
+    },
+    {
+      name: measureName + ComparisonDeltaAbsoluteSuffix,
+      comparisonDelta: {
+        measure: measureName,
+      },
+    },
+    {
+      name: measureName + ComparisonDeltaRelativeSuffix,
+      comparisonRatio: {
+        measure: measureName,
+      },
+    },
+  ];
 }

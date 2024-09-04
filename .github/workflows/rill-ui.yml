@@ -52,7 +52,7 @@ jobs:
           echo "DOMAIN=rilldata.com" >> $GITHUB_ENV
         
       - name: Setup Env variables from Inputs for Stage
-        if: ( github.event_name == 'push' && startsWith(github.ref_name, 'release') ) || ( github.event_name == 'workflow_dispatch' && inputs.env == 'stage' )
+        if: ( (github.event_name == 'push' || github.event_name == 'create') && startsWith(github.ref_name, 'release') ) || ( github.event_name == 'workflow_dispatch' && inputs.env == 'stage' )
         run: |-
           echo "NETLIFY_SITE_ID=e73ac785-882e-425a-8fc8-5432528bb374" >> $GITHUB_ENV
           echo "DOMAIN=rilldata.io" >> $GITHUB_ENV

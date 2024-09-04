@@ -1,9 +1,9 @@
+import { TDDChartMap } from "@rilldata/web-common/features/charts/types";
+import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
   ChartField,
   buildVegaLiteSpec,
-} from "@rilldata/web-common/features/charts/templates/build-template";
-import { TDDChartMap } from "@rilldata/web-common/features/charts/types";
-import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+} from "@rilldata/web-common/features/templates/charts/build-template";
 import { View, VisualizationSpec } from "svelte-vega";
 import { TDDAlternateCharts, TDDChart } from "../types";
 
@@ -29,7 +29,11 @@ export function getVegaSpecForTDD(
 ): VisualizationSpec {
   const temporalFields: ChartField[] = [{ name: "ts", label: "Time" }];
   const measureFields: ChartField[] = [
-    { name: expandedMeasureName, label: measureLabel },
+    {
+      name: expandedMeasureName,
+      label: measureLabel,
+      formatterFunction: "measureFormatter",
+    },
   ];
 
   let nominalFields: ChartField[] = [];

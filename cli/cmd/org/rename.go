@@ -29,7 +29,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
 			if !cmd.Flags().Changed("org") && ch.Interactive {
-				orgNames, err := orgNames(ctx, ch)
+				orgNames, err := OrgNames(ctx, ch)
 				if err != nil {
 					return err
 				}
@@ -52,7 +52,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !force {
-				msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
+				msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName)) // nolint:gocritic // Because it uses colors
 				ok, err := cmdutil.ConfirmPrompt(msg, "", false)
 				if err != nil {
 					return err

@@ -12,9 +12,10 @@
 
   const voidFunction = () => {};
 
-  export let value: string;
+  export let value: string | undefined | null;
   export let id = "";
   export let label = "";
+  export let description = "";
   export let errors: string | string[] | null | undefined = null;
   export let placeholder = "";
   export let hint = "";
@@ -107,6 +108,10 @@
         </div>
       {/each}
     {/if}
+  {/if}
+
+  {#if description}
+    <div>{description}</div>
   {/if}
 </div>
 

@@ -1,57 +1,67 @@
-import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
+import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
+  isAlertPage,
   isMetricsExplorerPage,
   isProjectPage,
+  isProjectRequestAccessPage,
+  isPublicURLPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
-import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
+import {
+  isGetResourceMetricsViewQuery,
+  isRuntimeQuery,
+} from "@rilldata/web-common/runtime-client/query-matcher";
 import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
-import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
-import {
-  adminServiceGetCurrentUser,
-  getAdminServiceGetCurrentUserQueryKey,
-} from "../../client";
-import { ADMIN_URL } from "../../client/http-client";
-import { getProjectRuntimeQueryKey } from "../projects/selectors";
+import type { RpcStatus } from "../../client";
+import { getAdminServiceGetProjectQueryKey } from "../../client";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
 
+    const onPublicURLPage = isPublicURLPage(get(page));
+    if (onPublicURLPage) {
+      // When a token is expired, show a specific error page
+      if (
+        error.response?.status === 401 &&
+        (error.response.data as RpcStatus)?.message === "auth token is expired"
+      ) {
+        errorStore.set({
+          statusCode: 401,
+          header: "Oops! This link has expired",
+          body: "It looks like this link is no longer active. Please reach out to the sender to request a new link.",
+          fatal: true,
+        });
+        return;
+      }
+
+      // Let the Public URL page handle all other errors
+      return;
+    }
+
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
-      // Check for a logged-in user
-      const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
-        queryKey: getAdminServiceGetCurrentUserQueryKey(),
-        queryFn: () => adminServiceGetCurrentUser(),
-      });
-      const isLoggedIn = !!userQuery.user;
-
-      // If not logged in, redirect to the login page
-      if (!isLoggedIn) {
-        await goto(
-          `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-        );
+      if (await checkUserAccess()) {
         return;
       }
     }
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      await goto(
-        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-      );
+      redirectToLogin();
       return;
     }
 
-    // Special handling for some errors on the Project page
     const onProjectPage = isProjectPage(get(page));
+
+    // Special handling for some errors on the Project page
     if (onProjectPage) {
       if (error.response?.status === 400) {
         // If "repository not found", ignore the error and show the page
@@ -66,7 +76,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
           (error.response.data as RpcStatus).message === "driver: not found"
         ) {
           const [, org, proj] = get(page).url.pathname.split("/");
-          void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
+          void queryClient.resetQueries(
+            getAdminServiceGetProjectQueryKey(org, proj),
+          );
           return;
         }
       }
@@ -104,6 +116,26 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       if (error.response?.status === 401) {
         return;
       }
+    }
+
+    // Special handling for some errors on the Alerts page
+    const onAlertPage = isAlertPage(get(page));
+    if (onAlertPage) {
+      // Don't block on a Metrics View 404
+      if (
+        isGetResourceMetricsViewQuery(query) &&
+        error.response?.status === 404
+      ) {
+        return;
+      }
+    }
+
+    // do not block on request access failures
+    if (
+      isProjectRequestAccessPage(get(page)) &&
+      error.response?.status !== 403
+    ) {
+      return;
     }
 
     // Create a pretty message for the error page
@@ -160,11 +192,13 @@ function createErrorStoreStateFromAxiosError(
     statusCode: error.response?.status,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+    detail: (error.response?.data as RpcStatus)?.message,
   };
 }
 
 export function createErrorPagePropsFromRoutingError(
   statusCode: number,
+  errorMessage: string,
 ): ErrorStoreState {
   if (statusCode === 404) {
     return {
@@ -179,5 +213,6 @@ export function createErrorPagePropsFromRoutingError(
     statusCode: statusCode,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+    detail: errorMessage,
   };
 }

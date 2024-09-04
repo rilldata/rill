@@ -10,6 +10,8 @@ initPlatform() {
         PLATFORM="darwin_amd64"
     elif [ "$OS" = "linux" ] && [ "$ARCH" = "x86_64" ]; then
         PLATFORM="linux_amd64"
+    elif [ "$OS" = "linux" ] && { [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; }; then
+        PLATFORM="linux_arm64"
     else
         printf "Platform not supported: os=%s arch=%s\n" "$OS" "$ARCH"
         exit 1
@@ -55,16 +57,22 @@ downloadBinary() {
     unzip -q rill_${PLATFORM}.zip
 }
 
-# Ask for preferred install option
-promtInstallChoice() {
+# Print install options
+printInstallOptions() {
     printf "\nWhere would you like to install rill?  (Default [1])\n\n"
     printf "[1]  /usr/local/bin/rill  [recommended, but requires sudo privileges]\n"
     printf "[2]  ~/.rill/rill         [directory will be created & path configured]\n"
     printf "[3]  ./rill               [download to the current directory]\n\n"
-    printf "Install option: "
+}
 
+# Ask for preferred install option
+promtInstallChoice() {
+    printf "Pick install option: (1/2/3)\n"
     read -r ans </dev/tty;
     case $ans in
+        1|"")
+            INSTALL_DIR="/usr/local/bin"
+            ;;
         2)
             INSTALL_DIR="$HOME/.rill"
             ;;
@@ -72,10 +80,10 @@ promtInstallChoice() {
             INSTALL_DIR=$(pwd)
             ;;
         *)
-            INSTALL_DIR="/usr/local/bin"
+            printf "\nInvalid option '$ans'\n\n"
+            promtInstallChoice
             ;;
     esac
-    printf "\n"
 }
 
 # Detect previous installation
@@ -141,6 +149,15 @@ printStartHelp() {
     fi
 }
 
+# Publish Syft install telemetry event, can be disabled by setting the 'RILL_INSTALL_DISABLE_TELEMETRY' environment variable
+publishSyftEvent() {
+    SYFT_URL=https://event.syftdata.com/log
+    SYFT_ID=clp76quhs0006l908bux79l4v
+    if [ -z "$RILL_INSTALL_DISABLE_TELEMETRY" ]; then
+        curl --silent --header "Authorization: ${SYFT_ID}" --header "Content-Type: application/json" --data "{\"event_name\":\"$1\"}" $SYFT_URL > /dev/null 2>&1
+    fi
+}
+
 # Add the Rill binary to the PATH via configuration of the shells we detect on the system
 addPathConfigEntries() {
     PATH_CONFIG_LINE="export PATH=\$HOME/.rill:\$PATH # Added by Rill install"
@@ -179,12 +196,14 @@ removePathConfigEntries() {
 
 # Install Rill on the system
 installRill() {
+    publishSyftEvent install
     checkDependency curl
     checkDependency shasum
     checkDependency unzip
     initPlatform
     detectPreviousInstallation
     if [ -z "${INSTALL_DIR}" ]; then
+        printInstallOptions
         promtInstallChoice
         checkConflictingInstallation
     fi
@@ -194,6 +213,7 @@ installRill() {
     testInstalledBinary
     addPathConfigEntries
     printStartHelp
+    publishSyftEvent installed
 }
 
 # Uninstall Rill from the system, this function is aware of both the privileged and unprivileged install methods

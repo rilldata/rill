@@ -2,7 +2,6 @@ package resolvers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -68,7 +67,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
-	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, inst, opts.UserAttributes, opts.ForExport)
+	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, inst, opts.Claims.UserAttributes, opts.ForExport)
 	if err != nil {
 		return nil, err
 	}
@@ -83,46 +82,16 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	}, nil
 }
 
-// newSQLSimple is a simplified version of newSQL that does not do any template resolution
-func newSQLSimple(ctx context.Context, opts *runtime.ResolverOptions, refs []*runtimev1.ResourceName) (runtime.Resolver, error) {
-	props := &sqlProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
-		return nil, err
-	}
-
-	args := &sqlArgs{}
-	if err := mapstructure.Decode(opts.Args, args); err != nil {
-		return nil, err
-	}
-
-	inst, err := opts.Runtime.Instance(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := inst.Config()
-	if err != nil {
-		return nil, err
-	}
-
-	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
-	if err != nil {
-		return nil, err
-	}
-
-	return &sqlResolver{
-		sql:                 props.SQL,
-		refs:                refs,
-		olap:                olap,
-		olapRelease:         release,
-		interactiveRowLimit: cfg.InteractiveSQLRowLimit,
-		priority:            args.Priority,
-	}, nil
-}
-
 func (r *sqlResolver) Close() error {
 	r.olapRelease()
 	return nil
+}
+
+func (r *sqlResolver) Cacheable() bool {
+	if r.olap.Dialect() == drivers.DialectDuckDB {
+		return len(r.refs) != 0
+	}
+	return false
 }
 
 func (r *sqlResolver) Key() string {
@@ -141,7 +110,7 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 	return err
 }
 
-func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
+func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
 	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, r.interactiveRowLimit+1)
@@ -153,41 +122,12 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
 
+	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
 	if r.interactiveRowLimit != 0 {
 		res.SetCap(r.interactiveRowLimit)
 	}
-
-	var out []map[string]any
-	for res.Next() {
-		row := make(map[string]any)
-		err = res.MapScan(row)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, row)
-	}
-	if res.Err() != nil {
-		return nil, res.Err()
-	}
-
-	data, err := json.Marshal(out)
-	if err != nil {
-		return nil, err
-	}
-
-	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
-	var cache bool
-	if r.olap.Dialect() == drivers.DialectDuckDB {
-		cache = len(r.refs) != 0
-	}
-
-	return &runtime.ResolverResult{
-		Data:   data,
-		Schema: res.Schema,
-		Cache:  cache,
-	}, nil
+	return runtime.NewDriverResolverResult(res), nil
 }
 
 func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {

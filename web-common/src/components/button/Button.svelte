@@ -29,9 +29,13 @@
   export let noStroke = false;
   export let rounded = false;
   export let href: string | null = null;
+  export let rel: string | undefined = undefined;
   export let builders: Builder[] = [];
   export let loading = false;
   export let target: string | undefined = undefined;
+  export let fit = false;
+  // needed to set certain style that could be overridden by the style block in this component
+  export let forcedStyle = "";
 
   const dispatch = createEventDispatcher();
 
@@ -58,16 +62,18 @@
   class:wide
   class:compact
   class:rounded
+  class:!w-fit={fit}
   class:danger={status === "error"}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
   aria-label={label}
   {target}
-  rel={target === "_blank" ? "noopener noreferrer" : undefined}
+  rel={target === "_blank" ? "noopener noreferrer" : rel}
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
   on:click={handleClick}
+  style={forcedStyle}
 >
   {#if loading}
     <svg
@@ -111,7 +117,7 @@
     @apply rounded-[2px];
     @apply px-3 gap-x-2;
     @apply h-7  min-h-[28px] min-w-fit;
-    @apply font-medium;
+    @apply font-medium pointer-events-auto;
   }
 
   button:disabled {
@@ -251,7 +257,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-slate-600;
+    @apply text-slate-600 p-0;
   }
 
   .text:hover {

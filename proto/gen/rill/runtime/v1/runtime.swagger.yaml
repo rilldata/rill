@@ -135,7 +135,8 @@ paths:
       tags:
         - ConnectorService
   /v1/dev-jwt:
-    get:
+    post:
+      summary: IssueDevJWT issues a JWT for mimicking a user in local development.
       operationId: RuntimeService_IssueDevJWT
       responses:
         "200":
@@ -147,25 +148,11 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: name
-          in: query
-          required: false
-          type: string
-        - name: email
-          in: query
-          required: false
-          type: string
-        - name: groups
-          in: query
-          required: false
-          type: array
-          items:
-            type: string
-          collectionFormat: multi
-        - name: admin
-          in: query
-          required: false
-          type: boolean
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTRequest'
       tags:
         - RuntimeService
   /v1/examples:
@@ -293,6 +280,41 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/health:
+    get:
+      summary: Health runs a health check on the runtime.
+      operationId: RuntimeService_Health
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1HealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/health/instances/{instanceId}:
+    get:
+      summary: InstanceHealth runs a health check on a specific instance.
+      operationId: RuntimeService_InstanceHealth
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1InstanceHealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -949,6 +971,39 @@ paths:
           default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/models/{model}/splits:
+    get:
+      summary: GetModelSplits returns the splits of a model
+      operationId: RuntimeService_GetModelSplits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetModelSplitsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: model
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -1036,6 +1091,41 @@ paths:
           required: false
           type: integer
           format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/components/{component}/resolve:
+    post:
+      summary: ResolveComponent resolves the data and renderer for a Component resource.
+      operationId: QueryService_ResolveComponent
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveComponentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance ID
+          in: path
+          required: true
+          type: string
+        - name: component
+          description: Component name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              args:
+                type: object
+                title: Optional args to pass to the data resolver and for resolving templating in the renderer properties
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
@@ -1195,9 +1285,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               limit:
                 type: string
                 format: int64
@@ -1293,9 +1389,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               aliases:
                 type: array
                 items:
@@ -1553,12 +1655,6 @@ paths:
                 type: array
                 items:
                   type: string
-                title: Required either measure_names or inline_measures
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1573,9 +1669,15 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              havingSql:
+                type: string
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               timeZone:
                 type: string
                 title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -1624,11 +1726,6 @@ paths:
                 type: array
                 items:
                   type: string
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1648,8 +1745,12 @@ paths:
                   $ref: '#/definitions/v1MetricsViewSort'
               where:
                 $ref: '#/definitions/v1Expression'
+              whereSql:
+                type: string
               having:
                 $ref: '#/definitions/v1Expression'
+              havingSql:
+                type: string
               priority:
                 type: integer
                 format: int32
@@ -1693,12 +1794,6 @@ paths:
                 type: array
                 items:
                   type: string
-                title: Required either measure_names or inline_measures
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1710,6 +1805,9 @@ paths:
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
+              whereSql:
+                type: string
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               priority:
                 type: integer
                 format: int32
@@ -2380,7 +2478,7 @@ paths:
   /v1/instances/{instanceId}/trigger:
     post:
       summary: |-
-        CreateTrigger creates a trigger in the catalog.
+        CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
         Triggers are ephemeral resources that will be cleaned up by the controller.
       operationId: RuntimeService_CreateTrigger
       responses:
@@ -2394,6 +2492,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to target.
           in: path
           required: true
           type: string
@@ -2403,10 +2502,31 @@ paths:
           schema:
             type: object
             properties:
-              pullTriggerSpec:
-                $ref: '#/definitions/v1PullTriggerSpec'
-              refreshTriggerSpec:
-                $ref: '#/definitions/v1RefreshTriggerSpec'
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+                description: Resources to trigger. See RefreshTriggerSpec for details.
+              models:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1RefreshModelTrigger'
+                description: Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+              parser:
+                type: boolean
+                description: |-
+                  Parser is a convenience flag to trigger the global project parser.
+                  Triggering the project parser ensures a pull of the repository and a full parse of all files.
+              allSourcesModels:
+                type: boolean
+                description: Convenience flag to trigger all sources and models.
+              allSourcesModelsFull:
+                type: boolean
+                description: |-
+                  Convenience flag to trigger all sources and models.
+                  Will trigger models with RefreshModelTrigger.full set to true.
       tags:
         - RuntimeService
   /v1/olap/tables:
@@ -2639,6 +2759,9 @@ definitions:
       secret:
         type: boolean
         title: If true, the property is a secret and should not be displayed in UIs
+      noPrompt:
+        type: boolean
+        title: If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
     title: Property represents the spec of one of the driver's config properties
   ConnectorDriverPropertyType:
     type: string
@@ -2723,6 +2846,8 @@ definitions:
         type: string
       unnest:
         type: boolean
+      uri:
+        type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecMeasureType:
     type: string
@@ -2785,32 +2910,6 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
-  MetricsViewSpecSecurityV2:
-    type: object
-    properties:
-      access:
-        type: string
-        title: Dashboard level access condition
-      rowFilter:
-        type: string
-        title: SQL expression to apply in a WHERE clause against the underlying table
-      queryFilter:
-        $ref: '#/definitions/v1Expression'
-        description: |-
-          Dimension filter to apply to queries against the metrics view.
-          Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
-      include:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-        title: either one of include or exclude will be specified
-      exclude:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-    title: Security for the dashboard
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -2846,16 +2945,6 @@ definitions:
       count:
         type: integer
         format: int32
-  SecurityV2FieldConditionV2:
-    type: object
-    properties:
-      condition:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
-    title: Dimension/measure level access condition
   StructTypeField:
     type: object
     properties:
@@ -2931,7 +3020,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -2981,6 +3070,14 @@ definitions:
         type: string
       resolverProperties:
         type: object
+      openapiSummary:
+        type: string
+      openapiParameters:
+        type: array
+        items:
+          type: object
+      openapiResponseSchema:
+        type: object
   v1APIState:
     type: object
   v1Alert:
@@ -3008,6 +3105,10 @@ definitions:
       finishedOn:
         type: string
         format: date-time
+      suppressedSince:
+        type: string
+        format: date-time
+        title: Stores the last notification time in suppressed alerts
   v1AlertSpec:
     type: object
     properties:
@@ -3032,8 +3133,13 @@ definitions:
         format: int64
       queryName:
         type: string
+        title: for alerts that have not been edited since resolver and resolver_properties have been added
       queryArgsJson:
         type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
       queryForUserId:
         type: string
       queryForUserEmail:
@@ -3530,6 +3636,8 @@ definitions:
     properties:
       title:
         type: string
+      subtitle:
+        type: string
       resolver:
         type: string
       resolverProperties:
@@ -3538,12 +3646,28 @@ definitions:
         type: string
       rendererProperties:
         type: object
+      input:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
+      output:
+        $ref: '#/definitions/v1ComponentVariable'
+      show:
+        type: string
+        description: Templated string that should evaluate to a boolean.
       definedInDashboard:
         type: boolean
-      subtitle:
-        type: string
   v1ComponentState:
     type: object
+  v1ComponentVariable:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      defaultValue: {}
   v1Condition:
     type: object
     properties:
@@ -3617,6 +3741,8 @@ definitions:
       implementsFileStore:
         type: boolean
       implementsNotifier:
+        type: boolean
+      implementsWarehouse:
         type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
   v1ConnectorSpec:
@@ -3719,9 +3845,6 @@ definitions:
       height:
         type: integer
         format: int64
-      fontSize:
-        type: integer
-        format: int64
   v1DashboardSpec:
     type: object
     properties:
@@ -3733,6 +3856,11 @@ definitions:
       gap:
         type: integer
         format: int64
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
       items:
         type: array
         items:
@@ -3882,11 +4010,36 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Log'
+  v1GetModelSplitsResponse:
+    type: object
+    properties:
+      splits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelSplit'
+      nextPageToken:
+        type: string
   v1GetResourceResponse:
     type: object
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
+  v1HealthResponse:
+    type: object
+    properties:
+      limiterError:
+        type: string
+      connCacheError:
+        type: string
+      metastoreError:
+        type: string
+      networkError:
+        type: string
+      instancesHealth:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1InstanceHealth'
   v1HistogramMethod:
     type: string
     enum:
@@ -3894,15 +4047,6 @@ definitions:
       - HISTOGRAM_METHOD_FD
       - HISTOGRAM_METHOD_DIAGNOSTIC
     default: HISTOGRAM_METHOD_UNSPECIFIED
-  v1InlineMeasure:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Required
-      expression:
-        type: string
-        title: Required, ie 'count(*)'
   v1Instance:
     type: object
     properties:
@@ -3961,6 +4105,34 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
+  v1InstanceHealth:
+    type: object
+    properties:
+      controllerError:
+        type: string
+      olapError:
+        type: string
+      repoError:
+        type: string
+  v1InstanceHealthResponse:
+    type: object
+    properties:
+      instanceHealth:
+        $ref: '#/definitions/v1InstanceHealth'
+  v1IssueDevJWTRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      groups:
+        type: array
+        items:
+          type: string
+      admin:
+        type: boolean
+    title: Request message for RuntimeService.IssueDevJWT
   v1IssueDevJWTResponse:
     type: object
     properties:
@@ -4092,6 +4264,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonDelta'
       comparisonRatio:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
+      percentOfTotal:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -4113,6 +4287,11 @@ definitions:
     type: object
     properties:
       dimension:
+        type: string
+  v1MetricsViewAggregationMeasureComputePercentOfTotal:
+    type: object
+    properties:
+      measure:
         type: string
   v1MetricsViewAggregationRequest:
     type: object
@@ -4168,9 +4347,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       limit:
         type: string
         format: int64
@@ -4277,9 +4462,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       aliases:
         type: array
         items:
@@ -4473,6 +4664,9 @@ definitions:
       table:
         type: string
         title: Name of the table the metrics view is based on
+      model:
+        type: string
+        description: Name of the model the metrics view is based on. Either table or model should be set.
       title:
         type: string
         title: User friendly label for the dashboard
@@ -4518,8 +4712,11 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
-      security:
-        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
         title: Security for the dashboard
       firstDayOfWeek:
         type: integer
@@ -4572,12 +4769,6 @@ definitions:
         type: array
         items:
           type: string
-        title: Required either measure_names or inline_measures
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time
@@ -4592,9 +4783,15 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      havingSql:
+        type: string
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -4632,11 +4829,6 @@ definitions:
         type: array
         items:
           type: string
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time
@@ -4656,8 +4848,12 @@ definitions:
           $ref: '#/definitions/v1MetricsViewSort'
       where:
         $ref: '#/definitions/v1Expression'
+      whereSql:
+        type: string
       having:
         $ref: '#/definitions/v1Expression'
+      havingSql:
+        type: string
       priority:
         type: integer
         format: int32
@@ -4690,12 +4886,6 @@ definitions:
         type: array
         items:
           type: string
-        title: Required either measure_names or inline_measures
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time
@@ -4707,6 +4897,9 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
+      whereSql:
+        type: string
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       priority:
         type: integer
         format: int32
@@ -4769,9 +4962,23 @@ definitions:
         type: string
       incrementalStateResolverProperties:
         type: object
+      splitsResolver:
+        type: string
+      splitsResolverProperties:
+        type: object
+      splitsWatermarkField:
+        type: string
+      splitsConcurrencyLimit:
+        type: integer
+        format: int64
       inputConnector:
         type: string
       inputProperties:
+        type: object
+      stageConnector:
+        type: string
+        description: stage_connector is optional.
+      stageProperties:
         type: object
       outputConnector:
         type: string
@@ -4779,28 +4986,63 @@ definitions:
         type: object
       trigger:
         type: boolean
+      triggerFull:
+        type: boolean
+  v1ModelSplit:
+    type: object
+    properties:
+      key:
+        type: string
+      data:
+        type: object
+      watermark:
+        type: string
+        format: date-time
+      executedOn:
+        type: string
+        format: date-time
+      error:
+        type: string
+      elapsedMs:
+        type: integer
+        format: int64
   v1ModelState:
     type: object
     properties:
       executorConnector:
         type: string
+        description: executor_connector is the ModelExecutor that produced the model's result.
       resultConnector:
         type: string
+        description: result_connector is the connector where the model's result is stored.
       resultProperties:
         type: object
+        description: result_properties are returned by the executor and contains metadata about the result.
       resultTable:
         type: string
+        description: result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties.
       specHash:
         type: string
+        description: spec_hash is a hash of those parts of the spec that affect the model's result.
       refsHash:
         type: string
+        description: refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
       refreshedOn:
         type: string
         format: date-time
+        description: refreshed_on is the time the model was last executed.
       incrementalState:
         type: object
+        description: incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
       incrementalStateSchema:
         $ref: '#/definitions/v1StructType'
+        description: incremental_state_schema contains a schema for the data in incremental_state.
+      splitsModelId:
+        type: string
+        description: splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
+      splitsHaveErrors:
+        type: boolean
+        description: splits_have_errors is true if one or more splits failed to execute.
   v1ModelV2:
     type: object
     properties:
@@ -4967,6 +5209,7 @@ definitions:
         $ref: '#/definitions/v1PullTriggerSpec'
       state:
         $ref: '#/definitions/v1PullTriggerState'
+    description: 'DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.'
   v1PullTriggerSpec:
     type: object
   v1PullTriggerState:
@@ -5087,6 +5330,25 @@ definitions:
       - RECONCILE_STATUS_PENDING
       - RECONCILE_STATUS_RUNNING
     default: RECONCILE_STATUS_UNSPECIFIED
+  v1RefreshModelTrigger:
+    type: object
+    properties:
+      model:
+        type: string
+        description: The model to refresh.
+      full:
+        type: boolean
+        description: |-
+          If true, the current table and state will be dropped before refreshing.
+          For non-incremental models, this is equivalent to a normal refresh.
+      splits:
+        type: array
+        items:
+          type: string
+        description: Keys of specific splits to refresh.
+      allErroredSplits:
+        type: boolean
+        description: If true, it will refresh all splits that errored on their last execution.
   v1RefreshTrigger:
     type: object
     properties:
@@ -5097,11 +5359,20 @@ definitions:
   v1RefreshTriggerSpec:
     type: object
     properties:
-      onlyNames:
+      resources:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
+        description: |-
+          Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+          If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes.
+      models:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1RefreshModelTrigger'
+        description: Models to refresh. These are specified separately to enable more fine-grained configuration.
   v1RefreshTriggerState:
     type: object
   v1RenameFileResponse:
@@ -5186,6 +5457,25 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1ResolveComponentResponse:
+    type: object
+    properties:
+      show:
+        type: boolean
+        description: |-
+          Show property with templating resolved for the provided args.
+          If it resolves to false, the other fields are not set.
+      schema:
+        $ref: '#/definitions/v1StructType'
+        title: Schema of the resolved component data
+      data:
+        type: array
+        items:
+          type: object
+        title: Resolved component data
+      rendererProperties:
+        type: object
+        title: Renderer properties with templating resolved for the provided args
   v1Resource:
     type: object
     properties:
@@ -5342,6 +5632,46 @@ definitions:
         format: int64
       timeZone:
         type: string
+  v1SecurityRule:
+    type: object
+    properties:
+      access:
+        $ref: '#/definitions/v1SecurityRuleAccess'
+      fieldAccess:
+        $ref: '#/definitions/v1SecurityRuleFieldAccess'
+      rowFilter:
+        $ref: '#/definitions/v1SecurityRuleRowFilter'
+  v1SecurityRuleAccess:
+    type: object
+    properties:
+      condition:
+        type: string
+      allow:
+        type: boolean
+  v1SecurityRuleFieldAccess:
+    type: object
+    properties:
+      condition:
+        type: string
+      allow:
+        type: boolean
+      fields:
+        type: array
+        items:
+          type: string
+      allFields:
+        type: boolean
+  v1SecurityRuleRowFilter:
+    type: object
+    properties:
+      condition:
+        type: string
+      sql:
+        type: string
+        title: Raw SQL expression to apply to the underlying table
+      expression:
+        $ref: '#/definitions/v1Expression'
+        title: Regular query expression referencing dimension names
   v1SourceSpec:
     type: object
     properties:

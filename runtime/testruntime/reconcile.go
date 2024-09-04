@@ -76,7 +76,7 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
-					OnlyNames: []*runtimev1.ResourceName{n},
+					Resources: []*runtimev1.ResourceName{n},
 				},
 			},
 		},
@@ -167,9 +167,12 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state := b.GetAlert().State
 		state.SpecHash = ""
 		state.RefsHash = ""
-		for _, e := range state.ExecutionHistory {
+		for i, e := range state.ExecutionHistory {
 			e.StartedOn = nil
 			e.FinishedOn = nil
+			if a.GetAlert().State.ExecutionHistory[i].ExecutionTime == nil {
+				e.ExecutionTime = nil
+			}
 		}
 	case runtime.ResourceKindConnector:
 		state := b.GetConnector().State
