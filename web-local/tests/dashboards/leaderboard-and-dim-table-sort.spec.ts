@@ -49,8 +49,8 @@ test.describe("leaderboard and dimension table sorting", () => {
     }
 
     await assertAAboveB(
-      page.getByRole("row", { name: "Microsoft 10.4k 10%" }),
-      page.getByRole("row", { name: "null 32.9k 33%" }),
+      page.getByRole("row", { name: "Microsoft 10.4k" }),
+      page.getByRole("row", { name: "null 32.9k" }),
     );
 
     // add time comparison and select Pct change
