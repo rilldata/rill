@@ -496,7 +496,6 @@ const metricViewReducers = {
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showTimeComparison = showTimeComparison;
-      // metricsExplorer.selectedComparisonDimension = undefined;
     });
   },
 
