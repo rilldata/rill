@@ -6,25 +6,21 @@
     createTable,
     createRender,
   } from "svelte-headless-table";
-  import { readable } from "svelte/store";
+  import { readable, writable } from "svelte/store";
   import { goto } from "$app/navigation";
   import PublicURLsDeleteRow from "./PublicURLsDeleteRow.svelte";
 
   // TODO: import type { V1MagicAuthToken } from "@rilldata/web-common/runtime-client";
   export let magicAuthTokens: any;
-  // $: console.log("magicAuthTokens: ", magicAuthTokens);
   export let organization: string;
   export let project: string;
   export let onDelete: (deletedTokenId: string) => void;
 
-  async function handleClickRow(row: any) {
-    // TODO: revisit when token secret is available
-    // `/${organization}/${project}/magic-link/${token.id}`
-    // http://localhost:3000/dev/rill-github-analytics/-/share/rill_mgc_4nLmVj83NhQ4zACJSww5OHhCGCf1CC97sfpfixe6Jfmu4TjkMMvveE
-    await goto(`/${organization}/${project}/${row.original.metricsView}`);
+  const magicAuthTokensStore = writable(magicAuthTokens);
+  $: {
+    magicAuthTokensStore.set(magicAuthTokens);
   }
-
-  const table = createTable(readable(magicAuthTokens));
+  const table = createTable(magicAuthTokensStore);
 
   const columns = table.createColumns([
     table.column({
@@ -80,6 +76,13 @@
 
   const { headerRows, pageRows, tableAttrs, tableBodyAttrs } =
     table.createViewModel(columns);
+
+  function handleClickRow(row: any) {
+    // TODOL: REVISIT AFTER https://github.com/rilldata/rill-private-issues/issues/642
+    // `/${organization}/${project}/magic-link/${token.id}`
+    // http://localhost:3000/dev/rill-github-analytics/-/share/rill_mgc_4nLmVj83NhQ4zACJSww5OHhCGCf1CC97sfpfixe6Jfmu4TjkMMvveE
+    goto(`/${organization}/${project}/${row.original.metricsView}`);
+  }
 </script>
 
 <div class="border rounded-md">
@@ -102,10 +105,7 @@
     <Table.Body {...$tableBodyAttrs}>
       {#each $pageRows as row (row.id)}
         <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-          <Table.Row
-            {...rowAttrs}
-            on:click={async () => await handleClickRow(row)}
-          >
+          <Table.Row {...rowAttrs} on:click={() => handleClickRow(row)}>
             {#each row.cells as cell (cell.id)}
               <Subscribe attrs={cell.attrs()} let:attrs>
                 <Table.Cell {...attrs}>

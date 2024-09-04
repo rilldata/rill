@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
 
   export let id: string;
@@ -11,13 +10,8 @@
 
     try {
       onDelete(id);
-      eventBus.emit("notification", { message: "Magic auth token deleted" });
     } catch (error) {
       console.error("Failed to delete magic auth token:", error);
-      eventBus.emit("notification", {
-        message: "Failed to delete magic auth token",
-        type: "error",
-      });
     }
   }
 </script>

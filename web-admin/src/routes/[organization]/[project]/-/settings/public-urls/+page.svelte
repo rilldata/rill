@@ -6,27 +6,50 @@
   import {
     createAdminServiceListMagicAuthTokens,
     getAdminServiceListMagicAuthTokensQueryKey,
-    adminServiceRevokeMagicAuthToken,
+    createAdminServiceRevokeMagicAuthToken,
   } from "@rilldata/web-admin/client";
   import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-
-  const queryClient = useQueryClient();
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-
   $: magicAuthTokensQuery = createAdminServiceListMagicAuthTokens(
     organization,
     project,
   );
 
-  async function handleDelete(deletedTokenId: string) {
-    await adminServiceRevokeMagicAuthToken(deletedTokenId);
+  const queryClient = useQueryClient();
+  const revokeMagicAuthToken = createAdminServiceRevokeMagicAuthToken();
 
-    queryClient.refetchQueries(
-      getAdminServiceListMagicAuthTokensQueryKey(organization, project),
-    );
+  async function handleDelete(deletedTokenId: string) {
+    try {
+      await $revokeMagicAuthToken.mutateAsync({
+        tokenId: deletedTokenId,
+      });
+
+      // Optimistically update the local cache
+      queryClient.setQueryData(
+        getAdminServiceListMagicAuthTokensQueryKey(organization, project),
+        (oldData: any) => ({
+          ...oldData,
+          tokens: oldData.tokens.filter(
+            (token: any) => token.id !== deletedTokenId,
+          ),
+        }),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListMagicAuthTokensQueryKey(organization, project),
+      );
+
+      eventBus.emit("notification", { message: "Magic auth token deleted" });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Failed to delete magic auth token",
+        type: "error",
+      });
+    }
   }
 </script>
 
