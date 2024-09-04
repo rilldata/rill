@@ -1,16 +1,16 @@
 ---
-title: "Custom Dashboards"
-description: Custom Dashboard (UI or Code)
-sidebar_label: "Custom Dashboard"
+title: "Canvas Dashboards"
+description: Canvas Dashboard (UI or Code)
+sidebar_label: "Canvas Dashboard"
 sidebar_position: 8
 ---
 
 
-Custom dashboards are composed of one more more charts. Now that we've learned how to create charts via Rill-provided templates and via custom chart with vega-lite, we can add and arrange these on a custom dashboard.
+Canvas dashboards are composed of one more more charts. Now that we've learned how to create charts via Rill-provided templates and via custom chart with vega-lite, we can add and arrange these on Canvas dashboard.
 
 
-### Create a custom dashboard
-Via the UI, select `Custom Dashboard`
+### Create a Canvas dashboard
+Via the UI, select `Canvas Dashboard`
 
 ![project-view](/img/tutorials/301/add-custom-dashboard.png)
 
@@ -24,7 +24,7 @@ You will notice three options in the UI for creating dashboards.
 
 ![project-view](/img/tutorials/301/custom-dashboard.png)
 
-In both the split and viz mode, we can drag and drop chart components into the custom dashboard.
+In both the split and viz mode, we can drag and drop chart components into the Canvas dashboard.
 You'll notice that in the YAML for the dashboard, you can adjust the `columns`, which will adjust the number of squares on the screen. Let's go ahead and drag our two custom charts that we built!
 
 <img src = '/img/tutorials/301/custom-chart.gif' class='rounded-gif' />
@@ -34,13 +34,13 @@ Using the markdown component under `items`, we can label the highest contributor
 
 ![project-view](/img/tutorials/301/markdown.png)
 
-Finally, using some of the Rill template KPI charts, we can finish off the custom dashboard by showing some easy to understand charts, along with a title.
+Finally, using some of the Rill template KPI charts, we can finish off the Canvas dashboard by showing some easy to understand charts, along with a title.
 
 ![project-view](/img/tutorials/301/complete-custom.png)
 
 
 <details>
-  <summary>If you had any issues building the custom dashboard, please refer to the YAML below.</summary>
+  <summary>If you had any issues building the Canvas dashboard, please refer to the YAML below.</summary>
 ```yaml
 type: dashboard
 columns: 13
@@ -99,7 +99,7 @@ items:
 ```
 </details>
 
-These are just two simple custom graphs that can be built using Vega Lite. Please refer to Vega Lite [documentation](https://vega.github.io/vega-lite/docs/) and [examples](https://vega.github.io/vega-lite/examples/) for further inspiration on how you can build your very own custom dashboard.
+These are just two simple custom graphs that can be built using Vega Lite. Please refer to Vega Lite [documentation](https://vega.github.io/vega-lite/docs/) and [examples](https://vega.github.io/vega-lite/examples/) for further inspiration on how you can build your very own Canvas dashboard.
 
 import DocsRating from '@site/src/components/DocsRating';
 

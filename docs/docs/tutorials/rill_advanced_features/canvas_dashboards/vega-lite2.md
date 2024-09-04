@@ -1,6 +1,6 @@
 ---
-title: "Custom Dashboards using Vega Lite"
-description: Creating Custom Dashboards in Rill
+title: "Canvas Dashboards using Vega Lite"
+description: Creating Canvas Dashboards in Rill
 sidebar_label: "Custom Charts Cont'd"
 sidebar_position: 13
 ---

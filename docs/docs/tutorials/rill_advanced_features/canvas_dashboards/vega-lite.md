@@ -1,6 +1,6 @@
 ---
-title: "Custom Dashboards using Vega Lite"
-description: Creating Custom Dashboards in Rill
+title: "Canvas Dashboards using Vega Lite"
+description: Creating Canvas Dashboards in Rill
 sidebar_label: "Custom Charts"
 sidebar_position: 12
 ---
@@ -12,9 +12,9 @@ The three components that are required for a custom chart using Vega Lite are:
 3. `vega_lite`: - where you will define the Vega Lite components and chart information
 
 
-## Let's create a few custom charts for our custom dashboard
+## Let's create a few custom charts for our Canvas dashboard
 
-Let's start by creating a chart for our custom dashboard.
+Let's start by creating a chart for our Canvas dashboard.
 
 ![project-view](/img/tutorials/301/add-custom-dashboard.png)
 

@@ -1,5 +1,5 @@
 ---
-title: "Custom Dashboards"
+title: "Canvas Dashboards"
 description: Using Template charts
 sidebar_label: "Template Charts"
 sidebar_position: 10
@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 ## Using Rill Custom Chart templates
 
-Rill provides a few templates for custom charts. We will use the dashboard, `dashboard_1` to create a few custom dashboards.
+Rill provides a few templates for custom charts. We will use the dashboard, `dashboard_1` to create a few Canvas dashboards.
 
 <Tabs>
 <TabItem value="KPI" label="KPI Charts" default>

@@ -1,13 +1,13 @@
 ---
-title: "Custom Dashboards"
-description: Creating Custom Dashboards in Rill
+title: "Canvas Dashboards"
+description: Creating Canvas Dashboards in Rill
 sidebar_label: "Getting Started"
 sidebar_position: 6
 ---
 
-## Creating Custom Dashboards in Rill 
+## Creating Canvas Dashboards in Rill 
 
-In this section, we'll cover how to create custom dashboards in Rill Developer and publish these to Rill Cloud,
+In this section, we'll cover how to create Canvas dashboards in Rill Developer and publish these to Rill Cloud,
 
 :::note
 This feature is not currently publicly released and is behind a feature flag. In case of specific issues, please reach out to us for assistance. 
