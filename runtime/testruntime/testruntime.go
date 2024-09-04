@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"go.uber.org/zap"
 
@@ -183,6 +184,7 @@ func NewInstanceForResolvers(t TestingT, opts InstanceOptionsForResolvers) (*run
 			clickhouse.WithUsername("clickhouse"),
 			clickhouse.WithPassword("clickhouse"),
 			clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+			withUsersConfig("../testruntime/testdata/users.xml"),
 		)
 		require.NoError(t, err)
 		t.Cleanup(func() {
@@ -397,4 +399,17 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 	require.NoError(t, err)
 
 	return rt, inst.ID, nil
+}
+
+func withUsersConfig(configFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      configFile,
+			ContainerFilePath: "/etc/clickhouse-server/users.xml",
+			FileMode:          0o755,
+		}
+		req.Files = append(req.Files, cf)
+
+		return nil
+	}
 }
