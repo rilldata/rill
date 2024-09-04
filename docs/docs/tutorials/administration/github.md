@@ -25,10 +25,8 @@ While not shown in the GIF above, you may want to take a moment to set up the[ G
 
 Navigating back to Terminal, we can run the following:
 ```
-rill deploy
-No git remote was found.
-You can connect to Github or use one-time uploads to deploy your project.
-? Do you want to use one-time uploads? No
+rill project connect-github
+
 ```
 
 We will be prompted with the same UI but this time select no. This time, you will be navigating to GitHub to install Rill Cloud to your account. Please proceed with the procedure and authorize the repository.

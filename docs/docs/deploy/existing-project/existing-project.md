@@ -41,7 +41,7 @@ Starting from **v0.48**, we have introduced the possibility to push dashboards _
 <img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br />
 
-Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](../../manage/user-management.md) section. After you have made updates to the dashboard and need to update it, you'll noticed that the button has changed to `redeploy`. Select this and we'll update the Rill Cloud project with your changes.
+Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](../../manage/user-management.md) section. After you have made updates to the dashboard and need to update it, you'll noticed that the button has changed to `Update`. Select this and we'll update the Rill Cloud project with your changes.
 
 <img src = '/img/deploy/existing-project/redeploy.gif' class='rounded-gif' />
 <br />

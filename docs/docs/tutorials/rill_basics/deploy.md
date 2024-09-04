@@ -3,8 +3,6 @@ title: Deploy to Rill Cloud
 sidebar_label: '5. Deploy to Rill Cloud'
 sidebar_position: 9
 hide_table_of_contents: false
-tags:
-    - rill deploy
 ---
 ## Deploy via the UI!
 

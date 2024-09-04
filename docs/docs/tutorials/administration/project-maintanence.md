@@ -17,6 +17,10 @@ The Status Page gives us an overview of all the components within Rill Cloud, in
 You'll see here that there's an option to connect to GitHub.
 During our first deployment onto Rill Cloud, we opted for a one-time upload. By doing so, we are able to directly deploy the project without any further steps, but we lose out on a few powerful capablities that can enhance the user experience, such as version control.
 
+### Project Alerting
+
+Along with checking the status via the UI or by running `rill project status`, you can set up [project error alerting](https://docs.rilldata.com/deploy/project-errors).
+
 ### When a dashboard is failing to load
 
 When a dashboard fails to load, you will see an `Error` in the UI. There are a few potential causes for a dashboard to fail to load, but the best place to start is the Status page. For example, you might see the following in the UI: 
