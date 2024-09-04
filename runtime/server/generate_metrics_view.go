@@ -215,9 +215,9 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 	for _, measure := range doc.Measures {
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:       measure.Name,
 			Label:      measure.Label,
 			Expression: measure.Expression,
-			Name:       measure.Name,
 			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		})
 	}
@@ -268,9 +268,9 @@ func metricsViewYAMLSystemPrompt() string {
 		Title: "<human-friendly title based on the table name and column names>",
 		Measures: []*metricsViewMeasureYAML{
 			{
+				Name:        "<unique name for the metric in snake case, such as average_sales>",
 				Label:       "<short descriptive label for the metric>",
 				Expression:  "<SQL expression to calculate the KPI in the requested SQL dialect>",
-				Name:        "<unique name for the metric in snake case, such as average_sales>",
 				Description: "<short description of the metric>",
 			},
 		},
@@ -400,9 +400,9 @@ type metricsViewDimensionYAML struct {
 }
 
 type metricsViewMeasureYAML struct {
+	Name        string
 	Label       string
 	Expression  string
-	Name        string
 	Description string
 }
 
