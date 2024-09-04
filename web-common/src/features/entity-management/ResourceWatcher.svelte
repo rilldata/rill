@@ -47,8 +47,8 @@
 <svelte:window
   on:visibilitychange={handleVisibilityChange}
   on:blur={() => {
-    fileWatcher.throttle(true);
-    resourceWatcher.throttle(true);
+    fileWatcher.throttle();
+    resourceWatcher.throttle();
   }}
   on:click={() => {
     fileWatcher.heartbeat();
