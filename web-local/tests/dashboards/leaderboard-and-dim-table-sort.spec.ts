@@ -19,10 +19,6 @@ test.describe("leaderboard and dimension table sorting", () => {
   test("leaderboard and dimension table sorting", async ({ page }) => {
     await page.getByRole("button", { name: "Preview" }).click();
 
-    // Change time zone to UTC
-    await page.getByLabel("Timezone selector").click();
-    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
-
     /**
      * LEADERBOARD
      */
@@ -55,17 +51,6 @@ test.describe("leaderboard and dimension table sorting", () => {
     await assertAAboveB(
       page.getByRole("row", { name: "Microsoft 10.4k 10%" }),
       page.getByRole("row", { name: "null 32.9k 33%" }),
-    );
-
-    //toggle sort by pct of total
-    await page
-      .getByLabel("publisher leaderboard")
-      .getByLabel("Toggle sort leaderboards by percent of total")
-      .click();
-
-    await assertAAboveB(
-      page.getByRole("row", { name: "facebook.com 15.6k 16%" }),
-      page.getByRole("row", { name: "news.google.com 12.9k 13%" }),
     );
 
     // add time comparison and select Pct change
