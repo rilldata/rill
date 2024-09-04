@@ -28,22 +28,21 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if !upload && !github {
-					sel, err := cmdutil.SelectPrompt("Do you want to use an existing github repo or use rill managed repo?", []string{githubRepoOption, rillManagedRepoOption}, githubRepoOption)
+					sel, err := cmdutil.SelectPrompt("Do you want to use an existing github repo or use rill managed repo?", []string{rillManagedRepoOption, githubRepoOption}, rillManagedRepoOption)
 					if err != nil {
 						return err
 					}
-					if sel == githubRepoOption {
-						github = true
-					} else {
+					if sel == rillManagedRepoOption {
 						upload = true
+					} else {
+						github = true
 					}
 				}
 
 				if upload {
 					return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
-				} else {
-					return project.ConnectGithubFlow(cmd.Context(), ch, opts)
 				}
+				return project.ConnectGithubFlow(cmd.Context(), ch, opts)
 			}
 			return nil
 		},
