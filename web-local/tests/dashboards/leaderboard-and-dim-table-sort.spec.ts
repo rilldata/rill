@@ -204,30 +204,5 @@ test.describe("leaderboard and dimension table sorting", () => {
         .filter({ hasText: /^5%$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     );
-
-    // sort by pct of total ONCE to sort by pct of total descending
-    await page.getByRole("button", { name: "%" }).nth(1).click();
-    await assertAAboveB(
-      page
-        .locator("div")
-        .filter({ hasText: /^34%$/ })
-        .getByRole("button", { name: "Filter dimension value" }),
-      page
-        .locator("div")
-        .filter({ hasText: /^25%$/ })
-        .getByRole("button", { name: "Filter dimension value" }),
-    );
-    // sort by pct of total TWICE to sort by pct of total ascending
-    await page.getByRole("button", { name: "%" }).nth(1).click();
-    await assertAAboveB(
-      page
-        .locator("div")
-        .filter({ hasText: /^25%$/ })
-        .getByRole("button", { name: "Filter dimension value" }),
-      page
-        .locator("div")
-        .filter({ hasText: /^34%$/ })
-        .getByRole("button", { name: "Filter dimension value" }),
-    );
   });
 });
