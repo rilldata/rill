@@ -8,14 +8,16 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
 type PlanChangeByAPIArgs struct {
-	OrgID  string
-	SubID  string
-	PlanID string
+	OrgID     string
+	SubID     string
+	PlanID    string
+	StartDate time.Time // just for deduplication
 }
 
 func (PlanChangeByAPIArgs) Kind() string { return "plan_change_by_api" }
@@ -170,7 +172,7 @@ func (w *SubscriptionCancellationWorker) Work(ctx context.Context, job *river.Jo
 	}
 
 	if time.Now().UTC().Before(job.Args.SubEndDate.AddDate(0, 0, 1)) {
-		return fmt.Errorf("subcription end date %s is not finished yet for org %q", job.Args.SubEndDate, org.Name)
+		return fmt.Errorf("subscription end date %s is not finished yet for org %q", job.Args.SubEndDate, org.Name) // will be retried
 	}
 
 	// update quotas to the default plan and hibernate all projects
@@ -214,6 +216,18 @@ func (w *SubscriptionCancellationWorker) Work(ctx context.Context, job *river.Jo
 			break
 		}
 	}
+
+	err = w.admin.Email.SendInformational(&email.Informational{
+		ToEmail: org.BillingEmail,
+		ToName:  org.Name,
+		Subject: "Subscription ended",
+		Title:   "",
+		Body:    "Thank you for using Rill, all your projects have been hibernated as subscription has ended.",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to send payment method expired email for org %q: %w", org.Name, err)
+	}
+
 	w.admin.Logger.Info("projects hibernated due to subscription cancellation", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 	return nil
 }

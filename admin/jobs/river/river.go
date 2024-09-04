@@ -333,11 +333,12 @@ func (c *Client) TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID
 	}, nil
 }
 
-func (c *Client) PlanChangeByAPI(ctx context.Context, orgID, subID, planID string) (*jobs.InsertResult, error) {
+func (c *Client) PlanChangeByAPI(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, PlanChangeByAPIArgs{
-		OrgID:  orgID,
-		SubID:  subID,
-		PlanID: planID,
+		OrgID:     orgID,
+		SubID:     subID,
+		PlanID:    planID,
+		StartDate: subStartDate,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,

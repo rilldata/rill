@@ -29,7 +29,7 @@ type Client interface {
 	TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID string, gracePeriodEndDate time.Time) (*InsertResult, error)
 
 	// subscription related workers
-	PlanChangeByAPI(ctx context.Context, orgID, subID, planID string) (*InsertResult, error)
+	PlanChangeByAPI(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*InsertResult, error)
 	SubscriptionCancellation(ctx context.Context, orgID, subID, planID string, subEndDate time.Time) (*InsertResult, error)
 }
 

@@ -39,6 +39,18 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEn
 		return fmt.Errorf("failed to find organization: %w", err)
 	}
 
+	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
+	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	if be != nil {
+		return nil
+	}
+
 	// check if the org has any active subscription
 	sub, err := w.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
@@ -58,26 +70,26 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEn
 		return nil
 	}
 
-	if sub[0].TrialEndDate.After(time.Now().UTC()) {
-		// trial period is ending soon, log warn and send email
-		w.admin.Logger.Warn("trial period is ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.Time("trial_end_date", sub[0].TrialEndDate))
-
-		// send email
-		err = w.admin.Email.SendInformational(&email.Informational{
-			ToEmail: org.BillingEmail,
-			ToName:  org.Name,
-			Subject: "Your trial period is ending soon",
-			Title:   "",
-			Body:    template.HTML(fmt.Sprintf("Your trial period will end on %s. Reach out to us for any help.", sub[0].TrialEndDate.Format("2006-01-02"))),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to send trial ending soon email for org %q: %w", org.Name, err)
-		}
-		w.admin.Logger.Info("email sent for trial period ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
-	} else {
-		// this cannot happen but woke up after schedule or some error in calculating scheduling time
-		w.admin.Logger.Warn("trial period has already ended before check was run, please check the org manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+	if time.Now().UTC().After(sub[0].TrialEndDate.AddDate(0, 0, 1)) {
+		// trial end date has already passed, ignore
+		return nil
 	}
+
+	// trial period is ending soon, log warn and send email
+	w.admin.Logger.Warn("trial period is ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.Time("trial_end_date", sub[0].TrialEndDate))
+
+	// send email
+	err = w.admin.Email.SendInformational(&email.Informational{
+		ToEmail: org.BillingEmail,
+		ToName:  org.Name,
+		Subject: "Your trial period is ending soon",
+		Title:   "",
+		Body:    template.HTML(fmt.Sprintf("Your trial period will end on %s UTC. Reach out to us for any help.", sub[0].TrialEndDate.Format("2006-01-02"))),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to send trial ending soon email for org %q: %w", org.Name, err)
+	}
+	w.admin.Logger.Info("email sent for trial period ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
 	return nil
 }
@@ -103,6 +115,18 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 			return nil
 		}
 		return fmt.Errorf("failed to find organization: %w", err)
+	}
+
+	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
+	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	if be != nil {
+		return nil
 	}
 
 	// check if the org has any active subscription
@@ -157,7 +181,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 		ToName:  org.Name,
 		Subject: "Your trial period has ended",
 		Title:   "",
-		Body:    template.HTML(fmt.Sprintf("Your trial period has ended, please visit the billing portal to enter payment method and upgrade your plan to continue using Rill. Your projects will be hibernated on %s, if you are still on trial.", gracePeriodEndDate)),
+		Body:    template.HTML(fmt.Sprintf("Your trial period has ended, please visit the billing portal to enter payment method and upgrade your plan to continue using Rill. Your projects will be hibernated on %s UTC, if you are still on trial.", gracePeriodEndDate.Format("2006-01-02"))),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
@@ -191,6 +215,18 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 		return fmt.Errorf("failed to find organization: %w", err)
 	}
 
+	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
+	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	if be != nil {
+		return nil
+	}
+
 	// check if the org has any active subscription
 	sub, err := w.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
@@ -206,7 +242,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 	}
 
 	if sub[0].ID != job.Args.SubID || sub[0].Plan.ID != job.Args.PlanID {
-		// subscription or plan have changed, ignore, delete the billing error if this was for this job
+		// subscription or plan have changed, delete the billing error if this was for this job
 		be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeTrialEnded)
 		if err != nil {
 			if !errors.Is(err, database.ErrNotFound) {

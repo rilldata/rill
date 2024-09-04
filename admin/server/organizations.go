@@ -360,7 +360,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	s.logger.Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
 
 	// schedule plan change by API job
-	_, err = s.admin.Jobs.PlanChangeByAPI(ctx, org.ID, subs[0].ID, plan.ID)
+	_, err = s.admin.Jobs.PlanChangeByAPI(ctx, org.ID, subs[0].ID, plan.ID, subs[0].CurrentBillingCycleStartDate)
 	if err != nil {
 		return nil, err
 	}

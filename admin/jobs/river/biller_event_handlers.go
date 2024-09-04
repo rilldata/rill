@@ -93,7 +93,7 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[In
 		ToName:  org.Name,
 		Subject: "Your invoice payment failed",
 		Title:   "",
-		Body:    template.HTML(fmt.Sprintf("Your invoice payment failed, please visit the billing portal to fix issues or contact support to continue using Rill. Your projects will be hibernated on %s, if invoice still not paid.", gracePeriodEndDate)),
+		Body:    template.HTML(fmt.Sprintf("Your invoice payment failed, please visit the billing portal to fix issues or contact support to continue using Rill. Your projects will be hibernated on %s UTC, if invoice still not paid.", gracePeriodEndDate.Format("2006-01-02"))),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send invoice payment failed email for org %q: %w", org.Name, err)
@@ -272,9 +272,9 @@ func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, j
 		err = w.admin.Email.SendInformational(&email.Informational{
 			ToEmail: org.BillingEmail,
 			ToName:  org.Name,
-			Subject: "No valid payment method found",
+			Subject: "Invoice payment default",
 			Title:   "",
-			Body:    "We did not receive any payment for the unpaid invoice, your projects have been hibernated. Please visit the billing portal to enter payment method and then run `rill project reconcile` to unhibernate each project.",
+			Body:    "We did not receive any payment for the unpaid invoice, your projects have been hibernated. Please visit the billing portal to complete payment.",
 		})
 		if err != nil {
 			return fmt.Errorf("failed to send payment method expired email for org %q: %w", org.Name, err)
