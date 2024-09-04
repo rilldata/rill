@@ -145,25 +145,25 @@ func testMetricsViewsAggregation(t *testing.T, rt *runtime.Runtime, instanceID s
 	rows := q.Result.Data
 
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z,http://localhost/Facebook", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Facebook,2022-02-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-02-01T00:00:00Z,http://localhost/Facebook", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Facebook,2022-03-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-03-01T00:00:00Z,http://localhost/Facebook", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Google,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Google,2022-01-01T00:00:00Z,http://localhost/Google", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Google,2022-02-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Google,2022-02-01T00:00:00Z,http://localhost/Google", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Google,2022-03-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Google,2022-03-01T00:00:00Z,http://localhost/Google", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Microsoft,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Microsoft,2022-01-01T00:00:00Z,http://localhost/Microsoft", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Microsoft,2022-02-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Microsoft,2022-02-01T00:00:00Z,http://localhost/Microsoft", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Microsoft,2022-03-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Microsoft,2022-03-01T00:00:00Z,http://localhost/Microsoft", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 	i++
-	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,http://localhost/Yahoo", fieldsToString(rows[i], "pub", "timestamp", "_uri_pub"))
 }
 
 func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, instanceID string) {

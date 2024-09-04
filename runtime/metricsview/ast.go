@@ -302,7 +302,6 @@ func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsVi
 			Expression: dim.Uri,
 			Label:      label,
 		}, nil
-
 	}
 
 	if qd.Compute.TimeFloor != nil {

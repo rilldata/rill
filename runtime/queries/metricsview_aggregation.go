@@ -196,7 +196,6 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 						},
 					},
 				})
-
 			}
 		}
 	}
