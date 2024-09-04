@@ -5,11 +5,13 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
 
   const fileWatcher = new WatchFilesClient().client;
   const resourceWatcher = new WatchResourcesClient().client;
   const fileAttempts = fileWatcher.retryAttempts;
   const resourceAttempts = resourceWatcher.retryAttempts;
+  const closed = fileWatcher.closed;
 
   export let host: string;
   export let instanceId: string;
@@ -36,13 +38,31 @@
       fileWatcher.reconnect().catch(console.error);
       resourceWatcher.reconnect().catch(console.error);
     } else {
-      fileWatcher.throttle();
-      resourceWatcher.throttle();
+      fileWatcher.throttle(true);
+      resourceWatcher.throttle(true);
     }
   }
 </script>
 
-<svelte:window on:visibilitychange={handleVisibilityChange} />
+<svelte:window
+  on:visibilitychange={handleVisibilityChange}
+  on:blur={() => {
+    fileWatcher.throttle(true);
+    resourceWatcher.throttle(true);
+  }}
+  on:click={() => {
+    fileWatcher.heartbeat();
+    resourceWatcher.heartbeat();
+  }}
+  on:keydown={() => {
+    fileWatcher.heartbeat();
+    resourceWatcher.heartbeat();
+  }}
+  on:focus={() => {
+    fileWatcher.heartbeat();
+    resourceWatcher.heartbeat();
+  }}
+/>
 
 {#if failed}
   <ErrorPage
@@ -52,5 +72,16 @@
     body="Try restarting the server"
   />
 {:else}
+  {#if $closed}
+    <div class="bg-yellow-100 py-1 w-full">
+      <div class="flex flex-row items-center mx-auto w-fit gap-x-2">
+        <InfoCircle />
+        <span>
+          Connection closed due to inactivity. Interact with the page to
+          reconnect.
+        </span>
+      </div>
+    </div>
+  {/if}
   <slot />
 {/if}
