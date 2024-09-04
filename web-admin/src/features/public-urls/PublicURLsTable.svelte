@@ -9,9 +9,9 @@
   import { writable } from "svelte/store";
   import { goto } from "$app/navigation";
   import PublicURLsDeleteRow from "./PublicURLsDeleteRow.svelte";
+  import type { V1MagicAuthToken } from "@rilldata/web-common/runtime-client";
 
-  // TODO: import type { V1MagicAuthToken } from "@rilldata/web-common/runtime-client";
-  export let magicAuthTokens: any;
+  export let magicAuthTokens: V1MagicAuthToken[];
   export let organization: string;
   export let project: string;
   export let onDelete: (deletedTokenId: string) => void;

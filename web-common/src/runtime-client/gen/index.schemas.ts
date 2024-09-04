@@ -1146,6 +1146,11 @@ export interface V1ModelState {
   splitsHaveErrors?: boolean;
 }
 
+export interface V1ModelV2 {
+  spec?: V1ModelSpec;
+  state?: V1ModelState;
+}
+
 export type V1ModelSplitData = { [key: string]: any };
 
 export interface V1ModelSplit {
@@ -1555,6 +1560,23 @@ export interface V1MetricsViewAggregationDimension {
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
+}
+
+export type V1MagicAuthTokenAttributes = { [key: string]: any };
+
+export interface V1MagicAuthToken {
+  id?: string;
+  projectId?: string;
+  createdOn?: string;
+  expiresOn?: string;
+  usedOn?: string;
+  createdByUserId?: string;
+  createdByUserEmail?: string;
+  attributes?: V1MagicAuthTokenAttributes;
+  metricsView?: string;
+  metricsViewFilter?: V1Expression;
+  metricsViewFields?: string[];
+  state?: string;
 }
 
 export type V1LogLevel = (typeof V1LogLevel)[keyof typeof V1LogLevel];
