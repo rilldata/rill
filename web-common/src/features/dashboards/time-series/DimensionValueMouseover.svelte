@@ -40,10 +40,7 @@
   let pointsData = dimensionData;
   $: if (dimensionValue !== undefined) {
     const higlighted = dimensionData.filter((d) => d.value === dimensionValue);
-
-    if (higlighted.length) {
-      pointsData = higlighted;
-    }
+    pointsData = higlighted.length ? higlighted : dimensionData;
   } else {
     pointsData = dimensionData;
   }
