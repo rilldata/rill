@@ -8,8 +8,6 @@ import (
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -274,31 +272,13 @@ func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, p
 	}
 
 	// schedule trial ending soon job 7 days before trial end date
-	_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndingSoonArgs{
-		OrgID:  orgID,
-		SubID:  subID,
-		PlanID: planID,
-	}, &river.InsertOpts{
-		ScheduledAt: trialEndDate.AddDate(0, 0, -7),
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
+	_, err := s.Jobs.TrialEndingSoon(ctx, orgID, subID, planID, trialEndDate.AddDate(0, 0, -7))
 	if err != nil {
 		return fmt.Errorf("failed to schedule trial ending soon job: %w", err)
 	}
 
-	// schedule trial end check job on trial end date
-	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, riverutils.TrialEndCheckArgs{
-		OrgID:  orgID,
-		SubID:  subID,
-		PlanID: planID,
-	}, &river.InsertOpts{
-		ScheduledAt: trialEndDate.AddDate(0, 0, 1).Add(time.Hour * 1), // add buffer of 1 hour to ensure the job runs after trial period days
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
+	// schedule trial end check job at end of trial end date + buffer of 1 hour to ensure the job runs after trial period days
+	_, err = s.Jobs.TrialEndCheck(ctx, orgID, subID, planID, trialEndDate.AddDate(0, 0, 1).Add(time.Hour*1))
 	if err != nil {
 		return fmt.Errorf("failed to schedule trial end check job: %w", err)
 	}

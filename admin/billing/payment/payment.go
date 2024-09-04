@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
 )
 
 type Provider interface {
@@ -20,6 +21,9 @@ type Provider interface {
 
 	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers.
 	WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request)
+
+	// SetJobsClient needs to be explicitly set because of circular dependency, see admin start method
+	SetJobsClient(jobs jobs.Client)
 }
 
 type Customer struct {

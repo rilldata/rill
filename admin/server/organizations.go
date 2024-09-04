@@ -11,12 +11,10 @@ import (
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
-	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -362,15 +360,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	s.logger.Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
 
 	// schedule plan change by API job
-	_, err = riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandlePlanChangeByAPIArgs{
-		OrgID:  org.ID,
-		SubID:  subs[0].ID,
-		PlanID: plan.ID,
-	}, &river.InsertOpts{
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
+	_, err = s.admin.Jobs.PlanChangeByAPI(ctx, org.ID, subs[0].ID, plan.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -469,17 +459,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		}
 	}
 
-	// schedule subscription cancellation job at end of the current subscription term
-	j, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.HandleSubscriptionCancellationArgs{
-		OrgID:  org.ID,
-		SubID:  subs[0].ID,
-		PlanID: plan.ID,
-	}, &river.InsertOpts{
-		ScheduledAt: subEndDate.AddDate(0, 0, 1).Add(1 * time.Hour), // 1 hour after the end of the current subscription term
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
+	// schedule subscription cancellation job at end of the current subscription term + 1 hour
+	j, err := s.admin.Jobs.SubscriptionCancellation(ctx, org.ID, subs[0].ID, plan.ID, subEndDate.AddDate(0, 0, 1).Add(1*time.Hour))
 	if err != nil {
 		return nil, err
 	}
@@ -490,7 +471,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		Type:  database.BillingErrorTypeSubscriptionCancelled,
 		Metadata: database.BillingErrorMetadataSubscriptionCancelled{
 			EndDate:     subEndDate,
-			SubEndJobID: j.Job.ID,
+			SubEndJobID: j.ID,
 		},
 		EventTime: time.Now(),
 	})

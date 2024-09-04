@@ -13,6 +13,7 @@ import (
 	"github.com/orbcorp/orb-go"
 	"github.com/orbcorp/orb-go/option"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
 	"go.uber.org/zap"
 )
 
@@ -25,14 +26,15 @@ var _ Biller = &Orb{}
 
 type Orb struct {
 	client        *orb.Client
-	webhookSecret string
 	logger        *zap.Logger
+	jobs          jobs.Client
+	webhookSecret string
 }
 
-func NewOrb(orbKey, webhookSecret string, logger *zap.Logger) Biller {
+func NewOrb(logger *zap.Logger, orbKey, webhookSecret string) Biller {
 	c := orb.NewClient(option.WithAPIKey(orbKey), option.WithRequestTimeout(requestTimeout))
 
-	return &Orb{client: c, webhookSecret: webhookSecret, logger: logger}
+	return &Orb{client: c, logger: logger, webhookSecret: webhookSecret}
 }
 
 func (o *Orb) Name() string {
@@ -394,6 +396,46 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }
 
+func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
+	return UsageReportingGranularityHour
+}
+
+func (o *Orb) GetReportingWorkerCron() string {
+	// run every hour at around end of the hour
+	return "55 * * * *"
+}
+
+func (o *Orb) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+	if o.webhookSecret == "" {
+		return nil
+	}
+	return o.handleWebhook
+}
+
+func (o *Orb) SetJobsClient(jc jobs.Client) {
+	o.jobs = jc
+}
+
+func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
+	plans, err := o.client.Plans.List(ctx, orb.PlanListParams{
+		Limit:  orb.Int(requestMaxLimit), // TODO handle pagination, for now don't expect more than 500 plans
+		Status: orb.F(orb.PlanListParamsStatusActive),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var billingPlans []*Plan
+	for i := 0; i < len(plans.Data); i++ {
+		billingPlan, err := getBillingPlanFromOrbPlan(&plans.Data[i])
+		if err != nil {
+			return nil, err
+		}
+		billingPlans = append(billingPlans, billingPlan)
+	}
+	return billingPlans, nil
+}
+
 func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent) error {
 	re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
 	err := re.RunCtx(ctx, func(ctx context.Context) error {
@@ -416,42 +458,6 @@ func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent
 		return err
 	}
 	return nil
-}
-
-func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
-	return UsageReportingGranularityHour
-}
-
-func (o *Orb) GetReportingWorkerCron() string {
-	// run every hour at around end of the hour
-	return "55 * * * *"
-}
-
-func (o *Orb) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
-	if o.webhookSecret == "" {
-		return nil
-	}
-	return o.handleWebhook
-}
-
-func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
-	plans, err := o.client.Plans.List(ctx, orb.PlanListParams{
-		Limit:  orb.Int(requestMaxLimit), // TODO handle pagination, for now don't expect more than 500 plans
-		Status: orb.F(orb.PlanListParamsStatusActive),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var billingPlans []*Plan
-	for i := 0; i < len(plans.Data); i++ {
-		billingPlan, err := getBillingPlanFromOrbPlan(&plans.Data[i])
-		if err != nil {
-			return nil, err
-		}
-		billingPlans = append(billingPlans, billingPlan)
-	}
-	return billingPlans, nil
 }
 
 func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {

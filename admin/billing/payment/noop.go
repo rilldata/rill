@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
 )
 
 var _ Provider = &noop{}
@@ -42,3 +43,5 @@ func (n noop) GetBillingPortalURL(ctx context.Context, customerID, returnURL str
 func (n noop) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
 	return nil
 }
+
+func (n noop) SetJobsClient(jc jobs.Client) {}

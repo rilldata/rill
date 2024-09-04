@@ -19,8 +19,6 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/riverqueue/river/riverdriver"
-	"github.com/riverqueue/river/riverdriver/riverdatabasesql"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	// Load postgres driver
@@ -45,21 +43,16 @@ func (d driver) Open(dsn string, encKeyring []*database.EncryptionKey) (database
 	}
 
 	dbx := sqlx.NewDb(db, "pgx")
-	return &connection{db: dbx, riverDriver: riverdatabasesql.New(dbx.DB), encKeyring: encKeyring}, nil
+	return &connection{db: dbx, encKeyring: encKeyring}, nil
 }
 
 type connection struct {
-	db          *sqlx.DB
-	encKeyring  []*database.EncryptionKey
-	riverDriver riverdriver.Driver[*sql.Tx]
+	db         *sqlx.DB
+	encKeyring []*database.EncryptionKey
 }
 
 func (c *connection) Close() error {
 	return c.db.Close()
-}
-
-func (c *connection) AsRiverDriver() (riverdriver.Driver[*sql.Tx], *sql.DB, bool) {
-	return c.riverDriver, c.db.DB, true
 }
 
 func (c *connection) FindOrganizations(ctx context.Context, afterName string, limit int) ([]*database.Organization, error) {

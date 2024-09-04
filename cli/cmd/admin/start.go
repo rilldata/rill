@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"net/url"
@@ -19,8 +18,6 @@ import (
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/jobs/river"
-	"github.com/rilldata/rill/admin/pkg/riverworker"
-	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -31,7 +28,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
-	riverlib "github.com/riverqueue/river"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -46,36 +42,38 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
-	DatabaseURL            string                 `split_words:"true"`
-	RiverDatabaseURL       string                 `split_words:"true"`
-	RedisURL               string                 `default:"" split_words:"true"`
-	ProvisionerSetJSON     string                 `split_words:"true"`
-	DefaultProvisioner     string                 `split_words:"true"`
-	Jobs                   []string               `split_words:"true"`
-	LogLevel               zapcore.Level          `default:"info" split_words:"true"`
-	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
-	TracesExporter         observability.Exporter `default:"" split_words:"true"`
-	HTTPPort               int                    `default:"8080" split_words:"true"`
-	GRPCPort               int                    `default:"9090" split_words:"true"`
-	DebugPort              int                    `split_words:"true"`
-	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
-	ExternalGRPCURL        string                 `envconfig:"external_grpc_url"`
-	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
-	AllowedOrigins         []string               `default:"*" split_words:"true"`
-	SessionKeyPairs        []string               `split_words:"true"`
-	SigningJWKS            string                 `split_words:"true"`
-	SigningKeyID           string                 `split_words:"true"`
-	AuthDomain             string                 `split_words:"true"`
-	AuthClientID           string                 `split_words:"true"`
-	AuthClientSecret       string                 `split_words:"true"`
-	GithubAppID            int64                  `split_words:"true"`
-	GithubAppName          string                 `split_words:"true"`
-	GithubAppPrivateKey    string                 `split_words:"true"`
-	GithubAppWebhookSecret string                 `split_words:"true"`
-	GithubClientID         string                 `split_words:"true"`
-	GithubClientSecret     string                 `split_words:"true"`
-	AssetsBucket           string                 `split_words:"true"`
+	DatabaseDriver string `default:"postgres" split_words:"true"`
+	DatabaseURL    string `split_words:"true"`
+	// json encoded array of database.EncryptionKey
+	DatabaseEncryptionKeyring string                 `split_words:"true"`
+	RiverDatabaseURL          string                 `split_words:"true"`
+	RedisURL                  string                 `default:"" split_words:"true"`
+	ProvisionerSetJSON        string                 `split_words:"true"`
+	DefaultProvisioner        string                 `split_words:"true"`
+	Jobs                      []string               `split_words:"true"`
+	LogLevel                  zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter           observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter            observability.Exporter `default:"" split_words:"true"`
+	HTTPPort                  int                    `default:"8080" split_words:"true"`
+	GRPCPort                  int                    `default:"9090" split_words:"true"`
+	DebugPort                 int                    `split_words:"true"`
+	ExternalURL               string                 `default:"http://localhost:8080" split_words:"true"`
+	ExternalGRPCURL           string                 `envconfig:"external_grpc_url"`
+	FrontendURL               string                 `default:"http://localhost:3000" split_words:"true"`
+	AllowedOrigins            []string               `default:"*" split_words:"true"`
+	SessionKeyPairs           []string               `split_words:"true"`
+	SigningJWKS               string                 `split_words:"true"`
+	SigningKeyID              string                 `split_words:"true"`
+	AuthDomain                string                 `split_words:"true"`
+	AuthClientID              string                 `split_words:"true"`
+	AuthClientSecret          string                 `split_words:"true"`
+	GithubAppID               int64                  `split_words:"true"`
+	GithubAppName             string                 `split_words:"true"`
+	GithubAppPrivateKey       string                 `split_words:"true"`
+	GithubAppWebhookSecret    string                 `split_words:"true"`
+	GithubClientID            string                 `split_words:"true"`
+	GithubClientSecret        string                 `split_words:"true"`
+	AssetsBucket              string                 `split_words:"true"`
 	// AssetsBucketGoogleCredentialsJSON is only required to be set for local development.
 	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
 	AssetsBucketGoogleCredentialsJSON string `split_words:"true"`
@@ -96,8 +94,6 @@ type Config struct {
 	OrbWebhookSecret                  string `split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
-	// json encoded array of database.EncryptionKey
-	DatabaseEncryptionKeyring string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -267,7 +263,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var biller billing.Biller
 			if conf.OrbAPIKey != "" {
-				biller = billing.NewOrb(conf.OrbAPIKey, conf.OrbWebhookSecret, logger)
+				biller = billing.NewOrb(logger, conf.OrbAPIKey, conf.OrbWebhookSecret)
 			} else {
 				biller = billing.NewNoop()
 			}
@@ -283,6 +279,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			admOpts := &admin.Options{
 				DatabaseDriver:            conf.DatabaseDriver,
 				DatabaseDSN:               conf.DatabaseURL,
+				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
 				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
 				FrontendURL:               conf.FrontendURL,
 				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
@@ -292,40 +289,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectOrg:         metricsProjectOrg,
 				MetricsProjectName:        metricsProjectName,
 				AutoscalerCron:            conf.AutoscalerCron,
-				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
 			defer adm.Close()
-
-			// add the river workers
-			riverworker.AddWorker[riverutils.PaymentMethodAddedArgs](riverworker.NewPaymentMethodAddedWorker(adm))
-			riverworker.AddWorker[riverutils.PaymentMethodRemovedArgs](riverworker.NewPaymentMethodRemovedWorker(adm))
-			riverworker.AddWorker[riverutils.TrialEndingSoonArgs](riverworker.NewTrialEndingSoonWorker(adm))
-			riverworker.AddWorker[riverutils.TrialEndCheckArgs](riverworker.NewTrialEndCheckWorker(adm))
-			riverworker.AddWorker[riverutils.TrialGracePeriodCheckArgs](riverworker.NewTrialGracePeriodCheckWorker(adm))
-			riverworker.AddWorker[riverutils.InvoicePaymentFailedArgs](riverworker.NewInvoicePaymentFailedWorker(adm))
-			riverworker.AddWorker[riverutils.InvoicePaymentFailedGracePeriodCheckArgs](riverworker.NewInvoicePaymentFailedGracePeriodCheckWorker(adm))
-			riverworker.AddWorker[riverutils.InvoicePaymentSuccessArgs](riverworker.NewInvoicePaymentSuccessWorker(adm))
-			riverworker.AddWorker[riverutils.HandlePlanChangeByAPIArgs](riverworker.NewHandlePlanChangeByAPIWorker(adm))
-			riverworker.AddWorker[riverutils.HandleSubscriptionCancellationArgs](riverworker.NewHandleSubscriptionCancellationWorker(adm))
-			riverworker.AddWorker[riverutils.CustomerAddressUpdatedArgs](riverworker.NewCustomerAddressUpdatedWorker(adm))
-
-			// this driver will be shared by both admin and worker river clients, riverDBPool is used for migrations
-			riverDriver, riverDBPool, ok := adm.DB.AsRiverDriver()
-			if !ok {
-				logger.Fatal("database driver does not support river")
-			}
-
-			client, err := riverlib.NewClient[*sql.Tx](riverDriver, &riverlib.Config{
-				Workers: riverworker.Workers,
-			})
-			if err != nil {
-				logger.Fatal("error creating insert only river client", zap.Error(err))
-			}
-			riverutils.InsertOnlyRiverClient = client
 
 			// Init river jobs client
 			jobs, err := river.New(cmd.Context(), conf.RiverDatabaseURL, adm)
@@ -336,6 +305,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Set initialized jobs client on admin so jobs can be triggered from admin
 			adm.Jobs = jobs
+			// Set jobs client on biller and payment provider as they cannot use admin jobs client due to circular dependency
+			biller.SetJobsClient(jobs)
+			p.SetJobsClient(jobs)
 
 			// Parse session keys as hex strings
 			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
@@ -397,7 +369,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init and run worker
 			if runWorker || runJobs {
-				wkr := worker.New(logger, adm, jobs, riverDriver, riverDBPool)
+				wkr := worker.New(logger, adm, jobs)
 				if runWorker {
 					group.Go(func() error { return wkr.Run(cctx) })
 					if !runServer {

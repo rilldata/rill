@@ -76,8 +76,6 @@ require (
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redis/go-redis/v9 v9.0.2
 	github.com/riverqueue/river v0.11.4
-	github.com/riverqueue/river/riverdriver v0.11.4
-	github.com/riverqueue/river/riverdriver/riverdatabasesql v0.11.4
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.11.4
 	github.com/riverqueue/river/rivertype v0.11.4
 	github.com/robfig/cron/v3 v3.0.1
@@ -291,7 +289,6 @@ require (
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lib/pq v1.10.9 // indirect
 	github.com/lufia/plan9stats v0.0.0-20230326075908-cb1d2100619a // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -343,6 +340,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
+	github.com/riverqueue/river/riverdriver v0.11.4 // indirect
 	github.com/riverqueue/river/rivershared v0.11.4 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect

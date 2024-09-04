@@ -3,14 +3,12 @@ package database
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/riverqueue/river/riverdriver"
 )
 
 // Drivers is a registry of drivers
@@ -57,8 +55,6 @@ type DB interface {
 
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
-
-	AsRiverDriver() (riverdriver.Driver[*sql.Tx], *sql.DB, bool)
 
 	FindOrganizations(ctx context.Context, afterName string, limit int) ([]*Organization, error)
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)

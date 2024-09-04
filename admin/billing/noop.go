@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
 )
 
 var _ Biller = &noop{}
@@ -111,3 +112,5 @@ func (n noop) GetReportingWorkerCron() string {
 func (n noop) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
 	return nil
 }
+
+func (n noop) SetJobsClient(jc jobs.Client) {}

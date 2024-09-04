@@ -15,8 +15,6 @@ import (
 	"time"
 
 	"github.com/orbcorp/orb-go"
-	"github.com/rilldata/rill/admin/pkg/riverworker/riverutils"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -103,33 +101,34 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *Orb) handleInvoicePaymentSucceeded(ctx context.Context, ie invoiceEvent) error {
-	_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.InvoicePaymentSuccessArgs{
-		BillingCustomerID: ie.OrbInvoice.Customer.ExternalCustomerID,
-		InvoiceID:         ie.OrbInvoice.ID,
-	}, &river.InsertOpts{
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	return err
+	res, err := o.jobs.InvoicePaymentSuccess(ctx, ie.OrbInvoice.Customer.ExternalCustomerID, ie.OrbInvoice.ID)
+	if err != nil {
+		return err
+	}
+	if res.Duplicate {
+		o.logger.Debug("duplicate invoice payment success event", zap.String("event_d", ie.ID))
+	}
+	return nil
 }
 
 func (o *Orb) handleInvoicePaymentFailed(ctx context.Context, ie invoiceEvent) error {
-	_, err := riverutils.InsertOnlyRiverClient.Insert(ctx, &riverutils.InvoicePaymentFailedArgs{
-		BillingCustomerID: ie.OrbInvoice.Customer.ExternalCustomerID,
-		InvoiceID:         ie.OrbInvoice.ID,
-		InvoiceNumber:     ie.OrbInvoice.InvoiceNumber,
-		InvoiceURL:        ie.OrbInvoice.HostedInvoiceURL,
-		Amount:            ie.OrbInvoice.AmountDue,
-		Currency:          ie.OrbInvoice.Currency,
-		DueDate:           ie.OrbInvoice.DueDate,
-		FailedAt:          ie.OrbInvoice.PaymentFailedAt,
-	}, &river.InsertOpts{
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	return err
+	res, err := o.jobs.InvoicePaymentFailed(ctx,
+		ie.OrbInvoice.Customer.ExternalCustomerID,
+		ie.OrbInvoice.ID,
+		ie.OrbInvoice.InvoiceNumber,
+		ie.OrbInvoice.HostedInvoiceURL,
+		ie.OrbInvoice.AmountDue,
+		ie.OrbInvoice.Currency,
+		ie.OrbInvoice.DueDate,
+		ie.OrbInvoice.PaymentFailedAt,
+	)
+	if err != nil {
+		return err
+	}
+	if res.Duplicate {
+		o.logger.Debug("duplicate invoice payment failed event", zap.String("event_id", ie.ID))
+	}
+	return nil
 }
 
 // Validates whether or not the webhook payload was sent by Orb.

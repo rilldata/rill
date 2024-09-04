@@ -69,6 +69,25 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &ValidateDeploymentsWorker{admin: adm})
 	river.AddWorker(workers, &ResetAllDeploymentsWorker{admin: adm})
 
+	// payment provider event handlers
+	river.AddWorker(workers, &PaymentMethodAddedWorker{admin: adm})
+	river.AddWorker(workers, &PaymentMethodRemovedWorker{admin: adm})
+	river.AddWorker(workers, &CustomerAddressUpdatedWorker{admin: adm})
+
+	// biller event handlers
+	river.AddWorker(workers, &InvoicePaymentFailedWorker{admin: adm})
+	river.AddWorker(workers, &InvoicePaymentSuccessWorker{admin: adm})
+	river.AddWorker(workers, &InvoicePaymentFailedGracePeriodCheckWorker{admin: adm})
+
+	// trial checks worker
+	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm})
+	river.AddWorker(workers, &TrialEndCheckWorker{admin: adm})
+	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm})
+
+	// subscription related workers
+	river.AddWorker(workers, &PlanChangeByAPIWorker{admin: adm})
+	river.AddWorker(workers, &SubscriptionCancellationWorker{admin: adm})
+
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
 		newPeriodicJob(&ValidateDeploymentsArgs{}, "* */6 * * *", true),
@@ -134,6 +153,223 @@ func (c *Client) ResetAllDeployments(ctx context.Context) (*jobs.InsertResult, e
 	}, nil
 }
 
+func (c *Client) PaymentMethodAdded(ctx context.Context, paymentMethodID, paymentCustomerID, paymentType string, eventTime time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PaymentMethodAddedArgs{
+		PaymentMethodID:   paymentMethodID,
+		PaymentCustomerID: paymentCustomerID,
+		PaymentType:       paymentType,
+		EventTime:         eventTime,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) PaymentMethodRemoved(ctx context.Context, paymentMethodID, paymentCustomerID string, eventTime time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PaymentMethodRemovedArgs{
+		PaymentMethodID:   paymentMethodID,
+		PaymentCustomerID: paymentCustomerID,
+		EventTime:         eventTime,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) CustomerAddressUpdated(ctx context.Context, paymentCustomerID string, eventTime time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, CustomerAddressUpdatedArgs{
+		PaymentCustomerID: paymentCustomerID,
+		EventTime:         eventTime,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) InvoicePaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, InvoicePaymentFailedArgs{
+		BillingCustomerID: billingCustomerID,
+		InvoiceID:         invoiceID,
+		InvoiceNumber:     invoiceNumber,
+		InvoiceURL:        invoiceURL,
+		Amount:            amount,
+		Currency:          currency,
+		DueDate:           dueDate,
+		FailedAt:          failedAt,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) InvoicePaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, InvoicePaymentSuccessArgs{
+		BillingCustomerID: billingCustomerID,
+		InvoiceID:         invoiceID,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, scheduleAt time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, InvoicePaymentFailedGracePeriodCheckArgs{
+		OrgID:     orgID,
+		InvoiceID: invoiceID,
+	}, &river.InsertOpts{
+		ScheduledAt: scheduleAt,
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) TrialEndingSoon(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, TrialEndingSoonArgs{
+		OrgID:  orgID,
+		SubID:  subID,
+		PlanID: planID,
+	}, &river.InsertOpts{
+		ScheduledAt: scheduleAt,
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) TrialEndCheck(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, TrialEndCheckArgs{
+		OrgID:  orgID,
+		SubID:  subID,
+		PlanID: planID,
+	}, &river.InsertOpts{
+		ScheduledAt: scheduleAt,
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID string, scheduleAt time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, TrialGracePeriodCheckArgs{
+		OrgID:  orgID,
+		SubID:  subID,
+		PlanID: planID,
+	}, &river.InsertOpts{
+		ScheduledAt: scheduleAt,
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) PlanChangeByAPI(ctx context.Context, orgID, subID, planID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PlanChangeByAPIArgs{
+		OrgID:  orgID,
+		SubID:  subID,
+		PlanID: planID,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) SubscriptionCancellation(ctx context.Context, orgID, subID, planID string, scheduledAt time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, SubscriptionCancellationArgs{
+		OrgID:  orgID,
+		SubID:  subID,
+		PlanID: planID,
+	}, &river.InsertOpts{
+		ScheduledAt: scheduledAt,
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
 type ErrorHandler struct {
 	logger *zap.Logger
 }
@@ -149,7 +385,7 @@ func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, p
 	var args string
 	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
 	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
-	// Set the job to be immediately cancelled
+	// Set the job to be immediately cancelled TODO review if we should retry or cancel the job
 	return &river.ErrorHandlerResult{SetCancelled: true}
 }
 
