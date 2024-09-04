@@ -6,7 +6,7 @@
     createTable,
     createRender,
   } from "svelte-headless-table";
-  import { readable, writable } from "svelte/store";
+  import { writable } from "svelte/store";
   import { goto } from "$app/navigation";
   import PublicURLsDeleteRow from "./PublicURLsDeleteRow.svelte";
 
