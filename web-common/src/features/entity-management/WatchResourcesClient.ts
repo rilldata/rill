@@ -25,6 +25,7 @@ export class WatchResourcesClient {
   private readonly instanceId = get(runtime).instanceId;
   private readonly connectorNames = new Set<string>();
   private readonly softDeletedTableConnectors = new Map<string, string>();
+  private readonly resourceStateVersions = new Map<string, string>();
 
   public constructor() {
     this.client = new WatchRequestClient<V1WatchResourcesResponse>();
@@ -57,15 +58,8 @@ export class WatchResourcesClient {
       },
     );
 
-    // Refetch `ListResources` queries
-    void queryClient.refetchQueries(
-      getRuntimeServiceListResourcesQueryKey(this.instanceId, undefined),
-    );
-    void queryClient.refetchQueries(
-      getRuntimeServiceListResourcesQueryKey(this.instanceId, {
-        kind: res.name.kind,
-      }),
-    );
+    // Nothing more to do for the ProjectParser resource
+    if ((res.name.kind as ResourceKind) === ResourceKind.ProjectParser) return;
 
     // Update the file artifacts client-side cache (which maps files to resources)
     switch (res.event) {
@@ -85,17 +79,36 @@ export class WatchResourcesClient {
         if (
           !res?.resource ||
           !res?.resource?.meta ||
-          !res?.resource?.meta?.reconcileStatus
+          !res?.resource?.meta?.reconcileStatus ||
+          !res?.resource?.meta?.stateVersion
         ) {
           return;
         }
 
-        // Proceed to query invalidations only if the resource has finished reconciling
+        // Proceed to query invalidations only if the resource has finished reconciling and incremented its state version
         if (
           res.resource.meta.reconcileStatus !==
-          V1ReconcileStatus.RECONCILE_STATUS_IDLE
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
+          this.resourceStateVersions.get(res.name.name) ===
+            res.resource.meta.stateVersion
         )
           return;
+
+        // Update the resource version
+        this.resourceStateVersions.set(
+          res.name.name,
+          res.resource.meta.stateVersion,
+        );
+
+        // Refetch `ListResources` queries
+        void queryClient.refetchQueries(
+          getRuntimeServiceListResourcesQueryKey(this.instanceId, undefined),
+        );
+        void queryClient.refetchQueries(
+          getRuntimeServiceListResourcesQueryKey(this.instanceId, {
+            kind: res.name.kind,
+          }),
+        );
 
         switch (res.name.kind as ResourceKind) {
           case ResourceKind.Connector:
@@ -196,6 +209,19 @@ export class WatchResourcesClient {
        * 2. A `DELETE` event signals that the resource has actually been deleted ("hard" delete).
        */
       case V1ResourceEvent.RESOURCE_EVENT_DELETE:
+        // Remove the resource from the resource versions map
+        this.resourceStateVersions.delete(res.name.name);
+
+        // Refetch `ListResources` queries
+        void queryClient.refetchQueries(
+          getRuntimeServiceListResourcesQueryKey(this.instanceId, undefined),
+        );
+        void queryClient.refetchQueries(
+          getRuntimeServiceListResourcesQueryKey(this.instanceId, {
+            kind: res.name.kind,
+          }),
+        );
+
         switch (res.name.kind as ResourceKind) {
           case ResourceKind.Connector:
             // Invalidate the list of connectors
