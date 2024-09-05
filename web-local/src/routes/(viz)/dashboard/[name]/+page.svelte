@@ -35,6 +35,10 @@
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 
+  $: if (mockUserHasNoAccess) {
+    eventBus.emit("banner", null);
+  }
+
   // Handle errors from dashboard YAML edits from an external IDE
   $: if (dashboardFileHasParseError && dashboardFileHasParseError.length > 0) {
     eventBus.emit("banner", {
