@@ -52,10 +52,7 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 
 	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
@@ -84,10 +81,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
@@ -152,10 +146,7 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 
 	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
@@ -199,10 +190,7 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 
 	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)

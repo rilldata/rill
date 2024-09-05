@@ -104,10 +104,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, fmt.Sprintf("project %q not found", req.Name))
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -882,10 +879,7 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 		// Check if there is a pending invite
 		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
 		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.InvalidArgument, "user not found")
-			}
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
@@ -941,10 +935,7 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 		// Check if there is a pending invite for this user
 		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
 		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.InvalidArgument, "user not found")
-			}
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID)
 		if err != nil {
@@ -1310,10 +1301,7 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !claims.Superuser(ctx) {
@@ -1336,10 +1324,7 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "role not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// find existing users belonging to the whitelisted domain to the project
@@ -1402,10 +1387,7 @@ func (s *Server) RemoveProjectWhitelistedDomain(ctx context.Context, req *adminv
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !(claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject || claims.Superuser(ctx)) {
@@ -1414,10 +1396,7 @@ func (s *Server) RemoveProjectWhitelistedDomain(ctx context.Context, req *adminv
 
 	invite, err := s.admin.DB.FindProjectWhitelistedDomain(ctx, proj.ID, req.Domain)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "whitelist not found for project %q and domain %q", proj.Name, req.Domain)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	err = s.admin.DB.DeleteProjectWhitelistedDomain(ctx, invite.ID)
@@ -1436,10 +1415,7 @@ func (s *Server) ListProjectWhitelistedDomains(ctx context.Context, req *adminv1
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1503,10 +1479,7 @@ func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernatePro
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
