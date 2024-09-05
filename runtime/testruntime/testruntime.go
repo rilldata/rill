@@ -200,7 +200,7 @@ func NewInstanceForResolvers(t *testing.T, opts InstanceOptionsForResolvers) (*r
 		opts.OLAPDSN = fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
 	case "druid":
 		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", ".env")
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
 		_, err := os.Stat(envPath)
 		if err == nil { // avoid .env in CI environment
 			require.NoError(t, godotenv.Load(envPath))
