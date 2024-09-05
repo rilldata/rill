@@ -30,20 +30,19 @@
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
-  $: parseErrors = $projectParserQuery.data?.projectParser?.state?.parseErrors;
   $: projectParserErrorMessage =
     $projectParserQuery.error?.response.data.message;
 
   // Show error banner when:
-  // - There's a parse error (will error out if the user can't manageProject)
+  // - There's a parse error (will error out if the user can't manageProject anyway)
   // - There's no mock user OR the mock user is a project admin
-  $: if (
+  $: showErrorBanner =
     projectParserErrorMessage &&
-    ($selectedMockUserStore === null || $selectedMockUserStore?.admin)
-  ) {
+    ($selectedMockUserStore === null || $selectedMockUserStore?.admin);
+  $: if (showErrorBanner) {
     eventBus.emit("banner", {
       type: "error",
-      message: projectParserErrorMessage ?? parseErrors,
+      message: projectParserErrorMessage ?? "Error parsing project",
       includesHtml: true,
       iconType: "alert",
     });
@@ -52,20 +51,24 @@
   $: dashboard = useDashboard(instanceId, metricsViewName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
+
+  // Handle errors from dashboard YAML edits from an external IDE
+  $: if (dashboardFileHasParseError && dashboardFileHasParseError.length > 0) {
+    eventBus.emit("banner", {
+      type: "error",
+      message:
+        "Error parsing project. Please check your dashboard's YAML file for errors.",
+      includesHtml: true,
+      iconType: "alert",
+    });
+  }
 </script>
 
 <svelte:head>
   <title>Rill Developer | {metricsViewName}</title>
 </svelte:head>
 
-<!-- TODO: move this to a banner at the top of the page -->
-<!-- Handle errors from dashboard YAML edits from an external IDE   -->
-{#if dashboardFileHasParseError && dashboardFileHasParseError.length > 0}
-  <ErrorPage
-    header="Error parsing dashboard"
-    body="Please check your dashboard's YAML file for errors."
-  />
-{:else if mockUserHasNoAccess}
+{#if mockUserHasNoAccess}
   <ErrorPage
     statusCode={$dashboard.error?.response?.status}
     header="This user can't access this dashboard"
