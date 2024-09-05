@@ -26,15 +26,20 @@
 
   $: projectParserQuery = useProjectParser(queryClient, instanceId);
 
-  $: showErrorBanner = $projectParserQuery.error?.response?.status === 404;
-  $: if (showErrorBanner) {
-    if ($projectParserQuery.error?.response?.data?.message) {
-      eventBus.emit("banner", {
-        type: "error",
-        message: $projectParserQuery.error?.response?.data?.message,
-        iconType: "alert",
-      });
-    }
+  $: showErrorBanner =
+    $projectParserQuery.error?.response?.status === 404 &&
+    $selectedMockUserStore?.admin;
+  $: if (
+    showErrorBanner &&
+    $projectParserQuery.error?.response?.data?.message
+  ) {
+    eventBus.emit("banner", {
+      type: "error",
+      message: $projectParserQuery.error?.response?.data?.message,
+      iconType: "alert",
+    });
+  } else {
+    eventBus.emit("banner", null);
   }
 </script>
 
