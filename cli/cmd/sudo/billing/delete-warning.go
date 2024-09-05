@@ -10,7 +10,7 @@ import (
 
 func DeleteWarningCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org, warningType string
-	warnings := []string{"trial-ending"}
+	warnings := []string{"on-trial"}
 	setCmd := &cobra.Command{
 		Use:   "delete-warning",
 		Short: "Delete billing warning of a type for an organization",
@@ -36,8 +36,8 @@ func DeleteWarningCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var w adminv1.BillingWarningType
 			switch warningType {
-			case "trial-ending":
-				w = adminv1.BillingWarningType_BILLING_WARNING_TYPE_TRIAL_ENDING
+			case "on-trial":
+				w = adminv1.BillingWarningType_BILLING_WARNING_ON_TRIAL
 			default:
 				return fmt.Errorf("invalid warning type %q", warningType)
 			}

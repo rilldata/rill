@@ -58,24 +58,10 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 	}
 
 	// delete any trial related billing errors and warnings, irrespective of the new plan.
-	bett, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeTrialEnded)
+	err = w.admin.CleanupTrialBillingErrorsAndWarnings(ctx, org.ID)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing errors: %w", err)
-		}
+		return fmt.Errorf("failed to cleanup trial billing errors and warnings: %w", err)
 	}
-
-	if bett != nil {
-		metadata, ok := bett.Metadata.(*database.BillingErrorMetadataTrialEnded)
-		if ok && metadata.GracePeriodEndJobID > 0 {
-			// cancel the trial end grace check job, ignore errors.
-			_ = w.admin.Jobs.CancelJob(ctx, metadata.GracePeriodEndJobID)
-		}
-		err = w.admin.DB.DeleteBillingError(ctx, bett.ID)
-		if err != nil {
-			return fmt.Errorf("failed to delete billing error: %w", err)
-		}
-	} // ideally should check and delete other scheduled trial check jobs like trial end check job
 
 	// delete any subscription cancellation errors
 	besc, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
@@ -96,9 +82,10 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 			return fmt.Errorf("failed to delete billing error: %w", err)
 		}
 	}
-	// if the new plan is still a trial plan, schedule trial checks. Can happen if manually assigned new trial plan for example to extend trial period
+
+	// if the new plan is still a trial plan, schedule trial checks. Can happen if manually assigned new trial plan for example to extend trial period for a customer
 	if sub[0].TrialEndDate.After(time.Now().Add(time.Hour * 1)) {
-		err = w.admin.ScheduleTrialEndCheckJobs(ctx, org.ID, sub[0].ID, sub[0].Plan.ID, sub[0].TrialEndDate)
+		err = w.admin.ScheduleTrialEndCheckJobs(ctx, org.ID, sub[0].ID, sub[0].Plan.ID, sub[0].StartDate, sub[0].TrialEndDate)
 		if err != nil {
 			return fmt.Errorf("failed to schedule trial end check job: %w", err)
 		}

@@ -3089,7 +3089,7 @@ paths:
           type: string
           enum:
             - BILLING_WARNING_TYPE_UNSPECIFIED
-            - BILLING_WARNING_TYPE_TRIAL_ENDING
+            - BILLING_WARNING_ON_TRIAL
       tags:
         - AdminService
   /v1/superuser/projects/annotations:
@@ -3681,19 +3681,19 @@ definitions:
   v1BillingWarningMetadata:
     type: object
     properties:
-      trialEnding:
-        $ref: '#/definitions/v1BillingWarningMetadataTrialEnding'
-  v1BillingWarningMetadataTrialEnding:
+      onTrial:
+        $ref: '#/definitions/v1BillingWarningMetadataOnTrial'
+  v1BillingWarningMetadataOnTrial:
     type: object
     properties:
-      trialEndsOn:
+      endDate:
         type: string
         format: date-time
   v1BillingWarningType:
     type: string
     enum:
       - BILLING_WARNING_TYPE_UNSPECIFIED
-      - BILLING_WARNING_TYPE_TRIAL_ENDING
+      - BILLING_WARNING_ON_TRIAL
     default: BILLING_WARNING_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object

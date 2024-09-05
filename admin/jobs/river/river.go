@@ -32,6 +32,7 @@ var (
 )
 
 type Client struct {
+	logger      *zap.Logger
 	dbPool      *pgxpool.Pool
 	riverClient *river.Client[pgx.Tx]
 }
@@ -114,6 +115,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	}
 
 	return &Client{
+		logger:      adm.Logger,
 		dbPool:      dbPool,
 		riverClient: riverClient,
 	}, nil
@@ -167,6 +169,11 @@ func (c *Client) PaymentMethodAdded(ctx context.Context, paymentMethodID, paymen
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("PaymentMethodAdded job skipped as duplicate", zap.String("payment_method_id", paymentMethodID), zap.String("payment_customer_id", paymentCustomerID), zap.String("payment_type", paymentType), zap.Time("event_time", eventTime))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -186,6 +193,11 @@ func (c *Client) PaymentMethodRemoved(ctx context.Context, paymentMethodID, paym
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("PaymentMethodRemoved job skipped as duplicate", zap.String("payment_method_id", paymentMethodID), zap.String("payment_customer_id", paymentCustomerID), zap.Time("event_time", eventTime))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -204,6 +216,11 @@ func (c *Client) CustomerAddressUpdated(ctx context.Context, paymentCustomerID s
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("CustomerAddressUpdated job skipped as duplicate", zap.String("payment_customer_id", paymentCustomerID), zap.Time("event_time", eventTime))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -228,6 +245,11 @@ func (c *Client) InvoicePaymentFailed(ctx context.Context, billingCustomerID, in
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("InvoicePaymentFailed job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID), zap.String("invoice_number", invoiceNumber), zap.String("invoice_url", invoiceURL), zap.String("amount", amount), zap.String("currency", currency), zap.Time("due_date", dueDate), zap.Time("failed_at", failedAt))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -246,6 +268,11 @@ func (c *Client) InvoicePaymentSuccess(ctx context.Context, billingCustomerID, i
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("InvoicePaymentSuccess job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -266,6 +293,11 @@ func (c *Client) InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("InvoicePaymentFailedGracePeriodCheck job skipped as duplicate", zap.String("org_id", orgID), zap.String("invoice_id", invoiceID), zap.Time("grace_period_end_date", gracePeriodEndDate))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -286,6 +318,11 @@ func (c *Client) TrialEndingSoon(ctx context.Context, orgID, subID, planID strin
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("TrialEndingSoon job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -306,6 +343,11 @@ func (c *Client) TrialEndCheck(ctx context.Context, orgID, subID, planID string,
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("TrialEndCheck job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -327,6 +369,11 @@ func (c *Client) TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("TrialGracePeriodCheck job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("grace_period_end_date", gracePeriodEndDate))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -347,6 +394,11 @@ func (c *Client) PlanChangeByAPI(ctx context.Context, orgID, subID, planID strin
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("PlanChangeByAPI job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("start_date", subStartDate))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,
@@ -368,6 +420,11 @@ func (c *Client) SubscriptionCancellation(ctx context.Context, orgID, subID, pla
 	if err != nil {
 		return nil, err
 	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("SubscriptionCancellation job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("sub_end_date", subEndDate))
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,

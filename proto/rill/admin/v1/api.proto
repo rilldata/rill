@@ -1326,7 +1326,7 @@ message SudoDeleteOrganizationBillingWarningResponse {}
 
 enum BillingWarningType {
   BILLING_WARNING_TYPE_UNSPECIFIED = 0;
-  BILLING_WARNING_TYPE_TRIAL_ENDING = 1;
+  BILLING_WARNING_ON_TRIAL = 1;
 }
 
 message ListProjectMemberUsersRequest {
@@ -2411,10 +2411,10 @@ message BillingWarning {
 
 message BillingWarningMetadata {
   oneof metadata {
-    BillingWarningMetadataTrialEnding trial_ending = 1;
+    BillingWarningMetadataOnTrial on_trial = 1;
   }
 }
 
-message BillingWarningMetadataTrialEnding {
-  google.protobuf.Timestamp trial_ends_on = 1;
+message BillingWarningMetadataOnTrial {
+  google.protobuf.Timestamp end_date = 1;
 }

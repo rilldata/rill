@@ -59,17 +59,17 @@ export enum BillingWarningType {
   /**
    * @generated from enum value: BILLING_WARNING_TYPE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  BILLING_WARNING_TYPE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: BILLING_WARNING_TYPE_TRIAL_ENDING = 1;
+   * @generated from enum value: BILLING_WARNING_ON_TRIAL = 1;
    */
-  TRIAL_ENDING = 1,
+  BILLING_WARNING_ON_TRIAL = 1,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingWarningType)
 proto3.util.setEnumType(BillingWarningType, "rill.admin.v1.BillingWarningType", [
   { no: 0, name: "BILLING_WARNING_TYPE_UNSPECIFIED" },
-  { no: 1, name: "BILLING_WARNING_TYPE_TRIAL_ENDING" },
+  { no: 1, name: "BILLING_WARNING_ON_TRIAL" },
 ]);
 
 /**
@@ -4246,7 +4246,7 @@ export class SudoDeleteOrganizationBillingWarningRequest extends Message<SudoDel
   /**
    * @generated from field: rill.admin.v1.BillingWarningType type = 2;
    */
-  type = BillingWarningType.UNSPECIFIED;
+  type = BillingWarningType.BILLING_WARNING_TYPE_UNSPECIFIED;
 
   constructor(data?: PartialMessage<SudoDeleteOrganizationBillingWarningRequest>) {
     super();
@@ -13315,7 +13315,7 @@ export class BillingWarning extends Message<BillingWarning> {
   /**
    * @generated from field: rill.admin.v1.BillingWarningType type = 2;
    */
-  type = BillingWarningType.UNSPECIFIED;
+  type = BillingWarningType.BILLING_WARNING_TYPE_UNSPECIFIED;
 
   /**
    * @generated from field: rill.admin.v1.BillingWarningMetadata metadata = 3;
@@ -13373,10 +13373,10 @@ export class BillingWarningMetadata extends Message<BillingWarningMetadata> {
    */
   metadata: {
     /**
-     * @generated from field: rill.admin.v1.BillingWarningMetadataTrialEnding trial_ending = 1;
+     * @generated from field: rill.admin.v1.BillingWarningMetadataOnTrial on_trial = 1;
      */
-    value: BillingWarningMetadataTrialEnding;
-    case: "trialEnding";
+    value: BillingWarningMetadataOnTrial;
+    case: "onTrial";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<BillingWarningMetadata>) {
@@ -13387,7 +13387,7 @@ export class BillingWarningMetadata extends Message<BillingWarningMetadata> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.BillingWarningMetadata";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "trial_ending", kind: "message", T: BillingWarningMetadataTrialEnding, oneof: "metadata" },
+    { no: 1, name: "on_trial", kind: "message", T: BillingWarningMetadataOnTrial, oneof: "metadata" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingWarningMetadata {
@@ -13408,39 +13408,39 @@ export class BillingWarningMetadata extends Message<BillingWarningMetadata> {
 }
 
 /**
- * @generated from message rill.admin.v1.BillingWarningMetadataTrialEnding
+ * @generated from message rill.admin.v1.BillingWarningMetadataOnTrial
  */
-export class BillingWarningMetadataTrialEnding extends Message<BillingWarningMetadataTrialEnding> {
+export class BillingWarningMetadataOnTrial extends Message<BillingWarningMetadataOnTrial> {
   /**
-   * @generated from field: google.protobuf.Timestamp trial_ends_on = 1;
+   * @generated from field: google.protobuf.Timestamp end_date = 1;
    */
-  trialEndsOn?: Timestamp;
+  endDate?: Timestamp;
 
-  constructor(data?: PartialMessage<BillingWarningMetadataTrialEnding>) {
+  constructor(data?: PartialMessage<BillingWarningMetadataOnTrial>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.BillingWarningMetadataTrialEnding";
+  static readonly typeName = "rill.admin.v1.BillingWarningMetadataOnTrial";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "trial_ends_on", kind: "message", T: Timestamp },
+    { no: 1, name: "end_date", kind: "message", T: Timestamp },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingWarningMetadataTrialEnding {
-    return new BillingWarningMetadataTrialEnding().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingWarningMetadataOnTrial {
+    return new BillingWarningMetadataOnTrial().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingWarningMetadataTrialEnding {
-    return new BillingWarningMetadataTrialEnding().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingWarningMetadataOnTrial {
+    return new BillingWarningMetadataOnTrial().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingWarningMetadataTrialEnding {
-    return new BillingWarningMetadataTrialEnding().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingWarningMetadataOnTrial {
+    return new BillingWarningMetadataOnTrial().fromJsonString(jsonString, options);
   }
 
-  static equals(a: BillingWarningMetadataTrialEnding | PlainMessage<BillingWarningMetadataTrialEnding> | undefined, b: BillingWarningMetadataTrialEnding | PlainMessage<BillingWarningMetadataTrialEnding> | undefined): boolean {
-    return proto3.util.equals(BillingWarningMetadataTrialEnding, a, b);
+  static equals(a: BillingWarningMetadataOnTrial | PlainMessage<BillingWarningMetadataOnTrial> | undefined, b: BillingWarningMetadataOnTrial | PlainMessage<BillingWarningMetadataOnTrial> | undefined): boolean {
+    return proto3.util.equals(BillingWarningMetadataOnTrial, a, b);
   }
 }
 

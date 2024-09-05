@@ -42,7 +42,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	s.Logger.Info("created subscription", zap.String("org", org.Name), zap.String("subscription_id", sub.ID))
 
 	// scheduling it before the org update as repair billing job can take care of it if update fails
-	err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.TrialEndDate)
+	err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.StartDate, sub.TrialEndDate)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -113,7 +113,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			subs = append(subs, sub)
 
 			// schedule trial end check job to the river queue, if it was already scheduled it will be ignored
-			err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.TrialEndDate)
+			err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.StartDate, sub.TrialEndDate)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -212,7 +212,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		subs = append(subs, sub)
 
 		// schedule trial end check job to the river queue
-		err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.TrialEndDate)
+		err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.StartDate, sub.TrialEndDate)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -265,21 +265,85 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 	return org, subs, nil
 }
 
-func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) error {
+func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, planID string, trialStartDate, trialEndDate time.Time) error {
 	if trialEndDate.Before(time.Now()) {
 		return nil
 	}
 
 	// schedule trial ending soon job
-	_, err := s.Jobs.TrialEndingSoon(ctx, orgID, subID, planID, trialEndDate)
+	tes, err := s.Jobs.TrialEndingSoon(ctx, orgID, subID, planID, trialEndDate)
 	if err != nil {
 		return fmt.Errorf("failed to schedule trial ending soon job: %w", err)
 	}
 
 	// schedule trial end check job
-	_, err = s.Jobs.TrialEndCheck(ctx, orgID, subID, planID, trialEndDate)
+	tec, err := s.Jobs.TrialEndCheck(ctx, orgID, subID, planID, trialEndDate)
 	if err != nil {
 		return fmt.Errorf("failed to schedule trial end check job: %w", err)
+	}
+
+	// raise on-trial billing warning
+	_, err = s.DB.UpsertBillingWarning(ctx, &database.UpsertBillingWarningOptions{
+		OrgID: orgID,
+		Type:  database.BillingWarningTypeOnTrial,
+		Metadata: &database.BillingWarningMetadataOnTrial{
+			EndDate:              trialEndDate,
+			TrialEndingSoonJobID: tes.ID,
+			TrialEndCheckJobID:   tec.ID,
+		},
+		EventTime: trialStartDate,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upsert billing warning: %w", err)
+	}
+
+	return nil
+}
+
+// CleanupTrialBillingErrorsAndWarnings removes trial related billing error and warning and cancel associated jobs
+func (s *Service) CleanupTrialBillingErrorsAndWarnings(ctx context.Context, orgID string) error {
+	bett, err := s.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeTrialEnded)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	if bett != nil {
+		metadata, ok := bett.Metadata.(*database.BillingErrorMetadataTrialEnded)
+		if ok && metadata.GracePeriodEndJobID > 0 {
+			// cancel the trial end grace check job, ignore errors.
+			_ = s.Jobs.CancelJob(ctx, metadata.GracePeriodEndJobID)
+		}
+		err = s.DB.DeleteBillingError(ctx, bett.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	}
+
+	bwot, err := s.DB.FindBillingWarningByType(ctx, orgID, database.BillingWarningTypeOnTrial)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing warnings: %w", err)
+		}
+	}
+
+	if bwot != nil {
+		metadata, ok := bwot.Metadata.(*database.BillingWarningMetadataOnTrial)
+		if ok && metadata.TrialEndingSoonJobID > 0 {
+			// cancel the trial ending soon job, ignore errors.
+			_ = s.Jobs.CancelJob(ctx, metadata.TrialEndingSoonJobID)
+		}
+
+		if ok && metadata.TrialEndCheckJobID > 0 {
+			// cancel the trial end check job, ignore errors.
+			_ = s.Jobs.CancelJob(ctx, metadata.TrialEndCheckJobID)
+		}
+
+		err = s.DB.DeleteBillingWarning(ctx, bwot.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing warning: %w", err)
+		}
 	}
 
 	return nil

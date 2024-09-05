@@ -1046,7 +1046,7 @@ type BillingWarningType int
 
 const (
 	BillingWarningTypeUnspecified BillingWarningType = iota
-	BillingWarningTypeTrialEnding
+	BillingWarningTypeOnTrial
 )
 
 type BillingWarning struct {
@@ -1067,6 +1067,8 @@ type UpsertBillingWarningOptions struct {
 
 type BillingWarningMetadata interface{}
 
-type BillingWarningMetadataTrialEnding struct {
-	TrialEndsOn time.Time `json:"trial_ends_on"`
+type BillingWarningMetadataOnTrial struct {
+	EndDate              time.Time `json:"end_date"`
+	TrialEndingSoonJobID int64     `json:"trial_end_soon_job_id"`
+	TrialEndCheckJobID   int64     `json:"trial_end_check_job_id"`
 }

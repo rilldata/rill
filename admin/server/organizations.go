@@ -154,6 +154,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 		}
 		s.logger.Warn("canceled subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 	}
+	// TODO after sub cancellation, add a background job to deletes all billing errors/warnings and cancels associated jobs. sub cancellation should be done in sync to have immediate effect or move to background job as jobs fail after few retires.
 
 	return &adminv1.DeleteOrganizationResponse{}, nil
 }
@@ -475,6 +476,12 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		},
 		EventTime: time.Now(),
 	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// clean up any trial related billing errors and warnings if present
+	err = s.admin.CleanupTrialBillingErrorsAndWarnings(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -1364,6 +1371,7 @@ func (s *Server) ListOrganizationBillingWarnings(ctx context.Context, req *admin
 		dtos = append(dtos, &adminv1.BillingWarning{
 			Organization: org.Name,
 			Type:         billingWarningTypeToDTO(w.Type),
+			Metadata:     billingWarningMetadataToDTO(w.Type, w.Metadata),
 			EventTime:    timestamppb.New(w.EventTime),
 			CreatedOn:    timestamppb.New(w.CreatedOn),
 		})
@@ -1468,8 +1476,8 @@ func billingWarningTypeToDTO(t database.BillingWarningType) adminv1.BillingWarni
 	switch t {
 	case database.BillingWarningTypeUnspecified:
 		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED
-	case database.BillingWarningTypeTrialEnding:
-		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_TRIAL_ENDING
+	case database.BillingWarningTypeOnTrial:
+		return adminv1.BillingWarningType_BILLING_WARNING_ON_TRIAL
 	default:
 		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED
 	}
@@ -1479,8 +1487,8 @@ func dtoBillingWarningTypeToDB(t adminv1.BillingWarningType) (database.BillingWa
 	switch t {
 	case adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED:
 		return database.BillingWarningTypeUnspecified, nil
-	case adminv1.BillingWarningType_BILLING_WARNING_TYPE_TRIAL_ENDING:
-		return database.BillingWarningTypeTrialEnding, nil
+	case adminv1.BillingWarningType_BILLING_WARNING_ON_TRIAL:
+		return database.BillingWarningTypeOnTrial, nil
 	default:
 		return database.BillingWarningTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing warning type")
 	}
@@ -1538,6 +1546,23 @@ func billingErrorMetadataToDTO(t database.BillingErrorType, m database.BillingEr
 		}
 	default:
 		return &adminv1.BillingErrorMetadata{}
+	}
+}
+
+func billingWarningMetadataToDTO(t database.BillingWarningType, m database.BillingWarningMetadata) *adminv1.BillingWarningMetadata {
+	switch t {
+	case database.BillingWarningTypeUnspecified:
+		return &adminv1.BillingWarningMetadata{}
+	case database.BillingWarningTypeOnTrial:
+		return &adminv1.BillingWarningMetadata{
+			Metadata: &adminv1.BillingWarningMetadata_OnTrial{
+				OnTrial: &adminv1.BillingWarningMetadataOnTrial{
+					EndDate: timestamppb.New(m.(*database.BillingWarningMetadataOnTrial).EndDate),
+				},
+			},
+		}
+	default:
+		return &adminv1.BillingWarningMetadata{}
 	}
 }
 

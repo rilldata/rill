@@ -40,6 +40,7 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEn
 	}
 
 	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
+	// this is just a cautionary check as we cancel this job on subscription cancellation if scheduled
 	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -118,6 +119,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 	}
 
 	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
+	// this is just a cautionary check as we cancel this job on subscription cancellation if scheduled
 	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -156,7 +158,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 	w.admin.Logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
 	gracePeriodEndDate := sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)
-	// schedule a job to check if the org is still on trial after end grace period
+	// schedule a job to check if the org is still on trial after end of grace period date
 	j, err := w.admin.Jobs.TrialGracePeriodCheck(ctx, org.ID, sub[0].ID, sub[0].Plan.ID, gracePeriodEndDate)
 	if err != nil {
 		return fmt.Errorf("failed to schedule trial grace period check job: %w", err)
@@ -216,6 +218,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 	}
 
 	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
+	// this is just a cautionary check as we cancel this job on subscription cancellation if scheduled
 	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {

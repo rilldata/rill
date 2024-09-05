@@ -2253,8 +2253,8 @@ type billingWarningDTO struct {
 func (b *billingWarningDTO) AsModel() *database.BillingWarning {
 	var metadata database.BillingWarningMetadata
 	switch b.Type {
-	case database.BillingWarningTypeTrialEnding:
-		metadata = &database.BillingWarningMetadataTrialEnding{}
+	case database.BillingWarningTypeOnTrial:
+		metadata = &database.BillingWarningMetadataOnTrial{}
 	default:
 		metadata = nil
 	}
