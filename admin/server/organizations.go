@@ -141,20 +141,10 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org")
 	}
 
-	err = s.admin.DB.DeleteOrganization(ctx, req.Name)
+	_, err = s.admin.Jobs.PurgeOrg(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	// cancel subscription
-	if org.BillingCustomerID != "" {
-		err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
-		if err != nil {
-			s.logger.Error("failed to cancel subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
-		}
-		s.logger.Warn("canceled subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-	}
-	// TODO after sub cancellation, add a background job to deletes all billing errors/warnings and cancels associated jobs. sub cancellation should be done in sync to have immediate effect or move to background job as jobs fail after few retires.
 
 	return &adminv1.DeleteOrganizationResponse{}, nil
 }

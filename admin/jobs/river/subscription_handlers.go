@@ -63,24 +63,10 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 		return fmt.Errorf("failed to cleanup trial billing errors and warnings: %w", err)
 	}
 
-	// delete any subscription cancellation errors
-	besc, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
+	// delete any subscription cancellation billing error
+	err = w.admin.CleanupBillingErrorSubCancellation(ctx, org.ID)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing errors: %w", err)
-		}
-	}
-
-	if besc != nil {
-		jobID := besc.Metadata.(*database.BillingErrorMetadataSubscriptionCancelled).SubEndJobID
-		if jobID > 0 {
-			// cancel the subscription end check job, ignore errors.
-			_ = w.admin.Jobs.CancelJob(ctx, jobID)
-		}
-		err = w.admin.DB.DeleteBillingError(ctx, besc.ID)
-		if err != nil {
-			return fmt.Errorf("failed to delete billing error: %w", err)
-		}
+		return fmt.Errorf("failed to cleanup subscription cancellation errors: %w", err)
 	}
 
 	// if the new plan is still a trial plan, schedule trial checks. Can happen if manually assigned new trial plan for example to extend trial period for a customer

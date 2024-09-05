@@ -13,24 +13,27 @@ type Client interface {
 	// NOTE: Add new job trigger functions here
 	ResetAllDeployments(ctx context.Context) (*InsertResult, error)
 
-	// payment provider related workers
+	// payment provider related jobs
 	PaymentMethodAdded(ctx context.Context, methodID, paymentCustomerID, typ string, eventTime time.Time) (*InsertResult, error)
 	PaymentMethodRemoved(ctx context.Context, methodID, paymentCustomerID string, eventTime time.Time) (*InsertResult, error)
 	CustomerAddressUpdated(ctx context.Context, paymentCustomerID string, eventTime time.Time) (*InsertResult, error)
 
-	// biller related workers
+	// biller related jobs
 	InvoicePaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error)
 	InvoicePaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*InsertResult, error)
 	InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, gracePeriodEndDate time.Time) (*InsertResult, error)
 
-	// trial checks worker
+	// trial check jobs
 	TrialEndingSoon(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) (*InsertResult, error)
 	TrialEndCheck(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) (*InsertResult, error)
 	TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID string, gracePeriodEndDate time.Time) (*InsertResult, error)
 
-	// subscription related workers
+	// subscription related jobs
 	PlanChangeByAPI(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*InsertResult, error)
 	SubscriptionCancellation(ctx context.Context, orgID, subID, planID string, subEndDate time.Time) (*InsertResult, error)
+
+	// org related joba
+	PurgeOrg(ctx context.Context, orgID string) (*InsertResult, error)
 }
 
 type InsertResult struct {

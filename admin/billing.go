@@ -349,6 +349,30 @@ func (s *Service) CleanupTrialBillingErrorsAndWarnings(ctx context.Context, orgI
 	return nil
 }
 
+// CleanupBillingErrorSubCancellation removes subscription cancellation related billing error and cancel associated job
+func (s *Service) CleanupBillingErrorSubCancellation(ctx context.Context, orgID string) error {
+	besc, err := s.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeSubscriptionCancelled)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	if besc != nil {
+		metadata, ok := besc.Metadata.(*database.BillingErrorMetadataSubscriptionCancelled)
+		if ok && metadata.SubEndJobID > 0 {
+			// cancel the subscription end check job, ignore errors.
+			_ = s.Jobs.CancelJob(ctx, metadata.SubEndJobID)
+		}
+		err = s.DB.DeleteBillingError(ctx, besc.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) CheckBillingErrors(ctx context.Context, orgID string) error {
 	be, err := s.DB.FindBillingErrorByType(ctx, orgID, database.BillingErrorTypeTrialEnded)
 	if err != nil {

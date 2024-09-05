@@ -89,6 +89,9 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &PlanChangeByAPIWorker{admin: adm})
 	river.AddWorker(workers, &SubscriptionCancellationWorker{admin: adm})
 
+	// org related workers
+	river.AddWorker(workers, &PurgeOrgWorker{admin: adm})
+
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
 		newPeriodicJob(&ValidateDeploymentsArgs{}, "* */6 * * *", true),
@@ -107,7 +110,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		PeriodicJobs: periodicJobs,
 		Logger:       logger,
 		JobTimeout:   time.Hour,
-		MaxAttempts:  5, // retry policy with backoff of attempt^4 seconds
+		MaxAttempts:  5, // default retry policy with backoff of attempt^4 seconds
 		ErrorHandler: &ErrorHandler{logger: adm.Logger},
 	})
 	if err != nil {
@@ -423,6 +426,20 @@ func (c *Client) SubscriptionCancellation(ctx context.Context, orgID, subID, pla
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("SubscriptionCancellation job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("sub_end_date", subEndDate))
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) PurgeOrg(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PurgeOrgArgs{
+		OrgID: orgID,
+	}, &river.InsertOpts{})
+	if err != nil {
+		return nil, err
 	}
 
 	return &jobs.InsertResult{
