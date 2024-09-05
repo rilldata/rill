@@ -98,7 +98,37 @@ rill user list
 
 When listing users in the CLI, you need to ensure that you are listing at the _**correct level**_. 
 
-### In summary:
+## Listing Users
+Depending on the command flags, you can set the level of which you list out your users.
+
+### Organization Users
+No flags on the command defaults to listing organization users. Note that this **does not** list out all users.
+```bash
+rill user list
+  NAME       EMAIL                   ROLE    CREATED ON            UPDATED ON           
+ ---------- ----------------------- ------- --------------------- --------------------- 
+  Roy Endo   roy.endo@rilldata.com   admin   2024-07-03 15:33:57   2024-09-05 08:05:50  
+  ...
+```
+
+### Project Users
+By adding the flag `--project <your_project>`, you can see the project users.
+
+```bash
+rill user list --project my-rill-tutorial
+  NAME       EMAIL                   ROLE    CREATED ON            UPDATED ON           
+ ---------- ----------------------- ------- --------------------- --------------------- 
+  Roy Endo   roy.endo@rilldata.com   admin   2024-07-03 15:33:57   2024-09-05 08:05:50  
+```
+
+### User group members
+Likewise, using the `--group <group_name>` flag, you can list the user group users.
+```bash
+rill user list --group tutorial-admin
+No members found
+```
+
+## In summary:
 
 - When running any command without a `--project` flag, this will add, list, remove at the organization level.
 - In order to add, list, remove at the project level, you need to add the `--project` flag.
