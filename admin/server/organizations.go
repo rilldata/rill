@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -505,7 +506,8 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
@@ -545,9 +547,21 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			OrgID:     org.ID,
 			RoleID:    role.ID,
 		})
-		// continue sending an email if the user already exists
-		if err != nil && !errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.Internal, err.Error())
+		if err != nil {
+			if !errors.Is(err, database.ErrNotUnique) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			// Already invited. Update the invitation role.
+			invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			// Update the role of the invite
+			err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			// Fallthrough so we send the email again.
 		}
 
 		// Send invitation email
@@ -568,33 +582,33 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		}, nil
 	}
 
-	ctx, tx, err := s.admin.DB.NewTx(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	errored := false
-	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
-	// continue sending an email if the user already exists
-	if err != nil {
-		errored = true
-		if !errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+	// Insert the user in the org and AllUsergroup transactionally.
+	err = func() error {
+		ctx, tx, err := s.admin.DB.NewTx(ctx)
+		if err != nil {
+			return err
 		}
-	}
+		defer func() { _ = tx.Rollback() }()
 
-	if !errored {
-		// if previous statement errored we cannot continue with this since transaction would be invalid
+		err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+		if err != nil {
+			return err
+		}
+
 		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
-			if !errors.Is(err, database.ErrNotUnique) {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			// If the user is already in the all user group, we can ignore the error
+			return fmt.Errorf("failed to add user to all user group: %w", err)
 		}
 
-		err = tx.Commit()
+		return tx.Commit()
+	}()
+	if err != nil {
+		if !errors.Is(err, database.ErrNotUnique) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// The user is already in the org. Instead of erroring, we update their role and fallthrough to send the email again.
+		err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
