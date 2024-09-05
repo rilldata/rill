@@ -26,25 +26,24 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-
-				if !upload && !github {
-					sel, err := cmdutil.SelectPrompt("Select deployment type", []string{directDeployOption, connectGithubOption}, directDeployOption)
-					if err != nil {
-						return err
-					}
-					if sel == rillManagedRepoOption {
-						upload = true
-					} else {
-						github = true
-					}
-				}
-
-				if upload {
-					return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
-				}
-				return project.ConnectGithubFlow(cmd.Context(), ch, opts)
 			}
-			return nil
+
+			if !upload && !github {
+				sel, err := cmdutil.SelectPrompt("Select deployment type", []string{directDeployOption, connectGithubOption}, directDeployOption)
+				if err != nil {
+					return err
+				}
+				if sel == directDeployOption {
+					upload = true
+				} else {
+					github = true
+				}
+			}
+
+			if upload {
+				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
+			}
+			return project.ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
 	}
 
