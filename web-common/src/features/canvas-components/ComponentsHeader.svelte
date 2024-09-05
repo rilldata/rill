@@ -56,6 +56,6 @@
 
 <GenerateVegaSpecPrompt
   bind:open={generateOpen}
-  component={componentName}
+  chart={componentName}
   {filePath}
 />
