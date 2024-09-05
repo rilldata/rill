@@ -45,10 +45,10 @@
     });
   }
 
-  // TODO: where to get measures from?
-  $: hasMeasures = false;
+  $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
 
-  $: if (mockUserHasNoAccess || !hasMeasures) {
+  $: if (mockUserHasNoAccess || measures.length === 0) {
+    // We want to close the banner before any of the ErrorPage is rendered
     eventBus.emit("banner", null);
   }
 </script>
@@ -57,7 +57,7 @@
   <title>Rill Developer | {metricsViewName}</title>
 </svelte:head>
 
-{#if !hasMeasures && $selectedMockUserStore !== null}
+{#if measures.length === 0 && $selectedMockUserStore !== null}
   <ErrorPage
     statusCode={$dashboard.error?.response?.status}
     header="Error fetching dashboard"
