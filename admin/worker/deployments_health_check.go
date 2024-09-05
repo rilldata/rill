@@ -76,28 +76,30 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 			continue
 		}
 		for _, instance := range expected {
-			if !slices.Contains(actual, instance) { // an expected instance is missing
-				// re verify that the deployment is not deleted
-				d, err := w.admin.DB.FindDeploymentByInstanceID(ctx, instance)
-				if err != nil {
-					if errors.Is(err, database.ErrNotFound) {
-						// Deployment was deleted
-						continue
-					}
-					w.logger.Error("deployment health check: failed to find deployment", zap.String("instance_id", instance), zap.Error(err))
-					continue
-				}
-				annotations, err := w.annotationsForDeployment(ctx, d)
-				if err != nil {
-					w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project", d.ProjectID), zap.String("deployment", d.ID), zap.Error(err))
-					continue
-				}
-				f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", instance)}
-				for k, v := range annotations.ToMap() {
-					f = append(f, zap.String(k, v))
-				}
-				w.logger.Error("deployment health check: missing instance on runtime", f...)
+			if slices.Contains(actual, instance) {
+				continue
 			}
+			// an expected instance is missing
+			// re verify that the deployment is not deleted
+			d, err := w.admin.DB.FindDeploymentByInstanceID(ctx, instance)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					// Deployment was deleted
+					continue
+				}
+				w.logger.Error("deployment health check: failed to find deployment", zap.String("instance_id", instance), zap.Error(err))
+				continue
+			}
+			annotations, err := w.annotationsForDeployment(ctx, d)
+			if err != nil {
+				w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project", d.ProjectID), zap.String("deployment", d.ID), zap.Error(err))
+				continue
+			}
+			f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", instance)}
+			for k, v := range annotations.ToMap() {
+				f = append(f, zap.String(k, v))
+			}
+			w.logger.Error("deployment health check: missing instance on runtime", f...)
 		}
 	}
 	return nil
