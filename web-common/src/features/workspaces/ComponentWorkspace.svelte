@@ -1,10 +1,10 @@
 <script lang="ts">
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
-  import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
-  import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
-  import ChartStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartStatusDisplay.svelte";
-  import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
-  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import ComponentStatusDisplay from "@rilldata/web-common/features/canvas-components/ComponentStatusDisplay.svelte";
+  import ComponentsHeader from "@rilldata/web-common/features/canvas-components/ComponentsHeader.svelte";
+  import ComponentsEditor from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditor.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas-dashboards/CanvasDashboardEmbed.svelte";
+  import { useVariableInputParams } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -24,7 +24,7 @@
 
   export let fileArtifact: FileArtifact;
 
-  const dashboardName = getContext("rill::custom-dashboard:name") as string;
+  const dashboardName = getContext("rill::canvas-dashboard:name") as string;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -34,12 +34,16 @@
   $: ({ instanceId } = $runtime);
 
   $: ({ hasUnsavedChanges, path: filePath } = fileArtifact);
-  $: chartName = getNameFromFile(filePath);
+  $: componentName = getNameFromFile(filePath);
 
   $: editorWidth = editorPercentage * containerWidth;
   $: tableHeight = tablePercentage * containerHeight;
 
-  $: resourceQuery = useResource(instanceId, chartName, ResourceKind.Component);
+  $: resourceQuery = useResource(
+    instanceId,
+    componentName,
+    ResourceKind.Component,
+  );
 
   $: ({ data: componentResource } = $resourceQuery);
 
@@ -47,18 +51,19 @@
 
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
-  $: chartDataQuery = resolverProperties
-    ? createQueryServiceResolveComponent(instanceId, chartName, {
+  $: componentDataQuery = resolverProperties
+    ? createQueryServiceResolveComponent(instanceId, componentName, {
         args: $inputVariableParams,
       })
     : null;
 
   let isFetching = false;
-  let chartData: V1MetricsViewRowsResponseDataItem[] | undefined = undefined;
+  let componentData: V1MetricsViewRowsResponseDataItem[] | undefined =
+    undefined;
 
-  $: if (chartDataQuery) {
-    isFetching = $chartDataQuery?.isFetching ?? false;
-    chartData = $chartDataQuery?.data?.data;
+  $: if (componentDataQuery) {
+    isFetching = $componentDataQuery?.isFetching ?? false;
+    componentData = $componentDataQuery?.data?.data;
   }
 </script>
 
@@ -67,7 +72,7 @@
   bind:width={containerWidth}
   bind:height={containerHeight}
 >
-  <ChartsHeader
+  <ComponentsHeader
     slot="header"
     {filePath}
     hasUnsavedChanges={$hasUnsavedChanges}
@@ -85,20 +90,22 @@
         max={0.65 * containerWidth}
         onUpdate={(width) => (editorPercentage = width / containerWidth)}
       />
-      <ChartsEditor {filePath} />
+      <ComponentsEditor {filePath} />
     </div>
     <div class="size-full flex-col flex overflow-hidden">
-      <ChartStatusDisplay {isFetching} {chartName}>
-        <CustomDashboardEmbed
+      <ComponentStatusDisplay {isFetching} {componentName}>
+        <CanvasDashboardEmbed
           {dashboardName}
           chartView
           gap={8}
           columns={10}
-          items={[{ width: 10, height: 10, x: 0, y: 0, component: chartName }]}
+          items={[
+            { width: 10, height: 10, x: 0, y: 0, component: componentName },
+          ]}
         />
-      </ChartStatusDisplay>
+      </ComponentStatusDisplay>
 
-      {#if chartDataQuery}
+      {#if componentDataQuery}
         <div
           class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
           style:height="{tablePercentage * 100}%"
@@ -116,20 +123,20 @@
               class="flex flex-col gap-y-2 size-full justify-center items-center"
             >
               <Spinner size="2em" status={EntityStatus.Running} />
-              <div>Loading chart data</div>
+              <div>Loading component data</div>
             </div>
-          {:else if chartData}
+          {:else if componentData}
             <PreviewTable
-              rows={chartData}
-              name={chartName}
-              columnNames={Object.keys(chartData[0]).map((key) => ({
+              rows={componentData}
+              name={componentName}
+              columnNames={Object.keys(componentData[0]).map((key) => ({
                 type: "VARCHAR",
                 name: key,
               }))}
             />
           {:else}
             <p class="text-lg size-full grid place-content-center">
-              Update YAML to view chart data
+              Update YAML to view component data
             </p>
           {/if}
         </div>

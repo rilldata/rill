@@ -1,4 +1,4 @@
-import { getChartYaml } from "@rilldata/web-common/features/charts/chartYaml";
+import { getChartYaml } from "@rilldata/web-common/features/canvas-components/chartYaml";
 import { describe, expect, it } from "vitest";
 
 const VegaLiteSpec = `{
@@ -19,7 +19,7 @@ describe("getChartYaml", () => {
 where publisher is not null`,
       }),
     ).toEqual(`# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+# Reference documentation: https://docs.rilldata.com/reference/project-files/components
 
 type: component
 data:
@@ -38,7 +38,7 @@ ${VegaLiteSpec.replace(/^/gm, "  ")}
 where publisher is not null`,
       }),
     ).toEqual(`# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+# Reference documentation: https://docs.rilldata.com/reference/project-files/components
 
 type: component
 data:

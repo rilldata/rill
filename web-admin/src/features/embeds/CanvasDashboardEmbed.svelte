@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas-dashboards/CanvasDashboardEmbed.svelte";
   import {
     ResourceKind,
     useResource,
@@ -23,4 +23,4 @@
   } = dashboard || { items: [], columns: 10, gap: 2 });
 </script>
 
-<CustomDashboardEmbed {dashboardName} {columns} {items} {gap} />
+<CanvasDashboardEmbed {dashboardName} {columns} {items} {gap} />
