@@ -26,18 +26,15 @@
 
   $: projectParserQuery = useProjectParser(queryClient, instanceId);
 
-  // TODO: should we add manageProject check here?
-  $: showErrorBanner =
-    $projectParserQuery.error?.response?.status === 404 ||
-    ($selectedMockUserStore !== null && $selectedMockUserStore?.admin);
+  $: showErrorBanner = $projectParserQuery.error?.response?.status === 404;
   $: if (showErrorBanner) {
-    eventBus.emit("banner", {
-      type: "error",
-      message:
-        $projectParserQuery.error?.response.data.message ??
-        "Error parsing project",
-      iconType: "alert",
-    });
+    if ($projectParserQuery.error?.response?.data?.message) {
+      eventBus.emit("banner", {
+        type: "error",
+        message: $projectParserQuery.error?.response?.data?.message,
+        iconType: "alert",
+      });
+    }
   }
 </script>
 
