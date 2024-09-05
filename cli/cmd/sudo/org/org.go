@@ -12,6 +12,7 @@ func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	cmd.AddCommand(ShowCmd(ch))
+	cmd.AddCommand(ListAdminsCmd(ch))
 	cmd.AddCommand(SetCustomDomainCmd(ch))
 
 	return cmd
