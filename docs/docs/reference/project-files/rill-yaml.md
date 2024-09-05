@@ -51,6 +51,8 @@ title: My Rill Project
 sources:
   refresh:
     cron: '0 * * * *'
+    # Uncomment to run cron jobs in development:
+    # run_in_dev: true
 models:
   materialize: true
 dashboards:
