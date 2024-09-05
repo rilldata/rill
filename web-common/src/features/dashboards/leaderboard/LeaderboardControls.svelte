@@ -29,11 +29,6 @@
 
   $: measures = $filteredSimpleMeasures();
 
-  // TODO: Show error banner
-  $: if (measures.length === 0) {
-    console.warn("LeaderboardControls - measures not found");
-  }
-
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
