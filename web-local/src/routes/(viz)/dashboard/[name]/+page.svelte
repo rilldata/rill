@@ -35,10 +35,6 @@
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 
-  $: if (mockUserHasNoAccess) {
-    eventBus.emit("banner", null);
-  }
-
   // Handle errors from dashboard YAML edits from an external IDE
   $: if (dashboardFileHasParseError && dashboardFileHasParseError.length > 0) {
     eventBus.emit("banner", {
@@ -48,13 +44,26 @@
       iconType: "alert",
     });
   }
+
+  // TODO: where to get measures from?
+  $: hasMeasures = false;
+
+  $: if (mockUserHasNoAccess || !hasMeasures) {
+    eventBus.emit("banner", null);
+  }
 </script>
 
 <svelte:head>
   <title>Rill Developer | {metricsViewName}</title>
 </svelte:head>
 
-{#if mockUserHasNoAccess}
+{#if !hasMeasures && $selectedMockUserStore !== null}
+  <ErrorPage
+    statusCode={$dashboard.error?.response?.status}
+    header="Error fetching dashboard"
+    body="No measures available"
+  />
+{:else if mockUserHasNoAccess}
   <ErrorPage
     statusCode={$dashboard.error?.response?.status}
     header="This user can't access this dashboard"
