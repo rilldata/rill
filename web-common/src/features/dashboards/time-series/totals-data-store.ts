@@ -20,11 +20,6 @@ export function createTotalsForMeasure(
   measures: string[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  // TODO: is this needed?
-  if (measures.length === 0) {
-    console.log("totals-data-store - measures not found");
-  }
-
   return derived(
     [
       ctx.runtime,

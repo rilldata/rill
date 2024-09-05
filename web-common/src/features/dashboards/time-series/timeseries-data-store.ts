@@ -57,11 +57,6 @@ export function createMetricsViewTimeSeries(
   measures: string[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
-  // TODO: is this needed?
-  if (measures.length === 0) {
-    console.log("timeseries-data-store - measures not found");
-  }
-
   return derived(
     [
       ctx.runtime,
@@ -139,20 +134,6 @@ export function createTimeSeriesDataStore(
           : [];
       }
 
-      // if (measures.length === 0) {
-      //   set({
-      //     isFetching: false,
-      //     isError: false,
-      //     error: {},
-      //     timeSeriesData: [],
-      //     total: undefined,
-      //     unfilteredTotal: undefined,
-      //     comparisonTotal: undefined,
-      //     dimensionChartData: [],
-      //   });
-      //   return;
-      // }
-
       const { measures: filteredMeasures } = getFilteredMeasuresAndDimensions({
         dashboard: dashboardStore,
       })(metricsView.data ?? {}, measures);
@@ -160,21 +141,6 @@ export function createTimeSeriesDataStore(
         metricsView.data ?? {},
         measures,
       );
-
-      if (measures.length === 0) {
-        console.warn("timeseries-data-store - measures not found");
-      }
-
-      // const primaryTimeSeries = createMetricsViewTimeSeries(
-      //   ctx,
-      //   filteredMeasures,
-      //   false,
-      // );
-      // const primaryTotals = createTotalsForMeasure(
-      //   ctx,
-      //   independentMeasures,
-      //   false,
-      // );
 
       const primaryTimeSeries =
         measures.length > 0
