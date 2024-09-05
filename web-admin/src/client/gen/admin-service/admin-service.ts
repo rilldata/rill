@@ -6691,7 +6691,7 @@ export const createAdminServiceSudoDeleteOrganizationBillingError = <
 };
 export const adminServiceSudoDeleteOrganizationBillingWarning = (
   organization: string,
-  type: "BILLING_WARNING_TYPE_UNSPECIFIED" | "BILLING_WARNING_ON_TRIAL",
+  type: "BILLING_WARNING_TYPE_UNSPECIFIED" | "BILLING_WARNING_TYPE_ON_TRIAL",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingWarningResponse>({
     url: `/v1/superuser/organizations/${organization}/billing/warnings/${type}`,
@@ -6718,7 +6718,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingWarning = <
     TError,
     {
       organization: string;
-      type: "BILLING_WARNING_TYPE_UNSPECIFIED" | "BILLING_WARNING_ON_TRIAL";
+      type:
+        | "BILLING_WARNING_TYPE_UNSPECIFIED"
+        | "BILLING_WARNING_TYPE_ON_TRIAL";
     },
     TContext
   >;
@@ -6731,7 +6733,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingWarning = <
     >,
     {
       organization: string;
-      type: "BILLING_WARNING_TYPE_UNSPECIFIED" | "BILLING_WARNING_ON_TRIAL";
+      type:
+        | "BILLING_WARNING_TYPE_UNSPECIFIED"
+        | "BILLING_WARNING_TYPE_ON_TRIAL";
     }
   > = (props) => {
     const { organization, type } = props ?? {};
@@ -6746,7 +6750,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingWarning = <
     TError,
     {
       organization: string;
-      type: "BILLING_WARNING_TYPE_UNSPECIFIED" | "BILLING_WARNING_ON_TRIAL";
+      type:
+        | "BILLING_WARNING_TYPE_UNSPECIFIED"
+        | "BILLING_WARNING_TYPE_ON_TRIAL";
     },
     TContext
   >(mutationFn, mutationOptions);

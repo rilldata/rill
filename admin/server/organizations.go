@@ -1477,7 +1477,7 @@ func billingWarningTypeToDTO(t database.BillingWarningType) adminv1.BillingWarni
 	case database.BillingWarningTypeUnspecified:
 		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED
 	case database.BillingWarningTypeOnTrial:
-		return adminv1.BillingWarningType_BILLING_WARNING_ON_TRIAL
+		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_ON_TRIAL
 	default:
 		return adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED
 	}
@@ -1487,7 +1487,7 @@ func dtoBillingWarningTypeToDB(t adminv1.BillingWarningType) (database.BillingWa
 	switch t {
 	case adminv1.BillingWarningType_BILLING_WARNING_TYPE_UNSPECIFIED:
 		return database.BillingWarningTypeUnspecified, nil
-	case adminv1.BillingWarningType_BILLING_WARNING_ON_TRIAL:
+	case adminv1.BillingWarningType_BILLING_WARNING_TYPE_ON_TRIAL:
 		return database.BillingWarningTypeOnTrial, nil
 	default:
 		return database.BillingWarningTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing warning type")

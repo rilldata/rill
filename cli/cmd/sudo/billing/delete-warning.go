@@ -37,7 +37,7 @@ func DeleteWarningCmd(ch *cmdutil.Helper) *cobra.Command {
 			var w adminv1.BillingWarningType
 			switch warningType {
 			case "on-trial":
-				w = adminv1.BillingWarningType_BILLING_WARNING_ON_TRIAL
+				w = adminv1.BillingWarningType_BILLING_WARNING_TYPE_ON_TRIAL
 			default:
 				return fmt.Errorf("invalid warning type %q", warningType)
 			}

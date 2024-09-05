@@ -1287,7 +1287,7 @@ export type V1BillingWarningType =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1BillingWarningType = {
   BILLING_WARNING_TYPE_UNSPECIFIED: "BILLING_WARNING_TYPE_UNSPECIFIED",
-  BILLING_WARNING_ON_TRIAL: "BILLING_WARNING_ON_TRIAL",
+  BILLING_WARNING_TYPE_ON_TRIAL: "BILLING_WARNING_TYPE_ON_TRIAL",
 } as const;
 
 export interface V1BillingWarningMetadataOnTrial {

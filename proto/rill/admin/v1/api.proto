@@ -1326,7 +1326,7 @@ message SudoDeleteOrganizationBillingWarningResponse {}
 
 enum BillingWarningType {
   BILLING_WARNING_TYPE_UNSPECIFIED = 0;
-  BILLING_WARNING_ON_TRIAL = 1;
+  BILLING_WARNING_TYPE_ON_TRIAL = 1;
 }
 
 message ListProjectMemberUsersRequest {

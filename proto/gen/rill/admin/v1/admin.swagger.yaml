@@ -3089,7 +3089,7 @@ paths:
           type: string
           enum:
             - BILLING_WARNING_TYPE_UNSPECIFIED
-            - BILLING_WARNING_ON_TRIAL
+            - BILLING_WARNING_TYPE_ON_TRIAL
       tags:
         - AdminService
   /v1/superuser/projects/annotations:
@@ -3693,7 +3693,7 @@ definitions:
     type: string
     enum:
       - BILLING_WARNING_TYPE_UNSPECIFIED
-      - BILLING_WARNING_ON_TRIAL
+      - BILLING_WARNING_TYPE_ON_TRIAL
     default: BILLING_WARNING_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object

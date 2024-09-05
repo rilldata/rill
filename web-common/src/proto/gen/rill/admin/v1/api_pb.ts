@@ -59,17 +59,17 @@ export enum BillingWarningType {
   /**
    * @generated from enum value: BILLING_WARNING_TYPE_UNSPECIFIED = 0;
    */
-  BILLING_WARNING_TYPE_UNSPECIFIED = 0,
+  UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: BILLING_WARNING_ON_TRIAL = 1;
+   * @generated from enum value: BILLING_WARNING_TYPE_ON_TRIAL = 1;
    */
-  BILLING_WARNING_ON_TRIAL = 1,
+  ON_TRIAL = 1,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingWarningType)
 proto3.util.setEnumType(BillingWarningType, "rill.admin.v1.BillingWarningType", [
   { no: 0, name: "BILLING_WARNING_TYPE_UNSPECIFIED" },
-  { no: 1, name: "BILLING_WARNING_ON_TRIAL" },
+  { no: 1, name: "BILLING_WARNING_TYPE_ON_TRIAL" },
 ]);
 
 /**
@@ -4246,7 +4246,7 @@ export class SudoDeleteOrganizationBillingWarningRequest extends Message<SudoDel
   /**
    * @generated from field: rill.admin.v1.BillingWarningType type = 2;
    */
-  type = BillingWarningType.BILLING_WARNING_TYPE_UNSPECIFIED;
+  type = BillingWarningType.UNSPECIFIED;
 
   constructor(data?: PartialMessage<SudoDeleteOrganizationBillingWarningRequest>) {
     super();
@@ -13315,7 +13315,7 @@ export class BillingWarning extends Message<BillingWarning> {
   /**
    * @generated from field: rill.admin.v1.BillingWarningType type = 2;
    */
-  type = BillingWarningType.BILLING_WARNING_TYPE_UNSPECIFIED;
+  type = BillingWarningType.UNSPECIFIED;
 
   /**
    * @generated from field: rill.admin.v1.BillingWarningMetadata metadata = 3;
