@@ -58,7 +58,7 @@ func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequ
 
 	err = s.admin.DB.UpdateSuperuser(ctx, user.ID, req.Superuser)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetSuperuserResponse{}, nil

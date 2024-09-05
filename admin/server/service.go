@@ -102,7 +102,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 		Name: valOrDefault(req.NewName, service.Name),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.UpdateServiceResponse{

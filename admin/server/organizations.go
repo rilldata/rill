@@ -197,7 +197,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if nameChanged {
@@ -360,7 +360,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		BillingEmail:                        org.BillingEmail,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	subs, err = s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
@@ -547,7 +547,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		})
 		// continue sending an email if the user already exists
 		if err != nil && !errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// Send invitation email
@@ -580,7 +580,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	if err != nil {
 		errored = true
 		if !errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 	}
 
@@ -589,7 +589,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			if !errors.Is(err, database.ErrNotUnique) {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 			// If the user is already in the all user group, we can ignore the error
 		}
@@ -752,7 +752,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 		}
 		err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 	}
@@ -776,7 +776,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 
 	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
@@ -929,22 +929,19 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		Domain:    req.Domain,
 	})
 	if err != nil {
-		if errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Errorf(codes.AlreadyExists, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	for _, user := range newUsers {
 		err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// add to all user group
 		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 

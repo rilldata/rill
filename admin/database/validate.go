@@ -8,7 +8,11 @@ import (
 
 // Validate validates a struct based on struct tags and other custom rules registered
 func Validate(v any) error {
-	return validate.Struct(v)
+	err := validate.Struct(v)
+	if err == nil {
+		return nil
+	}
+	return NewValidationError(err.Error())
 }
 
 // validate caches parsed validation rules
