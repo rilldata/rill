@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	githubRepoOption      = "github"
-	rillManagedRepoOption = "rill managed"
+	directDeployOption  = "Upload local project"
+	connectGithubOption = "Connect Github for automatic deploys"
 )
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
