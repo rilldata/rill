@@ -69,6 +69,7 @@ type Config struct {
 	GithubAppWebhookSecret string                 `split_words:"true"`
 	GithubClientID         string                 `split_words:"true"`
 	GithubClientSecret     string                 `split_words:"true"`
+	GithubAppDisabled      bool                   `split_words:"true"`
 	AssetsBucket           string                 `split_words:"true"`
 	// AssetsBucketGoogleCredentialsJSON is only required to be set for local development.
 	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
@@ -216,10 +217,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			emailClient := email.New(sender)
 
-			// Init github client
-			gh, err := admin.NewGithub(conf.GithubAppID, conf.GithubAppPrivateKey)
-			if err != nil {
-				logger.Fatal("error creating github client", zap.Error(err))
+			var gh admin.Github
+			if !conf.GithubAppDisabled {
+				// Init github client
+				gh, err = admin.NewGithub(conf.GithubAppID, conf.GithubAppPrivateKey)
+				if err != nil {
+					logger.Fatal("error creating github client", zap.Error(err))
+				}
 			}
 
 			// Init AI client
