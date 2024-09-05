@@ -39,6 +39,7 @@
   <title>Rill Developer | {metricsViewName}</title>
 </svelte:head>
 
+<!-- TODO: move this to a banner at the top of the page -->
 <!-- Handle errors from dashboard YAML edits from an external IDE   -->
 {#if dashboardFileHasParseError && dashboardFileHasParseError.length > 0}
   <ErrorPage

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import {
@@ -18,6 +19,12 @@
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import {
+    ResourceKind,
+    SingletonProjectParserName,
+  } from "../../entity-management/resource-selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { createRuntimeServiceGetResource } from "@rilldata/web-common/runtime-client";
 
   export let metricViewName: string;
 
@@ -39,6 +46,28 @@
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isRillDeveloper = $readOnly === false;
+
+  // TODO: or useProjectParser
+  $: projectParserQuery = createRuntimeServiceGetResource($runtime.instanceId, {
+    "name.kind": ResourceKind.ProjectParser,
+    "name.name": SingletonProjectParserName,
+  });
+  $: ({ data, error } = $projectParserQuery);
+  $: parseErrors = data?.resource?.projectParser?.state?.parseErrors;
+
+  // TODO: Only for project admins do we show the error banner (and request the project parser)
+  $: console.log("error:", error?.response.data.message);
+
+  // TODO: is it manageProject?
+  const canManageProject = false;
+  $: if (canManageProject && error?.response.data.message) {
+    eventBus.emit("banner", {
+      type: "error",
+      message: error?.response.data.message ?? parseErrors,
+      includesHtml: true,
+      iconType: "alert",
+    });
+  }
 
   // Check if the mock user (if selected) has access to the dashboard
   $: dashboard = useDashboard($runtime.instanceId, metricViewName);

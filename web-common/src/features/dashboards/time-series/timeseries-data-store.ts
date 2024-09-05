@@ -145,12 +145,12 @@ export function createTimeSeriesDataStore(
       const primaryTimeSeries =
         measures.length > 0
           ? createMetricsViewTimeSeries(ctx, filteredMeasures, false)
-          : writable({ isFetching: false, isError: false, data: null });
+          : writable({ isFetching: false, isError: false });
 
       const primaryTotals =
         measures.length > 0
           ? createTotalsForMeasure(ctx, independentMeasures, false)
-          : writable({ isFetching: false, isError: false, data: null });
+          : writable({ isFetching: false, isError: false });
 
       let unfilteredTotals:
         | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>
