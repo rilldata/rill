@@ -165,7 +165,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	return rt, inst.ID
 }
 
-func NewInstanceForResolvers(t TestingT, opts InstanceOptionsForResolvers) (*runtime.Runtime, string) {
+func NewInstanceForResolvers(t *testing.T, opts InstanceOptionsForResolvers) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	if opts.OLAPDriver == "" {
@@ -199,6 +199,16 @@ func NewInstanceForResolvers(t TestingT, opts InstanceOptionsForResolvers) (*run
 
 		opts.OLAPDSN = fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
 	case "druid":
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil { // avoid .env in CI environment
+			require.NoError(t, godotenv.Load(envPath))
+		}
+		if os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN") == "" {
+			t.Skip("skipping the test without the test instance")
+		}
+
 		opts.OLAPDSN = os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 	}
 
