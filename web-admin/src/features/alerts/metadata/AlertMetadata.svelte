@@ -41,14 +41,16 @@
   $: dashboardName = useAlertDashboardName($runtime.instanceId, alert);
   $: dashboard = useDashboard($runtime.instanceId, $dashboardName.data);
   $: dashboardTitle =
-    $dashboard.data?.metricsView.spec.title || $dashboardName.data;
+    $dashboard.data?.metricsView.spec.title ||
+    $dashboardName.data ||
+    $alertQuery.data?.resource?.meta?.name?.name;
   $: dashboardDoesNotExist = $dashboard.error?.response?.status === 404;
 
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
 
   $: metricsViewAggregationRequest = JSON.parse(
-    alertSpec?.resolverProperties?.query_args_json ??
-      alertSpec?.queryArgsJson ??
+    alertSpec?.resolverProperties?.query_args_json ||
+      alertSpec?.queryArgsJson ||
       "{}",
   ) as V1MetricsViewAggregationRequest;
 
@@ -144,7 +146,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Split by dimension</MetadataLabel>
         <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions[0]?.name ?? "None"}
+          {metricsViewAggregationRequest?.dimensions?.[0]?.name ?? "None"}
         </MetadataValue>
       </div>
 
