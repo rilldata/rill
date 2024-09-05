@@ -1,14 +1,17 @@
 ---
-title: "Set default OLAP engine and connect to Clickhouse"
+title: "2. Connect to ClickHouse"
 sidebar_label: "2. Connect to ClickHouse"
 sidebar_position: 3
 hide_table_of_contents: false
+tags:
+  - OLAP:ClickHouse
+
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 
-## Default OLAP connection
+## Default OLAP connection and Connect to ClickHouse
 
 Within Rill you can set the default OLAP connection on the [project level](https://docs.rilldata.com/reference/project-files/rill-yaml) or the [dashboard level](https://docs.rilldata.com/reference/project-files/dashboards). 
 For this course, we will set it up on the project level so all of our dashboards will be based on our ClickHouse table.
@@ -52,7 +55,13 @@ or
 ```yaml
 dsn: "clickhouse://localhost:9000"
 ```
+
+
  You can either add the credentials in plain text or dsn via the yaml file or add the credentials via the CLI.
+
+
+Please see our documentation to find the DSN for [your ClickHouse Cloud instance](https://docs.rilldata.com/reference/olap-engines/clickhouse#connecting-to-clickhouse-cloud). 
+
 ### How to pass the credentials to Rill
 There are a few way to define the credentials within Rill.
 
@@ -73,6 +82,7 @@ driver: clickhouse
 
 dsn: "clickhouse://localhost:9000"
 ```
+
 
 
 </TabItem>

@@ -1,8 +1,10 @@
 ---
-title: "Import the Source"
+title: "2. Import the Source"
 sidebar_label: "2. Import the Source"
 sidebar_position: 1
 hide_table_of_contents: false
+tags:
+  - OLAP:DuckDB
 ---
 import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
 

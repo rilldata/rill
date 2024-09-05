@@ -2,7 +2,9 @@
 title: "Project Maintanence"
 description: Project Maintanence
 sidebar_label: "Project Maintanence"
-
+tags:
+  - CLI
+  - Administration
 ---
 
 import ComingSoon from '@site/src/components/ComingSoon';

@@ -1,8 +1,10 @@
 ---
-title: "Metrics View (Dashboard)"
+title: "4. Metrics View (Dashboard)"
 sidebar_label: "4. Create the Dashboard"
 sidebar_position: 3
 hide_table_of_contents: false
+tags:
+  - OLAP:DuckDB
 ---
 
 ### What is a Metrics View? 

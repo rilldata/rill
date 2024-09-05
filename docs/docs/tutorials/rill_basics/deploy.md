@@ -1,8 +1,10 @@
 ---
-title: Deploy to Rill Cloud
+title: 5. Deploy to Rill Cloud
 sidebar_label: '5. Deploy to Rill Cloud'
 sidebar_position: 9
 hide_table_of_contents: false
+tags:
+  - OLAP:DuckDB
 ---
 ## Deploy via the UI!
 

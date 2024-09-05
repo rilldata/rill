@@ -1,9 +1,11 @@
 ---
-title: "Source to Dashboard on Rill Cloud in 5 Steps"
+title: "1. Source to Dashboard on Rill Cloud in 5 Steps"
 sidebar_label: "1. Launching Rill Developer"
 position: 1
 collapsed: false
 sidebar_position: 1
+tags:
+  - OLAP:DuckDB
 ---
 :::note prerequisites
 You will need to [install Rill](https://docs.rilldata.com/home/install).

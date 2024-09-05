@@ -3,6 +3,9 @@ title: "User Management"
 description:  Let's get into further details of Rill Cloud
 sidebar_label: "Creating Users"
 sidebar_position: 12
+tags:
+  - CLI
+  - Administration
 ---
 
 ## How to manage Users?

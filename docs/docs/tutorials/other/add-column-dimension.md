@@ -3,6 +3,8 @@ title: "How do I add a new dimension to my dashboard?"
 sidebar_label: "How to: Add Dimension to Dashboard"
 sidebar_position: 10
 hide_table_of_contents: false
+tags:
+  - OLAP:DuckDB
 ---
 
 Changes to the underlying data may require modification to your SQL / Dashboard in order to start visualizing your new data. 

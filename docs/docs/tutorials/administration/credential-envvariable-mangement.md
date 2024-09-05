@@ -2,6 +2,9 @@
 title: "Credential and Environmental Variable Management"
 description: how to use credentials in Developer vs Cloud
 sidebar_label: "Credential and Environmetal Variable Management"
+tags:
+  - CLI
+  - Administration
 ---
 import ComingSoon from '@site/src/components/ComingSoon';
 

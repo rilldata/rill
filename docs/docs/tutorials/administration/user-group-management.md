@@ -3,6 +3,9 @@ title: "User Group Management"
 description:  Let's get into further details of Rill Cloud
 sidebar_label: "Creating Usergroups"
 sidebar_position: 12
+tags:
+  - CLI
+  - Administration
 ---
 
 import ComingSoon from '@site/src/components/ComingSoon';

@@ -1,14 +1,16 @@
 ---
-title: "Getting started"
+title: "1. Launch Rill Developer"
 sidebar_label: "1. Launch Rill Developer"
 sidebar_position: 3
 hide_table_of_contents: false
+tags:
+  - OLAP:ClickHouse
 ---
 
 :::note prerequisites
 You will need to [install Rill](https://docs.rilldata.com/home/install).
 
-You need access to either a [locally running ClickHouse Server] or [ClickHouse Cloud]. We recommend using ClickHouse Cloud as this will make deploying to Rill Cloud easier. Please review the documentation, [here](https://docs.rilldata.com/reference/olap-engines/clickhouse.md#clickhouse-local-vs-clickhouse-cloud).
+You need access to either a [locally running ClickHouse Server](https://clickhouse.com/docs/en/install) or [ClickHouse Cloud](https://docs.rilldata.com/reference/olap-engines/clickhouse#connecting-to-clickhouse-cloud). We recommend using ClickHouse Cloud as this will make deploying to Rill Cloud easier. Please review the documentation, [here](https://docs.rilldata.com/reference/olap-engines/clickhouse).
 :::
 ## Start Rill Developer
 

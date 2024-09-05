@@ -1,8 +1,10 @@
 ---
-title: "Creating dashboard in Rill"
+title: "3. Create Dashboard in Rill"
 sidebar_label: "3. Create Dashboard in Rill"
 sidebar_position: 4
 hide_table_of_contents: false
+tags:
+  - OLAP:ClickHouse
 ---
 
 ## Let's get started!

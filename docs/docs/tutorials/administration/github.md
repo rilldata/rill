@@ -23,26 +23,36 @@ While not shown in the GIF above, you may want to take a moment to set up the[ G
 ---
 ### via CLI
 
+```bash
+rill project connect-github --help
+Deploy project to Rill Cloud by pulling project files from a git repository
+
+Usage:
+  rill project connect-github [flags]
+
+Flags:
+      --path string           Path to project repository (default: current directory) (default ".")
+      --subpath string        Relative path to project in the repository (for monorepos)
+      --remote string         Remote name (default: first Git remote)
+      --org string            Org to deploy project in (default "Rill_Learn")
+      --name string           Project name (default: Git repo name)
+      --description string    Project description
+      --public                Make dashboards publicly accessible
+      --provisioner string    Project provisioner
+      --prod-version string   Rill version (default: the latest release version) (default "latest")
+      --prod-branch string    Git branch to deploy from (default: the default Git branch)
+```
+
 Navigating back to Terminal, we can run the following:
 ```
 rill project connect-github
-
-```
-
-We will be prompted with the same UI but this time select no. This time, you will be navigating to GitHub to install Rill Cloud to your account. Please proceed with the procedure and authorize the repository.
-
-Once completed, you will hit the following UI and can return to the CLI.
-
-![img](/img/tutorials/203/git_okay.png)
-
-
-Since we had deployed onto Rill Cloud earlier without GitHub, when you try to deploy this time, Rill will warn you that the project name is already used. Let's create a new project with the following name `my-rill-tutorial-git`.
-```
-? Select a Github account for the new repository <your_account>
+No git remote was found.
+? Do you want to create a repo? Yes
+? Select a Github account for the new repository royendo
 
 Request submitted for creating repository. Checking completion status
 
-Successfully created repository on "https://github.com/royendo/my-rill-tutorial"
+Successfully created repository on "https://github.com/royendo/my-rill-tutorial-cli"
 
 Pushing local project to Github
 
@@ -51,31 +61,57 @@ Successfully pushed your local project to Github
 Using org "Rill_Learn".
 
 Rill project names are derived from your Github repository name.
-The "my-rill-tutorial" project already exists under org "Rill_Learn". Please enter a different name.
-? Enter a project name my-rill-tutorial-git
-Created project "Rill_Learn/my-rill-tutorial-git". Use `rill project rename` to change name if required.
+Created project "Rill_Learn/my-rill-tutorial-cli". Use `rill project rename` to change name if required.
 
 Rill projects deploy continuously when you push changes to Github.
-
-Could not access all connectors. Rill requires credentials for the following connectors:
-
- - gcs (used by commits__ and others)
-
-Run `rill env configure --project my-rill-tutorial` to provide credentials.
-
-Your project can be accessed at: https://ui.rilldata.in/Rill_Learn/my-rill-tutorial-git
+Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tutorial-cli
 Opening project in browser...
 ```
+
+The CLI will ask if you want to create a repo, select Yes. 
+
+If this is your first time, you will be prompted to log into Github. Once completed, you'll see this in the browser and can navigate back to the CLI.
+
+![img](/img/tutorials/203/git_okay.png)
+
+Rill will automatically use the project name as the repository and project name. If there are any issues with overlapping names, it will prompt your for a different name. Once this all completes, your browser will be automatically opened.
+
+
+![img](/img/deploy/existing-project/cli-upload.png)
 
 That's it! You have connected your GitHub repository to your Rill project. Now navigating back to the Status page, you can see the repository listed. Now you can push any changes that you've made locally to the Git repository and Rill will automatically update. For more information on how to use GitHub with Rill, please refer to the <a href= 'http://localhost:4004/deploy/existing-project/github-101#pushing-changes' target ="blank" > GitHub Basics docs</a>!
 
 
-![img](/img/tutorials/203/status-git.png)
+## Making Changes to the GitHub Repository
+While this is an unusual step and most changes and development to your project should be done via branches on your Repository, there might be times you may need to completely change the repository.
 
-:::tip
-While not shown in the steps above, you may want to take a moment to set up the[ GitHub repository connection to your local folder](https://docs.rilldata.com/deploy/existing-project/github-101). In the next course, we will start making some changes to the files and setting this up now makes it easier to push to the repository.
-:::
+### Via the UI
 
+By selecting the edit button (blue pencil) next to the GitHub Repository, the following UI will open where you can change the repository. Note that this will **push** the contents of your Rill project to the repository. You can change the branch of the repository under Advanced options.
+
+![img](/img/tutorials/admin/edit-github.png)
+
+If you want to **pull** the contents of your new repository to Rill Cloud, you will need to do the following:
+
+1. Pull contents of GitHub Repository locally.
+2. (Optional) If you want to keep the same project name, you will need to change the current project name by running `rill project rename --project <project_name>`.
+    - WARNING: Renaming a project will invalidate dashboard URLs, including public URLs
+3. Deploy the new folder by running `rill start` and select `Deploy` from the dashboard
+4. After confirming that the new project works, delete old project by running `rill project delete <project_name>`
+
+
+### Via the CLI
+
+You can redeploy a project by re-running the `rill project connect-github` with the new repository. Note that if you want to keep the same name of the project, you will need to rename the project before doing so.
+
+**Modifying the Branch**
+```bash
+rill project edit  
+? Select project my-rill-tutorial
+? Enter the description 
+? Enter the production branch main
+? Make project public No
+```
 
 import DocsRating from '@site/src/components/DocsRating';
 

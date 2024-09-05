@@ -1,8 +1,10 @@
 ---
-title: "Create the SQL Model"
+title: "3. Create the SQL Model"
 sidebar_label: "3. Create the SQL Model"
 sidebar_position: 2
 hide_table_of_contents: false
+tags:
+  - OLAP:DuckDB
 ---
 
 ### What is a model?
