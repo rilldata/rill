@@ -23,9 +23,9 @@ import { connectorExplorerStore } from "../connectors/connector-explorer-store";
 export class WatchResourcesClient {
   public readonly client: WatchRequestClient<V1WatchResourcesResponse>;
   private readonly instanceId = get(runtime).instanceId;
+  private readonly resourceStateVersions = new Map<string, string>();
   private readonly connectorNames = new Set<string>();
   private readonly softDeletedTableConnectors = new Map<string, string>();
-  private readonly resourceStateVersions = new Map<string, string>();
 
   public constructor() {
     this.client = new WatchRequestClient<V1WatchResourcesResponse>();
@@ -85,16 +85,17 @@ export class WatchResourcesClient {
           return;
         }
 
-        // Proceed to query invalidations only if the resource has finished reconciling and incremented its state version
+        // Proceed to query invalidations only when the resource has finished reconciling
+        // We know the resource has finished reconciling when:
+        // 1) the reconcileStatus is IDLE
+        // 2) the state version has been incremented
         if (
           res.resource.meta.reconcileStatus !==
-            V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
-          this.resourceStateVersions.get(res.name.name) ===
-            res.resource.meta.stateVersion
+          V1ReconcileStatus.RECONCILE_STATUS_IDLE
         )
           return;
 
-        // Update the resource version
+        // Update our client-side memory of the resource's latest state version
         this.resourceStateVersions.set(
           res.name.name,
           res.resource.meta.stateVersion,
