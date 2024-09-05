@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import {
