@@ -12,8 +12,6 @@
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { useProjectParser } from "../../entity-management/resource-selectors";
 
   const iconColor = "#15141A";
 
@@ -23,24 +21,6 @@
   $: ({ instanceId } = $runtime);
 
   $: mockUsers = useMockUsers(instanceId);
-
-  $: projectParserQuery = useProjectParser(queryClient, instanceId);
-
-  $: showErrorBanner =
-    $projectParserQuery.error?.response?.status === 404 &&
-    $selectedMockUserStore?.admin;
-  $: if (
-    showErrorBanner &&
-    $projectParserQuery.error?.response?.data?.message
-  ) {
-    eventBus.emit("banner", {
-      type: "error",
-      message: $projectParserQuery.error?.response?.data?.message,
-      iconType: "alert",
-    });
-  } else {
-    eventBus.emit("banner", null);
-  }
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -64,7 +44,6 @@
         active={viewAsMenuOpen}
         on:remove={() => {
           updateDevJWT(queryClient, null);
-          eventBus.emit("banner", null);
         }}
       >
         <div slot="body" class="flex gap-x-2">
