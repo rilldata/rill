@@ -106,7 +106,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		PeriodicJobs: periodicJobs,
 		Logger:       logger,
 		JobTimeout:   time.Hour,
-		MaxAttempts:  3,
+		MaxAttempts:  5, // retry policy with backoff of attempt^4 seconds
 		ErrorHandler: &ErrorHandler{logger: adm.Logger},
 	})
 	if err != nil {

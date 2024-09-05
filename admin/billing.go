@@ -41,8 +41,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	}
 	s.Logger.Info("created subscription", zap.String("org", org.Name), zap.String("subscription_id", sub.ID))
 
-	// can be done in same tx as UpdateOrganization using InsertTx but river driver expects sql.Tx and does not work with the Tx implementation we have
-	// scheduling it before the update as repair billing job can take care of the update if update fails
+	// scheduling it before the org update as repair billing job can take care of it if update fails
 	err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.TrialEndDate)
 	if err != nil {
 		return nil, nil, err
