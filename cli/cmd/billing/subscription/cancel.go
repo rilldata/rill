@@ -10,7 +10,7 @@ import (
 func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 	var orgName string
 
-	createCmd := &cobra.Command{
+	cancelCmd := &cobra.Command{
 		Use:   "cancel",
 		Short: "Cancel subscription for an organization",
 		Args:  cobra.NoArgs,
@@ -68,7 +68,7 @@ func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
-	createCmd.Flags().SortFlags = false
-	createCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization Name")
-	return createCmd
+	cancelCmd.Flags().SortFlags = false
+	cancelCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization Name")
+	return cancelCmd
 }
