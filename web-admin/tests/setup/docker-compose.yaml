@@ -1,0 +1,71 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - '6379:6379'
+
+  oauth:
+    image: public.ecr.aws/primaassicurazioni/localauth0:0.8.0
+    restart: always
+    ports:
+      - '3010:3000'
+
+  git:
+    image: rilldata/git
+    build:
+      context: .
+      dockerfile: git/Dockerfile
+    ports:
+      - '9418:9418'
+    volumes:
+      - ./git/repos:/usr/src/app
+
+  email:
+    image: rilldata/email
+    build:
+      context: .
+      dockerfile: email/Dockerfile
+    ports:
+      - '1025:1025'
+      - '1080:1080'
+
+  runtime:
+    image: rilldata/runtime
+    build:
+      context: ../../../
+      dockerfile: web-admin/tests/setup/runtime/Dockerfile
+    ports:
+      - '8081:8081'
+      - '9091:9091'
+
+  admin:
+    image: rilldata/admin
+    build:
+      context: ../../../
+      dockerfile: web-admin/tests/setup/admin/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - '8080:8080'
+
+  cloud:
+    image: rilldata/cloud
+    build:
+      context: ../../../
+      dockerfile: web-admin/tests/setup/cloud/Dockerfile
+    depends_on:
+      - admin
+    ports:
+      - '3000:3000'
