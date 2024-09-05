@@ -28,7 +28,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if !upload && !github {
-					sel, err := cmdutil.SelectPrompt("Do you want to use an existing github repo or use rill managed repo?", []string{rillManagedRepoOption, githubRepoOption}, rillManagedRepoOption)
+					sel, err := cmdutil.SelectPrompt("Select deployment type", []string{directDeployOption, connectGithubOption}, directDeployOption)
 					if err != nil {
 						return err
 					}
