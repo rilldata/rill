@@ -91,12 +91,18 @@ As a general rule of thumb, properties that have been specified at a more _granu
 
 ## Running scheduled source refreshes in development
 
-As an exception, scheduled source refreshes specified using `refresh:` are not applied in the `dev` environment by default. If you want to run or test scheduled refreshes in development, you can override this behavior using the `run_in_dev` property:
+As an exception, scheduled source refreshes specified using `refresh:` are not applied in the `dev` environment by default. If you want to run or test scheduled refreshes in local development, you can override this behavior using the `run_in_dev` property:
 ```yaml
 refresh:
   cron: 0 * * * *
   run_in_dev: true
 ```
+
+:::tip Why are source refreshes only enabled by default for Rill Cloud?
+
+Source refreshes are primarily meant to _help keep the data in your deployed dashboards on Rill Cloud up-to-date_ (without needing to manually trigger refreshes). For more details, see our documentation on [configuring source refreshes](/build/connect/source-refresh.md).
+
+:::
 
 ## Using environments to generate custom templated SQL
 
