@@ -56,6 +56,7 @@ type MeasureCompute struct {
 	ComparisonDelta *MeasureComputeComparisonDelta `mapstructure:"comparison_delta"`
 	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
 	PercentOfTotal  *MeasureComputePercentOfTotal  `mapstructure:"percent_of_total"`
+	URI             *MeasureComputeURI             `mapstructure:"uri"`
 }
 
 func (m *MeasureCompute) Validate() error {
@@ -76,6 +77,9 @@ func (m *MeasureCompute) Validate() error {
 		n++
 	}
 	if m.PercentOfTotal != nil {
+		n++
+	}
+	if m.URI != nil {
 		n++
 	}
 	if n == 0 {
@@ -106,6 +110,10 @@ type MeasureComputeComparisonRatio struct {
 type MeasureComputePercentOfTotal struct {
 	Measure string   `mapstructure:"measure"`
 	Total   *float64 `mapstructure:"total"`
+}
+
+type MeasureComputeURI struct {
+	Dimension string `mapstructure:"dimension"`
 }
 
 type Spine struct {

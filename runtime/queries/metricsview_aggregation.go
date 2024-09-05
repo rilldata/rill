@@ -77,7 +77,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return err
 	}
 
-	qry, err := q.rewriteToMetricsViewQuery(mv, q.Exporting)
+	qry, err := q.rewriteToMetricsViewQuery(q.Exporting)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
@@ -119,7 +119,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	// Route to metricsview executor
-	qry, err := q.rewriteToMetricsViewQuery(mv, true)
+	qry, err := q.rewriteToMetricsViewQuery(true)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
@@ -167,7 +167,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
-func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.MetricsViewSpec, export bool) (*metricsview.Query, error) {
+func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
 	for _, d := range q.Dimensions {
 		res := metricsview.Dimension{Name: d.Name}
@@ -186,18 +186,6 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 			}
 		}
 		qry.Dimensions = append(qry.Dimensions, res)
-		for _, dim := range mv.Dimensions {
-			if dim.Name == d.Name && dim.Uri != "" {
-				qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{
-					Name: "_uri_" + dim.Name,
-					Compute: &metricsview.DimensionCompute{
-						URI: &metricsview.DimensionComputeURI{
-							Dimension: dim.Name,
-						},
-					},
-				})
-			}
-		}
 	}
 
 	var measureFilter *runtimev1.Expression
@@ -237,6 +225,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 			case *runtimev1.MetricsViewAggregationMeasure_PercentOfTotal:
 				res.Compute = &metricsview.MeasureCompute{PercentOfTotal: &metricsview.MeasureComputePercentOfTotal{
 					Measure: c.PercentOfTotal.Measure,
+				}}
+			case *runtimev1.MetricsViewAggregationMeasure_Uri:
+				res.Compute = &metricsview.MeasureCompute{URI: &metricsview.MeasureComputeURI{
+					Dimension: c.Uri.Dimension,
 				}}
 			}
 		}

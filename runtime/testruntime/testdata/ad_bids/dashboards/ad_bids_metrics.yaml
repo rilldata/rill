@@ -10,10 +10,6 @@ dimensions:
     name: pub
     property: publisher
     description: ""
-  - label: Publisher
-    name: pub_with_uri
-    property: publisher
-    description: ""
     uri: concat('http://localhost/', publisher)
   - label: Domain
     name: dom
