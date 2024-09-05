@@ -2666,7 +2666,6 @@ func TestMetricsViewsAggregation_Druid_comparison_no_time_dim(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
@@ -2675,7 +2674,8 @@ func TestMetricsViewsAggregation_Druid_comparison_no_time_dim(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
