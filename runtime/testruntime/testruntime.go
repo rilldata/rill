@@ -205,11 +205,9 @@ func NewInstanceForResolvers(t *testing.T, opts InstanceOptionsForResolvers) (*r
 		if err == nil { // avoid .env in CI environment
 			require.NoError(t, godotenv.Load(envPath))
 		}
-		if os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN") == "" {
-			t.Skip("skipping the test without the test instance")
-		}
 
 		opts.OLAPDSN = os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
+		require.NotEqual(t, "", opts.OLAPDSN)
 	}
 
 	vars := make(map[string]string)
