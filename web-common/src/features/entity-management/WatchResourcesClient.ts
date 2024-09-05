@@ -87,11 +87,13 @@ export class WatchResourcesClient {
 
         // Proceed to query invalidations only when the resource has finished reconciling
         // We know the resource has finished reconciling when:
-        // 1) the reconcileStatus is IDLE
-        // 2) the state version has been incremented
+        //   1) the reconcileStatus is IDLE
+        //   2) the state version has been incremented
         if (
           res.resource.meta.reconcileStatus !==
-          V1ReconcileStatus.RECONCILE_STATUS_IDLE
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
+          this.resourceStateVersions.get(res.name.name) ===
+            res.resource.meta.stateVersion
         )
           return;
 
