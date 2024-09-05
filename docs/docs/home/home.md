@@ -5,7 +5,7 @@ sidebar_label: Welcome to Rill
 sidebar_position: 00
 hide_table_of_contents: true
 ---
-Use the following to download rill and start your first project, my-rill-project.
+Use the following to download Rill and start your first project, my-rill-project.
 
 ```bash
 curl https://rill.sh | sh
@@ -45,6 +45,7 @@ Some of the included projects are:
 - [GitHub Analytics](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics): analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files
 - [Programmatic Ads/OpenRTB](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads): bidstream data for programmtic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance
 - [311 Operations](https://github.com/rilldata/rill-examples/tree/main/rill-311-ops): a live datastream of 311 call centers from various locations in the US for example operational analytics 
+- [Final Tutorial Project](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial): A finalized version of the tutorial project with many working examples, a good place to reference any newer features, updated regularly.
 
 
 ## Release Notes

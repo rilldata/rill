@@ -9,6 +9,8 @@ sidebar_position: 20
 ### What is Rill?
 Rill is an operational BI tool that provides fast dashboards that your team will actually use. Rill’s unique architecture combines a last-mile ETL service, an in-memory database, and operational dashboards - all in a single solution
 
+## Install Rill 
+
 ### How do I install Rill? 
 You can install rill using our installation script:
 ```bash

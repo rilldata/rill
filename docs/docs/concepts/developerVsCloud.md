@@ -60,7 +60,7 @@ Once the dashboard has been [deployed to Rill Cloud](../deploy/existing-project/
     Anything from source ingestion to modeling to creating dashboards. 
 | Alerts: <img src = '/img/concepts/rcvsrd/alert.gif' class='rounded-gif' /> | Bookmarks:  <img src = '/img/concepts/rcvsrd/bookmark.gif' class='rounded-gif' /> |
 |:---:|:---:|
-| **Public url:** <img src = '/img/concepts/rcvsrd/Add-Model.gif' class='rounded-gif' />  | **Scheduled Report:** <img src = '/img/concepts/rcvsrd/Add-Dashboard.gif' class='rounded-gif' />  |
+| **Public url:** <img src = '/img/concepts/rcvsrd/public-url.gif' class='rounded-gif' />  | **Scheduled Report:** <img src = '/img/concepts/rcvsrd/scheduled-report.gif' class='rounded-gif' />  |
 </details>
 
 ## Is Rill Cloud a higher offering than Rill Developer?
