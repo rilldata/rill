@@ -30,23 +30,6 @@
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
-  $: projectParserErrorMessage =
-    $projectParserQuery.error?.response.data.message;
-
-  // Show error banner when:
-  // - There's a parse error (will error out if the user can't manageProject anyway)
-  // - There's no mock user OR the mock user is a project admin
-  $: showErrorBanner =
-    projectParserErrorMessage &&
-    ($selectedMockUserStore === null || $selectedMockUserStore?.admin);
-  $: if (showErrorBanner) {
-    eventBus.emit("banner", {
-      type: "error",
-      message: projectParserErrorMessage ?? "Error parsing project",
-      includesHtml: true,
-      iconType: "alert",
-    });
-  }
 
   $: dashboard = useDashboard(instanceId, metricsViewName);
   $: mockUserHasNoAccess =
@@ -57,8 +40,7 @@
     eventBus.emit("banner", {
       type: "error",
       message:
-        "Error parsing project. Please check your dashboard's YAML file for errors.",
-      includesHtml: true,
+        "Error parsing dashboard – you are viewing your last valid dashboard specification",
       iconType: "alert",
     });
   }
