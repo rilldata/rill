@@ -6,7 +6,22 @@
       { label: "Definition", key: "expression" },
       { label: "Name", key: "name", hint: "Name hint" },
       { label: "Label", key: "label", hint: "Label hint", optional: true },
-      { label: "Format", key: "formatPreset", yamlKey: "format_preset" },
+      {
+        label: "Format",
+        key: "formatPreset",
+        yamlKey: "format_preset",
+        modes: [
+          {
+            label: "Simple",
+            type: "select",
+            options: Object.values(FormatPreset),
+          },
+          {
+            label: "d3-format",
+            type: "text",
+          },
+        ],
+      },
       { label: "Description", key: "description", optional: true },
     ],
     dimensions: [
@@ -27,6 +42,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { FileArtifact } from "../entity-management/file-artifact";
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
   export let editing: MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
   export let onDelete: () => void;
@@ -65,9 +81,11 @@
 <div class="h-full w-[320px] bg-background flex-none p-6 flex flex-col border">
   <h1>{adding ? "Add" : "Edit"} {type.slice(0, -1)}</h1>
 
-  <div class="flex flex-col gap-y-3 w-full h-fit overflow-y-auto">
-    {#each properties[type] as { label, key, hint, optional } (key)}
-      <Input bind:value={editing[key]} {label} {hint} {optional} />
+  <div
+    class="flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible"
+  >
+    {#each properties[type] as { label, key, hint, optional, modes } (key)}
+      <Input bind:value={editing[key]} {label} {hint} {optional} {modes} />
     {/each}
 
     <h2>Referenced by</h2>
