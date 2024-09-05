@@ -57,10 +57,10 @@ export function createMetricsViewTimeSeries(
   measures: string[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
-  // Prevent querying if no measures are selected in security policy
-  // if (measures.length === 0) {
-  //   return derived([], () => undefined);
-  // }
+  // TODO: is this needed?
+  if (measures.length === 0) {
+    console.log("timeseries-data-store - measures not found");
+  }
 
   return derived(
     [
@@ -161,16 +161,30 @@ export function createTimeSeriesDataStore(
         measures,
       );
 
-      const primaryTimeSeries = createMetricsViewTimeSeries(
-        ctx,
-        filteredMeasures,
-        false,
-      );
-      const primaryTotals = createTotalsForMeasure(
-        ctx,
-        independentMeasures,
-        false,
-      );
+      if (measures.length === 0) {
+        console.warn("timeseries-data-store - measures not found");
+      }
+
+      // const primaryTimeSeries = createMetricsViewTimeSeries(
+      //   ctx,
+      //   filteredMeasures,
+      //   false,
+      // );
+      // const primaryTotals = createTotalsForMeasure(
+      //   ctx,
+      //   independentMeasures,
+      //   false,
+      // );
+
+      const primaryTimeSeries =
+        measures.length > 0
+          ? createMetricsViewTimeSeries(ctx, filteredMeasures, false)
+          : writable({ isFetching: false, isError: false, data: null });
+
+      const primaryTotals =
+        measures.length > 0
+          ? createTotalsForMeasure(ctx, independentMeasures, false)
+          : writable({ isFetching: false, isError: false, data: null });
 
       let unfilteredTotals:
         | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>

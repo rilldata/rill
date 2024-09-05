@@ -20,10 +20,10 @@ export function createTotalsForMeasure(
   measures: string[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  // Prevent querying if no measures are selected in security policy
-  // if (measures.length === 0) {
-  //   return derived([], () => undefined);
-  // }
+  // TODO: is this needed?
+  if (measures.length === 0) {
+    console.log("totals-data-store - measures not found");
+  }
 
   return derived(
     [
