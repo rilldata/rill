@@ -12,6 +12,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const queryClient = useQueryClient();
 
@@ -29,6 +30,24 @@
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
+  $: parseErrors = $projectParserQuery.data?.projectParser?.state?.parseErrors;
+  $: projectParserErrorMessage =
+    $projectParserQuery.error?.response.data.message;
+
+  // Show error banner when:
+  // - There's a parse error (will error out if the user can't manageProject)
+  // - There's no mock user OR the mock user is a project admin
+  $: if (
+    projectParserErrorMessage &&
+    ($selectedMockUserStore === null || $selectedMockUserStore?.admin)
+  ) {
+    eventBus.emit("banner", {
+      type: "error",
+      message: projectParserErrorMessage ?? parseErrors,
+      includesHtml: true,
+      iconType: "alert",
+    });
+  }
 
   $: dashboard = useDashboard(instanceId, metricsViewName);
   $: mockUserHasNoAccess =
