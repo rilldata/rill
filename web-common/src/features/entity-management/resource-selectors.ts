@@ -74,6 +74,7 @@ export function useResource<T = V1Resource>(
   );
 }
 
+// FIXME: To remove this duplicate of `useResource` https://github.com/rilldata/rill/pull/5531#discussion_r1733027626
 /**
  * `useResourceV2` is a more flexible version of `useResource` that accepts
  *  any `queryOptions`, not just `select` and `queryClient`.
@@ -112,13 +113,18 @@ export function useResourceV2<T = V1Resource>(
   );
 }
 
-export function useProjectParser(queryClient: QueryClient, instanceId: string) {
+export function useProjectParser(
+  queryClient: QueryClient,
+  instanceId: string,
+  enabled: boolean = true,
+) {
   return useResource(
     instanceId,
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
     {
       queryClient,
+      enabled,
     },
   );
 }

@@ -25,13 +25,17 @@
   $: ({ instanceId } = $runtime);
 
   $: filePaths = data.metricsView.meta?.filePaths as string[];
-  $: projectParserQuery = useProjectParser(queryClient, instanceId);
+  $: dashboard = useDashboard(instanceId, metricsViewName);
+  $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
+  $: projectParserQuery = useProjectParser(
+    queryClient,
+    instanceId,
+    measures.length > 0,
+  );
   $: dashboardFileHasParseError =
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
-
-  $: dashboard = useDashboard(instanceId, metricsViewName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 
@@ -44,8 +48,6 @@
       iconType: "alert",
     });
   }
-
-  $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
 
   $: if (mockUserHasNoAccess || measures.length === 0) {
     // We want to close the banner before any of the ErrorPage is rendered

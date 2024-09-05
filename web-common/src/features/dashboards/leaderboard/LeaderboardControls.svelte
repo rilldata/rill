@@ -143,13 +143,5 @@
         ariaLabel="Select a measure to filter by"
       />
     </div>
-  {:else}
-    <div
-      class="flex flex-row items-center"
-      style:grid-column-gap=".4rem"
-      in:receive|global={{ key: "loading-leaderboard-metric" }}
-    >
-      pulling leaderboards <Spinner status={EntityStatus.Running} />
-    </div>
   {/if}
 </div>
