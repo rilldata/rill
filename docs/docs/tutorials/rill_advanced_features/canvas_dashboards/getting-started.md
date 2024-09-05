@@ -9,9 +9,7 @@ sidebar_position: 6
 
 In this section, we'll cover how to create Canvas dashboards in Rill Developer and publish these to Rill Cloud,
 
-:::note
-This feature is not currently publicly released and is behind a feature flag. In case of specific issues, please reach out to us for assistance. 
-:::
+
 ### Step 1: Let's return to our project my-rill-tutorial in Rill Developer
 
 :::tip Friends from ClickHouse
@@ -36,22 +34,13 @@ From the terminal, let's start rill
 rill start 
 ```
 
-### Step 2: Adding feature flag (no longer required once GA)
+### Step 2: Select More! 
 
-Edit the rill.yaml via the UI and add the following:
-```
-features:
- - customDashboards
-```
-
-
-### Step 3: Notice the changes in the UI
-
-You will now notice that under the `+Add` UI, two new options are available.
+Under the + Add dropdown, select More to find the chart and custom dashboard components.
 
 ![img](/img/tutorials/301/add-custom-dashboard.png)
 
-Once you select either of these, a dedicated folder `charts` and `custom-dashboards` will be created.
+Once you select either of these, a dedicated folder `components` and `canvasdashboards` will be created.
 
 import DocsRating from '@site/src/components/DocsRating';
 

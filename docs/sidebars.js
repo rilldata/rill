@@ -157,11 +157,12 @@ const sidebars = {
         },
         {
           type: 'category',
-          label: 'Other Concepts',
+          label: "Other Concepts and How-to's",
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
-            'tutorials/other/avg_avg',
             'tutorials/other/add-column-dimension',
+            'tutorials/other/change-project-details',
+            'tutorials/other/avg_avg',
 
           ]
         },

@@ -6,7 +6,7 @@ sidebar_position: 8
 ---
 
 
-Canvas dashboards are composed of one more more charts. Now that we've learned how to create charts via Rill-provided templates and via custom chart with vega-lite, we can add and arrange these on Canvas dashboard.
+Canvas dashboards are composed of one more more charts. Now that we've learned how to create charts via Rill-provided templates and via custom component with vega-lite, we can add and arrange these on Canvas dashboard.
 
 
 ### Create a Canvas dashboard
@@ -25,7 +25,7 @@ You will notice three options in the UI for creating dashboards.
 ![project-view](/img/tutorials/301/custom-dashboard.png)
 
 In both the split and viz mode, we can drag and drop chart components into the Canvas dashboard.
-You'll notice that in the YAML for the dashboard, you can adjust the `columns`, which will adjust the number of squares on the screen. Let's go ahead and drag our two custom charts that we built!
+You'll notice that in the YAML for the dashboard, you can adjust the `columns`, which will adjust the number of squares on the screen. Let's go ahead and drag our two custom components that we built!
 
 <img src = '/img/tutorials/301/custom-chart.gif' class='rounded-gif' />
 <br />

@@ -1,11 +1,11 @@
 ---
 title: "Canvas Dashboards using Vega Lite"
 description: Creating Canvas Dashboards in Rill
-sidebar_label: "Custom Charts Cont'd"
+sidebar_label: "Custom Components Cont'd"
 sidebar_position: 13
 ---
 
-### Let's continue with another custom chart example.
+### Let's continue with another custom component example.
 
 Let's say we want to see each user's addition and deletion of code over a set period in an easy to read way. 
 Looking through Vega Lite's example gallery, we can see that a [Normalized Stacked Bar chart](https://vega.github.io/vega-lite/examples/stacked_bar_normalize.html) does this quite well.
@@ -138,7 +138,7 @@ vega_lite: |
 ```
 </details>
 
-**Custom Chart Complete**
+**Custom Component Complete**
 
 With both components ready, your dashboard should look something like this:
 ![img](/img/tutorials/301/normalized.png)

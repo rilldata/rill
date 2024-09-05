@@ -1,18 +1,18 @@
 ---
 title: "Canvas Dashboards using Vega Lite"
 description: Creating Canvas Dashboards in Rill
-sidebar_label: "Custom Charts"
+sidebar_label: "Custom Components"
 sidebar_position: 12
 ---
-Along with Rill template charts, you can create your own custom charts by using Vega Lite. 
+Along with Rill template charts, you can create your own custom components by using Vega Lite. 
 
-The three components that are required for a custom chart using Vega Lite are:
+The three components that are required for a custom component using Vega Lite are:
 1. `type: component` - defined on all component type YAML objects in Rill
 2. `data`: - whether a `metrics_sql` or `sql`, your dashboard needs data
 3. `vega_lite`: - where you will define the Vega Lite components and chart information
 
 
-## Let's create a few custom charts for our Canvas dashboard
+## Let's create a few custom components for our Canvas dashboard
 
 Let's start by creating a chart for our Canvas dashboard.
 
@@ -133,9 +133,9 @@ vega_lite: |
 ```
 </details>
 
-**Custom chart Complete**
+**Custom Component Complete**
 
-With everything completed, you should have a YAML file with the following contents and a custom chart that looks something like the following. 
+With everything completed, you should have a YAML file with the following contents and a custom component that looks something like the following. 
 ![img](/img/tutorials/301/top-contributors.png)
 
 ```yaml

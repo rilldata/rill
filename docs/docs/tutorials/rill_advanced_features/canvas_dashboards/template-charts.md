@@ -1,33 +1,21 @@
 ---
 title: "Canvas Dashboards"
 description: Using Template charts
-sidebar_label: "Template Charts"
+sidebar_label: "Template Components"
 sidebar_position: 10
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-## Using Rill Custom Chart templates
+## Using Rill Custom Components Templates
 
-Rill provides a few templates for custom charts. We will use the dashboard, `dashboard_1` to create a few Canvas dashboards.
+Rill provides a few templates for Rill-Authored charts. We will use the dashboard, `dashboard_1` to create a few custom dashboards. For a more extensive list of examples, please see [our reference page](https://docs.rilldata.com/reference/project-files/components#Examples)!
+
+### Charts:
 
 <Tabs>
-<TabItem value="KPI" label="KPI Charts" default>
 
-```yaml
-# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
-    
-type: component
-
-kpi:
-  metric_view: dashboard_1
-  time_range: P1W
-  measure: net_line_changes #if name parameter is defined on measure
-  comparison_range: P1W
-  ```
-</TabItem>
 <TabItem value="Bar" label="Bar Charts">
 
 ```yaml
@@ -53,7 +41,7 @@ bar_chart:
   </TabItem>
 
 
-  <TabItem value="Line" label="Line Charts">
+<TabItem value="Line" label="Line Charts">
 
   ```yaml
 # Chart YAML
@@ -75,18 +63,120 @@ line_chart:
   
     ```
   </TabItem>
+  <TabItem value="Pie" label="Pie Charts">
+
+  ```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+type: component
+
+
+    ```
+  </TabItem>
+
+      <TabItem value="Area" label="Area Charts">
+
+  ```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+type: component
+
+
+    ```
+  </TabItem>
+
+
+      <TabItem value="Scatter" label="Scatter Plots">
+
+  ```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+type: component
+
+
+    ```
+  </TabItem>
+
+
 </Tabs>
 
+### Others:
 
-Additional Templates available soon : 
+<Tabs>
+<TabItem value="KPI" label="KPI" default>
 
-- Pie Chart
-- Table
-- Pivot Table
-- Area Chart
-- Scatter Plot
-- Choropleth
-- Layer Map
+```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+    
+type: component
+
+kpi:
+  metric_view: dashboard_1
+  time_range: P1W
+  measure: net_line_changes #if name parameter is defined on measure
+  comparison_range: P1W
+  ```
+</TabItem>
+<TabItem value="Layer" label="Layer Map">
+
+  ```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+type: component
+
+
+    ```
+  </TabItem>
+<TabItem value="Choropleth" label="Choropleth Charts">
+
+  ```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+type: component
+
+
+    ```
+  </TabItem>
+      <TabItem value="Table" label="Table">
+
+  ```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+    
+type: component
+
+table:
+  measures:
+    - net_line_changes
+  metric_view: "dashboard_1"
+  time_range: "P3M"
+  #comparison_range: "P3M"
+
+  row_dimensions:
+    - author_name
+  #col_dimensions:
+  #  - filename 
+    ```
+  </TabItem>
+    <TabItem value="Pivot Table" label="Pivot Table">
+
+  ```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+type: component
+
+
+    ```
+  </TabItem>
+</Tabs>
+
 
 
 import DocsRating from '@site/src/components/DocsRating';
