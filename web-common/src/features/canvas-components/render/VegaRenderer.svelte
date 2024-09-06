@@ -157,12 +157,22 @@
     {#if showControls}
       <div class="pan-controls">
         {#if $canPanLeft}
-          <PanLeftIcon onClick={panLeft} />
-          Left
+          <button
+            class="pan-button left w-6 h-6"
+            on:click={panLeft}
+            aria-label="Pan left"
+          >
+            <PanLeftIcon />
+          </button>
         {/if}
         {#if $canPanRight}
-          <PanRightIcon onClick={panRight} />
-          Right
+          <button
+            class="pan-button right w-6 h-6"
+            on:click={panRight}
+            aria-label="Pan right"
+          >
+            <PanRightIcon />
+          </button>
         {/if}
       </div>
     {/if}
