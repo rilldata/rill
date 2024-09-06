@@ -1084,7 +1084,7 @@ func newYAMLError(err error) error {
 		return err
 	}
 
-	line, err2 := strconv.Atoi(res[1])
+	line, err2 := strconv.ParseUint(res[1], 10, 32)
 	if err2 != nil {
 		return err
 	}
@@ -1107,7 +1107,7 @@ func newDuckDBError(err error) error {
 		return err
 	}
 
-	line, err2 := strconv.Atoi(res[1])
+	line, err2 := strconv.ParseUint(res[1], 10, 32)
 	if err2 != nil {
 		return err
 	}
