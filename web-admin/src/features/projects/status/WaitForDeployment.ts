@@ -24,7 +24,6 @@ const PollTime = 1000;
 
 export class WaitForDeployment {
   private errored = false;
-  private redirectToResource: V1Resource | undefined;
 
   // The user is 1st redirected to `invite` page. They might take some time on there or be very quick.
   // We use this boolean to identify if a deployment already succeeded by the time user lands on dashboards page.
@@ -92,11 +91,16 @@ export class WaitForDeployment {
       eventBus.emit("notification", {
         message: "Failed to deploy project",
       });
-      return goto(`/${this.organization}/${this.project}/-/status`);
+      return;
     }
 
     eventBus.emit("notification", {
-      message: "Project shouldRedirect successfully",
+      message: "Project deployed",
+      type: "success",
+      link: {
+        text: "Go to dashboards",
+        href: `/${this.organization}/${this.project}`,
+      },
     });
   }
 }

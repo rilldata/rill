@@ -48,7 +48,7 @@
         });
       }
     }
-    return goto(`/${organization}/${project}`);
+    return goto(`/${organization}/${project}/-/status`);
   }
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
