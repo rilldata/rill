@@ -53,7 +53,7 @@
     }}
     items={options}
   >
-    <Select.Trigger class="rounded-sm">
+    <Select.Trigger>
       <Select.Value
         {placeholder}
         class="text-[12px] {!selected ? 'text-gray-400' : ''}"
