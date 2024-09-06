@@ -12,6 +12,7 @@ import type {
   ScaleStore,
   SimpleConfigurationStore,
 } from "./state/types";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -306,8 +307,8 @@ export function bisectData<T>(
   data: ArrayLike<T>,
 ): { position: number; entry: T } {
   const bisect = bisector<T, unknown>((d) => d[accessor])[direction];
-
   const position = bisect(data, value);
+
   return {
     position,
     entry: data[position],

@@ -104,7 +104,7 @@ function hasChartDimensionParam(
   return true;
 }
 
-export function updateVegaOnTableHover(
+export function updateChartOnTableCellHover(
   viewVL: View | undefined,
   chartType: TDDAlternateCharts,
   isTimeComparison: boolean,

@@ -25,7 +25,7 @@
     getVegaLiteSpecForTDD,
     hasBrushParam,
     reduceDimensionData,
-    updateVegaOnTableHover,
+    updateChartOnTableCellHover,
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
 
@@ -82,7 +82,7 @@
   );
 
   $: {
-    updateVegaOnTableHover(
+    updateChartOnTableCellHover(
       viewVL,
       chartType,
       isTimeComparison,
@@ -217,6 +217,7 @@
     {tooltipFormatter}
   />
 {:else}
+  <!-- JIC we add a new chart type without brush param -->
   <VegaLiteRenderer
     bind:viewVL
     data={{ table: data }}

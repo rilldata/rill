@@ -159,18 +159,33 @@
     const slicedData = isAllTime
       ? formattedData?.slice(1)
       : formattedData?.slice(1, -1);
+
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
+      let startDirection, endDirection;
+
+      if (
+        tddChartType === TDDChart.GROUPED_BAR ||
+        tddChartType === TDDChart.STACKED_BAR
+      ) {
+        startDirection = "left";
+        endDirection = "right";
+      } else {
+        startDirection = "center";
+        endDirection = "center";
+      }
+
       const { position: startPos } = bisectData(
         start,
-        "center",
+        startDirection,
         "ts_position",
         slicedData,
       );
+
       const { position: endPos } = bisectData(
         end,
-        "center",
+        endDirection,
         "ts_position",
         slicedData,
       );

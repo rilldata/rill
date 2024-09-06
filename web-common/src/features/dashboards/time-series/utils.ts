@@ -66,6 +66,7 @@ export function updateChartInteractionStore(
   const slicedData = isAllTime
     ? formattedData?.slice(1)
     : formattedData?.slice(1, -1);
+
   if (xHoverValue && xHoverValue instanceof Date) {
     const { position } = bisectData(
       xHoverValue,
