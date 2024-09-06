@@ -2110,11 +2110,7 @@ func parseErr(target string, err error) error {
 		if target == "" {
 			return database.ErrNotFound
 		}
-		return &wrappedError{
-			msg: fmt.Sprintf("%s not found", target),
-			// wrap database.ErrNotFound so checks with errors.Is(...) still work
-			err: database.ErrNotFound,
-		}
+		return database.NewNotFoundError(fmt.Sprintf("%s not found", target))
 	}
 	var pgerr *pgconn.PgError
 	if !errors.As(err, &pgerr) {
@@ -2123,59 +2119,41 @@ func parseErr(target string, err error) error {
 	if pgerr.Code == "23505" { // unique_violation
 		switch pgerr.ConstraintName {
 		case "orgs_name_idx":
-			return newAlreadyExistsErr("an org with that name already exists")
+			return database.NewNotUniqueError("an org with that name already exists")
 		case "projects_name_idx":
-			return newAlreadyExistsErr("a project with that name already exists in the org")
+			return database.NewNotUniqueError("a project with that name already exists in the org")
 		case "users_email_idx":
-			return newAlreadyExistsErr("a user with that email already exists")
+			return database.NewNotUniqueError("a user with that email already exists")
 		case "usergroups_name_idx":
-			return newAlreadyExistsErr("a usergroup with that name already exists in the org")
+			return database.NewNotUniqueError("a usergroup with that name already exists in the org")
 		case "usergroups_users_pkey":
-			return newAlreadyExistsErr("user is already a member of the usergroup")
+			return database.NewNotUniqueError("user is already a member of the usergroup")
 		case "users_orgs_roles_pkey":
-			return newAlreadyExistsErr("user is already a member of the org")
+			return database.NewNotUniqueError("user is already a member of the org")
 		case "users_projects_roles_pkey":
-			return newAlreadyExistsErr("user is already a member of the project")
+			return database.NewNotUniqueError("user is already a member of the project")
 		case "usergroups_orgs_roles_pkey":
-			return newAlreadyExistsErr("usergroup is already a member of the org")
+			return database.NewNotUniqueError("usergroup is already a member of the org")
 		case "usergroups_projects_roles_pkey":
-			return newAlreadyExistsErr("usergroup is already a member of the project")
+			return database.NewNotUniqueError("usergroup is already a member of the project")
 		case "org_invites_email_org_idx":
-			return newAlreadyExistsErr("email has already been invited to the org")
+			return database.NewNotUniqueError("email has already been invited to the org")
 		case "project_invites_email_project_idx":
-			return newAlreadyExistsErr("email has already been invited to the project")
+			return database.NewNotUniqueError("email has already been invited to the project")
 		case "orgs_autoinvite_domains_org_id_domain_idx":
-			return newAlreadyExistsErr("domain has already been added for the org")
+			return database.NewNotUniqueError("domain has already been added for the org")
 		case "service_name_idx":
-			return newAlreadyExistsErr("a service with that name already exists in the org")
+			return database.NewNotUniqueError("a service with that name already exists in the org")
 		case "virtual_files_pkey":
-			return newAlreadyExistsErr("a virtual file already exists at that path")
+			return database.NewNotUniqueError("a virtual file already exists at that path")
 		default:
 			if target == "" {
 				return database.ErrNotUnique
 			}
-			return newAlreadyExistsErr(fmt.Sprintf("%s already exists", target))
+			return database.NewNotUniqueError(fmt.Sprintf("%s already exists", target))
 		}
 	}
 	return err
-}
-
-func newAlreadyExistsErr(msg string) error {
-	// wrap database.ErrNotUnique so checks with errors.Is(...) still work
-	return &wrappedError{msg: msg, err: database.ErrNotUnique}
-}
-
-type wrappedError struct {
-	msg string
-	err error
-}
-
-func (e *wrappedError) Error() string {
-	return e.msg
-}
-
-func (e *wrappedError) Unwrap() error {
-	return e.err
 }
 
 // encrypts plaintext using AES-GCM with the given key and returns the base64 encoded ciphertext

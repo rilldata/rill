@@ -201,7 +201,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	}
 
 	// Search for connector definitions from YAML files
-	vars := inst.ResolveVariables()
+	vars := inst.ResolveVariables(true)
 	for _, c := range inst.ProjectConnectors {
 		if c.Name != name {
 			continue

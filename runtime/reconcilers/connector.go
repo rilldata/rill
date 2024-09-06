@@ -104,7 +104,7 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 	if err != nil {
 		return "", err
 	}
-	vars := instance.ResolveVariables()
+	vars := instance.ResolveVariables(false)
 
 	hash := md5.New()
 
