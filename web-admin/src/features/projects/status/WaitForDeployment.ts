@@ -1,4 +1,3 @@
-import { goto } from "$app/navigation";
 import {
   createAdminServiceGetProject,
   V1DeploymentStatus,
@@ -14,10 +13,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import {
-  V1ReconcileStatus,
-  type V1Resource,
-} from "@rilldata/web-common/runtime-client";
+import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 import { derived, type Unsubscriber } from "svelte/store";
 
 const PollTime = 1000;
