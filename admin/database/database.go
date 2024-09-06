@@ -607,18 +607,20 @@ type InsertDeploymentAuthTokenOptions struct {
 
 // MagicAuthToken is a persistent API token for accessing a specific (filtered) resource in a project.
 type MagicAuthToken struct {
-	ID                    string
-	SecretHash            []byte         `db:"secret_hash"`
-	ProjectID             string         `db:"project_id"`
-	CreatedOn             time.Time      `db:"created_on"`
-	ExpiresOn             *time.Time     `db:"expires_on"`
-	UsedOn                time.Time      `db:"used_on"`
-	CreatedByUserID       *string        `db:"created_by_user_id"`
-	Attributes            map[string]any `db:"attributes"`
-	MetricsView           string         `db:"metrics_view"`
-	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
-	MetricsViewFields     []string       `db:"metrics_view_fields"`
-	State                 string         `db:"state"`
+	ID                      string
+	SecretHash              []byte         `db:"secret_hash"`
+	TokenStr                string         `db:"token_str"`
+	TokenStrEncryptionKeyID string         `db:"token_str_encryption_key_id"`
+	ProjectID               string         `db:"project_id"`
+	CreatedOn               time.Time      `db:"created_on"`
+	ExpiresOn               *time.Time     `db:"expires_on"`
+	UsedOn                  time.Time      `db:"used_on"`
+	CreatedByUserID         *string        `db:"created_by_user_id"`
+	Attributes              map[string]any `db:"attributes"`
+	MetricsView             string         `db:"metrics_view"`
+	MetricsViewFilterJSON   string         `db:"metrics_view_filter_json"`
+	MetricsViewFields       []string       `db:"metrics_view_fields"`
+	State                   string         `db:"state"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -631,6 +633,7 @@ type MagicAuthTokenWithUser struct {
 type InsertMagicAuthTokenOptions struct {
 	ID                    string
 	SecretHash            []byte
+	TokenStr              string
 	ProjectID             string `validate:"required"`
 	ExpiresOn             *time.Time
 	CreatedByUserID       *string

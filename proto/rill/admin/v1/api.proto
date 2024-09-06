@@ -2198,6 +2198,7 @@ message MagicAuthToken {
   rill.runtime.v1.Expression metrics_view_filter = 10;
   repeated string metrics_view_fields = 11;
   string state = 12;
+  string url = 13;
 }
 
 message VirtualFile {

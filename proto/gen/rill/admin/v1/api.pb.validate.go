@@ -32699,6 +32699,8 @@ func (m *MagicAuthToken) validate(all bool) error {
 
 	// no validation rules for State
 
+	// no validation rules for Url
+
 	if len(errors) > 0 {
 		return MagicAuthTokenMultiError(errors)
 	}

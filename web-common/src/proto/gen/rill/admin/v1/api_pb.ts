@@ -11907,6 +11907,11 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    */
   state = "";
 
+  /**
+   * @generated from field: string url = 13;
+   */
+  url = "";
+
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11927,6 +11932,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
     { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {

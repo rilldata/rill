@@ -1107,7 +1107,7 @@ func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID 
 	res := make([]*database.MagicAuthTokenWithUser, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsModel()
+		res[i], err = c.magicAuthTokenWithUserFromDTO(dto)
 		if err != nil {
 			return nil, err
 		}
@@ -1121,7 +1121,7 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*databa
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenFromDTO(res)
 }
 
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
@@ -1130,7 +1130,7 @@ func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) 
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenWithUserFromDTO(res)
 }
 
 func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
@@ -1142,16 +1142,21 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		opts.MetricsViewFields = []string{}
 	}
 
+	encTknStr, encKeyID, err := c.encryptText(opts.TokenStr)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &magicAuthTokenDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state, token_str, token_str_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State, encTknStr, encKeyID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenFromDTO(res)
 }
 
 func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -1962,6 +1967,37 @@ func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, 
 	return res, nil
 }
 
+// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
+func (c *connection) encryptText(text string) (string, string, error) {
+	if len(c.encKeyring) == 0 {
+		return text, "", nil
+	}
+	// use the first key in the keyring for encryption
+	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+	if err != nil {
+		return "", "", err
+	}
+	return encrypted, c.encKeyring[0].ID, nil
+}
+
+// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
+func (c *connection) decryptText(text, encKeyID string) (string, error) {
+	if encKeyID == "" {
+		return text, nil
+	}
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return "", fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+	return decrypt(text, encKey.Secret)
+}
+
 // returns the map with encrypted values and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the values are returned as is.
 func (c *connection) encryptMap(m map[string]string) (map[string]string, string, error) {
 	if len(c.encKeyring) == 0 {
@@ -2019,17 +2055,22 @@ type magicAuthTokenDTO struct {
 	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
 }
 
-func (m *magicAuthTokenDTO) AsModel() (*database.MagicAuthToken, error) {
-	err := m.Attributes.AssignTo(&m.MagicAuthToken.Attributes)
+func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO) (*database.MagicAuthToken, error) {
+	err := dto.Attributes.AssignTo(&dto.MagicAuthToken.Attributes)
 	if err != nil {
 		return nil, err
 	}
-	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.MagicAuthToken, nil
+	dto.MagicAuthToken.TokenStr, err = c.decryptText(dto.MagicAuthToken.TokenStr, dto.MagicAuthToken.TokenStrEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.MagicAuthToken, nil
 }
 
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
@@ -2039,17 +2080,22 @@ type magicAuthTokenWithUserDTO struct {
 	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
 }
 
-func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser, error) {
-	err := m.Attributes.AssignTo(&m.MagicAuthTokenWithUser.Attributes)
+func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
+	err := dto.Attributes.AssignTo(&dto.MagicAuthTokenWithUser.Attributes)
 	if err != nil {
 		return nil, err
 	}
-	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.MagicAuthTokenWithUser, nil
+	dto.MagicAuthTokenWithUser.TokenStr, err = c.decryptText(dto.MagicAuthTokenWithUser.TokenStr, dto.MagicAuthTokenWithUser.TokenStrEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.MagicAuthTokenWithUser, nil
 }
 
 type organizationInviteDTO struct {

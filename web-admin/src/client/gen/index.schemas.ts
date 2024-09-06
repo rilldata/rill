@@ -813,6 +813,7 @@ export interface V1MagicAuthToken {
   metricsViewFilter?: V1Expression;
   metricsViewFields?: string[];
   state?: string;
+  url?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {
