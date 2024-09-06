@@ -245,6 +245,7 @@ require (
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/glog v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -426,3 +427,7 @@ exclude modernc.org/sqlite v1.18.1
 // https://github.com/apache/arrow/pull/41638
 // https://github.com/apache/arrow/pull/42003
 replace github.com/apache/arrow/go/v14 v14.0.2 => github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff
+
+// fixes security vulnerability in dgrijalva/jwt-go
+// golang-jwt/jwt/v4 is compatible with dgrijalva/jwt-go
+replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
