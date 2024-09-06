@@ -110,6 +110,14 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		}
 	}
 
+	if olap.Dialect() == drivers.DialectClickHouse {
+		for _, m := range mv.Measures {
+			if _, ok := cols[m.Name]; ok {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid measure %q. measures cannot have the same name as a column for metric views backed by clickhouse", m.Name))
+			}
+		}
+	}
+
 	// For performance, attempt to validate all dimensions and measures at once
 	err = validateAllDimensionsAndMeasures(ctx, olap, t, mv)
 	if err != nil {

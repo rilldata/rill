@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -275,12 +274,6 @@ type Tx interface {
 	// This means that a call to Rollback should almost always be defer'ed right after a call to NewTx.
 	Rollback() error
 }
-
-// ErrNotFound is returned for single row queries that return no values.
-var ErrNotFound = errors.New("database: not found")
-
-// ErrNotUnique is returned when a unique constraint is violated
-var ErrNotUnique = errors.New("database: violates unique constraint")
 
 // Organization represents a tenant.
 type Organization struct {

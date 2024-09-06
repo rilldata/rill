@@ -57,7 +57,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	td := rillv1.TemplateData{
 		Environment: inst.Environment,
 		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
-		Variables:   inst.ResolveVariables(),
+		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
 			"args": args,
 		},
