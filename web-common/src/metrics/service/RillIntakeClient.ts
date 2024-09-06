@@ -2,8 +2,9 @@ import type { MetricsEvent } from "./MetricsTypes";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
-const RillIntakeUser = import.meta.env.RILL_UI_PUBLIC_INTAKE_USER;
-const RillIntakePassword = import.meta.env.RILL_UI_PUBLIC_INTAKE_PASSWORD;
+const RillIntakeUser = "data-modeler";
+const RillIntakePassword =
+  "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==";
 
 export interface TelemetryClient {
   fireEvent(event: MetricsEvent): Promise<void>;
@@ -19,8 +20,6 @@ export class RillIntakeClient implements TelemetryClient {
   }
 
   public async fireEvent(event: MetricsEvent) {
-    if (!RillIntakeUser || !RillIntakePassword) return;
-
     try {
       const resp = await fetch(`${get(runtime).host}/local/track`, {
         method: "POST",

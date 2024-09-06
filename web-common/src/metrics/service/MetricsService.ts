@@ -74,7 +74,6 @@ export class MetricsService
   }
 
   public loadCloudFields(fields: CloudMetricsFields) {
-    console.log(fields);
     this.commonFields = {
       service_name: "web-admin",
       app_name: "rill-cloud",
