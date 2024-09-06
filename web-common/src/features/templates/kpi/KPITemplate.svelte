@@ -30,10 +30,14 @@
   let containerWidth: number;
 
   $: instanceId = $runtime?.instanceId;
-  $: metricViewName = kpiProperties.metric_view;
-  $: measureName = kpiProperties.measure;
-  $: timeRange = kpiProperties.time_range;
-  $: comparisonTimeRange = kpiProperties?.comparison_range;
+
+  $: ({
+    metric_view: metricViewName,
+    filter: whereSql,
+    measure: measureName,
+    time_range: timeRange,
+    comparison_range: comparisonTimeRange,
+  } = kpiProperties);
 
   $: measure = useMetaMeasure(instanceId, metricViewName, measureName);
 
@@ -42,6 +46,7 @@
     metricViewName,
     measureName,
     timeRange,
+    whereSql,
   );
 
   $: comparisonValue = useKPIComparisonTotal(
@@ -50,6 +55,7 @@
     measureName,
     comparisonTimeRange,
     timeRange,
+    whereSql,
     queryClient,
   );
 
@@ -58,6 +64,7 @@
     metricViewName,
     measureName,
     timeRange,
+    whereSql,
     queryClient,
   );
 
