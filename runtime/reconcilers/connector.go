@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 )
 
@@ -103,7 +103,7 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 	if err != nil {
 		return "", err
 	}
-	vars := instance.ResolveVariables()
+	vars := instance.ResolveVariables(false)
 
 	hash := md5.New()
 

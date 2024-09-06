@@ -104,7 +104,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	propsMap, err := rillv1.ResolveTemplateRecursively(opts.Properties, rillv1.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]any{},
-		Variables:   inst.ResolveVariables(),
+		Variables:   inst.ResolveVariables(false),
 		State:       args.State,
 		ExtraProps: map[string]any{
 			"table": tmpTableName,
