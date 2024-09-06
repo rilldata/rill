@@ -201,14 +201,13 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	}
 
 	// Search for connector definitions from YAML files
-	vars := inst.ResolveVariables(true)
 	for _, c := range inst.ProjectConnectors {
 		if c.Name != name {
 			continue
 		}
 
 		res.Driver = c.Type
-		res.Project, err = ResolveConnectorProperties(inst.Environment, vars, c)
+		res.Project, err = ResolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), c)
 		if err != nil {
 			return nil, err
 		}
@@ -230,6 +229,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	}
 
 	// Build res.Env config based on instance variables matching the format "connector.name.var"
+	vars := inst.ResolveVariables(true)
 	prefix := fmt.Sprintf("connector.%s.", name)
 	for k, v := range vars {
 		if after, found := strings.CutPrefix(k, prefix); found {
