@@ -33,10 +33,9 @@
   let tooltipTimer: number | null = null;
   const TOOLTIP_DELAY = 200;
 
-  export function createHoverIntentTooltipHandler(baseHandler: any) {
+  function createHoverIntentTooltipHandler(baseHandler: any) {
     return function (handler: any, event: MouseEvent, item: any, value: any) {
       if (!event) {
-        console.warn("Event object is null");
         return;
       }
       if (event.type === "pointermove") {
