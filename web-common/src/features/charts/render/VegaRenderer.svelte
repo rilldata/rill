@@ -12,6 +12,8 @@
   } from "svelte-vega";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
+  import { createEventDispatcher } from "svelte";
+  import { getStateManagers } from "../../dashboards/state-managers/state-managers";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -25,6 +27,21 @@
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let jwt = get(runtime).jwt;
+
+  type PanDirection = "left" | "right";
+
+  const dispatch = createEventDispatcher();
+  const {
+    selectors: {
+      charts: { canPanLeft, canPanRight, getNewPanRange },
+    },
+  } = getStateManagers();
+
+  $: console.log("tdd alternate chart", {
+    canPanLeft: $canPanLeft,
+    canPanRight: $canPanRight,
+    getNewPanRange: $getNewPanRange,
+  });
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
@@ -60,6 +77,33 @@
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
   };
+
+  function panCharts(direction: PanDirection) {
+    const panRange = $getNewPanRange(direction);
+    if (!panRange) return;
+    const { start, end } = panRange;
+    dispatch("pan", { start, end });
+  }
+
+  let showControls = false;
+
+  function handleMouseEnter() {
+    console.log("handleMouseEnter");
+    showControls = true;
+  }
+
+  function handleMouseLeave() {
+    console.log("handleMouseLeave");
+    showControls = false;
+  }
+
+  function panLeft() {
+    panCharts("left");
+  }
+
+  function panRight() {
+    panCharts("right");
+  }
 </script>
 
 <div
@@ -68,6 +112,9 @@
   class:px-4={customDashboard}
   class:pb-2={customDashboard}
   class="overflow-hidden size-full flex flex-col items-center justify-center"
+  on:mouseenter={handleMouseEnter}
+  on:mouseleave={handleMouseLeave}
+  role="figure"
 >
   {#if error}
     <div
@@ -85,6 +132,28 @@
       bind:view
       on:onError={onError}
     />
+    {#if showControls}
+      <div class="pan-controls">
+        {#if $canPanLeft}
+          <button class="pan-button left" on:click={panLeft}>
+            <svg viewBox="0 0 33 33" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M9.335 16.795L21.678 5.756C22.129 5.352 22.844 5.672 22.844 6.277L22.844 27.342C22.844 27.948 22.128 28.268 21.677 27.863L9.335 16.795Z"
+              />
+            </svg>
+          </button>
+        {/if}
+        {#if $canPanRight}
+          <button class="pan-button right" on:click={panRight}>
+            <svg viewBox="0 0 33 33" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M24.265 16.805L11.922 27.844C11.471 28.248 10.756 27.928 10.756 27.323L10.756 6.258C10.756 5.652 11.472 5.332 11.923 5.737L24.265 16.805Z"
+              />
+            </svg>
+          </button>
+        {/if}
+      </div>
+    {/if}
   {/if}
 </div>
 
