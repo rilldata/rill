@@ -983,6 +983,12 @@ func (p *Parser) defaultOLAPConnector() string {
 	return p.DefaultOLAPConnector
 }
 
+// isDev returns true if the parser's instance's environment is "dev".
+// Usually this means it's running on localhost with "rill start".
+func (p *Parser) isDev() bool {
+	return strings.EqualFold(p.Environment, "dev")
+}
+
 // pathIsSQL returns true if the path is a SQL file
 func pathIsSQL(path string) bool {
 	return strings.HasSuffix(path, ".sql")
