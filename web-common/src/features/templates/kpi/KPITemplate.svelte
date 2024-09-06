@@ -24,12 +24,11 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  $: kpiProperties = rendererProperties as KPIProperties;
-
   const queryClient = useQueryClient();
   let containerWidth: number;
 
   $: instanceId = $runtime?.instanceId;
+  $: kpiProperties = rendererProperties as KPIProperties;
 
   $: ({
     metric_view: metricViewName,
