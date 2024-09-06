@@ -39,6 +39,7 @@
   export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
+  export let updatePanRange: (start: Date, end: Date) => void;
 
   let viewVL: View;
   let vegaSpec: any;
@@ -210,27 +211,6 @@
 
   function updateRange(start: Date, end: Date) {
     console.log("updateRange", start, end);
-
-    // TODO: implement panning
-    // const timeRange = {
-    //   name: TimeRangePreset.CUSTOM,
-    //   start: start,
-    //   end: end,
-    // };
-
-    // const comparisonTimeRange = showComparison
-    //   ? ({
-    //       name: TimeComparisonOption.CONTIGUOUS,
-    //     } as DashboardTimeControls) // FIXME wrong typecasting across application
-    //   : undefined;
-
-    // metricsExplorerStore.selectTimeRange(
-    //   metricViewName,
-    //   timeRange,
-    //   timeGrain,
-    //   comparisonTimeRange,
-    //   $metricsView.data ?? {},
-    // );
   }
 </script>
 
@@ -242,7 +222,7 @@
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
-    on:pan={(e) => updateRange(e.detail.start, e.detail.end)}
+    on:pan={(e) => updatePanRange(e.detail.start, e.detail.end)}
   />
 {:else}
   <VegaLiteRenderer

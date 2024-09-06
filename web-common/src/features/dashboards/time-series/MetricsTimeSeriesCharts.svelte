@@ -32,6 +32,8 @@
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     AvailableTimeGrain,
+    DashboardTimeControls,
+    TimeComparisonOption,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
@@ -278,6 +280,29 @@
       },
     );
   }
+
+  function updatePanRange(start: Date, end: Date) {
+    if (!interval) return;
+    const timeRange = {
+      name: TimeRangePreset.CUSTOM,
+      start: start,
+      end: end,
+    };
+
+    const comparisonTimeRange = showComparison
+      ? ({
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls) // FIXME wrong typecasting across application
+      : undefined;
+
+    metricsExplorerStore.selectTimeRange(
+      metricViewName,
+      timeRange,
+      interval,
+      comparisonTimeRange,
+      $metricsView.data ?? {},
+    );
+  }
 </script>
 
 <TimeSeriesChartContainer
@@ -405,6 +430,7 @@
               xMin={startValue}
               xMax={endValue}
               isTimeComparison={showComparison}
+              {updatePanRange}
               on:chart-hover={(e) => {
                 const { dimension, ts } = e.detail;
 
