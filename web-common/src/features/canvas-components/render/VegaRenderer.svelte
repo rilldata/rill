@@ -12,6 +12,7 @@
   } from "svelte-vega";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
+  import { onDestroy } from "svelte";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -29,9 +30,35 @@
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
 
+  let tooltipTimer: number | null = null;
+  const TOOLTIP_DELAY = 200;
+
+  export function createHoverIntentTooltipHandler(baseHandler: any) {
+    return function (handler: any, event: MouseEvent, item: any, value: any) {
+      if (!event) {
+        console.warn("Event object is null");
+        return;
+      }
+      if (event.type === "pointermove") {
+        if (tooltipTimer !== null) {
+          clearTimeout(tooltipTimer);
+        }
+        tooltipTimer = window.setTimeout(() => {
+          baseHandler.call(this, handler, event, item, value);
+        }, TOOLTIP_DELAY);
+      } else if (event.type === "pointerout") {
+        if (tooltipTimer !== null) {
+          clearTimeout(tooltipTimer);
+          tooltipTimer = null;
+        }
+        baseHandler.call(this, handler, event, item, null);
+      }
+    };
+  }
+
   $: if (view && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
-    view.tooltip(handler.handleTooltip);
+    view.tooltip(createHoverIntentTooltipHandler(handler.handleTooltip));
     // https://stackoverflow.com/questions/59255654/vega-wont-update-until-the-mouse-has-brushed-over-the-div-containing-the-chart
     void view.runAsync();
   }
@@ -60,6 +87,12 @@
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
   };
+
+  onDestroy(() => {
+    if (tooltipTimer !== null) {
+      clearTimeout(tooltipTimer);
+    }
+  });
 </script>
 
 <div
