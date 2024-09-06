@@ -28,6 +28,8 @@
     updateVegaOnTableHover,
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { metricsExplorerStore } from "../../stores/dashboard-stores";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -205,6 +207,31 @@
   const expressionFunctions = {
     measureFormatter: { fn: vegaCustomFormatter },
   };
+
+  function updateRange(start: Date, end: Date) {
+    console.log("updateRange", start, end);
+
+    // TODO: implement panning
+    // const timeRange = {
+    //   name: TimeRangePreset.CUSTOM,
+    //   start: start,
+    //   end: end,
+    // };
+
+    // const comparisonTimeRange = showComparison
+    //   ? ({
+    //       name: TimeComparisonOption.CONTIGUOUS,
+    //     } as DashboardTimeControls) // FIXME wrong typecasting across application
+    //   : undefined;
+
+    // metricsExplorerStore.selectTimeRange(
+    //   metricViewName,
+    //   timeRange,
+    //   timeGrain,
+    //   comparisonTimeRange,
+    //   $metricsView.data ?? {},
+    // );
+  }
 </script>
 
 {#if hasBrushParam(sanitizedVegaLiteSpec) && data}
@@ -215,6 +242,7 @@
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
+    on:pan={(e) => updateRange(e.detail.start, e.detail.end)}
   />
 {:else}
   <VegaLiteRenderer
