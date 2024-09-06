@@ -11,9 +11,8 @@
   } from "svelte-vega";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
-  import { onDestroy } from "svelte";
   import { getRillTheme } from "./vega-config";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onDestroy } from "svelte";
   import { getStateManagers } from "../../dashboards/state-managers/state-managers";
   import { PanDirection } from "../../dashboards/time-dimension-details/types";
   import PanLeftIcon from "@rilldata/web-common/components/icons/PanLeftIcon.svelte";
@@ -136,7 +135,10 @@
   class:bg-white={canvasDashboard}
   class:px-4={canvasDashboard}
   class:pb-2={canvasDashboard}
-  class="overflow-hidden size-full flex flex-col items-center justify-center"
+  class="vega-renderer overflow-hidden size-full flex flex-col items-center justify-center no-scrollbars relative mr-8"
+  on:mouseenter={handleMouseEnter}
+  on:mouseleave={handleMouseLeave}
+  role="figure"
 >
   {#if error}
     <div
@@ -155,10 +157,10 @@
       on:onError={onError}
     />
     {#if showControls}
-      <div class="pan-controls">
+      <div class="pan-controls absolute">
         {#if $canPanLeft}
           <button
-            class="pan-button left w-6 h-6"
+            class="pan-button left w-8 h-8 pointer-events-auto"
             on:click={panLeft}
             aria-label="Pan left"
           >
@@ -167,7 +169,7 @@
         {/if}
         {#if $canPanRight}
           <button
-            class="pan-button right w-6 h-6"
+            class="pan-button right w-8 h-8 pointer-events-auto"
             on:click={panRight}
             aria-label="Pan right"
           >
@@ -208,5 +210,43 @@
       @apply text-left truncate font-semibold ui-copy-number;
       max-width: 250px;
     }
+  }
+
+  .no-scrollbars {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer and Edge */
+  }
+
+  .no-scrollbars::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+    background: transparent; /* Chrome/Safari/Webkit */
+  }
+
+  .pan-controls {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+  }
+
+  .pan-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+  }
+
+  .pan-button.left {
+    left: 10px;
+  }
+
+  .pan-button.right {
+    right: -18px;
   }
 </style>

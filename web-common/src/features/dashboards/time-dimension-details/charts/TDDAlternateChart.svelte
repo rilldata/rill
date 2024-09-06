@@ -207,10 +207,6 @@
   const expressionFunctions = {
     measureFormatter: { fn: vegaCustomFormatter },
   };
-
-  function updateRange(start: Date, end: Date) {
-    console.log("updateRange", start, end);
-  }
 </script>
 
 {#if hasBrushParam(sanitizedVegaLiteSpec) && data}

@@ -392,7 +392,7 @@
   {#if renderedMeasures}
     <div
       class:pb-4={!isInTimeDimensionView}
-      class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
+      class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit no-scrollbars"
     >
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure (measure.name)}
@@ -547,3 +547,16 @@
   }}
   on:replace={() => createPivot()}
 />
+
+<style lang="postcss">
+  .no-scrollbars {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer and Edge */
+  }
+
+  .no-scrollbars::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+    background: transparent; /* Chrome/Safari/Webkit */
+  }
+</style>
