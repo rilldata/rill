@@ -60,3 +60,5 @@ export interface TablePosition {
   y0?: number;
   y1?: number;
 }
+
+export type PanDirection = "left" | "right";

@@ -13,6 +13,11 @@
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
   import { onDestroy } from "svelte";
   import { getRillTheme } from "./vega-config";
+  import { createEventDispatcher } from "svelte";
+  import { getStateManagers } from "../../dashboards/state-managers/state-managers";
+  import { PanDirection } from "../../dashboards/time-dimension-details/types";
+  import PanLeftIcon from "@rilldata/web-common/components/icons/PanLeftIcon.svelte";
+  import PanRightIcon from "@rilldata/web-common/components/icons/PanRightIcon.svelte";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -27,6 +32,13 @@
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let jwt = get(runtime).jwt;
+
+  const dispatch = createEventDispatcher();
+  const {
+    selectors: {
+      charts: { canPanLeft, canPanRight, getNewPanRange },
+    },
+  } = getStateManagers();
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
@@ -92,6 +104,31 @@
       clearTimeout(tooltipTimer);
     }
   });
+
+  function panCharts(direction: PanDirection) {
+    const panRange = $getNewPanRange(direction);
+    if (!panRange) return;
+    const { start, end } = panRange;
+    dispatch("pan", { start, end });
+  }
+
+  let showControls = false;
+
+  function handleMouseEnter() {
+    showControls = true;
+  }
+
+  function handleMouseLeave() {
+    showControls = false;
+  }
+
+  function panLeft() {
+    panCharts("left");
+  }
+
+  function panRight() {
+    panCharts("right");
+  }
 </script>
 
 <div
@@ -117,6 +154,18 @@
       bind:view
       on:onError={onError}
     />
+    {#if showControls}
+      <div class="pan-controls">
+        {#if $canPanLeft}
+          <PanLeftIcon onClick={panLeft} />
+          Left
+        {/if}
+        {#if $canPanRight}
+          <PanRightIcon onClick={panRight} />
+          Right
+        {/if}
+      </div>
+    {/if}
   {/if}
 </div>
 
