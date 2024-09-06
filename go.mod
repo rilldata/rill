@@ -428,6 +428,5 @@ exclude modernc.org/sqlite v1.18.1
 // https://github.com/apache/arrow/pull/42003
 replace github.com/apache/arrow/go/v14 v14.0.2 => github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff
 
-// fixes security vulnerability in dgrijalva/jwt-go
-// golang-jwt/jwt/v4 is compatible with dgrijalva/jwt-go
+// security vulnerability in dgrijalva/jwt-go
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
