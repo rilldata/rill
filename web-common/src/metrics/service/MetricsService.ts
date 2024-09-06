@@ -33,6 +33,7 @@ export interface CloudMetricsFields {
   projectId: string;
   organizationId: string;
   userId: string;
+  version: string;
 }
 
 export class MetricsService
@@ -73,11 +74,12 @@ export class MetricsService
   }
 
   public loadCloudFields(fields: CloudMetricsFields) {
+    console.log(fields);
     this.commonFields = {
-      // TODO: build_id and version
       service_name: "web-admin",
       app_name: "rill-cloud",
       client_id: this.getOrSetClientID(),
+      version: fields.version,
       is_dev: fields.isDev,
       project_id: fields.projectId,
       organization_id: fields.organizationId,
