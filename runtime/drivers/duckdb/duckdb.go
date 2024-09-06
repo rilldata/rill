@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -553,7 +552,6 @@ func (c *connection) reopenDB() error {
 
 	// Add init SQL if provided
 	if c.config.InitSQL != "" {
-		log.Printf("GOT INIT SQL: %s", c.config.InitSQL)
 		bootQueries = append(bootQueries, c.config.InitSQL)
 	}
 
