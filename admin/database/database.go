@@ -2,9 +2,12 @@ package database
 
 import (
 	"context"
-	"errors"
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Drivers is a registry of drivers
@@ -19,13 +22,19 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new database connection.
-func Open(driver, dsn string) (DB, error) {
+// See ParseEncryptionKeyring for the expected format for encKeyringConfig.
+func Open(driver, dsn, encKeyringConfig string) (DB, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)
 	}
 
-	db, err := d.Open(dsn)
+	encKeyring, err := ParseEncryptionKeyring(encKeyringConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing encryption keyring: %w", err)
+	}
+
+	db, err := d.Open(dsn, encKeyring)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +44,7 @@ func Open(driver, dsn string) (DB, error) {
 
 // Driver is the interface for DB drivers.
 type Driver interface {
-	Open(dsn string) (DB, error)
+	Open(dsn string, encKeyring []*EncryptionKey) (DB, error)
 }
 
 // DB is the interface for a database connection.
@@ -266,12 +275,6 @@ type Tx interface {
 	Rollback() error
 }
 
-// ErrNotFound is returned for single row queries that return no values.
-var ErrNotFound = errors.New("database: not found")
-
-// ErrNotUnique is returned when a unique constraint is violated
-var ErrNotUnique = errors.New("database: violates unique constraint")
-
 // Organization represents a tenant.
 type Organization struct {
 	ID                                  string
@@ -339,21 +342,22 @@ type Project struct {
 	Provisioner     string
 	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
-	ArchiveAssetID       *string           `db:"archive_asset_id"`
-	GithubURL            *string           `db:"github_url"`
-	GithubInstallationID *int64            `db:"github_installation_id"`
-	Subpath              string            `db:"subpath"`
-	ProdVersion          string            `db:"prod_version"`
-	ProdBranch           string            `db:"prod_branch"`
-	ProdVariables        map[string]string `db:"prod_variables"`
-	ProdOLAPDriver       string            `db:"prod_olap_driver"`
-	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
-	ProdSlots            int               `db:"prod_slots"`
-	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string           `db:"prod_deployment_id"`
-	Annotations          map[string]string `db:"annotations"`
-	CreatedOn            time.Time         `db:"created_on"`
-	UpdatedOn            time.Time         `db:"updated_on"`
+	ArchiveAssetID               *string           `db:"archive_asset_id"`
+	GithubURL                    *string           `db:"github_url"`
+	GithubInstallationID         *int64            `db:"github_installation_id"`
+	Subpath                      string            `db:"subpath"`
+	ProdVersion                  string            `db:"prod_version"`
+	ProdBranch                   string            `db:"prod_branch"`
+	ProdVariables                map[string]string `db:"prod_variables"`
+	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
+	ProdOLAPDriver               string            `db:"prod_olap_driver"`
+	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
+	ProdSlots                    int               `db:"prod_slots"`
+	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID             *string           `db:"prod_deployment_id"`
+	Annotations                  map[string]string `db:"annotations"`
+	CreatedOn                    time.Time         `db:"created_on"`
+	UpdatedOn                    time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -917,4 +921,43 @@ type Asset struct {
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+// EncryptionKey represents an encryption key for column-level encryption/decryption.
+// Column-level encryption provides an extra layer of security for highly sensitive columns in the database.
+// It is implemented on the application side before writes to and after reads from the database.
+type EncryptionKey struct {
+	ID     string `json:"key_id"`
+	Secret []byte `json:"key"`
+}
+
+// ParseEncryptionKeyring parses a JSON string containing an array of EncryptionKey objects.
+// If the provided string is empty, an empty keyring is returned.
+// When using an empty keyring, columns will be read and written without applying encryption/decryption.
+func ParseEncryptionKeyring(keyring string) ([]*EncryptionKey, error) {
+	if keyring == "" {
+		return nil, nil
+	}
+
+	var encKeyring []*EncryptionKey
+	err := json.Unmarshal([]byte(keyring), &encKeyring)
+	if err != nil {
+		return nil, err
+	}
+
+	return encKeyring, nil
+}
+
+func NewRandomKeyring() ([]*EncryptionKey, error) {
+	secret := make([]byte, 32) // 32 bytes for AES-256
+	_, err := rand.Read(secret)
+	if err != nil {
+		return nil, err
+	}
+
+	encKeyRing := []*EncryptionKey{
+		{ID: uuid.New().String(), Secret: secret},
+	}
+
+	return encKeyRing, nil
 }

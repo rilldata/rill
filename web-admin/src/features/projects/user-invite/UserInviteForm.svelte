@@ -26,6 +26,7 @@
     object({
       emails: array(
         string().matches(RFC5322EmailRegex, {
+          excludeEmptyString: true,
           message: "Invalid email",
         }),
       ), // yup's email regex is too simple
@@ -41,28 +42,27 @@
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
+        const emails = values.emails.map((e) => e.trim()).filter(Boolean);
+        if (emails.length === 0) return;
 
         const succeeded = [];
         let errored = false;
         await Promise.all(
-          values.emails
-            .map((e) => e.trim())
-            .filter(Boolean)
-            .map(async (email) => {
-              try {
-                await $userInvite.mutateAsync({
-                  organization,
-                  project,
-                  data: {
-                    email,
-                    role: values.role,
-                  },
-                });
-                succeeded.push(email);
-              } catch (e) {
-                errored = true;
-              }
-            }),
+          emails.map(async (email) => {
+            try {
+              await $userInvite.mutateAsync({
+                organization,
+                project,
+                data: {
+                  email,
+                  role: values.role,
+                },
+              });
+              succeeded.push(email);
+            } catch (e) {
+              errored = true;
+            }
+          }),
         );
 
         eventBus.emit("notification", {

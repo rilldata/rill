@@ -29,6 +29,8 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(DescribeCmd(ch))
 	projectCmd.AddCommand(RefreshCmd(ch))
 	projectCmd.AddCommand(JwtCmd(ch))
+	projectCmd.AddCommand(GitPushCmd(ch))
+	projectCmd.AddCommand(UploadCmd(ch))
 
 	return projectCmd
 }

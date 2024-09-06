@@ -102,16 +102,6 @@ If you use templating in SQL models, you must replace references to tables / mod
 
 Some organizations might have both a development and production version of source data. In these cases, your sources should be configured to use the "dev" bucket or database for local development (in Rill Developer) and pointed to the "prod" bucket or database when in production (when deployed to Rill Cloud). Please refer to [this example](templating.md#changing-the-database-user-based-on-dev--prod) and [this example](templating.md#changing-the-bucket-location-based-on-dev--prod) for a complete walkthrough of how this can be configured.
 
-### Configure source refresh schedules in production only
-
-As [source refreshes](/build/connect/source-refresh.md) are generally aimed to help with ensuring data freshness in a [production environment](/build/models/environments.md) and can also take time to reconcile when a source refresh does end up triggering, they are not necessarily needed for model development and testing purposes. If you're using both Rill Developer and Cloud, it is recommended to configure source refreshes only in `prod`. This can be done by adding the following to your `rill.yaml`:
-
-```yaml
-prod:
-  refresh:
-    cron: '<cron_syntax>'
-```
-
 ## Query Optimization
 
 Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](../build/olap/olap.md), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource intensive it is to build models, how fast profiling queries run, and more. 

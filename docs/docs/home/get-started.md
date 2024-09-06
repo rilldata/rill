@@ -57,7 +57,7 @@ Once complete, you can deploy any Rill project with a dashboard to an authentica
 2. Setup continuous deployment from Github to Rill Cloud:
     ```
     cd my-rill-project
-    rill deploy
+    rill project upload
     ```
 
 ## Share your dashboard

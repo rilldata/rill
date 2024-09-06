@@ -1,24 +1,17 @@
 <script lang="ts">
-  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
+  import ChartDataDisplay from "@rilldata/web-common/features/charts/prompt/ChartDataDisplay.svelte";
   import ChartStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
-  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
-  import {
-    createQueryServiceResolveComponent,
-    V1MetricsViewRowsResponseDataItem,
-  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
 
@@ -37,29 +30,12 @@
   $: chartName = getNameFromFile(filePath);
 
   $: editorWidth = editorPercentage * containerWidth;
-  $: tableHeight = tablePercentage * containerHeight;
 
   $: resourceQuery = useResource(instanceId, chartName, ResourceKind.Component);
 
-  $: ({ data: componentResource } = $resourceQuery);
+  $: ({ data: componentResource, isFetching } = $resourceQuery);
 
   $: ({ resolverProperties, input } = componentResource?.component?.spec ?? {});
-
-  $: inputVariableParams = useVariableInputParams(dashboardName, input);
-
-  $: chartDataQuery = resolverProperties
-    ? createQueryServiceResolveComponent(instanceId, chartName, {
-        args: $inputVariableParams,
-      })
-    : null;
-
-  let isFetching = false;
-  let chartData: V1MetricsViewRowsResponseDataItem[] | undefined = undefined;
-
-  $: if (chartDataQuery) {
-    isFetching = $chartDataQuery?.isFetching ?? false;
-    chartData = $chartDataQuery?.data?.data;
-  }
 </script>
 
 <WorkspaceContainer
@@ -98,42 +74,13 @@
         />
       </ChartStatusDisplay>
 
-      {#if chartDataQuery}
-        <div
-          class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
-          style:height="{tablePercentage * 100}%"
-        >
-          <Resizer
-            direction="NS"
-            dimension={tableHeight}
-            min={100}
-            max={0.65 * containerHeight}
-            onUpdate={(height) => (tablePercentage = height / containerHeight)}
-          />
-
-          {#if isFetching}
-            <div
-              class="flex flex-col gap-y-2 size-full justify-center items-center"
-            >
-              <Spinner size="2em" status={EntityStatus.Running} />
-              <div>Loading chart data</div>
-            </div>
-          {:else if chartData}
-            <PreviewTable
-              rows={chartData}
-              name={chartName}
-              columnNames={Object.keys(chartData[0]).map((key) => ({
-                type: "VARCHAR",
-                name: key,
-              }))}
-            />
-          {:else}
-            <p class="text-lg size-full grid place-content-center">
-              Update YAML to view chart data
-            </p>
-          {/if}
-        </div>
-      {/if}
+      <ChartDataDisplay
+        {chartName}
+        {tablePercentage}
+        {containerHeight}
+        {input}
+        {resolverProperties}
+      />
     </div>
   </div>
 </WorkspaceContainer>

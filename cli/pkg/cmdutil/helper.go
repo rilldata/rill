@@ -222,7 +222,7 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 	return h.activityClient
 }
 
-// CurrentUser fetches the ID of the current user.
+// CurrentUserID fetches the ID of the current user.
 // It caches the result in ~/.rill, along with a hash of the current admin token for cache invalidation in case of login/logout.
 func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 	if h.AdminToken() == "" {

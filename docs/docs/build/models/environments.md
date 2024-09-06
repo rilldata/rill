@@ -23,10 +23,9 @@ For the built-in `dev` and `prod` environments **specifically**, Rill provides a
 ```yaml
 env:
   dev:
-    path: s3://path/to/bucket/Y=2024/M=01/*.parquet
+    sources:
+      path: s3://path/to/bucket/Y=2024/M=01/*.parquet
   prod:
-    refresh:
-      cron: 0 * * * *
     models:
       materialize: true
 ```
@@ -34,10 +33,9 @@ env:
 This would be exactly equivalent to (within the same `rill.yaml`):
 ```yaml
 dev:
-  path: s3://path/to/bucket/Y=2024/M=01/*.parquet
+  sources:
+    path: s3://path/to/bucket/Y=2024/M=01/*.parquet
 prod:
-  refresh:
-    cron: 0 * * * *
   models:
     materialize: true
 ```
@@ -60,7 +58,7 @@ rill start --env <name_of_environment>
 
 ## Specifying environment specific YAML overrides
 
-Environment overrides can be applied to source properties in the [YAML configuration](/reference/project-files/sources.md) of a source. For example, let's say that you have a [S3](/reference/connectors/s3.md) source defined but you only wanted to read from a particular month partition during local development and make sure that [source refreshes](/build/connect/source-refresh.md) are only applied _in production_ (i.e. when a project is deployed on Rill Cloud). Then, in your `source.yaml` file, you can define it as:
+Environment overrides can be applied to source properties in the [YAML configuration](/reference/project-files/sources.md) of a source. For example, let's say that you have a [S3](/reference/connectors/s3.md) source defined but you only wanted to read from a particular month partition during local development. Then, in your `source.yaml` file, you can define it as:
 
 ```yaml
 type: source
@@ -69,9 +67,6 @@ path: s3://path/to/bucket/*.parquet
 env:
   dev:
     path: s3://path/to/bucket/Y=2024/M=01/*.parquet
-  prod:
-    refresh:
-      cron: 0 * * * *
 ```
 
 Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models.md#model-materialization) only on Rill Cloud (i.e. `prod) and dashboards use a different default [theme](../dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
@@ -91,6 +86,21 @@ As a general rule of thumb, properties that have been specified at a more _granu
 1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
 2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
+
+:::
+
+## Running scheduled source refreshes in development
+
+As an exception, scheduled source refreshes specified using `refresh:` are not applied in the `dev` environment by default. If you want to run or test scheduled refreshes in local development, you can override this behavior using the `run_in_dev` property:
+```yaml
+refresh:
+  cron: 0 * * * *
+  run_in_dev: true
+```
+
+:::tip Why are source refreshes only enabled by default for Rill Cloud?
+
+Source refreshes are primarily meant to _help keep the data in your deployed dashboards on Rill Cloud up-to-date_ (without needing to manually trigger refreshes). For more details, see our documentation on [configuring source refreshes](/build/connect/source-refresh.md).
 
 :::
 

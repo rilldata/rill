@@ -17,17 +17,18 @@ import (
 )
 
 type Options struct {
-	DatabaseDriver     string
-	DatabaseDSN        string
-	ExternalURL        string
-	FrontendURL        string
-	ProvisionerSetJSON string
-	DefaultProvisioner string
-	VersionNumber      string
-	VersionCommit      string
-	MetricsProjectOrg  string
-	MetricsProjectName string
-	AutoscalerCron     string
+	DatabaseDriver            string
+	DatabaseDSN               string
+	DatabaseEncryptionKeyring string
+	ExternalURL               string
+	FrontendURL               string
+	ProvisionerSetJSON        string
+	DefaultProvisioner        string
+	VersionNumber             string
+	VersionCommit             string
+	MetricsProjectOrg         string
+	MetricsProjectName        string
+	AutoscalerCron            string
 }
 
 type Service struct {
@@ -53,7 +54,7 @@ type Service struct {
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
 	// Init db
-	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
+	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN, opts.DatabaseEncryptionKeyring)
 	if err != nil {
 		logger.Fatal("error connecting to database", zap.Error(err))
 	}

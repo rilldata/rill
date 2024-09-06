@@ -90,6 +90,8 @@ type Config struct {
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
+	// json encoded array of database.EncryptionKey
+	DatabaseEncryptionKeyring string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -273,17 +275,18 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:     conf.DatabaseDriver,
-				DatabaseDSN:        conf.DatabaseURL,
-				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
-				FrontendURL:        conf.FrontendURL,
-				ProvisionerSetJSON: conf.ProvisionerSetJSON,
-				DefaultProvisioner: conf.DefaultProvisioner,
-				VersionNumber:      ch.Version.Number,
-				VersionCommit:      ch.Version.Commit,
-				MetricsProjectOrg:  metricsProjectOrg,
-				MetricsProjectName: metricsProjectName,
-				AutoscalerCron:     conf.AutoscalerCron,
+				DatabaseDriver:            conf.DatabaseDriver,
+				DatabaseDSN:               conf.DatabaseURL,
+				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
+				FrontendURL:               conf.FrontendURL,
+				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
+				DefaultProvisioner:        conf.DefaultProvisioner,
+				VersionNumber:             ch.Version.Number,
+				VersionCommit:             ch.Version.Commit,
+				MetricsProjectOrg:         metricsProjectOrg,
+				MetricsProjectName:        metricsProjectName,
+				AutoscalerCron:            conf.AutoscalerCron,
+				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
 			if err != nil {
