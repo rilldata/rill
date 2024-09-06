@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -535,6 +536,8 @@ func (c *connection) reopenDB() error {
 		"LOAD 'parquet'",
 		"INSTALL 'httpfs'",
 		"LOAD 'httpfs'",
+		"INSTALL 'aws'",
+		"LOAD 'aws'",
 		"INSTALL 'sqlite'",
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
@@ -546,6 +549,12 @@ func (c *connection) reopenDB() error {
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
 		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
+	}
+
+	// Add init SQL if provided
+	if c.config.InitSQL != "" {
+		log.Printf("GOT INIT SQL: %s", c.config.InitSQL)
+		bootQueries = append(bootQueries, c.config.InitSQL)
 	}
 
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
