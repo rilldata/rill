@@ -10,17 +10,17 @@
   export let value: string;
   export let id: string;
   export let label: string;
-  export let options: { value: string; label?: string }[];
+  export let options: { value: string; label: string }[];
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
-  export let className = "";
-  export let itemsClass = "";
 
   $: selected = options.find((option) => option.value === value);
+
+  $: console.log({ value, selected, options });
 </script>
 
-<div class="flex flex-col gap-y-2 {className}">
+<div class="flex flex-col gap-y-2">
   {#if label?.length}
     <label for={id} class="text-sm flex items-center gap-x-1">
       <span class="text-gray-800 font-medium">
@@ -53,15 +53,24 @@
     }}
     items={options}
   >
-    <Select.Trigger>
+    <Select.Trigger class="px-3 gap-x-2">
       <Select.Value
         {placeholder}
         class="text-[12px] {!selected ? 'text-gray-400' : ''}"
       />
     </Select.Trigger>
-    <Select.Content>
+
+    <Select.Content
+      sameWidth={false}
+      align="start"
+      class="max-h-80 overflow-y-auto"
+    >
       {#each options as option (option.value)}
-        <Select.Item value={option.value} class="text-[12px] {itemsClass}">
+        <Select.Item
+          value={option.value}
+          label={option.label}
+          class="text-[12px] "
+        >
           {option?.label ?? option.value}
         </Select.Item>
       {/each}
