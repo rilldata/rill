@@ -14,10 +14,9 @@
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
+  export let width: number | null = null;
 
   $: selected = options.find((option) => option.value === value);
-
-  $: console.log({ value, selected, options });
 </script>
 
 <div class="flex flex-col gap-y-2">
@@ -53,7 +52,7 @@
     }}
     items={options}
   >
-    <Select.Trigger class="px-3 gap-x-2">
+    <Select.Trigger class="px-3 gap-x-2 {width && `w-[${width}px]`}">
       <Select.Value
         {placeholder}
         class="text-[12px] {!selected ? 'text-gray-400' : ''}"
