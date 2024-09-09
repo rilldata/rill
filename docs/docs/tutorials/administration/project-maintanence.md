@@ -19,9 +19,6 @@ The Status Page gives us an overview of all the components within Rill Cloud, in
 You'll see here that there's an option to connect to GitHub.
 During our first deployment onto Rill Cloud, we opted for a one-time upload. By doing so, we are able to directly deploy the project without any further steps, but we lose out on a few powerful capablities that can enhance the user experience, such as version control.
 
-### Project Alerting
-
-Along with checking the status via the UI or by running `rill project status`, you can set up [project error alerting](https://docs.rilldata.com/deploy/project-errors).
 
 ### When a dashboard is failing to load
 
@@ -99,11 +96,7 @@ rill project refresh --source <your_source> [--model <your-model>]
 ```
 
 
-## Alerts
-
-[Alerts created on individual dashboards](https://docs.rilldata.com/explore/alerts/) can be viewed from a project's alert page. As an admin, you can edit or delete the alert as needed.
-
-![alerts](/img/tutorials/admin/alert-admin.png)
+### Parse Errors
 
 
 

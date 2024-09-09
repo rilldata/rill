@@ -1,5 +1,5 @@
 ---
-title: "How to update Rill Cloud"
+title: "How to push your changes to  Rill Cloud"
 description:  Redeploy onto Rill Cloud
 sidebar_label: "Pushing changes to Rill Cloud"
 ---
