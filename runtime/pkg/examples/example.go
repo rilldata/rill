@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
+	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 )
 
 //go:embed all:embed
@@ -38,7 +38,7 @@ func List() ([]Example, error) {
 			return nil, err
 		}
 
-		rillYaml, err := rillv1.ParseProjectConfig(rillYamlContents)
+		rillYaml, err := compilerv1.ParseProjectConfig(rillYamlContents)
 		if err != nil {
 			return nil, err
 		}
