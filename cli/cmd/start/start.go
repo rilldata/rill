@@ -11,7 +11,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +51,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 					projectPath = repoName
 				}
-			} else if !rillv1beta.HasRillProject(".") {
+			} else if !rillv1.HasRillProject(".") {
 				if !ch.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
