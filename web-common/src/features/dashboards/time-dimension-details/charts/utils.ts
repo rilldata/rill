@@ -160,7 +160,7 @@ function checkLayerForBrush(layer) {
 }
 
 // Check if vega lite spec has brush params
-// If so, we need toompile vega lite spec to vega spec
+// If so, we need to compile vega lite spec to vega spec
 export function hasBrushParam(spec) {
   if (spec && spec.layer && Array.isArray(spec.layer)) {
     // Layered and Multi-view

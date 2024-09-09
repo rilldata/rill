@@ -16,7 +16,7 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onDestroy } from "svelte";
-  import { View } from "svelte-vega";
+  import { VegaSpec, View } from "svelte-vega";
   import { TopLevelSpec } from "vega-lite";
   import { TDDAlternateCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
@@ -28,6 +28,7 @@
     updateChartOnTableCellHover,
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -39,7 +40,9 @@
   export let isTimeComparison: boolean;
 
   let viewVL: View;
-  let vegaSpec: any;
+  let vegaSpec: VegaSpec;
+
+  const { customDashboards } = featureFlags;
 
   const dispatch = createEventDispatcher();
   const {
@@ -215,6 +218,7 @@
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
+    customDashboard={$customDashboards}
   />
 {:else}
   <!-- JIC we add a new chart type without brush param -->
@@ -225,5 +229,6 @@
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
+    customDashboard={$customDashboards}
   />
 {/if}

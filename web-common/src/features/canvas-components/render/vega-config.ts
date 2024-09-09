@@ -12,9 +12,14 @@ const defaultMarkColor = MainLineColor;
 const gridColor = "#d1d5db"; // gray-300
 const axisLabelColor = "#4b5563"; // gray-600
 
-export const getRillTheme: () => Config = () => ({
+export const getRillTheme: (isCustomDashboard: boolean) => Config = (
+  isCustomDashboard,
+) => ({
   autosize: {
     type: "fit-x",
+  },
+  mark: {
+    tooltip: isCustomDashboard ? true : false,
   },
   arc: { fill: defaultMarkColor },
   area: {

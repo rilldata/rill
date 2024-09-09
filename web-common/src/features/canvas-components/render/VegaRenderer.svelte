@@ -63,7 +63,7 @@
   }
 
   $: options = <EmbedOptions>{
-    config: getRillTheme(),
+    config: getRillTheme(customDashboard),
     renderer: "svg",
     actions: false,
     logLevel: 0, // only show errors
