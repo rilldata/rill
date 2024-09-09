@@ -1153,6 +1153,7 @@ message AddOrganizationMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
   string role = 3;
+  bool superuser_force_access = 4;
 }
 
 message AddOrganizationMemberUserResponse {

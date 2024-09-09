@@ -237,7 +237,7 @@ func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Inst
 	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
 		Environment: inst.Environment,
 		User:        userAttributes,
-		Variables:   inst.ResolveVariables(),
+		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
 			"args":   args,
 			"export": forExport,

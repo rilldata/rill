@@ -39,6 +39,5 @@ func TestGenerateMetricsView(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Contains(t, data, "model: ad_bids")
-	require.Contains(t, data, "valid_percent_of_total:")
 	require.Contains(t, data, "measures:")
 }

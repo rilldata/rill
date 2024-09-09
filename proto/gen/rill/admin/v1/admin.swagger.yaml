@@ -490,6 +490,8 @@ paths:
                 type: string
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/{email}:

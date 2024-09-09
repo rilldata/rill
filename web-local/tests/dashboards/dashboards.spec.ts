@@ -91,14 +91,6 @@ test.describe("dashboard", () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
 
-    // Change time zone to UTC
-    await page.getByLabel("Timezone selector").click();
-    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
-    // Wait for menu to close
-    await expect(
-      page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }),
-    ).not.toBeVisible();
-
     await page.getByRole("button", { name: "Comparing" }).click();
 
     // Check that the total records are 272 and have comparisons

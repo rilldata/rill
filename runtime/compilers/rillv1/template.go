@@ -3,6 +3,7 @@ package rillv1
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 	"text/template/parse"
 
@@ -225,6 +226,45 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 		return "", err
 	}
 
+	// Split variables that contain dots into nested maps.
+	var vars map[string]any
+	if len(data.Variables) > 0 {
+		vars = map[string]any{}
+	}
+	for k, v := range data.Variables {
+		// Note: We always add the full variable name (including dots) at the top level.
+		vars[k] = v
+
+		// Split variable into parts
+		parts := strings.Split(k, ".")
+		if len(parts) <= 1 {
+			continue
+		}
+
+		// Build nested maps
+		curr := vars
+		for i, part := range parts {
+			// We reached the leaf, set the value
+			if i == len(parts)-1 {
+				curr[part] = v
+				break
+			}
+
+			// Add or find nested map
+			v, ok := curr[part]
+			if !ok {
+				v = map[string]any{}
+				curr[part] = v
+			}
+			curr, ok = v.(map[string]any)
+			if !ok {
+				// Edge case where a variable name collides with a part name.
+				// We skip adding the nested map, and instead the keep the full variable.
+				break
+			}
+		}
+	}
+
 	// Build template data
 	var self map[string]any
 	if data.Self.Meta != nil {
@@ -238,7 +278,7 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 	dataMap := map[string]interface{}{
 		"env":   data.Environment,
 		"user":  data.User,
-		"vars":  data.Variables,
+		"vars":  vars,
 		"state": data.State,
 		"self":  self,
 	}

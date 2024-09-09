@@ -6,10 +6,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 
-	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"golang.org/x/exp/maps"
 )
 
 func init() {
@@ -103,7 +104,7 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 	if err != nil {
 		return "", err
 	}
-	vars := instance.ResolveVariables()
+	vars := instance.ResolveVariables(false)
 
 	hash := md5.New()
 
@@ -112,48 +113,26 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 		return "", err
 	}
 
-	// sort properties by key
-	keys := make([]string, 0, len(spec.Properties))
-	for k := range spec.Properties {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
 	// write properties to hash
+	props, err := runtime.ResolveConnectorProperties(instance.Environment, vars, &runtimev1.Connector{
+		Type:                spec.Driver,
+		Config:              spec.Properties,
+		TemplatedProperties: spec.TemplatedProperties,
+		ConfigFromVariables: spec.PropertiesFromVariables,
+	})
+	if err != nil {
+		return "", err
+	}
+	keys := maps.Keys(props)
+	slices.Sort(keys)
 	for _, k := range keys {
 		_, err = hash.Write([]byte(k))
 		if err != nil {
 			return "", err
 		}
-		_, err = hash.Write([]byte(spec.Properties[k]))
+		_, err = hash.Write([]byte(props[k]))
 		if err != nil {
 			return "", err
-		}
-	}
-
-	// sort propertiesFromVariables by key
-	keys = make([]string, 0, len(spec.PropertiesFromVariables))
-	for k := range spec.PropertiesFromVariables {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// write propertiesFromVariables and corresponding vars to hash
-	for _, k := range keys {
-		_, err = hash.Write([]byte(k))
-		if err != nil {
-			return "", err
-		}
-		name := spec.PropertiesFromVariables[k]
-		_, err = hash.Write([]byte(name))
-		if err != nil {
-			return "", err
-		}
-		if value, ok := vars[name]; ok {
-			_, err = hash.Write([]byte(value))
-			if err != nil {
-				return "", err
-			}
 		}
 	}
 
