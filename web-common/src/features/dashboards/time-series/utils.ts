@@ -248,3 +248,13 @@ export function transformAggregateDimensionData(
 
   return data;
 }
+
+export function adjustTimeInterval(
+  interval: { start: Date; end: Date },
+  zone: string,
+) {
+  const { start, end } = getOrderedStartEnd(interval?.start, interval?.end);
+  const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
+  const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
+  return { start: adjustedStart, end: adjustedEnd };
+}

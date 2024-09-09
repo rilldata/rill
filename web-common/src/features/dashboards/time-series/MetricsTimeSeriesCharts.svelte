@@ -43,7 +43,11 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
-  import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
+  import {
+    adjustTimeInterval,
+    getOrderedStartEnd,
+    updateChartInteractionStore,
+  } from "./utils";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -433,19 +437,27 @@
               }}
               on:chart-brush={(e) => {
                 const { interval } = e.detail;
+                const { start, end } = adjustTimeInterval(
+                  interval,
+                  $dashboardStore.selectedTimezone,
+                );
 
                 metricsExplorerStore.setSelectedScrubRange(metricViewName, {
-                  start: interval?.start,
-                  end: interval?.end,
+                  start,
+                  end,
                   isScrubbing: true,
                 });
               }}
               on:chart-brush-end={(e) => {
                 const { interval } = e.detail;
+                const { start, end } = adjustTimeInterval(
+                  interval,
+                  $dashboardStore.selectedTimezone,
+                );
 
                 metricsExplorerStore.setSelectedScrubRange(metricViewName, {
-                  start: interval?.start,
-                  end: interval?.end,
+                  start,
+                  end,
                   isScrubbing: false,
                 });
               }}
