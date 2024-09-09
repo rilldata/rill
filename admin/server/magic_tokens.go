@@ -115,7 +115,20 @@ func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetC
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	pb, err := s.magicAuthTokenToPB(ctx, tkn)
+	proj, err := s.admin.DB.FindProject(ctx, tkn.ProjectID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("project with id %s not found", tkn.ProjectID))
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
+	}
+
+	pb, err := s.magicAuthTokenToPB(tkn, org, proj)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -151,6 +164,11 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 		return nil, status.Error(codes.PermissionDenied, "not allowed to manage magic auth tokens")
 	}
 
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
+	}
+
 	var createdByUserID *string
 	if !projPerms.ManageMagicAuthTokens {
 		if claims.OwnerType() != auth.OwnerTypeUser {
@@ -171,7 +189,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 		nextPageToken = marshalPageToken(tokens[len(tokens)-1].ID)
 	}
 
-	pbs, err := s.magicAuthTokensToPB(ctx, tokens)
+	pbs, err := s.magicAuthTokensToPB(tokens, org, proj)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -215,10 +233,10 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 	return &adminv1.RevokeMagicAuthTokenResponse{}, nil
 }
 
-func (s *Server) magicAuthTokensToPB(ctx context.Context, tkns []*database.MagicAuthTokenWithUser) ([]*adminv1.MagicAuthToken, error) {
+func (s *Server) magicAuthTokensToPB(tkns []*database.MagicAuthTokenWithUser, org *database.Organization, proj *database.Project) ([]*adminv1.MagicAuthToken, error) {
 	var pbs []*adminv1.MagicAuthToken
 	for _, tkn := range tkns {
-		pb, err := s.magicAuthTokenToPB(ctx, tkn)
+		pb, err := s.magicAuthTokenToPB(tkn, org, proj)
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +245,7 @@ func (s *Server) magicAuthTokensToPB(ctx context.Context, tkns []*database.Magic
 	return pbs, nil
 }
 
-func (s *Server) magicAuthTokenToPB(ctx context.Context, tkn *database.MagicAuthTokenWithUser) (*adminv1.MagicAuthToken, error) {
+func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *database.Organization, proj *database.Project) (*adminv1.MagicAuthToken, error) {
 	attrs, err := structpb.NewStruct(tkn.Attributes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert attributes to structpb: %w", err)
@@ -242,22 +260,11 @@ func (s *Server) magicAuthTokenToPB(ctx context.Context, tkn *database.MagicAuth
 		}
 	}
 
-	proj, err := s.admin.DB.FindProject(ctx, tkn.ProjectID)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, fmt.Sprintf("project with id %s not found", tkn.ProjectID))
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
-	}
-
 	res := &adminv1.MagicAuthToken{
 		Id:                 tkn.ID,
 		ProjectId:          tkn.ProjectID,
+		Url:                s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(org.Name, proj.Name, tkn.Secret),
+		Token:              tkn.Secret,
 		CreatedOn:          timestamppb.New(tkn.CreatedOn),
 		ExpiresOn:          nil,
 		UsedOn:             timestamppb.New(tkn.UsedOn),
@@ -268,7 +275,6 @@ func (s *Server) magicAuthTokenToPB(ctx context.Context, tkn *database.MagicAuth
 		MetricsViewFilter:  metricsViewFilter,
 		MetricsViewFields:  tkn.MetricsViewFields,
 		State:              tkn.State,
-		Url:                s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(org.Name, proj.Name, tkn.TokenStr),
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)

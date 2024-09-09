@@ -1121,7 +1121,7 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*databa
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return c.magicAuthTokenFromDTO(res)
+	return c.magicAuthTokenFromDTO(res, false)
 }
 
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
@@ -1142,21 +1142,21 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		opts.MetricsViewFields = []string{}
 	}
 
-	encTknStr, encKeyID, err := c.encryptText(opts.TokenStr)
+	encSecret, encKeyID, err := c.encryptText(opts.Secret)
 	if err != nil {
 		return nil, err
 	}
 
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state, token_str, token_str_encryption_key_id)
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State, encTknStr, encKeyID,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return c.magicAuthTokenFromDTO(res)
+	return c.magicAuthTokenFromDTO(res, true)
 }
 
 func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -2055,7 +2055,7 @@ type magicAuthTokenDTO struct {
 	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
 }
 
-func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO) (*database.MagicAuthToken, error) {
+func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
 	err := dto.Attributes.AssignTo(&dto.MagicAuthToken.Attributes)
 	if err != nil {
 		return nil, err
@@ -2065,9 +2065,13 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO) (*database.Ma
 		return nil, err
 	}
 
-	dto.MagicAuthToken.TokenStr, err = c.decryptText(dto.MagicAuthToken.TokenStr, dto.MagicAuthToken.TokenStrEncryptionKeyID)
-	if err != nil {
-		return nil, err
+	if fetchSecret {
+		dto.MagicAuthToken.Secret, err = c.decryptText(dto.MagicAuthToken.Secret, dto.MagicAuthToken.SecretEncryptionKeyID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dto.MagicAuthToken.Secret = ""
 	}
 
 	return dto.MagicAuthToken, nil
@@ -2090,7 +2094,7 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 		return nil, err
 	}
 
-	dto.MagicAuthTokenWithUser.TokenStr, err = c.decryptText(dto.MagicAuthTokenWithUser.TokenStr, dto.MagicAuthTokenWithUser.TokenStrEncryptionKeyID)
+	dto.MagicAuthTokenWithUser.Secret, err = c.decryptText(dto.MagicAuthTokenWithUser.Secret, dto.MagicAuthTokenWithUser.SecretEncryptionKeyID)
 	if err != nil {
 		return nil, err
 	}

@@ -803,6 +803,8 @@ export type V1MagicAuthTokenAttributes = { [key: string]: any };
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
+  url?: string;
+  token?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -813,7 +815,6 @@ export interface V1MagicAuthToken {
   metricsViewFilter?: V1Expression;
   metricsViewFields?: string[];
   state?: string;
-  url?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {

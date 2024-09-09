@@ -11858,6 +11858,16 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   projectId = "";
 
   /**
+   * @generated from field: string url = 13;
+   */
+  url = "";
+
+  /**
+   * @generated from field: string token = 14;
+   */
+  token = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 3;
    */
   createdOn?: Timestamp;
@@ -11907,11 +11917,6 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    */
   state = "";
 
-  /**
-   * @generated from field: string url = 13;
-   */
-  url = "";
-
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11922,6 +11927,8 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "created_on", kind: "message", T: Timestamp },
     { no: 4, name: "expires_on", kind: "message", T: Timestamp },
     { no: 5, name: "used_on", kind: "message", T: Timestamp },
@@ -11932,7 +11939,6 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
     { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {

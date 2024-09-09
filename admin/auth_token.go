@@ -190,7 +190,7 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
 		ID:                    tkn.ID.String(),
 		SecretHash:            tkn.SecretHash(),
-		TokenStr:              tkn.String(),
+		Secret:                tkn.String(),
 		ProjectID:             opts.ProjectID,
 		ExpiresOn:             expiresOn,
 		CreatedByUserID:       opts.CreatedByUserID,
