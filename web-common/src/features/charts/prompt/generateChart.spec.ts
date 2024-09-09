@@ -37,7 +37,7 @@ ${VegaLiteSpec.replace(/^/gm, "  ")}
         sql: `select * from AdBids
 where publisher is not null`,
       }),
-    ).toEqual(`# Components YAML
+    ).toEqual(`# Component YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/components
 
 type: component
