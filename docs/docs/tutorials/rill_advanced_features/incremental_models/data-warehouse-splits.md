@@ -11,7 +11,7 @@ sidebar_position: 12
 Another advanced concept within Rill is using [Incremental Models](https://docs.rilldata.com/build/advancedmodels/incremental). To understand incremental models, we will also need to discuss [splits](https://docs.rilldata.com/build/advancedmodels/splits). 
 
 :::tip requirements
-You will need to setup the connection to your data warehouse, depending on the connection please refer to [our documentation](https://docs.rilldata.com/reference/connectors/).
+You will need to setup the connection to your data warehouse, depending on the connection please refer to [our documentation](https://docs.rilldata.com/reference/connectors/). 
 
 Your dataset will require a or equivalent to `updated_on` column to use.
 
@@ -42,6 +42,20 @@ sql: >
 
 Note that ` {{if incremental}}` is needed here as we will use this to increment over your data! As stated in the beginning, you will need an `updated_on` column to calculate the increments. 
 
+### Handling errors in splits
+If you see any errors in the UI regarding split, you may need to check the status. You can do this via the CLI running:
+```bash
+rill project splits --<model_name> --local
+```
+
+
+### Refreshing Splits 
+
+Let's say a specific split in your model had some formatting issues. After fixing the data, you would need to find the key for the split and run `rill project splits --<model_name> --local`.  Once found, you can run the following command that will only refresh the specific split, instead of the whole model.
+
+```bash
+rill project refresh --model <model_name> --split <split_key>
+```
 
 ## What is Incremental Modeling?
 You can use incremental modeling to load only new data when refreshing a dataset. This becomes important when your data is large and it does not make sense to reload all the data when trying to ingest new data.

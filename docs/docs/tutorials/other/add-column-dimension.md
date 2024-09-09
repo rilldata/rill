@@ -5,6 +5,7 @@ sidebar_position: 10
 hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
+  - OLAP:ClickHouse
 ---
 
 Changes to the underlying data may require modification to your SQL / Dashboard in order to start visualizing your new data. 

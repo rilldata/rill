@@ -49,6 +49,13 @@ Once completed you should see the following:
 
 ![img](/img/tutorials/302/splits.png)
 
+### Refreshing Splits 
+
+Let's say a specific split in your model had some formatting issues. After fixing the data, you would need to find the key for the split and run `rill project splits --<model_name> --local`.  Once found, you can run the following command that will only refresh the specific split, instead of the whole model.
+
+```bash
+rill project refresh --model <model_name> --split <split_key>
+```
 
 
 ## What is Incremental Modeling?

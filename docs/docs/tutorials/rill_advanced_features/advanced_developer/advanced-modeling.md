@@ -65,7 +65,7 @@ GROUP BY
     --directory_path, filename, author_name, author_date
     ALL
 ORDER BY
-    directory_path DESC -- ASC if wanted
+    author_date DESC -- ASC if wanted
     ```
 
 The resulting SQL allows us to filter using the dimensions: `author_date`, `directory_path`, `filename` and `commit_msg`.
