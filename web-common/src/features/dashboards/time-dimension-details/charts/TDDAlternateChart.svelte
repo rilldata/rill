@@ -38,6 +38,7 @@
   export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
+  export let isScrubbing: boolean;
 
   let viewVL: View;
   let vegaSpec: VegaSpec;
@@ -219,6 +220,7 @@
     {expressionFunctions}
     {tooltipFormatter}
     customDashboard={$customDashboards}
+    {isScrubbing}
   />
 {:else}
   <!-- JIC we add a new chart type without brush param -->

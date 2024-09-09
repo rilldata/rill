@@ -32,7 +32,6 @@
   $: if (viewVL && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
     viewVL.tooltip(handler.handleTooltip);
-    // https://stackoverflow.com/questions/59255654/vega-wont-update-until-the-mouse-has-brushed-over-the-div-containing-the-chart
     void viewVL.runAsync();
   }
 

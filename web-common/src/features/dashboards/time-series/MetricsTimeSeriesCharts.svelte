@@ -420,6 +420,7 @@
               xMin={startValue}
               xMax={endValue}
               isTimeComparison={showComparison}
+              isScrubbing={Boolean(isScrubbing)}
               on:chart-hover={(e) => {
                 const { dimension, ts } = e.detail;
 

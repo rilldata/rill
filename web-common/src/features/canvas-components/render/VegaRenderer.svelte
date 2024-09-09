@@ -23,6 +23,7 @@
   export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let view: View;
+  export let isScrubbing: boolean;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let jwt = get(runtime).jwt;
@@ -35,7 +36,7 @@
 
   function createHoverIntentTooltipHandler(baseHandler: any) {
     return function (handler: any, event: MouseEvent, item: any, value: any) {
-      if (!event) {
+      if (!event || isScrubbing) {
         return;
       }
       if (event.type === "pointermove") {
@@ -58,7 +59,6 @@
   $: if (view && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
     view.tooltip(createHoverIntentTooltipHandler(handler.handleTooltip));
-    // https://stackoverflow.com/questions/59255654/vega-wont-update-until-the-mouse-has-brushed-over-the-div-containing-the-chart
     void view.runAsync();
   }
 
