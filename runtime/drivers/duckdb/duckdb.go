@@ -535,8 +535,6 @@ func (c *connection) reopenDB() error {
 		"LOAD 'parquet'",
 		"INSTALL 'httpfs'",
 		"LOAD 'httpfs'",
-		"INSTALL 'aws'",
-		"LOAD 'aws'",
 		"INSTALL 'sqlite'",
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
