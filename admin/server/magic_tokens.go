@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -31,10 +30,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, fmt.Sprintf("project %q not found", req.Project))
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -109,10 +105,7 @@ func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetC
 
 	tkn, err := s.admin.DB.FindMagicAuthTokenWithUser(ctx, claims.OwnerID())
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "magic auth token not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, tkn.ProjectID)
@@ -152,10 +145,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, fmt.Sprintf("project %q not found", req.Project))
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)

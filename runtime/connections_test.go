@@ -20,7 +20,7 @@ connectors:
 - name: my-s3
   type: s3
   defaults:
-    aws_access_key_id: us-east-1
+    AWS_ACCESS_KEY_ID: us-east-1
     aws_secret_access_key: xxxx
 
 variables:

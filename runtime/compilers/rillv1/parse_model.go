@@ -43,7 +43,7 @@ func (p *Parser) parseModel(node *Node) error {
 	}
 
 	// Parse refresh schedule
-	schedule, err := parseScheduleYAML(tmp.Refresh)
+	schedule, err := p.parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
 	}

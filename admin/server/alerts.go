@@ -35,10 +35,7 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
@@ -96,10 +93,7 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -163,10 +157,7 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -234,10 +225,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -350,10 +338,7 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -427,10 +412,7 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)

@@ -62,10 +62,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "user not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	if user.GithubUsername == "" {
 		// If we don't have user's github username we navigate user to installtion assuming they never installed github app
