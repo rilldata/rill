@@ -29,7 +29,7 @@
   $: dashboard = useDashboard(instanceId, metricsViewName);
   $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
   $: projectParserQuery = useProjectParser(queryClient, instanceId, {
-    enabled: !$selectedMockUserStore?.admin,
+    enabled: $selectedMockUserStore?.admin,
   });
 
   $: dashboardFileHasParseError =
@@ -38,15 +38,6 @@
     );
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
-
-  $: if (mockUserHasNoAccess || measures.length === 0) {
-    // We want to close the banner before any of the ErrorPage is rendered
-    eventBus.emit("banner", null);
-  }
-
-  onNavigate(() => {
-    eventBus.emit("banner", null);
-  });
 </script>
 
 <svelte:head>
