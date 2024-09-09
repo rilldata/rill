@@ -13,6 +13,7 @@
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onNavigate } from "$app/navigation";
 
   const queryClient = useQueryClient();
 
@@ -27,11 +28,10 @@
   $: filePaths = data.metricsView.meta?.filePaths as string[];
   $: dashboard = useDashboard(instanceId, metricsViewName);
   $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
-  $: projectParserQuery = useProjectParser(
-    queryClient,
-    instanceId,
-    measures.length > 0,
-  );
+  $: projectParserQuery = useProjectParser(queryClient, instanceId, {
+    enabled: !$selectedMockUserStore?.admin,
+  });
+
   $: dashboardFileHasParseError =
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
@@ -39,20 +39,14 @@
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 
-  // Handle errors from dashboard YAML edits from an external IDE
-  $: if (dashboardFileHasParseError && dashboardFileHasParseError.length > 0) {
-    eventBus.emit("banner", {
-      type: "error",
-      message:
-        "Error parsing dashboard – you are viewing your last valid dashboard specification",
-      iconType: "alert",
-    });
-  }
-
   $: if (mockUserHasNoAccess || measures.length === 0) {
     // We want to close the banner before any of the ErrorPage is rendered
     eventBus.emit("banner", null);
   }
+
+  onNavigate(() => {
+    eventBus.emit("banner", null);
+  });
 </script>
 
 <svelte:head>
@@ -64,6 +58,12 @@
     statusCode={$dashboard.error?.response?.status}
     header="Error fetching dashboard"
     body="No measures available"
+  />
+  <!-- Handle errors from dashboard YAML edits from an external IDE -->
+{:else if dashboardFileHasParseError && dashboardFileHasParseError.length > 0}
+  <ErrorPage
+    header="Error parsing dashboard"
+    body="Please check your dashboard's YAML file for errors."
   />
 {:else if mockUserHasNoAccess}
   <ErrorPage

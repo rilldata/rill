@@ -116,7 +116,11 @@ export function useResourceV2<T = V1Resource>(
 export function useProjectParser(
   queryClient: QueryClient,
   instanceId: string,
-  enabled: boolean = true,
+  queryOptions?: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    V1Resource
+  >,
 ) {
   return useResource(
     instanceId,
@@ -124,7 +128,7 @@ export function useProjectParser(
     ResourceKind.ProjectParser,
     {
       queryClient,
-      enabled,
+      ...queryOptions,
     },
   );
 }
