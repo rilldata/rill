@@ -24,31 +24,33 @@
   });
 </script>
 
-<div bind:contentRect class="wrapper {color}">
-  {#if GridLinesComponent && (showGrid || changing)}
-    <svelte:component
-      this={GridLinesComponent}
-      {gridCell}
-      {scrollOffset}
-      {gapSize}
-      {radius}
-      {scale}
-    />
-  {/if}
-  <div
-    role="presentation"
-    class="size-full overflow-y-auto overflow-x-hidden relative"
-    on:scroll
-    on:click|self
-  >
+<div class="size-full bg-gray-100 flex justify-center">
+  <div bind:contentRect class="wrapper {color} max-w-[1200px]">
+    {#if GridLinesComponent && (showGrid || changing)}
+      <svelte:component
+        this={GridLinesComponent}
+        {gridCell}
+        {scrollOffset}
+        {gapSize}
+        {radius}
+        {scale}
+      />
+    {/if}
     <div
-      class="dash pointer-events-none"
       role="presentation"
-      style:width="{width}px"
-      style:height="{height}}px"
-      style:transform="scale({scale})"
+      class="size-full overflow-y-auto overflow-x-hidden relative"
+      on:scroll
+      on:click|self
     >
-      <slot />
+      <div
+        class="dash pointer-events-none"
+        role="presentation"
+        style:width="{width}px"
+        style:height="{height}}px"
+        style:transform="scale({scale})"
+      >
+        <slot />
+      </div>
     </div>
   </div>
 </div>
