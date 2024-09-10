@@ -1442,29 +1442,6 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1557,6 +1534,29 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
@@ -1567,6 +1567,7 @@ export type V1MagicAuthTokenAttributes = { [key: string]: any };
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
+  url?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
