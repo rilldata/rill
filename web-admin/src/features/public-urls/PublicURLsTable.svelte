@@ -14,6 +14,12 @@
   export let magicAuthTokens: V1MagicAuthToken[];
   export let onDelete: (deletedTokenId: string) => void;
 
+  $: console.log(magicAuthTokens);
+
+  // TODO: sort by expiresOn, usedOn
+  // TODO: get dashboard title
+  // TODO: use a tag instead of goto
+
   const magicAuthTokensStore = writable(magicAuthTokens);
   $: {
     magicAuthTokensStore.set(magicAuthTokens);
@@ -80,6 +86,8 @@
   }
 </script>
 
+<!-- TODO: redo this table component -->
+<!-- TODO: with pagination -->
 <div class="border rounded-md">
   <Table.Root {...$tableAttrs}>
     <Table.Header>
@@ -102,8 +110,11 @@
         <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
           <Table.Row
             {...rowAttrs}
-            on:click={() => handleClickRow(row)}
-            class="cursor-pointer"
+            on:click={() => {
+              if (row.original.url) {
+                handleClickRow(row);
+              }
+            }}
           >
             {#each row.cells as cell (cell.id)}
               <Subscribe attrs={cell.attrs()} let:attrs>
