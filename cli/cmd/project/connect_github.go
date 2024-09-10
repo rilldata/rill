@@ -15,8 +15,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
-	"github.com/rilldata/rill/admin/pkg/urlutil"
-	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -58,7 +56,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", defaultProdSlots(ch), "Slots to allocate for production deployments")
+	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
@@ -89,7 +87,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	var localGitPath, localProjectPath string
 	if isLocalGitPath {
 		var err error
-		localGitPath, localProjectPath, err = ValidateLocalProject(ctx, ch, opts.GitPath, opts.SubPath)
+		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
 		if err != nil {
 			if errors.Is(err, ErrInvalidProject) {
 				return nil
@@ -101,7 +99,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		var remote *gitutil.Remote
 		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 		if err != nil {
-			// first check if user wants to connect to Github or use one time uploads
+			// first check if user wants to create a github repo
 			ch.Print("No git remote was found.\n")
 			ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to create a repo?", "", true)
 			if confirmErr != nil {
@@ -111,20 +109,11 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 				return nil
 			}
 
-			// It's not a valid remote for Github. We navigate user to login and then create repo for them.
-			silent := false
-			if !ch.IsAuthenticated() {
-				err := loginWithTelemetryAndGithubRedirect(ctx, ch, "")
-				if err != nil {
-					return fmt.Errorf("login failed with error: %w", err)
-				}
-				silent = true
-			}
 			if !errors.Is(err, gitutil.ErrGitRemoteNotFound) && !errors.Is(err, git.ErrRepositoryNotExists) {
 				return err
 			}
 
-			if err := createGithubRepoFlow(ctx, ch, localGitPath, silent); err != nil {
+			if err := createGithubRepoFlow(ctx, ch, localGitPath); err != nil {
 				return err
 			}
 			// In the rest of the flow we still check for the github access.
@@ -156,18 +145,8 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		return nil
 	}
 
-	// If user is not authenticated, run login flow.
-	// To prevent opening the browser twice, we make it directly redirect to the Github flow.
-	silentGitFlow := false
-	if !ch.IsAuthenticated() {
-		silentGitFlow = true
-		if err := loginWithTelemetryAndGithubRedirect(ctx, ch, githubURL); err != nil {
-			return err
-		}
-	}
-
 	// Run flow for access to the Github remote (if necessary)
-	ghRes, err := githubFlow(ctx, ch, githubURL, silentGitFlow)
+	ghRes, err := githubFlow(ctx, ch, githubURL)
 	if err != nil {
 		return fmt.Errorf("failed Github flow: %w", err)
 	}
@@ -270,26 +249,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	return nil
 }
 
-func loginWithTelemetryAndGithubRedirect(ctx context.Context, ch *cmdutil.Helper, remote string) error {
-	// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
-	authURL := ch.AdminURL()
-	if strings.Contains(authURL, "http://localhost:9090") {
-		authURL = "http://localhost:8080"
-	}
-
-	var qry map[string]string
-	if remote != "" {
-		qry = map[string]string{"remote": remote}
-	}
-
-	redirectURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "github", "post-auth-redirect"), qry)
-	if err != nil {
-		return err
-	}
-	return auth.LoginWithTelemetry(ctx, ch, redirectURL)
-}
-
-func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath string, silent bool) error {
+func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath string) error {
 	// Get the admin client
 	c, err := ch.Client()
 	if err != nil {
@@ -307,16 +267,11 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		if res.GrantAccessUrl != "" {
 			// Print instructions to grant access
 			time.Sleep(3 * time.Second)
-			if silent {
-				ch.Print("If the browser did not redirect, ")
-			}
 			ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
 			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
 			// Open browser if possible
-			if !silent {
-				_ = browser.Open(res.GrantAccessUrl)
-			}
+			_ = browser.Open(res.GrantAccessUrl)
 		}
 	}
 
@@ -498,7 +453,7 @@ func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *ad
 	return githubRepo, nil
 }
 
-func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silent bool) (*adminv1.GetGithubRepoStatusResponse, error) {
+func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
 	// Get the admin client
 	c, err := ch.Client()
 	if err != nil {
@@ -519,19 +474,14 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silen
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedStart)
 
 		// Print instructions to grant access
-		if !silent {
-			ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
-			ch.Print("You need to grant Rill read only access to your repository on Github.\n\n")
-			time.Sleep(3 * time.Second)
-			ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
-			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
+		ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
+		ch.Print("You need to grant Rill read only access to your repository on Github.\n\n")
+		time.Sleep(3 * time.Second)
+		ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
+		ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
-			// Open browser if possible
-			_ = browser.Open(res.GrantAccessUrl)
-		} else {
-			ch.Printf("Polling for Github access for: %q\n", githubURL)
-			ch.Printf("If the browser did not redirect, visit this URL to grant access: %q\n\n", res.GrantAccessUrl)
-		}
+		// Open browser if possible
+		_ = browser.Open(res.GrantAccessUrl)
 
 		// Poll for permission granted
 		pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)

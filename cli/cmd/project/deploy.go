@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -47,14 +46,14 @@ type DeployOpts struct {
 	Slots       int
 }
 
-func UploadCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
-		Use:   "upload",
+		Use:   "deploy",
 		Short: "Deploy project to Rill Cloud by uploading the project files",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return deployWithUploadFlow(cmd.Context(), ch, opts)
+			return DeployWithUploadFlow(cmd.Context(), ch, opts)
 		},
 	}
 
@@ -68,7 +67,7 @@ func UploadCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", defaultProdSlots(ch), "Slots to allocate for production deployments")
+	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
@@ -78,7 +77,7 @@ func UploadCmd(ch *cmdutil.Helper) *cobra.Command {
 	return deployCmd
 }
 
-func ValidateLocalProject(ctx context.Context, ch *cmdutil.Helper, gitPath, subPath string) (string, string, error) {
+func ValidateLocalProject(ch *cmdutil.Helper, gitPath, subPath string) (string, string, error) {
 	var localGitPath string
 	var err error
 	if gitPath != "" {
@@ -103,14 +102,6 @@ func ValidateLocalProject(ctx context.Context, ch *cmdutil.Helper, gitPath, subP
 	if rillv1beta.HasRillProject(localProjectPath) {
 		return localGitPath, localProjectPath, nil
 	}
-	// If not, we still navigate user to login and then fail afterwards.
-	if !ch.IsAuthenticated() {
-		err := auth.LoginWithTelemetry(ctx, ch, "")
-		if err != nil {
-			ch.PrintfWarn("Login failed with error: %s\n", err.Error())
-		}
-		fmt.Println()
-	}
 
 	ch.PrintfWarn("Directory %q doesn't contain a valid Rill project.\n", localProjectPath)
 	ch.PrintfWarn("Run `rill project upload` from a Rill project directory or use `--path` to pass a project path.\n")
@@ -118,14 +109,8 @@ func ValidateLocalProject(ctx context.Context, ch *cmdutil.Helper, gitPath, subP
 	return "", "", ErrInvalidProject
 }
 
-func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
-	// If user is not authenticated, run login flow.
-	if !ch.IsAuthenticated() {
-		if err := auth.LoginWithTelemetry(ctx, ch, ""); err != nil {
-			return err
-		}
-	}
-	_, localProjectPath, err := ValidateLocalProject(ctx, ch, opts.GitPath, opts.SubPath)
+func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
+	_, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
 	if err != nil {
 		return err
 	}
@@ -432,11 +417,4 @@ func errMsgContains(err error, msg string) bool {
 		return strings.Contains(st.Message(), msg)
 	}
 	return false
-}
-
-func defaultProdSlots(ch *cmdutil.Helper) int {
-	if ch.IsDev() {
-		return 1
-	}
-	return 2
 }
