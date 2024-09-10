@@ -17,20 +17,14 @@ import type { TimeControlState } from "./time-controls/time-control-store";
 
 const countRegex = /count(?=[^(]*\()/i;
 const sumRegex = /sum(?=[^(]*\()/i;
-// Clickhouse has uniq and uniqExact, which are summable
-const uniqRegex = /uniq(?=[^(]*\()/i;
-const uniqExactRegex = /uniqExact(?=[^(]*\()/i;
 
 export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
   const expression = measure.expression?.toLowerCase();
-  return !!(
-    expression?.match(countRegex) ||
-    expression?.match(sumRegex) ||
-    expression?.match(uniqRegex) ||
-    expression?.match(uniqExactRegex)
+  return (
+    !!(expression?.match(countRegex) || expression?.match(sumRegex)) ||
+    Boolean(measure.validPercentOfTotal)
   );
 }
-
 /**
  * Returns a sanitized column name appropriate for use in e.g. filters.
  *
