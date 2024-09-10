@@ -29,7 +29,7 @@
 
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
-  $: ({ selectedScrubRange, selectedTimezone } = $dashboardStore);
+  $: ({ selectedScrubRange } = $dashboardStore);
 
   $: selectedSubRange =
     selectedScrubRange?.start && selectedScrubRange?.end
