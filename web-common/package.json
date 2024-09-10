@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
     "storybook:smoketest": "STORYBOOK_MODE=true storybook dev --smoke-test",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "build-grammer": "nearleyc src/features/filters/expression.ne -o src/features/filters/expression.js"
   },
   "devDependencies": {
     "@bufbuild/protobuf": "^1.0.0",
@@ -71,6 +72,7 @@
     "luxon": "^3.4.3",
     "marked": "^12.0.1",
     "match-sorter": "^6.3.1",
+    "nearley": "^2.20.1",
     "orval": "6.12.0",
     "regular-table": "^0.5.9",
     "storybook": "^7.0.18",
