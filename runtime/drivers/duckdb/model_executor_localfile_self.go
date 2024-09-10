@@ -113,12 +113,12 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 
 	// Build result props
 	resultProps := &ModelResultProperties{
-		Table:                  tableName,
-		View:                   asView,
-		UsedModelName:          usedModelName,
-		LocalFilePathsToHashes: make(map[string]any, len(localPaths)),
+		Table:         tableName,
+		View:          asView,
+		UsedModelName: usedModelName,
 	}
 	if inputProps.InvalidateOnChange {
+		resultProps.LocalFilePathsToHashes = make(map[string]any, len(localPaths))
 		// Need to store file path and its hashe to invalidate on change
 		for _, p := range localPaths {
 			resultProps.LocalFilePathsToHashes[p], err = fileHash(p)
