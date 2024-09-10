@@ -7,11 +7,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	directDeployOption  = "Upload local project"
-	connectGithubOption = "Connect Github for automatic deploys"
-)
-
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	var upload, github bool
@@ -29,14 +24,14 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !upload && !github {
-				sel, err := cmdutil.SelectPrompt("Select deployment type", []string{directDeployOption, connectGithubOption}, directDeployOption)
+				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
 				if err != nil {
 					return err
 				}
-				if sel == directDeployOption {
-					upload = true
-				} else {
+				if confirmed {
 					github = true
+				} else {
+					upload = true
 				}
 			}
 

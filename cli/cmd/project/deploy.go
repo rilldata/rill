@@ -46,11 +46,11 @@ type DeployOpts struct {
 	Slots       int
 }
 
-func UploadCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
-		Use:   "upload",
+		Use:   "deploy",
 		Short: "Deploy project to Rill Cloud by uploading the project files",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return DeployWithUploadFlow(cmd.Context(), ch, opts)
