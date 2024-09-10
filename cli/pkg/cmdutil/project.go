@@ -23,6 +23,9 @@ func RepoForProjectPath(path string) (drivers.RepoStore, string, error) {
 
 func HasRillProject(dir string) bool {
 	repo, _, err := RepoForProjectPath(dir)
+	if err != nil {
+		return false
+	}
 	_, err = repo.Get(context.Background(), "rill.yaml")
 	return err == nil
 }
