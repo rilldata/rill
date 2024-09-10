@@ -4,7 +4,6 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import {
     PivotChipData,
@@ -19,7 +18,6 @@
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
-  import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
@@ -27,7 +25,6 @@
     TimeSeriesDatum,
     useTimeSeriesDataStore,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
@@ -37,13 +34,11 @@
   import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import Spinner from "../../entity-management/Spinner.svelte";
-  import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import ChartInteractions from "./ChartInteractions.svelte";
-  import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
+  import ChartWithTotal from "./ChartWithTotal.svelte";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -92,12 +87,9 @@
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
-  $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
+  $: isScrubbing = Boolean($dashboardStore?.selectedScrubRange?.isScrubbing);
   $: isAllTime =
     $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
-  $: isPercOfTotalAsContextColumn =
-    $dashboardStore?.leaderboardContextColumn ===
-    LeaderboardContextColumn.PERCENT;
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
@@ -278,6 +270,8 @@
       },
     );
   }
+
+  let parentElement: HTMLDivElement;
 </script>
 
 <TimeSeriesChartContainer
@@ -348,113 +342,29 @@
   <!-- bignumbers and line charts -->
   {#if renderedMeasures}
     <div
+      bind:this={parentElement}
       class:pb-4={!isInTimeDimensionView}
       class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
     >
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure (measure.name)}
-        <!-- FIXME: I can't select the big number by the measure id. -->
-        <!-- for bigNum, catch nulls and convert to undefined.  -->
-        {@const bigNum = measure.name ? totals?.[measure.name] : undefined}
-        {@const comparisonValue = measure.name
-          ? totalsComparisons?.[measure.name]
-          : undefined}
-        {@const isValidPercTotal = measure.name
-          ? $isMeasureValidPercentOfTotal(measure.name)
-          : false}
-
-        <div class="flex flex-row gap-x-4">
-          <MeasureBigNumber
-            {measure}
-            value={bigNum}
-            isMeasureExpanded={isInTimeDimensionView}
-            {showComparison}
-            {comparisonValue}
-            errorMessage={$timeSeriesDataStore?.error?.totals}
-            status={hasTotalsError
-              ? EntityStatus.Error
-              : $timeSeriesDataStore?.isFetching
-                ? EntityStatus.Running
-                : EntityStatus.Idle}
-            on:expand-measure={() => {
-              metricsExplorerStore.setExpandedMeasureName(
-                metricViewName,
-                measure.name,
-              );
-            }}
-          />
-
-          {#if hasTimeseriesError}
-            <div
-              class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
-            >
-              {#if $timeSeriesDataStore.error?.timeseries}
-                <span>
-                  Error: {$timeSeriesDataStore.error.timeseries}
-                </span>
-              {:else}
-                <span>Unable to fetch data from the API</span>
-              {/if}
-            </div>
-          {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
-            <TDDAlternateChart
-              timeGrain={interval}
-              chartType={tddChartType}
-              {expandedMeasureName}
-              totalsData={formattedData}
-              {dimensionData}
-              xMin={startValue}
-              xMax={endValue}
-              isTimeComparison={showComparison}
-              on:chart-hover={(e) => {
-                const { dimension, ts } = e.detail;
-                updateChartInteractionStore(
-                  ts,
-                  dimension,
-                  isAllTime,
-                  formattedData,
-                );
-              }}
-            />
-          {:else if formattedData && interval}
-            <MeasureChart
-              bind:mouseoverValue
-              {measure}
-              {isInTimeDimensionView}
-              {isScrubbing}
-              {scrubStart}
-              {scrubEnd}
-              {metricViewName}
-              data={formattedData}
-              {dimensionData}
-              zone={$dashboardStore.selectedTimezone}
-              xAccessor="ts_position"
-              labelAccessor="ts"
-              timeGrain={interval}
-              yAccessor={measure.name}
-              xMin={startValue}
-              xMax={endValue}
-              {showComparison}
-              validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
-                ? bigNum
-                : null}
-              mouseoverTimeFormat={(value) => {
-                /** format the date according to the time grain */
-
-                return interval
-                  ? new Date(value).toLocaleDateString(
-                      undefined,
-                      TIME_GRAIN[interval].formatDate,
-                    )
-                  : value.toString();
-              }}
-            />
-          {:else}
-            <div class="flex items-center justify-center w-24">
-              <Spinner status={EntityStatus.Running} />
-            </div>
-          {/if}
-        </div>
+        <ChartWithTotal
+          {isScrubbing}
+          {scrubStart}
+          {scrubEnd}
+          {startValue}
+          {endValue}
+          {isAllTime}
+          {parentElement}
+          bind:mouseoverValue
+          {expandedMeasureName}
+          isComparison={showComparison}
+          {measure}
+          {metricViewName}
+          isValidPercTotal={measure.name
+            ? $isMeasureValidPercentOfTotal(measure.name)
+            : false}
+        />
       {/each}
     </div>
   {/if}
