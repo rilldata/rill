@@ -76,9 +76,9 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
   return dashboardUrlState.subscribe((state) => {
     const metricViewName = get(ctx.metricsViewName);
-    if (state.urlName !== metricViewName) {
-      return;
-    }
+
+    // Avoid a race condition when switching between metrics views
+    if (state?.urlName?.toLowerCase() !== metricViewName.toLowerCase()) return;
 
     if (!state.isReady || !state.proto) return;
 
