@@ -73,12 +73,12 @@ The type is a Rill required key pair as it indicates to Rill what type of file t
 title: "My Tutorial dashboard"
 
 #table: example_table # OR
-model: commit___model #_ _ _, there are three underbars there!
+model: commits___model #_ _ _, there are three underbars there!
 ```
 The title will be displayed in the metrics-view UI and should be defined as required. <br />
 Depending on your use-case, `table` or `model` will be used to underpin your dashboard.<br />
 
-Let's go ahead and change the title to `My Tutorial dashboard` and comment out the table and add `model: commit___model`.
+Let's go ahead and change the title to `My Tutorial dashboard` and comment out the table and add `model: commits___model`.
 
 
 ---
