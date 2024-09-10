@@ -5,7 +5,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import Banner from "@rilldata/web-common/components/banner/Banner.svelte";
 
   const fileWatcher = new WatchFilesClient().client;
   const resourceWatcher = new WatchResourcesClient().client;
@@ -73,15 +73,14 @@
   />
 {:else}
   {#if $closed}
-    <div class="bg-yellow-100 py-1 w-full">
-      <div class="flex flex-row items-center mx-auto w-fit gap-x-2">
-        <InfoCircle />
-        <span>
-          Connection closed due to inactivity. Interact with the page to
-          reconnect.
-        </span>
-      </div>
-    </div>
+    <Banner
+      banner={{
+        message:
+          "Connection closed due to inactivity. Interact with the page to reconnect.",
+        type: "warning",
+        iconType: "alert",
+      }}
+    />
   {/if}
   <slot />
 {/if}
