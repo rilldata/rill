@@ -16,7 +16,7 @@ import (
 
 // Driver implements drivers.RepoStore.
 func (c *connection) Driver() string {
-	return "file"
+	return c.driverName
 }
 
 // Root implements drivers.RepoStore.

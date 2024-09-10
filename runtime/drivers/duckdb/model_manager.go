@@ -68,6 +68,9 @@ type ModelResultProperties struct {
 	Table         string `mapstructure:"table"`
 	View          bool   `mapstructure:"view"`
 	UsedModelName bool   `mapstructure:"used_model_name"`
+
+	// LocalFilePathsToHashes is only set for `local_file` input connector.
+	LocalFilePathsToHashes map[string]any `mapstructure:"paths_to_hashes"`
 }
 
 func (c *connection) Rename(ctx context.Context, res *drivers.ModelResult, newName string, env *drivers.ModelEnv) (*drivers.ModelResult, error) {
@@ -111,6 +114,22 @@ func (c *connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 	}
 
 	_, err := olap.InformationSchema().Lookup(ctx, "", "", res.Table)
+	if err != nil {
+		return false, nil
+	}
+
+	props := &ModelResultProperties{}
+	err = mapstructure.Decode(res.Properties, props)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse model result properties: %w", err)
+	}
+	for path, hash := range props.LocalFilePathsToHashes {
+		// Check if the file has the same hash
+		newHash, err := fileHash(path)
+		if err != nil || newHash != hash.(string) {
+			return false, nil
+		}
+	}
 	return err == nil, nil
 }
 
