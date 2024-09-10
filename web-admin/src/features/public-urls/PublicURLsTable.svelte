@@ -12,8 +12,6 @@
   import type { V1MagicAuthToken } from "@rilldata/web-common/runtime-client";
 
   export let magicAuthTokens: V1MagicAuthToken[];
-  export let organization: string;
-  export let project: string;
   export let onDelete: (deletedTokenId: string) => void;
 
   const magicAuthTokensStore = writable(magicAuthTokens);
@@ -78,10 +76,7 @@
     table.createViewModel(columns);
 
   function handleClickRow(row: any) {
-    // TODOL: REVISIT AFTER https://github.com/rilldata/rill-private-issues/issues/642
-    // `/${organization}/${project}/magic-link/${token.id}`
-    // http://localhost:3000/dev/rill-github-analytics/-/share/rill_mgc_4nLmVj83NhQ4zACJSww5OHhCGCf1CC97sfpfixe6Jfmu4TjkMMvveE
-    goto(`/${organization}/${project}/${row.original.metricsView}`);
+    goto(`${row.original.url}`);
   }
 </script>
 

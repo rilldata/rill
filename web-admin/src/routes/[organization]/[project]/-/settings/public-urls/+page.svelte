@@ -68,8 +68,6 @@
         {:else}
           <PublicURLsTable
             magicAuthTokens={$magicAuthTokensQuery.data.tokens}
-            {organization}
-            {project}
             onDelete={handleDelete}
           />
         {/if}
