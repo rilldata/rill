@@ -1,11 +1,5 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/canvas-components/render/VegaLiteRenderer.svelte";
-  import VegaRenderer from "@rilldata/web-common/features/charts/render/VegaRenderer.svelte";
-  import {
-    resolveSignalField,
-    resolveSignalTimeField,
-    resolveSignalIntervalField,
-  } from "@rilldata/web-common/features/charts/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
@@ -29,6 +23,12 @@
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import VegaRenderer from "@rilldata/web-common/features/canvas-components/render/VegaRenderer.svelte";
+  import {
+    resolveSignalField,
+    resolveSignalTimeField,
+    resolveSignalIntervalField,
+  } from "@rilldata/web-common/features/canvas-components/render/vega-signals";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -219,7 +219,7 @@
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
-    customDashboard={$customDashboards}
+    canvasDashboard={$customDashboards}
     {isScrubbing}
   />
 {:else}
@@ -231,6 +231,6 @@
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
-    customDashboard={$customDashboards}
+    canvasDashboard={$customDashboards}
   />
 {/if}
