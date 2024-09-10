@@ -67,7 +67,7 @@ export const appScreen = derived(page, ($page) => {
     case "/(application)/custom-dashboard/[name]":
       activeEntity = {
         name: $page?.params?.name,
-        type: MetricsEventScreenName.CustomDashboard,
+        type: MetricsEventScreenName.CanvasDashboard,
       };
       break;
     case "/(application)/welcome":

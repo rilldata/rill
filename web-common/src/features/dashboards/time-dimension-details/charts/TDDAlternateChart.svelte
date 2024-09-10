@@ -1,9 +1,9 @@
 <script lang="ts">
-  import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
+  import VegaLiteRenderer from "@rilldata/web-common/features/canvas-components/render/VegaLiteRenderer.svelte";
   import {
     resolveSignalField,
     resolveSignalTimeField,
-  } from "@rilldata/web-common/features/charts/render/vega-signals";
+  } from "@rilldata/web-common/features/canvas-components/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";

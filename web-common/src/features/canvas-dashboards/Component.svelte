@@ -109,10 +109,10 @@
           </div>
         {/if}
         <Chart
+          {componentName}
           {chartView}
           {input}
           vegaSpec={rendererProperties?.spec}
-          chartName={componentName}
         />
       {:else if renderer && rendererProperties}
         <TemplateRenderer

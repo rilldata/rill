@@ -1,8 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
+  import { getRillTheme } from "@rilldata/web-common/features/canvas-components/render/vega-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { get } from "svelte/store";
   import {
     SignalListeners,
     VegaLite,
@@ -10,6 +9,7 @@
     VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
+  import { get } from "svelte/store";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
@@ -18,7 +18,7 @@
   export let signalListeners: SignalListeners = {};
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
-  export let customDashboard = false;
+  export let canvasDashboard = false;
   export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   // Bind view to parent component
@@ -41,9 +41,9 @@
     renderer: "svg",
     actions: false,
     logLevel: 0, // only show errors
-    width: customDashboard ? width : undefined,
+    width: canvasDashboard ? width : undefined,
     expressionFunctions,
-    height: chartView || !customDashboard ? undefined : height,
+    height: chartView || !canvasDashboard ? undefined : height,
     loader: {
       baseURL: `${get(runtime).host}/v1/instances/${get(runtime).instanceId}/assets/`,
       ...(jwt &&
@@ -64,9 +64,9 @@
 
 <div
   bind:contentRect
-  class:bg-white={customDashboard}
-  class:px-4={customDashboard}
-  class:pb-2={customDashboard}
+  class:bg-white={canvasDashboard}
+  class:px-4={canvasDashboard}
+  class:pb-2={canvasDashboard}
   class="overflow-hidden size-full flex flex-col items-center justify-center"
 >
   {#if error}

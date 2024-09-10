@@ -1,12 +1,12 @@
 <script lang="ts">
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import Search from "@rilldata/web-common/components/search/Search.svelte";
   import {
     ResourceKind,
     useClientFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ChevronDown, Plus } from "lucide-svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { runtime } from "../../runtime-client/runtime-store";
-  import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { getNameFromFile } from "../entity-management/entity-mappers";
   // import { featureFlags } from "../feature-flags";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -14,28 +14,28 @@
 
   // const { ai } = featureFlags;
 
-  export let addChart: (chartName: string) => void;
+  export let addComponent: (componentName: string) => void;
 
   let open = false;
   let value = "";
 
-  // We want to get only valid charts here. Hence using ListResources API
-  $: chartsQuery = useClientFilteredResources(
+  // We want to get only valid components here. Hence using ListResources API
+  $: componentsQuery = useClientFilteredResources(
     $runtime.instanceId,
     ResourceKind.Component,
   );
-  $: chartFileNames =
-    $chartsQuery.data?.map((c) => c.meta?.name?.name ?? "") ?? [];
+  $: componentFileNames =
+    $componentsQuery.data?.map((c) => c.meta?.name?.name ?? "") ?? [];
 
-  async function handleAddChart() {
+  async function handleAddComponent() {
     const newRoute = await handleEntityCreate(ResourceKind.Component);
 
     if (!newRoute) return;
 
-    const chartName = getNameFromFile(newRoute);
+    const componentName = getNameFromFile(newRoute);
 
-    if (chartName) {
-      addChart(chartName);
+    if (componentName) {
+      addComponent(componentName);
     }
   }
 </script>
@@ -59,7 +59,7 @@
           <WandIcon class="w-3 h-3" />
         {/if}
       </DropdownMenu.Item> -->
-      <DropdownMenu.Item on:click={handleAddChart}>
+      <DropdownMenu.Item on:click={handleAddComponent}>
         Create new component
       </DropdownMenu.Item>
     </DropdownMenu.Group>
@@ -74,9 +74,9 @@
       EXISTING COMPONENTS
     </DropdownMenu.Label>
     <DropdownMenu.Group>
-      {#each chartFileNames.filter( (n) => n.startsWith(value), ) as chartName (chartName)}
-        <DropdownMenu.Item on:click={() => addChart(chartName)}>
-          {chartName}
+      {#each componentFileNames.filter( (n) => n.startsWith(value), ) as componentName (componentName)}
+        <DropdownMenu.Item on:click={() => addComponent(componentName)}>
+          {componentName}
         </DropdownMenu.Item>
       {/each}
     </DropdownMenu.Group>
