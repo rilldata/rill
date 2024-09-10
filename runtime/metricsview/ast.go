@@ -434,6 +434,25 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		}, nil
 	}
 
+	if qm.Compute.URI != nil {
+		dim, err := a.lookupDimension(qm.Compute.URI.Dimension, visible)
+		if err != nil {
+			return nil, err
+		}
+
+		uri := dim.Uri
+		if uri == "" {
+			return nil, fmt.Errorf("`uri` not set for the dimension %v", qm.Compute.URI.Dimension)
+		}
+
+		return &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:       qm.Name,
+			Expression: a.sqlForAnyInGroup(uri),
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			Label:      fmt.Sprintf("URI for %s", dim.Label),
+		}, nil
+	}
+
 	return nil, errors.New("unhandled compute operation")
 }
 
