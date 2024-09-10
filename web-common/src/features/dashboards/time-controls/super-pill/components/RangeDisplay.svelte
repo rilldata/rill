@@ -26,7 +26,7 @@
       ({time})
     {/if}
     {#if zoneAbbreviation}
-      — {zoneAbbreviation}
+      —&nbsp;{zoneAbbreviation}
     {/if}
   </span>
 </div>
