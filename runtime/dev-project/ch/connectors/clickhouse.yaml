@@ -1,8 +1,0 @@
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
-type: connector
-
-driver: clickhouse
-host: localhost
-port: 9000
