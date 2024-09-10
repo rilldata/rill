@@ -114,3 +114,6 @@ Currently, a Rill Cloud Trial lasts for 30 days. If you have any comments or con
 ### What is included in the free trial? 
 
 The free trial is locked at 2 projects and up to 10GB of data each. You can invite as many users as required. 
+
+### What is project hibernation mean?
+
