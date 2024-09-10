@@ -11,6 +11,7 @@
   import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -57,7 +58,10 @@
   <div class="flex md:flex-row flex-col gap-6">
     <div class="w-full">
       {#if $magicAuthTokensQuery.isLoading}
-        <Spinner status={EntityStatus.Running} size={"16px"} />
+        <DelayedSpinner
+          isLoading={$magicAuthTokensQuery.isLoading}
+          size="1rem"
+        />
       {:else if $magicAuthTokensQuery.error}
         <div class="text-red-500">
           Error loading resources: {$magicAuthTokensQuery.error?.message}

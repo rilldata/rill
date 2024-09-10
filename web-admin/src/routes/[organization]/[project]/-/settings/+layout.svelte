@@ -23,7 +23,7 @@
   ];
 
   onMount(() => {
-    // NOTE: redirect to the first subpage if the user is on the base page
+    // Redirect to the first subpage if the user is on the base page
     if (basePage && navItems.length === 1 && $page.url.pathname === basePage) {
       goto(`${basePage}${navItems[0].route}`);
     }
@@ -53,6 +53,6 @@
   }
 
   .container {
-    @apply flex flex-row pt-6 gap-x-6;
+    @apply flex flex-row pt-6 gap-x-6 max-w-full;
   }
 </style>
