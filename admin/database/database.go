@@ -165,7 +165,7 @@ type DB interface {
 	DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
-	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
+	FindMagicAuthToken(ctx context.Context, id string, withSecret bool) (*MagicAuthToken, error)
 	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
@@ -602,6 +602,8 @@ type InsertDeploymentAuthTokenOptions struct {
 type MagicAuthToken struct {
 	ID                    string
 	SecretHash            []byte         `db:"secret_hash"`
+	Secret                []byte         `db:"secret"`
+	SecretEncryptionKeyID string         `db:"secret_encryption_key_id"`
 	ProjectID             string         `db:"project_id"`
 	CreatedOn             time.Time      `db:"created_on"`
 	ExpiresOn             *time.Time     `db:"expires_on"`
@@ -624,6 +626,7 @@ type MagicAuthTokenWithUser struct {
 type InsertMagicAuthTokenOptions struct {
 	ID                    string
 	SecretHash            []byte
+	Secret                []byte
 	ProjectID             string `validate:"required"`
 	ExpiresOn             *time.Time
 	CreatedByUserID       *string
