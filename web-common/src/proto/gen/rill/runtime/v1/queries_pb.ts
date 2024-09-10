@@ -1154,9 +1154,9 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     case: "percentOfTotal";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureURI uri = 11;
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeURI uri = 11;
      */
-    value: MetricsViewAggregationMeasureURI;
+    value: MetricsViewAggregationMeasureComputeURI;
     case: "uri";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
@@ -1178,7 +1178,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 8, name: "comparison_delta", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonDelta, oneof: "compute" },
     { no: 9, name: "comparison_ratio", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonRatio, oneof: "compute" },
     { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
-    { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureURI, oneof: "compute" },
+    { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1415,39 +1415,39 @@ export class MetricsViewAggregationMeasureComputePercentOfTotal extends Message<
 }
 
 /**
- * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureURI
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeURI
  */
-export class MetricsViewAggregationMeasureURI extends Message<MetricsViewAggregationMeasureURI> {
+export class MetricsViewAggregationMeasureComputeURI extends Message<MetricsViewAggregationMeasureComputeURI> {
   /**
    * @generated from field: string dimension = 1;
    */
   dimension = "";
 
-  constructor(data?: PartialMessage<MetricsViewAggregationMeasureURI>) {
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeURI>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureURI";
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeURI";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureURI {
-    return new MetricsViewAggregationMeasureURI().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureURI {
-    return new MetricsViewAggregationMeasureURI().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureURI {
-    return new MetricsViewAggregationMeasureURI().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewAggregationMeasureURI | PlainMessage<MetricsViewAggregationMeasureURI> | undefined, b: MetricsViewAggregationMeasureURI | PlainMessage<MetricsViewAggregationMeasureURI> | undefined): boolean {
-    return proto3.util.equals(MetricsViewAggregationMeasureURI, a, b);
+  static equals(a: MetricsViewAggregationMeasureComputeURI | PlainMessage<MetricsViewAggregationMeasureComputeURI> | undefined, b: MetricsViewAggregationMeasureComputeURI | PlainMessage<MetricsViewAggregationMeasureComputeURI> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeURI, a, b);
   }
 }
 

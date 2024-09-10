@@ -4549,23 +4549,24 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewAggregationMeasureComputePercentOfTotalValidationError{}
 
-// Validate checks the field values on MetricsViewAggregationMeasureURI with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *MetricsViewAggregationMeasureURI) Validate() error {
+// Validate checks the field values on MetricsViewAggregationMeasureComputeURI
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *MetricsViewAggregationMeasureComputeURI) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewAggregationMeasureURI with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// MetricsViewAggregationMeasureURIMultiError, or nil if none found.
-func (m *MetricsViewAggregationMeasureURI) ValidateAll() error {
+// ValidateAll checks the field values on
+// MetricsViewAggregationMeasureComputeURI with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// MetricsViewAggregationMeasureComputeURIMultiError, or nil if none found.
+func (m *MetricsViewAggregationMeasureComputeURI) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewAggregationMeasureURI) validate(all bool) error {
+func (m *MetricsViewAggregationMeasureComputeURI) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -4575,20 +4576,20 @@ func (m *MetricsViewAggregationMeasureURI) validate(all bool) error {
 	// no validation rules for Dimension
 
 	if len(errors) > 0 {
-		return MetricsViewAggregationMeasureURIMultiError(errors)
+		return MetricsViewAggregationMeasureComputeURIMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewAggregationMeasureURIMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsViewAggregationMeasureURI.ValidateAll() if the designated
+// MetricsViewAggregationMeasureComputeURIMultiError is an error wrapping
+// multiple validation errors returned by
+// MetricsViewAggregationMeasureComputeURI.ValidateAll() if the designated
 // constraints aren't met.
-type MetricsViewAggregationMeasureURIMultiError []error
+type MetricsViewAggregationMeasureComputeURIMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewAggregationMeasureURIMultiError) Error() string {
+func (m MetricsViewAggregationMeasureComputeURIMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4597,12 +4598,12 @@ func (m MetricsViewAggregationMeasureURIMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewAggregationMeasureURIMultiError) AllErrors() []error { return m }
+func (m MetricsViewAggregationMeasureComputeURIMultiError) AllErrors() []error { return m }
 
-// MetricsViewAggregationMeasureURIValidationError is the validation error
-// returned by MetricsViewAggregationMeasureURI.Validate if the designated
-// constraints aren't met.
-type MetricsViewAggregationMeasureURIValidationError struct {
+// MetricsViewAggregationMeasureComputeURIValidationError is the validation
+// error returned by MetricsViewAggregationMeasureComputeURI.Validate if the
+// designated constraints aren't met.
+type MetricsViewAggregationMeasureComputeURIValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4610,24 +4611,24 @@ type MetricsViewAggregationMeasureURIValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewAggregationMeasureURIValidationError) Field() string { return e.field }
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewAggregationMeasureURIValidationError) Reason() string { return e.reason }
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewAggregationMeasureURIValidationError) Cause() error { return e.cause }
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewAggregationMeasureURIValidationError) Key() bool { return e.key }
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewAggregationMeasureURIValidationError) ErrorName() string {
-	return "MetricsViewAggregationMeasureURIValidationError"
+func (e MetricsViewAggregationMeasureComputeURIValidationError) ErrorName() string {
+	return "MetricsViewAggregationMeasureComputeURIValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewAggregationMeasureURIValidationError) Error() string {
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4639,14 +4640,14 @@ func (e MetricsViewAggregationMeasureURIValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewAggregationMeasureURI.%s: %s%s",
+		"invalid %sMetricsViewAggregationMeasureComputeURI.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewAggregationMeasureURIValidationError{}
+var _ error = MetricsViewAggregationMeasureComputeURIValidationError{}
 
 var _ interface {
 	Field() string
@@ -4654,7 +4655,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewAggregationMeasureURIValidationError{}
+} = MetricsViewAggregationMeasureComputeURIValidationError{}
 
 // Validate checks the field values on MetricsViewAggregationSort with the
 // rules defined in the proto definition for this message. If any rules are

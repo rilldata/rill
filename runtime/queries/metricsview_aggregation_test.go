@@ -186,7 +186,7 @@ func testMetricsViewsAggregationURI(t *testing.T, rt *runtime.Runtime, instanceI
 			{
 				Name: "pub_uri",
 				Compute: &runtimev1.MetricsViewAggregationMeasure_Uri{
-					Uri: &runtimev1.MetricsViewAggregationMeasureURI{
+					Uri: &runtimev1.MetricsViewAggregationMeasureComputeURI{
 						Dimension: "pub",
 					},
 				},

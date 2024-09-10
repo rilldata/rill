@@ -1488,7 +1488,7 @@ export interface V1MetricsViewAggregationRequest {
   exact?: boolean;
 }
 
-export interface V1MetricsViewAggregationMeasureURI {
+export interface V1MetricsViewAggregationMeasureComputeURI {
   dimension?: string;
 }
 
@@ -1527,7 +1527,7 @@ export interface V1MetricsViewAggregationMeasure {
   comparisonDelta?: V1MetricsViewAggregationMeasureComputeComparisonDelta;
   comparisonRatio?: V1MetricsViewAggregationMeasureComputeComparisonRatio;
   percentOfTotal?: V1MetricsViewAggregationMeasureComputePercentOfTotal;
-  uri?: V1MetricsViewAggregationMeasureURI;
+  uri?: V1MetricsViewAggregationMeasureComputeURI;
 }
 
 export interface V1MetricsViewAggregationDimension {

@@ -32,16 +32,11 @@ type Dimension struct {
 
 type DimensionCompute struct {
 	TimeFloor *DimensionComputeTimeFloor `mapstructure:"time_floor"`
-	URI       *DimensionComputeURI       `mapstructure:"uri"`
 }
 
 type DimensionComputeTimeFloor struct {
 	Dimension string    `mapstructure:"dimension"`
 	Grain     TimeGrain `mapstructure:"grain"`
-}
-
-type DimensionComputeURI struct {
-	Dimension string `mapstructure:"dimension"`
 }
 
 type Measure struct {
