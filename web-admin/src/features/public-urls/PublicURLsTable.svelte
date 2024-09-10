@@ -100,7 +100,11 @@
     <Table.Body {...$tableBodyAttrs}>
       {#each $pageRows as row (row.id)}
         <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-          <Table.Row {...rowAttrs} on:click={() => handleClickRow(row)}>
+          <Table.Row
+            {...rowAttrs}
+            on:click={() => handleClickRow(row)}
+            class="cursor-pointer"
+          >
             {#each row.cells as cell (cell.id)}
               <Subscribe attrs={cell.attrs()} let:attrs>
                 <Table.Cell {...attrs}>

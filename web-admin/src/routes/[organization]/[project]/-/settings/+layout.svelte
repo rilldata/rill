@@ -11,23 +11,11 @@
   $: basePage = `/${organization}/${project}/-/settings`;
 
   const navItems = [
-    // TODO: re-add general settings
-    // {
-    //   label: "General",
-    //   route: "",
-    // },
     {
       label: "Public URLs",
       route: "/public-urls",
     },
   ];
-
-  onMount(() => {
-    // Redirect to the first subpage if the user is on the base page
-    if (basePage && navItems.length === 1 && $page.url.pathname === basePage) {
-      goto(`${basePage}${navItems[0].route}`);
-    }
-  });
 </script>
 
 <div class="layout-container">

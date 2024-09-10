@@ -37,12 +37,10 @@
               route: `/${organization}/${project}/-/status`,
               label: "Status",
             },
-            // TODO: should we gate this behind a feature flag?
-            // [ ] General
-            // [ ] Environment variables
-            // [WIP] Public URLs
             {
-              route: `/${organization}/${project}/-/settings`,
+              // TODO: Change this back to `/${organization}/${project}/-/settings`
+              // Once project settings are implemented
+              route: `/${organization}/${project}/-/settings/public-urls`,
               label: "Settings",
             },
           ];
@@ -58,12 +56,24 @@
   );
 
   $: tabs = $tabsQuery.data;
+
+  function isSelected(tabRoute: string, currentPathname: string) {
+    if (tabRoute.endsWith(`/${organization}/${project}`)) {
+      // For the dashboard (root) route, only exact match
+      return currentPathname === tabRoute;
+    }
+
+    const isExactMatch = currentPathname === tabRoute;
+    const isSubpage = currentPathname.startsWith(tabRoute + "/");
+
+    return isExactMatch || isSubpage;
+  }
 </script>
 
 {#if tabs}
   <nav>
     {#each tabs as tab (tab.route)}
-      <a href={tab.route} class:selected={pathname === tab.route}>
+      <a href={tab.route} class:selected={isSelected(tab.route, pathname)}>
         {tab.label}
         {#if tab.label === "Status"}
           <ProjectGlobalStatusIndicator {organization} {project} />
