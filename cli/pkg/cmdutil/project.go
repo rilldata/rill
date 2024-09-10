@@ -1,6 +1,7 @@
 package cmdutil
 
 import (
+	"context"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
@@ -18,4 +19,10 @@ func RepoForProjectPath(path string) (drivers.RepoStore, string, error) {
 	}
 	repo, _ := repoHandle.AsRepoStore(instanceID)
 	return repo, instanceID, nil
+}
+
+func HasRillProject(dir string) bool {
+	repo, _, err := RepoForProjectPath(dir)
+	_, err = repo.Get(context.Background(), "rill.yaml")
+	return err == nil
 }

@@ -20,7 +20,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -99,7 +98,7 @@ func ValidateLocalProject(ctx context.Context, ch *cmdutil.Helper, gitPath, subP
 	}
 
 	// Verify that localProjectPath contains a Rill project.
-	if rillv1.HasRillProject(localProjectPath) {
+	if cmdutil.HasRillProject(localProjectPath) {
 		return localGitPath, localProjectPath, nil
 	}
 	// If not, we still navigate user to login and then fail afterwards.

@@ -40,7 +40,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Verify that the projectPath contains a Rill project
-			if !rillv1.HasRillProject(projectPath) {
+			if !cmdutil.HasRillProject(projectPath) {
 				ch.PrintfWarn("Directory at %q doesn't contain a valid Rill project.\n", projectPath)
 				ch.PrintfWarn("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
 				return nil
