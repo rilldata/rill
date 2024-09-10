@@ -5,9 +5,15 @@
   import ProjectGithubConnection from "@rilldata/web-admin/features/projects/github/ProjectGithubConnection.svelte";
   import ProjectParseErrors from "@rilldata/web-admin/features/projects/status/ProjectParseErrors.svelte";
   import ProjectResources from "@rilldata/web-admin/features/projects/status/ProjectResources.svelte";
+  import { WaitForDeployment } from "@rilldata/web-admin/features/projects/status/WaitForDeployment";
+  import { onMount } from "svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
+  onMount(() => {
+    WaitForDeployment.wait();
+  });
 </script>
 
 <ContentContainer>
