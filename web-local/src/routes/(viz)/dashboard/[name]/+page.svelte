@@ -12,8 +12,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { onNavigate } from "$app/navigation";
 
   const queryClient = useQueryClient();
 
