@@ -14,7 +14,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
   import { Interval } from "luxon";
-  import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
 
   export let metricViewName: string;
   export let showComparison = false;
@@ -40,11 +39,6 @@
   $: subInterval = selectedSubRange
     ? Interval.fromDateTimes(selectedSubRange.start, selectedSubRange.end)
     : null;
-
-  $: zoneAbbreviation = getAbbreviationForIANA(
-    selectedSubRange?.start ?? new Date(),
-    selectedTimezone,
-  );
 
   function onKeyDown(e: KeyboardEvent) {
     const targetTagName = (e.target as HTMLElement).tagName;
@@ -124,11 +118,7 @@
           <Zoom size="16px" />
         </span>
         {#if subInterval?.isValid && timeGrain}
-          <RangeDisplay
-            interval={subInterval}
-            grain={timeGrain}
-            {zoneAbbreviation}
-          />
+          <RangeDisplay interval={subInterval} grain={timeGrain} />
         {/if}
         <span class="font-semibold">(Z)</span>
       </div>
