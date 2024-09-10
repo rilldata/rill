@@ -14,6 +14,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
   import { Interval } from "luxon";
+  import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
 
   export let metricViewName: string;
   export let showComparison = false;
@@ -29,7 +30,7 @@
 
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
-  $: ({ selectedScrubRange } = $dashboardStore);
+  $: ({ selectedScrubRange, selectedTimezone } = $dashboardStore);
 
   $: selectedSubRange =
     selectedScrubRange?.start && selectedScrubRange?.end
@@ -39,6 +40,11 @@
   $: subInterval = selectedSubRange
     ? Interval.fromDateTimes(selectedSubRange.start, selectedSubRange.end)
     : null;
+
+  $: zoneAbbreviation = getAbbreviationForIANA(
+    selectedSubRange?.start ?? new Date(),
+    selectedTimezone,
+  );
 
   function onKeyDown(e: KeyboardEvent) {
     const targetTagName = (e.target as HTMLElement).tagName;
@@ -92,12 +98,12 @@
 
   function zoomScrub() {
     if (
-      $dashboardStore?.selectedScrubRange?.start instanceof Date &&
-      $dashboardStore?.selectedScrubRange?.end instanceof Date
+      selectedScrubRange?.start instanceof Date &&
+      selectedScrubRange?.end instanceof Date
     ) {
       const { start, end } = getOrderedStartEnd(
-        $dashboardStore.selectedScrubRange.start,
-        $dashboardStore.selectedScrubRange.end,
+        selectedScrubRange.start,
+        selectedScrubRange.end,
       );
       metricsExplorerStore.setSelectedTimeRange(metricViewName, {
         name: TimeRangePreset.CUSTOM,
@@ -118,7 +124,11 @@
           <Zoom size="16px" />
         </span>
         {#if subInterval?.isValid && timeGrain}
-          <RangeDisplay interval={subInterval} grain={timeGrain} />
+          <RangeDisplay
+            interval={subInterval}
+            grain={timeGrain}
+            {zoneAbbreviation}
+          />
         {/if}
         <span class="font-semibold">(Z)</span>
       </div>
