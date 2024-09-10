@@ -119,7 +119,7 @@ func (s *Server) ListNotifierConnectors(ctx context.Context, req *runtimev1.List
 
 	// Connectors may be implicitly defined just by adding variables in the format "connector.<name>.<property>".
 	// NOTE: We can remove this if we move to explicitly defined connectors.
-	for k := range inst.ResolveVariables() {
+	for k := range inst.ResolveVariables(true) {
 		if !strings.HasPrefix(k, "connector.") {
 			continue
 		}

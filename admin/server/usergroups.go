@@ -35,11 +35,8 @@ func (s *Server) CreateUsergroup(ctx context.Context, req *adminv1.CreateUsergro
 		Name:  req.Name,
 		OrgID: org.ID,
 	})
-	if errors.Is(err, database.ErrNotUnique) {
-		return nil, status.Error(codes.AlreadyExists, err.Error())
-	}
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.CreateUsergroupResponse{}, nil
@@ -93,11 +90,8 @@ func (s *Server) RenameUsergroup(ctx context.Context, req *adminv1.RenameUsergro
 	}
 
 	_, err = s.admin.DB.UpdateUsergroupName(ctx, req.Name, usergroup.ID)
-	if errors.Is(err, database.ErrNotUnique) {
-		return nil, status.Error(codes.AlreadyExists, err.Error())
-	}
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RenameUsergroupResponse{}, nil
@@ -131,7 +125,7 @@ func (s *Server) EditUsergroup(ctx context.Context, req *adminv1.EditUsergroupRe
 
 	_, err = s.admin.DB.UpdateUsergroupDescription(ctx, req.Description, usergroup.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.EditUsergroupResponse{}, nil
@@ -288,7 +282,7 @@ func (s *Server) AddOrganizationMemberUsergroup(ctx context.Context, req *adminv
 
 	err = s.admin.DB.InsertOrganizationMemberUsergroup(ctx, usergroup.ID, org.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.AddOrganizationMemberUsergroupResponse{}, nil
@@ -327,7 +321,7 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 
 	err = s.admin.DB.UpdateOrganizationMemberUsergroup(ctx, usergroup.ID, org.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetOrganizationMemberUsergroupRoleResponse{}, nil
@@ -396,7 +390,7 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 
 	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.AddProjectMemberUsergroupResponse{}, nil
@@ -432,7 +426,7 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 
 	err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetProjectMemberUsergroupRoleResponse{}, nil
@@ -512,7 +506,7 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 			invite.UsergroupIDs = append(invite.UsergroupIDs, group.ID)
 			err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, invite.ID, invite.UsergroupIDs)
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		}
 
@@ -529,9 +523,6 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 
 	err = s.admin.DB.InsertUsergroupMemberUser(ctx, group.ID, user.ID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.AlreadyExists, err.Error())
-		}
 		return nil, err
 	}
 

@@ -11,14 +11,14 @@ const VegaLiteSpec = `{
   }
 }`;
 
-describe("getChartYaml", () => {
+describe("getComponentYaml", () => {
   it("multi line sql", () => {
     expect(
       getChartYaml(VegaLiteSpec, "sql", {
         sql: `select * from AdBids
 where publisher is not null`,
       }),
-    ).toEqual(`# Chart YAML
+    ).toEqual(`# Component YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/components
 
 type: component
@@ -37,7 +37,7 @@ ${VegaLiteSpec.replace(/^/gm, "  ")}
         sql: `select * from AdBids
 where publisher is not null`,
       }),
-    ).toEqual(`# Chart YAML
+    ).toEqual(`# Component YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/components
 
 type: component

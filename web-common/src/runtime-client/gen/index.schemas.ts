@@ -1834,7 +1834,7 @@ export interface V1ConnectorV2 {
 }
 
 /**
- * properties_from_variables stores properties whose value is a variable.
+ * DEPRECATED: properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties.
  */
 export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
@@ -1844,7 +1844,8 @@ export type V1ConnectorSpecProperties = { [key: string]: string };
 export interface V1ConnectorSpec {
   driver?: string;
   properties?: V1ConnectorSpecProperties;
-  /** properties_from_variables stores properties whose value is a variable.
+  templatedProperties?: string[];
+  /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
 }
@@ -1880,6 +1881,7 @@ export interface V1Connector {
   type?: string;
   name?: string;
   config?: V1ConnectorConfig;
+  templatedProperties?: string[];
   configFromVariables?: V1ConnectorConfigFromVariables;
 }
 

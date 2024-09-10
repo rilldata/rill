@@ -37,7 +37,7 @@
 
 <Dialog on:close={() => (open = false)} {open}>
   <svelte:fragment slot="title">
-    Generate chart yaml for "{table || metricsView}" using AI
+    Generate component yaml for "{table || metricsView}" using AI
   </svelte:fragment>
   <svelte:fragment slot="body">
     <Input bind:value={prompt} label="Prompt" />

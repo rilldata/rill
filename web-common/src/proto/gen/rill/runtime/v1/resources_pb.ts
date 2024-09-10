@@ -4266,7 +4266,12 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   properties: { [key: string]: string } = {};
 
   /**
-   * properties_from_variables stores properties whose value is a variable.
+   * @generated from field: repeated string templated_properties = 4;
+   */
+  templatedProperties: string[] = [];
+
+  /**
+   * DEPRECATED: properties_from_variables stores properties whose value is a variable.
    * NOTE : properties_from_variables and properties both should be used to get all properties.
    *
    * @generated from field: map<string, string> properties_from_variables = 3;
@@ -4283,6 +4288,7 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 3, name: "properties_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 

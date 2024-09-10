@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/azureblob"
 	"gocloud.dev/gcerrors"
@@ -133,7 +134,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		var respErr *azcore.ResponseError
 		if gcerrors.Code(err) == gcerrors.Unknown ||
 			(errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed")) {
-			c.logger.Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
+			c.logger.Debug("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.", zap.Error(err))
 
 			client, err = c.createAnonymousClient(conf)
 			if err != nil {
@@ -145,7 +146,11 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 				return nil, err
 			}
 
-			iter, err = rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
+			anonIt, anonErr := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
+			if anonErr == nil {
+				iter = anonIt
+				err = nil
+			}
 		}
 
 		// If there's still an err, return it
