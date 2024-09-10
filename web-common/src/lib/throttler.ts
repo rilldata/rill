@@ -4,19 +4,22 @@ export class Throttler {
 
   public constructor(
     private readonly timeout: number,
-    private readonly priorityTimeout: number,
+    private readonly shortTimeout: number,
   ) {}
 
-  public throttle(callback: () => void | Promise<void>, prioritize = false) {
+  public throttle(
+    callback: () => void | Promise<void>,
+    useShortTimeout = false,
+  ) {
     this.cancel();
     this.callback = callback;
 
     this.timer = setTimeout(
       () => {
         this.timer = undefined;
-        this.callback();
+        this.callback()?.catch(console.error);
       },
-      prioritize ? this.priorityTimeout : this.timeout,
+      useShortTimeout ? this.shortTimeout : this.timeout,
     );
   }
 
