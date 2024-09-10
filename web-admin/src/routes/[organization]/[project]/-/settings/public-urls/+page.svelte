@@ -1,7 +1,5 @@
 <script lang="ts">
   import PublicURLsTable from "@rilldata/web-admin/features/public-urls/PublicURLsTable.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { page } from "$app/stores";
   import {
     createAdminServiceListMagicAuthTokens,

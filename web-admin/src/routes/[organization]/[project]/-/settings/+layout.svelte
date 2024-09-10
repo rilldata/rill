@@ -1,10 +1,8 @@
 <!-- PROJECT SETTINGS -->
 
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import { onMount } from "svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
