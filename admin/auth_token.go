@@ -190,6 +190,7 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
 		ID:                    tkn.ID.String(),
 		SecretHash:            tkn.SecretHash(),
+		Secret:                tkn.Secret[:],
 		ProjectID:             opts.ProjectID,
 		ExpiresOn:             expiresOn,
 		CreatedByUserID:       opts.CreatedByUserID,
@@ -269,7 +270,7 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 
 		return &deploymentAuthToken{model: dat, token: parsed}, nil
 	case authtoken.TypeMagic:
-		mat, err := s.DB.FindMagicAuthToken(ctx, parsed.ID.String())
+		mat, err := s.DB.FindMagicAuthToken(ctx, parsed.ID.String(), false)
 		if err != nil {
 			return nil, err
 		}

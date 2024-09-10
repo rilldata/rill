@@ -60,6 +60,9 @@
         "comparison_range": {
           "type": "string"
         },
+        "filter": {
+          "type": "string"
+        },
         "measure": {
           "type": "string"
         },
@@ -193,6 +196,9 @@
           "type": "array"
         },
         "comparison_range": {
+          "type": "string"
+        },
+        "filter": {
           "type": "string"
         },
         "measures": {

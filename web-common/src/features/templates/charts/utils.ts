@@ -1,6 +1,6 @@
+import { ChartType } from "@rilldata/web-common/features/canvas-components/types";
 import { ChartProperties } from "@rilldata/web-common/features/templates/types";
 import { VisualizationSpec } from "svelte-vega";
-import { ChartType } from "../../charts/types";
 import { buildVegaLiteSpec } from "./build-template";
 
 export function singleLayerBaseSpec() {

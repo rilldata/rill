@@ -809,6 +809,8 @@ export type V1MagicAuthTokenAttributes = { [key: string]: any };
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
+  url?: string;
+  token?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;

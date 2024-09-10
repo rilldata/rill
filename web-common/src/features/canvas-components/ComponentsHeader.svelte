@@ -3,7 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
-  import GenerateVegaSpecPrompt from "@rilldata/web-common/features/charts/prompt/GenerateVegaSpecPrompt.svelte";
+  import GenerateVegaSpecPrompt from "@rilldata/web-common/features/canvas-components/prompt/GenerateVegaSpecPrompt.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     extractFileName,
@@ -20,7 +20,7 @@
   let fileName: string;
   $: [, fileName] = splitFolderAndName(filePath);
   $: runtimeInstanceId = $runtime.instanceId;
-  $: chartName = extractFileName(filePath);
+  $: componentName = extractFileName(filePath);
 
   async function handleNameChange(
     e: Event & {
@@ -31,7 +31,7 @@
       runtimeInstanceId,
       e.currentTarget,
       filePath,
-      chartName,
+      componentName,
       fileArtifacts.getNamesForKind(ResourceKind.Component),
     );
 
@@ -54,4 +54,8 @@
   </svelte:fragment>
 </WorkspaceHeader>
 
-<GenerateVegaSpecPrompt bind:open={generateOpen} chart={chartName} {filePath} />
+<GenerateVegaSpecPrompt
+  bind:open={generateOpen}
+  chart={componentName}
+  {filePath}
+/>

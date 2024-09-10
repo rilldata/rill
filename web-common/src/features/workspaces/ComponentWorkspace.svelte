@@ -1,9 +1,9 @@
 <script lang="ts">
-  import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
-  import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
-  import ChartDataDisplay from "@rilldata/web-common/features/charts/prompt/ChartDataDisplay.svelte";
-  import ChartStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartStatusDisplay.svelte";
-  import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
+  import ComponentDataDisplay from "@rilldata/web-common/features/canvas-components/ComponentDataDisplay.svelte";
+  import ComponentStatusDisplay from "@rilldata/web-common/features/canvas-components/ComponentStatusDisplay.svelte";
+  import ComponentsHeader from "@rilldata/web-common/features/canvas-components/ComponentsHeader.svelte";
+  import ComponentsEditor from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditor.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas-dashboards/CanvasDashboardEmbed.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -17,7 +17,7 @@
 
   export let fileArtifact: FileArtifact;
 
-  const dashboardName = getContext("rill::custom-dashboard:name") as string;
+  const dashboardName = getContext("rill::canvas-dashboard:name") as string;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -27,11 +27,15 @@
   $: ({ instanceId } = $runtime);
 
   $: ({ hasUnsavedChanges, path: filePath } = fileArtifact);
-  $: chartName = getNameFromFile(filePath);
+  $: componentName = getNameFromFile(filePath);
 
   $: editorWidth = editorPercentage * containerWidth;
 
-  $: resourceQuery = useResource(instanceId, chartName, ResourceKind.Component);
+  $: resourceQuery = useResource(
+    instanceId,
+    componentName,
+    ResourceKind.Component,
+  );
 
   $: ({ data: componentResource, isFetching } = $resourceQuery);
 
@@ -43,7 +47,7 @@
   bind:width={containerWidth}
   bind:height={containerHeight}
 >
-  <ChartsHeader
+  <ComponentsHeader
     slot="header"
     {filePath}
     hasUnsavedChanges={$hasUnsavedChanges}
@@ -61,21 +65,23 @@
         max={0.65 * containerWidth}
         onUpdate={(width) => (editorPercentage = width / containerWidth)}
       />
-      <ChartsEditor {filePath} />
+      <ComponentsEditor {filePath} />
     </div>
     <div class="size-full flex-col flex overflow-hidden">
-      <ChartStatusDisplay {isFetching} {chartName}>
-        <CustomDashboardEmbed
+      <ComponentStatusDisplay {isFetching} {componentName}>
+        <CanvasDashboardEmbed
           {dashboardName}
           chartView
           gap={8}
           columns={10}
-          items={[{ width: 10, height: 10, x: 0, y: 0, component: chartName }]}
+          items={[
+            { width: 10, height: 10, x: 0, y: 0, component: componentName },
+          ]}
         />
-      </ChartStatusDisplay>
+      </ComponentStatusDisplay>
 
-      <ChartDataDisplay
-        {chartName}
+      <ComponentDataDisplay
+        {componentName}
         {tablePercentage}
         {containerHeight}
         {input}

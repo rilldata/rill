@@ -1,5 +1,6 @@
 interface DataProperties {
   metric_view: string;
+  filter?: string;
 }
 
 export interface ChartProperties {

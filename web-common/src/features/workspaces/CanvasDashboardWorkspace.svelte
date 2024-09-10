@@ -4,12 +4,12 @@
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
-  import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
-  import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
-  import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
-  import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
-  import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
-  import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
+  import ComponentsEditor from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditor.svelte";
+  import ComponentsEditorContainer from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditorContainer.svelte";
+  import AddComponentMenu from "@rilldata/web-common/features/canvas-dashboards/AddComponentMenu.svelte";
+  import CanvasDashboardPreview from "@rilldata/web-common/features/canvas-dashboards/CanvasDashboardPreview.svelte";
+  import type { Vector } from "@rilldata/web-common/features/canvas-dashboards/types";
+  import ViewSelector from "@rilldata/web-common/features/canvas-dashboards/ViewSelector.svelte";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
@@ -34,26 +34,26 @@
 
   export let fileArtifact: FileArtifact;
 
-  let customDashboardName: string;
-  let selectedChartFileArtifact: FileArtifact | undefined;
+  let canvasDashboardName: string;
+  let selectedComponentFileArtifact: FileArtifact | undefined;
   let selectedView = "split";
   let showGrid = true;
-  let showChartEditor = false;
+  let showComponentEditor = false;
   let containerWidth: number;
   let containerHeight: number;
   let editorPercentage = 0.5;
   let editor: EditorView;
   let selectedIndex: number | null = null;
-  let chartEditorPercentage = 0.4;
-  let selectedChartName: string | null = null;
+  let componentEditorPercentage = 0.4;
+  let selectedComponentName: string | null = null;
   let spec: V1DashboardSpec = {
     columns: 20,
     gap: 4,
     items: [],
   };
 
-  $: customDashboardName = getNameFromFile(filePath);
-  $: setContext("rill::custom-dashboard:name", customDashboardName);
+  $: canvasDashboardName = getNameFromFile(filePath);
+  $: setContext("rill::canvas-dashboard:name", canvasDashboardName);
 
   $: ({ instanceId } = $runtime);
 
@@ -61,7 +61,7 @@
   $: errors = $errorsQuery;
 
   $: ({
-    saveLocalContent: updateChartFile,
+    saveLocalContent: updateComponentFile,
     autoSave,
     path: filePath,
     fileName,
@@ -79,21 +79,21 @@
   $: if (
     items.filter(
       (item) =>
-        !item.definedInDashboard && item.component === selectedChartName,
+        !item.definedInDashboard && item.component === selectedComponentName,
     ).length
   ) {
-    selectedChartFileArtifact = fileArtifacts.findFileArtifact(
+    selectedComponentFileArtifact = fileArtifacts.findFileArtifact(
       ResourceKind.Component,
-      selectedChartName ?? "",
+      selectedComponentName ?? "",
     );
   } else {
-    selectedChartName = null;
-    selectedChartFileArtifact = undefined;
-    showChartEditor = false;
+    selectedComponentName = null;
+    selectedComponentFileArtifact = undefined;
+    showComponentEditor = false;
   }
-  $: selectedChartFilePath = selectedChartFileArtifact?.path;
+  $: selectedComponentFilePath = selectedComponentFileArtifact?.path;
   $: editorWidth = editorPercentage * containerWidth;
-  $: chartEditorHeight = chartEditorPercentage * containerHeight;
+  $: componentEditorHeight = componentEditorPercentage * containerHeight;
 
   async function onChangeCallback(
     e: Event & {
@@ -129,12 +129,12 @@
 
     updateLocalContent(parsedDocument.toString(), true);
 
-    if ($autoSave) await updateChartFile();
+    if ($autoSave) await updateComponentFile();
   }
 
-  async function addChart(chartName: string) {
-    const newChart = {
-      component: chartName,
+  async function addComponent(componentName: string) {
+    const newComponent = {
+      component: componentName,
       height: 4,
       width: 4,
       x: 0,
@@ -145,14 +145,14 @@
     const items = parsedDocument.get("items") as any;
 
     if (!items) {
-      parsedDocument.set("items", [newChart]);
+      parsedDocument.set("items", [newComponent]);
     } else {
-      items.add(newChart);
+      items.add(newComponent);
     }
 
     updateLocalContent(parsedDocument.toString(), true);
 
-    if ($autoSave) await updateChartFile();
+    if ($autoSave) await updateComponentFile();
   }
 
   async function handleDeleteEvent(
@@ -161,10 +161,10 @@
     }>,
   ) {
     if (!e.detail.index) return;
-    await deleteChart(e.detail.index);
+    await deleteComponent(e.detail.index);
   }
 
-  async function deleteChart(index: number) {
+  async function deleteComponent(index: number) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
     const items = parsedDocument.get("items") as any;
@@ -175,7 +175,7 @@
 
     updateLocalContent(parsedDocument.toString(), true);
 
-    if ($autoSave) await updateChartFile();
+    if ($autoSave) await updateComponentFile();
   }
 </script>
 
@@ -183,7 +183,7 @@
   on:keydown={async (e) => {
     if (e.target !== document.body || selectedIndex === null) return;
     if (e.key === "Delete" || e.key === "Backspace") {
-      await deleteChart(selectedIndex);
+      await deleteComponent(selectedIndex);
     }
   }}
 />
@@ -212,10 +212,10 @@
         </div>
       {/if}
 
-      <AddChartMenu {addChart} />
+      <AddComponentMenu {addComponent} />
 
       <PreviewButton
-        dashboardName={customDashboardName}
+        dashboardName={canvasDashboardName}
         disabled={Boolean(errors.length)}
         type="custom"
       />
@@ -243,7 +243,7 @@
         />
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
-            <ChartsEditorContainer error={errors[0]}>
+            <ComponentsEditorContainer error={errors[0]}>
               <Editor
                 bind:editor
                 {fileArtifact}
@@ -255,46 +255,46 @@
                   spec = structuredClone(spec);
                 }}
               />
-            </ChartsEditorContainer>
+            </ComponentsEditorContainer>
           </section>
 
           <section
-            style:height="{chartEditorPercentage * 100}%"
-            class:!h-12={!showChartEditor}
+            style:height="{componentEditorPercentage * 100}%"
+            class:!h-12={!showComponentEditor}
             class="size-full flex flex-col flex-none bg-white flex-shrink-0 relative border-t !min-h-12"
           >
             <Resizer
               direction="NS"
-              dimension={chartEditorHeight}
+              dimension={componentEditorHeight}
               min={80}
               max={0.85 * containerHeight}
               onUpdate={(height) =>
-                (chartEditorPercentage = height / containerHeight)}
+                (componentEditorPercentage = height / containerHeight)}
             />
             <header
               class="flex justify-between items-center bg-gray-100 px-4 h-12 flex-none"
             >
               <h1 class="font-semibold text-[16px] truncate">
-                {#if selectedChartName}
-                  {selectedChartName}.yaml
+                {#if selectedComponentName}
+                  {selectedComponentName}.yaml
                 {:else}
-                  Select a chart to edit
+                  Select a component to edit
                 {/if}
               </h1>
-              {#if selectedChartName || showChartEditor}
+              {#if selectedComponentName || showComponentEditor}
                 <Button
                   type="text"
-                  on:click={() => (showChartEditor = !showChartEditor)}
+                  on:click={() => (showComponentEditor = !showComponentEditor)}
                 >
-                  {showChartEditor ? "Close" : "Open"}
+                  {showComponentEditor ? "Close" : "Open"}
                 </Button>
               {/if}
             </header>
 
-            {#if showChartEditor}
+            {#if showComponentEditor}
               <div class="size-full overflow-hidden">
-                {#if selectedChartFilePath}
-                  <ChartsEditor filePath={selectedChartFilePath} />
+                {#if selectedComponentFilePath}
+                  <ComponentsEditor filePath={selectedComponentFilePath} />
                 {/if}
               </div>
             {/if}
@@ -304,14 +304,14 @@
     {/if}
 
     {#if selectedView == "viz" || selectedView == "split"}
-      <CustomDashboardPreview
-        {customDashboardName}
+      <CanvasDashboardPreview
+        {canvasDashboardName}
         {gap}
         {items}
         {columns}
         {showGrid}
         {variables}
-        bind:selectedChartName
+        bind:selectedComponentName
         bind:selectedIndex
         on:update={handlePreviewUpdate}
         on:delete={handleDeleteEvent}

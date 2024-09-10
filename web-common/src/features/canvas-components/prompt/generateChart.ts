@@ -2,12 +2,12 @@ import { goto } from "$app/navigation";
 import {
   getChartYaml,
   parseChartYaml,
-} from "@rilldata/web-common/features/charts/chartYaml";
+} from "@rilldata/web-common/features/canvas-components/chartYaml";
 import {
   ChartPromptStatus,
   chartPromptsStore,
-} from "@rilldata/web-common/features/charts/prompt/chartPrompt";
-import { useChart } from "@rilldata/web-common/features/charts/selectors";
+} from "@rilldata/web-common/features/canvas-components/prompt/chartPrompt";
+import { useComponent } from "@rilldata/web-common/features/canvas-components/selectors";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
@@ -25,7 +25,7 @@ export function createChartGenerator(
   filePath: string,
 ) {
   const generateVegaConfig = createRuntimeServiceGenerateRenderer();
-  const chartQuery = useChart(instanceId, chart);
+  const chartQuery = useComponent(instanceId, chart);
   const chartContent = createRuntimeServiceGetFile(instanceId, {
     path: filePath,
   });

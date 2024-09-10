@@ -46,6 +46,7 @@ export interface PivotState {
   enableComparison: boolean;
   rowJoinType: PivotRowJoinType;
   activeCell: PivotCell | null;
+  whereSql?: string;
 }
 
 export type PivotRowJoinType = "flat" | "nest";
