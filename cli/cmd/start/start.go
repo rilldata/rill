@@ -198,7 +198,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
 	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
 	startCmd.Flags().StringSliceVarP(&vars, "var", "v", []string{}, "Set project variables")
-	startCmd.Flags().StringSliceVarP(&allowedOrigins, "allowed-origins", "", []string{}, "add additional allowed-origins")
+	startCmd.Flags().StringSliceVarP(&allowedOrigins, "allowed-origins", "", []string{}, "Override allowed origins for CORS")
 
 	// We have deprecated the ability configure the OLAP database via the CLI. This should now be done via rill.yaml.
 	// Keeping these for backwards compatibility for a while.

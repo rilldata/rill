@@ -39,6 +39,7 @@ import {
 import {
   canEnablePivotComparison,
   getFilterForPivotTable,
+  getFiltersForCell,
   getPivotConfigKey,
   getSortFilteredMeasureBody,
   getSortForAccessor,
@@ -51,6 +52,7 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
+  PivotFilter,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
@@ -602,6 +604,19 @@ export function createPivotDataStore(
                       expandedTableMap = {};
                       expandedTableMap[key] = tableDataExpanded;
                     }
+
+                    const activeCell = config.pivot.activeCell;
+                    let activeCellFilters: PivotFilter | undefined = undefined;
+                    if (activeCell) {
+                      activeCellFilters = getFiltersForCell(
+                        config,
+                        activeCell.rowId,
+                        activeCell.columnId,
+                        columnDimensionAxes?.data,
+                        tableDataExpanded,
+                      );
+                    }
+
                     lastPivotData = tableDataExpanded;
                     lastPivotColumnDef = columnDef;
                     lastTotalColumns = totalColumns;
@@ -613,6 +628,7 @@ export function createPivotDataStore(
                       data: tableDataExpanded,
                       columnDef,
                       assembled: true,
+                      activeCellFilters,
                       totalColumns,
                       reachedEndForRowData,
                       totalsRowData: displayTotalsRow

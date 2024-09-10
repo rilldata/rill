@@ -2,9 +2,14 @@ package postgres
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -25,7 +30,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string) (database.DB, error) {
+func (d driver) Open(dsn string, encKeyring []*database.EncryptionKey) (database.DB, error) {
 	db, err := otelsql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
@@ -37,11 +42,12 @@ func (d driver) Open(dsn string) (database.DB, error) {
 	}
 
 	dbx := sqlx.NewDb(db, "pgx")
-	return &connection{db: dbx}, nil
+	return &connection{db: dbx, encKeyring: encKeyring}, nil
 }
 
 type connection struct {
-	db *sqlx.DB
+	db         *sqlx.DB
+	encKeyring []*database.EncryptionKey
 }
 
 func (c *connection) Close() error {
@@ -96,6 +102,15 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	return res, nil
 }
 
+func (c *connection) FindOrganizationByCustomDomain(ctx context.Context, domain string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE lower(custom_domain)=lower($1)", domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
@@ -122,9 +137,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -142,7 +157,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, payment_customer_id=$10, billing_email=$11, updated_on=now() WHERE id=$12 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, display_name=$2, description=$3, custom_domain=$4, quota_projects=$5, quota_deployments=$6, quota_slots_total=$7, quota_slots_per_deployment=$8, quota_outstanding_invites=$9, quota_storage_limit_bytes_per_deployment=$10, billing_customer_id=$11, payment_customer_id=$12, billing_email=$13, updated_on=now() WHERE id=$14 RETURNING *", opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -209,7 +224,7 @@ func (c *connection) FindProjects(ctx context.Context, afterName string, limit i
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*database.Project, error) {
@@ -218,7 +233,7 @@ func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterNa
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
@@ -265,7 +280,7 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -278,7 +293,7 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -294,7 +309,7 @@ func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userI
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
@@ -307,7 +322,7 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
@@ -316,7 +331,7 @@ func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL stri
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
@@ -325,7 +340,7 @@ func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id 
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return projectsFromDTOs(res)
+	return c.projectsFromDTOs(res)
 }
 
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {
@@ -334,7 +349,7 @@ func (c *connection) FindProject(ctx context.Context, id string) (*database.Proj
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return c.projectFromDTO(res)
 }
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
@@ -343,7 +358,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return c.projectFromDTO(res)
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -351,16 +366,21 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		return nil, err
 	}
 
+	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &projectDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version, prod_variables_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, vars, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion, encKeyID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return c.projectFromDTO(res)
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
@@ -376,16 +396,21 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.Annotations = make(map[string]string, 0)
 	}
 
+	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &projectDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, updated_on=now()
-		WHERE id=$16 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, prod_variables_encryption_key_id=$16, updated_on=now()
+		WHERE id=$17 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, vars, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, encKeyID, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsModel()
+	return c.projectFromDTO(res)
 }
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -1082,7 +1107,7 @@ func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID 
 	res := make([]*database.MagicAuthTokenWithUser, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsModel()
+		res[i], err = c.magicAuthTokenWithUserFromDTO(dto)
 		if err != nil {
 			return nil, err
 		}
@@ -1090,13 +1115,13 @@ func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID 
 	return res, nil
 }
 
-func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*database.MagicAuthToken, error) {
+func (c *connection) FindMagicAuthToken(ctx context.Context, id string, withSecret bool) (*database.MagicAuthToken, error) {
 	res := &magicAuthTokenDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM magic_auth_tokens t WHERE t.id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenFromDTO(res, withSecret)
 }
 
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
@@ -1105,7 +1130,7 @@ func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) 
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenWithUserFromDTO(res)
 }
 
 func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
@@ -1117,16 +1142,21 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		opts.MetricsViewFields = []string{}
 	}
 
+	encSecret, encKeyID, err := c.encrypt(opts.Secret)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &magicAuthTokenDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenFromDTO(res, true)
 }
 
 func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -1906,30 +1936,120 @@ type projectDTO struct {
 	Annotations   pgtype.JSON `db:"annotations"`
 }
 
-func (p *projectDTO) AsModel() (*database.Project, error) {
-	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
+func (c *connection) projectFromDTO(dto *projectDTO) (*database.Project, error) {
+	err := dto.ProdVariables.AssignTo(&dto.Project.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+	m, err := c.decryptMap(dto.Project.ProdVariables, dto.Project.ProdVariablesEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+	dto.Project.ProdVariables = m
+
+	err = dto.Annotations.AssignTo(&dto.Project.Annotations)
 	if err != nil {
 		return nil, err
 	}
 
-	err = p.Annotations.AssignTo(&p.Project.Annotations)
-	if err != nil {
-		return nil, err
-	}
-
-	return p.Project, nil
+	return dto.Project, nil
 }
 
-func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
+func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
 	res := make([]*database.Project, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsModel()
+		res[i], err = c.projectFromDTO(dto)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return res, nil
+}
+
+// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
+func (c *connection) encrypt(text []byte) ([]byte, string, error) {
+	if len(c.encKeyring) == 0 {
+		return text, "", nil
+	}
+	// use the first key in the keyring for encryption
+	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+	if err != nil {
+		return nil, "", err
+	}
+	return encrypted, c.encKeyring[0].ID, nil
+}
+
+// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
+func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
+	if encKeyID == "" {
+		return text, nil
+	}
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+	return decrypt(text, encKey.Secret)
+}
+
+// returns the map with encrypted values and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the values are returned as is.
+func (c *connection) encryptMap(m map[string]string) (map[string]string, string, error) {
+	if len(c.encKeyring) == 0 {
+		return m, "", nil
+	}
+
+	encKeyID := ""
+	// copy the map to avoid modifying the original map
+	vars := make(map[string]string, len(m))
+	for k, v := range m {
+		// use the first key in the keyring for encryption
+		encKeyID = c.encKeyring[0].ID
+		encrypted, err := encrypt([]byte(v), c.encKeyring[0].Secret)
+		if err != nil {
+			return nil, "", err
+		}
+		vars[k] = base64.StdEncoding.EncodeToString(encrypted)
+	}
+	return vars, encKeyID, nil
+}
+
+// returns the map with decrypted values and the encryption key id used
+func (c *connection) decryptMap(m map[string]string, encKeyID string) (map[string]string, error) {
+	if encKeyID == "" {
+		return m, nil
+	}
+
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+
+	// copy the map to avoid modifying the original map
+	vars := make(map[string]string, len(m))
+	for k, v := range m {
+		decoded, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return nil, err
+		}
+		decrypted, err := decrypt(decoded, encKey.Secret)
+		if err != nil {
+			return nil, err
+		}
+		vars[k] = string(decrypted)
+	}
+	return vars, nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
@@ -1939,17 +2059,27 @@ type magicAuthTokenDTO struct {
 	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
 }
 
-func (m *magicAuthTokenDTO) AsModel() (*database.MagicAuthToken, error) {
-	err := m.Attributes.AssignTo(&m.MagicAuthToken.Attributes)
+func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
+	err := dto.Attributes.AssignTo(&dto.MagicAuthToken.Attributes)
 	if err != nil {
 		return nil, err
 	}
-	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.MagicAuthToken, nil
+	if fetchSecret {
+		dto.MagicAuthToken.Secret, err = c.decrypt(dto.MagicAuthToken.Secret, dto.MagicAuthToken.SecretEncryptionKeyID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dto.MagicAuthToken.Secret = nil
+		dto.MagicAuthToken.SecretEncryptionKeyID = ""
+	}
+
+	return dto.MagicAuthToken, nil
 }
 
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
@@ -1959,17 +2089,22 @@ type magicAuthTokenWithUserDTO struct {
 	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
 }
 
-func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser, error) {
-	err := m.Attributes.AssignTo(&m.MagicAuthTokenWithUser.Attributes)
+func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
+	err := dto.Attributes.AssignTo(&dto.MagicAuthTokenWithUser.Attributes)
 	if err != nil {
 		return nil, err
 	}
-	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.MagicAuthTokenWithUser, nil
+	dto.MagicAuthTokenWithUser.Secret, err = c.decrypt(dto.MagicAuthTokenWithUser.Secret, dto.MagicAuthTokenWithUser.SecretEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.MagicAuthTokenWithUser, nil
 }
 
 type organizationInviteDTO struct {
@@ -2030,11 +2165,7 @@ func parseErr(target string, err error) error {
 		if target == "" {
 			return database.ErrNotFound
 		}
-		return &wrappedError{
-			msg: fmt.Sprintf("%s not found", target),
-			// wrap database.ErrNotFound so checks with errors.Is(...) still work
-			err: database.ErrNotFound,
-		}
+		return database.NewNotFoundError(fmt.Sprintf("%s not found", target))
 	}
 	var pgerr *pgconn.PgError
 	if !errors.As(err, &pgerr) {
@@ -2043,57 +2174,86 @@ func parseErr(target string, err error) error {
 	if pgerr.Code == "23505" { // unique_violation
 		switch pgerr.ConstraintName {
 		case "orgs_name_idx":
-			return newAlreadyExistsErr("an org with that name already exists")
+			return database.NewNotUniqueError("an org with that name already exists")
 		case "projects_name_idx":
-			return newAlreadyExistsErr("a project with that name already exists in the org")
+			return database.NewNotUniqueError("a project with that name already exists in the org")
 		case "users_email_idx":
-			return newAlreadyExistsErr("a user with that email already exists")
+			return database.NewNotUniqueError("a user with that email already exists")
 		case "usergroups_name_idx":
-			return newAlreadyExistsErr("a usergroup with that name already exists in the org")
+			return database.NewNotUniqueError("a usergroup with that name already exists in the org")
 		case "usergroups_users_pkey":
-			return newAlreadyExistsErr("user is already a member of the usergroup")
+			return database.NewNotUniqueError("user is already a member of the usergroup")
 		case "users_orgs_roles_pkey":
-			return newAlreadyExistsErr("user is already a member of the org")
+			return database.NewNotUniqueError("user is already a member of the org")
 		case "users_projects_roles_pkey":
-			return newAlreadyExistsErr("user is already a member of the project")
+			return database.NewNotUniqueError("user is already a member of the project")
 		case "usergroups_orgs_roles_pkey":
-			return newAlreadyExistsErr("usergroup is already a member of the org")
+			return database.NewNotUniqueError("usergroup is already a member of the org")
 		case "usergroups_projects_roles_pkey":
-			return newAlreadyExistsErr("usergroup is already a member of the project")
+			return database.NewNotUniqueError("usergroup is already a member of the project")
 		case "org_invites_email_org_idx":
-			return newAlreadyExistsErr("email has already been invited to the org")
+			return database.NewNotUniqueError("email has already been invited to the org")
 		case "project_invites_email_project_idx":
-			return newAlreadyExistsErr("email has already been invited to the project")
+			return database.NewNotUniqueError("email has already been invited to the project")
 		case "orgs_autoinvite_domains_org_id_domain_idx":
-			return newAlreadyExistsErr("domain has already been added for the org")
+			return database.NewNotUniqueError("domain has already been added for the org")
 		case "service_name_idx":
-			return newAlreadyExistsErr("a service with that name already exists in the org")
+			return database.NewNotUniqueError("a service with that name already exists in the org")
 		case "virtual_files_pkey":
-			return newAlreadyExistsErr("a virtual file already exists at that path")
+			return database.NewNotUniqueError("a virtual file already exists at that path")
 		default:
 			if target == "" {
 				return database.ErrNotUnique
 			}
-			return newAlreadyExistsErr(fmt.Sprintf("%s already exists", target))
+			return database.NewNotUniqueError(fmt.Sprintf("%s already exists", target))
 		}
 	}
 	return err
 }
 
-func newAlreadyExistsErr(msg string) error {
-	// wrap database.ErrNotUnique so checks with errors.Is(...) still work
-	return &wrappedError{msg: msg, err: database.ErrNotUnique}
+// encrypts plaintext using AES-GCM with the given key and returns the base64 encoded ciphertext
+func encrypt(plaintext, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	// nonce is prepended to the ciphertext, so it can be used for decryption
+	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
+	return ciphertext, nil
 }
 
-type wrappedError struct {
-	msg string
-	err error
-}
+// decrypts the ciphertext using AES-GCM with the given key and returns the plaintext
+func decrypt(ciphertext, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
 
-func (e *wrappedError) Error() string {
-	return e.msg
-}
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
 
-func (e *wrappedError) Unwrap() error {
-	return e.err
+	nonceSize := aesGCM.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return nil, errors.New("ciphertext too short")
+	}
+
+	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+	d, err := aesGCM.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
 }

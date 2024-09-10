@@ -115,7 +115,7 @@ type RuntimeServiceClient interface {
 	GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error)
 	// GetModelSplits returns the splits of a model
 	GetModelSplits(ctx context.Context, in *GetModelSplitsRequest, opts ...grpc.CallOption) (*GetModelSplitsResponse, error)
-	// CreateTrigger creates a trigger in the catalog.
+	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
 	// ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
@@ -547,7 +547,7 @@ type RuntimeServiceServer interface {
 	GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error)
 	// GetModelSplits returns the splits of a model
 	GetModelSplits(context.Context, *GetModelSplitsRequest) (*GetModelSplitsResponse, error)
-	// CreateTrigger creates a trigger in the catalog.
+	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
 	// ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,

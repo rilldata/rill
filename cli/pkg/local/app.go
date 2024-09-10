@@ -400,7 +400,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 
 	// Open the browser when health check succeeds
-	go a.pollServer(ctx, httpPort, enableUI && openBrowser, secure)
+	go a.PollServer(ctx, httpPort, enableUI && openBrowser, secure)
 
 	// Run the server
 	err = group.Wait()
@@ -411,7 +411,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	return nil
 }
 
-func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy, secure bool) {
+func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secure bool) {
 	client := &http.Client{Timeout: time.Second}
 
 	scheme := "http"

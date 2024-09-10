@@ -13,8 +13,9 @@ rill org edit [<org-name>] [flags]
 ### Flags
 
 ```
-      --org string           Organization name
-      --description string   Description
+      --org string             Organization name
+      --description string     Description
+      --billing-email string   Billing email
 ```
 
 ### Global flags

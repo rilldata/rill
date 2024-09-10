@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
-  import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/connectors/olap/selectors";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -20,7 +19,11 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import VisualMetrics from "./VisualMetrics.svelte";
-  import ViewSelector from "../custom-dashboards/ViewSelector.svelte";
+  import ViewSelector from "../canvas-dashboards/ViewSelector.svelte";
+  import {
+    useIsModelingSupportedForDefaultOlapDriver,
+    useIsModelingSupportedForOlapDriver,
+  } from "../connectors/olap/selectors";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -41,14 +44,28 @@
   $: metricsViewName = getNameFromFile(filePath);
 
   $: initLocalUserPreferenceStore(metricsViewName);
-  $: isModelingSupportedQuery = canModel(instanceId);
-  $: isModelingSupported = $isModelingSupportedQuery;
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: ({ data: resourceData, isFetching } = $resourceQuery);
   $: isResourceLoading = resourceIsLoading(resourceData);
+
+  $: connector = resourceData?.metricsView?.state?.validSpec?.connector ?? "";
+  $: database = resourceData?.metricsView?.state?.validSpec?.database ?? "";
+  $: databaseSchema =
+    resourceData?.metricsView?.state?.validSpec?.databaseSchema ?? "";
+  $: table = resourceData?.metricsView?.state?.validSpec?.table ?? "";
+
+  $: isModelingSupportedForDefaultOlapDriver =
+    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
+    instanceId,
+    connector,
+  );
+  $: isModelingSupported = connector
+    ? $isModelingSupportedForOlapDriver
+    : $isModelingSupportedForDefaultOlapDriver;
 
   $: previewDisabled =
     !$remoteContent?.length ||
@@ -126,5 +143,12 @@
     {/if}
   </svelte:fragment>
 
-  <MetricsInspector {filePath} slot="inspector" />
+  <MetricsInspector
+    {filePath}
+    {connector}
+    {database}
+    {databaseSchema}
+    {table}
+    slot="inspector"
+  />
 </WorkspaceContainer>

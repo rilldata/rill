@@ -1,22 +1,25 @@
-import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
+  isAlertPage,
   isMetricsExplorerPage,
   isProjectPage,
   isProjectRequestAccessPage,
   isPublicURLPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
-import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
+import {
+  isGetResourceMetricsViewQuery,
+  isRuntimeQuery,
+} from "@rilldata/web-common/runtime-client/query-matcher";
 import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
 import type { RpcStatus } from "../../client";
 import { getAdminServiceGetProjectQueryKey } from "../../client";
-import { ADMIN_URL } from "../../client/http-client";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
@@ -52,9 +55,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      await goto(
-        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-      );
+      redirectToLogin();
       return;
     }
 
@@ -113,6 +114,18 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       // When a JWT doesn't permit access to a metrics view, the metrics view APIs return 401s.
       // In this scenario, `GetCatalog` returns a 404. We ignore the 401s so we can show the 404.
       if (error.response?.status === 401) {
+        return;
+      }
+    }
+
+    // Special handling for some errors on the Alerts page
+    const onAlertPage = isAlertPage(get(page));
+    if (onAlertPage) {
+      // Don't block on a Metrics View 404
+      if (
+        isGetResourceMetricsViewQuery(query) &&
+        error.response?.status === 404
+      ) {
         return;
       }
     }

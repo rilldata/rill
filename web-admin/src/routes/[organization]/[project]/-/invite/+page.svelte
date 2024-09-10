@@ -12,8 +12,8 @@
   } from "@rilldata/web-admin/features/projects/user-invite/selectors";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { AxiosError } from "axios";
 
@@ -39,7 +39,7 @@
         eventBus.emit("notification", {
           type: "error",
           message:
-            (e as AxiosError<RpcStatus>).response.data.message ?? e.message,
+            (e as AxiosError<RpcStatus>).response.data?.message ?? e.message,
           options: {
             persisted: true,
           },
@@ -62,7 +62,7 @@
     </div>
     <UserInviteForm {organization} {project} />
   </div>
-  {#if $userDomain.data && $isPublicDomain.data}
+  {#if $userDomain.data && !$isPublicDomain.data}
     <div class="flex flex-col gap-y-1">
       <div class="text-sm font-medium">Allow domain access</div>
       <div class="flex flex-row gap-x-2">
@@ -92,6 +92,6 @@
     wide
     class="mx-auto"
   >
-    Continue
+    Skip
   </Button>
 </div>

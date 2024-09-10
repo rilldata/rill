@@ -14,7 +14,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	removeCmd := &cobra.Command{
 		Use:   "remove",
-		Short: "Remove",
+		Short: "Remove a user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := cmdutil.StringPromptIfEmpty(&email, "Enter email")
 			if err != nil {

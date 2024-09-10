@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
+	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -116,6 +117,14 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			}
 		}
 	case string:
+		if t != nil && t.Code == runtimev1.Type_CODE_DECIMAL {
+			// Evil cast to float until frontend can deal with bigs:
+			v2, ok := new(big.Float).SetString(v)
+			if ok {
+				f, _ := v2.Float64()
+				return structpb.NewNumberValue(f), nil
+			}
+		}
 		return structpb.NewStringValue(strings.ToValidUTF8(v, "�")), nil
 	case net.IP:
 		return structpb.NewStringValue(v.String()), nil
@@ -167,6 +176,12 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(*v), nil
 	case *net.IP:
 		return structpb.NewStringValue(v.String()), nil
+	case orb.Point:
+		st, err := structpb.NewList([]any{v[0], v[1]})
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewListValue(st), nil
 	default:
 	}
 	if t != nil && t.ArrayElementType != nil {

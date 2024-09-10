@@ -17,7 +17,7 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
-	db, err := database.Open("postgres", pg.DatabaseURL)
+	db, err := database.Open("postgres", pg.DatabaseURL, "")
 	require.NoError(t, err)
 	require.NotNil(t, db)
 	defer db.Close()

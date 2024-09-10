@@ -1,0 +1,1 @@
+select timestamp, bid_price from {{ ref "ad_bids_source" }} where bid_price > 4

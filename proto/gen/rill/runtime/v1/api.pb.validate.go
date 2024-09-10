@@ -7775,25 +7775,15 @@ func (m *CreateTriggerRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	switch v := m.Trigger.(type) {
-	case *CreateTriggerRequest_PullTriggerSpec:
-		if v == nil {
-			err := CreateTriggerRequestValidationError{
-				field:  "Trigger",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
 
 		if all {
-			switch v := interface{}(m.GetPullTriggerSpec()).(type) {
+			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, CreateTriggerRequestValidationError{
-						field:  "PullTriggerSpec",
+						field:  fmt.Sprintf("Resources[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -7801,66 +7791,63 @@ func (m *CreateTriggerRequest) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, CreateTriggerRequestValidationError{
-						field:  "PullTriggerSpec",
+						field:  fmt.Sprintf("Resources[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			}
-		} else if v, ok := interface{}(m.GetPullTriggerSpec()).(interface{ Validate() error }); ok {
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return CreateTriggerRequestValidationError{
-					field:  "PullTriggerSpec",
+					field:  fmt.Sprintf("Resources[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
 			}
 		}
 
-	case *CreateTriggerRequest_RefreshTriggerSpec:
-		if v == nil {
-			err := CreateTriggerRequestValidationError{
-				field:  "Trigger",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetRefreshTriggerSpec()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, CreateTriggerRequestValidationError{
-						field:  "RefreshTriggerSpec",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, CreateTriggerRequestValidationError{
-						field:  "RefreshTriggerSpec",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetRefreshTriggerSpec()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return CreateTriggerRequestValidationError{
-					field:  "RefreshTriggerSpec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
 	}
+
+	for idx, item := range m.GetModels() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CreateTriggerRequestValidationError{
+						field:  fmt.Sprintf("Models[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CreateTriggerRequestValidationError{
+						field:  fmt.Sprintf("Models[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CreateTriggerRequestValidationError{
+					field:  fmt.Sprintf("Models[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Parser
+
+	// no validation rules for AllSourcesModels
+
+	// no validation rules for AllSourcesModelsFull
 
 	if len(errors) > 0 {
 		return CreateTriggerRequestMultiError(errors)

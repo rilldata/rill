@@ -30,6 +30,7 @@
 
   $: colDimensions = tableProperties.col_dimensions || [];
   $: rowDimensions = tableProperties.row_dimensions || [];
+  $: whereSql = tableProperties.filter;
 
   $: pivotState = writable<PivotState>({
     active: true,
@@ -52,12 +53,14 @@
         type: PivotChipType.Dimension,
       })),
     },
+    whereSql,
     expanded: {},
     sorting: [],
     columnPage: 1,
     rowPage: 1,
     enableComparison: false,
     rowJoinType: "nest",
+    activeCell: null,
   });
 
   let pivotDataStore: PivotDataStore | undefined = undefined;
@@ -74,7 +77,7 @@
   }
 </script>
 
-<div>
+<div class="overflow-y-scroll">
   {#if !isValidSchema}
     <div>{$tableSchema.error}</div>
   {:else if pivotDataStore && pivotConfig && $pivotConfig}

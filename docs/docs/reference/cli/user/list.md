@@ -4,7 +4,7 @@ title: rill user list
 ---
 ## rill user list
 
-List
+List users
 
 ```
 rill user list [flags]

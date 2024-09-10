@@ -43,12 +43,12 @@ import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
  * following the path defined by the key (split into indices) and extracts
  * the dimension values at each level.
  */
-function getValuesForExpandedKey(
+export function getValuesForExpandedKey(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   key: string,
   hasTotalsRow = true,
-) {
+): string[] {
   const indices = key.split(".").map((index) => parseInt(index, 10));
 
   if (hasTotalsRow) {

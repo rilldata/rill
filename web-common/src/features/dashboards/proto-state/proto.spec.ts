@@ -10,7 +10,7 @@ import {
   AD_BIDS_SCHEMA,
   AD_BIDS_WITH_BOOL_DIMENSION,
   TestTimeConstants,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
 import {
   createAndExpression,
   createInExpression,

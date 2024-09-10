@@ -51,7 +51,7 @@
 <DropdownMenu.Root bind:open={active}>
   <DropdownMenu.Trigger asChild let:builder>
     <button
-      class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
+      class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700 pointer-events-auto"
       aria-label="Export pivot"
       {...getAttrs([builder])}
       on:click|preventDefault

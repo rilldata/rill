@@ -310,7 +310,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdVersion:      "",
 			ProdOlapDriver:   "duckdb",
 			ProdOlapDsn:      "",
-			ProdSlots:        2,
+			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
 			ArchiveAssetId:   assetID,
 		}
@@ -359,7 +359,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdVersion:      "",
 			ProdOlapDriver:   "duckdb",
 			ProdOlapDsn:      "",
-			ProdSlots:        2,
+			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
 			GithubUrl:        ghURL,
 			Subpath:          "",

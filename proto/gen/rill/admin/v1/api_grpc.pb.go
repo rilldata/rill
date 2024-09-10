@@ -22,6 +22,7 @@ const (
 	AdminService_Ping_FullMethodName                                  = "/rill.admin.v1.AdminService/Ping"
 	AdminService_ListOrganizations_FullMethodName                     = "/rill.admin.v1.AdminService/ListOrganizations"
 	AdminService_GetOrganization_FullMethodName                       = "/rill.admin.v1.AdminService/GetOrganization"
+	AdminService_GetOrganizationNameForDomain_FullMethodName          = "/rill.admin.v1.AdminService/GetOrganizationNameForDomain"
 	AdminService_CreateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/CreateOrganization"
 	AdminService_DeleteOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/DeleteOrganization"
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
@@ -35,6 +36,7 @@ const (
 	AdminService_UpdateProject_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateProject"
 	AdminService_UpdateProjectVariables_FullMethodName                = "/rill.admin.v1.AdminService/UpdateProjectVariables"
 	AdminService_CreateAsset_FullMethodName                           = "/rill.admin.v1.AdminService/CreateAsset"
+	AdminService_RedeployProject_FullMethodName                       = "/rill.admin.v1.AdminService/RedeployProject"
 	AdminService_HibernateProject_FullMethodName                      = "/rill.admin.v1.AdminService/HibernateProject"
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
@@ -89,6 +91,7 @@ const (
 	AdminService_SudoUpdateUserQuotas_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName          = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
+	AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName    = "/rill.admin.v1.AdminService/SudoUpdateOrganizationCustomDomain"
 	AdminService_SudoUpdateAnnotations_FullMethodName                 = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_SudoIssueRuntimeManagerToken_FullMethodName          = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
@@ -147,6 +150,10 @@ type AdminServiceClient interface {
 	ListOrganizations(ctx context.Context, in *ListOrganizationsRequest, opts ...grpc.CallOption) (*ListOrganizationsResponse, error)
 	// GetOrganization returns information about a specific organization
 	GetOrganization(ctx context.Context, in *GetOrganizationRequest, opts ...grpc.CallOption) (*GetOrganizationResponse, error)
+	// GetOrganizationNameForDomain finds the org name for a custom domain.
+	// If the application detects it is running on a non-default domain, it can use this to find the org to present.
+	// It can be called without being authenticated.
+	GetOrganizationNameForDomain(ctx context.Context, in *GetOrganizationNameForDomainRequest, opts ...grpc.CallOption) (*GetOrganizationNameForDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(ctx context.Context, in *CreateOrganizationRequest, opts ...grpc.CallOption) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organizations
@@ -173,13 +180,20 @@ type AdminServiceClient interface {
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error)
+	// RedeployProject creates a new production deployment for a project.
+	// If the project currently has another production deployment, the old deployment will be deprovisioned.
+	// This RPC can be used to redeploy a project that has been hibernated.
+	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error)
-	// TriggerReconcile triggers reconcile for the project's prod deployment
+	// TriggerReconcile triggers reconcile for the project's prod deployment.
+	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
-	// TriggerRefreshSources refresh the source for production deployment
+	// TriggerRefreshSources refresh the source for production deployment.
+	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerRefreshSources(ctx context.Context, in *TriggerRefreshSourcesRequest, opts ...grpc.CallOption) (*TriggerRefreshSourcesResponse, error)
-	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+	// TriggerRedeploy is similar to RedeployProject.
+	// DEPRECATED: Use RedeployProject instead.
 	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
 	ListOrganizationMemberUsers(ctx context.Context, in *ListOrganizationMemberUsersRequest, opts ...grpc.CallOption) (*ListOrganizationMemberUsersResponse, error)
@@ -284,6 +298,10 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
+	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+	// It only updates the custom domain in the database, which is used to ensure correct redirects.
+	// The DNS records and ingress TLS must be configured separately.
+	SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
@@ -406,6 +424,16 @@ func (c *adminServiceClient) GetOrganization(ctx context.Context, in *GetOrganiz
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetOrganizationResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetOrganization_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetOrganizationNameForDomain(ctx context.Context, in *GetOrganizationNameForDomainRequest, opts ...grpc.CallOption) (*GetOrganizationNameForDomainResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetOrganizationNameForDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetOrganizationNameForDomain_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -536,6 +564,16 @@ func (c *adminServiceClient) CreateAsset(ctx context.Context, in *CreateAssetReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateAssetResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateAsset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RedeployProjectResponse)
+	err := c.cc.Invoke(ctx, AdminService_RedeployProject_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1082,6 +1120,16 @@ func (c *adminServiceClient) SudoUpdateOrganizationBillingCustomer(ctx context.C
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoUpdateOrganizationCustomDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoUpdateAnnotationsResponse)
@@ -1552,6 +1600,10 @@ type AdminServiceServer interface {
 	ListOrganizations(context.Context, *ListOrganizationsRequest) (*ListOrganizationsResponse, error)
 	// GetOrganization returns information about a specific organization
 	GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error)
+	// GetOrganizationNameForDomain finds the org name for a custom domain.
+	// If the application detects it is running on a non-default domain, it can use this to find the org to present.
+	// It can be called without being authenticated.
+	GetOrganizationNameForDomain(context.Context, *GetOrganizationNameForDomainRequest) (*GetOrganizationNameForDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organizations
@@ -1578,13 +1630,20 @@ type AdminServiceServer interface {
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error)
+	// RedeployProject creates a new production deployment for a project.
+	// If the project currently has another production deployment, the old deployment will be deprovisioned.
+	// This RPC can be used to redeploy a project that has been hibernated.
+	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error)
-	// TriggerReconcile triggers reconcile for the project's prod deployment
+	// TriggerReconcile triggers reconcile for the project's prod deployment.
+	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
-	// TriggerRefreshSources refresh the source for production deployment
+	// TriggerRefreshSources refresh the source for production deployment.
+	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerRefreshSources(context.Context, *TriggerRefreshSourcesRequest) (*TriggerRefreshSourcesResponse, error)
-	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+	// TriggerRedeploy is similar to RedeployProject.
+	// DEPRECATED: Use RedeployProject instead.
 	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
 	ListOrganizationMemberUsers(context.Context, *ListOrganizationMemberUsersRequest) (*ListOrganizationMemberUsersResponse, error)
@@ -1689,6 +1748,10 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
+	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+	// It only updates the custom domain in the database, which is used to ensure correct redirects.
+	// The DNS records and ingress TLS must be configured separately.
+	SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
@@ -1796,6 +1859,9 @@ func (UnimplementedAdminServiceServer) ListOrganizations(context.Context, *ListO
 func (UnimplementedAdminServiceServer) GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrganization not implemented")
 }
+func (UnimplementedAdminServiceServer) GetOrganizationNameForDomain(context.Context, *GetOrganizationNameForDomainRequest) (*GetOrganizationNameForDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationNameForDomain not implemented")
+}
 func (UnimplementedAdminServiceServer) CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateOrganization not implemented")
 }
@@ -1834,6 +1900,9 @@ func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *
 }
 func (UnimplementedAdminServiceServer) CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAsset not implemented")
+}
+func (UnimplementedAdminServiceServer) RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RedeployProject not implemented")
 }
 func (UnimplementedAdminServiceServer) HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HibernateProject not implemented")
@@ -1996,6 +2065,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Cont
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationBillingCustomer not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationCustomDomain not implemented")
 }
 func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateAnnotations not implemented")
@@ -2206,6 +2278,24 @@ func _AdminService_GetOrganization_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetOrganization(ctx, req.(*GetOrganizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetOrganizationNameForDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOrganizationNameForDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetOrganizationNameForDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetOrganizationNameForDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetOrganizationNameForDomain(ctx, req.(*GetOrganizationNameForDomainRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2440,6 +2530,24 @@ func _AdminService_CreateAsset_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).CreateAsset(ctx, req.(*CreateAssetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RedeployProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeployProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RedeployProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RedeployProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RedeployProject(ctx, req.(*RedeployProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3416,6 +3524,24 @@ func _AdminService_SudoUpdateOrganizationBillingCustomer_Handler(srv interface{}
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoUpdateOrganizationCustomDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateOrganizationCustomDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationCustomDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationCustomDomain(ctx, req.(*SudoUpdateOrganizationCustomDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SudoUpdateAnnotations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoUpdateAnnotationsRequest)
 	if err := dec(in); err != nil {
@@ -4264,6 +4390,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetOrganization_Handler,
 		},
 		{
+			MethodName: "GetOrganizationNameForDomain",
+			Handler:    _AdminService_GetOrganizationNameForDomain_Handler,
+		},
+		{
 			MethodName: "CreateOrganization",
 			Handler:    _AdminService_CreateOrganization_Handler,
 		},
@@ -4314,6 +4444,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateAsset",
 			Handler:    _AdminService_CreateAsset_Handler,
+		},
+		{
+			MethodName: "RedeployProject",
+			Handler:    _AdminService_RedeployProject_Handler,
 		},
 		{
 			MethodName: "HibernateProject",
@@ -4530,6 +4664,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateOrganizationBillingCustomer",
 			Handler:    _AdminService_SudoUpdateOrganizationBillingCustomer_Handler,
+		},
+		{
+			MethodName: "SudoUpdateOrganizationCustomDomain",
+			Handler:    _AdminService_SudoUpdateOrganizationCustomDomain_Handler,
 		},
 		{
 			MethodName: "SudoUpdateAnnotations",
