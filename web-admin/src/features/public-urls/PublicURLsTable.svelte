@@ -14,7 +14,7 @@
     SortingState,
     TableOptions,
   } from "@tanstack/svelte-table";
-  import PublicURLsDeleteRow from "./PublicURLsDeleteRow.svelte";
+  import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
 
   export let magicAuthTokens: V1MagicAuthToken[];
@@ -63,8 +63,9 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(PublicURLsDeleteRow, {
+        flexRender(PublicURLsActionsRow, {
           id: row.original.id,
+          url: row.original.url,
           onDelete,
         }),
     },
@@ -156,10 +157,8 @@
       {#each $table.getRowModel().rows as row}
         <tr>
           {#each row.getVisibleCells() as cell}
-            <td
-              class="hover:bg-slate-50 px-4 py-2"
-              data-label={cell.column.columnDef.header}
-            >
+            <!-- hover:bg-slate-50  -->
+            <td class="px-4 py-2" data-label={cell.column.columnDef.header}>
               <svelte:component
                 this={flexRender(cell.column.columnDef.cell, cell.getContext())}
               />
