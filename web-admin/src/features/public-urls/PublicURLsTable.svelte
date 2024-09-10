@@ -14,8 +14,11 @@
     SortingState,
     TableOptions,
   } from "@tanstack/svelte-table";
+  import PublicURLsDeleteRow from "./PublicURLsDeleteRow.svelte";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+
   export let magicAuthTokens: V1MagicAuthToken[];
-  // export let onDelete: (deletedTokenId: string) => void;
+  export let onDelete: (deletedTokenId: string) => void;
 
   function formatDate(value: string | null) {
     if (!value) return "-";
@@ -44,6 +47,8 @@
     {
       accessorFn: (row) => row.attributes.name,
       header: "Created by",
+      // TODO: enable sorting for more than one name
+      // enableSorting: false,
     },
     {
       accessorKey: "usedOn",
@@ -53,10 +58,19 @@
         return date;
       },
     },
+    {
+      accessorKey: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row }) =>
+        flexRender(PublicURLsDeleteRow, {
+          id: row.original.id,
+          onDelete,
+        }),
+    },
   ];
 
   let sorting: SortingState = [];
-
   const setSorting: OnChangeFn<SortingState> = (updater) => {
     if (updater instanceof Function) {
       sorting = updater(sorting);
@@ -81,10 +95,16 @@
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    debugTable: true,
   });
 
   const table = createSvelteTable(options);
+
+  // function rerender() {
+  //   options.update((options) => ({
+  //     ...options,
+  //     data: magicAuthTokens,
+  //   }));
+  // }
 </script>
 
 <table class="w-full">
@@ -92,13 +112,16 @@
     {#each $table.getHeaderGroups() as headerGroup}
       <tr>
         {#each headerGroup.headers as header}
-          <th colSpan={header.colSpan} class="px-4 py-2 text-left">
+          <th
+            colSpan={header.colSpan}
+            class="px-4 py-2 text-left"
+            on:click={header.column.getToggleSortingHandler()}
+          >
             {#if !header.isPlaceholder}
               <button
                 class:cursor-pointer={header.column.getCanSort()}
                 class:select-none={header.column.getCanSort()}
-                class="font-semibold text-gray-500"
-                on:click={header.column.getToggleSortingHandler()}
+                class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
               >
                 <svelte:component
                   this={flexRender(
@@ -107,11 +130,13 @@
                   )}
                 />
                 {#if header.column.getIsSorted().toString() === "asc"}
-                  <!-- TODO: use icon -->
-                  🔼
+                  <span>
+                    <ArrowDown flip size="12px" />
+                  </span>
                 {:else if header.column.getIsSorted().toString() === "desc"}
-                  <!-- TODO: use icon -->
-                  🔽
+                  <span>
+                    <ArrowDown size="12px" />
+                  </span>
                 {/if}
               </button>
             {/if}

@@ -50,8 +50,6 @@
       });
     }
   }
-
-  $: console.log($magicAuthTokensQuery.data);
 </script>
 
 <div class="flex flex-col w-full">
@@ -72,6 +70,7 @@
         {:else}
           <PublicURLsTable
             magicAuthTokens={$magicAuthTokensQuery.data.tokens}
+            onDelete={handleDelete}
           />
         {/if}
       {/if}
