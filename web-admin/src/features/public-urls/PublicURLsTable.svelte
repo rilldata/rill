@@ -1,131 +1,191 @@
 <script lang="ts">
-  import * as Table from "@rilldata/web-common/components/table-shadcn";
-  import {
-    Render,
-    Subscribe,
-    createTable,
-    createRender,
-  } from "svelte-headless-table";
-  import { writable } from "svelte/store";
   import { goto } from "$app/navigation";
-  import PublicURLsDeleteRow from "./PublicURLsDeleteRow.svelte";
+  import { writable } from "svelte/store";
   import type { V1MagicAuthToken } from "@rilldata/web-common/runtime-client";
-
+  import {
+    createSvelteTable,
+    flexRender,
+    getCoreRowModel,
+    getSortedRowModel,
+  } from "@tanstack/svelte-table";
+  import type {
+    ColumnDef,
+    OnChangeFn,
+    SortingState,
+    TableOptions,
+  } from "@tanstack/svelte-table";
   export let magicAuthTokens: V1MagicAuthToken[];
-  export let onDelete: (deletedTokenId: string) => void;
+  // export let onDelete: (deletedTokenId: string) => void;
 
-  $: console.log(magicAuthTokens);
-
-  // TODO: sort by expiresOn, usedOn
-  // TODO: get dashboard title
-  // TODO: use a tag instead of goto
-
-  const magicAuthTokensStore = writable(magicAuthTokens);
-  $: {
-    magicAuthTokensStore.set(magicAuthTokens);
+  function formatDate(value: string | null) {
+    if (!value) return "-";
+    return new Date(value).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
   }
-  const table = createTable(magicAuthTokensStore);
 
-  const columns = table.createColumns([
-    table.column({
-      accessor: (token) => token.metricsView,
+  const columns: ColumnDef<V1MagicAuthToken>[] = [
+    {
+      accessorKey: "metricsView",
       header: "Dashboard name",
-    }),
-    table.column({
-      accessor: (token) => token.expiresOn,
+    },
+    {
+      accessorKey: "expiresOn",
       header: "Expires on",
-      cell: ({ value }) => {
-        if (!value) {
-          return "-";
-        }
-        return new Date(value).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        });
+      cell: (info) => {
+        const date = formatDate(info.getValue() as string);
+        return date;
       },
-    }),
-    table.column({
-      accessor: (token) => token.attributes.name,
+    },
+    {
+      accessorFn: (row) => row.attributes.name,
       header: "Created by",
-    }),
-    table.column({
-      accessor: (token) => token.usedOn,
+    },
+    {
+      accessorKey: "usedOn",
       header: "Last used",
-      cell: ({ value }) => {
-        if (!value) {
-          return "-";
-        }
-        return new Date(value).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        });
+      cell: (info) => {
+        const date = formatDate(info.getValue() as string);
+        return date;
       },
-    }),
-    table.column({
-      accessor: (token) => token.id,
-      header: "",
-      cell: ({ value }) =>
-        createRender(PublicURLsDeleteRow, {
-          id: value,
-          onDelete,
-        }),
-    }),
-  ]);
+    },
+  ];
 
-  const { headerRows, pageRows, tableAttrs, tableBodyAttrs } =
-    table.createViewModel(columns);
+  let sorting: SortingState = [];
 
-  function handleClickRow(row: any) {
-    goto(`${row.original.url}`);
-  }
+  const setSorting: OnChangeFn<SortingState> = (updater) => {
+    if (updater instanceof Function) {
+      sorting = updater(sorting);
+    } else {
+      sorting = updater;
+    }
+    options.update((old) => ({
+      ...old,
+      state: {
+        ...old.state,
+        sorting,
+      },
+    }));
+  };
+
+  const options = writable<TableOptions<V1MagicAuthToken>>({
+    data: magicAuthTokens,
+    columns: columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    debugTable: true,
+  });
+
+  const table = createSvelteTable(options);
 </script>
 
-<!-- TODO: redo this table component -->
-<!-- TODO: with pagination -->
-<div class="border rounded-md">
-  <Table.Root {...$tableAttrs}>
-    <Table.Header>
-      {#each $headerRows as headerRow (headerRow.id)}
-        <Subscribe rowAttrs={headerRow.attrs()}>
-          <Table.Row>
-            {#each headerRow.cells as cell (cell.id)}
-              <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()}>
-                <Table.Head {...attrs}>
-                  <Render of={cell.render()} />
-                </Table.Head>
-              </Subscribe>
-            {/each}
-          </Table.Row>
-        </Subscribe>
+<table class="w-full">
+  <thead>
+    {#each $table.getHeaderGroups() as headerGroup}
+      <tr>
+        {#each headerGroup.headers as header}
+          <th colSpan={header.colSpan} class="px-4 py-2 text-left">
+            {#if !header.isPlaceholder}
+              <button
+                class:cursor-pointer={header.column.getCanSort()}
+                class:select-none={header.column.getCanSort()}
+                class="font-semibold text-gray-500"
+                on:click={header.column.getToggleSortingHandler()}
+              >
+                <svelte:component
+                  this={flexRender(
+                    header.column.columnDef.header,
+                    header.getContext(),
+                  )}
+                />
+                {#if header.column.getIsSorted().toString() === "asc"}
+                  <!-- TODO: use icon -->
+                  🔼
+                {:else if header.column.getIsSorted().toString() === "desc"}
+                  <!-- TODO: use icon -->
+                  🔽
+                {/if}
+              </button>
+            {/if}
+          </th>
+        {/each}
+      </tr>
+    {/each}
+  </thead>
+  <tbody>
+    {#if $table.getRowModel().rows.length === 0}
+      <tr>
+        <td class="text-center py-4">
+          <slot name="empty" />
+        </td>
+      </tr>
+    {:else}
+      {#each $table.getRowModel().rows as row}
+        <tr>
+          {#each row.getVisibleCells() as cell}
+            <td
+              class="hover:bg-slate-50 px-4 py-2"
+              data-label={cell.column.columnDef.header}
+            >
+              <svelte:component
+                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+              />
+            </td>
+          {/each}
+        </tr>
       {/each}
-    </Table.Header>
-    <Table.Body {...$tableBodyAttrs}>
-      {#each $pageRows as row (row.id)}
-        <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-          <Table.Row
-            {...rowAttrs}
-            on:click={() => {
-              if (row.original.url) {
-                handleClickRow(row);
-              }
-            }}
-          >
-            {#each row.cells as cell (cell.id)}
-              <Subscribe attrs={cell.attrs()} let:attrs>
-                <Table.Cell {...attrs}>
-                  <Render of={cell.render()} />
-                </Table.Cell>
-              </Subscribe>
-            {/each}
-          </Table.Row>
-        </Subscribe>
-      {/each}
-    </Table.Body>
-  </Table.Root>
-</div>
+    {/if}
+  </tbody>
+</table>
+
+<style lang="postcss">
+  table {
+    @apply border-separate border-spacing-0;
+  }
+  table th,
+  table td {
+    @apply border-b border-gray-200;
+  }
+
+  thead tr th {
+    @apply border-t border-gray-200;
+  }
+  thead tr th:first-child {
+    @apply border-l rounded-tl-sm;
+  }
+  thead tr th:last-child {
+    @apply border-r rounded-tr-sm;
+  }
+  thead tr:last-child th {
+    @apply border-b;
+  }
+  tbody tr {
+    @apply border-t border-gray-200;
+  }
+  tbody tr:first-child {
+    @apply border-t-0;
+  }
+  tbody td {
+    @apply border-b border-gray-200;
+  }
+  tbody td:first-child {
+    @apply border-l;
+  }
+  tbody td:last-child {
+    @apply border-r;
+  }
+  tbody tr:last-child td:first-child {
+    @apply rounded-bl-sm;
+  }
+  tbody tr:last-child td:last-child {
+    @apply rounded-br-sm;
+  }
+</style>
