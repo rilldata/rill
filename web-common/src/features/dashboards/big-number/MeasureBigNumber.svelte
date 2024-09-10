@@ -76,7 +76,7 @@
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
 
-    copyToClipboard(number, `copied dimension value "${number}" to clipboard`);
+    copyToClipboard(number, `copied measure value "${number}" to clipboard`);
   }
 
   let suppressTooltip = false;

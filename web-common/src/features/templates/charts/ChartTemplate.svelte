@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Chart from "@rilldata/web-common/features/custom-dashboards/Chart.svelte";
+  import Chart from "@rilldata/web-common/features/canvas-dashboards/Chart.svelte";
   import { ChartProperties } from "@rilldata/web-common/features/templates/types";
   import {
     V1ComponentSpecRendererProperties,
@@ -17,4 +17,4 @@
   $: vegaSpec = getSpecFromTemplateProperties(renderer, chartProperties);
 </script>
 
-<Chart {chartView} {vegaSpec} {input} chartName={componentName} />
+<Chart {chartView} {vegaSpec} {input} {componentName} />

@@ -97,8 +97,8 @@ metrics_sql: |
   [ResourceKind.Component]: {
     name: "component",
     extension: ".yaml",
-    baseContent: `# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+    baseContent: `# Component YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/components
     
 type: component
 

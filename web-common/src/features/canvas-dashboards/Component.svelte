@@ -93,7 +93,7 @@
     {/if}
 
     <div
-      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none bg-white"
+      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none"
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
@@ -109,10 +109,10 @@
           </div>
         {/if}
         <Chart
+          {componentName}
           {chartView}
           {input}
           vegaSpec={rendererProperties?.spec}
-          chartName={componentName}
         />
       {:else if renderer && rendererProperties}
         <TemplateRenderer

@@ -1,7 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
-  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import { useVariableInputParams } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -13,7 +13,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
 
-  export let chartName: string;
+  export let componentName: string;
   export let tablePercentage = 0.45;
   export let containerHeight: number;
   export let resolverProperties: V1ComponentSpecResolverProperties | undefined;
@@ -27,15 +27,15 @@
 
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
-  $: chartDataQuery = resolverProperties
-    ? createQueryServiceResolveComponent(instanceId, chartName, {
+  $: componentDataQuery = resolverProperties
+    ? createQueryServiceResolveComponent(instanceId, componentName, {
         args: $inputVariableParams,
       })
     : null;
 
-  $: chartData = $chartDataQuery?.data?.data;
-  $: isFetching = $chartDataQuery?.isFetching ?? false;
-  $: errorMessage = $chartDataQuery?.error?.response?.data?.message;
+  $: componentData = $componentDataQuery?.data?.data;
+  $: isFetching = $componentDataQuery?.isFetching ?? false;
+  $: errorMessage = $componentDataQuery?.error?.response?.data?.message;
 </script>
 
 {#if resolverProperties}
@@ -54,7 +54,7 @@
     {#if isFetching}
       <div class="flex flex-col gap-y-2 size-full justify-center items-center">
         <Spinner size="2em" status={EntityStatus.Running} />
-        <div>Loading chart data</div>
+        <div>Loading component data</div>
       </div>
     {:else if errorMessage}
       <div class="size-full flex flex-col items-center justify-center">
@@ -63,11 +63,11 @@
         </div>
         <div class="text-sm">{errorMessage}</div>
       </div>
-    {:else if chartData}
+    {:else if componentData}
       <PreviewTable
-        rows={chartData}
-        name={chartName}
-        columnNames={Object.keys(chartData[0]).map((key) => ({
+        rows={componentData}
+        name={componentName}
+        columnNames={Object.keys(componentData[0]).map((key) => ({
           type: "VARCHAR",
           name: key,
         }))}

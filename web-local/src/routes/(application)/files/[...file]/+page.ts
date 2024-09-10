@@ -15,7 +15,10 @@ export const load = async ({ params: { file } }) => {
   const fileArtifact = fileArtifacts.getFileArtifact(path);
 
   if (fileArtifact.fileTypeUnsupported) {
-    throw error(400, fileArtifact.fileExtension + " file type not supported");
+    throw error(
+      400,
+      "No renderer available for file type: " + fileArtifact.fileExtension,
+    );
   }
 
   try {

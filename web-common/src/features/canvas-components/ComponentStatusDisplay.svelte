@@ -3,14 +3,14 @@
   import {
     chartPromptsStore,
     ChartPromptStatus,
-  } from "@rilldata/web-common/features/charts/prompt/chartPrompt";
+  } from "@rilldata/web-common/features/canvas-components/prompt/chartPrompt";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
-  export let chartName: string;
+  export let componentName: string;
   export let isFetching: boolean;
 
-  $: chartPrompt = chartPromptsStore.getStatusForChart(chartName);
+  $: chartPrompt = chartPromptsStore.getStatusForChart(componentName);
 </script>
 
 <!-- TODO: handle prompt error -->

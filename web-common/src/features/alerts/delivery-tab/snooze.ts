@@ -14,19 +14,19 @@ export const SnoozeOptions = [
   },
   {
     value: HOUR.toString(),
-    label: "Rest of the hour",
+    label: "1 hour",
   },
   {
     value: DAY.toString(),
-    label: "Rest of the day",
+    label: "1 day",
   },
   {
     value: WEEK.toString(),
-    label: "Rest of the week",
+    label: "1 week",
   },
   {
     value: MONTH.toString(),
-    label: "Rest of the month",
+    label: "1 month",
   },
 ];
 
