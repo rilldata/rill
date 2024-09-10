@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -196,7 +198,7 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 		attribute.String("args.token_id", req.TokenId),
 	)
 
-	tkn, err := s.admin.DB.FindMagicAuthToken(ctx, req.TokenId)
+	tkn, err := s.admin.DB.FindMagicAuthToken(ctx, req.TokenId, false)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -251,11 +253,27 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		}
 	}
 
+	// backwards compatibility
+	tokenStr := ""
+	url := ""
+	if len(tkn.Secret) != 0 {
+		id, err := uuid.Parse(tkn.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse token ID: %w", err)
+		}
+		token, err := authtoken.FromParts(authtoken.TypeMagic, id, tkn.Secret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create magic auth token from parts: %w", err)
+		}
+		tokenStr = token.String()
+		url = s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(org.Name, proj.Name, tokenStr)
+	}
+
 	res := &adminv1.MagicAuthToken{
 		Id:                 tkn.ID,
 		ProjectId:          tkn.ProjectID,
-		Url:                s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(org.Name, proj.Name, tkn.Secret),
-		Token:              tkn.Secret,
+		Url:                url,
+		Token:              tokenStr,
 		CreatedOn:          timestamppb.New(tkn.CreatedOn),
 		ExpiresOn:          nil,
 		UsedOn:             timestamppb.New(tkn.UsedOn),
