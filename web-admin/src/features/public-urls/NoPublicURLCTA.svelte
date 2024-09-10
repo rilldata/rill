@@ -12,7 +12,8 @@
     </div>
     <div>
       <span style="text-gray-500 font-normal">
-        To create a public URL, click the Share button.
+        To create a public URL that you can share with anyone, click the Share
+        button in a dashboard.
       </span>
     </div>
   </div>
