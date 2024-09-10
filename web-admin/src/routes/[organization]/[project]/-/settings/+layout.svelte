@@ -1,23 +1,33 @@
 <!-- PROJECT SETTINGS -->
 
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
+  import { onMount } from "svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: basePage = `/${organization}/${project}/-/settings`;
 
   const navItems = [
-    {
-      label: "General",
-      route: "",
-    },
+    // TODO: re-add general settings
+    // {
+    //   label: "General",
+    //   route: "",
+    // },
     {
       label: "Public URLs",
       route: "/public-urls",
     },
   ];
+
+  onMount(() => {
+    // NOTE: redirect to the first subpage if the user is on the base page
+    if (basePage && navItems.length === 1 && $page.url.pathname === basePage) {
+      goto(`${basePage}${navItems[0].route}`);
+    }
+  });
 </script>
 
 <div class="layout-container">
