@@ -49,12 +49,13 @@
   export let fileArtifact: FileArtifact;
   export let index: number;
   export let type: "measures" | "dimensions";
-
   export let switchView: () => void;
 
   $: ({ remoteContent, localContent, saveContent } = fileArtifact);
 
   $: adding = index === -1;
+
+  $: editingClone = { ...editing };
 
   async function saveChanges() {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
@@ -63,18 +64,19 @@
     if (adding) {
       const newItem = new YAMLMap();
       properties[type].forEach(({ key, yamlKey }) => {
-        if (editing[key]) newItem.set(yamlKey || key, editing[key]);
+        if (editingClone[key]) newItem.set(yamlKey || key, editingClone[key]);
       });
       items.push(newItem);
     } else {
       const item = items[index];
 
       properties[type].forEach(({ key, yamlKey }) => {
-        item.set(yamlKey || key, editing[key]);
+        item.set(yamlKey || key, editingClone[key]);
       });
     }
 
     await saveContent(parsedDocument.toString());
+    editingItem.set(null);
   }
 </script>
 
@@ -85,7 +87,7 @@
     class="flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible"
   >
     {#each properties[type] as { label, key, hint, optional, modes } (key)}
-      <Input bind:value={editing[key]} {label} {hint} {optional} {modes} />
+      <Input bind:value={editingClone[key]} {label} {hint} {optional} {modes} />
     {/each}
 
     <h2>Referenced by</h2>
@@ -115,9 +117,9 @@
         >
           Cancel
         </Button>
-        <Button type="primary" on:click={saveChanges}
-          >{adding ? "Add " + type.slice(0, -1) : "Save changes"}</Button
-        >
+        <Button type="primary" on:click={saveChanges}>
+          {adding ? "Add " + type.slice(0, -1) : "Save changes"}
+        </Button>
       </div>
     </div>
   </div>

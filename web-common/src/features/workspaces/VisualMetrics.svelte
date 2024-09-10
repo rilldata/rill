@@ -91,9 +91,13 @@
     await saveLocalContent();
   }
 
-  async function reorderList(initIndex: number, newIndex: number) {
+  async function reorderList(
+    initIndex: number,
+    newIndex: number,
+    type: "measures" | "dimensions",
+  ) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const measures = parsedDocument.get("measures") as YAMLSeq;
+    const measures = parsedDocument.get(type) as YAMLSeq;
 
     const items = measures.items as Array<YAMLMap>;
 
@@ -101,20 +105,20 @@
 
     items.splice(clampedIndex, 0, items.splice(initIndex, 1)[0]);
 
-    parsedDocument.set("measures", items);
+    parsedDocument.set(type, items);
 
     await saveContent(parsedDocument.toString());
   }
 
-  async function deleteItem(index: number) {
+  async function deleteItem(index: number, type: "measures" | "dimensions") {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const measures = parsedDocument.get("measures") as YAMLSeq;
+    const measures = parsedDocument.get(type) as YAMLSeq;
 
     const items = measures.items as Array<YAMLMap>;
 
     items.splice(index, 1);
 
-    parsedDocument.set("measures", items);
+    parsedDocument.set(type, items);
 
     updateLocalContent(parsedDocument.toString(), true);
 
@@ -130,9 +134,9 @@
     const newItem = items[item].clone() as YAMLMap;
 
     if (type === "measures")
-      newItem.set("name", `${newItem.get("name")} copy ${items.length}`);
+      newItem.set("name", `${newItem.get("name")}_copy_${items.length}`);
 
-    items.push(newItem);
+    items.splice(item + 1, 0, newItem);
 
     parsedDocument.set(type, items);
 
@@ -250,9 +254,7 @@
           <MetricsTable
             {reorderList}
             dimensions={option === "dimensions"}
-            onDuplicate={async (item) => {
-              await duplicateItem(item, option);
-            }}
+            onDuplicate={duplicateItem}
             items={option === "dimensions"
               ? filteredDimensions
               : filteredMeasures}
@@ -268,7 +270,7 @@
     <Sidebar
       editing={$editingItem.data}
       onDelete={async () => {
-        await deleteItem($editingItem.index);
+        await deleteItem($editingItem.index, $editingItem.type);
         editingItem.set(null);
       }}
       index={$editingItem.index}

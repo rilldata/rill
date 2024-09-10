@@ -12,9 +12,16 @@
 
   export let dimensions: boolean = false;
   export let items: MetricsViewSpecDimensionV2[] | MetricsViewSpecMeasureV2[];
-  export let reorderList: (initIndex: number, newIndex: number) => void;
-  export let onDuplicate: (index: number) => void;
-  export let onDelete: (index: number) => void;
+  export let reorderList: (
+    initIndex: number,
+    newIndex: number,
+    type: "measures" | "dimensions",
+  ) => void;
+  export let onDuplicate: (
+    index: number,
+    type: "measures" | "dimensions",
+  ) => void;
+  export let onDelete: (index: number, type: "measures" | "dimensions") => void;
 
   let tbody: HTMLTableSectionElement;
   let selected = new Set();

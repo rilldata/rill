@@ -27,10 +27,17 @@
   export let i: number;
   export let selected: boolean;
   export let length: number;
-  export let reorderList: (initIndex: number, newIndex: number) => void;
+  export let reorderList: (
+    initIndex: number,
+    newIndex: number,
+    type: "measures" | "dimensions",
+  ) => void;
   export let onCheckedChange: (checked: boolean) => void;
-  export let onDelete: (index: number) => void;
-  export let onDuplicate: (index: number) => void;
+  export let onDelete: (index: number, type: "measures" | "dimensions") => void;
+  export let onDuplicate: (
+    index: number,
+    type: "measures" | "dimensions",
+  ) => void;
   export let scrollLeft: number;
   export let tableWidth: number;
   export let type: "measures" | "dimensions";
@@ -70,7 +77,7 @@
     window.removeEventListener("mouseup", handleMouseUp);
 
     if ($insertIndex !== i && $insertIndex !== null) {
-      reorderList(i, $insertIndex < i ? $insertIndex + 1 : $insertIndex);
+      reorderList(i, $insertIndex < i ? $insertIndex + 1 : $insertIndex, type);
     }
 
     clone.remove();
@@ -84,13 +91,18 @@
   ): item is MetricsViewSpecMeasureV2 {
     return "formatPreset" in item;
   }
+
+  function setEditing() {
+    editingItem.set({ data: item, index: i, type });
+  }
 </script>
 
 <tr
   id={item?.name || item?.label}
   style:transform="translateY(0px)"
-  class="relative"
+  class="relative text-sm"
   style:height="{ROW_HEIGHT}px"
+  class:editing={$editingItem?.index === i && $editingItem?.type === type}
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
   bind:this={row}
@@ -103,53 +115,61 @@
         class:opacity-0={!hovered}
         disabled={!hovered}
       >
-        <GripVertical size="14px" />
+        <GripVertical size="14px" class="text-gray-500" />
       </button>
       <Checkbox onChange={onCheckedChange} checked={selected} />
     </div>
   </td>
-  <td class="max-w-64"> {item?.name || item?.label}</td>
+  <td class="max-w-64 source-code" on:click={setEditing}>
+    {item?.name || item?.label}</td
+  >
 
-  <td class="expression max-w-72">{item?.expression || item?.name}</td>
-  <td>
-    <Chip
-      {...colors}
-      slideDuration={0}
-      extraRounded={false}
-      extraPadding={false}
-      {...isMeasure(item) ? measureChipColors : defaultChipColors}
-      label={item?.label || item?.label}
-      outline
-    >
-      <span slot="body" class="font-bold truncate"
-        >{item?.label || item?.label}</span
+  <td class="source-code max-w-72" on:click={setEditing}
+    >{item?.expression || item?.name}</td
+  >
+  <td on:click={setEditing}>
+    <div class="pointer-events-none text-[12px]">
+      <Chip
+        {...colors}
+        slideDuration={0}
+        extraRounded={false}
+        extraPadding={false}
+        {...isMeasure(item) ? measureChipColors : defaultChipColors}
+        label={item?.label || item?.label}
+        outline
       >
-    </Chip>
+        <span slot="body" class="font-bold truncate">
+          {item?.label || item?.label}
+        </span>
+      </Chip>
+    </div>
   </td>
   {#if isMeasure(item)}
-    <td class="capitalize"> {item?.formatPreset || item?.formatD3 || "-"}</td>
+    <td class="capitalize" on:click={setEditing}>
+      {item?.formatPreset || item?.formatD3 || "-"}</td
+    >
   {/if}
-  <td class="max-w-72">{item?.description || item?.description || "-"}</td>
+  <td class="max-w-72" on:click={setEditing}
+    >{item?.description || item?.description || "-"}</td
+  >
 
   {#if hovered}
     <EditControls
       right={Math.max(0, tableWidth - scrollLeft)}
       first={i === 0}
       last={i === length - 1}
-      onEdit={() => {
-        editingItem.set({ data: item, index: i, type });
-      }}
+      onEdit={setEditing}
       onMoveToBottom={() => {
-        reorderList(i, length - 1);
+        reorderList(i, length - 1, type);
       }}
       onMoveToTop={() => {
-        reorderList(i, 0);
+        reorderList(i, 0, type);
       }}
       onDuplicate={() => {
-        onDuplicate(i);
+        onDuplicate(i, type);
       }}
       onDelete={() => {
-        onDelete(i);
+        onDelete(i, type);
       }}
     />
   {/if}
@@ -161,7 +181,8 @@
     /* @apply -z-10; */
   }
 
-  tr:hover {
+  tr:hover,
+  .editing {
     @apply bg-gray-50;
   }
 
@@ -177,7 +198,7 @@
     @apply border-b-0;
   }
 
-  .expression {
+  .source-code {
     font-family: "Source Code Variable", monospace;
   }
 </style>
