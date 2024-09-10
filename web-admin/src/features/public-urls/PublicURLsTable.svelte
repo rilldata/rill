@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { writable } from "svelte/store";
   import type { V1MagicAuthToken } from "@rilldata/web-common/runtime-client";
   import {
@@ -47,8 +46,7 @@
     {
       accessorFn: (row) => row.attributes.name,
       header: "Created by",
-      // TODO: enable sorting for more than one name
-      // enableSorting: false,
+      enableSorting: false,
     },
     {
       accessorKey: "usedOn",
@@ -100,6 +98,7 @@
 
   const table = createSvelteTable(options);
 
+  // TODO: to be removed
   // function rerender() {
   //   options.update((options) => ({
   //     ...options,
