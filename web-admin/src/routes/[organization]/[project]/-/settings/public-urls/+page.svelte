@@ -43,10 +43,10 @@
         getAdminServiceListMagicAuthTokensQueryKey(organization, project),
       );
 
-      eventBus.emit("notification", { message: "Magic auth token deleted" });
+      eventBus.emit("notification", { message: "Public URL deleted" });
     } catch (error) {
       eventBus.emit("notification", {
-        message: "Failed to delete magic auth token",
+        message: "Failed to delete public URL",
         type: "error",
       });
     }
