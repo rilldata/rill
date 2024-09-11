@@ -43,7 +43,7 @@ notify:
 
 So as not to spam our own inbox, let's change the alert to run the 1st of every month by changing the CRON to:
 ```
-  cron: "* * 1 * *"
+  cron: "0 0 1 * *"
 ```
 
 Once complete, we can go ahead and create a broken dashboard or model. The easiest would be to create a new dashboard via +Add, and leaving it as is. There will be a solid red border around the text editor. 
