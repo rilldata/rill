@@ -18,15 +18,29 @@ rill start my-rill-project
 ```
 
 ---
-<div style={{ position: "relative", width: "100%", paddingTop: "56.25%" }}>
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
   <iframe 
     src="https://www.youtube.com/embed/GMsUyj_Bv3Q?autoplay=1&mute=1&si=CMltjZI4S5oAAAtg" 
     frameBorder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
     allowFullScreen
-    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
+    style={{ 
+      position: "absolute", 
+      top: 0, 
+      left: 0, 
+      width: "100%", 
+      height: "100%", 
+      borderRadius: "10px"  /* Apply to iframe as well for rounded effect */
+    }}>
   </iframe>
 </div>
+
 
 ## Example Projects Repository
 
