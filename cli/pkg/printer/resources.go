@@ -531,7 +531,6 @@ func toBillingErrorRow(e *adminv1.BillingError) *billingError {
 		Type:         e.Type.String(),
 		Metadata:     string(meta), // TODO pretty print
 		EventTime:    e.EventTime.AsTime().Local().Format(time.DateTime),
-		CreatedAt:    e.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
 
@@ -540,7 +539,6 @@ type billingError struct {
 	Type         string `header:"type" json:"type"`
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
-	CreatedAt    string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }
 
 func (p *Printer) PrintBillingWarnings(warns []*adminv1.BillingWarning) {
@@ -569,7 +567,6 @@ func toBillingWarningRow(w *adminv1.BillingWarning) *billingWarning {
 		Type:         w.Type.String(),
 		Metadata:     string(meta), // TODO pretty print
 		EventTime:    w.EventTime.AsTime().Local().Format(time.DateTime),
-		CreatedAt:    w.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
 
@@ -578,5 +575,4 @@ type billingWarning struct {
 	Type         string `header:"type" json:"type"`
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
-	CreatedAt    string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }

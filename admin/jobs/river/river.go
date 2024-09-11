@@ -65,6 +65,8 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		adm.Logger.Info("river database migrated", zap.String("direction", string(res.Direction)), zap.Int("version", version.Version))
 	}
 
+	billingLogger := adm.Logger.Named("billing")
+
 	workers := river.NewWorkers()
 	// NOTE: Register new job workers here
 	river.AddWorker(workers, &ValidateDeploymentsWorker{admin: adm})
@@ -76,18 +78,18 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &CustomerAddressUpdatedWorker{admin: adm})
 
 	// biller event handlers
-	river.AddWorker(workers, &InvoicePaymentFailedWorker{admin: adm})
-	river.AddWorker(workers, &InvoicePaymentSuccessWorker{admin: adm})
-	river.AddWorker(workers, &InvoicePaymentFailedGracePeriodCheckWorker{admin: adm})
+	river.AddWorker(workers, &InvoicePaymentFailedWorker{admin: adm, billingLogger: billingLogger})
+	river.AddWorker(workers, &InvoicePaymentSuccessWorker{admin: adm, billingLogger: billingLogger})
+	river.AddWorker(workers, &InvoicePaymentFailedGracePeriodCheckWorker{admin: adm, billingLogger: billingLogger})
 
 	// trial checks worker
-	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm})
-	river.AddWorker(workers, &TrialEndCheckWorker{admin: adm})
-	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm})
+	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm, billingLogger: billingLogger})
+	river.AddWorker(workers, &TrialEndCheckWorker{admin: adm, billingLogger: billingLogger})
+	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm, billingLogger: billingLogger})
 
 	// subscription related workers
 	river.AddWorker(workers, &PlanChangeByAPIWorker{admin: adm})
-	river.AddWorker(workers, &SubscriptionCancellationWorker{admin: adm})
+	river.AddWorker(workers, &SubscriptionCancellationWorker{admin: adm, billingLogger: billingLogger})
 
 	// org related workers
 	river.AddWorker(workers, &PurgeOrgWorker{admin: adm})
@@ -463,7 +465,7 @@ func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, p
 	var args string
 	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
 	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
-	// Set the job to be immediately cancelled TODO review if we should retry or cancel the job
+	// Set the job to be immediately cancelled
 	return &river.ErrorHandlerResult{SetCancelled: true}
 }
 

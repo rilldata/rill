@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -26,7 +25,8 @@ func (TrialEndingSoonArgs) Kind() string { return "trial_ending_soon" }
 
 type TrialEndingSoonWorker struct {
 	river.WorkerDefaults[TrialEndingSoonArgs]
-	admin *admin.Service
+	admin         *admin.Service
+	billingLogger *zap.Logger
 }
 
 func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEndingSoonArgs]) error {
@@ -76,21 +76,19 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEn
 		return nil
 	}
 
-	// trial period is ending soon, log warn and send email
-	w.admin.Logger.Warn("trial period is ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.Time("trial_end_date", sub[0].TrialEndDate))
+	// trial period ending soon, log warn and send email
+	w.billingLogger.Warn("trial ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("trial_end_date", sub[0].TrialEndDate))
 
 	// send email
-	err = w.admin.Email.SendInformational(&email.Informational{
-		ToEmail: org.BillingEmail,
-		ToName:  org.Name,
-		Subject: "Your trial period is ending soon",
-		Title:   "",
-		Body:    template.HTML(fmt.Sprintf("Your trial period will end on %s UTC. Reach out to us for any help.", sub[0].TrialEndDate.Format("2006-01-02"))),
+	err = w.admin.Email.SendTrialEndingSoon(&email.TrialEndingSoon{
+		ToEmail:      org.BillingEmail,
+		ToName:       org.Name,
+		OrgName:      org.Name,
+		TrialEndDate: sub[0].TrialEndDate,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send trial ending soon email for org %q: %w", org.Name, err)
 	}
-	w.admin.Logger.Info("email sent for trial period ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
 	return nil
 }
@@ -105,7 +103,8 @@ func (TrialEndCheckArgs) Kind() string { return "trial_end_check" }
 
 type TrialEndCheckWorker struct {
 	river.WorkerDefaults[TrialEndCheckArgs]
-	admin *admin.Service
+	admin         *admin.Service
+	billingLogger *zap.Logger
 }
 
 func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndCheckArgs]) error {
@@ -155,7 +154,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 	}
 
 	// trial period has ended, log warn, send email and schedule a job to hibernate projects after grace period days if still on trial
-	w.admin.Logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+	w.billingLogger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	gracePeriodEndDate := sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)
 	// schedule a job to check if the org is still on trial after end of grace period date
@@ -178,17 +177,15 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 	}
 
 	// send email
-	err = w.admin.Email.SendInformational(&email.Informational{
-		ToEmail: org.BillingEmail,
-		ToName:  org.Name,
-		Subject: "Your trial period has ended",
-		Title:   "",
-		Body:    template.HTML(fmt.Sprintf("Your trial period has ended, please visit the billing portal to enter payment method and upgrade your plan to continue using Rill. Your projects will be hibernated on %s UTC, if you are still on trial.", gracePeriodEndDate.Format("2006-01-02"))),
+	err = w.admin.Email.SendTrialEnded(&email.TrialEnded{
+		ToEmail:            org.BillingEmail,
+		ToName:             org.Name,
+		OrgName:            org.Name,
+		GracePeriodEndDate: gracePeriodEndDate,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
 	}
-	w.admin.Logger.Info("email sent for trial period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
 
 	return nil
 }
@@ -204,7 +201,8 @@ func (TrialGracePeriodCheckArgs) Kind() string { return "trial_grace_period_chec
 
 type TrialGracePeriodCheckWorker struct {
 	river.WorkerDefaults[TrialGracePeriodCheckArgs]
-	admin *admin.Service
+	admin         *admin.Service
+	billingLogger *zap.Logger
 }
 
 func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[TrialGracePeriodCheckArgs]) error {
@@ -290,19 +288,17 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 			break
 		}
 	}
-	w.admin.Logger.Warn("projects hibernated due to trial grace period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+	w.billingLogger.Warn("projects hibernated due to trial grace period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	// send email
-	err = w.admin.Email.SendInformational(&email.Informational{
+	err = w.admin.Email.SendTrialGracePeriodEnded(&email.TrialGracePeriodEnded{
 		ToEmail: org.BillingEmail,
 		ToName:  org.Name,
-		Subject: "Your trial grace period has ended",
-		Title:   "",
-		Body:    "Your trial grace period has ended, your projects have been hibernated. Please visit the billing portal to enter payment method and upgrade your plan to continue using Rill.",
+		OrgName: org.Name,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send trial grace period ended email for org %q: %w", org.Name, err)
 	}
-	w.admin.Logger.Info("email sent for projects hibernated", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+
 	return nil
 }

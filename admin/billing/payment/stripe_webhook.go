@@ -8,41 +8,35 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/webhook"
 	"go.uber.org/zap"
 )
 
+const maxBodyBytes = int64(65536)
+
 // handleWebhook handles incoming webhook events from Stripe
-func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	const MaxBodyBytes = int64(65536)
-	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
+func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) error {
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		s.logger.Error("error reading request body", zap.Error(err))
-		http.Error(w, "error reading request body", http.StatusServiceUnavailable)
-		return
+		return httputil.Errorf(http.StatusServiceUnavailable, "error reading request body: %w", err)
 	}
 
 	endpointSecret := s.webhookSecret
 	sigHeader := r.Header.Get("Stripe-Signature")
 	event, err := webhook.ConstructEventWithOptions(payload, sigHeader, endpointSecret, webhook.ConstructEventOptions{IgnoreAPIVersionMismatch: true})
 	if err != nil {
-		s.logger.Error("error verifying webhook signature", zap.Error(err))
-		http.Error(w, "error verifying webhook signature", http.StatusBadRequest)
-		return
+		return httputil.Errorf(http.StatusBadRequest, "error verifying webhook signature: %w", err)
 	}
-
-	s.logger.Debug(fmt.Sprintf("got event : %s\n", event.Data))
 
 	// Handle the event based on its type
 	switch event.Type {
 	case "payment_method.attached":
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
-			s.logger.Error("error parsing payment method data", zap.Error(err))
-			http.Error(w, "error parsing payment method data", http.StatusBadRequest)
-			return
+			return httputil.Errorf(http.StatusBadRequest, "error parsing payment method data: %w", err)
 		}
 		if paymentMethod.Customer == nil {
 			// just log warn and send http ok as we can't do anything without customer id
@@ -50,24 +44,18 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		} else {
 			err = s.handlePaymentMethodAdded(r.Context(), event.ID, &paymentMethod)
 			if err != nil {
-				s.logger.Error("Error handling payment_method.attached event", zap.Error(err))
-				http.Error(w, "Error handling payment_method.attached event", http.StatusInternalServerError)
-				return
+				return httputil.Errorf(http.StatusInternalServerError, "error handling payment_method.attached event: %w", err)
 			}
 		}
 	case "payment_method.detached":
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
-			s.logger.Error("Error parsing payment method data", zap.Error(err))
-			http.Error(w, "Error parsing payment method data", http.StatusBadRequest)
-			return
+			return httputil.Errorf(http.StatusBadRequest, "error parsing payment method data: %w", err)
 		}
 		if cust, ok := event.Data.PreviousAttributes["customer"]; ok && cust != nil {
 			err = s.handlePaymentMethodRemoved(r.Context(), event.ID, cust.(string), &paymentMethod)
 			if err != nil {
-				s.logger.Error("error handling payment_method.detached event", zap.Error(err))
-				http.Error(w, "error handling payment_method.detached event", http.StatusInternalServerError)
-				return
+				return httputil.Errorf(http.StatusInternalServerError, "error handling payment_method.detached event: %w", err)
 			}
 		} else {
 			// just log warn and send http ok as we can't do anything without customer id
@@ -76,9 +64,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case "customer.updated":
 		var customer stripe.Customer
 		if err := json.Unmarshal(event.Data.Raw, &customer); err != nil {
-			s.logger.Error("error parsing customer data", zap.Error(err))
-			http.Error(w, "error parsing customer data", http.StatusBadRequest)
-			return
+			return httputil.Errorf(http.StatusBadRequest, "error parsing customer data: %w", err)
 		}
 		if customer.ID == "" {
 			// just log warn and send http ok as we can't do anything without customer id
@@ -88,9 +74,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			if _, ok := event.Data.PreviousAttributes["address"]; ok && customer.Address != nil {
 				err = s.handleCustomerAddressUpdated(r.Context(), event.ID, &customer)
 				if err != nil {
-					s.logger.Error("error handling customer.updated event", zap.Error(err))
-					http.Error(w, "error handling customer.updated event", http.StatusInternalServerError)
-					return
+					return httputil.Errorf(http.StatusInternalServerError, "error handling customer.updated event: %w", err)
 				}
 			}
 		}
@@ -100,6 +84,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Acknowledge receipt of the event
 	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, eventID string, method *stripe.PaymentMethod) error {

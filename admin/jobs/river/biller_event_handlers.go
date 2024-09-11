@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -30,7 +29,8 @@ func (InvoicePaymentFailedArgs) Kind() string { return "invoice_payment_failed" 
 
 type InvoicePaymentFailedWorker struct {
 	river.WorkerDefaults[InvoicePaymentFailedArgs]
-	admin *admin.Service
+	admin         *admin.Service
+	billingLogger *zap.Logger
 }
 
 func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[InvoicePaymentFailedArgs]) error {
@@ -87,18 +87,18 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[In
 		return fmt.Errorf("failed to add billing error: %w", err)
 	}
 
-	// send email
-	err = w.admin.Email.SendInformational(&email.Informational{
-		ToEmail: org.BillingEmail,
-		ToName:  org.Name,
-		Subject: "Your invoice payment failed",
-		Title:   "",
-		Body:    template.HTML(fmt.Sprintf("Your invoice payment failed, please visit the billing portal to fix issues or contact support to continue using Rill. Your projects will be hibernated on %s UTC, if invoice still not paid.", gracePeriodEndDate.Format("2006-01-02"))),
+	err = w.admin.Email.SendInvoicePaymentFailed(&email.InvoicePaymentFailed{
+		ToEmail:            org.BillingEmail,
+		ToName:             org.Name,
+		OrgName:            org.Name,
+		Currency:           job.Args.Currency,
+		Amount:             job.Args.Amount,
+		GracePeriodEndDate: gracePeriodEndDate,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send invoice payment failed email for org %q: %w", org.Name, err)
 	}
-	w.admin.Logger.Info("email sent for invoice payment failed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+	w.billingLogger.Warn("invoice payment failed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("amount", job.Args.Amount), zap.Time("due_date", job.Args.DueDate), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_url", job.Args.InvoiceURL))
 
 	return nil
 }
@@ -112,7 +112,8 @@ func (InvoicePaymentSuccessArgs) Kind() string { return "invoice_payment_success
 
 type InvoicePaymentSuccessWorker struct {
 	river.WorkerDefaults[InvoicePaymentSuccessArgs]
-	admin *admin.Service
+	admin         *admin.Service
+	billingLogger *zap.Logger
 }
 
 func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[InvoicePaymentSuccessArgs]) error {
@@ -128,46 +129,63 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[I
 	// check for existing billing error and delete it
 	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeInvoicePaymentFailed)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing errors: %w", err)
+		if errors.Is(err, database.ErrNotFound) {
+			// no billing error, ignore
+			return nil
+		}
+		return fmt.Errorf("failed to find billing errors: %w", err)
+	}
+
+	failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
+	failedInvoice, ok := failedInvoices[job.Args.InvoiceID]
+	if !ok {
+		// invoice not found in the failed invoices, do nothing
+		return nil
+	}
+
+	// remove any scheduled job for invoice payment failed grace period check
+	if failedInvoice.GracePeriodEndJobID > 0 { // river job ids starts from 1
+		err = w.admin.Jobs.CancelJob(ctx, failedInvoice.GracePeriodEndJobID)
+		if err != nil {
+			if !errors.Is(err, rivertype.ErrNotFound) {
+				w.billingLogger.Error("failed to cancel grace period check job", zap.Error(err), zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID), zap.Error(err))
+				// don't return error, continue as the grace period check worker will check the billing error and invoice status before doing anything else
+			}
+		}
+	}
+	delete(failedInvoices, job.Args.InvoiceID)
+	w.billingLogger.Info("invoice payment success for a failed invoice", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID))
+
+	// if no more failed invoices, delete the billing error
+	if len(failedInvoices) == 0 {
+		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	} else {
+		// update the metadata
+		_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingErrorTypeInvoicePaymentFailed,
+			Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: failedInvoices},
+			EventTime: be.EventTime,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to update billing error: %w", err)
 		}
 	}
 
-	// delete the invoice failed error
-	if be != nil {
-		failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
-		// if found remove the invoice from the failed invoices
-		if i, ok := failedInvoices[job.Args.InvoiceID]; ok {
-			// remove any scheduled job for invoice payment failed grace period check
-			if i.GracePeriodEndJobID > 0 { // river job ids starts from 1
-				err = w.admin.Jobs.CancelJob(ctx, i.GracePeriodEndJobID)
-				if err != nil {
-					if !errors.Is(err, rivertype.ErrNotFound) {
-						return fmt.Errorf("failed to cancel invoice payment failed grace period check job: %w", err)
-					}
-				}
-			}
-			delete(failedInvoices, job.Args.InvoiceID)
-		}
-
-		// if no more failed invoices, delete the billing error
-		if len(failedInvoices) == 0 {
-			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
-			if err != nil {
-				return fmt.Errorf("failed to delete billing error: %w", err)
-			}
-		} else {
-			// update the metadata
-			_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-				OrgID:     org.ID,
-				Type:      database.BillingErrorTypeInvoicePaymentFailed,
-				Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: failedInvoices},
-				EventTime: be.EventTime,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to update billing error: %w", err)
-			}
-		}
+	// send email
+	err = w.admin.Email.SendInvoicePaymentSuccess(&email.InvoicePaymentSuccess{
+		ToEmail:  org.BillingEmail,
+		ToName:   org.Name,
+		OrgName:  org.Name,
+		Currency: failedInvoice.Currency,
+		Amount:   failedInvoice.Amount,
+	})
+	if err != nil {
+		// ignore email sending error
+		w.billingLogger.Error("failed to send invoice payment success email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID), zap.Error(err))
 	}
 
 	return nil
@@ -185,7 +203,8 @@ func (InvoicePaymentFailedGracePeriodCheckArgs) Kind() string {
 
 type InvoicePaymentFailedGracePeriodCheckWorker struct {
 	river.WorkerDefaults[InvoicePaymentFailedGracePeriodCheckArgs]
-	admin *admin.Service
+	admin         *admin.Service
+	billingLogger *zap.Logger
 }
 
 func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[InvoicePaymentFailedGracePeriodCheckArgs]) error {
@@ -205,81 +224,86 @@ func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, j
 	// check if the org has still invoice failed billing error
 	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeInvoicePaymentFailed)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing errors: %w", err)
-		}
-	}
-
-	if be != nil {
-		// just to be very sure, check if the invoice is still unpaid directly from the biller
-		invoice, err := w.admin.Biller.GetInvoice(ctx, job.Args.InvoiceID)
-		if err != nil {
-			return fmt.Errorf("failed to get invoice %q: %w", job.Args.InvoiceID, err)
-		}
-
-		if w.admin.Biller.IsInvoicePaid(ctx, invoice) || !w.admin.Biller.IsInvoiceValid(ctx, invoice) {
-			w.admin.Logger.Warn("Invoice was already paid or invalid but billing error was not cleared", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_status", invoice.Status))
-
-			// clearing the billing error for this invoice
-			failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
-			delete(failedInvoices, job.Args.InvoiceID)
-
-			// if no more failed invoices, delete the billing error
-			if len(failedInvoices) == 0 {
-				err = w.admin.DB.DeleteBillingError(ctx, be.ID)
-				if err != nil {
-					return fmt.Errorf("failed to delete billing error: %w", err)
-				}
-			} else {
-				// update the metadata
-				_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
-					OrgID:     org.ID,
-					Type:      database.BillingErrorTypeInvoicePaymentFailed,
-					Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: failedInvoices},
-					EventTime: be.EventTime,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to update billing error: %w", err)
-				}
-			}
+		if errors.Is(err, database.ErrNotFound) {
+			// no billing error, ignore
 			return nil
 		}
+		return fmt.Errorf("failed to find billing errors: %w", err)
+	}
 
-		// hibernate projects
-		limit := 10
-		afterProjectName := ""
-		for {
-			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
+	failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
+	// check if the invoice is still in the failed invoices
+	if _, ok := failedInvoices[job.Args.InvoiceID]; !ok {
+		// invoice is not in the failed invoices, do nothing
+		return nil
+	}
+
+	// just to be very sure, check if the invoice is still unpaid directly from the biller
+	invoice, err := w.admin.Biller.GetInvoice(ctx, job.Args.InvoiceID)
+	if err != nil {
+		return fmt.Errorf("failed to get invoice %q: %w", job.Args.InvoiceID, err)
+	}
+
+	if w.admin.Biller.IsInvoicePaid(ctx, invoice) || !w.admin.Biller.IsInvoiceValid(ctx, invoice) {
+		w.admin.Logger.Warn("Invoice was already paid or invalid but billing error was not cleared", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_status", invoice.Status))
+
+		// clearing the billing error for this invoice
+		delete(failedInvoices, job.Args.InvoiceID)
+
+		// if no more failed invoices, delete the billing error
+		if len(failedInvoices) == 0 {
+			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to delete billing error: %w", err)
 			}
-
-			for _, proj := range projs {
-				_, err = w.admin.HibernateProject(ctx, proj)
-				if err != nil {
-					return fmt.Errorf("failed to hibernate project %q: %w", proj.Name, err)
-				}
-				afterProjectName = proj.Name
-			}
-
-			if len(projs) < limit {
-				break
+		} else {
+			// update the metadata
+			_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingErrorTypeInvoicePaymentFailed,
+				Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: failedInvoices},
+				EventTime: be.EventTime,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to update billing error: %w", err)
 			}
 		}
-		w.admin.Logger.Info("Projects hibernated due to no valid payment method", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+		return nil
+	}
 
-		// send email
-		err = w.admin.Email.SendInformational(&email.Informational{
-			ToEmail: org.BillingEmail,
-			ToName:  org.Name,
-			Subject: "Invoice payment default",
-			Title:   "",
-			Body:    "We did not receive any payment for the unpaid invoice, your projects have been hibernated. Please visit the billing portal to complete payment.",
-		})
+	// hibernate projects
+	limit := 10
+	afterProjectName := ""
+	for {
+		projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
 		if err != nil {
-			return fmt.Errorf("failed to send payment method expired email for org %q: %w", org.Name, err)
+			return err
 		}
-		w.admin.Logger.Info("email sent for projects hibernated", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID))
+
+		for _, proj := range projs {
+			_, err = w.admin.HibernateProject(ctx, proj)
+			if err != nil {
+				return fmt.Errorf("failed to hibernate project %q: %w", proj.Name, err)
+			}
+			afterProjectName = proj.Name
+		}
+
+		if len(projs) < limit {
+			break
+		}
+	}
+	w.billingLogger.Warn("projects hibernated due to unpaid invoice", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID))
+
+	// send email
+	err = w.admin.Email.SendInvoiceUnpaid(&email.InvoiceUnpaid{
+		ToEmail:  org.BillingEmail,
+		ToName:   org.Name,
+		OrgName:  org.Name,
+		Currency: invoice.Currency,
+		Amount:   invoice.Amount,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to send payment method expired email for org %q: %w", org.Name, err)
 	}
 
 	return nil

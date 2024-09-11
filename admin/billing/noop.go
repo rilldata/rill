@@ -2,11 +2,11 @@ package billing
 
 import (
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
 
 var _ Biller = &noop{}
@@ -109,7 +109,7 @@ func (n noop) GetReportingWorkerCron() string {
 	return ""
 }
 
-func (n noop) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+func (n noop) WebhookHandlerFunc(ctx context.Context) httputil.Handler {
 	return nil
 }
 

@@ -3,12 +3,12 @@ package payment
 import (
 	"context"
 	"errors"
-	"net/http"
 	"time"
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/billingportal/session"
 	"github.com/stripe/stripe-go/v79/customer"
@@ -130,7 +130,7 @@ func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL 
 	return sess.URL, nil
 }
 
-func (s *Stripe) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+func (s *Stripe) WebhookHandlerFunc(ctx context.Context) httputil.Handler {
 	if s.webhookSecret == "" {
 		return nil
 	}

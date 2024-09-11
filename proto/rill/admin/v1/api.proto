@@ -503,12 +503,14 @@ service AdminService {
     };
   }
 
+  // SudoDeleteOrganizationBillingError deletes a billing error of a type for the organization
   rpc SudoDeleteOrganizationBillingError(SudoDeleteOrganizationBillingErrorRequest) returns (SudoDeleteOrganizationBillingErrorResponse) {
     option (google.api.http) = {
       delete: "/v1/superuser/organizations/{organization}/billing/errors/{type}",
     };
   }
 
+  // SudoDeleteOrganizationBillingWarning deletes a billing warning of a type for the organization
   rpc SudoDeleteOrganizationBillingWarning(SudoDeleteOrganizationBillingWarningRequest) returns (SudoDeleteOrganizationBillingWarningResponse) {
     option (google.api.http) = {
       delete: "/v1/superuser/organizations/{organization}/billing/warnings/{type}",
@@ -808,10 +810,12 @@ service AdminService {
     };
   }
 
+  // ListOrganizationBillingErrors lists all the billing errors for the organization
   rpc ListOrganizationBillingErrors(ListOrganizationBillingErrorsRequest) returns (ListOrganizationBillingErrorsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/billing/errors"};
   }
 
+  // ListOrganizationBillingWarnings lists all the billing warnings for the organization
   rpc ListOrganizationBillingWarnings(ListOrganizationBillingWarningsRequest) returns (ListOrganizationBillingWarningsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/billing/warnings"};
   }
@@ -1308,26 +1312,12 @@ message SudoDeleteOrganizationBillingErrorRequest {
 
 message SudoDeleteOrganizationBillingErrorResponse {}
 
-enum BillingErrorType {
-  BILLING_ERROR_TYPE_UNSPECIFIED = 0;
-  BILLING_ERROR_TYPE_NO_PAYMENT_METHOD = 1;
-  BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS = 2;
-  BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 3;
-  BILLING_ERROR_TYPE_TRIAL_ENDED = 4;
-  BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 5;
-}
-
 message SudoDeleteOrganizationBillingWarningRequest {
   string organization = 1;
   BillingWarningType type = 2;
 }
 
 message SudoDeleteOrganizationBillingWarningResponse {}
-
-enum BillingWarningType {
-  BILLING_WARNING_TYPE_UNSPECIFIED = 0;
-  BILLING_WARNING_TYPE_ON_TRIAL = 1;
-}
 
 message ListProjectMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -2007,7 +1997,7 @@ message UpdateBillingSubscriptionRequest {
 }
 
 message CancelBillingSubscriptionRequest {
-  string org_name = 1;
+  string organization = 1;
 }
 
 message CancelBillingSubscriptionResponse {}
@@ -2358,6 +2348,15 @@ message MemberUsergroup {
   google.protobuf.Timestamp updated_on = 5;
 }
 
+enum BillingErrorType {
+  BILLING_ERROR_TYPE_UNSPECIFIED = 0;
+  BILLING_ERROR_TYPE_NO_PAYMENT_METHOD = 1;
+  BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS = 2;
+  BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 3;
+  BILLING_ERROR_TYPE_TRIAL_ENDED = 4;
+  BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 5;
+}
+
 message BillingError {
   string organization = 1;
   BillingErrorType type = 2;
@@ -2399,6 +2398,11 @@ message BillingErrorMetadataTrialEnded {
 
 message BillingErrorMetadataSubscriptionCancelled {
   google.protobuf.Timestamp end_date = 1;
+}
+
+enum BillingWarningType {
+  BILLING_WARNING_TYPE_UNSPECIFIED = 0;
+  BILLING_WARNING_TYPE_ON_TRIAL = 1;
 }
 
 message BillingWarning {

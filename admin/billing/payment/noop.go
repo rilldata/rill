@@ -2,10 +2,10 @@ package payment
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
 
 var _ Provider = &noop{}
@@ -40,7 +40,7 @@ func (n noop) GetBillingPortalURL(ctx context.Context, customerID, returnURL str
 	return "", nil
 }
 
-func (n noop) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+func (n noop) WebhookHandlerFunc(ctx context.Context) httputil.Handler {
 	return nil
 }
 

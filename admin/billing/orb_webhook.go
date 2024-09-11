@@ -15,44 +15,40 @@ import (
 	"time"
 
 	"github.com/orbcorp/orb-go"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"go.uber.org/zap"
 )
 
-// WebhookHeaderTimestampFormat is the format of the header X-Orb-Timestamp for webhook requests sent by Orb.
-const WebhookHeaderTimestampFormat = "2006-01-02T15:04:05.999999999"
+const (
+	webhookHeaderTimestampFormat = "2006-01-02T15:04:05.999999999" // format of the header X-Orb-Timestamp for webhook requests sent by Orb.
+	maxBodyBytes                 = int64(65536)
+)
 
 var interestingEvents = []string{"invoice.payment_succeeded", "invoice.payment_failed", "invoice.issue_failed"}
 
-func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	const MaxBodyBytes = int64(65536)
-	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
+func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) error {
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		o.logger.Error("error reading request body", zap.Error(err))
-		http.Error(w, "error reading request body", http.StatusServiceUnavailable)
-		return
+		return httputil.Errorf(http.StatusServiceUnavailable, "error reading request body: %w", err)
 	}
 
 	// unmarshal event first before even verifying signature, so we can ignore unwanted events as Orb does not have an option to selectively deliver only required events
 	var e genericEvent
 	err = json.Unmarshal(payload, &e)
 	if err != nil {
-		o.logger.Error("error parsing event data", zap.Error(err))
-		http.Error(w, "error parsing event data", http.StatusBadRequest)
-		return
+		return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 	}
 
 	if !slices.Contains(interestingEvents, e.Type) {
 		w.WriteHeader(http.StatusOK)
-		return
+		return nil
 	}
 
 	now := time.Now().UTC()
 	err = o.verifySignature(payload, r.Header, now)
 	if err != nil {
-		o.logger.Error("error verifying webhook signature", zap.Error(err))
-		http.Error(w, "error verifying webhook signature", http.StatusBadRequest)
-		return
+		return httputil.Errorf(http.StatusBadRequest, "error verifying webhook signature: %w", err)
 	}
 
 	switch e.Type {
@@ -60,37 +56,27 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		var ie invoiceEvent
 		err = json.Unmarshal(payload, &ie)
 		if err != nil {
-			o.logger.Error("error parsing event data", zap.Error(err))
-			http.Error(w, "error parsing event data", http.StatusBadRequest)
-			return
+			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
 		err = o.handleInvoicePaymentSucceeded(r.Context(), ie)
 		if err != nil {
-			o.logger.Error("error handling event", zap.Error(err))
-			http.Error(w, "error handling event", http.StatusInternalServerError)
-			return
+			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
 		}
 	case "invoice.payment_failed":
 		var ie invoiceEvent
 		err = json.Unmarshal(payload, &ie)
 		if err != nil {
-			o.logger.Error("error parsing event data", zap.Error(err))
-			http.Error(w, "error parsing event data", http.StatusBadRequest)
-			return
+			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
 		err = o.handleInvoicePaymentFailed(r.Context(), ie)
 		if err != nil {
-			o.logger.Error("error handling event", zap.Error(err))
-			http.Error(w, "error handling event", http.StatusInternalServerError)
-			return
+			return httputil.Errorf(http.StatusInternalServerError, "error handling event: %w", err)
 		}
 	case "invoice.issue_failed":
 		var ie invoiceEvent
 		err = json.Unmarshal(payload, &ie)
 		if err != nil {
-			o.logger.Error("error parsing event data", zap.Error(err))
-			http.Error(w, "error parsing event data", http.StatusBadRequest)
-			return
+			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
 		o.logger.Warn("invoice issue failed", zap.String("customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.String("invoice_id", ie.OrbInvoice.ID), zap.String("props", fmt.Sprintf("%v", ie.Properties)))
 	default:
@@ -98,6 +84,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 func (o *Orb) handleInvoicePaymentSucceeded(ctx context.Context, ie invoiceEvent) error {
@@ -146,7 +133,7 @@ func (o *Orb) verifySignature(payload []byte, headers http.Header, now time.Time
 		return errors.New("could not find X-Orb-Timestamp header")
 	}
 
-	timestamp, err := time.Parse(WebhookHeaderTimestampFormat, msgTimestamp)
+	timestamp, err := time.Parse(webhookHeaderTimestampFormat, msgTimestamp)
 	if err != nil {
 		return fmt.Errorf("invalid timestamp headers: %w", err)
 	}

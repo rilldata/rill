@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/orbcorp/orb-go/option"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"go.uber.org/zap"
 )
 
@@ -405,7 +405,7 @@ func (o *Orb) GetReportingWorkerCron() string {
 	return "55 * * * *"
 }
 
-func (o *Orb) WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
+func (o *Orb) WebhookHandlerFunc(ctx context.Context) httputil.Handler {
 	if o.webhookSecret == "" {
 		return nil
 	}

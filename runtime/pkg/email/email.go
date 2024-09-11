@@ -355,3 +355,126 @@ func (c *Client) SendProjectAccessRejected(opts *ProjectAccessRejected) error {
 		Body:    template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been denied. Contact your project admin for help.", opts.OrgName, opts.ProjectName)),
 	})
 }
+
+type InvoicePaymentFailed struct {
+	ToEmail            string
+	ToName             string
+	OrgName            string
+	Currency           string
+	Amount             string
+	GracePeriodEndDate time.Time
+}
+
+func (c *Client) SendInvoicePaymentFailed(opts *InvoicePaymentFailed) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Payment for %s has failed", opts.OrgName),
+		Title:   fmt.Sprintf("Payment for %s has failed", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has failed. Your projects will be hibenrated on %s if payment is not received.", opts.Currency, opts.Amount, opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
+	})
+}
+
+type InvoicePaymentSuccess struct {
+	ToEmail  string
+	ToName   string
+	OrgName  string
+	Currency string
+	Amount   string
+}
+
+// SendInvoicePaymentSuccess Currently Used only when a previously failed invoice payment succeeds
+func (c *Client) SendInvoicePaymentSuccess(opts *InvoicePaymentSuccess) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Payment for %s has succeeded", opts.OrgName),
+		Title:   fmt.Sprintf("Payment for %s has succeeded", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has succeeded.", opts.Currency, opts.Amount, opts.OrgName)),
+	})
+}
+
+type InvoiceUnpaid struct {
+	ToEmail  string
+	ToName   string
+	OrgName  string
+	Currency string
+	Amount   string
+}
+
+// SendInvoiceUnpaid sent after the payment grace period has ended
+func (c *Client) SendInvoiceUnpaid(opts *InvoiceUnpaid) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Payment for %s is overdue", opts.OrgName),
+		Title:   fmt.Sprintf("Payment for %s is overdue", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your Rill subscription on %q is overdue. Your projects have been hibernated.", opts.Currency, opts.Amount, opts.OrgName)),
+	})
+}
+
+type SubscriptionEnded struct {
+	ToEmail string
+	ToName  string
+	OrgName string
+}
+
+func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Subscription ended for %s", opts.OrgName),
+		Title:   fmt.Sprintf("Subscription ended for %s", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Thank you for using Rill, all your projects have been hibernated as subscription has ended for %q.", opts.OrgName)),
+	})
+}
+
+type TrialEndingSoon struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialEndingSoon(opts *TrialEndingSoon) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your trial for %s is ending soon", opts.OrgName),
+		Title:   fmt.Sprintf("Your trial for %s is ending soon", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Your trial for %q is ending on %s. Upgrade to a paid plan to continue using Rill.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+	})
+}
+
+type TrialEnded struct {
+	ToEmail            string
+	ToName             string
+	OrgName            string
+	GracePeriodEndDate time.Time
+}
+
+func (c *Client) SendTrialEnded(opts *TrialEnded) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your trial for %s has ended", opts.OrgName),
+		Title:   fmt.Sprintf("Your trial for %s has ended", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Your trial for %q has ended. Your projects will be hibernated on %s. Upgrade to a paid plan to continue using Rill.", opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
+	})
+}
+
+type TrialGracePeriodEnded struct {
+	ToEmail string
+	ToName  string
+	OrgName string
+}
+
+func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your trial grace period has ended for %s", opts.OrgName),
+		Title:   fmt.Sprintf("Your trial grace period has ended for %s", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Your trial grace period has ended for %q. Your projects have been hibernated. Please visit the billing portal to enter payment method and upgrade your plan to continue using Rill.", opts.OrgName)),
+	})
+}

@@ -3,11 +3,11 @@ package billing
 import (
 	"context"
 	"errors"
-	"net/http"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
 
 const (
@@ -56,7 +56,7 @@ type Biller interface {
 	GetReportingWorkerCron() string
 
 	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers.
-	WebhookHandlerFunc(ctx context.Context) func(w http.ResponseWriter, r *http.Request)
+	WebhookHandlerFunc(ctx context.Context) httputil.Handler
 
 	// SetJobsClient needs to be explicitly set because of circular dependency, see admin start method
 	SetJobsClient(jobs jobs.Client)
