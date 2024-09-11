@@ -14,9 +14,9 @@
     TableOptions,
   } from "@tanstack/svelte-table";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
+  import DashboardLink from "./DashboardLink.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
-  import { ChevronLeft, ChevronRight } from "lucide-svelte";
 
   export let magicAuthTokens: V1MagicAuthToken[];
   export let pageSize: number;
@@ -42,6 +42,11 @@
     {
       accessorFn: (row) => row.title || row.metricsView,
       header: "Dashboard name",
+      cell: ({ row }) =>
+        flexRender(DashboardLink, {
+          href: row.original.url,
+          title: row.original.title || row.original.metricsView,
+        }),
     },
     {
       accessorKey: "expiresOn",
@@ -186,7 +191,7 @@
   </tbody>
 </table>
 
-<div class="flex items-center gap-2 mt-2">
+<div class="flex items-center gap-2 mt-2 justify-between">
   <button
     class="border rounded px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none"
     on:click={onLoadMore}
