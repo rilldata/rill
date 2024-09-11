@@ -29,6 +29,7 @@
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
+    isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
     withinOrganization,
@@ -56,6 +57,7 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
+  $: onOrgPage = isOrganizationPage($page);
   $: withinOrgPage = withinOrganization($page);
 
   $: loggedIn = !!$user.data?.user;
@@ -161,7 +163,7 @@
 
 <div
   class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage && !withinOrgPage}
+  class:border-b={!onProjectPage && !onOrgPage}
 >
   <!-- Left side -->
   <a
