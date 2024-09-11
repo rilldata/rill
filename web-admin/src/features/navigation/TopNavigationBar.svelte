@@ -32,7 +32,6 @@
     isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
-    withinOrganization,
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
@@ -58,7 +57,6 @@
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
-  $: withinOrgPage = withinOrganization($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
