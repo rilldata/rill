@@ -71,11 +71,6 @@
       pageToken = $magicAuthTokens.data.nextPageToken;
     }
   }
-
-  function handlePageSizeChange(newPageSize: number) {
-    pageSize = newPageSize;
-    pageToken = undefined;
-  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -96,7 +91,6 @@
             {pageSize}
             onDelete={handleDelete}
             onLoadMore={handleLoadMore}
-            onPageSizeChange={handlePageSizeChange}
             hasNextPage={!!$magicAuthTokens.data?.nextPageToken}
           />
         {/if}

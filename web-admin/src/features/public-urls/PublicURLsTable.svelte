@@ -22,7 +22,6 @@
   export let pageSize: number;
   export let onDelete: (deletedTokenId: string) => void;
   export let onLoadMore: () => void;
-  export let onPageSizeChange: (newPageSize: number) => void;
   export let hasNextPage: boolean;
 
   let sorting: SortingState = [];
@@ -48,7 +47,7 @@
         }),
     },
     {
-      // TODO: should this from the public url creation?
+      // TODO: use dashboard title instead of metricsView
       accessorFn: (row) => row.metricsView,
       header: "Dashboard name",
     },
@@ -125,14 +124,6 @@
       },
     }));
   }
-
-  // TODO: to be removed
-  // function rerender() {
-  //   options.update((options) => ({
-  //     ...options,
-  //     data: magicAuthTokens,
-  //   }));
-  // }
 </script>
 
 <table class="w-full">
