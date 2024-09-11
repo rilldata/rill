@@ -9,15 +9,15 @@
     runtimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useIsModelingSupportedForCurrentOlapDriver } from "../../../connectors/olap/selectors";
+  import { useIsModelingSupportedForDefaultOlapDriver } from "../../../connectors/olap/selectors";
   import { createDashboardFromTableInMetricsEditor } from "../../ai-generation/generateMetricsView";
 
   export let metricsName: string;
   export let filePath: string;
   export let view: EditorView | undefined = undefined;
 
-  $: isModelingSupportedForCurrentOlapDriver =
-    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
+  $: isModelingSupportedForDefaultOlapDriver =
+    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
   $: models = useModels($runtime.instanceId);
 
   const buttonClasses =
@@ -59,7 +59,7 @@
 </script>
 
 <div class="whitespace-normal">
-  {#if $isModelingSupportedForCurrentOlapDriver}
+  {#if $isModelingSupportedForDefaultOlapDriver}
     Auto-generate a <WithTogglableFloatingElement
       distance={8}
       inline
@@ -98,7 +98,7 @@
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
     }}
-    >{#if $isModelingSupportedForCurrentOlapDriver}s{:else}S{/if}tart with a
+    >{#if $isModelingSupportedForDefaultOlapDriver}s{:else}S{/if}tart with a
     skeleton</button
   >, or just start typing.
 </div>

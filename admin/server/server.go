@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -213,14 +214,6 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		),
 	)
 
-	// Temporary endpoint for testing headers.
-	// TODO: Remove this.
-	mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
-		for k, v := range r.Header {
-			fmt.Fprintf(w, "%s: %v\n", k, v)
-		}
-	})
-
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		mux.Handle("/metrics", promhttp.Handler())
@@ -357,6 +350,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	case
 		"/rill.admin.v1.AdminService/CreateProject",
 		"/rill.admin.v1.AdminService/UpdateProject",
+		"/rill.admin.v1.AdminService/RedeployProject",
 		"/rill.admin.v1.AdminService/TriggerRedeploy":
 		return time.Minute * 5
 	}
@@ -390,7 +384,16 @@ func mapGRPCError(err error) error {
 	if errors.Is(err, context.Canceled) {
 		return status.Error(codes.Canceled, err.Error())
 	}
-	return err
+	if errors.Is(err, database.ErrNotFound) {
+		return status.Error(codes.NotFound, err.Error())
+	}
+	if errors.Is(err, database.ErrNotUnique) {
+		return status.Error(codes.AlreadyExists, err.Error())
+	}
+	if errors.Is(err, database.ErrValidation) {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	return status.Error(codes.Internal, err.Error())
 }
 
 // checkUserAgent is an interceptor that checks rejects from requests from old versions of the Rill CLI.

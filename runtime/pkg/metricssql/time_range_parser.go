@@ -124,11 +124,10 @@ func parseTimeRangeArgs(args []ast.ExprNode) (duration.Duration, int, string, er
 		if err != nil {
 			return nil, 0, "", err
 		}
-		i, err := strconv.ParseInt(val, 10, 64)
+		unit, err = strconv.Atoi(val)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		unit = int(i)
 	}
 
 	// identify column name

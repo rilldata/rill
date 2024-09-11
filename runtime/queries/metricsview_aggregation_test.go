@@ -27,6 +27,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	}
 	rt, instanceID := testruntime.NewInstanceWithClickhouseProject(t, true)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
@@ -64,6 +65,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_day", func(t *testing.T) { testMetricsViewsAggregation_export_day(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_export_hour", func(t *testing.T) { testMetricsViewsAggregation_export_hour(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_no_limit", func(t *testing.T) { testMetricsViewsAggregation_no_limit(t, rt, instanceID) })
@@ -164,6 +166,68 @@ func testMetricsViewsAggregation(t *testing.T, rt *runtime.Runtime, instanceID s
 	require.Equal(t, "Microsoft,2022-03-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
 	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+}
+
+func testMetricsViewsAggregationURI(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "pub_uri",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_Uri{
+					Uri: &runtimev1.MetricsViewAggregationMeasureComputeURI{
+						Dimension: "pub",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "timestamp",
+			},
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+
+	i := 0
+	require.Equal(t, "http://localhost/Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Facebook,2022-02-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Facebook,2022-03-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Google,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Google,2022-02-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Google,2022-03-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Microsoft,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Microsoft,2022-02-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Microsoft,2022-03-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
+	i++
+	require.Equal(t, "http://localhost/Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub_uri", "timestamp"))
 }
 
 func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, instanceID string) {

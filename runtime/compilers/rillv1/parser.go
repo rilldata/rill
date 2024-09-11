@@ -983,6 +983,12 @@ func (p *Parser) defaultOLAPConnector() string {
 	return p.DefaultOLAPConnector
 }
 
+// isDev returns true if the parser's instance's environment is "dev".
+// Usually this means it's running on localhost with "rill start".
+func (p *Parser) isDev() bool {
+	return strings.EqualFold(p.Environment, "dev")
+}
+
 // pathIsSQL returns true if the path is a SQL file
 func pathIsSQL(path string) bool {
 	return strings.HasSuffix(path, ".sql")
@@ -1084,7 +1090,7 @@ func newYAMLError(err error) error {
 		return err
 	}
 
-	line, err2 := strconv.Atoi(res[1])
+	line, err2 := strconv.ParseUint(res[1], 10, 32)
 	if err2 != nil {
 		return err
 	}
@@ -1107,7 +1113,7 @@ func newDuckDBError(err error) error {
 		return err
 	}
 
-	line, err2 := strconv.Atoi(res[1])
+	line, err2 := strconv.ParseUint(res[1], 10, 32)
 	if err2 != nil {
 		return err
 	}
