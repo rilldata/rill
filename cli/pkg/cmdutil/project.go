@@ -2,6 +2,7 @@ package cmdutil
 
 import (
 	"context"
+
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
