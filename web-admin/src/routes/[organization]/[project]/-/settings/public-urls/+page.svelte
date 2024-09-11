@@ -13,9 +13,17 @@
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-  $: magicAuthTokensQuery = createAdminServiceListMagicAuthTokens(
+
+  let pageSize = 10;
+  let pageToken: string | undefined = undefined;
+
+  $: magicAuthTokens = createAdminServiceListMagicAuthTokens(
     organization,
     project,
+    {
+      pageSize,
+      pageToken,
+    },
   );
 
   const queryClient = useQueryClient();
@@ -50,27 +58,40 @@
       });
     }
   }
+
+  // forward cursor-based pagination
+  function handleLoadMore() {
+    if ($magicAuthTokens.data?.nextPageToken) {
+      pageToken = $magicAuthTokens.data.nextPageToken;
+    }
+  }
+
+  function handlePageSizeChange(newPageSize: number) {
+    pageSize = newPageSize;
+    pageToken = undefined;
+  }
 </script>
 
 <div class="flex flex-col w-full">
   <div class="flex md:flex-row flex-col gap-6">
     <div class="w-full">
-      {#if $magicAuthTokensQuery.isLoading}
-        <DelayedSpinner
-          isLoading={$magicAuthTokensQuery.isLoading}
-          size="1rem"
-        />
-      {:else if $magicAuthTokensQuery.error}
+      {#if $magicAuthTokens.isLoading}
+        <DelayedSpinner isLoading={$magicAuthTokens.isLoading} size="1rem" />
+      {:else if $magicAuthTokens.error}
         <div class="text-red-500">
-          Error loading resources: {$magicAuthTokensQuery.error?.message}
+          Error loading resources: {$magicAuthTokens.error?.message}
         </div>
-      {:else if $magicAuthTokensQuery.data}
-        {#if $magicAuthTokensQuery.data.tokens.length === 0}
+      {:else if $magicAuthTokens.data}
+        {#if $magicAuthTokens.data.tokens.length === 0}
           <NoPublicURLCTA />
         {:else}
           <PublicURLsTable
-            magicAuthTokens={$magicAuthTokensQuery.data.tokens}
+            magicAuthTokens={$magicAuthTokens.data.tokens}
+            {pageSize}
             onDelete={handleDelete}
+            onLoadMore={handleLoadMore}
+            onPageSizeChange={handlePageSizeChange}
+            hasNextPage={!!$magicAuthTokens.data?.nextPageToken}
           />
         {/if}
       {/if}

@@ -4,6 +4,7 @@
     createSvelteTable,
     flexRender,
     getCoreRowModel,
+    getPaginationRowModel,
     getSortedRowModel,
   } from "@tanstack/svelte-table";
   import type {
@@ -15,9 +16,16 @@
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
+  import { ChevronLeft, ChevronRight } from "lucide-svelte";
 
   export let magicAuthTokens: V1MagicAuthToken[];
+  export let pageSize: number;
   export let onDelete: (deletedTokenId: string) => void;
+  export let onLoadMore: () => void;
+  export let onPageSizeChange: (newPageSize: number) => void;
+  export let hasNextPage: boolean;
+
+  let sorting: SortingState = [];
 
   function formatDate(value: string | null) {
     if (!value) return "-";
@@ -69,20 +77,13 @@
     },
   ];
 
-  let sorting: SortingState = [];
   const setSorting: OnChangeFn<SortingState> = (updater) => {
     if (updater instanceof Function) {
       sorting = updater(sorting);
     } else {
       sorting = updater;
     }
-    options.update((old) => ({
-      ...old,
-      state: {
-        ...old.state,
-        sorting,
-      },
-    }));
+    updateTableOptions();
   };
 
   const options = writable<TableOptions<V1MagicAuthToken>>({
@@ -90,13 +91,29 @@
     columns: columns,
     state: {
       sorting,
+      pagination: {
+        pageSize,
+        pageIndex: 0, // Always 0 since we're using cursor-based pagination
+      },
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
   });
 
   const table = createSvelteTable(options);
+
+  function updateTableOptions() {
+    options.update((old) => ({
+      ...old,
+      state: {
+        ...old.state,
+        sorting,
+      },
+    }));
+  }
 
   // TODO: to be removed
   // function rerender() {
@@ -168,6 +185,28 @@
     {/if}
   </tbody>
 </table>
+
+<div class="flex items-center gap-2 mt-2">
+  <button
+    class="border rounded px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none"
+    on:click={onLoadMore}
+    disabled={!hasNextPage}
+  >
+    Load More
+  </button>
+  <span class="flex items-center gap-1">
+    <p class="text-sm font-medium">Rows per page</p>
+    <select
+      bind:value={pageSize}
+      on:change={(e) => onPageSizeChange(Number(e.target.value))}
+      class="border p-1 rounded"
+    >
+      {#each [10, 20, 30, 40, 50] as size}
+        <option value={size}>{size}</option>
+      {/each}
+    </select>
+  </span>
+</div>
 
 <style lang="postcss">
   table {
