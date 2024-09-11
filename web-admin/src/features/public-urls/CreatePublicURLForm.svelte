@@ -40,6 +40,7 @@
   $: dashboard = useDashboard($runtime.instanceId, $metricsViewName);
   $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
 
+  // Set the dashboard title as the default name for the public URL name
   $: if (dashboardTitle && !$form.name) {
     $form.name = dashboardTitle;
   }
@@ -63,7 +64,7 @@
 
   const initialValues = {
     expiresAt: null,
-    name: dashboardTitle,
+    name: "",
   };
 
   const validationSchema = object({
@@ -179,7 +180,7 @@
       </div>
       {#if setExpiration}
         <div class="expires-at-container">
-          <label for="expires-at" class="expires-at-label">
+          <label for="expires-at" class="expires-at-label w-1/3">
             Access expires
           </label>
           <!-- TODO: use a Rill date picker, once we have one that can select a single day -->
@@ -191,6 +192,7 @@
             min={new Date(Date.now() + 24 * 60 * 60 * 1000)
               .toISOString()
               .slice(0, 10)}
+            class="w-2/3"
           />
         </div>
       {/if}
@@ -258,7 +260,6 @@
     @apply h-8 pl-2 w-full;
     @apply border border-gray-300 rounded-sm;
     @apply text-xs;
-    @apply cursor-pointer;
   }
 
   #name-input:focus-within {
