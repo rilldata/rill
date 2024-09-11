@@ -1523,6 +1523,9 @@ paths:
               state:
                 type: string
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+              title:
+                type: string
+                description: Optional dashboard title to store with the token.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
@@ -4329,6 +4332,8 @@ definitions:
         items:
           type: string
       state:
+        type: string
+      title:
         type: string
   v1MemberUser:
     type: object

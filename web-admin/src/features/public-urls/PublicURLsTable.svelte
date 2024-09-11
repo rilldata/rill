@@ -32,7 +32,8 @@
 
   const columns: ColumnDef<V1MagicAuthToken>[] = [
     {
-      accessorKey: "metricsView",
+      // accessorFn: (row) => row.title || row.metricsView,
+      accessorFn: (row) => row.title,
       header: "Dashboard name",
     },
     {
@@ -118,7 +119,7 @@
             on:click={header.column.getToggleSortingHandler()}
           >
             {#if !header.isPlaceholder}
-              <button
+              <div
                 class:cursor-pointer={header.column.getCanSort()}
                 class:select-none={header.column.getCanSort()}
                 class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
@@ -138,7 +139,7 @@
                     <ArrowDown size="12px" />
                   </span>
                 {/if}
-              </button>
+              </div>
             {/if}
           </th>
         {/each}

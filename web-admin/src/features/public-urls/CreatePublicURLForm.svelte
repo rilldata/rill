@@ -22,6 +22,8 @@
     hasDashboardWhereFilter,
   } from "./form-utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   const queryClient = useQueryClient();
   const {
@@ -34,6 +36,9 @@
   } = getStateManagers();
 
   $: ({ organization, project } = $page.params);
+
+  $: dashboard = useDashboard($runtime.instanceId, $metricsViewName);
+  $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
 
   $: metricsViewFields = getMetricsViewFields(
     $dashboardStore,
@@ -84,6 +89,7 @@
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
               state: sanitizedState ? sanitizedState : undefined,
+              title: dashboardTitle ? dashboardTitle : undefined,
             },
           });
           token = _token;

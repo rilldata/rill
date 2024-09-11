@@ -4416,42 +4416,6 @@ definitions:
       - LOG_LEVEL_ERROR
       - LOG_LEVEL_FATAL
     default: LOG_LEVEL_UNSPECIFIED
-  v1MagicAuthToken:
-    type: object
-    properties:
-      id:
-        type: string
-      projectId:
-        type: string
-      url:
-        type: string
-      token:
-        type: string
-      createdOn:
-        type: string
-        format: date-time
-      expiresOn:
-        type: string
-        format: date-time
-      usedOn:
-        type: string
-        format: date-time
-      createdByUserId:
-        type: string
-      createdByUserEmail:
-        type: string
-      attributes:
-        type: object
-      metricsView:
-        type: string
-      metricsViewFilter:
-        $ref: '#/definitions/v1Expression'
-      metricsViewFields:
-        type: array
-        items:
-          type: string
-      state:
-        type: string  
   v1MapType:
     type: object
     properties:

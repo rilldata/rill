@@ -1639,6 +1639,8 @@ message IssueMagicAuthTokenRequest {
   repeated string metrics_view_fields = 6;
   // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
   string state = 7;
+  // Optional dashboard title to store with the token.
+  string title = 8;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -2241,6 +2243,7 @@ message MagicAuthToken {
   rill.runtime.v1.Expression metrics_view_filter = 10;
   repeated string metrics_view_fields = 11;
   string state = 12;
+  string title = 15;
 }
 
 message VirtualFile {

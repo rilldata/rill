@@ -9348,6 +9348,8 @@ type IssueMagicAuthTokenRequest struct {
 	MetricsViewFields []string `protobuf:"bytes,6,rep,name=metrics_view_fields,json=metricsViewFields,proto3" json:"metrics_view_fields,omitempty"`
 	// Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
 	State string `protobuf:"bytes,7,opt,name=state,proto3" json:"state,omitempty"`
+	// Optional dashboard title to store with the token.
+	Title string `protobuf:"bytes,8,opt,name=title,proto3" json:"title,omitempty"`
 }
 
 func (x *IssueMagicAuthTokenRequest) Reset() {
@@ -9427,6 +9429,13 @@ func (x *IssueMagicAuthTokenRequest) GetMetricsViewFields() []string {
 func (x *IssueMagicAuthTokenRequest) GetState() string {
 	if x != nil {
 		return x.State
+	}
+	return ""
+}
+
+func (x *IssueMagicAuthTokenRequest) GetTitle() string {
+	if x != nil {
+		return x.Title
 	}
 	return ""
 }
@@ -15563,6 +15572,7 @@ type MagicAuthToken struct {
 	MetricsViewFilter  *v1.Expression         `protobuf:"bytes,10,opt,name=metrics_view_filter,json=metricsViewFilter,proto3" json:"metrics_view_filter,omitempty"`
 	MetricsViewFields  []string               `protobuf:"bytes,11,rep,name=metrics_view_fields,json=metricsViewFields,proto3" json:"metrics_view_fields,omitempty"`
 	State              string                 `protobuf:"bytes,12,opt,name=state,proto3" json:"state,omitempty"`
+	Title              string                 `protobuf:"bytes,15,opt,name=title,proto3" json:"title,omitempty"`
 }
 
 func (x *MagicAuthToken) Reset() {
@@ -15691,6 +15701,13 @@ func (x *MagicAuthToken) GetMetricsViewFields() []string {
 func (x *MagicAuthToken) GetState() string {
 	if x != nil {
 		return x.State
+	}
+	return ""
+}
+
+func (x *MagicAuthToken) GetTitle() string {
+	if x != nil {
+		return x.Title
 	}
 	return ""
 }
@@ -20849,7 +20866,7 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x6e, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x41, 0x64, 0x6d, 0x69,
 	0x6e, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
 	0xea, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x3a, 0x3a,
-	0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,6745e7 (Add title to MagicAuthToken, db migration)
 }
 
 var (
