@@ -99,6 +99,8 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindModel
 	case "metricsview", "metrics_view":
 		return runtime.ResourceKindMetricsView
+	case "explore":
+		return runtime.ResourceKindExplore
 	case "migration":
 		return runtime.ResourceKindMigration
 	case "report":

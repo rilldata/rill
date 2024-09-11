@@ -38,6 +38,8 @@ func (p *Parser) parseNode(node *Node) error {
 		return p.parseModel(node)
 	case ResourceKindMetricsView:
 		return p.parseMetricsView(node)
+	case ResourceKindExplore:
+		return p.parseExplore(node)
 	case ResourceKindMigration:
 		return p.parseMigration(node)
 	case ResourceKindReport:
