@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import { onDestroy } from "svelte";
-  import { CheckIcon, CopyIcon } from "lucide-svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
 
   export let id: string;
   export let url: string;
@@ -12,10 +12,7 @@
 
   const COPIED_TIMER = 1_500;
 
-  function handleCopy(e: MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-
+  function handleCopy() {
     navigator.clipboard.writeText(url);
     copied = true;
 
@@ -26,10 +23,7 @@
     }, COPIED_TIMER);
   }
 
-  async function handleDelete(e: MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-
+  async function handleDelete() {
     try {
       onDelete(id);
     } catch (error) {
@@ -42,23 +36,20 @@
   });
 </script>
 
-<div class="flex items-center justify-center gap-x-4">
-  {#if copied}
-    <button class="text-gray-400 hover:text-gray-500">
-      <CheckIcon size="14px" />
-    </button>
-  {:else if url}
-    <button on:click={handleCopy} class="text-gray-400 hover:text-gray-500">
-      <CopyIcon size="14px" />
-    </button>
-  {:else}
-    <!-- Avoid layout shift -->
-    <!-- TODO: We can add info icon to handle previously created public urls if we want -->
-    <!-- If we add an info icon, when do we remove it ykwim? -->
-    <div class="h-[14px] w-[14px]" />
-  {/if}
-
-  <button on:click={handleDelete} class="text-gray-400 hover:text-gray-500">
-    <Trash size="14px " />
-  </button>
-</div>
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger class="flex-none">
+    <ThreeDot size="16px" />
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content>
+    <DropdownMenu.Item class="text-gray-800 font-normal" on:click={handleCopy}>
+      {#if copied}
+        <button>Copied</button>
+      {:else if url}
+        <button on:click={handleCopy}> Copy </button>
+      {/if}
+    </DropdownMenu.Item>
+    <DropdownMenu.Item class="text-gray-800 font-normal">
+      <button on:click={handleDelete}>Delete</button>
+    </DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
