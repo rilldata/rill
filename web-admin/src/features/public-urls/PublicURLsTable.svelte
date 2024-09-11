@@ -45,11 +45,12 @@
       cell: ({ row }) =>
         flexRender(DashboardLink, {
           href: row.original.url,
-          title: row.original.token,
+          title: row.original.title,
         }),
     },
     {
-      accessorFn: (row) => row.title || row.metricsView,
+      // TODO: should this from the public url creation?
+      accessorFn: (row) => row.metricsView,
       header: "Dashboard name",
     },
     {

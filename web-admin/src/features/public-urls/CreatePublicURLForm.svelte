@@ -59,10 +59,12 @@
 
   const initialValues = {
     expiresAt: null,
+    name: dashboardTitle,
   };
 
   const validationSchema = object({
     expiresAt: string().nullable(),
+    name: string().required("Name is required"),
   });
 
   const issueMagicAuthToken = createAdminServiceIssueMagicAuthToken();
@@ -89,7 +91,7 @@
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
               state: sanitizedState ? sanitizedState : undefined,
-              title: dashboardTitle ? dashboardTitle : undefined,
+              title: values.name,
             },
           });
           token = _token;
@@ -135,11 +137,21 @@
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
     <div class="information-container">
-      <h3>Create a public URL that you can send to anyone.</h3>
+      <h3>Create a shareable public URL for this view</h3>
       <ul>
         <li>Measures and dimensions will be limited to current visible set.</li>
         <li>Filters will be locked and hidden.</li>
       </ul>
+
+      <div class="name-input-container">
+        <input
+          id="name-input"
+          type="text"
+          bind:value={$form.name}
+          placeholder="Name this URL"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
 
       <!-- Filters -->
       {#if hasWhereFilter}
@@ -216,6 +228,10 @@
     @apply list-disc list-inside;
   }
 
+  .name-input-container {
+    @apply flex flex-col gap-y-1;
+  }
+
   .has-expiration-container {
     @apply flex items-center gap-x-2;
   }
@@ -227,5 +243,25 @@
 
   .expires-at-label {
     @apply text-slate-500 font-medium;
+  }
+
+  input {
+    @apply size-full outline-none border-0;
+  }
+
+  #name-input {
+    @apply flex justify-center items-center overflow-hidden;
+    @apply h-8 pl-2 w-full;
+    @apply border border-gray-300 rounded-sm;
+    @apply text-xs;
+    @apply cursor-pointer;
+  }
+
+  #name-input:focus-within {
+    @apply border-primary-500;
+  }
+
+  #name-input::placeholder {
+    @apply text-xs;
   }
 </style>
