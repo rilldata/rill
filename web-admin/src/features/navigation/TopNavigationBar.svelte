@@ -29,9 +29,9 @@
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
+    isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
-    withinOrganization,
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
@@ -56,7 +56,7 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: withinOrgPage = withinOrganization($page);
+  $: onOrgPage = isOrganizationPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -161,7 +161,7 @@
 
 <div
   class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage && !withinOrgPage}
+  class:border-b={!onProjectPage && !onOrgPage}
 >
   <!-- Left side -->
   <a
