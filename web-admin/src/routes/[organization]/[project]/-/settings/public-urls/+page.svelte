@@ -96,7 +96,7 @@
             {pageSize}
             onDelete={handleDelete}
             onLoadMore={handleLoadMore}
-            <!-- onPageSizeChange={handlePageSizeChange} -->
+            onPageSizeChange={handlePageSizeChange}
             hasNextPage={!!$magicAuthTokens.data?.nextPageToken}
           />
         {/if}
