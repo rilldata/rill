@@ -117,3 +117,4 @@ The free trial is locked at 2 projects and up to 10GB of data each. You can invi
 
 ### What is project hibernation mean?
 
+When a project is inactive for a specific number of days, we automatically hibernate the project. What this means is that all of your information and metadata is saved and resource consumption will be zero. You will need to unhibernate the project to gain access to the dashboard again. If the project is hibernated due to payment issues, the project will stay in this state until payment is confirmed.
