@@ -616,7 +616,9 @@ message ComponentSpec {
   bool defined_in_dashboard = 6;
 }
 
-message ComponentState {}
+message ComponentState {
+  ComponentSpec valid_spec = 1;
+}
 
 message ComponentVariable {
   string name = 1;
@@ -637,7 +639,9 @@ message DashboardSpec {
   repeated DashboardItem items = 4;
 }
 
-message DashboardState {}
+message DashboardState {
+  DashboardSpec valid_spec = 1;
+}
 
 message DashboardItem {
   string component = 1;

@@ -25,7 +25,9 @@
     ResourceKind.Component,
   );
   $: componentFileNames =
-    $componentsQuery.data?.map((c) => c.meta?.name?.name ?? "") ?? [];
+    $componentsQuery.data
+      ?.filter((c) => !c.component?.spec?.definedInDashboard)
+      .map((c) => c.meta?.name?.name ?? "") ?? [];
 
   async function handleAddComponent() {
     const newRoute = await handleEntityCreate(ResourceKind.Component);

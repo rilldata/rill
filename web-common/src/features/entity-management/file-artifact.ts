@@ -35,7 +35,28 @@ import {
 import { fileArtifacts } from "./file-artifacts";
 import { inferResourceKind } from "./infer-resource-kind";
 
-const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
+const UNSUPPORTED_EXTENSIONS = [
+  // Data formats
+  ".db",
+  ".db.wal",
+  ".parquet",
+  ".xls",
+  ".xlsx",
+
+  // Image formats
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".svg",
+
+  // Document formats
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".ppt",
+  ".pptx",
+];
 
 export class FileArtifact {
   readonly path: string;

@@ -1888,10 +1888,6 @@ export interface V1DeleteFileResponse {
   [key: string]: any;
 }
 
-export interface V1DashboardState {
-  [key: string]: any;
-}
-
 export interface V1DashboardItem {
   component?: string;
   definedInDashboard?: boolean;
@@ -1907,6 +1903,10 @@ export interface V1DashboardSpec {
   gap?: number;
   variables?: V1ComponentVariable[];
   items?: V1DashboardItem[];
+}
+
+export interface V1DashboardState {
+  validSpec?: V1DashboardSpec;
 }
 
 export interface V1Dashboard {
@@ -2020,10 +2020,6 @@ export interface V1ComponentVariable {
   defaultValue?: unknown;
 }
 
-export interface V1ComponentState {
-  [key: string]: any;
-}
-
 export type V1ComponentSpecRendererProperties = { [key: string]: any };
 
 export type V1ComponentSpecResolverProperties = { [key: string]: any };
@@ -2040,6 +2036,10 @@ export interface V1ComponentSpec {
   /** Templated string that should evaluate to a boolean. */
   show?: string;
   definedInDashboard?: boolean;
+}
+
+export interface V1ComponentState {
+  validSpec?: V1ComponentSpec;
 }
 
 export interface V1Component {

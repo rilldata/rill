@@ -4019,6 +4019,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
  * @generated from message rill.runtime.v1.ComponentState
  */
 export class ComponentState extends Message<ComponentState> {
+  /**
+   * @generated from field: rill.runtime.v1.ComponentSpec valid_spec = 1;
+   */
+  validSpec?: ComponentSpec;
+
   constructor(data?: PartialMessage<ComponentState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4027,6 +4032,7 @@ export class ComponentState extends Message<ComponentState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ComponentState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "valid_spec", kind: "message", T: ComponentSpec },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentState {
@@ -4203,6 +4209,11 @@ export class DashboardSpec extends Message<DashboardSpec> {
  * @generated from message rill.runtime.v1.DashboardState
  */
 export class DashboardState extends Message<DashboardState> {
+  /**
+   * @generated from field: rill.runtime.v1.DashboardSpec valid_spec = 1;
+   */
+  validSpec?: DashboardSpec;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4211,6 +4222,7 @@ export class DashboardState extends Message<DashboardState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.DashboardState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "valid_spec", kind: "message", T: DashboardSpec },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
