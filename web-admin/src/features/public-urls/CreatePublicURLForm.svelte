@@ -40,6 +40,10 @@
   $: dashboard = useDashboard($runtime.instanceId, $metricsViewName);
   $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
 
+  $: if (dashboardTitle && !$form.name) {
+    $form.name = dashboardTitle;
+  }
+
   $: metricsViewFields = getMetricsViewFields(
     $dashboardStore,
     $visibleDimensions,

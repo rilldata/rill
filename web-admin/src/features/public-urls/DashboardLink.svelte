@@ -3,6 +3,10 @@
   export let title: string;
 </script>
 
-<a {href} class="text-blue-600 hover:underline">
-  {title}
-</a>
+{#if title}
+  <a {href} class="text-blue-600 hover:underline">
+    {title}
+  </a>
+{:else}
+  <span>-</span>
+{/if}

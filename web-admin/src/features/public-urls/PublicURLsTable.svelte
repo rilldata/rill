@@ -27,8 +27,7 @@
 
   let sorting: SortingState = [];
 
-  function formatDate(value: string | null) {
-    if (!value) return "-";
+  function formatDate(value: string) {
     return new Date(value).toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
@@ -57,6 +56,7 @@
       accessorKey: "expiresOn",
       header: "Expires on",
       cell: (info) => {
+        if (!info.getValue()) return "-";
         const date = formatDate(info.getValue() as string);
         return date;
       },
@@ -70,6 +70,7 @@
       accessorKey: "usedOn",
       header: "Last used",
       cell: (info) => {
+        if (!info.getValue()) return "-";
         const date = formatDate(info.getValue() as string);
         return date;
       },
