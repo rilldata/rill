@@ -2,8 +2,8 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import ChartPromptHistoryDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptHistoryDisplay.svelte";
-  import { createFullChartGenerator } from "@rilldata/web-common/features/charts/prompt/generateChart";
+  import ChartPromptHistoryDisplay from "@rilldata/web-common/features/canvas-components/prompt/ChartPromptHistoryDisplay.svelte";
+  import { createFullChartGenerator } from "@rilldata/web-common/features/canvas-components/prompt/generateChart";
   import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

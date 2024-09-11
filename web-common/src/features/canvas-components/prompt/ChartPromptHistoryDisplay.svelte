@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import { chartPromptsStore } from "@rilldata/web-common/features/charts/prompt/chartPrompt";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
+  import { chartPromptsStore } from "@rilldata/web-common/features/canvas-components/prompt/chartPrompt";
   import { createEventDispatcher } from "svelte";
 
   export let entityName: string;

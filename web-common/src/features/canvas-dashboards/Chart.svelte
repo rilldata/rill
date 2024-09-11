@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import { useVariableInputParams } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import {
     createQueryServiceResolveComponent,
     V1ComponentVariable,
@@ -7,9 +7,9 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
   import type { View, VisualizationSpec } from "svelte-vega";
-  import VegaLiteRenderer from "../charts/render/VegaLiteRenderer.svelte";
+  import VegaLiteRenderer from "../canvas-components/render/VegaLiteRenderer.svelte";
 
-  export let chartName: string;
+  export let componentName: string;
   export let chartView: boolean;
   export let input: V1ComponentVariable[] | undefined;
   export let vegaSpec: VisualizationSpec | string | undefined;
@@ -28,22 +28,22 @@
     error = JSON.stringify(e);
   }
 
-  $: dashboardName = getContext("rill::custom-dashboard:name") as string;
+  $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
-  $: chartDataQuery = createQueryServiceResolveComponent(
+  $: componentDataQuery = createQueryServiceResolveComponent(
     $runtime.instanceId,
-    chartName,
+    componentName,
     { args: $inputVariableParams },
   );
 
-  $: data = $chartDataQuery?.data?.data;
+  $: data = $componentDataQuery?.data?.data;
 </script>
 
 {#if parsedVegaSpec}
   <VegaLiteRenderer
     bind:viewVL
-    customDashboard
+    canvasDashboard
     {error}
     {chartView}
     data={{ table: data }}

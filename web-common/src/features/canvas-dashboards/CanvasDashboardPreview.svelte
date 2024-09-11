@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dashboardVariablesStore } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import { dashboardVariablesStore } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import {
     V1ComponentVariable,
     V1DashboardItem,
@@ -15,14 +15,14 @@
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
 
-  export let customDashboardName: string;
+  export let canvasDashboardName: string;
   export let columns: number | undefined;
   export let items: V1DashboardItem[];
   export let gap: number | undefined;
   export let variables: V1ComponentVariable[];
   export let showGrid = false;
   export let snap = true;
-  export let selectedChartName: string | null;
+  export let selectedComponentName: string | null;
   export let selectedIndex: number | null = null;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
@@ -64,7 +64,7 @@
 
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
   $: if (variables.length) {
-    dashboardVariablesStore.init(customDashboardName, variables);
+    dashboardVariablesStore.init(canvasDashboardName, variables);
   }
 
   function handleMouseUp() {
@@ -130,7 +130,7 @@
     mousePosition = startMouse;
 
     selectedIndex = index;
-    selectedChartName = items[index].component ?? null;
+    selectedComponentName = items[index].component ?? null;
     changing = true;
   }
 
@@ -161,7 +161,7 @@
 
   function deselect() {
     selectedIndex = null;
-    selectedChartName = null;
+    selectedComponentName = null;
   }
 
   $: maxBottom = items.reduce((max, el) => {

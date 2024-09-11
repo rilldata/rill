@@ -32548,6 +32548,10 @@ func (m *MagicAuthToken) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
+	// no validation rules for Url
+
+	// no validation rules for Token
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:

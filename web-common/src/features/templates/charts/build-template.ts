@@ -1,5 +1,5 @@
+import { ChartType } from "@rilldata/web-common/features/canvas-components/types";
 import { VisualizationSpec } from "svelte-vega";
-import { ChartType } from "../../charts/types";
 import { buildArea } from "./area";
 import { buildGroupedBar } from "./grouped-bar";
 import { buildLine } from "./line";

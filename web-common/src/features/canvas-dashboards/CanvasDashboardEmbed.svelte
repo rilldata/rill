@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dashboardVariablesStore } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import { dashboardVariablesStore } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import {
     V1ComponentVariable,
     V1DashboardItem,
@@ -18,7 +18,7 @@
   export let variables: V1ComponentVariable[] = [];
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
-  setContext("rill::custom-dashboard:name", dashboardName);
+  setContext("rill::canvas-dashboard:name", dashboardName);
 
   $: instanceId = $runtime.instanceId;
 
