@@ -55,9 +55,9 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
-	t := self.GetComponent()
-	if t == nil {
-		return runtime.ReconcileResult{Err: errors.New("not a Component")}
+	c := self.GetComponent()
+	if c == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a component")}
 	}
 
 	// Exit early for deletion
@@ -65,7 +65,21 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{}
 	}
 
-	err = checkRefs(ctx, r.C, self.Meta.Refs)
+	// Validate
+	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
 
-	return runtime.ReconcileResult{Err: err}
+	// Capture the valid spec in the state
+	if validateErr == nil {
+		c.State.ValidSpec = c.Spec
+	} else {
+		c.State.ValidSpec = nil
+	}
+
+	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
+	err = r.C.UpdateState(ctx, self.Meta.Name, self)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
+	return runtime.ReconcileResult{Err: validateErr}
 }
