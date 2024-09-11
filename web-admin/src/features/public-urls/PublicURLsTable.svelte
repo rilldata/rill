@@ -40,13 +40,17 @@
 
   const columns: ColumnDef<V1MagicAuthToken>[] = [
     {
-      accessorFn: (row) => row.title || row.metricsView,
-      header: "Dashboard name",
+      accessorFn: (row) => row.token,
+      header: "Public URL name",
       cell: ({ row }) =>
         flexRender(DashboardLink, {
           href: row.original.url,
-          title: row.original.title || row.original.metricsView,
+          title: row.original.token,
         }),
+    },
+    {
+      accessorFn: (row) => row.title || row.metricsView,
+      header: "Dashboard name",
     },
     {
       accessorKey: "expiresOn",
@@ -191,15 +195,16 @@
   </tbody>
 </table>
 
-<div class="flex items-center gap-2 mt-2 justify-between">
-  <button
-    class="border rounded px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none"
-    on:click={onLoadMore}
-    disabled={!hasNextPage}
-  >
-    Load More
-  </button>
-  <span class="flex items-center gap-1">
+{#if hasNextPage}
+  <div class="flex items-center gap-2 mt-2 justify-between">
+    <button
+      class="border rounded px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none w-full"
+      on:click={onLoadMore}
+      disabled={!hasNextPage}
+    >
+      Load More
+    </button>
+    <!-- <span class="flex items-center gap-1">
     <p class="text-sm font-medium">Rows per page</p>
     <select
       bind:value={pageSize}
@@ -210,8 +215,9 @@
         <option value={size}>{size}</option>
       {/each}
     </select>
-  </span>
-</div>
+  </span> -->
+  </div>
+{/if}
 
 <style lang="postcss">
   table {

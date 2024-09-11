@@ -10,12 +10,14 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
   let pageSize = 10;
   let pageToken: string | undefined = undefined;
+  let allTokens = new Set<V1MagicAuthToken>();
 
   $: magicAuthTokens = createAdminServiceListMagicAuthTokens(
     organization,
@@ -25,6 +27,10 @@
       pageToken,
     },
   );
+
+  $: if ($magicAuthTokens.data) {
+    allTokens = new Set([...allTokens, ...$magicAuthTokens.data.tokens]);
+  }
 
   const queryClient = useQueryClient();
   const revokeMagicAuthToken = createAdminServiceRevokeMagicAuthToken();
@@ -86,11 +92,11 @@
           <NoPublicURLCTA />
         {:else}
           <PublicURLsTable
-            magicAuthTokens={$magicAuthTokens.data.tokens}
+            magicAuthTokens={Array.from(allTokens)}
             {pageSize}
             onDelete={handleDelete}
             onLoadMore={handleLoadMore}
-            onPageSizeChange={handlePageSizeChange}
+            <!-- onPageSizeChange={handlePageSizeChange} -->
             hasNextPage={!!$magicAuthTokens.data?.nextPageToken}
           />
         {/if}
