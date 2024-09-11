@@ -573,12 +573,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -606,6 +600,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -897,14 +897,6 @@ export interface V1RefreshTriggerState {
   [key: string]: any;
 }
 
-export interface V1RefreshTriggerSpec {
-  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
-If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
-  resources?: V1ResourceName[];
-  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
-  models?: V1RefreshModelTrigger[];
-}
-
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
@@ -920,6 +912,14 @@ For non-incremental models, this is equivalent to a normal refresh. */
   splits?: string[];
   /** If true, it will refresh all splits that errored on their last execution. */
   allErroredSplits?: boolean;
+}
+
+export interface V1RefreshTriggerSpec {
+  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
+  resources?: V1ResourceName[];
+  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
+  models?: V1RefreshModelTrigger[];
 }
 
 export type V1ReconcileStatus =
@@ -1010,6 +1010,12 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  watching?: boolean;
+}
+
 export interface V1ProjectParserSpec {
   [key: string]: any;
 }
@@ -1035,12 +1041,6 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: V1CharLocation;
   external?: boolean;
-}
-
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  watching?: boolean;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -1107,6 +1107,11 @@ export interface V1Notifier {
   properties?: V1NotifierProperties;
 }
 
+export interface V1ModelV2 {
+  spec?: V1ModelSpec;
+  state?: V1ModelState;
+}
+
 /**
  * incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
  */
@@ -1139,11 +1144,6 @@ export interface V1ModelState {
   splitsModelId?: string;
   /** splits_have_errors is true if one or more splits failed to execute. */
   splitsHaveErrors?: boolean;
-}
-
-export interface V1ModelV2 {
-  spec?: V1ModelSpec;
-  state?: V1ModelState;
 }
 
 export type V1ModelSplitData = { [key: string]: any };
@@ -1302,6 +1302,28 @@ export interface V1MetricsViewSpec {
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
+  /** List of selected dimensions by defaults.
+Deprecated: Now defined in the Explore resource. */
+  defaultDimensions?: string[];
+  /** List of selected measures by defaults.
+Deprecated: Now defined in the Explore resource. */
+  defaultMeasures?: string[];
+  /** Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+Deprecated: Now defined in the Explore resource. */
+  defaultTimeRange?: string;
+  defaultComparisonMode?: MetricsViewSpecComparisonMode;
+  /** If comparison mode is dimension then this determines which is the default dimension.
+Deprecated: Now defined in the Explore resource. */
+  defaultComparisonDimension?: string;
+  /** Default theme to apply.
+Deprecated: Now defined in the Explore resource. */
+  defaultTheme?: string;
+  /** List of available time ranges with comparison ranges that would replace the default list.
+Deprecated: Now defined in the Explore resource. */
+  availableTimeRanges?: MetricsViewSpecAvailableTimeRange[];
+  /** Available time zones list preferred time zones using IANA location identifiers.
+Deprecated: Now defined in the Explore resource. */
+  availableTimeZones?: string[];
 }
 
 export interface V1MetricsViewState {
@@ -1415,6 +1437,29 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1505,29 +1550,6 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
-}
-
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MapType {
@@ -2470,6 +2492,21 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
 } as const;
 
+export interface MetricsViewSpecMeasureV2 {
+  name?: string;
+  expression?: string;
+  type?: MetricsViewSpecMeasureType;
+  window?: MetricsViewSpecMeasureWindow;
+  perDimensions?: MetricsViewSpecDimensionSelector[];
+  requiredDimensions?: MetricsViewSpecDimensionSelector[];
+  referencedMeasures?: string[];
+  label?: string;
+  description?: string;
+  formatPreset?: string;
+  formatD3?: string;
+  validPercentOfTotal?: boolean;
+}
+
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
   column?: string;
@@ -2493,19 +2530,37 @@ export interface MetricsViewSpecMeasureWindow {
   frameExpression?: string;
 }
 
-export interface MetricsViewSpecMeasureV2 {
-  name?: string;
-  expression?: string;
-  type?: MetricsViewSpecMeasureType;
-  window?: MetricsViewSpecMeasureWindow;
-  perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions?: MetricsViewSpecDimensionSelector[];
-  referencedMeasures?: string[];
-  label?: string;
-  description?: string;
-  formatPreset?: string;
-  formatD3?: string;
-  validPercentOfTotal?: boolean;
+/**
+ * DEPRECATED FIELDS
+Deprecated: Now defined in the Explore resource.
+ */
+export type MetricsViewSpecComparisonMode =
+  (typeof MetricsViewSpecComparisonMode)[keyof typeof MetricsViewSpecComparisonMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecComparisonMode = {
+  COMPARISON_MODE_UNSPECIFIED: "COMPARISON_MODE_UNSPECIFIED",
+  COMPARISON_MODE_NONE: "COMPARISON_MODE_NONE",
+  COMPARISON_MODE_TIME: "COMPARISON_MODE_TIME",
+  COMPARISON_MODE_DIMENSION: "COMPARISON_MODE_DIMENSION",
+} as const;
+
+/**
+ * Deprecated: Now defined in the Explore resource.
+ */
+export interface MetricsViewSpecAvailableComparisonOffset {
+  offset?: string;
+  /** Used to override the range for the comparison with something other than the selected range. */
+  range?: string;
+}
+
+/**
+ * Deprecated: Now defined in the Explore resource.
+ */
+export interface MetricsViewSpecAvailableTimeRange {
+  range?: string;
+  /** Available comparison offsets for this time range. */
+  comparisonOffsets?: MetricsViewSpecAvailableComparisonOffset[];
 }
 
 export interface MetricsViewSearchResponseSearchResult {

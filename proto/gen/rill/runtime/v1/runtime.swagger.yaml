@@ -2816,6 +2816,38 @@ definitions:
       dimension:
         type: string
       value: {}
+  MetricsViewSpecAvailableComparisonOffset:
+    type: object
+    properties:
+      offset:
+        type: string
+      range:
+        type: string
+        description: Used to override the range for the comparison with something other than the selected range.
+    description: 'Deprecated: Now defined in the Explore resource.'
+  MetricsViewSpecAvailableTimeRange:
+    type: object
+    properties:
+      range:
+        type: string
+      comparisonOffsets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecAvailableComparisonOffset'
+        description: Available comparison offsets for this time range.
+    description: 'Deprecated: Now defined in the Explore resource.'
+  MetricsViewSpecComparisonMode:
+    type: string
+    enum:
+      - COMPARISON_MODE_UNSPECIFIED
+      - COMPARISON_MODE_NONE
+      - COMPARISON_MODE_TIME
+      - COMPARISON_MODE_DIMENSION
+    default: COMPARISON_MODE_UNSPECIFIED
+    description: |-
+      DEPRECATED FIELDS
+      Deprecated: Now defined in the Explore resource.
   MetricsViewSpecDimensionSelector:
     type: object
     properties:
@@ -4870,6 +4902,55 @@ definitions:
         type: integer
         format: int64
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
+      defaultDimensions:
+        type: array
+        items:
+          type: string
+        description: |-
+          List of selected dimensions by defaults.
+          Deprecated: Now defined in the Explore resource.
+      defaultMeasures:
+        type: array
+        items:
+          type: string
+        description: |-
+          List of selected measures by defaults.
+          Deprecated: Now defined in the Explore resource.
+      defaultTimeRange:
+        type: string
+        description: |-
+          Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+          Deprecated: Now defined in the Explore resource.
+      defaultComparisonMode:
+        $ref: '#/definitions/MetricsViewSpecComparisonMode'
+        description: |-
+          Selected default comparison mode.
+          Deprecated: Now defined in the Explore resource.
+      defaultComparisonDimension:
+        type: string
+        description: |-
+          If comparison mode is dimension then this determines which is the default dimension.
+          Deprecated: Now defined in the Explore resource.
+      defaultTheme:
+        type: string
+        description: |-
+          Default theme to apply.
+          Deprecated: Now defined in the Explore resource.
+      availableTimeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
+        description: |-
+          List of available time ranges with comparison ranges that would replace the default list.
+          Deprecated: Now defined in the Explore resource.
+      availableTimeZones:
+        type: array
+        items:
+          type: string
+        description: |-
+          Available time zones list preferred time zones using IANA location identifiers.
+          Deprecated: Now defined in the Explore resource.
   v1MetricsViewState:
     type: object
     properties:

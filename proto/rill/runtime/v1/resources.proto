@@ -236,6 +236,51 @@ message MetricsViewSpec {
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
+  
+  // DEPRECATED FIELDS
+  // Deprecated: Now defined in the Explore resource.
+  enum ComparisonMode {
+    COMPARISON_MODE_UNSPECIFIED = 0;
+    COMPARISON_MODE_NONE = 1;
+    COMPARISON_MODE_TIME = 2;
+    COMPARISON_MODE_DIMENSION = 3;
+  }
+  // Deprecated: Now defined in the Explore resource.
+  message AvailableComparisonOffset {
+    string offset = 1;
+    // Used to override the range for the comparison with something other than the selected range.
+    string range = 2;
+  }
+  // Deprecated: Now defined in the Explore resource.
+  message AvailableTimeRange {
+    string range = 1;
+    // Available comparison offsets for this time range.
+    repeated AvailableComparisonOffset comparison_offsets = 2;
+  }
+  // List of selected dimensions by defaults.
+  // Deprecated: Now defined in the Explore resource.
+  repeated string default_dimensions = 18;
+  // List of selected measures by defaults.
+  // Deprecated: Now defined in the Explore resource.
+  repeated string default_measures = 19;
+  // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+  // Deprecated: Now defined in the Explore resource.
+  string default_time_range = 9;
+  // Selected default comparison mode.
+  // Deprecated: Now defined in the Explore resource.
+  ComparisonMode default_comparison_mode = 14;
+  // If comparison mode is dimension then this determines which is the default dimension.
+  // Deprecated: Now defined in the Explore resource.
+  string default_comparison_dimension = 15;
+  // Default theme to apply.
+  // Deprecated: Now defined in the Explore resource.
+  string default_theme = 17;
+  // List of available time ranges with comparison ranges that would replace the default list.
+  // Deprecated: Now defined in the Explore resource.
+  repeated AvailableTimeRange available_time_ranges = 16;
+  // Available time zones list preferred time zones using IANA location identifiers.
+  // Deprecated: Now defined in the Explore resource.
+  repeated string available_time_zones = 10;
 }
 
 message SecurityRule {

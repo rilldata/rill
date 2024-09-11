@@ -1185,6 +1185,70 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   firstMonthOfYear = 0;
 
+  /**
+   * List of selected dimensions by defaults.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: repeated string default_dimensions = 18;
+   */
+  defaultDimensions: string[] = [];
+
+  /**
+   * List of selected measures by defaults.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: repeated string default_measures = 19;
+   */
+  defaultMeasures: string[] = [];
+
+  /**
+   * Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: string default_time_range = 9;
+   */
+  defaultTimeRange = "";
+
+  /**
+   * Selected default comparison mode.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.ComparisonMode default_comparison_mode = 14;
+   */
+  defaultComparisonMode = MetricsViewSpec_ComparisonMode.UNSPECIFIED;
+
+  /**
+   * If comparison mode is dimension then this determines which is the default dimension.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: string default_comparison_dimension = 15;
+   */
+  defaultComparisonDimension = "";
+
+  /**
+   * Default theme to apply.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: string default_theme = 17;
+   */
+  defaultTheme = "";
+
+  /**
+   * List of available time ranges with comparison ranges that would replace the default list.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.AvailableTimeRange available_time_ranges = 16;
+   */
+  availableTimeRanges: MetricsViewSpec_AvailableTimeRange[] = [];
+
+  /**
+   * Available time zones list preferred time zones using IANA location identifiers.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: repeated string available_time_zones = 10;
+   */
+  availableTimeZones: string[] = [];
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1208,6 +1272,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 18, name: "default_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 19, name: "default_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "default_comparison_mode", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_ComparisonMode) },
+    { no: 15, name: "default_comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "default_theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "available_time_ranges", kind: "message", T: MetricsViewSpec_AvailableTimeRange, repeated: true },
+    { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1259,6 +1331,41 @@ proto3.util.setEnumType(MetricsViewSpec_MeasureType, "rill.runtime.v1.MetricsVie
   { no: 1, name: "MEASURE_TYPE_SIMPLE" },
   { no: 2, name: "MEASURE_TYPE_DERIVED" },
   { no: 3, name: "MEASURE_TYPE_TIME_COMPARISON" },
+]);
+
+/**
+ * DEPRECATED FIELDS
+ * Deprecated: Now defined in the Explore resource.
+ *
+ * @generated from enum rill.runtime.v1.MetricsViewSpec.ComparisonMode
+ */
+export enum MetricsViewSpec_ComparisonMode {
+  /**
+   * @generated from enum value: COMPARISON_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: COMPARISON_MODE_NONE = 1;
+   */
+  NONE = 1,
+
+  /**
+   * @generated from enum value: COMPARISON_MODE_TIME = 2;
+   */
+  TIME = 2,
+
+  /**
+   * @generated from enum value: COMPARISON_MODE_DIMENSION = 3;
+   */
+  DIMENSION = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_ComparisonMode)
+proto3.util.setEnumType(MetricsViewSpec_ComparisonMode, "rill.runtime.v1.MetricsViewSpec.ComparisonMode", [
+  { no: 0, name: "COMPARISON_MODE_UNSPECIFIED" },
+  { no: 1, name: "COMPARISON_MODE_NONE" },
+  { no: 2, name: "COMPARISON_MODE_TIME" },
+  { no: 3, name: "COMPARISON_MODE_DIMENSION" },
 ]);
 
 /**
@@ -1550,6 +1657,100 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
 
   static equals(a: MetricsViewSpec_MeasureV2 | PlainMessage<MetricsViewSpec_MeasureV2> | undefined, b: MetricsViewSpec_MeasureV2 | PlainMessage<MetricsViewSpec_MeasureV2> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_MeasureV2, a, b);
+  }
+}
+
+/**
+ * Deprecated: Now defined in the Explore resource.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
+ */
+export class MetricsViewSpec_AvailableComparisonOffset extends Message<MetricsViewSpec_AvailableComparisonOffset> {
+  /**
+   * @generated from field: string offset = 1;
+   */
+  offset = "";
+
+  /**
+   * Used to override the range for the comparison with something other than the selected range.
+   *
+   * @generated from field: string range = 2;
+   */
+  range = "";
+
+  constructor(data?: PartialMessage<MetricsViewSpec_AvailableComparisonOffset>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_AvailableComparisonOffset {
+    return new MetricsViewSpec_AvailableComparisonOffset().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_AvailableComparisonOffset {
+    return new MetricsViewSpec_AvailableComparisonOffset().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_AvailableComparisonOffset {
+    return new MetricsViewSpec_AvailableComparisonOffset().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_AvailableComparisonOffset | PlainMessage<MetricsViewSpec_AvailableComparisonOffset> | undefined, b: MetricsViewSpec_AvailableComparisonOffset | PlainMessage<MetricsViewSpec_AvailableComparisonOffset> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_AvailableComparisonOffset, a, b);
+  }
+}
+
+/**
+ * Deprecated: Now defined in the Explore resource.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
+ */
+export class MetricsViewSpec_AvailableTimeRange extends Message<MetricsViewSpec_AvailableTimeRange> {
+  /**
+   * @generated from field: string range = 1;
+   */
+  range = "";
+
+  /**
+   * Available comparison offsets for this time range.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset comparison_offsets = 2;
+   */
+  comparisonOffsets: MetricsViewSpec_AvailableComparisonOffset[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewSpec_AvailableTimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.AvailableTimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "comparison_offsets", kind: "message", T: MetricsViewSpec_AvailableComparisonOffset, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_AvailableTimeRange {
+    return new MetricsViewSpec_AvailableTimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_AvailableTimeRange {
+    return new MetricsViewSpec_AvailableTimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_AvailableTimeRange {
+    return new MetricsViewSpec_AvailableTimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined, b: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_AvailableTimeRange, a, b);
   }
 }
 
