@@ -21,7 +21,7 @@ type ExploreYAML struct {
 	Theme       string                 `yaml:"theme"`
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
-	Presets     []struct {
+	Presets     []*struct {
 		Label               string    `yaml:"label"`
 		Dimensions          NamesYAML `yaml:"dimensions"`
 		Measures            NamesYAML `yaml:"measures"`
@@ -222,6 +222,10 @@ func (p *Parser) parseExplore(node *Node) error {
 	// Build and validate presets
 	var presets []*runtimev1.ExplorePreset
 	for _, p := range tmp.Presets {
+		if p == nil {
+			continue
+		}
+
 		if p.TimeRange != "" {
 			if err := validateISO8601(p.TimeRange, false, false); err != nil {
 				return fmt.Errorf("invalid time range %q: %w", p.TimeRange, err)
