@@ -537,26 +537,6 @@ export type ConnectorServiceBigQueryListDatasetsParams = {
   pageToken?: string;
 };
 
-export type V1MagicAuthTokenAttributes = { [key: string]: any };
-
-export interface V1MagicAuthToken {
-  id?: string;
-  projectId?: string;
-  url?: string;
-  token?: string;
-  createdOn?: string;
-  expiresOn?: string;
-  usedOn?: string;
-  createdByUserId?: string;
-  createdByUserEmail?: string;
-  attributes?: V1MagicAuthTokenAttributes;
-  metricsView?: string;
-  metricsViewFilter?: V1Expression;
-  metricsViewFields?: string[];
-  state?: string;
-  title?: string;
-}
-
 export interface V1WatchResourcesResponse {
   event?: V1ResourceEvent;
   name?: V1ResourceName;
