@@ -25,9 +25,14 @@
     <ThreeDot size="16px" />
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
-    <DropdownMenu.Item class="text-gray-800 font-normal" on:click={handleCopy}>
-      <button on:click={handleCopy}>Copy</button>
-    </DropdownMenu.Item>
+    {#if url}
+      <DropdownMenu.Item
+        class="text-gray-800 font-normal"
+        on:click={handleCopy}
+      >
+        <button on:click={handleCopy}>Copy</button>
+      </DropdownMenu.Item>
+    {/if}
     <DropdownMenu.Item class="text-gray-800 font-normal">
       <button on:click={handleDelete}>Delete</button>
     </DropdownMenu.Item>
