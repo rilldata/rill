@@ -1,6 +1,5 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import type { V1MagicAuthToken } from "@rilldata/web-common/runtime-client";
   import {
     createSvelteTable,
     flexRender,
@@ -15,6 +14,7 @@
   } from "@tanstack/svelte-table";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { V1MagicAuthToken } from "@rilldata/web-admin/client";
 
   export let magicAuthTokens: V1MagicAuthToken[];
   export let onDelete: (deletedTokenId: string) => void;
@@ -32,8 +32,7 @@
 
   const columns: ColumnDef<V1MagicAuthToken>[] = [
     {
-      // accessorFn: (row) => row.title || row.metricsView,
-      accessorFn: (row) => row.title,
+      accessorFn: (row) => row.title || row.metricsView,
       header: "Dashboard name",
     },
     {
