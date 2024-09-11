@@ -3,6 +3,9 @@ title: Quickstart & Examples
 sidebar_label: Quickstart & Examples
 sidebar_position: 10
 ---
+import Video from '@site/src/components/Video';
+
+
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
@@ -14,8 +17,16 @@ Run the following from the CLI to start Rill. Select a project from the UI or ad
 rill start my-rill-project
 ```
 
-![img](/img/tutorials/101/new-rill-project.png)
-
+---
+<div style={{ position: "relative", width: "100%", paddingTop: "56.25%" }}>
+  <iframe 
+    src="https://www.youtube.com/embed/GMsUyj_Bv3Q?autoplay=1&mute=1&si=CMltjZI4S5oAAAtg" 
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    allowFullScreen
+    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
+  </iframe>
+</div>
 
 ## Example Projects Repository
 
