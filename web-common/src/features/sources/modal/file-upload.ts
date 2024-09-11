@@ -50,7 +50,7 @@ export async function* uploadTableFiles(
     // if there was a duplicate and cancel was clicked then we do not upload
     if (!resolvedTableName) continue;
 
-    overlay.set({ title: `Uploading ${validFile.name}` });
+    overlay.setDebounced({ title: `Uploading ${validFile.name}` });
 
     const filePath = await uploadFile(instanceId, validFile);
     // if upload failed for any reason continue
@@ -59,7 +59,7 @@ export async function* uploadTableFiles(
       yield { tableName: resolvedTableName, filePath };
     }
 
-    overlay.set(null);
+    overlay.clear();
   }
 
   if (lastTableName && goToIfSuccessful) {
