@@ -30,7 +30,7 @@
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
 
-  // Reset and update allTokensStore when magicAuthTokens changes
+  // Reset and update currentPageTokens when magicAuthTokens changes
   $: currentPageTokens =
     $magicAuthTokens.data && $dashboards.data
       ? $magicAuthTokens.data.tokens.map((token) => {

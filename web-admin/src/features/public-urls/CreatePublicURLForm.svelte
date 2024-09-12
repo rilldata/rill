@@ -154,6 +154,7 @@
       </ul>
 
       <div class="name-input-container">
+        <Label for="name-input" class="text-xs">URL label</Label>
         <input
           id="name-input"
           type="text"
