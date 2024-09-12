@@ -62,6 +62,8 @@ type Options struct {
 	HangingFunc func(cfg any, open bool)
 	// Metrics are optional instruments for observability.
 	Metrics Metrics
+	// The maximum time the error stays in cache
+	ErrorTimeout time.Duration
 }
 
 // Metrics are optional instruments for observability. If an instrument is nil, it will not be collected.
@@ -135,6 +137,21 @@ func New(opts Options) Cache {
 	if opts.CheckHangingInterval != 0 {
 		go c.periodicallyCheckHangingConnections()
 	}
+
+	go func() {
+		for true {
+			time.Sleep(5 * time.Second)
+			go func() {
+				c.mu.Lock()
+				defer c.mu.Unlock()
+				for k, v := range c.entries {
+					if v.err != nil && time.Now().Sub(v.since) > c.opts.ErrorTimeout {
+						c.beginClose(k, v)
+					}
+				}
+			}()
+		}
+	}()
 
 	return c
 }
@@ -415,7 +432,7 @@ func (c *cacheImpl) releaseEntry(key string, e *entry) {
 	e.refs--
 	if e.refs == 0 {
 		// If open, keep entry and put in LRU. Else remove entirely.
-		if e.status != entryStatusClosing && e.status != entryStatusClosed && e.err == nil {
+		if e.status != entryStatusClosing && e.status != entryStatusClosed {
 			c.lru.Add(key, e)
 			if c.opts.Metrics.SizeLRU != nil {
 				c.opts.Metrics.SizeLRU.Add(c.ctx, 1)

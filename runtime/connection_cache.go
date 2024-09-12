@@ -40,6 +40,7 @@ func (r *Runtime) newConnectionCache() conncache.Cache {
 		MaxIdleConnections:   r.opts.ConnectionCacheSize,
 		OpenTimeout:          10 * time.Minute,
 		CloseTimeout:         10 * time.Minute,
+		ErrorTimeout: r.opts.ConnectionCacheErrorTimeout,
 		CheckHangingInterval: time.Minute,
 		OpenFunc: func(ctx context.Context, cfg any) (conncache.Connection, error) {
 			x := cfg.(cachedConnectionConfig)
