@@ -18,7 +18,7 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
 
-  export let magicAuthTokens: V1MagicAuthToken[];
+  export let tableData: V1MagicAuthToken[];
   export let pageSize: number;
   export let onDelete: (deletedTokenId: string) => void;
   export let onLoadMore: () => void;
@@ -97,7 +97,7 @@
   };
 
   const options = writable<TableOptions<V1MagicAuthToken>>({
-    data: magicAuthTokens,
+    data: tableData,
     columns: columns,
     state: {
       sorting,
@@ -123,6 +123,20 @@
         sorting,
       },
     }));
+  }
+
+  function updateTable(data: V1MagicAuthToken[]) {
+    options.update((old) => ({
+      ...old,
+      data: data,
+    }));
+  }
+
+  $: {
+    // Update table when magicAuthTokens changes
+    if (tableData) {
+      updateTable(tableData);
+    }
   }
 </script>
 

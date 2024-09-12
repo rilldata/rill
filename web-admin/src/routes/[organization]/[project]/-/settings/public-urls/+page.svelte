@@ -11,13 +11,14 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
+  import { writable } from "svelte/store";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
   let pageSize = 10;
   let pageToken: string | undefined = undefined;
-  let allTokens = new Set<V1MagicAuthToken>();
+  const allTokensStore = writable(new Set<V1MagicAuthToken>());
 
   $: magicAuthTokens = createAdminServiceListMagicAuthTokens(
     organization,
@@ -28,8 +29,13 @@
     },
   );
 
+  // Reset and update allTokensStore when magicAuthTokens changes
   $: if ($magicAuthTokens.data) {
-    allTokens = new Set([...allTokens, ...$magicAuthTokens.data.tokens]);
+    allTokensStore.update((currentSet) => {
+      const newSet = new Set(currentSet);
+      $magicAuthTokens.data.tokens.forEach((token) => newSet.add(token));
+      return newSet;
+    });
   }
 
   const queryClient = useQueryClient();
@@ -37,21 +43,18 @@
 
   async function handleDelete(deletedTokenId: string) {
     try {
-      await $revokeMagicAuthToken.mutateAsync({
-        tokenId: deletedTokenId,
-      });
-
-      // Optimistically update the local cache
-      queryClient.setQueryData(
-        getAdminServiceListMagicAuthTokensQueryKey(organization, project),
-        (oldData: any) => ({
-          ...oldData,
-          tokens: oldData.tokens.filter(
-            (token: any) => token.id !== deletedTokenId,
+      // Optimistically update local store
+      allTokensStore.update(
+        (currentSet) =>
+          new Set(
+            [...currentSet].filter((token) => token.id !== deletedTokenId),
           ),
-        }),
       );
 
+      // Perform the deletion
+      await $revokeMagicAuthToken.mutateAsync({ tokenId: deletedTokenId });
+
+      // Invalidate and refetch the query
       await queryClient.invalidateQueries(
         getAdminServiceListMagicAuthTokensQueryKey(organization, project),
       );
@@ -59,13 +62,13 @@
       eventBus.emit("notification", { message: "Public URL deleted" });
     } catch (error) {
       eventBus.emit("notification", {
-        message: "Failed to delete public URL",
+        message: "Error deleting public URL",
         type: "error",
       });
     }
   }
 
-  // forward cursor-based pagination
+  // Forward cursor-based pagination with `nextPageToken`
   function handleLoadMore() {
     if ($magicAuthTokens.data?.nextPageToken) {
       pageToken = $magicAuthTokens.data.nextPageToken;
@@ -87,7 +90,7 @@
           <NoPublicURLCTA />
         {:else}
           <PublicURLsTable
-            magicAuthTokens={Array.from(allTokens)}
+            tableData={Array.from($allTokensStore)}
             {pageSize}
             onDelete={handleDelete}
             onLoadMore={handleLoadMore}

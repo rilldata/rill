@@ -24,6 +24,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { onMount } from "svelte";
 
   const queryClient = useQueryClient();
   const {
@@ -40,10 +41,7 @@
   $: dashboard = useDashboard($runtime.instanceId, $metricsViewName);
   $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
 
-  // Set the dashboard title as the default name for the public URL name
-  $: if (dashboardTitle && !$form.name) {
-    $form.name = dashboardTitle;
-  }
+  $: isNameEmpty = $form.name.trim() === "";
 
   $: metricsViewFields = getMetricsViewFields(
     $dashboardStore,
@@ -138,6 +136,13 @@
   }
 
   $: ({ length: allErrorsLength } = $allErrors);
+
+  // Set the dashboard title as the default name for the public URL name
+  onMount(() => {
+    if (dashboardTitle && !$form.name) {
+      $form.name = dashboardTitle;
+    }
+  });
 </script>
 
 {#if !token}
@@ -199,7 +204,12 @@
       {/if}
     </div>
 
-    <Button type="primary" disabled={$submitting} form={formId} submitForm>
+    <Button
+      type="primary"
+      disabled={$submitting || isNameEmpty}
+      form={formId}
+      submitForm
+    >
       Create and copy URL
     </Button>
 

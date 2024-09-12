@@ -30,11 +30,14 @@
         class="text-gray-800 font-normal"
         on:click={handleCopy}
       >
-        <button on:click={handleCopy}>Copy</button>
+        Copy
       </DropdownMenu.Item>
     {/if}
-    <DropdownMenu.Item class="text-gray-800 font-normal">
-      <button on:click={handleDelete}>Delete</button>
+    <DropdownMenu.Item
+      class="text-gray-800 font-normal"
+      on:click={handleDelete}
+    >
+      Delete
     </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
