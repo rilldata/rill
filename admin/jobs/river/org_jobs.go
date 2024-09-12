@@ -42,8 +42,7 @@ func (w *PurgeOrgWorker) Work(ctx context.Context, job *river.Job[PurgeOrgArgs])
 		w.admin.Logger.Warn("canceled subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 	}
 
-	// clean billing errors and warnings and cancel associated scheduled jobs
-	err = w.admin.CleanupTrialBillingErrorsAndWarnings(ctx, org.ID)
+	err = w.admin.CleanupTrialBillingIssues(ctx, org.ID)
 	if err != nil {
 		return err
 	}

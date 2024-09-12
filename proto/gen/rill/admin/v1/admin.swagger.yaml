@@ -334,15 +334,15 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/billing/errors:
+  /v1/organizations/{organization}/billing/issues:
     get:
-      summary: ListOrganizationBillingErrors lists all the billing errors for the organization
-      operationId: AdminService_ListOrganizationBillingErrors
+      summary: ListOrganizationBillingIssues lists all the billing issues for the organization
+      operationId: AdminService_ListOrganizationBillingIssues
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListOrganizationBillingErrorsResponse'
+            $ref: '#/definitions/v1ListOrganizationBillingIssuesResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -442,26 +442,6 @@ paths:
             properties:
               planName:
                 type: string
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/billing/warnings:
-    get:
-      summary: ListOrganizationBillingWarnings lists all the billing warnings for the organization
-      operationId: AdminService_ListOrganizationBillingWarnings
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListOrganizationBillingWarningsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -3040,15 +3020,15 @@ paths:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
       tags:
         - AdminService
-  /v1/superuser/organizations/{organization}/billing/errors/{type}:
+  /v1/superuser/organizations/{organization}/billing/issues/{type}:
     delete:
-      summary: SudoDeleteOrganizationBillingError deletes a billing error of a type for the organization
-      operationId: AdminService_SudoDeleteOrganizationBillingError
+      summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+      operationId: AdminService_SudoDeleteOrganizationBillingIssue
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoDeleteOrganizationBillingErrorResponse'
+            $ref: '#/definitions/v1SudoDeleteOrganizationBillingIssueResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3063,39 +3043,13 @@ paths:
           required: true
           type: string
           enum:
-            - BILLING_ERROR_TYPE_UNSPECIFIED
-            - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
-            - BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS
-            - BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
-            - BILLING_ERROR_TYPE_TRIAL_ENDED
-            - BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED
-      tags:
-        - AdminService
-  /v1/superuser/organizations/{organization}/billing/warnings/{type}:
-    delete:
-      summary: SudoDeleteOrganizationBillingWarning deletes a billing warning of a type for the organization
-      operationId: AdminService_SudoDeleteOrganizationBillingWarning
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoDeleteOrganizationBillingWarningResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: type
-          in: path
-          required: true
-          type: string
-          enum:
-            - BILLING_WARNING_TYPE_UNSPECIFIED
-            - BILLING_WARNING_TYPE_ON_TRIAL
+            - BILLING_ISSUE_TYPE_UNSPECIFIED
+            - BILLING_ISSUE_TYPE_ON_TRIAL
+            - BILLING_ISSUE_TYPE_TRIAL_ENDED
+            - BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
+            - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
+            - BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED
+            - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
       tags:
         - AdminService
   /v1/superuser/projects/annotations:
@@ -3588,35 +3542,46 @@ definitions:
         title: base64 state url of the dashboard when it was created
   v1ApproveProjectAccessResponse:
     type: object
-  v1BillingError:
+  v1BillingIssue:
     type: object
     properties:
       organization:
         type: string
       type:
-        $ref: '#/definitions/v1BillingErrorType'
+        $ref: '#/definitions/v1BillingIssueType'
+      level:
+        $ref: '#/definitions/v1BillingIssueLevel'
       metadata:
-        $ref: '#/definitions/v1BillingErrorMetadata'
+        $ref: '#/definitions/v1BillingIssueMetadata'
       eventTime:
         type: string
         format: date-time
       createdOn:
         type: string
         format: date-time
-  v1BillingErrorMetadata:
+  v1BillingIssueLevel:
+    type: string
+    enum:
+      - BILLING_ISSUE_LEVEL_UNSPECIFIED
+      - BILLING_ISSUE_LEVEL_WARNING
+      - BILLING_ISSUE_LEVEL_ERROR
+    default: BILLING_ISSUE_LEVEL_UNSPECIFIED
+  v1BillingIssueMetadata:
     type: object
     properties:
-      noPaymentMethod:
-        $ref: '#/definitions/v1BillingErrorMetadataNoPaymentMethod'
-      noBillableAddress:
-        $ref: '#/definitions/v1BillingErrorMetadataNoBillableAddress'
-      invoicePaymentFailed:
-        $ref: '#/definitions/v1BillingErrorMetadataInvoicePaymentFailed'
+      onTrial:
+        $ref: '#/definitions/v1BillingIssueMetadataOnTrial'
       trialEnded:
-        $ref: '#/definitions/v1BillingErrorMetadataTrialEnded'
+        $ref: '#/definitions/v1BillingIssueMetadataTrialEnded'
+      noPaymentMethod:
+        $ref: '#/definitions/v1BillingIssueMetadataNoPaymentMethod'
+      noBillableAddress:
+        $ref: '#/definitions/v1BillingIssueMetadataNoBillableAddress'
+      invoicePaymentFailed:
+        $ref: '#/definitions/v1BillingIssueMetadataInvoicePaymentFailed'
       subscriptionCancelled:
-        $ref: '#/definitions/v1BillingErrorMetadataSubscriptionCancelled'
-  v1BillingErrorMetadataInvoicePaymentFailed:
+        $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
+  v1BillingIssueMetadataInvoicePaymentFailed:
     type: object
     properties:
       invoices:
@@ -3624,32 +3589,39 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1InvoicePaymentFailedMeta'
-  v1BillingErrorMetadataNoBillableAddress:
+  v1BillingIssueMetadataNoBillableAddress:
     type: object
-  v1BillingErrorMetadataNoPaymentMethod:
+  v1BillingIssueMetadataNoPaymentMethod:
     type: object
-  v1BillingErrorMetadataSubscriptionCancelled:
+  v1BillingIssueMetadataOnTrial:
     type: object
     properties:
       endDate:
         type: string
         format: date-time
-  v1BillingErrorMetadataTrialEnded:
+  v1BillingIssueMetadataSubscriptionCancelled:
+    type: object
+    properties:
+      endDate:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataTrialEnded:
     type: object
     properties:
       gracePeriodEndDate:
         type: string
         format: date-time
-  v1BillingErrorType:
+  v1BillingIssueType:
     type: string
     enum:
-      - BILLING_ERROR_TYPE_UNSPECIFIED
-      - BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
-      - BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS
-      - BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
-      - BILLING_ERROR_TYPE_TRIAL_ENDED
-      - BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED
-    default: BILLING_ERROR_TYPE_UNSPECIFIED
+      - BILLING_ISSUE_TYPE_UNSPECIFIED
+      - BILLING_ISSUE_TYPE_ON_TRIAL
+      - BILLING_ISSUE_TYPE_TRIAL_ENDED
+      - BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
+      - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
+      - BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED
+      - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+    default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
     properties:
@@ -3669,38 +3641,6 @@ definitions:
       quotas:
         $ref: '#/definitions/v1Quotas'
         title: TODO expose pricing information
-  v1BillingWarning:
-    type: object
-    properties:
-      organization:
-        type: string
-      type:
-        $ref: '#/definitions/v1BillingWarningType'
-      metadata:
-        $ref: '#/definitions/v1BillingWarningMetadata'
-      eventTime:
-        type: string
-        format: date-time
-      createdOn:
-        type: string
-        format: date-time
-  v1BillingWarningMetadata:
-    type: object
-    properties:
-      onTrial:
-        $ref: '#/definitions/v1BillingWarningMetadataOnTrial'
-  v1BillingWarningMetadataOnTrial:
-    type: object
-    properties:
-      endDate:
-        type: string
-        format: date-time
-  v1BillingWarningType:
-    type: string
-    enum:
-      - BILLING_WARNING_TYPE_UNSPECIFIED
-      - BILLING_WARNING_TYPE_ON_TRIAL
-    default: BILLING_WARNING_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object
     properties:
@@ -4199,22 +4139,14 @@ definitions:
           $ref: '#/definitions/v1MagicAuthToken'
       nextPageToken:
         type: string
-  v1ListOrganizationBillingErrorsResponse:
+  v1ListOrganizationBillingIssuesResponse:
     type: object
     properties:
-      errors:
+      issues:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1BillingError'
-  v1ListOrganizationBillingWarningsResponse:
-    type: object
-    properties:
-      warnings:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1BillingWarning'
+          $ref: '#/definitions/v1BillingIssue'
   v1ListOrganizationInvitesResponse:
     type: object
     properties:
@@ -4825,9 +4757,7 @@ definitions:
       trialEndDate:
         type: string
         format: date-time
-  v1SudoDeleteOrganizationBillingErrorResponse:
-    type: object
-  v1SudoDeleteOrganizationBillingWarningResponse:
+  v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
   v1SudoGetResourceResponse:
     type: object
@@ -4871,7 +4801,7 @@ definitions:
   v1SudoUpdateOrganizationBillingCustomerRequest:
     type: object
     properties:
-      orgName:
+      organization:
         type: string
       billingCustomerId:
         type: string
@@ -4900,7 +4830,7 @@ definitions:
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
-      orgName:
+      organization:
         type: string
       projects:
         type: integer

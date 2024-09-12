@@ -452,7 +452,7 @@ export interface V1SudoUpdateOrganizationQuotasResponse {
 }
 
 export interface V1SudoUpdateOrganizationQuotasRequest {
-  orgName?: string;
+  organization?: string;
   projects?: number;
   deployments?: number;
   slotsTotal?: number;
@@ -476,7 +476,7 @@ export interface V1SudoUpdateOrganizationBillingCustomerResponse {
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
-  orgName?: string;
+  organization?: string;
   billingCustomerId?: string;
 }
 
@@ -510,11 +510,7 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
-export interface V1SudoDeleteOrganizationBillingWarningResponse {
-  [key: string]: any;
-}
-
-export interface V1SudoDeleteOrganizationBillingErrorResponse {
+export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: any;
 }
 
@@ -900,12 +896,8 @@ export interface V1ListOrganizationInvitesResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListOrganizationBillingWarningsResponse {
-  warnings?: V1BillingWarning[];
-}
-
-export interface V1ListOrganizationBillingErrorsResponse {
-  errors?: V1BillingError[];
+export interface V1ListOrganizationBillingIssuesResponse {
+  issues?: V1BillingIssue[];
 }
 
 export interface V1ListMagicAuthTokensResponse {
@@ -1289,31 +1281,6 @@ export interface V1Bookmark {
   updatedOn?: string;
 }
 
-export type V1BillingWarningType =
-  (typeof V1BillingWarningType)[keyof typeof V1BillingWarningType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1BillingWarningType = {
-  BILLING_WARNING_TYPE_UNSPECIFIED: "BILLING_WARNING_TYPE_UNSPECIFIED",
-  BILLING_WARNING_TYPE_ON_TRIAL: "BILLING_WARNING_TYPE_ON_TRIAL",
-} as const;
-
-export interface V1BillingWarningMetadataOnTrial {
-  endDate?: string;
-}
-
-export interface V1BillingWarningMetadata {
-  onTrial?: V1BillingWarningMetadataOnTrial;
-}
-
-export interface V1BillingWarning {
-  organization?: string;
-  type?: V1BillingWarningType;
-  metadata?: V1BillingWarningMetadata;
-  eventTime?: string;
-  createdOn?: string;
-}
-
 export interface V1BillingPlan {
   id?: string;
   name?: string;
@@ -1324,54 +1291,71 @@ export interface V1BillingPlan {
   quotas?: V1Quotas;
 }
 
-export type V1BillingErrorType =
-  (typeof V1BillingErrorType)[keyof typeof V1BillingErrorType];
+export type V1BillingIssueType =
+  (typeof V1BillingIssueType)[keyof typeof V1BillingIssueType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1BillingErrorType = {
-  BILLING_ERROR_TYPE_UNSPECIFIED: "BILLING_ERROR_TYPE_UNSPECIFIED",
-  BILLING_ERROR_TYPE_NO_PAYMENT_METHOD: "BILLING_ERROR_TYPE_NO_PAYMENT_METHOD",
-  BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS:
-    "BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS",
-  BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED:
-    "BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED",
-  BILLING_ERROR_TYPE_TRIAL_ENDED: "BILLING_ERROR_TYPE_TRIAL_ENDED",
-  BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED:
-    "BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED",
+export const V1BillingIssueType = {
+  BILLING_ISSUE_TYPE_UNSPECIFIED: "BILLING_ISSUE_TYPE_UNSPECIFIED",
+  BILLING_ISSUE_TYPE_ON_TRIAL: "BILLING_ISSUE_TYPE_ON_TRIAL",
+  BILLING_ISSUE_TYPE_TRIAL_ENDED: "BILLING_ISSUE_TYPE_TRIAL_ENDED",
+  BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD: "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD",
+  BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS:
+    "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS",
+  BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED:
+    "BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED",
+  BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
+    "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
 } as const;
 
-export interface V1BillingErrorMetadataTrialEnded {
+export interface V1BillingIssueMetadataTrialEnded {
   gracePeriodEndDate?: string;
 }
 
-export interface V1BillingErrorMetadataSubscriptionCancelled {
+export interface V1BillingIssueMetadataSubscriptionCancelled {
   endDate?: string;
 }
 
-export interface V1BillingErrorMetadataNoPaymentMethod {
+export interface V1BillingIssueMetadataOnTrial {
+  endDate?: string;
+}
+
+export interface V1BillingIssueMetadataNoPaymentMethod {
   [key: string]: any;
 }
 
-export interface V1BillingErrorMetadataNoBillableAddress {
+export interface V1BillingIssueMetadataNoBillableAddress {
   [key: string]: any;
 }
 
-export interface V1BillingErrorMetadataInvoicePaymentFailed {
+export interface V1BillingIssueMetadataInvoicePaymentFailed {
   invoices?: V1InvoicePaymentFailedMeta[];
 }
 
-export interface V1BillingErrorMetadata {
-  noPaymentMethod?: V1BillingErrorMetadataNoPaymentMethod;
-  noBillableAddress?: V1BillingErrorMetadataNoBillableAddress;
-  invoicePaymentFailed?: V1BillingErrorMetadataInvoicePaymentFailed;
-  trialEnded?: V1BillingErrorMetadataTrialEnded;
-  subscriptionCancelled?: V1BillingErrorMetadataSubscriptionCancelled;
+export interface V1BillingIssueMetadata {
+  onTrial?: V1BillingIssueMetadataOnTrial;
+  trialEnded?: V1BillingIssueMetadataTrialEnded;
+  noPaymentMethod?: V1BillingIssueMetadataNoPaymentMethod;
+  noBillableAddress?: V1BillingIssueMetadataNoBillableAddress;
+  invoicePaymentFailed?: V1BillingIssueMetadataInvoicePaymentFailed;
+  subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
 }
 
-export interface V1BillingError {
+export type V1BillingIssueLevel =
+  (typeof V1BillingIssueLevel)[keyof typeof V1BillingIssueLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingIssueLevel = {
+  BILLING_ISSUE_LEVEL_UNSPECIFIED: "BILLING_ISSUE_LEVEL_UNSPECIFIED",
+  BILLING_ISSUE_LEVEL_WARNING: "BILLING_ISSUE_LEVEL_WARNING",
+  BILLING_ISSUE_LEVEL_ERROR: "BILLING_ISSUE_LEVEL_ERROR",
+} as const;
+
+export interface V1BillingIssue {
   organization?: string;
-  type?: V1BillingErrorType;
-  metadata?: V1BillingErrorMetadata;
+  type?: V1BillingIssueType;
+  level?: V1BillingIssueLevel;
+  metadata?: V1BillingIssueMetadata;
   eventTime?: string;
   createdOn?: string;
 }

@@ -50,17 +50,17 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[In
 		return fmt.Errorf("failed to schedule invoice payment failed grace period check job: %w", err)
 	}
 
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeInvoicePaymentFailed)
+	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeInvoicePaymentFailed)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
 		}
 	}
-	var metadata *database.BillingErrorMetadataInvoicePaymentFailed
+	var metadata *database.BillingIssueMetadataInvoicePaymentFailed
 	if be != nil {
-		metadata = be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed)
+		metadata = be.Metadata.(*database.BillingIssueMetadataInvoicePaymentFailed)
 	} else {
-		metadata = &database.BillingErrorMetadataInvoicePaymentFailed{
+		metadata = &database.BillingIssueMetadataInvoicePaymentFailed{
 			Invoices: make(map[string]database.InvoicePaymentFailedMeta),
 		}
 	}
@@ -77,10 +77,10 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[In
 	}
 
 	// insert billing error
-	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+	_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 		OrgID:     org.ID,
-		Type:      database.BillingErrorTypeInvoicePaymentFailed,
-		Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: metadata.Invoices},
+		Type:      database.BillingIssueTypeInvoicePaymentFailed,
+		Metadata:  &database.BillingIssueMetadataInvoicePaymentFailed{Invoices: metadata.Invoices},
 		EventTime: job.Args.FailedAt,
 	})
 	if err != nil {
@@ -127,7 +127,7 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[I
 	}
 
 	// check for existing billing error and delete it
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeInvoicePaymentFailed)
+	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeInvoicePaymentFailed)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no billing error, ignore
@@ -136,7 +136,7 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[I
 		return fmt.Errorf("failed to find billing errors: %w", err)
 	}
 
-	failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
+	failedInvoices := be.Metadata.(*database.BillingIssueMetadataInvoicePaymentFailed).Invoices
 	failedInvoice, ok := failedInvoices[job.Args.InvoiceID]
 	if !ok {
 		// invoice not found in the failed invoices, do nothing
@@ -158,16 +158,16 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[I
 
 	// if no more failed invoices, delete the billing error
 	if len(failedInvoices) == 0 {
-		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+		err = w.admin.DB.DeleteBillingIssue(ctx, be.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete billing error: %w", err)
 		}
 	} else {
 		// update the metadata
-		_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     org.ID,
-			Type:      database.BillingErrorTypeInvoicePaymentFailed,
-			Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: failedInvoices},
+			Type:      database.BillingIssueTypeInvoicePaymentFailed,
+			Metadata:  &database.BillingIssueMetadataInvoicePaymentFailed{Invoices: failedInvoices},
 			EventTime: be.EventTime,
 		})
 		if err != nil {
@@ -222,7 +222,7 @@ func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, j
 	}
 
 	// check if the org has still invoice failed billing error
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeInvoicePaymentFailed)
+	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeInvoicePaymentFailed)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no billing error, ignore
@@ -231,7 +231,7 @@ func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, j
 		return fmt.Errorf("failed to find billing errors: %w", err)
 	}
 
-	failedInvoices := be.Metadata.(*database.BillingErrorMetadataInvoicePaymentFailed).Invoices
+	failedInvoices := be.Metadata.(*database.BillingIssueMetadataInvoicePaymentFailed).Invoices
 	// check if the invoice is still in the failed invoices
 	if _, ok := failedInvoices[job.Args.InvoiceID]; !ok {
 		// invoice is not in the failed invoices, do nothing
@@ -245,23 +245,23 @@ func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, j
 	}
 
 	if w.admin.Biller.IsInvoicePaid(ctx, invoice) || !w.admin.Biller.IsInvoiceValid(ctx, invoice) {
-		w.admin.Logger.Warn("Invoice was already paid or invalid but billing error was not cleared", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", org.BillingCustomerID), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_status", invoice.Status))
+		w.billingLogger.Warn("invoice was already paid or invalid but billing issue was not cleared", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_status", invoice.Status))
 
 		// clearing the billing error for this invoice
 		delete(failedInvoices, job.Args.InvoiceID)
 
 		// if no more failed invoices, delete the billing error
 		if len(failedInvoices) == 0 {
-			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+			err = w.admin.DB.DeleteBillingIssue(ctx, be.ID)
 			if err != nil {
 				return fmt.Errorf("failed to delete billing error: %w", err)
 			}
 		} else {
 			// update the metadata
-			_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+			_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 				OrgID:     org.ID,
-				Type:      database.BillingErrorTypeInvoicePaymentFailed,
-				Metadata:  &database.BillingErrorMetadataInvoicePaymentFailed{Invoices: failedInvoices},
+				Type:      database.BillingIssueTypeInvoicePaymentFailed,
+				Metadata:  &database.BillingIssueMetadataInvoicePaymentFailed{Invoices: failedInvoices},
 				EventTime: be.EventTime,
 			})
 			if err != nil {

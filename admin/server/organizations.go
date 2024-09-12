@@ -818,7 +818,7 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 }
 
 func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.SudoUpdateOrganizationQuotasRequest) (*adminv1.SudoUpdateOrganizationQuotasResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 	if req.Projects != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int("args.projects", int(*req.Projects)))
 	}
@@ -840,13 +840,13 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, err
 	}
 
 	opts := &database.UpdateOrganizationOptions{
-		Name:                                req.OrgName,
+		Name:                                req.Organization,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        org.CustomDomain,

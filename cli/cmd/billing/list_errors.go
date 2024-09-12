@@ -6,10 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func ListErrorsCmd(ch *cmdutil.Helper) *cobra.Command {
+func ListIssuesCmd(ch *cmdutil.Helper) *cobra.Command {
 	listCmd := &cobra.Command{
-		Use:   "list-errors",
-		Short: "List billing errors for an organization",
+		Use:   "list-issues",
+		Short: "List billing issues for an organization",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
@@ -17,19 +17,19 @@ func ListErrorsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			resp, err := client.ListOrganizationBillingErrors(cmd.Context(), &adminv1.ListOrganizationBillingErrorsRequest{
+			resp, err := client.ListOrganizationBillingIssues(cmd.Context(), &adminv1.ListOrganizationBillingIssuesRequest{
 				Organization: ch.Org,
 			})
 			if err != nil {
 				return err
 			}
 
-			if len(resp.Errors) == 0 {
-				ch.PrintfSuccess("No billing errors for organization %q.\n", ch.Org)
+			if len(resp.Issues) == 0 {
+				ch.PrintfSuccess("No billing issues for organization %q.\n", ch.Org)
 				return nil
 			}
 
-			ch.PrintBillingErrors(resp.Errors)
+			ch.PrintBillingIssues(resp.Issues)
 			return nil
 		},
 	}

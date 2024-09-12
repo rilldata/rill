@@ -8,12 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeleteErrorCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeleteIssueCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org, errorType string
-	errors := []string{"no-payment-method", "trial-ended", "invoice-payment-failed", "subscription-cancelled"}
+	errors := []string{"on-trial", "trial-ended", "no-payment-method", "invoice-payment-failed", "subscription-cancelled"}
 	setCmd := &cobra.Command{
-		Use:   "delete-error",
-		Short: "Delete billing error of a type for an organization",
+		Use:   "delete-issue",
+		Short: "Delete billing issue of a type for an organization",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -34,21 +34,23 @@ func DeleteErrorCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			var t adminv1.BillingErrorType
+			var t adminv1.BillingIssueType
 			switch errorType {
-			case "no-payment-method":
-				t = adminv1.BillingErrorType_BILLING_ERROR_TYPE_NO_PAYMENT_METHOD
+			case "on-trial":
+				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_ON_TRIAL
 			case "trial-ended":
-				t = adminv1.BillingErrorType_BILLING_ERROR_TYPE_TRIAL_ENDED
+				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_ENDED
+			case "no-payment-method":
+				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
 			case "invoice-payment-failed":
-				t = adminv1.BillingErrorType_BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED
+				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED
 			case "subscription-cancelled":
-				t = adminv1.BillingErrorType_BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED
+				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
 			default:
 				return fmt.Errorf("invalid error type %q", errorType)
 			}
 
-			_, err = client.SudoDeleteOrganizationBillingError(ctx, &adminv1.SudoDeleteOrganizationBillingErrorRequest{
+			_, err = client.SudoDeleteOrganizationBillingIssue(ctx, &adminv1.SudoDeleteOrganizationBillingIssueRequest{
 				Organization: org,
 				Type:         t,
 			})

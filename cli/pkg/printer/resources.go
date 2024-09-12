@@ -501,74 +501,40 @@ type modelSplit struct {
 	Error      string `header:"error" json:"error"`
 }
 
-func (p *Printer) PrintBillingErrors(errs []*adminv1.BillingError) {
+func (p *Printer) PrintBillingIssues(errs []*adminv1.BillingIssue) {
 	if len(errs) == 0 {
 		return
 	}
 
-	p.PrintData(toBillingErrorsTable(errs))
+	p.PrintData(toBillingIssuesTable(errs))
 }
 
-func toBillingErrorsTable(errs []*adminv1.BillingError) []*billingError {
-	res := make([]*billingError, 0, len(errs))
+func toBillingIssuesTable(errs []*adminv1.BillingIssue) []*billingIssue {
+	res := make([]*billingIssue, 0, len(errs))
 	for _, e := range errs {
-		res = append(res, toBillingErrorRow(e))
+		res = append(res, toBillingIssueRow(e))
 	}
 	return res
 }
 
-func toBillingErrorRow(e *adminv1.BillingError) *billingError {
+func toBillingIssueRow(e *adminv1.BillingIssue) *billingIssue {
 	meta, err := json.Marshal(e.Metadata)
 	if err != nil || !utf8.Valid(meta) {
 		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
 	}
-	return &billingError{
+	return &billingIssue{
 		Organization: e.Organization,
 		Type:         e.Type.String(),
+		Level:        e.Level.String(),
 		Metadata:     string(meta), // TODO pretty print
 		EventTime:    e.EventTime.AsTime().Local().Format(time.DateTime),
 	}
 }
 
-type billingError struct {
+type billingIssue struct {
 	Organization string `header:"organization" json:"organization"`
 	Type         string `header:"type" json:"type"`
-	Metadata     string `header:"metadata" json:"metadata"`
-	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
-}
-
-func (p *Printer) PrintBillingWarnings(warns []*adminv1.BillingWarning) {
-	if len(warns) == 0 {
-		return
-	}
-
-	p.PrintData(toBillingWarningsTable(warns))
-}
-
-func toBillingWarningsTable(warns []*adminv1.BillingWarning) []*billingWarning {
-	res := make([]*billingWarning, 0, len(warns))
-	for _, w := range warns {
-		res = append(res, toBillingWarningRow(w))
-	}
-	return res
-}
-
-func toBillingWarningRow(w *adminv1.BillingWarning) *billingWarning {
-	meta, err := json.Marshal(w.Metadata)
-	if err != nil || !utf8.Valid(meta) {
-		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
-	}
-	return &billingWarning{
-		Organization: w.Organization,
-		Type:         w.Type.String(),
-		Metadata:     string(meta), // TODO pretty print
-		EventTime:    w.EventTime.AsTime().Local().Format(time.DateTime),
-	}
-}
-
-type billingWarning struct {
-	Organization string `header:"organization" json:"organization"`
-	Type         string `header:"type" json:"type"`
+	Level        string `header:"level" json:"level"`
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }

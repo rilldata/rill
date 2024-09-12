@@ -41,7 +41,7 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEn
 
 	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
 	// this is just a cautionary check as we cancel this job on subscription cancellation if scheduled
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
+	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -119,7 +119,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 
 	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
 	// this is just a cautionary check as we cancel this job on subscription cancellation if scheduled
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
+	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -163,10 +163,10 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 		return fmt.Errorf("failed to schedule trial grace period check job: %w", err)
 	}
 
-	_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+	_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 		OrgID: org.ID,
-		Type:  database.BillingErrorTypeTrialEnded,
-		Metadata: &database.BillingErrorMetadataTrialEnded{
+		Type:  database.BillingIssueTypeTrialEnded,
+		Metadata: &database.BillingIssueMetadataTrialEnded{
 			GracePeriodEndDate:  gracePeriodEndDate,
 			GracePeriodEndJobID: j.ID,
 		},
@@ -217,7 +217,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 
 	// check if org has subscription cancelled billing error, if yes ignore the job as we put the customer back on default plan on cancellation
 	// this is just a cautionary check as we cancel this job on subscription cancellation if scheduled
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeSubscriptionCancelled)
+	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -244,7 +244,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 
 	if sub[0].ID != job.Args.SubID || sub[0].Plan.ID != job.Args.PlanID {
 		// subscription or plan have changed, delete the billing error if this was for this job
-		be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeTrialEnded)
+		be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeTrialEnded)
 		if err != nil {
 			if !errors.Is(err, database.ErrNotFound) {
 				return fmt.Errorf("failed to find billing errors: %w", err)
@@ -252,9 +252,9 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 		}
 
 		if be != nil {
-			meta, ok := be.Metadata.(*database.BillingErrorMetadataTrialEnded)
+			meta, ok := be.Metadata.(*database.BillingIssueMetadataTrialEnded)
 			if ok && meta.GracePeriodEndJobID == job.ID {
-				err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+				err = w.admin.DB.DeleteBillingIssue(ctx, be.ID)
 				if err != nil {
 					return fmt.Errorf("failed to delete billing error: %w", err)
 				}

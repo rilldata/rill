@@ -36,7 +36,7 @@ func (w *PaymentMethodAddedWorker) Work(ctx context.Context, job *river.Job[Paym
 	}
 
 	// check for no payment method billing error
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeNoPaymentMethod)
+	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNoPaymentMethod)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -51,7 +51,7 @@ func (w *PaymentMethodAddedWorker) Work(ctx context.Context, job *river.Job[Paym
 		}
 
 		if c.HasPaymentMethod {
-			err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+			err = w.admin.DB.DeleteBillingIssue(ctx, be.ID)
 			if err != nil {
 				return fmt.Errorf("failed to delete billing error: %w", err)
 			}
@@ -91,10 +91,10 @@ func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[Pa
 	}
 
 	if !c.HasPaymentMethod {
-		_, err = w.admin.DB.UpsertBillingError(ctx, &database.UpsertBillingErrorOptions{
+		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     org.ID,
-			Type:      database.BillingErrorTypeNoPaymentMethod,
-			Metadata:  &database.BillingErrorMetadataNoPaymentMethod{},
+			Type:      database.BillingIssueTypeNoPaymentMethod,
+			Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
 			EventTime: job.Args.EventTime,
 		})
 		if err != nil {
@@ -128,7 +128,7 @@ func (w *CustomerAddressUpdatedWorker) Work(ctx context.Context, job *river.Job[
 	}
 
 	// look for no billable address billing error and remove it
-	be, err := w.admin.DB.FindBillingErrorByType(ctx, org.ID, database.BillingErrorTypeNoBillableAddress)
+	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNoBillableAddress)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -136,7 +136,7 @@ func (w *CustomerAddressUpdatedWorker) Work(ctx context.Context, job *river.Job[
 	}
 
 	if be != nil {
-		err = w.admin.DB.DeleteBillingError(ctx, be.ID)
+		err = w.admin.DB.DeleteBillingIssue(ctx, be.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete billing error: %w", err)
 		}

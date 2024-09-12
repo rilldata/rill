@@ -503,17 +503,10 @@ service AdminService {
     };
   }
 
-  // SudoDeleteOrganizationBillingError deletes a billing error of a type for the organization
-  rpc SudoDeleteOrganizationBillingError(SudoDeleteOrganizationBillingErrorRequest) returns (SudoDeleteOrganizationBillingErrorResponse) {
+  // SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+  rpc SudoDeleteOrganizationBillingIssue(SudoDeleteOrganizationBillingIssueRequest) returns (SudoDeleteOrganizationBillingIssueResponse) {
     option (google.api.http) = {
-      delete: "/v1/superuser/organizations/{organization}/billing/errors/{type}",
-    };
-  }
-
-  // SudoDeleteOrganizationBillingWarning deletes a billing warning of a type for the organization
-  rpc SudoDeleteOrganizationBillingWarning(SudoDeleteOrganizationBillingWarningRequest) returns (SudoDeleteOrganizationBillingWarningResponse) {
-    option (google.api.http) = {
-      delete: "/v1/superuser/organizations/{organization}/billing/warnings/{type}",
+      delete: "/v1/superuser/organizations/{organization}/billing/issues/{type}",
     };
   }
 
@@ -810,14 +803,9 @@ service AdminService {
     };
   }
 
-  // ListOrganizationBillingErrors lists all the billing errors for the organization
-  rpc ListOrganizationBillingErrors(ListOrganizationBillingErrorsRequest) returns (ListOrganizationBillingErrorsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/errors"};
-  }
-
-  // ListOrganizationBillingWarnings lists all the billing warnings for the organization
-  rpc ListOrganizationBillingWarnings(ListOrganizationBillingWarningsRequest) returns (ListOrganizationBillingWarningsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/warnings"};
+  // ListOrganizationBillingIssues lists all the billing issues for the organization
+  rpc ListOrganizationBillingIssues(ListOrganizationBillingIssuesRequest) returns (ListOrganizationBillingIssuesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/issues"};
   }
 }
 
@@ -1247,7 +1235,7 @@ message SudoGetResourceResponse {
 }
 
 message SudoUpdateOrganizationQuotasRequest {
-  string org_name = 1;
+  string organization = 1;
   optional int32 projects = 2;
   optional int32 deployments = 3;
   optional int32 slots_total = 4;
@@ -1261,7 +1249,7 @@ message SudoUpdateOrganizationQuotasResponse {
 }
 
 message SudoUpdateOrganizationBillingCustomerRequest {
-  string org_name = 1;
+  string organization = 1;
   string billing_customer_id = 2;
 }
 
@@ -1306,19 +1294,12 @@ message SudoIssueRuntimeManagerTokenResponse {
   string token = 1;
 }
 
-message SudoDeleteOrganizationBillingErrorRequest {
+message SudoDeleteOrganizationBillingIssueRequest {
   string organization = 1;
-  BillingErrorType type = 2;
+  BillingIssueType type = 2;
 }
 
-message SudoDeleteOrganizationBillingErrorResponse {}
-
-message SudoDeleteOrganizationBillingWarningRequest {
-  string organization = 1;
-  BillingWarningType type = 2;
-}
-
-message SudoDeleteOrganizationBillingWarningResponse {}
+message SudoDeleteOrganizationBillingIssueResponse {}
 
 message ListProjectMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -2062,20 +2043,12 @@ message DenyProjectAccessRequest {
 
 message DenyProjectAccessResponse {}
 
-message ListOrganizationBillingErrorsRequest {
+message ListOrganizationBillingIssuesRequest {
   string organization = 1;
 }
 
-message ListOrganizationBillingErrorsResponse {
-  repeated BillingError errors = 1;
-}
-
-message ListOrganizationBillingWarningsRequest {
-  string organization = 1;
-}
-
-message ListOrganizationBillingWarningsResponse {
-  repeated BillingWarning warnings = 1;
+message ListOrganizationBillingIssuesResponse {
+  repeated BillingIssue issues = 1;
 }
 
 message User {
@@ -2351,38 +2324,55 @@ message MemberUsergroup {
   google.protobuf.Timestamp updated_on = 5;
 }
 
-enum BillingErrorType {
-  BILLING_ERROR_TYPE_UNSPECIFIED = 0;
-  BILLING_ERROR_TYPE_NO_PAYMENT_METHOD = 1;
-  BILLING_ERROR_TYPE_NO_BILLABLE_ADDRESS = 2;
-  BILLING_ERROR_TYPE_INVOICE_PAYMENT_FAILED = 3;
-  BILLING_ERROR_TYPE_TRIAL_ENDED = 4;
-  BILLING_ERROR_TYPE_SUBSCRIPTION_CANCELLED = 5;
+enum BillingIssueType {
+  BILLING_ISSUE_TYPE_UNSPECIFIED = 0;
+  BILLING_ISSUE_TYPE_ON_TRIAL = 1;
+  BILLING_ISSUE_TYPE_TRIAL_ENDED = 2;
+  BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD = 3;
+  BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS = 4;
+  BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED = 5;
+  BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
 }
 
-message BillingError {
+enum BillingIssueLevel {
+  BILLING_ISSUE_LEVEL_UNSPECIFIED = 0;
+  BILLING_ISSUE_LEVEL_WARNING = 1;
+  BILLING_ISSUE_LEVEL_ERROR = 2;
+}
+
+message BillingIssue {
   string organization = 1;
-  BillingErrorType type = 2;
-  BillingErrorMetadata metadata = 3;
-  google.protobuf.Timestamp event_time = 4;
-  google.protobuf.Timestamp created_on = 5;
+  BillingIssueType type = 2;
+  BillingIssueLevel level = 3;
+  BillingIssueMetadata metadata = 4;
+  google.protobuf.Timestamp event_time = 5;
+  google.protobuf.Timestamp created_on = 6;
 }
 
-message BillingErrorMetadata {
+message BillingIssueMetadata {
   oneof metadata {
-    BillingErrorMetadataNoPaymentMethod no_payment_method = 1;
-    BillingErrorMetadataNoBillableAddress no_billable_address = 2;
-    BillingErrorMetadataInvoicePaymentFailed invoice_payment_failed = 3;
-    BillingErrorMetadataTrialEnded trial_ended = 4;
-    BillingErrorMetadataSubscriptionCancelled subscription_cancelled = 5;
+    BillingIssueMetadataOnTrial on_trial = 1;
+    BillingIssueMetadataTrialEnded trial_ended = 2;
+    BillingIssueMetadataNoPaymentMethod no_payment_method = 3;
+    BillingIssueMetadataNoBillableAddress no_billable_address = 4;
+    BillingIssueMetadataInvoicePaymentFailed invoice_payment_failed = 5;
+    BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
   }
 }
 
-message BillingErrorMetadataNoPaymentMethod {}
+message BillingIssueMetadataOnTrial {
+  google.protobuf.Timestamp end_date = 1;
+}
 
-message BillingErrorMetadataNoBillableAddress {}
+message BillingIssueMetadataTrialEnded {
+  google.protobuf.Timestamp grace_period_end_date = 1;
+}
 
-message BillingErrorMetadataInvoicePaymentFailed {
+message BillingIssueMetadataNoPaymentMethod {}
+
+message BillingIssueMetadataNoBillableAddress {}
+
+message BillingIssueMetadataInvoicePaymentFailed {
   repeated InvoicePaymentFailedMeta invoices = 1;
 }
 
@@ -2395,33 +2385,6 @@ message InvoicePaymentFailedMeta {
   google.protobuf.Timestamp due_date = 6;
 }
 
-message BillingErrorMetadataTrialEnded {
-  google.protobuf.Timestamp grace_period_end_date = 1;
-}
-
-message BillingErrorMetadataSubscriptionCancelled {
-  google.protobuf.Timestamp end_date = 1;
-}
-
-enum BillingWarningType {
-  BILLING_WARNING_TYPE_UNSPECIFIED = 0;
-  BILLING_WARNING_TYPE_ON_TRIAL = 1;
-}
-
-message BillingWarning {
-  string organization = 1;
-  BillingWarningType type = 2;
-  BillingWarningMetadata metadata = 3;
-  google.protobuf.Timestamp event_time = 4;
-  google.protobuf.Timestamp created_on = 5;
-}
-
-message BillingWarningMetadata {
-  oneof metadata {
-    BillingWarningMetadataOnTrial on_trial = 1;
-  }
-}
-
-message BillingWarningMetadataOnTrial {
+message BillingIssueMetadataSubscriptionCancelled {
   google.protobuf.Timestamp end_date = 1;
 }

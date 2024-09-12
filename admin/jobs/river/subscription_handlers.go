@@ -58,7 +58,7 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 	}
 
 	// delete any trial related billing errors and warnings, irrespective of the new plan.
-	err = w.admin.CleanupTrialBillingErrorsAndWarnings(ctx, org.ID)
+	err = w.admin.CleanupTrialBillingIssues(ctx, org.ID)
 	if err != nil {
 		return fmt.Errorf("failed to cleanup trial billing errors and warnings: %w", err)
 	}

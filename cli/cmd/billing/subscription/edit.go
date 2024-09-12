@@ -36,7 +36,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfBold("Organization %q has following subscription\n", ch.Org)
 			ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 
-			ch.PrintfWarn("Editing plan for organization %q. Plan change will take place immediately.", ch.Org)
+			ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
 			ok, err := cmdutil.ConfirmPrompt("Do you want to Continue ?", "", false)
 			if err != nil {
 				return err

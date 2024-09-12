@@ -15,8 +15,7 @@ func BillingCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	billingCmd.AddCommand(subscription.SubscriptionCmd(ch))
 	billingCmd.AddCommand(plan.PlanCmd(ch))
-	billingCmd.AddCommand(ListErrorsCmd(ch))
-	billingCmd.AddCommand(ListWarningsCmd(ch))
+	billingCmd.AddCommand(ListIssuesCmd(ch))
 
 	return billingCmd
 }

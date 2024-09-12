@@ -266,17 +266,11 @@ type DB interface {
 	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
 	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
 
-	FindBillingErrors(ctx context.Context, orgID string) ([]*BillingError, error)
-	FindBillingErrorByType(ctx context.Context, orgID string, errorType BillingErrorType) (*BillingError, error)
-	UpsertBillingError(ctx context.Context, opts *UpsertBillingErrorOptions) (*BillingError, error)
-	DeleteBillingError(ctx context.Context, id string) error
-	DeleteBillingErrorByType(ctx context.Context, orgID string, errorType BillingErrorType) error
-
-	FindBillingWarnings(ctx context.Context, orgID string) ([]*BillingWarning, error)
-	FindBillingWarningByType(ctx context.Context, orgID string, warningType BillingWarningType) (*BillingWarning, error)
-	UpsertBillingWarning(ctx context.Context, opts *UpsertBillingWarningOptions) (*BillingWarning, error)
-	DeleteBillingWarning(ctx context.Context, id string) error
-	DeleteBillingWarningByType(ctx context.Context, orgID string, warningType BillingWarningType) error
+	FindBillingIssues(ctx context.Context, orgID string) ([]*BillingIssue, error)
+	FindBillingIssueByType(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
+	UpsertBillingIssue(ctx context.Context, opts *UpsertBillingIssueOptions) (*BillingIssue, error)
+	DeleteBillingIssue(ctx context.Context, id string) error
+	DeleteBillingIssueByType(ctx context.Context, orgID string, errorType BillingIssueType) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -980,33 +974,54 @@ func NewRandomKeyring() ([]*EncryptionKey, error) {
 	return encKeyRing, nil
 }
 
-type BillingErrorType int
+type BillingIssueType int
 
 const (
-	BillingErrorTypeUnspecified BillingErrorType = iota
-	BillingErrorTypeNoPaymentMethod
-	BillingErrorTypeNoBillableAddress
-	BillingErrorTypeInvoicePaymentFailed
-	BillingErrorTypeTrialEnded
-	BillingErrorTypeSubscriptionCancelled
+	BillingIssueTypeUnspecified           BillingIssueType = iota
+	BillingIssueTypeOnTrial                                = 1
+	BillingIssueTypeTrialEnded                             = 2
+	BillingIssueTypeNoPaymentMethod                        = 3
+	BillingIssueTypeNoBillableAddress                      = 4
+	BillingIssueTypeInvoicePaymentFailed                   = 5
+	BillingIssueTypeSubscriptionCancelled                  = 6
 )
 
-type BillingError struct {
+type BillingIssueLevel int
+
+const (
+	BillingIssueLevelUnspecified BillingIssueLevel = iota
+	BillingIssueLevelWarning                       = 1
+	BillingIssueLevelError                         = 2
+)
+
+type BillingIssue struct {
 	ID        string
 	OrgID     string
-	Type      BillingErrorType
-	Metadata  BillingErrorMetadata
+	Type      BillingIssueType
+	Level     BillingIssueLevel
+	Metadata  BillingIssueMetadata
 	EventTime time.Time
 	CreatedOn time.Time
 }
 
-type BillingErrorMetadata interface{}
+type BillingIssueMetadata interface{}
 
-type BillingErrorMetadataNoPaymentMethod struct{}
+type BillingIssueMetadataOnTrial struct {
+	EndDate              time.Time `json:"end_date"`
+	TrialEndingSoonJobID int64     `json:"trial_end_soon_job_id"`
+	TrialEndCheckJobID   int64     `json:"trial_end_check_job_id"`
+}
 
-type BillingErrorMetadataNoBillableAddress struct{}
+type BillingIssueMetadataTrialEnded struct {
+	GracePeriodEndDate  time.Time `json:"grace_period_end_date"`
+	GracePeriodEndJobID int64     `json:"grace_period_end_job_id"`
+}
 
-type BillingErrorMetadataInvoicePaymentFailed struct {
+type BillingIssueMetadataNoPaymentMethod struct{}
+
+type BillingIssueMetadataNoBillableAddress struct{}
+
+type BillingIssueMetadataInvoicePaymentFailed struct {
 	Invoices map[string]InvoicePaymentFailedMeta `json:"invoices"`
 }
 
@@ -1021,50 +1036,14 @@ type InvoicePaymentFailedMeta struct {
 	GracePeriodEndJobID int64     `json:"grace_period_end_job_id"`
 }
 
-type BillingErrorMetadataTrialEnded struct {
-	GracePeriodEndDate  time.Time `json:"grace_period_end_date"`
-	GracePeriodEndJobID int64     `json:"grace_period_end_job_id"`
-}
-
-type BillingErrorMetadataSubscriptionCancelled struct {
+type BillingIssueMetadataSubscriptionCancelled struct {
 	EndDate     time.Time `json:"end_date"`
 	SubEndJobID int64     `json:"sub_end_job_id"`
 }
 
-type UpsertBillingErrorOptions struct {
+type UpsertBillingIssueOptions struct {
 	OrgID     string           `validate:"required"`
-	Type      BillingErrorType `validate:"required"`
-	Metadata  BillingErrorMetadata
+	Type      BillingIssueType `validate:"required"`
+	Metadata  BillingIssueMetadata
 	EventTime time.Time `validate:"required"`
-}
-
-type BillingWarningType int
-
-const (
-	BillingWarningTypeUnspecified BillingWarningType = iota
-	BillingWarningTypeOnTrial
-)
-
-type BillingWarning struct {
-	ID        string
-	OrgID     string
-	Type      BillingWarningType
-	Metadata  BillingWarningMetadata
-	EventTime time.Time
-	CreatedOn time.Time
-}
-
-type UpsertBillingWarningOptions struct {
-	OrgID     string             `validate:"required"`
-	Type      BillingWarningType `validate:"required"`
-	Metadata  BillingWarningMetadata
-	EventTime time.Time `validate:"required"`
-}
-
-type BillingWarningMetadata interface{}
-
-type BillingWarningMetadataOnTrial struct {
-	EndDate              time.Time `json:"end_date"`
-	TrialEndingSoonJobID int64     `json:"trial_end_soon_job_id"`
-	TrialEndCheckJobID   int64     `json:"trial_end_check_job_id"`
 }
