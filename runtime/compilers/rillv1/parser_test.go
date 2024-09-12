@@ -1875,53 +1875,6 @@ measures:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
-func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
-	// Check errors
-	// NOTE: Assumes there's at most one parse error per file path
-	// NOTE: Matches error messages using Contains (exact match not required)
-	gotErrors := slices.Clone(p.Errors)
-	for _, want := range wantErrors {
-		found := false
-		for i, got := range gotErrors {
-			if want.FilePath == got.FilePath {
-				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
-				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
-				gotErrors = slices.Delete(gotErrors, i, i+1)
-				found = true
-				break
-			}
-		}
-		require.True(t, found, "missing error for path %q", want.FilePath)
-	}
-	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
-
-	// Check resources
-	gotResources := maps.Clone(p.Resources)
-	for _, want := range wantResources {
-		found := false
-		for _, got := range gotResources {
-			if want.Name == got.Name {
-				require.Equal(t, want.Name, got.Name)
-				require.ElementsMatch(t, want.Refs, got.Refs, "for resource %q", want.Name)
-				require.ElementsMatch(t, want.Paths, got.Paths, "for resource %q", want.Name)
-				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
-				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
-				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
-				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
-				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
-				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
-				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
-
-				delete(gotResources, got.Name)
-				found = true
-				break
-			}
-		}
-		require.True(t, found, "missing resource %q", want.Name)
-	}
-	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
-}
-
 func TestRefreshInDev(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
@@ -1978,6 +1931,53 @@ refresh:
 	p, err = Parse(ctx, repo, "", "dev", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
+}
+
+func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
+	// Check errors
+	// NOTE: Assumes there's at most one parse error per file path
+	// NOTE: Matches error messages using Contains (exact match not required)
+	gotErrors := slices.Clone(p.Errors)
+	for _, want := range wantErrors {
+		found := false
+		for i, got := range gotErrors {
+			if want.FilePath == got.FilePath {
+				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
+				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
+				gotErrors = slices.Delete(gotErrors, i, i+1)
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "missing error for path %q", want.FilePath)
+	}
+	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
+
+	// Check resources
+	gotResources := maps.Clone(p.Resources)
+	for _, want := range wantResources {
+		found := false
+		for _, got := range gotResources {
+			if want.Name == got.Name {
+				require.Equal(t, want.Name, got.Name)
+				require.ElementsMatch(t, want.Refs, got.Refs, "for resource %q", want.Name)
+				require.ElementsMatch(t, want.Paths, got.Paths, "for resource %q", want.Name)
+				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
+				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
+				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
+
+				delete(gotResources, got.Name)
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "missing resource %q", want.Name)
+	}
+	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
 }
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {

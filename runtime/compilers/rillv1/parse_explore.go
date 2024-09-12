@@ -62,19 +62,19 @@ func (y *NamesYAML) UnmarshalYAML(v *yaml.Node) error {
 		}
 	case yaml.MappingNode:
 		tmp := &struct {
-			Exclude *yaml.Node `yaml:"exclude"`
+			Exclude yaml.Node `yaml:"exclude"`
 		}{}
 		err := v.Decode(tmp)
 		if err != nil {
 			return err
 		}
-		if tmp.Exclude == nil {
+		if tmp.Exclude.IsZero() {
 			return errors.New("expected '*', list of names, or `exclude` field")
 		}
 
 		// Exclude should also be '*' or a list of names.
 		// For simpliciy, we can just recurse on it and invert the result.
-		err = y.UnmarshalYAML(tmp.Exclude)
+		err = y.UnmarshalYAML(&tmp.Exclude)
 		if err != nil {
 			return fmt.Errorf("error parsing `exclude` field: %w", err)
 		}

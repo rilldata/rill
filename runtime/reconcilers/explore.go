@@ -117,7 +117,6 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 			spec.SecurityRules = append(spec.SecurityRules, rule)
 		}
 	}
-	spec.SecurityRules = append(spec.SecurityRules, mv.SecurityRules...)
 
 	// Validate and rewrite dimensions
 	allDims := make(map[string]bool)

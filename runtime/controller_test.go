@@ -1258,6 +1258,109 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
+func TestExplores(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"models/m1.sql": `SELECT 'foo' as foo, 'bar' as bar, 'int' as internal, 1 as x, 2 as y`,
+		"metrics_views/mv1.yaml": `
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+- column: bar
+- column: internal
+measures:
+- name: x
+  expression: sum(x)
+- name: y
+  expression: sum(y)
+security:
+  access: true
+  row_filter: true
+  exclude:
+    - if: "{{ not .user.admin }}"
+      names: ['internal']
+`,
+		"explores/e1.yaml": `
+type: explore
+title: Hello
+metrics_view: mv1
+dimensions:
+  exclude: ['internal']
+measures: '*'
+time_zones: ['UTC', 'America/Los_Angeles']
+presets:
+  - label: Default
+    measures: ['x']
+    comparison_mode: time
+`,
+	})
+
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: "e1"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "mv1"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/explores/e1.yaml"},
+		},
+		Resource: &runtimev1.Resource_Explore{
+			Explore: &runtimev1.Explore{
+				Spec: &runtimev1.ExploreSpec{
+					Title:             "Hello",
+					MetricsView:       "mv1",
+					Dimensions:        []string{"internal"},
+					DimensionsExclude: true,
+					Measures:          nil,
+					MeasuresExclude:   true,
+					TimeZones:         []string{"UTC", "America/Los_Angeles"},
+					Presets: []*runtimev1.ExplorePreset{
+						{
+							Label:             "Default",
+							DimensionsExclude: true,
+							Measures:          []string{"x"},
+							ComparisonMode:    runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
+						},
+					},
+				},
+				State: &runtimev1.ExploreState{
+					ValidSpec: &runtimev1.ExploreSpec{
+						Title:       "Hello",
+						MetricsView: "mv1",
+						Dimensions:  []string{"foo", "bar"},
+						Measures:    []string{"x", "y"},
+						TimeZones:   []string{"UTC", "America/Los_Angeles"},
+						Presets: []*runtimev1.ExplorePreset{
+							{
+								Label:          "Default",
+								Dimensions:     []string{"foo", "bar"},
+								Measures:       []string{"x"},
+								ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
+							},
+						},
+						SecurityRules: []*runtimev1.SecurityRule{
+							{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+								Condition: "true",
+								Allow:     true,
+							}}},
+							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+								Allow:     true,
+								AllFields: true,
+							}}},
+							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+								Condition: "{{ not .user.admin }}",
+								Allow:     false,
+								Fields:    []string{"internal"},
+							}}},
+						},
+					},
+				},
+			},
+		},
+	})
+}
+
 func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
 	source := &runtimev1.SourceV2{
 		Spec: &runtimev1.SourceSpec{
