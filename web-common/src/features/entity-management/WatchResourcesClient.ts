@@ -6,7 +6,7 @@ import {
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  V1ReconcileStatus,
+  V1Resource,
   V1ResourceEvent,
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -47,7 +47,17 @@ export class WatchResourcesClient {
       return;
     }
 
-    // Update the resource in the query cache
+    // Get the previous resource from the query cache
+    const previousResource = queryClient.getQueryData<{
+      resource: V1Resource | undefined;
+    }>(
+      getRuntimeServiceGetResourceQueryKey(this.instanceId, {
+        "name.name": res.name.name,
+        "name.kind": res.name.kind,
+      }),
+    );
+
+    // Set the updated resource in the query cache
     queryClient.setQueryData(
       getRuntimeServiceGetResourceQueryKey(this.instanceId, {
         "name.name": res.name.name,
@@ -85,15 +95,10 @@ export class WatchResourcesClient {
           return;
         }
 
-        // Proceed to query invalidations only when the resource has finished reconciling
-        // We know the resource has finished reconciling when:
-        //   1) the reconcileStatus is IDLE
-        //   2) the state version has been incremented
+        // Proceed to query invalidations only when the resource state has changed
         if (
-          res.resource.meta.reconcileStatus !==
-            V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
           this.resourceStateVersions.get(res.name.name) ===
-            res.resource.meta.stateVersion
+          res.resource.meta.stateVersion
         )
           return;
 
@@ -133,32 +138,42 @@ export class WatchResourcesClient {
 
           case ResourceKind.Source:
           case ResourceKind.Model: {
-            // TODO: differentiate between a Source's sourceConnector and sinkConnector
-            // TODO: differentiate between a Model's inputConnector, stageConnector, and outputConnector
+            // TODO: differentiate between a Model's executorConnector and resultConnector
             const connectorName =
               (res.name.kind as ResourceKind) === ResourceKind.Source
-                ? res.resource.source?.spec?.sinkConnector
-                : res.resource.model?.spec?.outputConnector;
+                ? res.resource.source?.state?.connector
+                : res.resource.model?.state?.resultConnector;
+            const previousConnectorName =
+              (res.name.kind as ResourceKind) === ResourceKind.Source
+                ? previousResource?.resource?.source?.state?.connector
+                : previousResource?.resource?.model?.state?.resultConnector;
 
-            // The following invalidations are only needed if the Source/Model has a defined connector
-            if (!connectorName) return;
+            // If the result table has changed, invalidate the connector's list of tables
+            const resultTableChanged =
+              res.resource.model?.state?.resultTable !==
+              previousResource?.resource?.model?.state?.resultTable;
+            if (resultTableChanged) {
+              const connectorsToInvalidate = Array.from(
+                new Set([connectorName, previousConnectorName].filter(Boolean)),
+              );
+              for (const connector of connectorsToInvalidate) {
+                void queryClient.invalidateQueries(
+                  getConnectorServiceOLAPListTablesQueryKey({
+                    instanceId: this.instanceId,
+                    connector: connector,
+                  }),
+                );
+              }
+            }
 
             // If the connector is new, invalidate the list of connectors
             // (This is needed because Sources and Models can implicitly create Connectors)
-            if (!this.connectorNames.has(connectorName)) {
+            if (connectorName && !this.connectorNames.has(connectorName)) {
               this.connectorNames.add(connectorName);
               void queryClient.invalidateQueries(
                 getRuntimeServiceAnalyzeConnectorsQueryKey(this.instanceId),
               );
             }
-
-            // Invalidate the connector's list of tables
-            void queryClient.invalidateQueries(
-              getConnectorServiceOLAPListTablesQueryKey({
-                instanceId: this.instanceId,
-                connector: connectorName,
-              }),
-            );
 
             // Note: Sources/Models that fail to ingest will not have a table name
             const tableName =
@@ -167,7 +182,7 @@ export class WatchResourcesClient {
                 : res.resource.model?.state?.resultTable;
 
             // The following invalidations are only needed if the Source/Model has an active table
-            if (!tableName) return;
+            if (!connectorName || !tableName) return;
 
             // Invalidate profiling queries
             const failed = !!res.resource.meta?.reconcileError;
