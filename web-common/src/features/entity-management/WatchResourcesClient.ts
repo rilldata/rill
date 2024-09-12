@@ -53,7 +53,7 @@ export class WatchResourcesClient {
         "name.name": res.name.name,
         "name.kind": res.name.kind,
       }),
-    );
+    )?.resource;
 
     // Set the updated resource in the query cache
     queryClient.setQueryData(
@@ -96,7 +96,7 @@ export class WatchResourcesClient {
         // Proceed to query invalidations only when the resource state has changed
         if (
           res.resource.meta.stateVersion ===
-          previousResource?.resource?.meta?.stateVersion
+          previousResource?.meta?.stateVersion
         )
           return;
 
@@ -137,16 +137,16 @@ export class WatchResourcesClient {
                 : res.resource.model?.state?.resultConnector;
             const previousConnectorName =
               (res.name.kind as ResourceKind) === ResourceKind.Source
-                ? previousResource?.resource?.source?.state?.connector
-                : previousResource?.resource?.model?.state?.resultConnector;
+                ? previousResource?.source?.state?.connector
+                : previousResource?.model?.state?.resultConnector;
 
             // If the result table has changed, invalidate the connector's list of tables
             const sourceTableChanged =
               res.resource?.source?.state?.table !==
-              previousResource?.resource?.source?.state?.table;
+              previousResource?.source?.state?.table;
             const modelResultTableChanged =
               res.resource.model?.state?.resultTable !==
-              previousResource?.resource?.model?.state?.resultTable;
+              previousResource?.model?.state?.resultTable;
             if (sourceTableChanged || modelResultTableChanged) {
               const connectorsToInvalidate = Array.from(
                 new Set([connectorName, previousConnectorName].filter(Boolean)),
@@ -243,8 +243,8 @@ export class WatchResourcesClient {
             // Get the now-deleted resource's connector name
             const connectorName =
               (res.name.kind as ResourceKind) === ResourceKind.Source
-                ? previousResource?.resource?.source?.state?.connector
-                : previousResource?.resource?.model?.state?.resultConnector;
+                ? previousResource?.source?.state?.connector
+                : previousResource?.model?.state?.resultConnector;
 
             // Invalidate the connector's list of tables
             void queryClient.invalidateQueries(
