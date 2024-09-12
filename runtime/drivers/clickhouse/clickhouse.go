@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -162,7 +163,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		}
 	}
 
-	db := sqlx.NewDb(clickhouse.OpenDB(opts), "clickhouse")
+	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 	// very roughly approximating num queries required for a typical page load
 	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
