@@ -1,17 +1,14 @@
 <script lang="ts">
-  import {
-    MetricsViewSpecDimensionV2,
-    MetricsViewSpecMeasureV2,
-  } from "@rilldata/web-common/runtime-client";
   import Checkbox from "./Checkbox.svelte";
   import MetricsTableRow from "./MetricsTableRow.svelte";
   import { insertIndex } from "./MetricsTableRow.svelte";
+  import { YAMLMap } from "yaml";
 
   const headers = ["Name", "Definition", "Label", "Format", "Description"];
   const gutterWidth = 56;
 
   export let dimensions: boolean = false;
-  export let items: MetricsViewSpecDimensionV2[] | MetricsViewSpecMeasureV2[];
+  export let items: Array<YAMLMap<string, string>>;
   export let reorderList: (
     initIndex: number,
     newIndex: number,
@@ -40,6 +37,7 @@
     scroll = e.currentTarget.scrollLeft;
   }}
   bind:contentRect={wrapperRect}
+  style:max-height="{items?.length * 40}px"
 >
   <table bind:contentRect>
     <colgroup>
@@ -70,8 +68,8 @@
         {/each}
       </tr>
     </thead>
-    <tbody bind:this={tbody} class="relative">
-      {#each items as item, i (item.name)}
+    <tbody bind:this={tbody} class="relative overflow-hidden">
+      {#each items as item, i (i)}
         <MetricsTableRow
           {item}
           {reorderList}
@@ -101,19 +99,19 @@
 </div>
 
 <style lang="postcss">
-  thead tr {
-    height: 40px;
+  .wrapper {
+    @apply overflow-x-auto overflow-y-hidden w-full max-w-full relative;
+    @apply border rounded-[2px] min-h-fit h-fit;
+    /* @apply max-h-72; */
   }
 
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-full;
-    @apply font-normal cursor-pointer select-none relative;
+    @apply font-normal cursor-pointer select-none relative h-fit;
   }
 
-  .wrapper {
-    @apply overflow-auto w-full max-w-full h-fit max-h-full relative bg-white;
-    @apply border-[1px] rounded-[2px];
-    @apply max-h-72;
+  thead tr {
+    height: 40px;
   }
 
   th {

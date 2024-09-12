@@ -25,15 +25,11 @@
   export let autocomplete = false;
   export let alwaysShowError = false;
   export let optional = false;
-  export let modes: {
-    label: string;
-    type: "select" | "text" | "combo";
-    options: string[];
-  }[] = [];
+  export let fields: string[] | undefined = [];
+  export let options: string[] | undefined = [];
   export let onInput: (e: Event & InputEvent) => void = voidFunction;
   export let onChange: (e: Event & InputEvent) => void = voidFunction;
-  export let inputType = "text";
-  export let selected: string = "Simple";
+  export let selected: number = -1;
 
   let showPassword = false;
   let inputElement: HTMLInputElement;
@@ -54,12 +50,12 @@
       <label for={id}>
         {label}
         {#if optional}
-          <span class="text-gray-500 text-sm">(optional)</span>
+          <span class="text-gray-500 text-[12px] font-normal">(optional)</span>
         {/if}
       </label>
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500" style="transform:translateY(-.5px)">
+          <div class="text-gray-500">
             <InfoCircle size="13px" />
           </div>
           <TooltipContent maxWidth="400px" slot="tooltip-content">
@@ -70,23 +66,22 @@
     </div>
   {/if}
 
-  {#if modes.length}
+  {#if fields && fields?.length > 1}
     <div class="rounded-sm option-wrapper flex h-6 text-sm w-fit mb-1">
-      {#each modes as { label, type } (label)}
+      {#each fields as field, i (field)}
         <button
           on:click={() => {
-            inputType = type;
-            selected = label;
+            selected = i;
           }}
-          class="-ml-[1px] first-of-type:-ml-0 px-2 border first-of-type:rounded-l-sm last-of-type:rounded-r-sm"
-          class:selected={selected === label}>{label}</button
+          class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
+          class:selected={selected === i}>{field}</button
         >
       {/each}
     </div>
   {/if}
 
-  {#if inputType === "text"}
-    <div class="input-wrapper">
+  {#if !options?.length}
+    <div class="input-wrapper overflow-hidden">
       <input
         {id}
         {type}
@@ -120,15 +115,16 @@
         </button>
       {/if}
     </div>
-  {:else if inputType === "select"}
+  {:else if options.length}
     <Select
       {value}
-      options={modes
-        .find(({ label }) => label === selected)
-        ?.options.map((value) => ({ value }))}
+      options={options.map((value) => ({ value, label: value })) ?? []}
       on:change={(e) => {
+        console.log(e);
         value = e.detail;
+        onInput(e.detail);
       }}
+      {placeholder}
     />
   {/if}
 
@@ -168,7 +164,7 @@
     @apply flex justify-center items-center;
     @apply h-8 pl-2 w-full;
 
-    @apply border border-gray-300 rounded-sm;
+    @apply border border-gray-300 rounded-[2px];
     @apply text-xs;
     @apply cursor-pointer;
   }

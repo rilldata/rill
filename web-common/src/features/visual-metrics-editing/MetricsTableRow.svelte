@@ -6,24 +6,21 @@
 </script>
 
 <script lang="ts">
-  import type {
-    MetricsViewSpecDimensionV2,
-    MetricsViewSpecMeasureV2,
-  } from "@rilldata/web-common/runtime-client";
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import { measureChipColors as colors } from "@rilldata/web-common/components/chip/chip-types";
   import EditControls from "./EditControls.svelte";
-  import { GripVertical } from "lucide-svelte";
+  import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import Checkbox from "./Checkbox.svelte";
   import { editingItem } from "../workspaces/VisualMetrics.svelte";
   import {
     defaultChipColors,
     measureChipColors,
   } from "@rilldata/web-common/components/chip/chip-types";
+  import { YAMLMap } from "yaml";
 
   const ROW_HEIGHT = 40;
 
-  export let item: MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2;
+  export let item: YAMLMap<string, string>;
   export let i: number;
   export let selected: boolean;
   export let length: number;
@@ -53,9 +50,10 @@
 
     clone = row.cloneNode(true) as HTMLTableRowElement;
 
+    clone.classList.remove("row");
     clone.style.opacity = "0.6";
-    clone.style.position = "fixed";
-    clone.style.display = "table-row";
+    // clone.style.position = "fixed";
+    // clone.style.display = "table-row";
     clone.style.width = "100%";
     clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
     row.parentElement?.appendChild(clone);
@@ -86,23 +84,25 @@
   }
   let hovered = false;
 
-  function isMeasure(
-    item: MetricsViewSpecDimensionV2 | MetricsViewSpecMeasureV2,
-  ): item is MetricsViewSpecMeasureV2 {
-    return "formatPreset" in item;
-  }
+  // function isMeasure(
+  //   item: MetricsViewSpecDimensionV2 | MetricsViewSpecMeasureV2,
+  // ): item is MetricsViewSpecMeasureV2 {
+  //   return "formatPreset" in item;
+  // }
 
   function setEditing() {
-    editingItem.set({ data: item, index: i, type });
+    editingItem.set({ index: i, type });
   }
+
+  $: editing = $editingItem?.index === i && $editingItem?.type === type;
 </script>
 
 <tr
-  id={item?.name || item?.label}
+  id={item.get("name") || item.get("label")}
   style:transform="translateY(0px)"
-  class="relative text-sm"
+  class="relative text-sm row"
   style:height="{ROW_HEIGHT}px"
-  class:editing={$editingItem?.index === i && $editingItem?.type === type}
+  class:editing
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
   bind:this={row}
@@ -114,19 +114,20 @@
         on:mousedown={handleDragStart}
         class:opacity-0={!hovered}
         disabled={!hovered}
+        class="text-gray-500"
       >
-        <GripVertical size="14px" class="text-gray-500" />
+        <DragHandle size="16px" />
       </button>
       <Checkbox onChange={onCheckedChange} checked={selected} />
     </div>
   </td>
   <td class="max-w-64 source-code" on:click={setEditing}>
-    {item?.name || item?.label}</td
+    {item?.get("name")}</td
   >
 
-  <td class="source-code max-w-72" on:click={setEditing}
-    >{item?.expression || item?.name}</td
-  >
+  <td class="source-code max-w-72" on:click={setEditing}>
+    {item.get("expression") || item.get("column")}
+  </td>
   <td on:click={setEditing}>
     <div class="pointer-events-none text-[12px]">
       <Chip
@@ -134,27 +135,28 @@
         slideDuration={0}
         extraRounded={false}
         extraPadding={false}
-        {...isMeasure(item) ? measureChipColors : defaultChipColors}
-        label={item?.label || item?.label}
+        {...type === "measures" ? measureChipColors : defaultChipColors}
+        label={item.get("label") || item.get("name")}
         outline
       >
         <span slot="body" class="font-bold truncate">
-          {item?.label || item?.label}
+          {item.get("label") || item.get("name")}
         </span>
       </Chip>
     </div>
   </td>
-  {#if isMeasure(item)}
-    <td class="capitalize" on:click={setEditing}>
-      {item?.formatPreset || item?.formatD3 || "-"}</td
+  {#if type === "measures"}
+    <td on:click={setEditing}>
+      {item.get("format_preset") || item?.get("format_d3") || "-"}</td
     >
   {/if}
-  <td class="max-w-72" on:click={setEditing}
-    >{item?.description || item?.description || "-"}</td
-  >
+  <td class="max-w-72" on:click={setEditing}>
+    {item?.get("description") || "-"}
+  </td>
 
   {#if hovered}
     <EditControls
+      {editing}
       right={Math.max(0, tableWidth - scrollLeft)}
       first={i === 0}
       last={i === length - 1}
@@ -181,9 +183,12 @@
     /* @apply -z-10; */
   }
 
-  tr:hover,
-  .editing {
+  tr:hover:not(.editing) {
     @apply bg-gray-50;
+  }
+
+  .editing {
+    @apply bg-gray-100;
   }
 
   td:not(.dragging) {
@@ -194,7 +199,7 @@
     @apply border-b border-primary-500;
   }
 
-  tr:last-of-type td {
+  .row:last-of-type td {
     @apply border-b-0;
   }
 
