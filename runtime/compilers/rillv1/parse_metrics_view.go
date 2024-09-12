@@ -784,12 +784,15 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
+			// nolint:staticcheck // We still need to set it
 			t := &runtimev1.MetricsViewSpec_AvailableTimeRange{
 				Range: r.Range,
 			}
 			if r.ComparisonTimeRanges != nil {
+				// nolint:staticcheck // We still need to set it
 				t.ComparisonOffsets = make([]*runtimev1.MetricsViewSpec_AvailableComparisonOffset, len(r.ComparisonTimeRanges))
 				for i, o := range r.ComparisonTimeRanges {
+					// nolint:staticcheck // We still need to set it
 					t.ComparisonOffsets[i] = &runtimev1.MetricsViewSpec_AvailableComparisonOffset{
 						Offset: o.Offset,
 						Range:  o.Range,
