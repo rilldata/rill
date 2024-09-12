@@ -12,7 +12,7 @@
     "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
     "storybook:smoketest": "STORYBOOK_MODE=true storybook dev --smoke-test",
     "build-storybook": "storybook build",
-    "build-grammer": "nearleyc src/features/filters/expression.ne -o src/features/filters/expression.js"
+    "build-grammer": "nearleyc src/features/dashboards/url-state/filters/expression.ne -o src/features/dashboards/url-state/filters/expression.js"
   },
   "devDependencies": {
     "@bufbuild/protobuf": "^1.0.0",
