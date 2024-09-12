@@ -155,7 +155,15 @@ measures:
     expression: count(*)
 first_day_of_week: 7
 first_month_of_year: 3
-available_time_ranges:
+`,
+		// explore e1
+		`explores/e1.yaml`: `
+type: explore
+title: E1
+metrics_view: d1
+measures:
+  - b
+time_ranges:
   - P2W
   - range: P4W
   - range: P2M
@@ -163,6 +171,8 @@ available_time_ranges:
       - P1M
       - offset: P4M
         range: P2M
+presets:
+  - time_range: P4W
 `,
 		// migration c1
 		`custom/c1.yml`: `
@@ -268,16 +278,31 @@ schema: default
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
-				AvailableTimeRanges: []*runtimev1.MetricsViewSpec_AvailableTimeRange{
+			},
+		},
+		// explore e1
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e1"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "d1"}},
+			Paths: []string{"/explores/e1.yaml"},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				Title:             "E1",
+				MetricsView:       "d1",
+				DimensionsExclude: true,
+				Measures:          []string{"b"},
+				TimeRanges: []*runtimev1.ExploreTimeRange{
 					{Range: "P2W"},
 					{Range: "P4W"},
 					{
 						Range: "P2M",
-						ComparisonOffsets: []*runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+						ComparisonTimeRanges: []*runtimev1.ExploreComparisonTimeRange{
 							{Offset: "P1M"},
 							{Offset: "P4M", Range: "P2M"},
 						},
 					},
+				},
+				Presets: []*runtimev1.ExplorePreset{
+					{TimeRange: "P4W"},
 				},
 			},
 		},
@@ -985,17 +1010,16 @@ SELECT * FROM t2
 func TestProjectDashboardDefaults(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
-		// Provide dashboard defaults in rill.yaml
+		// Provide metrics view defaults in rill.yaml
 		`rill.yaml`: `
-dashboards:
+metrics_views:
   first_day_of_week: 7
-  available_time_zones:
-    - America/New_York
   security:
     access: true
 `,
-		// Dashboard that inherits defaults
-		`dashboards/d1.yaml`: `
+		// Metrics that inherits defaults
+		`mv1.yaml`: `
+type: metrics_view
 table: t1
 dimensions:
   - name: a
@@ -1004,8 +1028,9 @@ measures:
   - name: b
     expression: count(*)
 `,
-		// Dashboard that overrides defaults
-		`dashboards/d2.yaml`: `
+		// Metrics that overrides defaults
+		`mv2.yaml`: `
+type: metrics_view
 table: t2
 dimensions:
   - name: a
@@ -1014,17 +1039,16 @@ measures:
   - name: b
     expression: count(*)
 first_day_of_week: 1
-available_time_zones: []
 security:
   row_filter: true
 `,
 	})
 
 	resources := []*Resource{
-		// dashboard d1
+		// metrics view mv1
 		{
-			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
+			Paths: []string{"/mv1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t1",
@@ -1034,8 +1058,7 @@ security:
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
-				FirstDayOfWeek:     7,
-				AvailableTimeZones: []string{"America/New_York"},
+				FirstDayOfWeek: 7,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
 						Condition: "true",
@@ -1044,10 +1067,10 @@ security:
 				},
 			},
 		},
-		// dashboard d2
+		// metrics view mv2
 		{
-			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d2"},
-			Paths: []string{"/dashboards/d2.yaml"},
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"},
+			Paths: []string{"/mv2.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t2",
@@ -1057,8 +1080,7 @@ security:
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
-				FirstDayOfWeek:     1,
-				AvailableTimeZones: []string{},
+				FirstDayOfWeek: 1,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
 						Condition: "true",

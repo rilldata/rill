@@ -1138,20 +1138,26 @@ func TestDashboardTheme(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
+type: source
 connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/dash.yaml": `
-title: dash
+		"/dashboards/m1.yaml": `
+type: metrics_view
 model: bar
-default_theme: t1
 dimensions:
 - column: b
 measures:
 - expression: count(*)
 `,
-		`themes/t1.yaml`: `
+		"explores/e1.yaml": `
+type: explore
+metrics_view: m1
+title: Hello
+theme: t1
+`,
+		"themes/t1.yaml": `
 type: theme
 colors:
   primary: red
@@ -1184,14 +1190,17 @@ colors:
 			},
 		},
 	}
-	mv, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
-	metricsRes.Meta.Refs = append(metricsRes.Meta.Refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"})
-	mv.GetSpec().DefaultTheme = "t1"
-	mv.GetState().ValidSpec.DefaultTheme = "t1"
+
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 	testruntime.RequireResource(t, rt, id, theme)
-	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	exp := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Equal(t, exp.GetExplore().State.ValidSpec.Theme, "t1")
+	require.ElementsMatch(t, exp.Meta.Refs, []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindTheme, Name: "t1"},
+		{Kind: runtime.ResourceKindMetricsView, Name: "m1"},
+	})
 
 	// make the theme invalid
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1202,11 +1211,12 @@ colors:
   secondary: xxx
 `,
 	})
-	mv.State = &runtimev1.MetricsViewState{}
-	metricsRes.Meta.ReconcileError = `could not find theme "t1"`
+
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 4, 2, 1)
-	testruntime.RequireResource(t, rt, id, metricsRes)
+	testruntime.RequireReconcileState(t, rt, id, 5, 2, 1)
+
+	exp = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Nil(t, exp.GetExplore().State.ValidSpec)
 
 	// make the theme valid
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1217,13 +1227,8 @@ colors:
   secondary: grey
 `,
 	})
-	mv, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
-	metricsRes.Meta.Refs = append(metricsRes.Meta.Refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"})
-	mv.GetSpec().DefaultTheme = "t1"
-	mv.GetState().ValidSpec.DefaultTheme = "t1"
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
-	testruntime.RequireResource(t, rt, id, metricsRes)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 }
 
 func TestAlert(t *testing.T) {

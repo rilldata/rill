@@ -16,23 +16,26 @@ type ExploreYAML struct {
 	Title       string                 `yaml:"title"`
 	Description string                 `yaml:"description"`
 	MetricsView string                 `yaml:"metrics_view"`
-	Dimensions  NamesYAML              `yaml:"dimensions"`
-	Measures    NamesYAML              `yaml:"measures"`
+	Dimensions  *NamesYAML             `yaml:"dimensions"`
+	Measures    *NamesYAML             `yaml:"measures"`
 	Theme       string                 `yaml:"theme"`
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
 	Presets     []*struct {
-		Label               string    `yaml:"label"`
-		Dimensions          NamesYAML `yaml:"dimensions"`
-		Measures            NamesYAML `yaml:"measures"`
-		TimeRange           string    `yaml:"time_range"`
-		ComparisonMode      string    `yaml:"comparison_mode"`
-		ComparisonDimension string    `yaml:"comparison_dimension"`
+		Label               string     `yaml:"label"`
+		Dimensions          *NamesYAML `yaml:"dimensions"`
+		Measures            *NamesYAML `yaml:"measures"`
+		TimeRange           string     `yaml:"time_range"`
+		ComparisonMode      string     `yaml:"comparison_mode"`
+		ComparisonDimension string     `yaml:"comparison_dimension"`
 	} `yaml:"presets"`
 }
 
 // NamesYAML parses a list of names with support for a '*' scalar for all names,
 // and support for a nested "exclude:" list for selecting all except the listed names.
+//
+// Note that '*' is represented by setting Exclude to true and leaving Names nil.
+// (Because excluding nothing is the same as including everything.)
 type NamesYAML struct {
 	Names   []string
 	Exclude bool
@@ -80,6 +83,14 @@ func (y *NamesYAML) UnmarshalYAML(v *yaml.Node) error {
 		return fmt.Errorf("expected '*', list of names, or `exclude` field, got type %q", v.Kind)
 	}
 	return nil
+}
+
+func (y *NamesYAML) Safe() NamesYAML {
+	if y == nil {
+		// If not specified, default to '*' (include all).
+		return NamesYAML{Names: nil, Exclude: true}
+	}
+	return *y
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.
@@ -247,10 +258,10 @@ func (p *Parser) parseExplore(node *Node) error {
 
 		presets = append(presets, &runtimev1.ExplorePreset{
 			Label:               p.Label,
-			Dimensions:          p.Dimensions.Names,
-			DimensionsExclude:   p.Dimensions.Exclude,
-			Measures:            p.Measures.Names,
-			MeasuresExclude:     p.Measures.Exclude,
+			Dimensions:          p.Dimensions.Safe().Names,
+			DimensionsExclude:   p.Dimensions.Safe().Exclude,
+			Measures:            p.Measures.Safe().Names,
+			MeasuresExclude:     p.Measures.Safe().Exclude,
 			TimeRange:           p.TimeRange,
 			ComparisonMode:      mode,
 			ComparisonDimension: p.ComparisonDimension,
@@ -267,10 +278,10 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.Title = tmp.Title
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
-	r.ExploreSpec.Dimensions = tmp.Dimensions.Names
-	r.ExploreSpec.DimensionsExclude = tmp.Dimensions.Exclude
-	r.ExploreSpec.Measures = tmp.Measures.Names
-	r.ExploreSpec.MeasuresExclude = tmp.Measures.Exclude
+	r.ExploreSpec.Dimensions = tmp.Dimensions.Safe().Names
+	r.ExploreSpec.DimensionsExclude = tmp.Dimensions.Safe().Exclude
+	r.ExploreSpec.Measures = tmp.Measures.Safe().Names
+	r.ExploreSpec.MeasuresExclude = tmp.Measures.Safe().Exclude
 	r.ExploreSpec.Theme = tmp.Theme
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
