@@ -141,10 +141,13 @@ export class WatchResourcesClient {
                 : previousResource?.resource?.model?.state?.resultConnector;
 
             // If the result table has changed, invalidate the connector's list of tables
-            const resultTableChanged =
+            const sourceTableChanged =
+              res.resource?.source?.state?.table !==
+              previousResource?.resource?.source?.state?.table;
+            const modelResultTableChanged =
               res.resource.model?.state?.resultTable !==
               previousResource?.resource?.model?.state?.resultTable;
-            if (resultTableChanged) {
+            if (sourceTableChanged || modelResultTableChanged) {
               const connectorsToInvalidate = Array.from(
                 new Set([connectorName, previousConnectorName].filter(Boolean)),
               );
