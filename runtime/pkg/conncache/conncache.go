@@ -147,6 +147,7 @@ func New(opts Options) Cache {
 				for k, v := range c.entries {
 					if v.err != nil && time.Now().Sub(v.since) > c.opts.ErrorTimeout {
 						c.beginClose(k, v)
+						// todo reopen
 					}
 				}
 			}()
