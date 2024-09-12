@@ -4,30 +4,34 @@
 @builtin "number.ne"
 @builtin "string.ne"
 
-expr => expr _ "OR"i _ expr
-      | expr _ "AND"i _ expr
+@{%
+  const binaryPostprocessor = ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right];
+  // binary expression where the right should be surrounded in brackets
+  const bracketedBinaryPostprocessor = ([column, _1, op, _2, _3, values]) => [op.toUpperCase(), column, values];
+  const andOrPostprocessor = ([left, right]) => {
+    const op = left[0][2].toUpperCase();
+    const exprs = left.map((_, i) => i % 4 === 0);
+    return [op, ...left.map((t) => t[0]), right]
+  }
+%}
 
-bool_expr => 
+expr => boolean_expr                             {% id %}
+      | (boolean_expr _ "AND"i _):+ non_and_expr {% andOrPostprocessor %}
+      | (boolean_expr _ "OR"i _):+ non_or_expr   {% andOrPostprocessor %}
 
+# these are used to disambiguate matches
+non_and_expr => boolean_expr                            {% id %}
+              | (boolean_expr _ "OR"i _):+ non_and_expr {% andOrPostprocessor %}
+non_or_expr  => boolean_expr                            {% id %}
+              | (boolean_expr _ "AND"i _):+ non_or_expr {% andOrPostprocessor %}
 
-expr => "(" expr ")"                               {% ([_, expr]) => expr %}
-      | column __ in_operator _ "(" value_list ")" {% ([column, _1, op, _2, _3, values]) => [op.toUpperCase(), column, values] %}
-      | column __ "HAVING"i _ "(" expr ")"         {% ([column, _1, op, _2, _3, expr]) => [op.toUpperCase(), column, expr] %}
-      | expr _ "AND"i _ expr                       {% ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right] %}
-      | expr _ "OR"i _ expr                        {% ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right] %}
-      | or_expr                                    {% id %}
-      | expr_or_col _ compare_operator _ value     {% ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right] %}
+boolean_expr => "(" expr ")"                               {% ([_, expr]) => expr %}
+              | column __ in_operator _ "(" value_list ")" {% bracketedBinaryPostprocessor %}
+              | column __ "HAVING"i _ "(" expr ")"         {% bracketedBinaryPostprocessor %}
+              | simple_expr _ compare_operator _ value     {% binaryPostprocessor %}
 
-expr_or_col => expr   {% id %}
-             | column {% id %}
-
-and_expr => expr _ "AND"i _ expr {% ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right] %}
-          # merge chained AND expressions
-          | and_expr _ "AND"i _ expr {% ([left, _1, op, _2, right]) => [...left, right] %}
-
-or_expr => expr _ "OR"i _ expr {% ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right] %}
-         # merge chained OR expressions
-         | or_expr _ "OR"i _ expr {% ([left, _1, op, _2, right]) => [...left, right] %}
+simple_expr => column {% id %}
+             | value  {% id %}
 
 in_operator      => "IN"i     {% id %}
                   | "NIN"i    {% id %}
@@ -40,9 +44,9 @@ compare_operator => "="       {% id %}
                   | "<="      {% id %}
 
 column     => sqstring                 {% id %}
-           | [a-zA-Z] [a-zA-Z0-9_]:*   {% ([fst, rest]) => [fst, ...rest].join("") %}
+            | [a-zA-Z] [a-zA-Z0-9_]:*  {% ([fst, rest]) => [fst, ...rest].join("") %}
 value      => sqstring                 {% id %}
-           | int                       {% id %}
-           | decimal                   {% id %}
+            | int                      {% id %}
+            | decimal                  {% id %}
 value_list => value_list _ "," _ value {% ([list, _1, _2, _3, value]) => [...list, value] %}
-           | value                     {% ([v]) => [v] %}
+            | value                    {% ([v]) => [v] %}

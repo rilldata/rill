@@ -2,6 +2,15 @@
 // http://github.com/Hardmath123/nearley
 (function () {
 function id(x) { return x[0]; }
+
+  const binaryPostprocessor = ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right];
+  // binary expression where the right should be surrounded in brackets
+  const bracketedBinaryPostprocessor = ([column, _1, op, _2, _3, values]) => [op.toUpperCase(), column, values];
+  const andOrPostprocessor = ([left, right]) => {
+    const op = left[0][2].toUpperCase();
+    const exprs = left.map((_, i) => i % 4 === 0);
+    return [op, ...left.map((t) => t[0]), right]
+  }
 var grammar = {
     Lexer: undefined,
     ParserRules: [
@@ -123,26 +132,44 @@ var grammar = {
             return d.join("");
         }
         },
-    {"name": "expr", "symbols": [{"literal":"("}, "expr", {"literal":")"}], "postprocess": ([_, expr]) => expr},
-    {"name": "expr", "symbols": ["column", "__", "in_operator", "_", {"literal":"("}, "value_list", {"literal":")"}], "postprocess": ([column, _1, op, _2, _3, values]) => [op.toUpperCase(), column, values]},
-    {"name": "expr$subexpression$1", "symbols": [/[hH]/, /[aA]/, /[vV]/, /[iI]/, /[nN]/, /[gG]/], "postprocess": function(d) {return d.join(""); }},
-    {"name": "expr", "symbols": ["column", "__", "expr$subexpression$1", "_", {"literal":"("}, "expr", {"literal":")"}], "postprocess": ([column, _1, op, _2, _3, expr]) => [op.toUpperCase(), column, expr]},
-    {"name": "expr$subexpression$2", "symbols": [/[aA]/, /[nN]/, /[dD]/], "postprocess": function(d) {return d.join(""); }},
-    {"name": "expr", "symbols": ["expr", "_", "expr$subexpression$2", "_", "expr"], "postprocess": ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right]},
-    {"name": "expr$subexpression$3", "symbols": [/[oO]/, /[rR]/], "postprocess": function(d) {return d.join(""); }},
-    {"name": "expr", "symbols": ["expr", "_", "expr$subexpression$3", "_", "expr"], "postprocess": ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right]},
-    {"name": "expr", "symbols": ["or_expr"], "postprocess": id},
-    {"name": "expr", "symbols": ["expr_or_col", "_", "compare_operator", "_", "value"], "postprocess": ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right]},
-    {"name": "expr_or_col", "symbols": ["expr"], "postprocess": id},
-    {"name": "expr_or_col", "symbols": ["column"], "postprocess": id},
-    {"name": "and_expr$subexpression$1", "symbols": [/[aA]/, /[nN]/, /[dD]/], "postprocess": function(d) {return d.join(""); }},
-    {"name": "and_expr", "symbols": ["expr", "_", "and_expr$subexpression$1", "_", "expr"], "postprocess": ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right]},
-    {"name": "and_expr$subexpression$2", "symbols": [/[aA]/, /[nN]/, /[dD]/], "postprocess": function(d) {return d.join(""); }},
-    {"name": "and_expr", "symbols": ["and_expr", "_", "and_expr$subexpression$2", "_", "expr"], "postprocess": ([left, _1, op, _2, right]) => [...left, right]},
-    {"name": "or_expr$subexpression$1", "symbols": [/[oO]/, /[rR]/], "postprocess": function(d) {return d.join(""); }},
-    {"name": "or_expr", "symbols": ["expr", "_", "or_expr$subexpression$1", "_", "expr"], "postprocess": ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right]},
-    {"name": "or_expr$subexpression$2", "symbols": [/[oO]/, /[rR]/], "postprocess": function(d) {return d.join(""); }},
-    {"name": "or_expr", "symbols": ["or_expr", "_", "or_expr$subexpression$2", "_", "expr"], "postprocess": ([left, _1, op, _2, right]) => [...left, right]},
+    {"name": "expr", "symbols": ["boolean_expr"], "postprocess": id},
+    {"name": "expr$ebnf$1$subexpression$1$subexpression$1", "symbols": [/[aA]/, /[nN]/, /[dD]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "expr$ebnf$1$subexpression$1", "symbols": ["boolean_expr", "_", "expr$ebnf$1$subexpression$1$subexpression$1", "_"]},
+    {"name": "expr$ebnf$1", "symbols": ["expr$ebnf$1$subexpression$1"]},
+    {"name": "expr$ebnf$1$subexpression$2$subexpression$1", "symbols": [/[aA]/, /[nN]/, /[dD]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "expr$ebnf$1$subexpression$2", "symbols": ["boolean_expr", "_", "expr$ebnf$1$subexpression$2$subexpression$1", "_"]},
+    {"name": "expr$ebnf$1", "symbols": ["expr$ebnf$1", "expr$ebnf$1$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "expr", "symbols": ["expr$ebnf$1", "non_and_expr"], "postprocess": andOrPostprocessor},
+    {"name": "expr$ebnf$2$subexpression$1$subexpression$1", "symbols": [/[oO]/, /[rR]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "expr$ebnf$2$subexpression$1", "symbols": ["boolean_expr", "_", "expr$ebnf$2$subexpression$1$subexpression$1", "_"]},
+    {"name": "expr$ebnf$2", "symbols": ["expr$ebnf$2$subexpression$1"]},
+    {"name": "expr$ebnf$2$subexpression$2$subexpression$1", "symbols": [/[oO]/, /[rR]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "expr$ebnf$2$subexpression$2", "symbols": ["boolean_expr", "_", "expr$ebnf$2$subexpression$2$subexpression$1", "_"]},
+    {"name": "expr$ebnf$2", "symbols": ["expr$ebnf$2", "expr$ebnf$2$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "expr", "symbols": ["expr$ebnf$2", "non_or_expr"], "postprocess": andOrPostprocessor},
+    {"name": "non_and_expr", "symbols": ["boolean_expr"], "postprocess": id},
+    {"name": "non_and_expr$ebnf$1$subexpression$1$subexpression$1", "symbols": [/[oO]/, /[rR]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "non_and_expr$ebnf$1$subexpression$1", "symbols": ["boolean_expr", "_", "non_and_expr$ebnf$1$subexpression$1$subexpression$1", "_"]},
+    {"name": "non_and_expr$ebnf$1", "symbols": ["non_and_expr$ebnf$1$subexpression$1"]},
+    {"name": "non_and_expr$ebnf$1$subexpression$2$subexpression$1", "symbols": [/[oO]/, /[rR]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "non_and_expr$ebnf$1$subexpression$2", "symbols": ["boolean_expr", "_", "non_and_expr$ebnf$1$subexpression$2$subexpression$1", "_"]},
+    {"name": "non_and_expr$ebnf$1", "symbols": ["non_and_expr$ebnf$1", "non_and_expr$ebnf$1$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "non_and_expr", "symbols": ["non_and_expr$ebnf$1", "non_and_expr"], "postprocess": andOrPostprocessor},
+    {"name": "non_or_expr", "symbols": ["boolean_expr"], "postprocess": id},
+    {"name": "non_or_expr$ebnf$1$subexpression$1$subexpression$1", "symbols": [/[aA]/, /[nN]/, /[dD]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "non_or_expr$ebnf$1$subexpression$1", "symbols": ["boolean_expr", "_", "non_or_expr$ebnf$1$subexpression$1$subexpression$1", "_"]},
+    {"name": "non_or_expr$ebnf$1", "symbols": ["non_or_expr$ebnf$1$subexpression$1"]},
+    {"name": "non_or_expr$ebnf$1$subexpression$2$subexpression$1", "symbols": [/[aA]/, /[nN]/, /[dD]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "non_or_expr$ebnf$1$subexpression$2", "symbols": ["boolean_expr", "_", "non_or_expr$ebnf$1$subexpression$2$subexpression$1", "_"]},
+    {"name": "non_or_expr$ebnf$1", "symbols": ["non_or_expr$ebnf$1", "non_or_expr$ebnf$1$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "non_or_expr", "symbols": ["non_or_expr$ebnf$1", "non_or_expr"], "postprocess": andOrPostprocessor},
+    {"name": "boolean_expr", "symbols": [{"literal":"("}, "expr", {"literal":")"}], "postprocess": ([_, expr]) => expr},
+    {"name": "boolean_expr", "symbols": ["column", "__", "in_operator", "_", {"literal":"("}, "value_list", {"literal":")"}], "postprocess": bracketedBinaryPostprocessor},
+    {"name": "boolean_expr$subexpression$1", "symbols": [/[hH]/, /[aA]/, /[vV]/, /[iI]/, /[nN]/, /[gG]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "boolean_expr", "symbols": ["column", "__", "boolean_expr$subexpression$1", "_", {"literal":"("}, "expr", {"literal":")"}], "postprocess": bracketedBinaryPostprocessor},
+    {"name": "boolean_expr", "symbols": ["simple_expr", "_", "compare_operator", "_", "value"], "postprocess": binaryPostprocessor},
+    {"name": "simple_expr", "symbols": ["column"], "postprocess": id},
+    {"name": "simple_expr", "symbols": ["value"], "postprocess": id},
     {"name": "in_operator$subexpression$1", "symbols": [/[iI]/, /[nN]/], "postprocess": function(d) {return d.join(""); }},
     {"name": "in_operator", "symbols": ["in_operator$subexpression$1"], "postprocess": id},
     {"name": "in_operator$subexpression$2", "symbols": [/[nN]/, /[iI]/, /[nN]/], "postprocess": function(d) {return d.join(""); }},

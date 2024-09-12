@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   createAndExpression,
+  createSubQueryExpression,
   filterExpressions,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
@@ -64,24 +65,11 @@ export function splitWhereFilter(whereFilter: V1Expression | undefined) {
 function convertDimensionThresholdFilter(
   dtf: DimensionThresholdFilter,
 ): V1Expression {
-  return {
-    cond: {
-      op: V1Operation.OPERATION_IN,
-      exprs: [
-        { ident: dtf.name },
-        {
-          subquery: {
-            dimension: dtf.name,
-            measures: dtf.filters.map((f) => f.measure),
-            where: undefined,
-            having: createAndExpression(
-              dtf.filters
-                .map(mapMeasureFilterToExpr)
-                .filter(Boolean) as V1Expression[],
-            ),
-          },
-        },
-      ],
-    },
-  };
+  return createSubQueryExpression(
+    dtf.name,
+    dtf.filters.map((f) => f.measure),
+    createAndExpression(
+      dtf.filters.map(mapMeasureFilterToExpr).filter(Boolean) as V1Expression[],
+    ),
+  );
 }
