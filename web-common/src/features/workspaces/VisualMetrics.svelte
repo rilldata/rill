@@ -2,7 +2,7 @@
   export const editingItem: Writable<{
     index: number;
     type: "measures" | "dimensions";
-    field?: string;
+    field?: string | null;
   } | null> = writable(null);
 
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
@@ -51,7 +51,6 @@
 </script>
 
 <script lang="ts">
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createQueryServiceTableColumns } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { FileArtifact } from "../entity-management/file-artifact";
@@ -69,6 +68,10 @@
   import * as Select from "@rilldata/web-common/components/select";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
+  import {
+    ResourceKind,
+    useResource,
+  } from "../entity-management/resource-selectors";
 
   export let fileArtifact: FileArtifact;
   export let switchView: () => void;
@@ -76,8 +79,13 @@
   let searchValue = "";
   let measuresCollapsed = false;
   let dimensionsCollapsed = false;
+  let confirmation: {
+    action: "cancel" | "delete";
+    index: number;
+    type: "measures" | "dimensions";
+  } | null = null;
 
-  $: resource = fileArtifact.getResource(queryClient, $runtime.instanceId);
+  $: ({ instanceId } = $runtime);
 
   $: ({
     remoteContent,
@@ -87,24 +95,22 @@
     saveLocalContent,
   } = fileArtifact);
 
-  $: ({ data } = $resource);
-
   $: timeDimension = (parsedDocument.get("timeseries") ?? "") as string;
 
-  $: connector = data?.metricsView?.state?.validSpec?.connector ?? "";
-  $: database = data?.metricsView?.state?.validSpec?.database ?? "";
-  $: databaseSchema = data?.metricsView?.state?.validSpec?.databaseSchema ?? "";
-  $: table = data?.metricsView?.state?.validSpec?.table ?? "";
+  $: databaseSchema = (parsedDocument.get("database_schema") ?? "") as string;
+  $: table = (parsedDocument.get("model") ??
+    parsedDocument.get("table") ??
+    "") as string;
 
-  $: columnsQuery = createQueryServiceTableColumns(
-    $runtime?.instanceId,
-    table,
-    {
-      connector,
-      database,
-      databaseSchema,
-    },
-  );
+  $: resourceQuery = useResource(instanceId, table, ResourceKind.Model);
+  $: modelResource = $resourceQuery?.data?.model;
+  $: connector = modelResource?.spec?.outputConnector;
+
+  $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
+    connector,
+    database: "", // models use the default database
+    databaseSchema,
+  });
   $: ({ data: columnsResponse } = $columnsQuery);
 
   $: columns = columnsResponse?.profileColumns ?? [
@@ -214,12 +220,6 @@
 
     await saveContent(parsedDocument.toString());
   }
-
-  let confirmation: {
-    action: "cancel" | "delete";
-    index: number;
-    type: "measures" | "dimensions";
-  } | null = null;
 </script>
 
 <div class="wrapper">
@@ -344,6 +344,7 @@
         }}
         index={$editingItem.index}
         type={$editingItem.type}
+        field={$editingItem.field}
         {fileArtifact}
         {switchView}
       />

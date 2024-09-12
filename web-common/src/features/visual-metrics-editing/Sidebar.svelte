@@ -24,6 +24,7 @@
   export let type: "measures" | "dimensions";
   export let switchView: () => void;
   export let columns: V1ProfileColumn[];
+  export let field: string | null | undefined;
 
   let editingClone =
     type === "measures" ? new YAMLMeasure(item) : new YAMLDimension(item);
@@ -263,6 +264,7 @@
         </div>
       {:else}
         <Input
+          claimFocusOnMount={field === label}
           bind:value={editingClone[key]}
           {label}
           {hint}

@@ -39,7 +39,7 @@
 
   onMount(() => {
     if (claimFocusOnMount) {
-      inputElement.focus();
+      inputElement?.focus();
     }
   });
 </script>

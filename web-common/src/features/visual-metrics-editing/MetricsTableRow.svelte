@@ -90,8 +90,13 @@
   //   return "formatPreset" in item;
   // }
 
-  function setEditing() {
-    editingItem.set({ index: i, type });
+  function setEditing(
+    e: MouseEvent & {
+      currentTarget: EventTarget & HTMLTableCellElement;
+    },
+  ) {
+    const field = e.currentTarget.getAttribute("aria-label");
+    editingItem.set({ index: i, type, field });
   }
 
   $: editing = $editingItem?.index === i && $editingItem?.type === type;
@@ -121,14 +126,18 @@
       <Checkbox onChange={onCheckedChange} checked={selected} />
     </div>
   </td>
-  <td class="max-w-64 source-code" on:click={setEditing}>
+  <td class="max-w-64 source-code" on:click={setEditing} aria-label="Name">
     {item?.get("name")}</td
   >
 
-  <td class="source-code max-w-72" on:click={setEditing}>
+  <td
+    class="source-code max-w-72"
+    on:click={setEditing}
+    aria-label="SQL Expression"
+  >
     {item.get("expression") || item.get("column")}
   </td>
-  <td on:click={setEditing}>
+  <td on:click={setEditing} aria-label="Label">
     <div class="pointer-events-none text-[12px]">
       <Chip
         {...colors}
@@ -146,11 +155,11 @@
     </div>
   </td>
   {#if type === "measures"}
-    <td on:click={setEditing}>
+    <td on:click={setEditing} aria-label="Format">
       {item.get("format_preset") || item?.get("format_d3") || "-"}</td
     >
   {/if}
-  <td class="max-w-72" on:click={setEditing}>
+  <td class="max-w-72" on:click={setEditing} aria-label="Description">
     {item?.get("description") || "-"}
   </td>
 
