@@ -30,6 +30,7 @@
   export let onInput: (e: Event & InputEvent) => void = voidFunction;
   export let onChange: (e: Event & InputEvent) => void = voidFunction;
   export let selected: number = -1;
+  export let full = false;
 
   let showPassword = false;
   let inputElement: HTMLInputElement;
@@ -44,7 +45,7 @@
   });
 </script>
 
-<div class="flex flex-col gap-y-1">
+<div class="flex flex-col gap-y-1" class:w-full={full}>
   {#if label}
     <div class="label-wrapper">
       <label for={id}>

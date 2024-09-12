@@ -7,7 +7,6 @@
 
 <script lang="ts">
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
-  import { measureChipColors as colors } from "@rilldata/web-common/components/chip/chip-types";
   import EditControls from "./EditControls.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import Checkbox from "./Checkbox.svelte";
@@ -18,8 +17,7 @@
   } from "@rilldata/web-common/components/chip/chip-types";
   import { YAMLMap } from "yaml";
 
-  const ROW_HEIGHT = 40;
-
+  export let rowHeight: number;
   export let item: YAMLMap<string, string>;
   export let i: number;
   export let selected: boolean;
@@ -38,6 +36,7 @@
   export let scrollLeft: number;
   export let tableWidth: number;
   export let type: "measures" | "dimensions";
+  export let expressionWidth: number;
 
   let row: HTMLTableRowElement;
   let initialY = 0;
@@ -50,10 +49,7 @@
 
     clone = row.cloneNode(true) as HTMLTableRowElement;
 
-    clone.classList.remove("row");
     clone.style.opacity = "0.6";
-    // clone.style.position = "fixed";
-    // clone.style.display = "table-row";
     clone.style.width = "100%";
     clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
     row.parentElement?.appendChild(clone);
@@ -95,7 +91,7 @@
       currentTarget: EventTarget & HTMLTableCellElement;
     },
   ) {
-    const field = e.currentTarget.getAttribute("aria-label");
+    const field = e.currentTarget?.getAttribute("aria-label");
     editingItem.set({ index: i, type, field });
   }
 
@@ -105,8 +101,8 @@
 <tr
   id={item.get("name") || item.get("label")}
   style:transform="translateY(0px)"
-  class="relative text-sm row"
-  style:height="{ROW_HEIGHT}px"
+  class="relative text-sm"
+  style:height="{rowHeight}px"
   class:editing
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
@@ -114,7 +110,7 @@
   class:insert={$table === type && $insertIndex === i}
 >
   <td class="!pl-0">
-    <div class="gap-x-0.5 flex items-center w-14 pl-1">
+    <div class="gap-x-0.5 flex items-center pl-1">
       <button
         on:mousedown={handleDragStart}
         class:opacity-0={!hovered}
@@ -126,41 +122,46 @@
       <Checkbox onChange={onCheckedChange} checked={selected} />
     </div>
   </td>
-  <td class="max-w-64 source-code" on:click={setEditing} aria-label="Name">
-    {item?.get("name")}</td
-  >
 
-  <td
-    class="source-code max-w-72"
-    on:click={setEditing}
-    aria-label="SQL Expression"
-  >
-    {item.get("expression") || item.get("column")}
+  <td class="source-code truncate" on:click={setEditing} aria-label="Name">
+    <span>{item?.get("name") ?? "-"}</span>
   </td>
   <td on:click={setEditing} aria-label="Label">
-    <div class="pointer-events-none text-[12px]">
+    <div class="pointer-events-none text-[12px] pr-4">
       <Chip
-        {...colors}
         slideDuration={0}
-        extraRounded={false}
+        extraRounded={type === "dimensions"}
         extraPadding={false}
         {...type === "measures" ? measureChipColors : defaultChipColors}
         label={item.get("label") || item.get("name")}
         outline
       >
-        <span slot="body" class="font-bold truncate">
+        <div slot="body" class="font-bold">
           {item.get("label") || item.get("name")}
-        </span>
+        </div>
       </Chip>
     </div>
   </td>
+
+  <td
+    class="source-code truncate"
+    on:click={setEditing}
+    aria-label="SQL Expression"
+    style:max-width="{expressionWidth}px"
+  >
+    <span>{item.get("expression") || item.get("column")}</span>
+  </td>
+
   {#if type === "measures"}
     <td on:click={setEditing} aria-label="Format">
-      {item.get("format_preset") || item?.get("format_d3") || "-"}</td
-    >
+      <span>{item.get("format_preset") || item?.get("format_d3") || "-"}</span>
+    </td>
+  {:else}
+    <!-- <td /> -->
   {/if}
-  <td class="max-w-72" on:click={setEditing} aria-label="Description">
-    {item?.get("description") || "-"}
+
+  <td class="" on:click={setEditing} aria-label="Description">
+    <span>{item?.get("description") || "-"}</span>
   </td>
 
   {#if hovered}
@@ -214,5 +215,9 @@
 
   .source-code {
     font-family: "Source Code Variable", monospace;
+  }
+
+  span {
+    @apply pr-4;
   }
 </style>

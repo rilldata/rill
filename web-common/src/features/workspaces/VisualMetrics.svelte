@@ -56,34 +56,36 @@
   import { FileArtifact } from "../entity-management/file-artifact";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import { PlusIcon } from "lucide-svelte";
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
   import { writable, Writable } from "svelte/store";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import * as Select from "@rilldata/web-common/components/select";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { useModels } from "../models/selectors";
+  import { useSources } from "../sources/selectors";
 
   export let fileArtifact: FileArtifact;
   export let switchView: () => void;
 
   let searchValue = "";
-  let measuresCollapsed = false;
-  let dimensionsCollapsed = false;
   let confirmation: {
     action: "cancel" | "delete";
     index: number;
     type: "measures" | "dimensions";
   } | null = null;
+  let collapsed = {
+    measures: false,
+    dimensions: false,
+  };
 
   $: ({ instanceId } = $runtime);
 
@@ -95,18 +97,34 @@
     saveLocalContent,
   } = fileArtifact);
 
+  $: modelsQuery = useModels(instanceId);
+  $: sourcesQuery = useSources(instanceId);
+
+  $: modelNames =
+    $modelsQuery.data
+      ?.map((resource) => {
+        return resource.meta?.name?.name;
+      })
+      .filter(isDefined) ?? [];
+  $: sourceNames =
+    $sourcesQuery.data
+      ?.map((resource) => {
+        return resource.meta?.name?.name;
+      })
+      .filter(isDefined) ?? [];
+
   $: timeDimension = (parsedDocument.get("timeseries") ?? "") as string;
 
   $: databaseSchema = (parsedDocument.get("database_schema") ?? "") as string;
-  $: table = (parsedDocument.get("model") ??
+  $: model = (parsedDocument.get("model") ??
     parsedDocument.get("table") ??
     "") as string;
 
-  $: resourceQuery = useResource(instanceId, table, ResourceKind.Model);
+  $: resourceQuery = useResource(instanceId, model, ResourceKind.Model);
   $: modelResource = $resourceQuery?.data?.model;
   $: connector = modelResource?.spec?.outputConnector;
 
-  $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
+  $: columnsQuery = createQueryServiceTableColumns(instanceId, model, {
     connector,
     database: "", // models use the default database
     databaseSchema,
@@ -119,9 +137,12 @@
 
   $: timeOptions = columns
     .filter(({ type }) => type === "TIMESTAMP")
-    .map(({ name }) => ({ value: name }));
+    .map(({ name }) => name)
+    .filter(isDefined);
 
-  $: selected = timeOptions.find((option) => option.value === timeDimension);
+  function isDefined<T>(x: T | undefined): x is T {
+    return x !== undefined;
+  }
 
   $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
@@ -142,6 +163,9 @@
     ["dimensions", yamlDimensions],
   ]) as Map<"measures" | "dimensions", Array<YAMLMap<string, string>>>;
 
+  $: smallestTimeGrain = (parsedDocument.get("smallest_time_grain") ??
+    "") as string;
+
   function filter(item: YAMLMap<string, string>, searchValue: string) {
     return (
       item?.get("name")?.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -154,11 +178,10 @@
     );
   }
 
-  async function handleColumnSelection(column: string) {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    parsedDocument.set("timeseries", column);
-    updateLocalContent(parsedDocument.toString(), true);
-    await saveLocalContent();
+  async function updateProperty(property: string, value: unknown) {
+    parsedDocument.set(property, value);
+
+    await saveContent(parsedDocument.toString());
   }
 
   async function reorderList(
@@ -224,37 +247,38 @@
 
 <div class="wrapper">
   <div class="main-area">
-    <div class="flex flex-col gap-y-1">
-      <span class="flex items-center gap-x-1">
-        <p>Time column</p>
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500">
-            <InfoCircle size="13px" />
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            Time column description
-          </TooltipContent>
-        </Tooltip>
-      </span>
-
-      <Select.Root
-        {selected}
-        onSelectedChange={(newSelection) => {
-          if (newSelection?.value) handleColumnSelection(newSelection.value);
+    <div class="flex gap-x-4">
+      <Input
+        full
+        value={model}
+        options={[...modelNames, ...sourceNames]}
+        label="Model or source referenced"
+        onInput={async (value) => {
+          await updateProperty("model", value);
         }}
-        items={timeOptions}
-      >
-        <Select.Trigger class="w-[300px] rounded-[2px] shadow-none">
-          <Select.Value placeholder={timeDimension} class="text-[12px]" />
-        </Select.Trigger>
-        <Select.Content>
-          {#each timeOptions as { value } (value)}
-            <Select.Item {value} class="text-[12px]">
-              {value}
-            </Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+      />
+
+      <Input
+        full
+        value={timeDimension}
+        options={timeOptions}
+        label="Time column"
+        hint="Column from model that will be used as primary time dimension in dashboards"
+        onInput={async (value) => {
+          await updateProperty("timeseries", value);
+        }}
+      />
+
+      <Input
+        full
+        value={smallestTimeGrain}
+        options={Object.entries(TIME_GRAIN).map(([_, { label }]) => label)}
+        label="Smallest time grain"
+        hint="The smallest time grain that will be used in dashboards"
+        onInput={async (value) => {
+          await updateProperty("smallest_time_grain", value);
+        }}
+      />
     </div>
 
     <span class="h-[1px] w-full bg-gray-200" />
@@ -286,12 +310,15 @@
               gray
               noStroke
               on:click={() => {
-                if (type === "measures") measuresCollapsed = !measuresCollapsed;
-                if (type === "dimensions")
-                  dimensionsCollapsed = !dimensionsCollapsed;
+                collapsed[type] = !collapsed[type];
               }}
             >
-              <CaretDownIcon size="18px" className="!fill-gray-700" />
+              <span
+                class="transition-transform"
+                class:-rotate-90={collapsed[type]}
+              >
+                <CaretDownIcon size="16px" className="!fill-gray-700" />
+              </span>
             </Button>
             <h1 class="capitalize font-medium">{type}</h1>
             <Button
@@ -309,7 +336,7 @@
               <PlusIcon size="16px" />
             </Button>
           </header>
-          {#if (!measuresCollapsed && type === "measures") || (!dimensionsCollapsed && type === "dimensions")}
+          {#if !collapsed[type]}
             <MetricsTable
               {reorderList}
               dimensions={type === "dimensions"}
