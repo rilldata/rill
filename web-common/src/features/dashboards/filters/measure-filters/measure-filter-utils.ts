@@ -12,7 +12,7 @@ import type {
   DimensionThresholdFilter,
   MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { V1Expression, V1Operation } from "@rilldata/web-common/runtime-client";
+import { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function mergeMeasureFilters(
   dashboard: MetricsExplorerEntity,
