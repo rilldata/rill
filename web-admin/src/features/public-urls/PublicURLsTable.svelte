@@ -25,7 +25,7 @@
   export let tableData: MagicAuthTokenProps[];
   export let pageSize: number;
   export let onDelete: (deletedTokenId: string) => void;
-  export let onLoadMore: () => void;
+  export let onNextPage: () => void;
   export let hasNextPage: boolean;
 
   let sorting: SortingState = [
@@ -217,7 +217,7 @@
 <div class="flex items-center gap-2 mt-4 justify-end">
   <button
     class="border border-slate-300 rounded-sm px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50"
-    on:click={onLoadMore}
+    on:click={onNextPage}
     disabled={!hasNextPage}
   >
     Next

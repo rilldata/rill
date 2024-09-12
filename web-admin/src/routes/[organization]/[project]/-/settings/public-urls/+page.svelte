@@ -70,7 +70,7 @@
   }
 
   // Forward cursor-based pagination with `nextPageToken`
-  function handleLoadMore() {
+  function handleNextPage() {
     if ($magicAuthTokens.data?.nextPageToken) {
       pageToken = $magicAuthTokens.data.nextPageToken;
     }
@@ -94,7 +94,7 @@
             tableData={currentPageTokens}
             {pageSize}
             onDelete={handleDelete}
-            onLoadMore={handleLoadMore}
+            onNextPage={handleNextPage}
             hasNextPage={!!$magicAuthTokens.data?.nextPageToken}
           />
         {/if}
