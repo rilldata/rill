@@ -101,6 +101,7 @@
           url: row.original.url,
           onDelete,
         }),
+      meta: { class: "w-1" },
     },
   ];
 
@@ -199,7 +200,10 @@
     {#each $table.getRowModel().rows as row}
       <tr class="hover:bg-slate-50">
         {#each row.getVisibleCells() as cell}
-          <td class="px-4 py-2" data-label={cell.column.columnDef.header}>
+          <td
+            class="px-4 py-2 {cell.column.columnDef.meta?.class || ''}"
+            data-label={cell.column.columnDef.header}
+          >
             <svelte:component
               this={flexRender(cell.column.columnDef.cell, cell.getContext())}
             />

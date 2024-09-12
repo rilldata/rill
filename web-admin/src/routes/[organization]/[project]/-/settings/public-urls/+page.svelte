@@ -18,7 +18,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  let pageSize = 12;
+  let pageSize = 16;
   let pageToken: string | undefined = undefined;
 
   $: magicAuthTokens = createAdminServiceListMagicAuthTokens(

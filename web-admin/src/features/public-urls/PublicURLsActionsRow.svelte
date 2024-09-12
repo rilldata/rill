@@ -24,7 +24,7 @@
   <DropdownMenu.Trigger class="flex-none">
     <ThreeDot size="16px" />
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content>
+  <DropdownMenu.Content align="start">
     {#if url}
       <DropdownMenu.Item
         class="text-gray-800 font-normal"
