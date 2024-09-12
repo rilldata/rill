@@ -139,15 +139,18 @@ func New(opts Options) Cache {
 	}
 
 	go func() {
-		for true {
+		for {
 			time.Sleep(5 * time.Second)
 			go func() {
 				c.mu.Lock()
 				defer c.mu.Unlock()
 				for k, v := range c.entries {
-					if v.err != nil && time.Now().Sub(v.since) > c.opts.ErrorTimeout {
+					if v.err != nil && time.Since(v.since) > c.opts.ErrorTimeout {
 						c.beginClose(k, v)
-						c.Acquire(context.Background(), v.cfg)
+						// release and err will be accessed later the user of the conncache instance
+						// err will be checked here too for timeout
+						// so ignoring both
+						_, _, _ = c.Acquire(context.Background(), v.cfg)
 					}
 				}
 			}()
