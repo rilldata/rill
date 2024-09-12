@@ -94,8 +94,7 @@
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
               state: sanitizedState ? sanitizedState : undefined,
-              // TODO: should we store url name and dashboard title in the token?
-              title: values.name,
+              name: values.name,
             },
           });
           token = _token;

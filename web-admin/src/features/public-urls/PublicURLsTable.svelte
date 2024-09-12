@@ -38,12 +38,12 @@
 
   const columns: ColumnDef<V1MagicAuthToken>[] = [
     {
-      accessorFn: (row) => row.token,
+      accessorKey: "name",
       header: "Public URL name",
       cell: ({ row }) =>
         flexRender(DashboardLink, {
           href: row.original.url,
-          title: row.original.title,
+          title: row.original.name,
         }),
     },
     {
