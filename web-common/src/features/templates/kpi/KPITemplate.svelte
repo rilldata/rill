@@ -24,16 +24,19 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  $: kpiProperties = rendererProperties as KPIProperties;
-
   const queryClient = useQueryClient();
   let containerWidth: number;
 
   $: instanceId = $runtime?.instanceId;
-  $: metricViewName = kpiProperties.metric_view;
-  $: measureName = kpiProperties.measure;
-  $: timeRange = kpiProperties.time_range;
-  $: comparisonTimeRange = kpiProperties?.comparison_range;
+  $: kpiProperties = rendererProperties as KPIProperties;
+
+  $: ({
+    metric_view: metricViewName,
+    filter: whereSql,
+    measure: measureName,
+    time_range: timeRange,
+    comparison_range: comparisonTimeRange,
+  } = kpiProperties);
 
   $: measure = useMetaMeasure(instanceId, metricViewName, measureName);
 
@@ -42,6 +45,7 @@
     metricViewName,
     measureName,
     timeRange,
+    whereSql,
   );
 
   $: comparisonValue = useKPIComparisonTotal(
@@ -50,6 +54,7 @@
     measureName,
     comparisonTimeRange,
     timeRange,
+    whereSql,
     queryClient,
   );
 
@@ -58,6 +63,7 @@
     metricViewName,
     measureName,
     timeRange,
+    whereSql,
     queryClient,
   );
 
@@ -74,7 +80,7 @@
 
 <div
   bind:clientWidth={containerWidth}
-  class="flex flex-row h-full w-full items-center"
+  class="flex flex-row h-full w-full items-center bg-white"
 >
   {#if $measure.data && $measureValue.data}
     <MeasureBigNumber

@@ -549,6 +549,8 @@ paths:
                 type: string
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/{email}:
@@ -4357,6 +4359,10 @@ definitions:
       id:
         type: string
       projectId:
+        type: string
+      url:
+        type: string
+      token:
         type: string
       createdOn:
         type: string

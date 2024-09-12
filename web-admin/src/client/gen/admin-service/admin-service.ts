@@ -48,7 +48,7 @@ import type {
   V1ListOrganizationMemberUsersResponse,
   AdminServiceListOrganizationMemberUsersParams,
   V1AddOrganizationMemberUserResponse,
-  AdminServiceAddOrganizationMemberUserBodyBody,
+  AdminServiceAddOrganizationMemberUserBody,
   V1RemoveOrganizationMemberUserResponse,
   AdminServiceRemoveOrganizationMemberUserParams,
   V1SetOrganizationMemberUserRoleResponse,
@@ -76,6 +76,7 @@ import type {
   V1ListProjectMemberUsersResponse,
   AdminServiceListProjectMemberUsersParams,
   V1AddProjectMemberUserResponse,
+  AdminServiceAddProjectMemberUserBody,
   V1RemoveProjectMemberUserResponse,
   V1SetProjectMemberUserRoleResponse,
   V1RedeployProjectResponse,
@@ -1453,13 +1454,13 @@ export const createAdminServiceListOrganizationMemberUsers = <
  */
 export const adminServiceAddOrganizationMemberUser = (
   organization: string,
-  adminServiceAddOrganizationMemberUserBodyBody: AdminServiceAddOrganizationMemberUserBodyBody,
+  adminServiceAddOrganizationMemberUserBody: AdminServiceAddOrganizationMemberUserBody,
 ) => {
   return httpClient<V1AddOrganizationMemberUserResponse>({
     url: `/v1/organizations/${organization}/members`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceAddOrganizationMemberUserBodyBody,
+    data: adminServiceAddOrganizationMemberUserBody,
   });
 };
 
@@ -1467,7 +1468,7 @@ export type AdminServiceAddOrganizationMemberUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>
 >;
 export type AdminServiceAddOrganizationMemberUserMutationBody =
-  AdminServiceAddOrganizationMemberUserBodyBody;
+  AdminServiceAddOrganizationMemberUserBody;
 export type AdminServiceAddOrganizationMemberUserMutationError = RpcStatus;
 
 export const createAdminServiceAddOrganizationMemberUser = <
@@ -1477,10 +1478,7 @@ export const createAdminServiceAddOrganizationMemberUser = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
     TError,
-    {
-      organization: string;
-      data: AdminServiceAddOrganizationMemberUserBodyBody;
-    },
+    { organization: string; data: AdminServiceAddOrganizationMemberUserBody },
     TContext
   >;
 }) => {
@@ -1488,10 +1486,7 @@ export const createAdminServiceAddOrganizationMemberUser = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
-    {
-      organization: string;
-      data: AdminServiceAddOrganizationMemberUserBodyBody;
-    }
+    { organization: string; data: AdminServiceAddOrganizationMemberUserBody }
   > = (props) => {
     const { organization, data } = props ?? {};
 
@@ -1501,10 +1496,7 @@ export const createAdminServiceAddOrganizationMemberUser = <
   return createMutation<
     Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
     TError,
-    {
-      organization: string;
-      data: AdminServiceAddOrganizationMemberUserBodyBody;
-    },
+    { organization: string; data: AdminServiceAddOrganizationMemberUserBody },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -2618,13 +2610,13 @@ export const createAdminServiceListProjectMemberUsers = <
 export const adminServiceAddProjectMemberUser = (
   organization: string,
   project: string,
-  adminServiceAddOrganizationMemberUserBodyBody: AdminServiceAddOrganizationMemberUserBodyBody,
+  adminServiceAddProjectMemberUserBody: AdminServiceAddProjectMemberUserBody,
 ) => {
   return httpClient<V1AddProjectMemberUserResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/members`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceAddOrganizationMemberUserBodyBody,
+    data: adminServiceAddProjectMemberUserBody,
   });
 };
 
@@ -2632,7 +2624,7 @@ export type AdminServiceAddProjectMemberUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceAddProjectMemberUser>>
 >;
 export type AdminServiceAddProjectMemberUserMutationBody =
-  AdminServiceAddOrganizationMemberUserBodyBody;
+  AdminServiceAddProjectMemberUserBody;
 export type AdminServiceAddProjectMemberUserMutationError = RpcStatus;
 
 export const createAdminServiceAddProjectMemberUser = <
@@ -2645,7 +2637,7 @@ export const createAdminServiceAddProjectMemberUser = <
     {
       organization: string;
       project: string;
-      data: AdminServiceAddOrganizationMemberUserBodyBody;
+      data: AdminServiceAddProjectMemberUserBody;
     },
     TContext
   >;
@@ -2657,7 +2649,7 @@ export const createAdminServiceAddProjectMemberUser = <
     {
       organization: string;
       project: string;
-      data: AdminServiceAddOrganizationMemberUserBodyBody;
+      data: AdminServiceAddProjectMemberUserBody;
     }
   > = (props) => {
     const { organization, project, data } = props ?? {};
@@ -2671,7 +2663,7 @@ export const createAdminServiceAddProjectMemberUser = <
     {
       organization: string;
       project: string;
-      data: AdminServiceAddOrganizationMemberUserBodyBody;
+      data: AdminServiceAddProjectMemberUserBody;
     },
     TContext
   >(mutationFn, mutationOptions);

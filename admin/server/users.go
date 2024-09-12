@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -50,15 +49,12 @@ func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequ
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, fmt.Errorf("user not found for email id %s", req.Email)
-		}
 		return nil, err
 	}
 
 	err = s.admin.DB.UpdateSuperuser(ctx, user.ID, req.Superuser)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetSuperuserResponse{}, nil

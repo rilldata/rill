@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -56,10 +57,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -78,10 +76,7 @@ func (s *Server) GetOrganizationNameForDomain(ctx context.Context, req *adminv1.
 
 	org, err := s.admin.DB.FindOrganizationByCustomDomain(ctx, req.Domain)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// NOTE: Not checking auth on purpose. This needs to be a public endpoint.
@@ -187,7 +182,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if nameChanged {
@@ -312,7 +307,8 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
@@ -352,9 +348,21 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			OrgID:     org.ID,
 			RoleID:    role.ID,
 		})
-		// continue sending an email if the user already exists
-		if err != nil && !errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.Internal, err.Error())
+		if err != nil {
+			if !errors.Is(err, database.ErrNotUnique) {
+				return nil, err
+			}
+			// Already invited. Update the invitation role.
+			invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+			if err != nil {
+				return nil, err
+			}
+			// Update the role of the invite
+			err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
+			if err != nil {
+				return nil, err
+			}
+			// Fallthrough so we send the email again.
 		}
 
 		// Send invitation email
@@ -375,35 +383,35 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		}, nil
 	}
 
-	ctx, tx, err := s.admin.DB.NewTx(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	errored := false
-	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
-	// continue sending an email if the user already exists
-	if err != nil {
-		errored = true
-		if !errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+	// Insert the user in the org and AllUsergroup transactionally.
+	err = func() error {
+		ctx, tx, err := s.admin.DB.NewTx(ctx)
+		if err != nil {
+			return err
 		}
-	}
+		defer func() { _ = tx.Rollback() }()
 
-	if !errored {
-		// if previous statement errored we cannot continue with this since transaction would be invalid
+		err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+		if err != nil {
+			return err
+		}
+
 		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
-			if !errors.Is(err, database.ErrNotUnique) {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			// If the user is already in the all user group, we can ignore the error
+			return fmt.Errorf("failed to add user to all user group: %w", err)
 		}
 
-		err = tx.Commit()
+		return tx.Commit()
+	}()
+	if err != nil {
+		if !errors.Is(err, database.ErrNotUnique) {
+			return nil, err
+		}
+
+		// The user is already in the org. Instead of erroring, we update their role and fallthrough to send the email again.
+		err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -451,10 +459,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 		// Check if there is a pending invite
 		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
 		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.InvalidArgument, "user not found")
-			}
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		err = s.admin.DB.DeleteOrganizationInvite(ctx, invite.ID)
@@ -552,14 +557,11 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 		// Check if there is a pending invite for this user
 		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
 		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.InvalidArgument, "user not found")
-			}
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 	}
@@ -583,7 +585,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 
 	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
@@ -673,10 +675,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !claims.Superuser(ctx) {
@@ -699,10 +698,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "role not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// find existing users belonging to the whitelisted domain to the org
@@ -736,22 +732,19 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		Domain:    req.Domain,
 	})
 	if err != nil {
-		if errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Errorf(codes.AlreadyExists, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	for _, user := range newUsers {
 		err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// add to all user group
 		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -773,10 +766,7 @@ func (s *Server) RemoveWhitelistedDomain(ctx context.Context, req *adminv1.Remov
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !(claims.OrganizationPermissions(ctx, org.ID).ManageOrg || claims.Superuser(ctx)) {
@@ -785,10 +775,7 @@ func (s *Server) RemoveWhitelistedDomain(ctx context.Context, req *adminv1.Remov
 
 	invite, err := s.admin.DB.FindOrganizationWhitelistedDomain(ctx, org.ID, req.Domain)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "whitelist not found for org %q and domain %q", org.Name, req.Domain)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	err = s.admin.DB.DeleteOrganizationWhitelistedDomain(ctx, invite.ID)
@@ -808,10 +795,7 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !(claims.OrganizationPermissions(ctx, org.ID).ManageOrg || claims.Superuser(ctx)) {

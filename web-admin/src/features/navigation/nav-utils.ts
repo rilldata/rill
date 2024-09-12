@@ -30,7 +30,7 @@ export function isMetricsExplorerPage(page: Page): boolean {
   );
 }
 
-export function isCustomDashboardPage(page: Page): boolean {
+export function isCanvasDashboardPage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/dashboards/[dashboard]";
 }
 
@@ -38,7 +38,7 @@ export function isCustomDashboardPage(page: Page): boolean {
  * Returns true if the page is any kind of dashboard page (either a Metrics Explorer or a Custom Dashboard).
  */
 export function isAnyDashboardPage(page: Page): boolean {
-  return isMetricsExplorerPage(page) || isCustomDashboardPage(page);
+  return isMetricsExplorerPage(page) || isCanvasDashboardPage(page);
 }
 
 export function isReportPage(page: Page): boolean {

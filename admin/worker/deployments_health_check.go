@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -19,13 +21,16 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 	afterID := ""
 	limit := 100
 	seenHosts := map[string]bool{}
+	expectedInstances := map[string][]string{}
+	actualInstances := map[string][]string{}
+	var mu sync.Mutex
 	for {
 		deployments, err := w.admin.DB.FindDeployments(ctx, afterID, limit)
 		if err != nil {
 			return fmt.Errorf("deployment health check: failed to get deployments: %w", err)
 		}
 		if len(deployments) == 0 {
-			return nil
+			break
 		}
 
 		group, cctx := errgroup.WithContext(ctx)
@@ -38,30 +43,73 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 				}
 				continue
 			}
+			addExpectedInstance(expectedInstances, d)
 			if seenHosts[d.RuntimeHost] {
 				continue
 			}
 			seenHosts[d.RuntimeHost] = true
 			group.Go(func() error {
-				return w.deploymentHealthCheck(cctx, d)
+				instances, ok := w.deploymentHealthCheck(cctx, d)
+				if ok {
+					mu.Lock()
+					actualInstances[d.RuntimeHost] = instances
+					mu.Unlock()
+				}
+				return nil
 			})
 		}
 		if err := group.Wait(); err != nil {
 			return err
 		}
 		if len(deployments) < limit {
-			return nil
+			break
 		}
 		afterID = deployments[len(deployments)-1].ID
 		// fetch again
 	}
+
+	// compare expected and actual instances
+	for host, expected := range expectedInstances {
+		actual, ok := actualInstances[host]
+		if !ok {
+			// runtime health check failed
+			continue
+		}
+		for _, instance := range expected {
+			if slices.Contains(actual, instance) {
+				continue
+			}
+			// an expected instance is missing
+			// re verify that the deployment is not deleted
+			d, err := w.admin.DB.FindDeploymentByInstanceID(ctx, instance)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					// Deployment was deleted
+					continue
+				}
+				w.logger.Error("deployment health check: failed to find deployment", zap.String("instance_id", instance), zap.Error(err))
+				continue
+			}
+			annotations, err := w.annotationsForDeployment(ctx, d)
+			if err != nil {
+				w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project", d.ProjectID), zap.String("deployment", d.ID), zap.Error(err))
+				continue
+			}
+			f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", instance)}
+			for k, v := range annotations.ToMap() {
+				f = append(f, zap.String(k, v))
+			}
+			w.logger.Error("deployment health check: missing instance on runtime", f...)
+		}
+	}
+	return nil
 }
 
-func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployment) error {
+func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployment) (instances []string, runtimeOK bool) {
 	client, err := w.admin.OpenRuntimeClient(d)
 	if err != nil {
 		w.logger.Error("deployment health check: failed to open runtime client", zap.String("host", d.RuntimeHost), zap.Error(err))
-		return nil
+		return nil, false
 	}
 	defer client.Close()
 
@@ -69,23 +117,23 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 	if err != nil {
 		if status.Code(err) != codes.Unavailable {
 			w.logger.Error("deployment health check: health check call failed", zap.String("host", d.RuntimeHost), zap.Error(err))
-			return nil
+			return nil, false
 		}
 		// an unavailable error could also be because the deployment got deleted
 		d, dbErr := w.admin.DB.FindDeployment(ctx, d.ID)
 		if dbErr != nil {
 			if errors.Is(dbErr, database.ErrNotFound) {
 				// Deployment was deleted
-				return nil
+				return nil, false
 			}
 			w.logger.Error("deployment health check: failed to find deployment", zap.String("deployment", d.ID), zap.Error(dbErr))
-			return nil
+			return nil, false
 		}
 		if d.Status == database.DeploymentStatusOK {
 			w.logger.Error("deployment health check: health check call failed", zap.String("host", d.RuntimeHost), zap.Error(err))
 		}
 		// Deployment status changed (probably being deleted)
-		return nil
+		return nil, false
 	}
 
 	if runtimeUnhealthy(resp) {
@@ -103,9 +151,10 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 			f = append(f, zap.String("network_error", resp.NetworkError))
 		}
 		w.logger.Error("deployment health check: runtime is unhealthy", f...)
-		return nil
+		return nil, false
 	}
 	for instanceID, health := range resp.InstancesHealth {
+		instances = append(instances, instanceID)
 		if !instanceUnhealthy(health) {
 			continue
 		}
@@ -115,14 +164,16 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 		if d.RuntimeInstanceID != instanceID {
 			d, err = w.admin.DB.FindDeploymentByInstanceID(ctx, instanceID)
 			if err != nil {
+				// NOTE :: In some race conditions this may return a false alert when instance is deleted
+				// but we alert on not found errors as well to handle cases when runtime reports extra instance
 				w.logger.Error("deployment health check: failed to find deployment", zap.String("instance_id", instanceID), zap.Error(err))
-				return nil
+				continue
 			}
 		}
 		annotations, err := w.annotationsForDeployment(ctx, d)
 		if err != nil {
 			w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project", d.ProjectID), zap.String("deployment", d.ID), zap.Error(err))
-			return nil
+			continue
 		}
 		f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", instanceID)}
 		for k, v := range annotations.ToMap() {
@@ -139,7 +190,7 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 		}
 		w.logger.Error("deployment health check: runtime instance is unhealthy", f...)
 	}
-	return nil
+	return instances, true
 }
 
 func (w *Worker) annotationsForDeployment(ctx context.Context, d *database.Deployment) (*admin.DeploymentAnnotations, error) {
@@ -161,4 +212,11 @@ func runtimeUnhealthy(r *runtimev1.HealthResponse) bool {
 
 func instanceUnhealthy(i *runtimev1.InstanceHealth) bool {
 	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != ""
+}
+
+func addExpectedInstance(expectedInstances map[string][]string, d *database.Deployment) {
+	if expectedInstances[d.RuntimeHost] == nil {
+		expectedInstances[d.RuntimeHost] = []string{}
+	}
+	expectedInstances[d.RuntimeHost] = append(expectedInstances[d.RuntimeHost], d.RuntimeInstanceID)
 }

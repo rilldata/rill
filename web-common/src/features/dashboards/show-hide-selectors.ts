@@ -105,12 +105,6 @@ function createShowHideStore<Item>(
         ...metricsExplorer[visibleFieldInStore].keys(),
       ]);
 
-      if (type === "measures") {
-        metricsExplorer.leaderboardMeasureName = firstKey[0];
-        persistentStore.updateLeaderboardMeasureName(
-          metricsExplorer.leaderboardMeasureName,
-        );
-      }
       metricsExplorer[allVisibleFieldInStore] = false;
     });
   };
@@ -119,28 +113,6 @@ function createShowHideStore<Item>(
     updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
       if (metricsExplorer[visibleFieldInStore].has(key)) {
         metricsExplorer[visibleFieldInStore].delete(key);
-
-        /*
-         * If current leaderboard measure is hidden, set the first
-         * visible measure as the current leaderboard measure
-         */
-        if (
-          type === "measures" &&
-          metricsExplorer.leaderboardMeasureName === key
-        ) {
-          /*
-           * To maintain the order of keys, filter out the
-           * non-visible ones from the available keys
-           */
-          const firstVisible = get(derivedStore).availableKeys.find((key) =>
-            metricsExplorer[visibleFieldInStore].has(key),
-          );
-
-          metricsExplorer.leaderboardMeasureName = firstVisible ?? "";
-          persistentStore.updateLeaderboardMeasureName(
-            metricsExplorer.leaderboardMeasureName,
-          );
-        }
       } else {
         metricsExplorer[visibleFieldInStore].add(key);
       }

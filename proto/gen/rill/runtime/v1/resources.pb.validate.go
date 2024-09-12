@@ -8427,6 +8427,35 @@ func (m *ComponentState) validate(all bool) error {
 
 	var errors []error
 
+	if all {
+		switch v := interface{}(m.GetValidSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ComponentStateValidationError{
+					field:  "ValidSpec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ComponentStateValidationError{
+					field:  "ValidSpec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetValidSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ComponentStateValidationError{
+				field:  "ValidSpec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return ComponentStateMultiError(errors)
 	}
@@ -8992,6 +9021,35 @@ func (m *DashboardState) validate(all bool) error {
 	}
 
 	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetValidSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, DashboardStateValidationError{
+					field:  "ValidSpec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, DashboardStateValidationError{
+					field:  "ValidSpec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetValidSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return DashboardStateValidationError{
+				field:  "ValidSpec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return DashboardStateMultiError(errors)
