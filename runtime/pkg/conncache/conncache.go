@@ -147,7 +147,7 @@ func New(opts Options) Cache {
 				for k, v := range c.entries {
 					if v.err != nil && time.Since(v.since) > c.opts.ErrorTimeout {
 						c.beginClose(k, v)
-						// release and err will be accessed later the user of the conncache instance
+						// release and err will be accessed later by the user of the conncache instance
 						// err will be checked here too for timeout
 						// so ignoring both
 						_, _, _ = c.Acquire(context.Background(), v.cfg)
