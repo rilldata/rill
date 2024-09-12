@@ -196,7 +196,7 @@
 {#if hasNextPage}
   <div class="flex items-center gap-2 mt-2 justify-between">
     <button
-      class="border rounded px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none w-full"
+      class="border rounded px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none w-full hover:bg-slate-50"
       on:click={onLoadMore}
       disabled={!hasNextPage}
     >
