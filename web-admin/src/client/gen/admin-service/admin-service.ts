@@ -35,13 +35,13 @@ import type {
   V1DeleteOrganizationResponse,
   V1UpdateOrganizationResponse,
   AdminServiceUpdateOrganizationBody,
+  V1ListOrganizationBillingErrorsResponse,
   V1GetPaymentsPortalURLResponse,
   AdminServiceGetPaymentsPortalURLParams,
   V1GetBillingSubscriptionResponse,
   V1CancelBillingSubscriptionResponse,
   V1UpdateBillingSubscriptionResponse,
   AdminServiceUpdateBillingSubscriptionBody,
-  V1ListOrganizationBillingErrorsResponse,
   V1ListOrganizationBillingWarningsResponse,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
@@ -958,232 +958,8 @@ export const createAdminServiceUpdateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary GetPaymentsPortalURL returns the URL for the billing session to collect payment method
+ * @summary ListOrganizationBillingErrors lists all the billing errors for the organization
  */
-export const adminServiceGetPaymentsPortalURL = (
-  orgName: string,
-  params?: AdminServiceGetPaymentsPortalURLParams,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetPaymentsPortalURLResponse>({
-    url: `/v1/organizations/${orgName}/billing/payments/portal-url`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceGetPaymentsPortalURLQueryKey = (
-  orgName: string,
-  params?: AdminServiceGetPaymentsPortalURLParams,
-) => [
-  `/v1/organizations/${orgName}/billing/payments/portal-url`,
-  ...(params ? [params] : []),
-];
-
-export type AdminServiceGetPaymentsPortalURLQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>
->;
-export type AdminServiceGetPaymentsPortalURLQueryError = RpcStatus;
-
-export const createAdminServiceGetPaymentsPortalURL = <
-  TData = Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
-  TError = RpcStatus,
->(
-  orgName: string,
-  params?: AdminServiceGetPaymentsPortalURLParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetPaymentsPortalURLQueryKey(orgName, params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>
-  > = ({ signal }) => adminServiceGetPaymentsPortalURL(orgName, params, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!orgName,
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary GetBillingSubscription lists the subscription for the organization
- */
-export const adminServiceGetBillingSubscription = (
-  orgName: string,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetBillingSubscriptionResponse>({
-    url: `/v1/organizations/${orgName}/billing/subscriptions`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getAdminServiceGetBillingSubscriptionQueryKey = (
-  orgName: string,
-) => [`/v1/organizations/${orgName}/billing/subscriptions`];
-
-export type AdminServiceGetBillingSubscriptionQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>
->;
-export type AdminServiceGetBillingSubscriptionQueryError = RpcStatus;
-
-export const createAdminServiceGetBillingSubscription = <
-  TData = Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
-  TError = RpcStatus,
->(
-  orgName: string,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetBillingSubscriptionQueryKey(orgName);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>
-  > = ({ signal }) => adminServiceGetBillingSubscription(orgName, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!orgName,
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
- */
-export const adminServiceCancelBillingSubscription = (orgName: string) => {
-  return httpClient<V1CancelBillingSubscriptionResponse>({
-    url: `/v1/organizations/${orgName}/billing/subscriptions`,
-    method: "delete",
-  });
-};
-
-export type AdminServiceCancelBillingSubscriptionMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>
->;
-
-export type AdminServiceCancelBillingSubscriptionMutationError = RpcStatus;
-
-export const createAdminServiceCancelBillingSubscription = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
-    TError,
-    { orgName: string },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
-    { orgName: string }
-  > = (props) => {
-    const { orgName } = props ?? {};
-
-    return adminServiceCancelBillingSubscription(orgName);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
-    TError,
-    { orgName: string },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary UpdateBillingSubscription updates the billing plan for the organization
- */
-export const adminServiceUpdateBillingSubscription = (
-  orgName: string,
-  adminServiceUpdateBillingSubscriptionBody: AdminServiceUpdateBillingSubscriptionBody,
-) => {
-  return httpClient<V1UpdateBillingSubscriptionResponse>({
-    url: `/v1/organizations/${orgName}/billing/subscriptions`,
-    method: "patch",
-    headers: { "Content-Type": "application/json" },
-    data: adminServiceUpdateBillingSubscriptionBody,
-  });
-};
-
-export type AdminServiceUpdateBillingSubscriptionMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>
->;
-export type AdminServiceUpdateBillingSubscriptionMutationBody =
-  AdminServiceUpdateBillingSubscriptionBody;
-export type AdminServiceUpdateBillingSubscriptionMutationError = RpcStatus;
-
-export const createAdminServiceUpdateBillingSubscription = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
-    TError,
-    { orgName: string; data: AdminServiceUpdateBillingSubscriptionBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
-    { orgName: string; data: AdminServiceUpdateBillingSubscriptionBody }
-  > = (props) => {
-    const { orgName, data } = props ?? {};
-
-    return adminServiceUpdateBillingSubscription(orgName, data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
-    TError,
-    { orgName: string; data: AdminServiceUpdateBillingSubscriptionBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
 export const adminServiceListOrganizationBillingErrors = (
   organization: string,
   signal?: AbortSignal,
@@ -1244,6 +1020,237 @@ export const createAdminServiceListOrganizationBillingErrors = <
   return query;
 };
 
+/**
+ * @summary GetPaymentsPortalURL returns the URL for the billing session to collect payment method
+ */
+export const adminServiceGetPaymentsPortalURL = (
+  organization: string,
+  params?: AdminServiceGetPaymentsPortalURLParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetPaymentsPortalURLResponse>({
+    url: `/v1/organizations/${organization}/billing/payments/portal-url`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetPaymentsPortalURLQueryKey = (
+  organization: string,
+  params?: AdminServiceGetPaymentsPortalURLParams,
+) => [
+  `/v1/organizations/${organization}/billing/payments/portal-url`,
+  ...(params ? [params] : []),
+];
+
+export type AdminServiceGetPaymentsPortalURLQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>
+>;
+export type AdminServiceGetPaymentsPortalURLQueryError = RpcStatus;
+
+export const createAdminServiceGetPaymentsPortalURL = <
+  TData = Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  params?: AdminServiceGetPaymentsPortalURLParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetPaymentsPortalURLQueryKey(organization, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>
+  > = ({ signal }) =>
+    adminServiceGetPaymentsPortalURL(organization, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organization,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetBillingSubscription lists the subscription for the organization
+ */
+export const adminServiceGetBillingSubscription = (
+  organization: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetBillingSubscriptionResponse>({
+    url: `/v1/organizations/${organization}/billing/subscriptions`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetBillingSubscriptionQueryKey = (
+  organization: string,
+) => [`/v1/organizations/${organization}/billing/subscriptions`];
+
+export type AdminServiceGetBillingSubscriptionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>
+>;
+export type AdminServiceGetBillingSubscriptionQueryError = RpcStatus;
+
+export const createAdminServiceGetBillingSubscription = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetBillingSubscriptionQueryKey(organization);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>
+  > = ({ signal }) => adminServiceGetBillingSubscription(organization, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organization,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+ */
+export const adminServiceCancelBillingSubscription = (organization: string) => {
+  return httpClient<V1CancelBillingSubscriptionResponse>({
+    url: `/v1/organizations/${organization}/billing/subscriptions`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceCancelBillingSubscriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>
+>;
+
+export type AdminServiceCancelBillingSubscriptionMutationError = RpcStatus;
+
+export const createAdminServiceCancelBillingSubscription = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
+    TError,
+    { organization: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
+    { organization: string }
+  > = (props) => {
+    const { organization } = props ?? {};
+
+    return adminServiceCancelBillingSubscription(organization);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
+    TError,
+    { organization: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary UpdateBillingSubscription updates the billing plan for the organization
+ */
+export const adminServiceUpdateBillingSubscription = (
+  organization: string,
+  adminServiceUpdateBillingSubscriptionBody: AdminServiceUpdateBillingSubscriptionBody,
+) => {
+  return httpClient<V1UpdateBillingSubscriptionResponse>({
+    url: `/v1/organizations/${organization}/billing/subscriptions`,
+    method: "patch",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateBillingSubscriptionBody,
+  });
+};
+
+export type AdminServiceUpdateBillingSubscriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>
+>;
+export type AdminServiceUpdateBillingSubscriptionMutationBody =
+  AdminServiceUpdateBillingSubscriptionBody;
+export type AdminServiceUpdateBillingSubscriptionMutationError = RpcStatus;
+
+export const createAdminServiceUpdateBillingSubscription = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
+    TError,
+    { organization: string; data: AdminServiceUpdateBillingSubscriptionBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
+    { organization: string; data: AdminServiceUpdateBillingSubscriptionBody }
+  > = (props) => {
+    const { organization, data } = props ?? {};
+
+    return adminServiceUpdateBillingSubscription(organization, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
+    TError,
+    { organization: string; data: AdminServiceUpdateBillingSubscriptionBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary ListOrganizationBillingWarnings lists all the billing warnings for the organization
+ */
 export const adminServiceListOrganizationBillingWarnings = (
   organization: string,
   signal?: AbortSignal,
@@ -6609,6 +6616,9 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary SudoDeleteOrganizationBillingError deletes a billing error of a type for the organization
+ */
 export const adminServiceSudoDeleteOrganizationBillingError = (
   organization: string,
   type:
@@ -6689,6 +6699,9 @@ export const createAdminServiceSudoDeleteOrganizationBillingError = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary SudoDeleteOrganizationBillingWarning deletes a billing warning of a type for the organization
+ */
 export const adminServiceSudoDeleteOrganizationBillingWarning = (
   organization: string,
   type: "BILLING_WARNING_TYPE_UNSPECIFIED" | "BILLING_WARNING_TYPE_ON_TRIAL",

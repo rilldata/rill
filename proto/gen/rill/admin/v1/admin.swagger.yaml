@@ -334,7 +334,27 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{orgName}/billing/payments/portal-url:
+  /v1/organizations/{organization}/billing/errors:
+    get:
+      summary: ListOrganizationBillingErrors lists all the billing errors for the organization
+      operationId: AdminService_ListOrganizationBillingErrors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationBillingErrorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/billing/payments/portal-url:
     get:
       summary: GetPaymentsPortalURL returns the URL for the billing session to collect payment method
       operationId: AdminService_GetPaymentsPortalURL
@@ -348,7 +368,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: orgName
+        - name: organization
           in: path
           required: true
           type: string
@@ -358,7 +378,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{orgName}/billing/subscriptions:
+  /v1/organizations/{organization}/billing/subscriptions:
     get:
       summary: GetBillingSubscription lists the subscription for the organization
       operationId: AdminService_GetBillingSubscription
@@ -372,7 +392,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: orgName
+        - name: organization
           in: path
           required: true
           type: string
@@ -391,7 +411,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: orgName
+        - name: organization
           in: path
           required: true
           type: string
@@ -410,7 +430,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: orgName
+        - name: organization
           in: path
           required: true
           type: string
@@ -424,27 +444,9 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/billing/errors:
-    get:
-      operationId: AdminService_ListOrganizationBillingErrors
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListOrganizationBillingErrorsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
   /v1/organizations/{organization}/billing/warnings:
     get:
+      summary: ListOrganizationBillingWarnings lists all the billing warnings for the organization
       operationId: AdminService_ListOrganizationBillingWarnings
       responses:
         "200":
@@ -3038,6 +3040,7 @@ paths:
         - AdminService
   /v1/superuser/organizations/{organization}/billing/errors/{type}:
     delete:
+      summary: SudoDeleteOrganizationBillingError deletes a billing error of a type for the organization
       operationId: AdminService_SudoDeleteOrganizationBillingError
       responses:
         "200":
@@ -3068,6 +3071,7 @@ paths:
         - AdminService
   /v1/superuser/organizations/{organization}/billing/warnings/{type}:
     delete:
+      summary: SudoDeleteOrganizationBillingWarning deletes a billing warning of a type for the organization
       operationId: AdminService_SudoDeleteOrganizationBillingWarning
       responses:
         "200":

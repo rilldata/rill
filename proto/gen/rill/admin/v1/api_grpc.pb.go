@@ -311,7 +311,9 @@ type AdminServiceClient interface {
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
 	SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error)
+	// SudoDeleteOrganizationBillingError deletes a billing error of a type for the organization
 	SudoDeleteOrganizationBillingError(ctx context.Context, in *SudoDeleteOrganizationBillingErrorRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingErrorResponse, error)
+	// SudoDeleteOrganizationBillingWarning deletes a billing warning of a type for the organization
 	SudoDeleteOrganizationBillingWarning(ctx context.Context, in *SudoDeleteOrganizationBillingWarningRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingWarningResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error)
@@ -399,7 +401,9 @@ type AdminServiceClient interface {
 	GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error)
 	DenyProjectAccess(ctx context.Context, in *DenyProjectAccessRequest, opts ...grpc.CallOption) (*DenyProjectAccessResponse, error)
+	// ListOrganizationBillingErrors lists all the billing errors for the organization
 	ListOrganizationBillingErrors(ctx context.Context, in *ListOrganizationBillingErrorsRequest, opts ...grpc.CallOption) (*ListOrganizationBillingErrorsResponse, error)
+	// ListOrganizationBillingWarnings lists all the billing warnings for the organization
 	ListOrganizationBillingWarnings(ctx context.Context, in *ListOrganizationBillingWarningsRequest, opts ...grpc.CallOption) (*ListOrganizationBillingWarningsResponse, error)
 }
 
@@ -1817,7 +1821,9 @@ type AdminServiceServer interface {
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
 	SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error)
+	// SudoDeleteOrganizationBillingError deletes a billing error of a type for the organization
 	SudoDeleteOrganizationBillingError(context.Context, *SudoDeleteOrganizationBillingErrorRequest) (*SudoDeleteOrganizationBillingErrorResponse, error)
+	// SudoDeleteOrganizationBillingWarning deletes a billing warning of a type for the organization
 	SudoDeleteOrganizationBillingWarning(context.Context, *SudoDeleteOrganizationBillingWarningRequest) (*SudoDeleteOrganizationBillingWarningResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error)
@@ -1905,7 +1911,9 @@ type AdminServiceServer interface {
 	GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error)
 	DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error)
+	// ListOrganizationBillingErrors lists all the billing errors for the organization
 	ListOrganizationBillingErrors(context.Context, *ListOrganizationBillingErrorsRequest) (*ListOrganizationBillingErrorsResponse, error)
+	// ListOrganizationBillingWarnings lists all the billing warnings for the organization
 	ListOrganizationBillingWarnings(context.Context, *ListOrganizationBillingWarningsRequest) (*ListOrganizationBillingWarningsResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }

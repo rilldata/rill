@@ -1,14 +1,13 @@
 package subscription
 
 import (
-	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, plan string
+	var plan string
 
 	editCmd := &cobra.Command{
 		Use:   "edit",
@@ -22,34 +21,23 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if !cmd.Flags().Changed("org") && ch.Interactive {
-				orgNames, err := org.OrgNames(ctx, ch)
-				if err != nil {
-					return err
-				}
-
-				orgName, err = cmdutil.SelectPrompt("Select org to change plan", orgNames, ch.Org)
-				if err != nil {
-					return err
-				}
-			}
-
 			subResp, err := client.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{
-				OrgName: orgName,
+				OrgName: ch.Org,
 			})
 			if err != nil {
 				return err
 			}
 
 			if subResp.Subscription == nil {
-				ch.PrintfWarn("No subscriptions found for organization %q\n", orgName)
+				ch.PrintfWarn("No subscriptions found for organization %q\n", ch.Org)
 				return nil
 			}
 
-			ch.PrintfBold("Organization has following subscription\n")
+			ch.PrintfBold("Organization %q has following subscription\n", ch.Org)
 			ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 
-			ok, err := cmdutil.ConfirmPrompt("\nPlan changes will take place immediately, Do you want to Continue ?\n", "", false)
+			ch.PrintfWarn("Editing plan for organization %q. Plan change will take place immediately.", ch.Org)
+			ok, err := cmdutil.ConfirmPrompt("Do you want to Continue ?", "", false)
 			if err != nil {
 				return err
 			}
@@ -59,20 +47,18 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{
-				OrgName:  orgName,
+				OrgName:  ch.Org,
 				PlanName: plan,
 			})
 			if err != nil {
 				return err
 			}
 
-			ch.PrintfSuccess("Successfully subscribed to plan %q for org %q\n", plan, orgName)
+			ch.PrintfSuccess("Successfully subscribed to plan %q for org %q\n", plan, ch.Org)
 			ch.PrintSubscriptions(resp.Subscriptions)
 			return nil
 		},
 	}
-	editCmd.Flags().SortFlags = false
-	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
 	editCmd.Flags().StringVar(&plan, "plan", "", "Plan Name to change subscription to")
 
 	return editCmd

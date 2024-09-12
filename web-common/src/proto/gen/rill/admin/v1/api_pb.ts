@@ -9,6 +9,64 @@ import { Expression } from "../../runtime/v1/expression_pb.js";
 import { ExportFormat } from "../../runtime/v1/export_format_pb.js";
 
 /**
+ * @generated from enum rill.admin.v1.GithubPermission
+ */
+export enum GithubPermission {
+  /**
+   * @generated from enum value: GITHUB_PERMISSION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: GITHUB_PERMISSION_READ = 1;
+   */
+  READ = 1,
+
+  /**
+   * @generated from enum value: GITHUB_PERMISSION_WRITE = 2;
+   */
+  WRITE = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(GithubPermission)
+proto3.util.setEnumType(GithubPermission, "rill.admin.v1.GithubPermission", [
+  { no: 0, name: "GITHUB_PERMISSION_UNSPECIFIED" },
+  { no: 1, name: "GITHUB_PERMISSION_READ" },
+  { no: 2, name: "GITHUB_PERMISSION_WRITE" },
+]);
+
+/**
+ * @generated from enum rill.admin.v1.DeploymentStatus
+ */
+export enum DeploymentStatus {
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_PENDING = 1;
+   */
+  PENDING = 1,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_OK = 2;
+   */
+  OK = 2,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_ERROR = 4;
+   */
+  ERROR = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DeploymentStatus)
+proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
+  { no: 0, name: "DEPLOYMENT_STATUS_UNSPECIFIED" },
+  { no: 1, name: "DEPLOYMENT_STATUS_PENDING" },
+  { no: 2, name: "DEPLOYMENT_STATUS_OK" },
+  { no: 4, name: "DEPLOYMENT_STATUS_ERROR" },
+]);
+
+/**
  * @generated from enum rill.admin.v1.BillingErrorType
  */
 export enum BillingErrorType {
@@ -70,64 +128,6 @@ export enum BillingWarningType {
 proto3.util.setEnumType(BillingWarningType, "rill.admin.v1.BillingWarningType", [
   { no: 0, name: "BILLING_WARNING_TYPE_UNSPECIFIED" },
   { no: 1, name: "BILLING_WARNING_TYPE_ON_TRIAL" },
-]);
-
-/**
- * @generated from enum rill.admin.v1.GithubPermission
- */
-export enum GithubPermission {
-  /**
-   * @generated from enum value: GITHUB_PERMISSION_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: GITHUB_PERMISSION_READ = 1;
-   */
-  READ = 1,
-
-  /**
-   * @generated from enum value: GITHUB_PERMISSION_WRITE = 2;
-   */
-  WRITE = 2,
-}
-// Retrieve enum metadata with: proto3.getEnumType(GithubPermission)
-proto3.util.setEnumType(GithubPermission, "rill.admin.v1.GithubPermission", [
-  { no: 0, name: "GITHUB_PERMISSION_UNSPECIFIED" },
-  { no: 1, name: "GITHUB_PERMISSION_READ" },
-  { no: 2, name: "GITHUB_PERMISSION_WRITE" },
-]);
-
-/**
- * @generated from enum rill.admin.v1.DeploymentStatus
- */
-export enum DeploymentStatus {
-  /**
-   * @generated from enum value: DEPLOYMENT_STATUS_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: DEPLOYMENT_STATUS_PENDING = 1;
-   */
-  PENDING = 1,
-
-  /**
-   * @generated from enum value: DEPLOYMENT_STATUS_OK = 2;
-   */
-  OK = 2,
-
-  /**
-   * @generated from enum value: DEPLOYMENT_STATUS_ERROR = 4;
-   */
-  ERROR = 4,
-}
-// Retrieve enum metadata with: proto3.getEnumType(DeploymentStatus)
-proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
-  { no: 0, name: "DEPLOYMENT_STATUS_UNSPECIFIED" },
-  { no: 1, name: "DEPLOYMENT_STATUS_PENDING" },
-  { no: 2, name: "DEPLOYMENT_STATUS_OK" },
-  { no: 4, name: "DEPLOYMENT_STATUS_ERROR" },
 ]);
 
 /**
@@ -10155,9 +10155,9 @@ export class GetAlertYAMLResponse extends Message<GetAlertYAMLResponse> {
  */
 export class GetBillingSubscriptionRequest extends Message<GetBillingSubscriptionRequest> {
   /**
-   * @generated from field: string org_name = 1;
+   * @generated from field: string organization = 1;
    */
-  orgName = "";
+  organization = "";
 
   constructor(data?: PartialMessage<GetBillingSubscriptionRequest>) {
     super();
@@ -10167,7 +10167,7 @@ export class GetBillingSubscriptionRequest extends Message<GetBillingSubscriptio
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetBillingSubscriptionRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingSubscriptionRequest {
@@ -10241,9 +10241,9 @@ export class GetBillingSubscriptionResponse extends Message<GetBillingSubscripti
  */
 export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubscriptionRequest> {
   /**
-   * @generated from field: string org_name = 1;
+   * @generated from field: string organization = 1;
    */
-  orgName = "";
+  organization = "";
 
   /**
    * @generated from field: string plan_name = 2;
@@ -10258,7 +10258,7 @@ export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubsc
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.UpdateBillingSubscriptionRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -10284,9 +10284,9 @@ export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubsc
  */
 export class CancelBillingSubscriptionRequest extends Message<CancelBillingSubscriptionRequest> {
   /**
-   * @generated from field: string org_name = 1;
+   * @generated from field: string organization = 1;
    */
-  orgName = "";
+  organization = "";
 
   constructor(data?: PartialMessage<CancelBillingSubscriptionRequest>) {
     super();
@@ -10296,7 +10296,7 @@ export class CancelBillingSubscriptionRequest extends Message<CancelBillingSubsc
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CancelBillingSubscriptionRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CancelBillingSubscriptionRequest {
@@ -10395,9 +10395,9 @@ export class UpdateBillingSubscriptionResponse extends Message<UpdateBillingSubs
  */
 export class GetPaymentsPortalURLRequest extends Message<GetPaymentsPortalURLRequest> {
   /**
-   * @generated from field: string org_name = 1;
+   * @generated from field: string organization = 1;
    */
-  orgName = "";
+  organization = "";
 
   /**
    * @generated from field: string return_url = 2;
@@ -10412,7 +10412,7 @@ export class GetPaymentsPortalURLRequest extends Message<GetPaymentsPortalURLReq
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetPaymentsPortalURLRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "return_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

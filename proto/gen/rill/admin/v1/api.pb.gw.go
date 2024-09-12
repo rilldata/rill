@@ -7322,14 +7322,14 @@ func request_AdminService_GetBillingSubscription_0(ctx context.Context, marshale
 		_   = err
 	)
 
-	val, ok = pathParams["org_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "org_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrgName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "org_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.GetBillingSubscription(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -7348,14 +7348,14 @@ func local_request_AdminService_GetBillingSubscription_0(ctx context.Context, ma
 		_   = err
 	)
 
-	val, ok = pathParams["org_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "org_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrgName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "org_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.GetBillingSubscription(ctx, &protoReq)
@@ -7378,14 +7378,14 @@ func request_AdminService_UpdateBillingSubscription_0(ctx context.Context, marsh
 		_   = err
 	)
 
-	val, ok = pathParams["org_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "org_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrgName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "org_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.UpdateBillingSubscription(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -7408,14 +7408,14 @@ func local_request_AdminService_UpdateBillingSubscription_0(ctx context.Context,
 		_   = err
 	)
 
-	val, ok = pathParams["org_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "org_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrgName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "org_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.UpdateBillingSubscription(ctx, &protoReq)
@@ -7434,14 +7434,14 @@ func request_AdminService_CancelBillingSubscription_0(ctx context.Context, marsh
 		_   = err
 	)
 
-	val, ok = pathParams["org_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "org_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrgName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "org_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.CancelBillingSubscription(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -7460,14 +7460,14 @@ func local_request_AdminService_CancelBillingSubscription_0(ctx context.Context,
 		_   = err
 	)
 
-	val, ok = pathParams["org_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "org_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrgName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "org_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.CancelBillingSubscription(ctx, &protoReq)
@@ -7476,7 +7476,7 @@ func local_request_AdminService_CancelBillingSubscription_0(ctx context.Context,
 }
 
 var (
-	filter_AdminService_GetPaymentsPortalURL_0 = &utilities.DoubleArray{Encoding: map[string]int{"org_name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_AdminService_GetPaymentsPortalURL_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_AdminService_GetPaymentsPortalURL_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -7490,14 +7490,14 @@ func request_AdminService_GetPaymentsPortalURL_0(ctx context.Context, marshaler 
 		_   = err
 	)
 
-	val, ok = pathParams["org_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "org_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrgName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "org_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -7523,14 +7523,14 @@ func local_request_AdminService_GetPaymentsPortalURL_0(ctx context.Context, mars
 		_   = err
 	)
 
-	val, ok = pathParams["org_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "org_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrgName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "org_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -10759,7 +10759,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{org_name}/billing/subscriptions"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/billing/subscriptions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -10784,7 +10784,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{org_name}/billing/subscriptions"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/billing/subscriptions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -10809,7 +10809,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CancelBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{org_name}/billing/subscriptions"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CancelBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/billing/subscriptions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -10834,7 +10834,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetPaymentsPortalURL", runtime.WithHTTPPathPattern("/v1/organizations/{org_name}/billing/payments/portal-url"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetPaymentsPortalURL", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/billing/payments/portal-url"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13559,7 +13559,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{org_name}/billing/subscriptions"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/billing/subscriptions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13581,7 +13581,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{org_name}/billing/subscriptions"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/billing/subscriptions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13603,7 +13603,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CancelBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{org_name}/billing/subscriptions"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CancelBillingSubscription", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/billing/subscriptions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13625,7 +13625,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetPaymentsPortalURL", runtime.WithHTTPPathPattern("/v1/organizations/{org_name}/billing/payments/portal-url"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetPaymentsPortalURL", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/billing/payments/portal-url"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -14025,13 +14025,13 @@ var (
 
 	pattern_AdminService_GetAlertYAML_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7}, []string{"v1", "organizations", "organization", "projects", "project", "alerts", "name", "yaml"}, ""))
 
-	pattern_AdminService_GetBillingSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "organizations", "org_name", "billing", "subscriptions"}, ""))
+	pattern_AdminService_GetBillingSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "organizations", "organization", "billing", "subscriptions"}, ""))
 
-	pattern_AdminService_UpdateBillingSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "organizations", "org_name", "billing", "subscriptions"}, ""))
+	pattern_AdminService_UpdateBillingSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "organizations", "organization", "billing", "subscriptions"}, ""))
 
-	pattern_AdminService_CancelBillingSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "organizations", "org_name", "billing", "subscriptions"}, ""))
+	pattern_AdminService_CancelBillingSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "organizations", "organization", "billing", "subscriptions"}, ""))
 
-	pattern_AdminService_GetPaymentsPortalURL_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5}, []string{"v1", "organizations", "org_name", "billing", "payments", "portal-url"}, ""))
+	pattern_AdminService_GetPaymentsPortalURL_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5}, []string{"v1", "organizations", "organization", "billing", "payments", "portal-url"}, ""))
 
 	pattern_AdminService_ListPublicBillingPlans_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "billing", "plans"}, ""))
 

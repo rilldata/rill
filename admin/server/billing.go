@@ -20,9 +20,9 @@ import (
 )
 
 func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBillingSubscriptionRequest) (*adminv1.GetBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -57,12 +57,12 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 }
 
 func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.UpdateBillingSubscriptionRequest) (*adminv1.UpdateBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 	if req.PlanName != "" {
 		observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -195,9 +195,9 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 // CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
 func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.CancelBillingSubscriptionRequest) (*adminv1.CancelBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -282,10 +282,10 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 }
 
 func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 	observability.AddRequestAttributes(ctx, attribute.String("args.return_url", req.ReturnUrl))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

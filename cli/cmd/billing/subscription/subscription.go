@@ -12,6 +12,7 @@ func SubscriptionCmd(ch *cmdutil.Helper) *cobra.Command {
 		PersistentPreRunE: cmdutil.CheckAuth(ch),
 	}
 
+	subsCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 	subsCmd.AddCommand(CreateCmd(ch))
 	subsCmd.AddCommand(EditCmd(ch))
 	subsCmd.AddCommand(ListCmd(ch))
