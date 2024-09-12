@@ -18,13 +18,22 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
 
-  export let tableData: V1MagicAuthToken[];
+  interface MagicAuthTokenProps extends V1MagicAuthToken {
+    dashboardTitle: string;
+  }
+
+  export let tableData: MagicAuthTokenProps[];
   export let pageSize: number;
   export let onDelete: (deletedTokenId: string) => void;
   export let onLoadMore: () => void;
   export let hasNextPage: boolean;
 
-  let sorting: SortingState = [];
+  let sorting: SortingState = [
+    {
+      id: "createdOn",
+      desc: true,
+    },
+  ];
 
   function formatDate(value: string) {
     return new Date(value).toLocaleDateString(undefined, {
@@ -36,7 +45,7 @@
     });
   }
 
-  const columns: ColumnDef<V1MagicAuthToken>[] = [
+  const columns: ColumnDef<MagicAuthTokenProps>[] = [
     {
       accessorKey: "name",
       header: "Public URL name",
@@ -47,8 +56,7 @@
         }),
     },
     {
-      // TODO: use dashboard title instead of metricsView
-      accessorFn: (row) => row.metricsView,
+      accessorFn: (row) => row.dashboardTitle,
       header: "Dashboard name",
     },
     {
@@ -68,6 +76,15 @@
     {
       accessorKey: "usedOn",
       header: "Last used",
+      cell: (info) => {
+        if (!info.getValue()) return "-";
+        const date = formatDate(info.getValue() as string);
+        return date;
+      },
+    },
+    {
+      accessorKey: "createdOn",
+      header: "Created on",
       cell: (info) => {
         if (!info.getValue()) return "-";
         const date = formatDate(info.getValue() as string);
@@ -96,7 +113,7 @@
     updateTableOptions();
   };
 
-  const options = writable<TableOptions<V1MagicAuthToken>>({
+  const options = writable<TableOptions<MagicAuthTokenProps>>({
     data: tableData,
     columns: columns,
     state: {
@@ -125,7 +142,7 @@
     }));
   }
 
-  function updateTable(data: V1MagicAuthToken[]) {
+  function updateTable(data: MagicAuthTokenProps[]) {
     options.update((old) => ({
       ...old,
       data: data,
@@ -193,17 +210,15 @@
   </tbody>
 </table>
 
-{#if hasNextPage}
-  <div class="flex items-center gap-2 mt-2 justify-between">
-    <button
-      class="border rounded px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none w-full hover:bg-slate-50"
-      on:click={onLoadMore}
-      disabled={!hasNextPage}
-    >
-      Load More
-    </button>
-  </div>
-{/if}
+<div class="flex items-center gap-2 mt-4 justify-end">
+  <button
+    class="border border-slate-300 rounded-sm px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50"
+    on:click={onLoadMore}
+    disabled={!hasNextPage}
+  >
+    Next
+  </button>
+</div>
 
 <style lang="postcss">
   table {

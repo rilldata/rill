@@ -12,13 +12,14 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
   import { writable } from "svelte/store";
+  import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  let pageSize = 10;
+  let pageSize = 12;
   let pageToken: string | undefined = undefined;
-  const allTokensStore = writable(new Set<V1MagicAuthToken>());
 
   $: magicAuthTokens = createAdminServiceListMagicAuthTokens(
     organization,
@@ -29,28 +30,28 @@
     },
   );
 
+  $: dashboards = useDashboardsV2($runtime.instanceId);
+
   // Reset and update allTokensStore when magicAuthTokens changes
-  $: if ($magicAuthTokens.data) {
-    allTokensStore.update((currentSet) => {
-      const newSet = new Set(currentSet);
-      $magicAuthTokens.data.tokens.forEach((token) => newSet.add(token));
-      return newSet;
-    });
-  }
+  $: currentPageTokens =
+    $magicAuthTokens.data && $dashboards.data
+      ? $magicAuthTokens.data.tokens.map((token) => {
+          const dashboard = $dashboards.data.find(
+            (d) => d.resource.meta.name.name === token.metricsView,
+          );
+          return {
+            ...token,
+            dashboardTitle:
+              dashboard?.resource.metricsView.spec.title || "Unknown Dashboard",
+          };
+        })
+      : [];
 
   const queryClient = useQueryClient();
   const revokeMagicAuthToken = createAdminServiceRevokeMagicAuthToken();
 
   async function handleDelete(deletedTokenId: string) {
     try {
-      // Optimistically update local store
-      allTokensStore.update(
-        (currentSet) =>
-          new Set(
-            [...currentSet].filter((token) => token.id !== deletedTokenId),
-          ),
-      );
-
       // Perform the deletion
       await $revokeMagicAuthToken.mutateAsync({ tokenId: deletedTokenId });
 
@@ -90,7 +91,7 @@
           <NoPublicURLCTA />
         {:else}
           <PublicURLsTable
-            tableData={Array.from($allTokensStore)}
+            tableData={currentPageTokens}
             {pageSize}
             onDelete={handleDelete}
             onLoadMore={handleLoadMore}
