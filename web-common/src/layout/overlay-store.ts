@@ -9,32 +9,31 @@ interface Overlay {
   };
 }
 
-const { subscribe, set } = writable<Overlay | null>(null);
-let timeout: NodeJS.Timeout;
-let isCleared: boolean = false;
+class OverlayStore {
+  private timeout: NodeJS.Timeout;
+  private isCleared: boolean = false;
+  private overlayStore = writable<Overlay | null>(null);
+  public subscribe = this.overlayStore.subscribe;
 
-export const overlay = {
-  subscribe,
-  set: (overlay: Overlay | null) => {
-    isCleared = false;
-    set(overlay);
-  },
-  /**
-   * `setDebounced` is a debounced version of the set method.
-   *
-   * The overlay will be displayed only if it hasn't been cleared before the specified delay elapses.
-   */
-  setDebounced: (overlay: Overlay | null, delay: number = 300) => {
-    isCleared = false;
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      if (!isCleared) {
-        set(overlay);
+  public set(overlay: Overlay | null) {
+    this.isCleared = false;
+    this.overlayStore.set(overlay);
+  }
+
+  public setDebounced(overlay: Overlay | null, delay: number = 300) {
+    this.isCleared = false;
+    clearTimeout(this.timeout);
+    this.timeout = setTimeout(() => {
+      if (!this.isCleared) {
+        this.overlayStore.set(overlay);
       }
     }, delay);
-  },
-  clear: () => {
-    isCleared = true;
-    set(null);
-  },
-};
+  }
+
+  public clear() {
+    this.isCleared = true;
+    this.overlayStore.set(null);
+  }
+}
+
+export const overlay = new OverlayStore();
