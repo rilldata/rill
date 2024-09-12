@@ -10,8 +10,6 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
-  import { writable } from "svelte/store";
   import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
