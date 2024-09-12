@@ -121,7 +121,7 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 	require.Equal(t, lenResources, len(rs), "resources: %s", strings.Join(names, "\n"))
 }
 
-func GetResource(t testing.TB, rt *runtime.Runtime, id string, kind, name string) *runtimev1.Resource {
+func GetResource(t testing.TB, rt *runtime.Runtime, id, kind, name string) *runtimev1.Resource {
 	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
