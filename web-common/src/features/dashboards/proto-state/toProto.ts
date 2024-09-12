@@ -166,13 +166,10 @@ function toTimeRangeProto(range: DashboardTimeControls) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
     name: range.name,
   };
-  if (
-    range.name === TimeRangePreset.CUSTOM ||
-    range.name === TimeComparisonOption.CUSTOM
-  ) {
-    if (range.start) timeRangeArgs.timeStart = toTimeProto(range.start);
-    if (range.end) timeRangeArgs.timeEnd = toTimeProto(range.end);
-  }
+
+  if (range.start) timeRangeArgs.timeStart = toTimeProto(range.start);
+  if (range.end) timeRangeArgs.timeEnd = toTimeProto(range.end);
+
   return new DashboardTimeRange(timeRangeArgs);
 }
 

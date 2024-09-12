@@ -20,4 +20,4 @@
   });
 </script>
 
-<Select {id} {label} {value} options={timeOptions} />
+<Select {id} {label} bind:value options={timeOptions} />
