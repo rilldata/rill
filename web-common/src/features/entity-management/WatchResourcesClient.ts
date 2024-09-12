@@ -23,9 +23,7 @@ import { connectorExplorerStore } from "../connectors/connector-explorer-store";
 export class WatchResourcesClient {
   public readonly client: WatchRequestClient<V1WatchResourcesResponse>;
   private readonly instanceId = get(runtime).instanceId;
-  private readonly resourceStateVersions = new Map<string, string>();
   private readonly connectorNames = new Set<string>();
-  private readonly softDeletedTableConnectors = new Map<string, string>();
 
   public constructor() {
     this.client = new WatchRequestClient<V1WatchResourcesResponse>();
@@ -97,16 +95,10 @@ export class WatchResourcesClient {
 
         // Proceed to query invalidations only when the resource state has changed
         if (
-          this.resourceStateVersions.get(res.name.name) ===
-          res.resource.meta.stateVersion
+          res.resource.meta.stateVersion ===
+          previousResource?.resource?.meta?.stateVersion
         )
           return;
-
-        // Update our client-side memory of the resource's latest state version
-        this.resourceStateVersions.set(
-          res.name.name,
-          res.resource.meta.stateVersion,
-        );
 
         // Refetch `ListResources` queries
         void queryClient.refetchQueries(
@@ -188,13 +180,6 @@ export class WatchResourcesClient {
             const failed = !!res.resource.meta?.reconcileError;
             void invalidateProfilingQueries(queryClient, tableName, failed);
 
-            // Record the connector name for soft deleted tables, so we can invalidate the
-            // connector's list of tables once the table is hard deleted
-            const isSoftDelete = !!res.resource.meta?.deletedOn;
-            if (isSoftDelete) {
-              this.softDeletedTableConnectors.set(tableName, connectorName);
-            }
-
             // Done
             return;
           }
@@ -227,9 +212,6 @@ export class WatchResourcesClient {
        * 2. A `DELETE` event signals that the resource has actually been deleted ("hard" delete).
        */
       case V1ResourceEvent.RESOURCE_EVENT_DELETE:
-        // Remove the resource from the resource versions map
-        this.resourceStateVersions.delete(res.name.name);
-
         // Refetch `ListResources` queries
         void queryClient.refetchQueries(
           getRuntimeServiceListResourcesQueryKey(this.instanceId, undefined),
@@ -255,10 +237,11 @@ export class WatchResourcesClient {
 
           case ResourceKind.Source:
           case ResourceKind.Model: {
-            // Get the connector name
-            const connectorName = this.softDeletedTableConnectors.get(
-              res.name.name,
-            );
+            // Get the now-deleted resource's connector name
+            const connectorName =
+              (res.name.kind as ResourceKind) === ResourceKind.Source
+                ? previousResource?.resource?.source?.state?.connector
+                : previousResource?.resource?.model?.state?.resultConnector;
 
             // Invalidate the connector's list of tables
             void queryClient.invalidateQueries(
@@ -267,9 +250,6 @@ export class WatchResourcesClient {
                 connector: connectorName,
               }),
             );
-
-            // Remove the soft-deleted table from our record
-            this.softDeletedTableConnectors.delete(res.name.name);
 
             // Done
             return;
