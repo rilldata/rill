@@ -40,7 +40,7 @@ func (r *Runtime) newConnectionCache() conncache.Cache {
 		MaxIdleConnections:   r.opts.ConnectionCacheSize,
 		OpenTimeout:          10 * time.Minute,
 		CloseTimeout:         10 * time.Minute,
-		ErrorTimeout: r.opts.ConnectionCacheErrorTimeout,
+		ErrorTimeout:         r.opts.ConnectionCacheErrorTimeout,
 		CheckHangingInterval: time.Minute,
 		OpenFunc: func(ctx context.Context, cfg any) (conncache.Connection, error) {
 			x := cfg.(cachedConnectionConfig)
@@ -116,11 +116,6 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}
 	if err != nil {
-		return nil, err
-	}
-
-	if err = handle.Ping(ctx); err != nil {
-		handle.Close()
 		return nil, err
 	}
 
