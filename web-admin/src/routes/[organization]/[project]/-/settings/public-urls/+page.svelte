@@ -40,7 +40,8 @@
           return {
             ...token,
             dashboardTitle:
-              dashboard?.resource.metricsView.spec.title || "Unknown Dashboard",
+              dashboard?.resource.metricsView.state?.validSpec?.title ||
+              dashboard?.resource.meta.name.name,
           };
         })
       : [];
