@@ -49,7 +49,6 @@ export function setDefaultTimeRange(
     timeZone,
   );
 
-  console.log({timeRange})
   const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
   metricsExplorer.selectedTimeRange = {
     ...timeRange,
