@@ -55,7 +55,7 @@
 </script>
 
 <div class="flex flex-col size-full">
-  <header class="py-3 w-full bg-white flex gap-x-2 items-center px-4 border-b">
+  <header>
     {#if $dashboardsQuery.data}
       <Breadcrumbs {pathParts} {currentPath}>
         <a href="/" slot="icon">
@@ -74,3 +74,11 @@
   </header>
   <slot />
 </div>
+
+<style lang="postcss">
+  header {
+    @apply w-full bg-background box-border;
+    @apply flex gap-x-2 items-center px-4 border-b flex-none;
+    height: var(--header-height);
+  }
+</style>
