@@ -132,8 +132,8 @@
     }));
   }
 
+  // Update table when magicAuthTokens changes
   $: {
-    // Update table when magicAuthTokens changes
     if (tableData) {
       updateTable(tableData);
     }
@@ -179,26 +179,17 @@
     {/each}
   </thead>
   <tbody>
-    {#if $table.getRowModel().rows.length === 0}
-      <tr>
-        <td class="text-center py-4">
-          <slot name="empty" />
-        </td>
+    {#each $table.getRowModel().rows as row}
+      <tr class="hover:bg-slate-50">
+        {#each row.getVisibleCells() as cell}
+          <td class="px-4 py-2" data-label={cell.column.columnDef.header}>
+            <svelte:component
+              this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+            />
+          </td>
+        {/each}
       </tr>
-    {:else}
-      {#each $table.getRowModel().rows as row}
-        <tr>
-          {#each row.getVisibleCells() as cell}
-            <!-- hover:bg-slate-50  -->
-            <td class="px-4 py-2" data-label={cell.column.columnDef.header}>
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            </td>
-          {/each}
-        </tr>
-      {/each}
-    {/if}
+    {/each}
   </tbody>
 </table>
 
@@ -211,18 +202,6 @@
     >
       Load More
     </button>
-    <!-- <span class="flex items-center gap-1">
-    <p class="text-sm font-medium">Rows per page</p>
-    <select
-      bind:value={pageSize}
-      on:change={(e) => onPageSizeChange(Number(e.target.value))}
-      class="border p-1 rounded"
-    >
-      {#each [10, 20, 30, 40, 50] as size}
-        <option value={size}>{size}</option>
-      {/each}
-    </select>
-  </span> -->
   </div>
 {/if}
 
