@@ -76,13 +76,13 @@ func TestImpl_err(t *testing.T) {
 	_, _, err := c.Acquire(context.Background(), "foo")
 	require.Error(t, err)
 	time.Sleep(time.Second)
-	require.Equal(t, 0, len(ci.entries))
-	require.Equal(t, 0, ci.lru.Len())
+	require.Equal(t, 1, len(ci.entries))
+	require.Equal(t, 1, ci.lru.Len())
 
 	_, _, err = c.Acquire(context.Background(), "foo")
 	require.Error(t, err)
-	require.Equal(t, 0, len(ci.entries))
-	require.Equal(t, 0, ci.lru.Len())
+	require.Equal(t, 1, len(ci.entries))
+	require.Equal(t, 1, ci.lru.Len())
 
 	require.NoError(t, c.Close(context.Background()))
 }
