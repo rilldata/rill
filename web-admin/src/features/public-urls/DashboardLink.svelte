@@ -4,7 +4,12 @@
 </script>
 
 {#if title}
-  <a {href} class="text-blue-600 hover:underline">
+  <a
+    {href}
+    class="text-blue-600 hover:underline"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
     {title}
   </a>
 {:else}

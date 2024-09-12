@@ -48,7 +48,7 @@
   const columns: ColumnDef<MagicAuthTokenProps, any>[] = [
     {
       accessorKey: "name",
-      header: "Public URL name",
+      header: "Public URL label",
       cell: ({ row }) =>
         flexRender(DashboardLink, {
           href: row.original.url,
@@ -57,7 +57,7 @@
     },
     {
       accessorFn: (row) => row.dashboardTitle,
-      header: "Dashboard name",
+      header: "Dashboard title",
     },
     {
       accessorKey: "expiresOn",
