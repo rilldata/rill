@@ -18,7 +18,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.GetBillingSubscription(cmd.Context(), &adminv1.GetBillingSubscriptionRequest{
-				OrgName: ch.Org,
+				Organization: ch.Org,
 			})
 			if err != nil {
 				return err

@@ -40,8 +40,6 @@ func (n noop) GetBillingPortalURL(ctx context.Context, customerID, returnURL str
 	return "", nil
 }
 
-func (n noop) WebhookHandlerFunc(ctx context.Context) httputil.Handler {
+func (n noop) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
 	return nil
 }
-
-func (n noop) SetJobsClient(jc jobs.Client) {}

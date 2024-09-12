@@ -27,7 +27,6 @@ var _ Biller = &Orb{}
 type Orb struct {
 	client        *orb.Client
 	logger        *zap.Logger
-	jobs          jobs.Client
 	webhookSecret string
 }
 
@@ -405,15 +404,12 @@ func (o *Orb) GetReportingWorkerCron() string {
 	return "55 * * * *"
 }
 
-func (o *Orb) WebhookHandlerFunc(ctx context.Context) httputil.Handler {
+func (o *Orb) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
 	if o.webhookSecret == "" {
 		return nil
 	}
-	return o.handleWebhook
-}
-
-func (o *Orb) SetJobsClient(jc jobs.Client) {
-	o.jobs = jc
+	ow := &orbWebhook{orb: o, jobs: jc}
+	return ow.handleWebhook
 }
 
 func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {

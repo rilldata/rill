@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/webhook"
@@ -16,15 +17,20 @@ import (
 
 const maxBodyBytes = int64(65536)
 
+type stripeWebhook struct {
+	stripe *Stripe
+	jobs   jobs.Client
+}
+
 // handleWebhook handles incoming webhook events from Stripe
-func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) error {
+func (s *stripeWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
 		return httputil.Errorf(http.StatusServiceUnavailable, "error reading request body: %w", err)
 	}
 
-	endpointSecret := s.webhookSecret
+	endpointSecret := s.stripe.webhookSecret
 	sigHeader := r.Header.Get("Stripe-Signature")
 	event, err := webhook.ConstructEventWithOptions(payload, sigHeader, endpointSecret, webhook.ConstructEventOptions{IgnoreAPIVersionMismatch: true})
 	if err != nil {
@@ -40,7 +46,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 		}
 		if paymentMethod.Customer == nil {
 			// just log warn and send http ok as we can't do anything without customer id
-			s.logger.Warn("no customer info sent for payment_method.attached event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
+			s.stripe.logger.Warn("no customer info sent for payment_method.attached event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
 		} else {
 			err = s.handlePaymentMethodAdded(r.Context(), event.ID, &paymentMethod)
 			if err != nil {
@@ -59,7 +65,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 			}
 		} else {
 			// just log warn and send http ok as we can't do anything without customer id
-			s.logger.Warn("no customer info sent for payment method detached event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
+			s.stripe.logger.Warn("no customer info sent for payment method detached event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
 		}
 	case "customer.updated":
 		var customer stripe.Customer
@@ -68,7 +74,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 		}
 		if customer.ID == "" {
 			// just log warn and send http ok as we can't do anything without customer id
-			s.logger.Warn("no customer info sent for customer.updated event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
+			s.stripe.logger.Warn("no customer info sent for customer.updated event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
 		} else {
 			// we just care about address update, so check if address was update and now customer has a valid address
 			if _, ok := event.Data.PreviousAttributes["address"]; ok && customer.Address != nil {
@@ -79,7 +85,7 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 			}
 		}
 	default:
-		s.logger.Warn("unhandled stripe event type", zap.String("type", string(event.Type)))
+		s.stripe.logger.Warn("unhandled stripe event type", zap.String("type", string(event.Type)))
 	}
 
 	// Acknowledge receipt of the event
@@ -87,37 +93,37 @@ func (s *Stripe) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (s *Stripe) handlePaymentMethodAdded(ctx context.Context, eventID string, method *stripe.PaymentMethod) error {
+func (s *stripeWebhook) handlePaymentMethodAdded(ctx context.Context, eventID string, method *stripe.PaymentMethod) error {
 	res, err := s.jobs.PaymentMethodAdded(ctx, method.ID, method.Customer.ID, string(method.Type), time.UnixMilli(method.Created*1000))
 	if err != nil {
 		return fmt.Errorf("failed to add payment method added: %w", err)
 	}
 	if res.Duplicate {
-		s.logger.Debug("duplicate payment_method.attached event", zap.String("event_id", eventID))
+		s.stripe.logger.Debug("duplicate payment_method.attached event", zap.String("event_id", eventID))
 		return nil
 	}
 	return nil
 }
 
-func (s *Stripe) handlePaymentMethodRemoved(ctx context.Context, eventID, customerID string, method *stripe.PaymentMethod) error {
+func (s *stripeWebhook) handlePaymentMethodRemoved(ctx context.Context, eventID, customerID string, method *stripe.PaymentMethod) error {
 	res, err := s.jobs.PaymentMethodRemoved(ctx, method.ID, customerID, time.UnixMilli(method.Created*1000))
 	if err != nil {
 		return fmt.Errorf("failed to add payment method added: %w", err)
 	}
 	if res.Duplicate {
-		s.logger.Debug("duplicate payment_method.detached event", zap.String("event_id", eventID))
+		s.stripe.logger.Debug("duplicate payment_method.detached event", zap.String("event_id", eventID))
 		return nil
 	}
 	return nil
 }
 
-func (s *Stripe) handleCustomerAddressUpdated(ctx context.Context, eventID string, customer *stripe.Customer) error {
+func (s *stripeWebhook) handleCustomerAddressUpdated(ctx context.Context, eventID string, customer *stripe.Customer) error {
 	res, err := s.jobs.CustomerAddressUpdated(ctx, customer.ID, time.UnixMilli(customer.Created*1000))
 	if err != nil {
 		return fmt.Errorf("failed to add customer updated event: %w", err)
 	}
 	if res.Duplicate {
-		s.logger.Debug("duplicate customer.updated event", zap.String("event_d", eventID))
+		s.stripe.logger.Debug("duplicate customer.updated event", zap.String("event_d", eventID))
 		return nil
 	}
 	return nil

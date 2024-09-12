@@ -237,7 +237,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add biller webhook handler if any
 	if s.admin.Biller != nil {
-		handlerFunc := s.admin.Biller.WebhookHandlerFunc(ctx)
+		handlerFunc := s.admin.Biller.WebhookHandlerFunc(ctx, s.admin.Jobs)
 		if handlerFunc != nil {
 			inner := http.NewServeMux()
 			observability.MuxHandle(inner, "/billing/webhook", handlerFunc)
@@ -247,7 +247,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add payment webhook handler if any
 	if s.admin.PaymentProvider != nil {
-		handlerFunc := s.admin.PaymentProvider.WebhookHandlerFunc(ctx)
+		handlerFunc := s.admin.PaymentProvider.WebhookHandlerFunc(ctx, s.admin.Jobs)
 		if handlerFunc != nil {
 			inner := http.NewServeMux()
 			observability.MuxHandle(inner, "/payment/webhook", handlerFunc)

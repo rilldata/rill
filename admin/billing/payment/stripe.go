@@ -20,7 +20,6 @@ var _ Provider = &Stripe{}
 type Stripe struct {
 	logger        *zap.Logger
 	webhookSecret string
-	jobs          jobs.Client
 }
 
 func NewStripe(logger *zap.Logger, stripeKey, stripeWebhookSecret string) *Stripe {
@@ -130,13 +129,10 @@ func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL 
 	return sess.URL, nil
 }
 
-func (s *Stripe) WebhookHandlerFunc(ctx context.Context) httputil.Handler {
+func (s *Stripe) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
 	if s.webhookSecret == "" {
 		return nil
 	}
-	return s.handleWebhook
-}
-
-func (s *Stripe) SetJobsClient(jc jobs.Client) {
-	s.jobs = jc
+	sw := &stripeWebhook{stripe: s, jobs: jc}
+	return sw.handleWebhook
 }

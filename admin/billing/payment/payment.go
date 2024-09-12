@@ -19,11 +19,8 @@ type Provider interface {
 	// GetBillingPortalURL returns the payment portal URL to collect payment information from the customer.
 	GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error)
 
-	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers.
-	WebhookHandlerFunc(ctx context.Context) httputil.Handler
-
-	// SetJobsClient needs to be explicitly set because of circular dependency, see admin start method
-	SetJobsClient(jobs jobs.Client)
+	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers. jobs is used to enqueue jobs for processing the webhook events.
+	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler
 }
 
 type Customer struct {

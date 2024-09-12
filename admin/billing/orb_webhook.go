@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/orbcorp/orb-go"
+	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"go.uber.org/zap"
 )
@@ -26,7 +27,12 @@ const (
 
 var interestingEvents = []string{"invoice.payment_succeeded", "invoice.payment_failed", "invoice.issue_failed"}
 
-func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) error {
+type orbWebhook struct {
+	orb  *Orb
+	jobs jobs.Client
+}
+
+func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -78,7 +84,7 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		o.logger.Warn("invoice issue failed", zap.String("customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.String("invoice_id", ie.OrbInvoice.ID), zap.String("props", fmt.Sprintf("%v", ie.Properties)))
+		o.orb.logger.Warn("invoice issue failed", zap.String("customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.String("invoice_id", ie.OrbInvoice.ID), zap.String("props", fmt.Sprintf("%v", ie.Properties)))
 	default:
 		// do nothing
 	}
@@ -87,18 +93,18 @@ func (o *Orb) handleWebhook(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (o *Orb) handleInvoicePaymentSucceeded(ctx context.Context, ie invoiceEvent) error {
+func (o *orbWebhook) handleInvoicePaymentSucceeded(ctx context.Context, ie invoiceEvent) error {
 	res, err := o.jobs.InvoicePaymentSuccess(ctx, ie.OrbInvoice.Customer.ExternalCustomerID, ie.OrbInvoice.ID)
 	if err != nil {
 		return err
 	}
 	if res.Duplicate {
-		o.logger.Debug("duplicate invoice payment success event", zap.String("event_d", ie.ID))
+		o.orb.logger.Debug("duplicate invoice payment success event", zap.String("event_d", ie.ID))
 	}
 	return nil
 }
 
-func (o *Orb) handleInvoicePaymentFailed(ctx context.Context, ie invoiceEvent) error {
+func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceEvent) error {
 	res, err := o.jobs.InvoicePaymentFailed(ctx,
 		ie.OrbInvoice.Customer.ExternalCustomerID,
 		ie.OrbInvoice.ID,
@@ -113,14 +119,14 @@ func (o *Orb) handleInvoicePaymentFailed(ctx context.Context, ie invoiceEvent) e
 		return err
 	}
 	if res.Duplicate {
-		o.logger.Debug("duplicate invoice payment failed event", zap.String("event_id", ie.ID))
+		o.orb.logger.Debug("duplicate invoice payment failed event", zap.String("event_id", ie.ID))
 	}
 	return nil
 }
 
 // Validates whether or not the webhook payload was sent by Orb.
-func (o *Orb) verifySignature(payload []byte, headers http.Header, now time.Time) error {
-	if o.webhookSecret == "" {
+func (o *orbWebhook) verifySignature(payload []byte, headers http.Header, now time.Time) error {
+	if o.orb.webhookSecret == "" {
 		return errors.New("no webhook secret set")
 	}
 
@@ -145,7 +151,7 @@ func (o *Orb) verifySignature(payload []byte, headers http.Header, now time.Time
 		return errors.New("value from X-Orb-Timestamp header too new")
 	}
 
-	secretBytes := []byte(o.webhookSecret)
+	secretBytes := []byte(o.orb.webhookSecret)
 	mac := hmac.New(sha256.New, secretBytes)
 	mac.Write([]byte("v1:"))
 	mac.Write([]byte(msgTimestamp))

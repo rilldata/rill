@@ -22,7 +22,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			subResp, err := client.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{
-				OrgName: ch.Org,
+				Organization: ch.Org,
 			})
 			if err != nil {
 				return err
@@ -47,8 +47,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{
-				OrgName:  ch.Org,
-				PlanName: plan,
+				Organization: ch.Org,
+				PlanName:     plan,
 			})
 			if err != nil {
 				return err

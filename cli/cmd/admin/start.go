@@ -305,9 +305,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Set initialized jobs client on admin so jobs can be triggered from admin
 			adm.Jobs = jobs
-			// Set jobs client on biller and payment provider as they cannot use admin jobs client due to circular dependency
-			biller.SetJobsClient(jobs)
-			p.SetJobsClient(jobs)
 
 			// Parse session keys as hex strings
 			keyPairs := make([][]byte, len(conf.SessionKeyPairs))

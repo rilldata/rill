@@ -109,8 +109,6 @@ func (n noop) GetReportingWorkerCron() string {
 	return ""
 }
 
-func (n noop) WebhookHandlerFunc(ctx context.Context) httputil.Handler {
+func (n noop) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
 	return nil
 }
-
-func (n noop) SetJobsClient(jc jobs.Client) {}

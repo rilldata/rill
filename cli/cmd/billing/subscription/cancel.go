@@ -18,7 +18,7 @@ func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			subResp, err := client.GetBillingSubscription(cmd.Context(), &adminv1.GetBillingSubscriptionRequest{
-				OrgName: ch.Org,
+				Organization: ch.Org,
 			})
 			if err != nil {
 				return err
@@ -43,7 +43,7 @@ func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.CancelBillingSubscription(cmd.Context(), &adminv1.CancelBillingSubscriptionRequest{
-				OrgName: ch.Org,
+				Organization: ch.Org,
 			})
 			if err != nil {
 				return err
