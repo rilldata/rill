@@ -111,23 +111,23 @@
     dispatch("pan", { start, end });
   }
 
-  let showControls = false;
+  let showControls = true;
 
   function handleMouseEnter() {
     showControls = true;
   }
 
   function handleMouseLeave() {
-    showControls = false;
+    showControls = true;
   }
 
-  function panLeft() {
-    panCharts("left");
-  }
+  $: buttonOffset = 6; // Distance from edge
+  $: midY = contentRect.height / 2;
+  $: leftButtonX = buttonOffset;
 
-  function panRight() {
-    panCharts("right");
-  }
+  // FIXME
+  // Ideally we can use path.background's width from vega-embed
+  $: rightButtonX = -19;
 </script>
 
 <div
@@ -135,7 +135,9 @@
   class:bg-white={canvasDashboard}
   class:px-4={canvasDashboard}
   class:pb-2={canvasDashboard}
-  class="vega-renderer overflow-hidden size-full flex flex-col items-center justify-center no-scrollbars relative mr-8"
+  class="vega-renderer no-scrollbars size-full flex flex-col items-center justify-center relative mr-6"
+  data-width={width}
+  data-height={height}
   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
   role="figure"
@@ -157,11 +159,15 @@
       on:onError={onError}
     />
     {#if showControls}
-      <div class="pan-controls absolute">
+      <div
+        class="vega-controls-overlay absolute inset-0 pointer-events-none"
+        style="width: {contentRect.width}px; height: {contentRect.height}px;"
+      >
         {#if $canPanLeft}
           <button
-            class="pan-button left w-8 h-8 pointer-events-auto"
-            on:click={panLeft}
+            class="pan-button absolute -translate-y-1/2 w-8 h-8 pointer-events-auto"
+            style="left: {leftButtonX}px; top: {midY}px;"
+            on:click={() => panCharts("left")}
             aria-label="Pan left"
           >
             <PanLeftIcon />
@@ -169,8 +175,9 @@
         {/if}
         {#if $canPanRight}
           <button
-            class="pan-button right w-8 h-8 pointer-events-auto"
-            on:click={panRight}
+            class="pan-button absolute -translate-y-1/2 w-8 h-8 pointer-events-auto"
+            style="right: {rightButtonX}px; top: {midY}px;"
+            on:click={() => panCharts("right")}
             aria-label="Pan right"
           >
             <PanRightIcon />
@@ -221,32 +228,5 @@
     width: 0px;
     height: 0px;
     background: transparent; /* Chrome/Safari/Webkit */
-  }
-
-  .pan-controls {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-  }
-
-  .pan-button {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-  }
-
-  .pan-button.left {
-    left: 10px;
-  }
-
-  .pan-button.right {
-    right: -18px;
   }
 </style>
