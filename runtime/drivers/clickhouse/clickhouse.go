@@ -13,6 +13,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -167,6 +169,11 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	// very roughly approximating num queries required for a typical page load
 	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
+
+	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))
+	if err != nil {
+		return nil, fmt.Errorf("registering db stats metrics: %w", err)
+	}
 
 	err = db.Ping()
 	if err != nil {
