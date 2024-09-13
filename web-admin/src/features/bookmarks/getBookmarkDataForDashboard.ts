@@ -21,7 +21,7 @@ export function getBookmarkDataForDashboard(
     return getProtoFromDashboardState({
       whereFilter: dashboard.whereFilter,
       dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
-      selectedTimeRange: timeControlState.selectedTimeRange,
+      selectedTimeRange: dashboard.selectedTimeRange,
     } as MetricsExplorerEntity);
   }
 
@@ -30,12 +30,17 @@ export function getBookmarkDataForDashboard(
       ...dashboard,
     };
 
-    dashboard.selectedTimeRange = {
-      name: TimeRangePreset.CUSTOM,
-      interval: timeControlState.selectedTimeRange.interval,
-      start: timeControlState.selectedTimeRange.start,
-      end: timeControlState.selectedTimeRange.end,
-    };
+    if (
+      timeControlState.selectedTimeRange?.start &&
+      timeControlState.selectedTimeRange?.end
+    ) {
+      dashboard.selectedTimeRange = {
+        name: TimeRangePreset.CUSTOM,
+        interval: timeControlState.selectedTimeRange.interval,
+        start: timeControlState.selectedTimeRange.start,
+        end: timeControlState.selectedTimeRange.end,
+      };
+    }
 
     if (
       timeControlState.selectedComparisonTimeRange?.start &&
