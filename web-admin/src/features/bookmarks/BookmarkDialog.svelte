@@ -18,17 +18,18 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let metricsViewName: string;
   export let bookmark: BookmarkEntry | null = null;
   export let onClose = () => {};
 
-  $: dashboardStore = useDashboardStore(metricsViewName);
-
-  $: projectId = useProjectId($page.params.organization, $page.params.project);
+  const StateManagers = getStateManagers();
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
+  const timeControlsStore = useTimeControlStore(StateManagers);
 
   const formState = createForm<BookmarkFormValues>({
     initialValues: {
@@ -54,6 +55,7 @@
               $dashboardStore,
               values.filtersOnly,
               values.absoluteTimeRange,
+              $timeControlsStore,
             ),
           },
         });
@@ -70,6 +72,7 @@
               $dashboardStore,
               values.filtersOnly,
               values.absoluteTimeRange,
+              $timeControlsStore,
             ),
           },
         });
@@ -91,6 +94,10 @@
   });
 
   const { handleSubmit, handleReset } = formState;
+
+  $: ({ params } = $page);
+  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: projectId = useProjectId(params.organization, params.project);
 </script>
 
 <Dialog.Root

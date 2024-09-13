@@ -1,5 +1,6 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
 /**
@@ -14,31 +15,29 @@ export function getBookmarkDataForDashboard(
   dashboard: MetricsExplorerEntity,
   filtersOnly: boolean,
   absoluteTimeRange: boolean,
+  timeControlState: TimeControlState,
 ): string {
   if (absoluteTimeRange) {
     dashboard = {
       ...dashboard,
     };
+
+    dashboard.selectedTimeRange = {
+      name: TimeRangePreset.CUSTOM,
+      interval: timeControlState.selectedTimeRange.interval,
+      start: timeControlState.selectedTimeRange.start,
+      end: timeControlState.selectedTimeRange.end,
+    };
+
     if (
-      dashboard.selectedTimeRange?.start &&
-      dashboard.selectedTimeRange?.end
-    ) {
-      dashboard.selectedTimeRange = {
-        name: TimeRangePreset.CUSTOM,
-        interval: dashboard.selectedTimeRange.interval,
-        start: dashboard.selectedTimeRange.start,
-        end: dashboard.selectedTimeRange.end,
-      };
-    }
-    if (
-      dashboard.selectedComparisonTimeRange?.start &&
-      dashboard.selectedComparisonTimeRange?.end
+      timeControlState.selectedComparisonTimeRange?.start &&
+      timeControlState.selectedComparisonTimeRange?.end
     ) {
       dashboard.selectedComparisonTimeRange = {
         name: TimeRangePreset.CUSTOM,
-        interval: dashboard.selectedComparisonTimeRange.interval,
-        start: dashboard.selectedComparisonTimeRange.start,
-        end: dashboard.selectedComparisonTimeRange.end,
+        interval: timeControlState.selectedComparisonTimeRange.interval,
+        start: timeControlState.selectedComparisonTimeRange.start,
+        end: timeControlState.selectedComparisonTimeRange.end,
       };
     }
   }
@@ -47,7 +46,7 @@ export function getBookmarkDataForDashboard(
     return getProtoFromDashboardState({
       whereFilter: dashboard.whereFilter,
       dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
-      selectedTimeRange: dashboard.selectedTimeRange,
+      selectedTimeRange: timeControlState.selectedTimeRange,
     } as MetricsExplorerEntity);
   }
 
