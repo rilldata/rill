@@ -1,3 +1,4 @@
+@preprocessor esmodule
 # match an expression used in url filters
 # adapted from https://dev.mysql.com/doc/refman/5.7/en/expressions.html
 @builtin "whitespace.ne"
@@ -5,14 +6,12 @@
 @builtin "string.ne"
 
 @{%
-  const binaryPostprocessor = ([left, _1, op, _2, right]) => [op.toUpperCase(), left, right];
-  // binary expression where the right should be surrounded in brackets
-  const bracketedBinaryPostprocessor = ([column, _1, op, _2, _3, values]) => [op.toUpperCase(), column, values];
-  const andOrPostprocessor = ([left, right]) => {
-    const op = left[0][2].toUpperCase();
-    const exprs = left.map((_, i) => i % 4 === 0);
-    return [op, ...left.map((t) => t[0]), right]
-  }
+  import {
+    binaryPostprocessor,
+    inPostprocessor,
+    havingPostprocessor,
+    andOrPostprocessor,
+  } from "./post-processors.ts";
 %}
 
 expr => boolean_expr                             {% id %}
@@ -21,13 +20,13 @@ expr => boolean_expr                             {% id %}
 
 # these are used to disambiguate matches
 non_and_expr => boolean_expr                            {% id %}
-              | (boolean_expr _ "OR"i _):+ non_and_expr {% andOrPostprocessor %}
+              | (boolean_expr __ "OR"i __):+ non_and_expr {% andOrPostprocessor %}
 non_or_expr  => boolean_expr                            {% id %}
-              | (boolean_expr _ "AND"i _):+ non_or_expr {% andOrPostprocessor %}
+              | (boolean_expr __ "AND"i __):+ non_or_expr {% andOrPostprocessor %}
 
 boolean_expr => "(" expr ")"                               {% ([_, expr]) => expr %}
-              | column __ in_operator _ "(" value_list ")" {% bracketedBinaryPostprocessor %}
-              | column __ "HAVING"i _ "(" expr ")"         {% bracketedBinaryPostprocessor %}
+              | column __ in_operator _ "(" value_list ")" {% inPostprocessor %}
+              | column __ "HAVING"i _ "(" expr ")"         {% havingPostprocessor %}
               | simple_expr _ compare_operator _ value     {% binaryPostprocessor %}
 
 simple_expr => column {% id %}
