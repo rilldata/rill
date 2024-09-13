@@ -97,17 +97,17 @@
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
+      {#if title || subtitle}
+        <div class="w-full h-fit flex flex-col gap-y-1">
+          {#if title}
+            <h1>{title}</h1>
+          {/if}
+          {#if subtitle}
+            <h2>{subtitle}</h2>
+          {/if}
+        </div>
+      {/if}
       {#if renderer === "vega_lite" && rendererProperties?.spec && resolverProperties}
-        {#if title || subtitle}
-          <div class="w-full h-fit flex flex-col gap-y-1 px-8 py-4">
-            {#if title}
-              <h1>{title}</h1>
-            {/if}
-            {#if subtitle}
-              <h2>{subtitle}</h2>
-            {/if}
-          </div>
-        {/if}
         <Chart {componentName} {chartView} {input} />
       {:else if renderer && rendererProperties}
         <TemplateRenderer
