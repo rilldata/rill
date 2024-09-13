@@ -113,7 +113,7 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	connectors := parser.AnalyzeConnectors(ctx)
 	for _, c := range connectors {
 		if c.Err != nil {
-			return nil, fmt.Errorf("failed to extract connectors: %w", err)
+			return nil, fmt.Errorf("failed to extract connectors: %w", c.Err)
 		}
 	}
 
