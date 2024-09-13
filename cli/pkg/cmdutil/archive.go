@@ -34,7 +34,12 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, na
 		return "", err
 	}
 
-	err = archive.Create(ctx, entries, repo.Root(), asset.SignedUrl, asset.SigningHeaders)
+	rootPath, err := repo.Root(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get root path: %w", err)
+	}
+
+	err = archive.Create(ctx, entries, rootPath, asset.SignedUrl, asset.SigningHeaders)
 	if err != nil {
 		return "", err
 	}
