@@ -8,7 +8,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"golang.org/x/exp/maps"
 )
 
 func init() {
@@ -119,9 +118,9 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	}
 
 	// Validate and rewrite dimensions
-	allDims := make(map[string]bool)
+	allDims := make([]string, 0, len(mv.Dimensions))
 	for _, d := range mv.Dimensions {
-		allDims[d.Name] = true
+		allDims = append(allDims, d.Name)
 	}
 	dims, err := r.resolveNames(allDims, spec.Dimensions, spec.DimensionsExclude)
 	if err != nil {
@@ -131,9 +130,9 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	spec.DimensionsExclude = false
 
 	// Validate and rewrite measures
-	allMeasures := make(map[string]bool)
+	allMeasures := make([]string, 0, len(mv.Measures))
 	for _, m := range mv.Measures {
-		allMeasures[m.Name] = true
+		allMeasures = append(allMeasures, m.Name)
 	}
 	measures, err := r.resolveNames(allMeasures, spec.Measures, spec.MeasuresExclude)
 	if err != nil {
@@ -144,25 +143,15 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 
 	// Validate and rewrite presets, now in the context of the explore's dimensions and measures resolved above.
 	if len(spec.Presets) > 0 {
-		allDims = make(map[string]bool)
-		for _, d := range spec.Dimensions {
-			allDims[d] = true
-		}
-
-		allMeasures := make(map[string]bool)
-		for _, m := range spec.Measures {
-			allMeasures[m] = true
-		}
-
 		for _, p := range spec.Presets {
-			dims, err = r.resolveNames(allDims, p.Dimensions, p.DimensionsExclude)
+			dims, err = r.resolveNames(spec.Dimensions, p.Dimensions, p.DimensionsExclude)
 			if err != nil {
 				return nil, err
 			}
 			p.Dimensions = dims
 			p.DimensionsExclude = false
 
-			measures, err := r.resolveNames(allMeasures, p.Measures, p.MeasuresExclude)
+			measures, err := r.resolveNames(spec.Measures, p.Measures, p.MeasuresExclude)
 			if err != nil {
 				return nil, err
 			}
@@ -175,15 +164,19 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	return spec, nil
 }
 
-func (r *ExploreReconciler) resolveNames(allNames map[string]bool, names []string, exclude bool) ([]string, error) {
+func (r *ExploreReconciler) resolveNames(allNames, names []string, exclude bool) ([]string, error) {
 	// Optimization for the wildcard case (exclude nothing = include everything)
 	if len(names) == 0 && exclude {
-		return maps.Keys(allNames), nil
+		return allNames, nil
 	}
 
 	// Check the provided names exist
+	allNamesMap := make(map[string]bool, len(allNames))
+	for _, n := range allNames {
+		allNamesMap[n] = true
+	}
 	for _, n := range names {
-		if !allNames[n] {
+		if !allNamesMap[n] {
 			return nil, fmt.Errorf("dimension or measure name %q not found in the parent metrics view", n)
 		}
 	}
@@ -195,7 +188,7 @@ func (r *ExploreReconciler) resolveNames(allNames map[string]bool, names []strin
 
 	// Get all names not in the provided names
 	var res []string
-	for n := range allNames {
+	for _, n := range allNames {
 		if !slices.Contains(names, n) {
 			res = append(res, n)
 		}
