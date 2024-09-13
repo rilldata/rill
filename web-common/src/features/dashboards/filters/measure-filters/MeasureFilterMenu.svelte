@@ -105,9 +105,7 @@
   >
     <Select
       bind:value={$form["dimension"]}
-      detach
       id="dimension"
-      itemsClass="absolute left-4.5"
       label="By Dimension"
       on:change={handleSubmit}
       options={dimensionOptions}
@@ -115,9 +113,7 @@
     />
     <Select
       bind:value={$form["operation"]}
-      detach
       id="operation"
-      itemsClass="absolute left-4.5"
       label="Threshold"
       on:change={handleSubmit}
       options={MeasureFilterOperationOptions}

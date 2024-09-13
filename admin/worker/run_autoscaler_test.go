@@ -17,6 +17,7 @@ func TestShouldScale(t *testing.T) {
 		{"No scaling for less than min scaling slots", 20, 24, false, belowThreshold},
 		{"Scaling for significant change", 50, 60, true, ""},
 		{"Scaling up for small services", 6, 10, true, ""},
+		{"No scaling for the same quota", 77, 77, false, scaleMatch},
 	}
 
 	for _, tt := range tests {

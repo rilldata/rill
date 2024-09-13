@@ -266,7 +266,6 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		}
 
 		s.Used.DeploymentToken(dat.ID)
-		s.Used.Deployment(dat.DeploymentID)
 
 		return &deploymentAuthToken{model: dat, token: parsed}, nil
 	case authtoken.TypeMagic:

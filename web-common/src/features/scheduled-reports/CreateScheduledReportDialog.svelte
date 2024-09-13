@@ -85,7 +85,7 @@
             },
           },
         });
-        queryClient.invalidateQueries(
+        await queryClient.invalidateQueries(
           getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
         );
         dispatch("close");

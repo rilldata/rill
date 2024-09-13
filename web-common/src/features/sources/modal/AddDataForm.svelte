@@ -12,7 +12,6 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
-  import { overlay } from "../../../layout/overlay-store";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
   import { submitAddDataForm } from "./submitAddDataForm";
@@ -42,7 +41,6 @@
       onSubmit: async (values) => {
         // Sources
         if (isSourceForm) {
-          overlay.set({ title: `Importing ${values.name}` });
           try {
             await submitAddDataForm(queryClient, formType, connector, values);
             await goto(`/files/sources/${values.name}.yaml`);
@@ -50,7 +48,6 @@
           } catch (e) {
             rpcError = e?.response?.data;
           }
-          overlay.set(null);
           return;
         }
 

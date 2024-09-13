@@ -48,6 +48,7 @@ export function setDefaultTimeRange(
     fullTimeEnd,
     timeZone,
   );
+
   const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
   metricsExplorer.selectedTimeRange = {
     ...timeRange,

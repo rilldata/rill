@@ -31,7 +31,7 @@
   $: kpiProperties = rendererProperties as KPIProperties;
 
   $: ({
-    metric_view: metricViewName,
+    metrics_view: metricViewName,
     filter: whereSql,
     measure: measureName,
     time_range: timeRange,
@@ -80,7 +80,7 @@
 
 <div
   bind:clientWidth={containerWidth}
-  class="flex flex-row h-full w-full items-center"
+  class="flex flex-row h-full w-full items-center bg-white"
 >
   {#if $measure.data && $measureValue.data}
     <MeasureBigNumber

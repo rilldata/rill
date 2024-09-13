@@ -18,7 +18,6 @@
   } from "@rilldata/web-common/features/sources/refreshSource";
   import { useIsLocalFileConnector } from "@rilldata/web-common/features/sources/selectors";
   import SourceCTAs from "@rilldata/web-common/features/sources/workspace/SourceCTAs.svelte";
-  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -68,12 +67,6 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
   $: isLocalFileConnector = !!$isLocalFileConnectorQuery?.data;
-
-  $: if (resourceIsReconciling) {
-    overlay.set({ title: `Importing ${filePath}` });
-  } else {
-    overlay.set(null);
-  }
 
   async function replaceSource() {
     await replaceSourceWithUploadedFile(instanceId, filePath);

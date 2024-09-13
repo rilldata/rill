@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useQueryClient } from "@rilldata/svelte-query";
   import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
   import { getPrettySelectedTimeRange } from "@rilldata/web-admin/features/bookmarks/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
@@ -16,11 +15,11 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { createForm } from "svelte-forms-lib";
   import { InfoIcon } from "lucide-svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let metricsViewName: string;
   export let formState: ReturnType<typeof createForm<BookmarkFormValues>>;
 
-  const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricsViewName);
 
   let timeRange: V1TimeRange;
@@ -54,7 +53,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     bind:value={$form["displayName"]}
     errors={$errors["displayName"]}
     id="displayName"
-    label="Name"
+    label="Label"
   />
   <Input
     bind:value={$form["description"]}

@@ -103,7 +103,6 @@
     <div class="flex-none">
       <svelte:component
         this={resourceKind ? resourceIconMapping[resourceKind] : File}
-        className="text-gray-400"
         size="14px"
       />
     </div>

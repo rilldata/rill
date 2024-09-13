@@ -12,9 +12,8 @@
   } from "@rilldata/web-common/components/dropdown-menu";
   import { createBookmarkApplier } from "@rilldata/web-admin/features/bookmarks/applyBookmark";
   import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuContent.svelte";
-  import CreateBookmarkDialog from "@rilldata/web-admin/features/bookmarks/CreateBookmarkDialog.svelte";
+  import BookmarkDialog from "@rilldata/web-admin/features/bookmarks/BookmarkDialog.svelte";
   import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
-  import EditBookmarkDialog from "@rilldata/web-admin/features/bookmarks/EditBookmarkDialog.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -26,9 +25,8 @@
 
   export let metricsViewName: string;
 
-  let createBookmark = false;
-  let editBookmark = false;
-  let bookmark: BookmarkEntry;
+  let showDialog = false;
+  let bookmark: BookmarkEntry | null = null;
 
   $: bookmarkApplier = createBookmarkApplier(
     $runtime?.instanceId,
@@ -47,9 +45,7 @@
   }
 
   async function createHomeBookmark() {
-    await homeBookmarkModifier(
-      getBookmarkDataForDashboard($dashboardStore, false, false),
-    );
+    await homeBookmarkModifier(getBookmarkDataForDashboard($dashboardStore));
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });
@@ -93,11 +89,11 @@
     </Button>
   </DropdownMenuTrigger>
   <BookmarksContent
-    on:create={() => (createBookmark = true)}
+    on:create={() => (showDialog = true)}
     on:create-home={() => createHomeBookmark()}
     on:delete={({ detail }) => deleteBookmark(detail)}
     on:edit={({ detail }) => {
-      editBookmark = true;
+      showDialog = true;
       bookmark = detail;
     }}
     on:select={({ detail }) => selectBookmark(detail)}
@@ -105,10 +101,13 @@
   />
 </DropdownMenu>
 
-<CreateBookmarkDialog bind:open={createBookmark} {metricsViewName} />
-
-{#if bookmark}
-  {#key bookmark.resource.id}
-    <EditBookmarkDialog {bookmark} bind:open={editBookmark} {metricsViewName} />
-  {/key}
+{#if showDialog}
+  <BookmarkDialog
+    {bookmark}
+    {metricsViewName}
+    onClose={() => {
+      showDialog = false;
+      bookmark = null;
+    }}
+  />
 {/if}
