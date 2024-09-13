@@ -571,12 +571,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -604,6 +598,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -894,14 +894,6 @@ export interface V1RefreshTriggerState {
   [key: string]: any;
 }
 
-export interface V1RefreshTriggerSpec {
-  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
-If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
-  resources?: V1ResourceName[];
-  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
-  models?: V1RefreshModelTrigger[];
-}
-
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
@@ -917,6 +909,14 @@ For non-incremental models, this is equivalent to a normal refresh. */
   splits?: string[];
   /** If true, it will refresh all splits that errored on their last execution. */
   allErroredSplits?: boolean;
+}
+
+export interface V1RefreshTriggerSpec {
+  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
+  resources?: V1ResourceName[];
+  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
+  models?: V1RefreshModelTrigger[];
 }
 
 export type V1ReconcileStatus =
@@ -1138,6 +1138,11 @@ export interface V1ModelState {
   splitsHaveErrors?: boolean;
 }
 
+export interface V1ModelV2 {
+  spec?: V1ModelSpec;
+  state?: V1ModelState;
+}
+
 export type V1ModelSplitData = { [key: string]: any };
 
 export interface V1ModelSplit {
@@ -1180,11 +1185,6 @@ export interface V1ModelSpec {
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
   triggerFull?: boolean;
-}
-
-export interface V1ModelV2 {
-  spec?: V1ModelSpec;
-  state?: V1ModelState;
 }
 
 export interface V1MigrationState {
@@ -1232,6 +1232,24 @@ export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewToplistResponseDataItem[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  whereSql?: string;
+  having?: V1Expression;
+  havingSql?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -1303,24 +1321,6 @@ It's set to true if the metrics view is based on an externally managed table. */
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
-}
-
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  whereSql?: string;
-  having?: V1Expression;
-  havingSql?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewSearchResponse {
@@ -1422,29 +1422,6 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1537,6 +1514,29 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
@@ -1598,14 +1598,17 @@ export interface V1IssueDevJWTRequest {
   admin?: boolean;
 }
 
+export interface V1InstanceHealthResponse {
+  instanceHealth?: V1InstanceHealth;
+}
+
+export type V1InstanceHealthDashboardErrors = { [key: string]: string };
+
 export interface V1InstanceHealth {
   controllerError?: string;
   olapError?: string;
   repoError?: string;
-}
-
-export interface V1InstanceHealthResponse {
-  instanceHealth?: V1InstanceHealth;
+  dashboardErrors?: V1InstanceHealthDashboardErrors;
 }
 
 export type V1InstanceAnnotations = { [key: string]: string };

@@ -48,6 +48,9 @@ type CatalogStore interface {
 	UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error
 	UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error
 	DeleteModelSplits(ctx context.Context, modelID string) error
+
+	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
+	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 }
 
 // Resource is an entry in a catalog store
@@ -77,4 +80,11 @@ type ModelSplit struct {
 	Error string
 	// Elapsed is the duration of the last execution of the split.
 	Elapsed time.Duration
+}
+
+// InstanceHealth represents the health of an instance.
+type InstanceHealth struct {
+	InstanceID string    `db:"instance_id"`
+	Health     []byte    `db:"health"`
+	CreatedOn  time.Time `db:"created_on"`
 }

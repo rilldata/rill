@@ -792,6 +792,8 @@ func (m *InstanceHealth) validate(all bool) error {
 
 	// no validation rules for RepoError
 
+	// no validation rules for DashboardErrors
+
 	if len(errors) > 0 {
 		return InstanceHealthMultiError(errors)
 	}

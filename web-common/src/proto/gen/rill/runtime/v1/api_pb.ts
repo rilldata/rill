@@ -372,6 +372,11 @@ export class InstanceHealth extends Message<InstanceHealth> {
    */
   repoError = "";
 
+  /**
+   * @generated from field: map<string, string> dashboard_errors = 4;
+   */
+  dashboardErrors: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<InstanceHealth>) {
     super();
     proto3.util.initPartial(data, this);
@@ -383,6 +388,7 @@ export class InstanceHealth extends Message<InstanceHealth> {
     { no: 1, name: "controller_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "dashboard_errors", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealth {

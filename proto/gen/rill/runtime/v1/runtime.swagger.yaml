@@ -4129,6 +4129,10 @@ definitions:
         type: string
       repoError:
         type: string
+      dashboardErrors:
+        type: object
+        additionalProperties:
+          type: string
   v1InstanceHealthResponse:
     type: object
     properties:

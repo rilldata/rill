@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -30,7 +32,7 @@ func (s *Server) Health(ctx context.Context, req *runtimev1.HealthRequest) (*run
 	}
 
 	// runtime health
-	status, err := s.runtime.Health(ctx)
+	status, err := s.runtime.Health(ctx, s.dashboardHealthQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +62,7 @@ func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHeal
 		return nil, ErrForbidden
 	}
 
-	h, err := s.runtime.InstanceHealth(ctx, req.InstanceId)
+	h, err := s.runtime.InstanceHealth(ctx, req.InstanceId, s.dashboardHealthQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +86,7 @@ func (s *Server) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
 
 	// runtime health
 	// we don't return 5xx on olap errors and hanging connections
-	status, err := s.runtime.Health(ctx)
+	status, err := s.runtime.Health(ctx, nil)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -94,12 +96,25 @@ func (s *Server) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	for _, h := range status.InstancesHealth {
-		if h.Controller != nil || h.Repo != nil {
+		if h.Controller != "" || h.Repo != "" {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) dashboardHealthQuery(ctx context.Context, instanceID, name string) (runtime.Query, error) {
+	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, instanceID, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &queries.MetricsViewTimeRange{
+		MetricsViewName:    name,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
+	}, nil
 }
 
 func pingCloudfareDNS(ctx context.Context) error {
