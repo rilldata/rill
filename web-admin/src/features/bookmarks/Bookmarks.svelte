@@ -45,9 +45,7 @@
   }
 
   async function createHomeBookmark() {
-    await homeBookmarkModifier(
-      getBookmarkDataForDashboard($dashboardStore, false, false),
-    );
+    await homeBookmarkModifier(getBookmarkDataForDashboard($dashboardStore));
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });

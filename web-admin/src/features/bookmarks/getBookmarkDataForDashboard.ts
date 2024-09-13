@@ -13,11 +13,19 @@ import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
  */
 export function getBookmarkDataForDashboard(
   dashboard: MetricsExplorerEntity,
-  filtersOnly: boolean,
-  absoluteTimeRange: boolean,
-  timeControlState: TimeControlState,
+  filtersOnly?: boolean,
+  absoluteTimeRange?: boolean,
+  timeControlState?: TimeControlState,
 ): string {
-  if (absoluteTimeRange) {
+  if (filtersOnly) {
+    return getProtoFromDashboardState({
+      whereFilter: dashboard.whereFilter,
+      dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
+      selectedTimeRange: timeControlState.selectedTimeRange,
+    } as MetricsExplorerEntity);
+  }
+
+  if (absoluteTimeRange && timeControlState) {
     dashboard = {
       ...dashboard,
     };
@@ -40,14 +48,6 @@ export function getBookmarkDataForDashboard(
         end: timeControlState.selectedComparisonTimeRange.end,
       };
     }
-  }
-
-  if (filtersOnly) {
-    return getProtoFromDashboardState({
-      whereFilter: dashboard.whereFilter,
-      dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
-      selectedTimeRange: timeControlState.selectedTimeRange,
-    } as MetricsExplorerEntity);
   }
 
   return getProtoFromDashboardState(dashboard);
