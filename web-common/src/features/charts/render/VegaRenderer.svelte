@@ -90,13 +90,16 @@
     showControls = true;
   }
 
-  $: buttonOffset = 6; // Distance from edge
-  $: midY = contentRect.height / 2;
-  $: leftButtonX = buttonOffset;
+  // const AXIS_OFFSET = 40;
+  const BUTTON_OFFSET = -12;
+  const MARGIN = 32;
 
-  // FIXME
-  // Ideally we can use path.background's width from vega-embed
-  $: rightButtonX = -19;
+  // FIXME: ADJUST LEFT PAN ICON
+  $: midY = contentRect.height / 2;
+  // $: adjustedWidth = contentRect.width - AXIS_OFFSET + RIGHT_MARGIN;
+  $: translateXLeft = `translateX(${BUTTON_OFFSET}px)`;
+  $: translateXRight = `translateX(${BUTTON_OFFSET + MARGIN}px)`;
+  // $: translateX = `translateX(${BUTTON_OFFSET + MARGIN}px)`;
 </script>
 
 <div
@@ -134,8 +137,8 @@
       >
         {#if $canPanLeft}
           <button
-            class="pan-button absolute -translate-y-1/2 w-8 h-8 pointer-events-auto"
-            style="left: {leftButtonX}px; top: {midY}px;"
+            class="pan-button absolute left-0 -translate-y-1/2 w-8 h-8 pointer-events-auto cursor-pointer fill-slate-400 hover:fill-slate-300"
+            style="top: {midY}px; transform: {translateXLeft} translateY(-50%);"
             on:click={() => panCharts("left")}
             aria-label="Pan left"
           >
@@ -144,8 +147,8 @@
         {/if}
         {#if $canPanRight}
           <button
-            class="pan-button absolute -translate-y-1/2 w-8 h-8 pointer-events-auto"
-            style="right: {rightButtonX}px; top: {midY}px;"
+            class="pan-button absolute right-0 -translate-y-1/2 w-8 h-8 pointer-events-auto cursor-pointer fill-slate-400 hover:fill-slate-300"
+            style="top: {midY}px; transform: {translateXRight} translateY(-50%);"
             on:click={() => panCharts("right")}
             aria-label="Pan right"
           >
