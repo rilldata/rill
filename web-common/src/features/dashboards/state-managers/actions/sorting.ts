@@ -6,22 +6,24 @@ export const toggleSort = (
   { dashboard, persistentDashboardStore }: DashboardMutables,
   sortType: SortType,
 ) => {
-  // if sortType is not provided,  or if it is provided
-  // and is the same as the current sort type,
-  // then just toggle the current sort direction
   if (sortType === undefined || dashboard.dashboardSortType === sortType) {
-    dashboard.sortDirection =
-      dashboard.sortDirection === SortDirection.ASCENDING
-        ? SortDirection.DESCENDING
-        : SortDirection.ASCENDING;
+    // If it's already sorted by this type, cycle through: descending -> ascending -> unspecified
+    if (dashboard.sortDirection === SortDirection.DESCENDING) {
+      dashboard.sortDirection = SortDirection.ASCENDING;
+    } else if (dashboard.sortDirection === SortDirection.ASCENDING) {
+      dashboard.dashboardSortType = SortType.UNSPECIFIED;
+      dashboard.sortDirection = SortDirection.UNSPECIFIED;
+    } else {
+      dashboard.dashboardSortType = sortType;
+      dashboard.sortDirection = SortDirection.DESCENDING;
+    }
   } else {
-    // if the sortType is different from the current sort type,
-    //  then update the sort type and set the sort direction
-    // to descending
+    // If it's a new sort type, start with descending
     dashboard.dashboardSortType = sortType;
-    persistentDashboardStore.updateDashboardSortType(sortType);
     dashboard.sortDirection = SortDirection.DESCENDING;
   }
+
+  persistentDashboardStore.updateDashboardSortType(dashboard.dashboardSortType);
   persistentDashboardStore.updateSortDirection(dashboard.sortDirection);
 };
 
