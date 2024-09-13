@@ -2,6 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { Trash2Icon, CopyIcon } from "lucide-svelte";
 
   export let id: string;
   export let url: string;
@@ -27,17 +28,19 @@
   <DropdownMenu.Content align="start">
     {#if url}
       <DropdownMenu.Item
-        class="text-gray-800 font-normal"
+        class="text-gray-800 font-normal flex items-center"
         on:click={handleCopy}
       >
-        Copy
+        <CopyIcon size="12px" />
+        <span class="ml-2">Copy URL</span>
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      class="text-gray-800 font-normal"
+      class="font-normal flex items-center text-red-500"
       on:click={handleDelete}
     >
-      Delete
+      <Trash2Icon size="12px" />
+      <span class="ml-2">Delete</span>
     </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
