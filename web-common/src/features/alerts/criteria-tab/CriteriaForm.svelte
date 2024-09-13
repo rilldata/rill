@@ -10,6 +10,7 @@
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import SimpleSelect from "@rilldata/web-common/components/select/simple-select.svelte";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;
@@ -61,12 +62,10 @@
     placeholder="Measure"
     className="w-[160px]"
   />
-  <Select
+  <SimpleSelect
     bind:value={$form["criteria"][index].type}
     id="type"
-    label=""
     options={typeOptions}
-    placeholder="type"
     className="w-[256px]"
   />
   <Select
