@@ -185,15 +185,17 @@
       <UserInviteButton {organization} {project} />
     {/if}
     {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
-      <StateManagersProvider metricsViewName={dashboard}>
-        <LastRefreshedDate {dashboard} />
-        <GlobalDimensionSearch metricsViewName={dashboard} />
-        {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-          <CreateAlert />
-          <Bookmarks metricsViewName={dashboard} />
-          <ShareDashboardButton {createMagicAuthTokens} />
-        {/if}
-      </StateManagersProvider>
+      {#key dashboard}
+        <StateManagersProvider metricsViewName={dashboard}>
+          <LastRefreshedDate {dashboard} />
+          <GlobalDimensionSearch metricsViewName={dashboard} />
+          {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
+            <CreateAlert />
+            <Bookmarks metricsViewName={dashboard} />
+            <ShareDashboardButton {createMagicAuthTokens} />
+          {/if}
+        </StateManagersProvider>
+      {/key}
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}
