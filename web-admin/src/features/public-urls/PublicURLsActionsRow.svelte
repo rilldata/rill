@@ -1,4 +1,5 @@
 <script lang="ts">
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -19,11 +20,15 @@
       console.error("Failed to delete magic auth token:", error);
     }
   }
+
+  let isOpen = false;
 </script>
 
-<DropdownMenu.Root>
+<DropdownMenu.Root bind:open={isOpen}>
   <DropdownMenu.Trigger class="flex-none">
-    <ThreeDot size="16px" />
+    <IconButton rounded active={isOpen}>
+      <ThreeDot size="16px" />
+    </IconButton>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
     {#if url}
@@ -36,7 +41,7 @@
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      class="font-normal flex items-center text-red-500"
+      class="font-normal flex items-center text-red-500 hover:text-red-600"
       on:click={handleDelete}
     >
       <Trash2Icon size="12px" />

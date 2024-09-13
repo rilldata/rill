@@ -6,7 +6,7 @@
 {#if title}
   <a
     {href}
-    class="text-blue-600 hover:underline"
+    class="text-primary-600 hover:underline"
     target="_blank"
     rel="noopener noreferrer"
   >

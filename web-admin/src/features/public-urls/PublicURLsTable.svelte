@@ -197,7 +197,7 @@
   </thead>
   <tbody>
     {#each $table.getRowModel().rows as row}
-      <tr class="hover:bg-slate-50">
+      <tr>
         {#each row.getVisibleCells() as cell}
           <td
             class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
