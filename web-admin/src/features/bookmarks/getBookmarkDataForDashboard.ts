@@ -10,6 +10,7 @@ import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
  * @param dashboard
  * @param filtersOnly Only dimension/measure filters and the selected time range is stored.
  * @param absoluteTimeRange Time ranges is treated as absolute.
+ * @param timeControlState Time control state to derive the time range from.
  */
 export function getBookmarkDataForDashboard(
   dashboard: MetricsExplorerEntity,
@@ -17,24 +18,14 @@ export function getBookmarkDataForDashboard(
   absoluteTimeRange?: boolean,
   timeControlState?: TimeControlState,
 ): string {
-  if (filtersOnly) {
-    return getProtoFromDashboardState({
-      whereFilter: dashboard.whereFilter,
-      dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
-      selectedTimeRange: dashboard.selectedTimeRange,
-    } as MetricsExplorerEntity);
-  }
+  const newDashboard = structuredClone(dashboard);
 
   if (absoluteTimeRange && timeControlState) {
-    dashboard = {
-      ...dashboard,
-    };
-
     if (
       timeControlState.selectedTimeRange?.start &&
       timeControlState.selectedTimeRange?.end
     ) {
-      dashboard.selectedTimeRange = {
+      newDashboard.selectedTimeRange = {
         name: TimeRangePreset.CUSTOM,
         interval: timeControlState.selectedTimeRange.interval,
         start: timeControlState.selectedTimeRange.start,
@@ -46,7 +37,7 @@ export function getBookmarkDataForDashboard(
       timeControlState.selectedComparisonTimeRange?.start &&
       timeControlState.selectedComparisonTimeRange?.end
     ) {
-      dashboard.selectedComparisonTimeRange = {
+      newDashboard.selectedComparisonTimeRange = {
         name: TimeRangePreset.CUSTOM,
         interval: timeControlState.selectedComparisonTimeRange.interval,
         start: timeControlState.selectedComparisonTimeRange.start,
@@ -55,5 +46,13 @@ export function getBookmarkDataForDashboard(
     }
   }
 
-  return getProtoFromDashboardState(dashboard);
+  if (filtersOnly) {
+    return getProtoFromDashboardState({
+      whereFilter: newDashboard.whereFilter,
+      dimensionThresholdFilters: newDashboard.dimensionThresholdFilters,
+      selectedTimeRange: newDashboard.selectedTimeRange,
+    } as MetricsExplorerEntity);
+  } else {
+    return getProtoFromDashboardState(newDashboard);
+  }
 }
