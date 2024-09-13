@@ -164,7 +164,7 @@ export function getBreadcrumbOptions(
   }, new Map<string, PathOption>());
 
   const canvasOptions = canvases.reduce((map, canvas) => {
-    const label = canvas.dashboard?.state?.validSpec?.title ?? "";
+    const label = canvas?.dashboard?.spec?.title ?? "";
     const name = canvas.meta?.name?.name ?? "";
 
     if (label && name)
