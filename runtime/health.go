@@ -2,6 +2,9 @@ package runtime
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 
@@ -21,15 +24,12 @@ type InstanceHealth struct {
 	// always recomputed
 	Controller string
 	Repo       string
-	Catalog    string
 
-	// below fields can be cached
+	// cached
 	OLAP       string
 	Dashboards map[string]string
 
-	// below fields determine if cache should be used
-	ControllerVersion int64
-	DashboardVersion  map[string]int64
+	Hash string
 }
 
 func (r *Runtime) Health(ctx context.Context, query DashboardHealthQuery) (*Health, error) {
@@ -73,6 +73,13 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string, query D
 	}
 
 	// check olap error
+	olap, release, err := r.OLAP(ctx, ctrl.InstanceID, "")
+	if err != nil {
+		res.OLAP = err.Error()
+		return res, nil
+	}
+	defer release()
+
 	resources, err := ctrl.List(ctx, ResourceKindMetricsView, "", false)
 	if err != nil {
 		return nil, err
@@ -85,39 +92,54 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string, query D
 		return res, nil
 	}
 
-	for _, resource := range resources {
-		res.DashboardVersion[resource.Meta.Name.Name] = resource.Meta.StateVersion
-	}
-	res.ControllerVersion = ctrl.catalog.version
-
-	olap, release, err := r.OLAP(ctx, ctrl.InstanceID, "")
-	if err != nil {
-		res.OLAP = err.Error()
-		return res, nil
-	}
-	defer release()
-
 	err = olap.(drivers.Handle).Ping(ctx)
 	if err != nil {
 		res.OLAP = err.Error()
-		return res, nil
+	} else {
+		// run queries against dashboards
+		if query != nil {
+			res.Dashboards = make(map[string]string, len(resources))
+			for _, mv := range resources {
+				q, err := query(ctx, ctrl.InstanceID, mv.Meta.Name.Name)
+				if err != nil {
+					res.Dashboards[mv.Meta.Name.Name] = err.Error()
+					continue
+				}
+				err = r.Query(ctx, ctrl.InstanceID, q, 1)
+				if err != nil {
+					res.Dashboards[mv.Meta.Name.Name] = err.Error()
+				}
+			}
+		}
 	}
 
-	if query == nil {
-		return res, nil
+	// save to cache
+	// populate the versions
+	hash, err := r.healthResultHash(ctrl.catalog.version, resources)
+	if err != nil {
+		return nil, err
 	}
-	res.Dashboards = make(map[string]string, len(resources))
-	for _, mv := range resources {
-		q, err := query(ctx, ctrl.InstanceID, mv.Meta.Name.Name)
-		if err != nil {
-			res.Dashboards[mv.Meta.Name.Name] = err.Error()
-			continue
-		}
-		err = r.Query(ctx, ctrl.InstanceID, q, 1)
-		if err != nil {
-			res.Dashboards[mv.Meta.Name.Name] = err.Error()
-		}
+	res.Hash = hash
+
+	bytes, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
 	}
+
+	catalog, release, err := r.Catalog(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	err = catalog.UpsertInstanceHealth(ctx, &drivers.InstanceHealth{
+		InstanceID: instanceID,
+		Health:     bytes,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return res, nil
 }
 
@@ -139,17 +161,10 @@ func (r *Runtime) cachedInstanceHealth(ctx context.Context, instanceID string, c
 		return nil, false
 	}
 
-	if c.ControllerVersion != ctrlVersion {
+	hash, err := r.healthResultHash(ctrlVersion, resources)
+	if err != nil || hash != c.Hash {
 		return nil, false
 	}
-
-	for _, res := range resources {
-		v, ok := c.DashboardVersion[res.Meta.Name.Name]
-		if !ok || v != res.Meta.StateVersion {
-			return nil, false
-		}
-	}
-	// ignores deleted metric views
 	return c, true
 }
 
@@ -164,4 +179,21 @@ func (h *InstanceHealth) To() *runtimev1.InstanceHealth {
 		DashboardErrors: h.Dashboards,
 	}
 	return r
+}
+
+func (r *Runtime) healthResultHash(ctrlVersion int64, resources []*runtimev1.Resource) (string, error) {
+	hash := md5.New()
+	err := binary.Write(hash, binary.BigEndian, ctrlVersion)
+	if err != nil {
+		return "", err
+	}
+
+	for _, res := range resources {
+		err := binary.Write(hash, binary.BigEndian, res.Meta.StateVersion)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
