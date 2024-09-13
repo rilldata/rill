@@ -114,7 +114,6 @@
     } catch (err) {
       // no-op
     }
-    overlay.set(null);
   };
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(

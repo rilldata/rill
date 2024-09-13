@@ -27,6 +27,6 @@
   label=""
   placeholder="Select organization"
   options={orgs.map((o) => ({ value: o, label: o }))}
-  className="w-[400px]"
+  width={400}
 />
 <Button wide type="primary" on:click={selectHandler}>Continue</Button>
