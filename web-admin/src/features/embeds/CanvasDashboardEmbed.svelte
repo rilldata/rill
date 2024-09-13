@@ -20,7 +20,7 @@
     items = [],
     columns,
     gap,
-  } = dashboard || { items: [], columns: 10, gap: 2 });
+  } = dashboard || { items: [], columns: 24, gap: 2 });
 </script>
 
 <CanvasDashboardEmbed {dashboardName} {columns} {items} {gap} />
