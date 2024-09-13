@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/XSAM/otelsql"
 	"github.com/go-sql-driver/mysql"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -36,7 +35,7 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 	}
 	conf.ParseTime = true // if set to false, time is scanned as an array rather than as time.Time
 
-	db, err := otelsql.Open("mysql", conf.FormatDSN())
+	db, err := sql.Open("mysql", conf.FormatDSN())
 	if err != nil {
 		return nil, err
 	}
