@@ -46,8 +46,9 @@
     .slice(0, MAX_OPTIONS);
 </script>
 
-<div class="m-1 p-1">
+<div>
   <Select
+    className="bg-white"
     on:change={(e) =>
       dashboardVariablesStore.updateVariable(
         dashboardName,
