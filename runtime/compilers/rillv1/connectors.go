@@ -192,22 +192,23 @@ func (a *connectorAnalyzer) analyzeResourceWithResolver(r *Resource, resolver st
 // analyzeResourceNotifiers extracts connector metadata for a resource that uses notifiers (email, slack, etc).
 func (a *connectorAnalyzer) analyzeResourceNotifiers(r *Resource, notifiers []*runtimev1.Notifier) {
 	for _, n := range notifiers {
+		if n.Connector == "email" {
+			// NOTE: email is not implemented as a real driver yet, so we skip it.
+			continue
+		}
+
+		// Slack notifier can be used anonymously if no users and no channels are specified (only webhooks)
 		anonAccess := false
-		var decodeErr error
 		if n.Connector == "slack" {
-			// Slack notifier can be used anonymously if no users and no channels are specified (only webhooks)
 			props, err := slack.DecodeProps(n.Properties.AsMap())
-			decodeErr = err
-			if decodeErr == nil {
+			if err == nil {
 				if len(props.Users) == 0 && len(props.Channels) == 0 {
 					anonAccess = true
 				}
 			}
 		}
+
 		a.trackConnector(n.Connector, r, anonAccess)
-		if decodeErr != nil {
-			a.result[n.Connector].Err = decodeErr
-		}
 	}
 }
 
@@ -248,7 +249,6 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 				Spec:            &driverSpec,
 				DefaultConfig:   defaultConfig,
 				AnonymousAccess: true,
-				Err:             driverErr,
 			}
 		}
 
