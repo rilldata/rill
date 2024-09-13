@@ -32955,7 +32955,7 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for ExportFormat
 
-	// no validation rules for OpenProjectSubpath
+	// no validation rules for WebOpenPath
 
 	// no validation rules for WebOpenState
 
@@ -33103,6 +33103,8 @@ func (m *AlertOptions) validate(all bool) error {
 	// no validation rules for Renotify
 
 	// no validation rules for RenotifyAfterSeconds
+
+	// no validation rules for WebOpenPath
 
 	// no validation rules for WebOpenState
 
