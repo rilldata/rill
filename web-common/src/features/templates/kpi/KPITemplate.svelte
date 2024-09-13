@@ -31,7 +31,7 @@
   $: kpiProperties = rendererProperties as KPIProperties;
 
   $: ({
-    metric_view: metricViewName,
+    metrics_view: metricViewName,
     filter: whereSql,
     measure: measureName,
     time_range: timeRange,

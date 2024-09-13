@@ -45,8 +45,6 @@
 
   $: currentPath = [projectTitle, dashboardName.toLowerCase()];
 
-  $: console.log("currentPath", currentPath);
-
   $: currentDashboard = dashboards.find(
     (d) => d.meta?.name?.name?.toLowerCase() === dashboardName.toLowerCase(),
   );
