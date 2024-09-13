@@ -7,10 +7,12 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	// Load Druid database/sql driver
@@ -115,21 +117,26 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	db, err := sqlx.Open("druid", dsn)
+	db, err := otelsql.Open("druid", dsn)
 	if err != nil {
 		return nil, err
 	}
-
 	// very roughly approximating num queries required for a typical page load
 	db.SetMaxOpenConns(20)
 
-	err = db.Ping()
+	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(attribute.String("instance_id", instanceID)))
+	if err != nil {
+		return nil, fmt.Errorf("druid: failed to register db stats metrics: %w", err)
+	}
+
+	dbx := sqlx.NewDb(db, "druid")
+	err = dbx.Ping()
 	if err != nil {
 		return nil, fmt.Errorf("druid: %w", err)
 	}
 
 	conn := &connection{
-		db:     db,
+		db:     dbx,
 		config: conf,
 		logger: logger,
 	}
