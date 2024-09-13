@@ -27,7 +27,9 @@
   $: measureOptions = [
     {
       value: $form["measure"],
-      label: measure?.label?.length ? measure.label : measure?.expression,
+      label: measure?.label?.length
+        ? measure.label
+        : measure?.expression ?? $form["measure"],
     },
   ];
   $: selectedMeasure = $metricsView.data?.measures?.find(
@@ -59,7 +61,7 @@
     label=""
     options={measureOptions}
     placeholder="Measure"
-    className="w-[160px]"
+    width={160}
   />
   <Select
     bind:value={$form["criteria"][index].type}
@@ -67,7 +69,7 @@
     label=""
     options={typeOptions}
     placeholder="type"
-    className="w-[256px]"
+    width={256}
   />
   <Select
     bind:value={$form["criteria"][index].operation}
@@ -75,7 +77,7 @@
     label=""
     options={CriteriaOperationOptions}
     placeholder="Operator"
-    className="w-[70px]"
+    width={70}
   />
   <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
   <Input
