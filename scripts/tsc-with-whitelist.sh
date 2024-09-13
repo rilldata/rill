@@ -73,7 +73,7 @@ web-common/src/features/dashboards/time-controls/time-range-store.ts: error TS18
 web-common/src/features/dashboards/time-controls/time-range-utils.ts: error TS2322
 web-common/src/features/dashboards/time-series/multiple-dimension-queries.ts: error TS18048
 web-common/src/features/dashboards/time-series/multiple-dimension-queries.ts: error TS2345
-web-common/src/features/dashboards/url-state/filters/expression.js: error TS2339
+web-common/src/features/dashboards/url-state/filters/expression.cjs: error TS5097
 web-common/src/features/entity-management/file-artifacts-store.ts: error TS18048
 web-common/src/features/entity-management/file-artifacts-store.ts: error TS2345
 web-common/src/features/entity-management/file-artifacts-store.ts: error TS2532
