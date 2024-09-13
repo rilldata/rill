@@ -15,8 +15,8 @@
   import { createEventDispatcher, onDestroy } from "svelte";
   import { getStateManagers } from "../../dashboards/state-managers/state-managers";
   import { PanDirection } from "../../dashboards/time-dimension-details/types";
-  import PanLeftIcon from "@rilldata/web-common/components/icons/PanLeftIcon.svelte";
-  import PanRightIcon from "@rilldata/web-common/components/icons/PanRightIcon.svelte";
+  import LeftPanIcon from "@rilldata/web-common/components/icons/LeftPanIcon.svelte";
+  import RightPanIcon from "@rilldata/web-common/components/icons/RightPanIcon.svelte";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -121,16 +121,9 @@
     showControls = true;
   }
 
-  // const AXIS_OFFSET = 40;
-  const BUTTON_OFFSET = -12;
-  const MARGIN = 32;
-
-  // FIXME: ADJUST LEFT PAN ICON
   $: midY = contentRect.height / 2;
-  // $: adjustedWidth = contentRect.width - AXIS_OFFSET + RIGHT_MARGIN;
-  $: translateXLeft = `translateX(${BUTTON_OFFSET}px)`;
-  $: translateXRight = `translateX(${BUTTON_OFFSET + MARGIN}px)`;
-  // $: translateX = `translateX(${BUTTON_OFFSET + MARGIN}px)`;
+  $: translateXLeft = `translateX(-12px)`;
+  $: translateXRight = `translateX(20px)`;
 </script>
 
 <div
@@ -162,28 +155,25 @@
       on:onError={onError}
     />
     {#if showControls}
-      <div
-        class="vega-controls-overlay absolute inset-0 pointer-events-none"
-        style="width: {contentRect.width}px; height: {contentRect.height}px;"
-      >
+      <div class="vega-pan-controls">
         {#if $canPanLeft}
           <button
             class="pan-button absolute left-0 -translate-y-1/2 w-8 h-8 pointer-events-auto cursor-pointer fill-slate-400 hover:fill-slate-300"
-            style="top: {midY}px; transform: {translateXLeft} translateY(-50%);"
+            style="top: {midY}px; transform: ${translateXLeft};"
             on:click={() => panCharts("left")}
             aria-label="Pan left"
           >
-            <PanLeftIcon />
+            <LeftPanIcon />
           </button>
         {/if}
         {#if $canPanRight}
           <button
             class="pan-button absolute right-0 -translate-y-1/2 w-8 h-8 pointer-events-auto cursor-pointer fill-slate-400 hover:fill-slate-300"
-            style="top: {midY}px; transform: {translateXRight} translateY(-50%);"
+            style="top: {midY}px; transform: {translateXRight};"
             on:click={() => panCharts("right")}
             aria-label="Pan right"
           >
-            <PanRightIcon />
+            <RightPanIcon />
           </button>
         {/if}
       </div>
