@@ -67,6 +67,14 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
+	// Set a default org for the user if necessary
+	// (If user is not in an org, we'll create one based on their Github account later in the flow.)
+	if ch.Org == "" {
+		if err := org.SetDefaultOrg(ctx, ch); err != nil {
+			return err
+		}
+	}
+
 	// The gitPath can be either a local path or a remote .git URL.
 	// Determine which it is.
 	var isLocalGitPath bool
@@ -84,17 +92,42 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// If the Git path is local, we'll do some extra steps to infer the githubURL.
-	var localGitPath, localProjectPath string
-	if isLocalGitPath {
-		var err error
-		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
+	localGitPath, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
+	if err != nil {
+		if errors.Is(err, ErrInvalidProject) {
+			return nil
+		}
+		return err
+	}
+
+	if ch.Org != "" {
+		adminClient, err := ch.Client()
 		if err != nil {
-			if errors.Is(err, ErrInvalidProject) {
-				return nil
-			}
 			return err
 		}
 
+		projName := opts.Name
+
+		if projName == "" {
+			projName, err = ch.InferProjectName(ctx, ch.Org, localProjectPath)
+			if err != nil {
+				return err
+			}
+		}
+
+		projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: projName})
+		if err != nil {
+			if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
+				return err
+			}
+		}
+		if projResp != nil && projResp.Project.GithubUrl != "" {
+			ch.PrintfError("Found existing project. But it is already connected to a github repo.\nPlease visit %s to update the github repo.", projResp.Project.FrontendUrl)
+			return nil
+		}
+	}
+
+	if isLocalGitPath {
 		// Extract the Git remote and infer the githubURL.
 		var remote *gitutil.Remote
 		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
@@ -158,14 +191,6 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	// If no project name was provided, default to Git repo name
 	if opts.Name == "" {
 		opts.Name = ghRepo
-	}
-
-	// Set a default org for the user if necessary
-	// (If user is not in an org, we'll create one based on their Github account later in the flow.)
-	if ch.Org == "" {
-		if err := org.SetDefaultOrg(ctx, ch); err != nil {
-			return err
-		}
 	}
 
 	// If no default org is set by now, it means the user is not in an org yet.
