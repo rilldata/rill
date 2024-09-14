@@ -1,4 +1,4 @@
-import { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
