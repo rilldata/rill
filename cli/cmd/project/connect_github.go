@@ -106,23 +106,28 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 			return err
 		}
 
-		projName := opts.Name
+		var proj *adminv1.Project
 
-		if projName == "" {
-			projName, err = ch.InferProjectName(ctx, ch.Org, localProjectPath)
+		if opts.Name == "" {
+			// Try loading the project from the .rillcloud directory
+			proj, err = ch.LoadProject(ctx, localProjectPath)
 			if err != nil {
 				return err
 			}
-		}
-
-		projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: projName})
-		if err != nil {
-			if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
-				return err
+		} else {
+			projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
+			if err != nil {
+				if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
+					return err
+				}
+			}
+			if projResp != nil {
+				proj = projResp.Project
 			}
 		}
-		if projResp != nil && projResp.Project.GithubUrl != "" {
-			ch.PrintfError("Found existing project. But it is already connected to a github repo.\nPlease visit %s to update the github repo.", projResp.Project.FrontendUrl)
+
+		if proj != nil && proj.GithubUrl != "" {
+			ch.PrintfError("Found existing project. But it is already connected to a github repo.\nPlease visit %s to update the github repo.\n", proj.FrontendUrl)
 			return nil
 		}
 	}

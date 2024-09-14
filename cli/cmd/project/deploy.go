@@ -165,7 +165,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	// check if the project with name already exists
 	if projResp != nil {
 		if projResp.Project.GithubUrl != "" {
-			ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to the repo to deploy.")
+			ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to %q to deploy.\n", projResp.Project.GithubUrl)
 			return nil
 		}
 
