@@ -48,7 +48,6 @@
 
 <div>
   <Select
-    className="bg-white"
     on:change={(e) =>
       dashboardVariablesStore.updateVariable(
         dashboardName,
@@ -58,6 +57,7 @@
     bind:value
     detach
     id={componentName}
+    className={"bg-white"}
     tooltip={selectProperties.tooltip || ""}
     label={selectProperties.label || ""}
     options={selectOptions}
