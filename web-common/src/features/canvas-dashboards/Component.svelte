@@ -100,10 +100,10 @@
       {#if title || subtitle}
         <div class="w-full h-fit flex flex-col gap-y-1">
           {#if title}
-            <h1>{title}</h1>
+            <h1 class="text-slate-900">{title}</h1>
           {/if}
           {#if subtitle}
-            <h2>{subtitle}</h2>
+            <h2 class="text-slate-600">{subtitle}</h2>
           {/if}
         </div>
       {/if}
@@ -130,12 +130,12 @@
   }
 
   h1 {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 18px;
+    font-weight: 600;
   }
 
   h2 {
-    font-size: 18px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 400;
   }
 </style>
