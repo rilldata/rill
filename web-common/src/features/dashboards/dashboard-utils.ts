@@ -154,8 +154,8 @@ export function getBreadcrumbOptions(
   canvases: V1Resource[],
 ): Map<string, PathOption> {
   const dashboardOptions = dashboards.reduce((map, dimension) => {
-    const label = dimension.metricsView?.state?.validSpec?.title ?? "";
     const name = dimension.meta?.name?.name ?? "";
+    const label = dimension.metricsView?.state?.validSpec?.title || name;
 
     if (label && name)
       map.set(name.toLowerCase(), { label, section: "dashboard", depth: 0 });
@@ -164,8 +164,8 @@ export function getBreadcrumbOptions(
   }, new Map<string, PathOption>());
 
   const canvasOptions = canvases.reduce((map, canvas) => {
-    const label = canvas?.dashboard?.spec?.title ?? "";
     const name = canvas.meta?.name?.name ?? "";
+    const label = canvas?.dashboard?.spec?.title || name;
 
     if (label && name)
       map.set(name.toLowerCase(), { label, section: "custom", depth: 0 });
