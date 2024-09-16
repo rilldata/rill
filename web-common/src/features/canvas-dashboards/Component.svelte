@@ -115,7 +115,6 @@
           {renderer}
           {input}
           {output}
-          {rendererProperties}
           {resolverProperties}
           {componentName}
         />
