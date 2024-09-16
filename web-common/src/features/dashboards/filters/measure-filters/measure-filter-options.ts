@@ -41,8 +41,6 @@ export const MeasureFilterBaseTypeOptions = [
     label: "value",
     shortLabel: "",
     description: "value",
-    tooltip: "",
-    disabled: false,
   },
 ];
 export const MeasureFilterComparisonTypeOptions = [
@@ -51,16 +49,12 @@ export const MeasureFilterComparisonTypeOptions = [
     label: "% change from",
     shortLabel: "% change",
     description: "% change",
-    tooltip: "",
-    disabled: false,
   },
   {
     value: MeasureFilterType.AbsoluteChange,
     label: "change from",
     shortLabel: "change",
     description: "change",
-    tooltip: "",
-    disabled: false,
   },
 ];
 export const MeasureFilterPercentOfTotalOption = {
@@ -68,8 +62,6 @@ export const MeasureFilterPercentOfTotalOption = {
   label: "% of total",
   shortLabel: "% of total",
   description: "% of total",
-  tooltip: "",
-  disabled: false,
 };
 export const AllMeasureFilterTypeOptions = [
   ...MeasureFilterBaseTypeOptions,

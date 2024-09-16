@@ -3,6 +3,7 @@
   import { createEventDispatcher } from "svelte";
   import * as Select from "@rilldata/web-common/components/select";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { builderActions } from "bits-ui";
 
   const dispatch = createEventDispatcher();
 
@@ -67,22 +68,20 @@
       class="max-h-80 overflow-y-auto"
     >
       {#each options as { value, label, disabled, tooltip } (value)}
-        {#if tooltip}
-          <Tooltip.Root portal="body">
-            <Tooltip.Trigger>
-              <Select.Item {value} {disabled}>
+        <Select.Item {value} {label} {disabled} class="text-[12px]">
+          {#if tooltip}
+            <Tooltip.Root portal="body">
+              <Tooltip.Trigger class="select-tooltip cursor-default">
                 {label ?? value}
-              </Select.Item>
-            </Tooltip.Trigger>
-            <Tooltip.Content side="right">
-              {tooltip}
-            </Tooltip.Content>
-          </Tooltip.Root>
-        {:else}
-          <Select.Item {value} {label} {disabled} class="text-[12px]">
+              </Tooltip.Trigger>
+              <Tooltip.Content side="right" sideOffset={8}>
+                {tooltip}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
             {label ?? value}
-          </Select.Item>
-        {/if}
+          {/if}
+        </Select.Item>
       {/each}
     </Select.Content>
   </Select.Root>

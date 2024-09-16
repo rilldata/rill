@@ -11,9 +11,12 @@ export function getTypeOptions(
   formValues: AlertFormValues,
   selectedMeasure: MetricsViewSpecMeasureV2 | undefined,
 ) {
-  const options: typeof MeasureFilterBaseTypeOptions = [
-    ...MeasureFilterBaseTypeOptions,
-  ];
+  const options: {
+    value: string;
+    label: string;
+    disabled?: boolean;
+    tooltip?: string;
+  }[] = [...MeasureFilterBaseTypeOptions];
 
   if (
     formValues.comparisonTimeRange?.isoDuration ||
