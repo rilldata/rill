@@ -169,8 +169,6 @@
     console.log({ bottom });
     return Math.max(max, bottom);
   }, 0);
-
-  $: console.log({ gridCell });
 </script>
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />

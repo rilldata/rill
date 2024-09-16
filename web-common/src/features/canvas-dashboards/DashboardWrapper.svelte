@@ -62,7 +62,6 @@
     width: 100%;
     height: 100%;
     position: relative;
-    /* overflow: hidden; */
     user-select: none;
     margin: 0;
     pointer-events: auto;
