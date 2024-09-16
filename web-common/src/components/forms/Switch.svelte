@@ -4,6 +4,7 @@
 
   type $$Props = SwitchPrimitive.Props & {
     small?: boolean;
+    medium?: boolean;
   };
   // type $$Events = SwitchPrimitive.Events;
 

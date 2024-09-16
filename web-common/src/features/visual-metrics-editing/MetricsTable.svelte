@@ -102,7 +102,7 @@
         bind:this={clientWidth}
         class:insert={$insertIndex === -1 && $table === type}
       >
-        <th class="!pl-5">
+        <th class="!pl-[22px]">
           <Checkbox
             onChange={(checked) => {
               if (checked) {

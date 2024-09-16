@@ -40,11 +40,9 @@
 
     width: var(--height);
     height: var(--height);
-    /* border: 0.15em solid currentColor; */
-    /* border-radius: 0.15em; */
+
     @apply rounded-sm border border-gray-300;
     @apply bg-gray-50;
-    /* transform: translateY(-0.075em); */
 
     display: grid;
     place-content: center;
@@ -70,11 +68,6 @@
 
   input[type="checkbox"]:checked::before {
     transform: scale(1);
-  }
-
-  input[type="checkbox"]:focus {
-    outline: max(2px, 0.15em) solid currentColor;
-    outline-offset: max(2px, 0.15em);
   }
 
   input[type="checkbox"]:disabled {

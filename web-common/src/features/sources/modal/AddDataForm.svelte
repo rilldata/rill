@@ -9,7 +9,6 @@
     RpcStatus,
     V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import { inferSourceName } from "../sourceUtils";
@@ -17,8 +16,8 @@
   import { submitAddDataForm } from "./submitAddDataForm";
   import { AddDataFormType } from "./types";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   export let connector: V1ConnectorDriver;
@@ -34,43 +33,37 @@
 
   let rpcError: RpcStatus | null = null;
 
-  const { form, touched, errors, handleChange, handleSubmit, isSubmitting } =
-    createForm({
-      initialValues: isSourceForm ? { name: "" } : {},
-      validationSchema: getYupSchema(connector),
-      onSubmit: async (values) => {
-        // Sources
-        if (isSourceForm) {
-          try {
-            await submitAddDataForm(queryClient, formType, connector, values);
-            await goto(`/files/sources/${values.name}.yaml`);
-            dispatch("close");
-          } catch (e) {
-            rpcError = e?.response?.data;
-          }
-          return;
-        }
-
-        // Connectors
+  const { form, touched, errors, handleSubmit, isSubmitting } = createForm({
+    initialValues: isSourceForm ? { name: "" } : {},
+    validationSchema: getYupSchema(connector),
+    onSubmit: async (values) => {
+      // Sources
+      if (isSourceForm) {
         try {
           await submitAddDataForm(queryClient, formType, connector, values);
-          await goto(`/files/connectors/${connector.name}.yaml`);
+          await goto(`/files/sources/${values.name}.yaml`);
           dispatch("close");
         } catch (e) {
           rpcError = e?.response?.data;
         }
-      },
-    });
+        return;
+      }
 
-  function onStringInputChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    const { name, value } = target;
+      // Connectors
+      try {
+        await submitAddDataForm(queryClient, formType, connector, values);
+        await goto(`/files/connectors/${connector.name}.yaml`);
+        dispatch("close");
+      } catch (e) {
+        rpcError = e?.response?.data;
+      }
+    },
+  });
 
-    if (name === "path") {
-      if ($touched.name) return;
-      const name = inferSourceName(connector, value);
-      $form.name = name ? name : $form.name;
-    }
+  function onPathInputChange(newPath: string) {
+    if ($touched.name) return;
+    const name = inferSourceName(connector, newPath);
+    $form.name = name ? name : $form.name;
   }
 </script>
 
@@ -113,8 +106,9 @@
               hint={property.hint}
               errors={$errors[toYupFriendlyKey(property.key)]}
               bind:value={$form[toYupFriendlyKey(property.key)]}
-              onInput={onStringInputChange}
-              onChange={handleChange}
+              onInput={(newValue, e) => {
+                if (e && property.key === "path") onPathInputChange(newValue);
+              }}
               alwaysShowError
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}

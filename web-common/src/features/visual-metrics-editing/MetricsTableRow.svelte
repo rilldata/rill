@@ -10,12 +10,16 @@
   import EditControls from "./EditControls.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import Checkbox from "./Checkbox.svelte";
-  import { editingItem } from "../workspaces/VisualMetrics.svelte";
+  import {
+    editingIndex,
+    editingType,
+  } from "../workspaces/VisualMetrics.svelte";
   import {
     defaultChipColors,
     measureChipColors,
   } from "@rilldata/web-common/components/chip/chip-types";
   import { YAMLMap } from "yaml";
+  import { tick } from "svelte";
 
   export let rowHeight: number;
   export let item: YAMLMap<string, string>;
@@ -41,6 +45,7 @@
   let row: HTMLTableRowElement;
   let initialY = 0;
   let clone: HTMLTableRowElement;
+  let hovered = false;
 
   function handleDragStart(e: MouseEvent) {
     if (e.button !== 0) return;
@@ -78,24 +83,22 @@
     table.set(null);
     insertIndex.set(null);
   }
-  let hovered = false;
 
-  // function isMeasure(
-  //   item: MetricsViewSpecDimensionV2 | MetricsViewSpecMeasureV2,
-  // ): item is MetricsViewSpecMeasureV2 {
-  //   return "formatPreset" in item;
-  // }
-
-  function setEditing(
-    e: MouseEvent & {
+  async function setEditing(
+    e?: MouseEvent & {
       currentTarget: EventTarget & HTMLTableCellElement;
     },
   ) {
-    const field = e.currentTarget?.getAttribute("aria-label");
-    editingItem.set({ index: i, type, field });
+    const field = e?.currentTarget?.getAttribute("aria-label");
+
+    editingIndex.set(i);
+    editingType.set(type);
+
+    await tick();
+    document.getElementById(`vme-${field}`)?.focus();
   }
 
-  $: editing = $editingItem?.index === i && $editingItem?.type === type;
+  $: editing = $editingIndex === i && $editingType === type;
 </script>
 
 <tr
@@ -127,7 +130,7 @@
     <span>{item?.get("name") ?? "-"}</span>
   </td>
   <td on:click={setEditing} aria-label="Label">
-    <div class="pointer-events-none text-[12px] pr-4">
+    <div class=" text-[12px] pr-4">
       <Chip
         slideDuration={0}
         extraRounded={type === "dimensions"}
@@ -197,6 +200,10 @@
     @apply bg-gray-50;
   }
 
+  td:hover:not(.editing) {
+    @apply text-primary-500;
+  }
+
   .editing {
     @apply bg-gray-100;
   }
@@ -206,7 +213,7 @@
   }
 
   .insert td {
-    @apply border-b border-primary-500;
+    @apply border-b border-primary-600;
   }
 
   .row:last-of-type td {

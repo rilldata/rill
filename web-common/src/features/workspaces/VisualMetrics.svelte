@@ -1,9 +1,7 @@
 <script lang="ts" context="module">
-  export const editingItem: Writable<{
-    index: number;
-    type: "measures" | "dimensions";
-    field?: string | null;
-  } | null> = writable(null);
+  export const editingIndex = writable<number | null>(null);
+  export const editingType = writable<"measures" | "dimensions" | null>(null);
+  export const editingField = writable<string | null>(null);
 
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
@@ -60,7 +58,7 @@
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
-  import { writable, Writable } from "svelte/store";
+  import { writable } from "svelte/store";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
@@ -78,9 +76,10 @@
 
   let searchValue = "";
   let confirmation: {
-    action: "cancel" | "delete";
-    index: number;
-    type: "measures" | "dimensions";
+    action: "cancel" | "delete" | "switch";
+    type?: "measures" | "dimensions";
+    model?: string;
+    index?: number;
   } | null = null;
   let collapsed = {
     measures: false,
@@ -232,10 +231,20 @@
 
     const items = measures.items as Array<YAMLMap>;
 
-    const newItem = items[item].clone() as YAMLMap;
+    const originalItem = items[item];
+    const originalName = originalItem.get("name");
+    const newItem = originalItem.clone() as YAMLMap;
 
-    if (type === "measures")
-      newItem.set("name", `${newItem.get("name")}_copy_${items.length}`);
+    const itemNames = items.map((i) => i.get("name"));
+    let count = 0;
+    let newName = `${originalName}_copy`;
+    newItem.set("name", newName);
+
+    while (itemNames.includes(newName)) {
+      count++;
+      newName = `${originalName}_copy_${count}`;
+      newItem.set("name", newName);
+    }
 
     items.splice(item + 1, 0, newItem);
 
@@ -243,20 +252,38 @@
 
     await saveContent(parsedDocument.toString());
   }
+
+  $: item =
+    ($editingType !== null &&
+      $editingIndex !== null &&
+      itemGroups.get($editingType)?.[$editingIndex]) ||
+    undefined;
+
+  $: editingClone =
+    $editingIndex !== null
+      ? $editingType === "measures"
+        ? new YAMLMeasure(item)
+        : new YAMLDimension(item)
+      : undefined;
 </script>
 
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4">
-      <Input
-        full
-        value={model}
-        options={[...modelNames, ...sourceNames]}
-        label="Model or source referenced"
-        onInput={async (value) => {
-          await updateProperty("model", value);
-        }}
-      />
+      {#key confirmation}
+        <Input
+          full
+          value={model}
+          options={[...modelNames, ...sourceNames]}
+          label="Model or source referenced"
+          onInput={(newModelName) => {
+            confirmation = {
+              action: "switch",
+              model: newModelName,
+            };
+          }}
+        />
+      {/key}
 
       <Input
         full
@@ -291,7 +318,7 @@
         <input
           type="text"
           autocomplete="off"
-          class="border outline-none rounded-[2px] block w-full pl-8 p-1"
+          class="border outline-none rounded-[2px] block w-full pl-8 p-1 text-sm"
           placeholder="Search"
           bind:value={searchValue}
         />
@@ -327,10 +354,8 @@
               gray
               noStroke
               on:click={() => {
-                editingItem.set({
-                  index: -1,
-                  type,
-                });
+                editingIndex.set(-1);
+                editingType.set(type);
               }}
             >
               <PlusIcon size="16px" />
@@ -350,28 +375,32 @@
     </div>
   </div>
 
-  {#if $editingItem}
-    {#key $editingItem}
+  {#if $editingIndex !== null && $editingType !== null && editingClone}
+    {#key editingClone}
       <Sidebar
+        {item}
+        {editingClone}
         {columns}
-        item={itemGroups.get($editingItem.type)?.[$editingItem.index]}
         onDelete={() => {
-          triggerDelete($editingItem.index, $editingItem.type);
+          if ($editingType) triggerDelete($editingIndex, $editingType);
         }}
         onCancel={(unsavedChanges) => {
           if (unsavedChanges) {
             confirmation = {
               action: "cancel",
-              index: $editingItem.index,
-              type: $editingItem.type,
+              index: $editingIndex,
+              type: $editingType,
             };
           } else {
-            editingItem.set(null);
+            editingField.set(null);
+            editingIndex.set(null);
+            editingType.set(null);
           }
         }}
-        index={$editingItem.index}
-        type={$editingItem.type}
-        field={$editingItem.field}
+        index={$editingIndex}
+        type={$editingType}
+        field={$editingField}
+        editing={$editingIndex !== -1}
         {fileArtifact}
         {switchView}
       />
@@ -385,18 +414,23 @@
       <AlertDialog.Header>
         <AlertDialog.Title>
           {#if confirmation.action === "delete"}
-            <h2>Delete this {confirmation.type.slice(0, -1)}?</h2>
-          {:else}
-            <h2>Cancel changes to {confirmation.type.slice(0, -1)}?</h2>
-          {/if}</AlertDialog.Title
-        >
+            <h2>Delete this {confirmation.type?.slice(0, -1)}?</h2>
+          {:else if confirmation.action === "cancel"}
+            <h2>Cancel changes to {confirmation.type?.slice(0, -1)}?</h2>
+          {:else if confirmation.action === "switch"}
+            <h2>Switch reference model?</h2>
+          {/if}
+        </AlertDialog.Title>
         <AlertDialog.Description>
           {#if confirmation.action === "delete"}
-            You haven't saved changes to this {confirmation.type.slice(0, -1)} yet,
+            You haven't saved changes to this {confirmation.type?.slice(0, -1)} yet,
             so closing this window will lose your work.
-          {:else}
-            You will permanently remove this {confirmation.type.slice(0, -1)} from
+          {:else if confirmation.action === "cancel"}
+            You will permanently remove this {confirmation.type?.slice(0, -1)} from
             all associated dashboards.
+          {:else if confirmation.action === "switch"}
+            Switching to a different model may break your measures and
+            dimensions unless the new model has similar data.
           {/if}
         </AlertDialog.Description>
       </AlertDialog.Header>
@@ -408,20 +442,29 @@
             confirmation = null;
           }}
         >
-          {#if confirmation.action === "delete"}Cancel{:else}Keep editing{/if}
+          {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
         </Button>
         <Button
           large
           type="primary"
           on:click={async () => {
-            if (confirmation?.action === "delete") {
-              await deleteItem(confirmation.index, confirmation.type);
+            if (
+              confirmation?.action === "delete" &&
+              confirmation?.index !== undefined &&
+              confirmation.type
+            ) {
+              await deleteItem(confirmation?.index, confirmation.type);
+            } else if (confirmation?.action === "switch") {
+              await updateProperty("model", confirmation.model);
             }
             confirmation = null;
-            editingItem.set(null);
+            editingIndex.set(null);
+            editingType.set(null);
           }}
         >
-          {#if confirmation.action === "delete"}Yes, delete{:else}Close{/if}
+          {#if confirmation.action === "delete"}Yes, delete{:else if confirmation.action === "switch"}Switch
+            model{:else}
+            Close{/if}
         </Button>
       </AlertDialog.Footer>
     </AlertDialog.Content>
