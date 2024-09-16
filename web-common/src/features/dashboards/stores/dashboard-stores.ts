@@ -116,20 +116,6 @@ function syncMeasures(
         metricsView.measures[0].name,
       ]);
     }
-
-    // check if current leaderboard measure is visible,
-    // if not set it to first visible measure
-    if (
-      metricsExplorer.visibleMeasureKeys.size &&
-      !metricsExplorer.visibleMeasureKeys.has(
-        metricsExplorer.leaderboardMeasureName,
-      )
-    ) {
-      const firstVisibleMeasure = metricsView.measures
-        .map((measure) => measure.name)
-        .find((key) => metricsExplorer.visibleMeasureKeys.has(key));
-      metricsExplorer.leaderboardMeasureName = firstVisibleMeasure;
-    }
   }
 }
 

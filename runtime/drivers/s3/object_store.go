@@ -158,7 +158,11 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, bucketErr)
 			}
 
-			it, err = rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
+			anonIt, anonErr := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
+			if anonErr == nil {
+				it = anonIt
+				err = nil
+			}
 		}
 
 		// check again

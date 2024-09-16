@@ -90,7 +90,10 @@ export type AdminServiceUpdateProjectBody = {
   prodVersion?: string;
 };
 
-export type AdminServiceGetProjectParams = { accessTokenTtlSeconds?: number };
+export type AdminServiceGetProjectParams = {
+  accessTokenTtlSeconds?: number;
+  issueSuperuserToken?: boolean;
+};
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
 
@@ -165,6 +168,11 @@ If empty, all dimensions and measures are accessible. */
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceAddProjectMemberUserBody = {
+  email?: string;
+  role?: string;
 };
 
 export type AdminServiceListProjectMemberUsersParams = {
@@ -243,6 +251,12 @@ export type AdminServiceRemoveOrganizationMemberUserParams = {
   keepProjectRoles?: boolean;
 };
 
+export type AdminServiceAddOrganizationMemberUserBody = {
+  email?: string;
+  role?: string;
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListOrganizationMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -287,11 +301,6 @@ export type AdminServiceCreateReportBodyBody = {
 
 export type AdminServiceCreateAlertBodyBody = {
   options?: V1AlertOptions;
-};
-
-export type AdminServiceAddOrganizationMemberUserBodyBody = {
-  email?: string;
-  role?: string;
 };
 
 export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
@@ -461,6 +470,11 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
   customDomain?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -506,11 +520,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -641,6 +650,10 @@ export interface V1RemoveOrganizationMemberUserResponse {
 }
 
 export interface V1RemoveBookmarkResponse {
+  [key: string]: any;
+}
+
+export interface V1RedeployProjectResponse {
   [key: string]: any;
 }
 
@@ -796,6 +809,8 @@ export type V1MagicAuthTokenAttributes = { [key: string]: any };
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
+  url?: string;
+  token?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;

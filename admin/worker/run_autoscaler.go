@@ -18,6 +18,7 @@ const (
 
 	// Reasons for not scaling
 	scaledown      = "scaling down is temporarily disabled"
+	scaleMatch     = "current scale equals recommendation"
 	belowThreshold = "scaling change is below the threshold"
 )
 
@@ -150,8 +151,12 @@ func (w *Worker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSl
 // based on the comparison of the current number of slots (originSlots)
 // and the recommended number of slots (recommendSlots).
 func shouldScale(originSlots, recommendSlots int) (bool, string) {
+	if recommendSlots == originSlots {
+		return false, scaleMatch
+	}
+
 	// NOTE(2024-07-23): Temporary measure to avoid autoscaling DOWN
-	if recommendSlots <= originSlots {
+	if recommendSlots < originSlots {
 		return false, scaledown
 	}
 

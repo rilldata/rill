@@ -117,7 +117,7 @@
     @apply rounded-[2px];
     @apply px-3 gap-x-2;
     @apply h-7  min-h-[28px] min-w-fit;
-    @apply font-medium;
+    @apply font-medium pointer-events-auto;
   }
 
   button:disabled {

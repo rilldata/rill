@@ -737,6 +737,11 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
    */
   accessTokenTtlSeconds = 0;
 
+  /**
+   * @generated from field: bool issue_superuser_token = 4;
+   */
+  issueSuperuserToken = false;
+
   constructor(data?: PartialMessage<GetProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -748,6 +753,7 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
     { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "access_token_ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "issue_superuser_token", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectRequest {
@@ -2420,6 +2426,80 @@ export class CreateAssetResponse extends Message<CreateAssetResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.RedeployProjectRequest
+ */
+export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<RedeployProjectRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RedeployProjectRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RedeployProjectRequest | PlainMessage<RedeployProjectRequest> | undefined, b: RedeployProjectRequest | PlainMessage<RedeployProjectRequest> | undefined): boolean {
+    return proto3.util.equals(RedeployProjectRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RedeployProjectResponse
+ */
+export class RedeployProjectResponse extends Message<RedeployProjectResponse> {
+  constructor(data?: PartialMessage<RedeployProjectResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RedeployProjectResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RedeployProjectResponse | PlainMessage<RedeployProjectResponse> | undefined, b: RedeployProjectResponse | PlainMessage<RedeployProjectResponse> | undefined): boolean {
+    return proto3.util.equals(RedeployProjectResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.HibernateProjectRequest
  */
 export class HibernateProjectRequest extends Message<HibernateProjectRequest> {
@@ -2921,6 +3001,11 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
    */
   role = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 4;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<AddOrganizationMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2932,6 +3017,7 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddOrganizationMemberUserRequest {
@@ -11778,6 +11864,16 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   projectId = "";
 
   /**
+   * @generated from field: string url = 13;
+   */
+  url = "";
+
+  /**
+   * @generated from field: string token = 14;
+   */
+  token = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 3;
    */
   createdOn?: Timestamp;
@@ -11837,6 +11933,8 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "created_on", kind: "message", T: Timestamp },
     { no: 4, name: "expires_on", kind: "message", T: Timestamp },
     { no: 5, name: "used_on", kind: "message", T: Timestamp },

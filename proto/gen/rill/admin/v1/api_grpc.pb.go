@@ -36,6 +36,7 @@ const (
 	AdminService_UpdateProject_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateProject"
 	AdminService_UpdateProjectVariables_FullMethodName                = "/rill.admin.v1.AdminService/UpdateProjectVariables"
 	AdminService_CreateAsset_FullMethodName                           = "/rill.admin.v1.AdminService/CreateAsset"
+	AdminService_RedeployProject_FullMethodName                       = "/rill.admin.v1.AdminService/RedeployProject"
 	AdminService_HibernateProject_FullMethodName                      = "/rill.admin.v1.AdminService/HibernateProject"
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
@@ -179,13 +180,20 @@ type AdminServiceClient interface {
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error)
+	// RedeployProject creates a new production deployment for a project.
+	// If the project currently has another production deployment, the old deployment will be deprovisioned.
+	// This RPC can be used to redeploy a project that has been hibernated.
+	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error)
-	// TriggerReconcile triggers reconcile for the project's prod deployment
+	// TriggerReconcile triggers reconcile for the project's prod deployment.
+	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
-	// TriggerRefreshSources refresh the source for production deployment
+	// TriggerRefreshSources refresh the source for production deployment.
+	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerRefreshSources(ctx context.Context, in *TriggerRefreshSourcesRequest, opts ...grpc.CallOption) (*TriggerRefreshSourcesResponse, error)
-	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+	// TriggerRedeploy is similar to RedeployProject.
+	// DEPRECATED: Use RedeployProject instead.
 	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
 	ListOrganizationMemberUsers(ctx context.Context, in *ListOrganizationMemberUsersRequest, opts ...grpc.CallOption) (*ListOrganizationMemberUsersResponse, error)
@@ -556,6 +564,16 @@ func (c *adminServiceClient) CreateAsset(ctx context.Context, in *CreateAssetReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateAssetResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateAsset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RedeployProjectResponse)
+	err := c.cc.Invoke(ctx, AdminService_RedeployProject_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1612,13 +1630,20 @@ type AdminServiceServer interface {
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error)
+	// RedeployProject creates a new production deployment for a project.
+	// If the project currently has another production deployment, the old deployment will be deprovisioned.
+	// This RPC can be used to redeploy a project that has been hibernated.
+	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error)
-	// TriggerReconcile triggers reconcile for the project's prod deployment
+	// TriggerReconcile triggers reconcile for the project's prod deployment.
+	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
-	// TriggerRefreshSources refresh the source for production deployment
+	// TriggerRefreshSources refresh the source for production deployment.
+	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerRefreshSources(context.Context, *TriggerRefreshSourcesRequest) (*TriggerRefreshSourcesResponse, error)
-	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+	// TriggerRedeploy is similar to RedeployProject.
+	// DEPRECATED: Use RedeployProject instead.
 	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
 	ListOrganizationMemberUsers(context.Context, *ListOrganizationMemberUsersRequest) (*ListOrganizationMemberUsersResponse, error)
@@ -1875,6 +1900,9 @@ func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *
 }
 func (UnimplementedAdminServiceServer) CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAsset not implemented")
+}
+func (UnimplementedAdminServiceServer) RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RedeployProject not implemented")
 }
 func (UnimplementedAdminServiceServer) HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HibernateProject not implemented")
@@ -2502,6 +2530,24 @@ func _AdminService_CreateAsset_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).CreateAsset(ctx, req.(*CreateAssetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RedeployProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeployProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RedeployProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RedeployProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RedeployProject(ctx, req.(*RedeployProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4398,6 +4444,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateAsset",
 			Handler:    _AdminService_CreateAsset_Handler,
+		},
+		{
+			MethodName: "RedeployProject",
+			Handler:    _AdminService_RedeployProject_Handler,
 		},
 		{
 			MethodName: "HibernateProject",

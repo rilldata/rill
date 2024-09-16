@@ -115,8 +115,9 @@ type projectStatusTableRow struct {
 
 func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, project string) (*projectStatusTableRow, error) {
 	proj, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName: org,
-		Name:             project,
+		OrganizationName:    org,
+		Name:                project,
+		IssueSuperuserToken: true,
 	})
 	if err != nil {
 		return nil, err
@@ -202,8 +203,15 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	}
 
 	// check if there are any parser errors
-	if parser.State != nil && len(parser.State.ParseErrors) != 0 {
-		parseErrorsCount++
+	if parser == nil {
+		return &projectStatusTableRow{
+			Org:              org,
+			Project:          project,
+			DeploymentStatus: "Parser not found (corrupted)",
+		}, nil
+	}
+	if parser.State != nil {
+		parseErrorsCount = len(parser.State.ParseErrors)
 	}
 
 	return &projectStatusTableRow{

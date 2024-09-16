@@ -24,7 +24,7 @@ import {
   createAdBidsMirrorInStore,
   createMetricsMetaQueryMock,
   resetDashboardStore,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
 import {
   getPersistentDashboardStore,
   initPersistentDashboardStore,

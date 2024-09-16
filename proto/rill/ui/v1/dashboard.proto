@@ -162,7 +162,6 @@ message PivotColumnSort {
   string id = 2;
 }
 
-
 message PivotElement {
   oneof element {
     rill.runtime.v1.TimeGrain pivot_time_dimension = 1;

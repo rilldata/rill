@@ -18,7 +18,7 @@
     createRuntimeServicePutFile,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { useIsModelingSupportedForCurrentOlapDriver } from "../connectors/olap/selectors";
+  import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
   import { featureFlags } from "../feature-flags";
   import { directoryState } from "../file-explorer/directory-store";
   import { handleEntityCreate } from "../file-explorer/new-files";
@@ -53,8 +53,8 @@
     currentDirectory,
   );
 
-  $: isModelingSupportedForCurrentOlapDriver =
-    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
+  $: isModelingSupportedForDefaultOlapDriver =
+    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
 
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
@@ -161,7 +161,7 @@
   /**
    * Put an example Chart file in the `charts` directory
    */
-  async function handleAddChart() {
+  async function handleAddComponent() {
     const newRoute = await handleEntityCreate(ResourceKind.Component);
     await wrapNavigation(newRoute);
   }
@@ -169,7 +169,7 @@
   /**
    * Put an example Custom Dashboard file in the `custom-dashbaords` directory
    */
-  async function handleAddCustomDashboard() {
+  async function handleAddCanvasDashboard() {
     const newRoute = await handleEntityCreate(ResourceKind.Dashboard);
     await wrapNavigation(newRoute);
   }
@@ -218,7 +218,7 @@
     </Button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-[240px]">
-    {#if $isModelingSupportedForCurrentOlapDriver}
+    {#if $isModelingSupportedForDefaultOlapDriver}
       <DropdownMenu.Item
         aria-label="Add Source"
         class="flex gap-x-2"
@@ -276,24 +276,24 @@
           <DropdownMenu.Separator />
         </DropdownMenu.Item>
         {#if $customDashboards}
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Component]}
-              className="text-gray-900"
-              size="16px"
-            />
-            Chart
-          </DropdownMenu.Item>
           <DropdownMenu.Item
             class="flex gap-x-2"
-            on:click={handleAddCustomDashboard}
+            on:click={handleAddCanvasDashboard}
           >
             <svelte:component
               this={resourceIconMapping[ResourceKind.Dashboard]}
               className="text-gray-900"
               size="16px"
             />
-            Custom Dashboard
+            Canvas Dashboard
+          </DropdownMenu.Item>
+          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddComponent}>
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Component]}
+              className="text-gray-900"
+              size="16px"
+            />
+            Component
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>

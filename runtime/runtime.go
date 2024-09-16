@@ -144,6 +144,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 				Name:                r.Name.Name,
 				Type:                r.ConnectorSpec.Driver,
 				Config:              r.ConnectorSpec.Properties,
+				TemplatedProperties: r.ConnectorSpec.TemplatedProperties,
 				ConfigFromVariables: r.ConnectorSpec.PropertiesFromVariables,
 			}
 		}
@@ -194,6 +195,7 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 		Name:                name,
 		Type:                connector.Driver,
 		Config:              connector.Properties,
+		TemplatedProperties: connector.TemplatedProperties,
 		ConfigFromVariables: connector.PropertiesFromVariables,
 	})
 

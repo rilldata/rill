@@ -30,6 +30,7 @@
 
   $: colDimensions = tableProperties.col_dimensions || [];
   $: rowDimensions = tableProperties.row_dimensions || [];
+  $: whereSql = tableProperties.filter;
 
   $: pivotState = writable<PivotState>({
     active: true,
@@ -52,6 +53,7 @@
         type: PivotChipType.Dimension,
       })),
     },
+    whereSql,
     expanded: {},
     sorting: [],
     columnPage: 1,
@@ -66,7 +68,7 @@
   $: if (isValidSchema) {
     const stateManagerContext = createStateManagers({
       queryClient,
-      metricsViewName: tableProperties.metric_view,
+      metricsViewName: tableProperties.metrics_view,
       extraKeyPrefix: TABLE_PREFIX,
     });
 

@@ -49,7 +49,9 @@ paths:
         - AdminService
   /v1/deployments/{deploymentId}/reconcile:
     post:
-      summary: TriggerReconcile triggers reconcile for the project's prod deployment
+      summary: |-
+        TriggerReconcile triggers reconcile for the project's prod deployment.
+        DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
       operationId: AdminService_TriggerReconcile
       responses:
         "200":
@@ -74,7 +76,9 @@ paths:
         - AdminService
   /v1/deployments/{deploymentId}/refresh:
     post:
-      summary: TriggerRefreshSources refresh the source for production deployment
+      summary: |-
+        TriggerRefreshSources refresh the source for production deployment.
+        DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
       operationId: AdminService_TriggerRefreshSources
       responses:
         "200":
@@ -486,6 +490,8 @@ paths:
                 type: string
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/{email}:
@@ -1146,6 +1152,33 @@ paths:
             properties:
               role:
                 type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/redeploy:
+    post:
+      summary: |-
+        RedeployProject creates a new production deployment for a project.
+        If the project currently has another production deployment, the old deployment will be deprovisioned.
+        This RPC can be used to redeploy a project that has been hibernated.
+      operationId: AdminService_RedeployProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RedeployProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/reports:
@@ -2278,6 +2311,10 @@ paths:
           required: false
           type: integer
           format: int64
+        - name: issueSuperuserToken
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
@@ -2650,7 +2687,9 @@ paths:
         - AdminService
   /v1/projects/-/redeploy:
     post:
-      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      summary: |-
+        TriggerRedeploy is similar to RedeployProject.
+        DEPRECATED: Use RedeployProject instead.
       operationId: AdminService_TriggerRedeploy
       responses:
         "200":
@@ -4076,6 +4115,10 @@ definitions:
         type: string
       projectId:
         type: string
+      url:
+        type: string
+      token:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -4351,6 +4394,8 @@ definitions:
         items:
           type: object
   v1RecordEventsResponse:
+    type: object
+  v1RedeployProjectResponse:
     type: object
   v1RemoveBookmarkResponse:
     type: object

@@ -13,12 +13,10 @@
     createQueryServiceMetricsViewAggregation,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onMount } from "svelte";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "../../feature-flags";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import RowsViewer from "./RowsViewer.svelte";
-  import { rowViewerStore } from "./row-viewer-store";
 
   const { exports } = featureFlags;
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -35,14 +33,8 @@
   let rowCountlabel = "";
   let label = DEFAULT_LABEL;
   let height = INITIAL_HEIGHT_EXPANDED;
-  let rowViewer: HTMLElement;
-  let manualClose = false;
 
-  onMount(() => {
-    if (rowViewer) {
-      rowViewerStore.set(rowViewer);
-    }
-  });
+  let manualClose = false;
 
   const stateManagers = getStateManagers();
 
@@ -135,7 +127,6 @@
 </script>
 
 <div
-  bind:this={rowViewer}
   class="relative w-screen flex-none overflow-hidden flex flex-col bg-gray-100"
 >
   <Resizer

@@ -2,12 +2,12 @@
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import { RillTheme } from "@rilldata/web-common/layout";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
-  import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
@@ -17,6 +17,7 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
+  import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
 
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
@@ -33,9 +34,8 @@
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;
-
   onMount(async () => {
-    const config = await runtimeServiceGetConfig();
+    const config = await localServiceGetMetadata();
     await initMetrics(config);
     removeJavascriptListeners = errorEventHandler.addJavascriptErrorListeners();
 
@@ -44,7 +44,7 @@
 
     appBuildMetaStore.set({
       version: config.version,
-      commitHash: config.build_commit,
+      commitHash: config.buildCommit,
     });
   });
 
@@ -63,6 +63,7 @@
   <QueryClientProvider client={queryClient}>
     <ResourceWatcher {host} {instanceId}>
       <div class="body h-screen w-screen overflow-hidden absolute">
+        <BannerCenter />
         <RepresentingUserBanner />
         <slot />
       </div>

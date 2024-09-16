@@ -4,7 +4,7 @@
     dashboardVariablesStore,
     useVariable,
     useVariableInputParams,
-  } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import { SelectProperties } from "@rilldata/web-common/features/templates/types";
 
   import {
@@ -16,7 +16,7 @@
   import { getContext } from "svelte";
 
   const MAX_OPTIONS = 250;
-  $: dashboardName = getContext("rill::custom-dashboard:name") as string;
+  $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
 
   export let componentName: string;
   export let rendererProperties: V1ComponentSpecRendererProperties;
@@ -55,7 +55,6 @@
         e.detail,
       )}
     bind:value
-    detach
     id={componentName}
     tooltip={selectProperties.tooltip || ""}
     label={selectProperties.label || ""}

@@ -2,15 +2,11 @@
   import { page } from "$app/stores";
   import AddDataModal from "@rilldata/web-common/features/sources/modal/AddDataModal.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
-  import PreparingImport from "@rilldata/web-common/features/sources/modal/PreparingImport.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import {
-    importOverlayVisible,
-    overlay,
-  } from "@rilldata/web-common/layout/overlay-store";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
 
   let showDropOverlay = false;
 
@@ -43,9 +39,7 @@
   </section>
 </main>
 
-{#if $importOverlayVisible}
-  <PreparingImport />
-{:else if showDropOverlay}
+{#if showDropOverlay}
   <FileDrop bind:showDropOverlay />
 {:else if $overlay !== null}
   <BlockingOverlayContainer

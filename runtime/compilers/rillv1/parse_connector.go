@@ -2,12 +2,7 @@ package rillv1
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
 )
-
-// envVarRegex matches a variable reference in the form {{   .vars.variable   }}
-var envVarRegex = regexp.MustCompile(`^\{\{\s*\.vars\.\w+(?:\.\w+)*\s*\}\}$`)
 
 // ConnectorYAML is the raw structure of a Connector resource defined in YAML (does not include common fields)
 type ConnectorYAML struct {
@@ -26,9 +21,9 @@ func (p *Parser) parseConnector(node *Node) error {
 		return err
 	}
 
-	props, propsFromVariables, err := propertiesFromVariables(tmp.Defaults)
+	templatedProps, err := analyzeTemplatedProperties(tmp.Defaults)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to analyze templated properties: %w", err)
 	}
 
 	// Insert the connector
@@ -39,33 +34,23 @@ func (p *Parser) parseConnector(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ConnectorSpec.Driver = tmp.Driver
-	r.ConnectorSpec.Properties = props
-	r.ConnectorSpec.PropertiesFromVariables = propsFromVariables
+	r.ConnectorSpec.Properties = tmp.Defaults
+	r.ConnectorSpec.TemplatedProperties = templatedProps
 	return nil
 }
 
-func propertiesFromVariables(in map[string]string) (map[string]string, map[string]string, error) {
-	props := make(map[string]string)
-	propsFromVars := make(map[string]string)
-	for key, val := range in {
-		meta, err := AnalyzeTemplate(val)
+// analyzeTemplatedProperties returns a slice of map keys that have a value which contains templating tags.
+func analyzeTemplatedProperties(m map[string]string) ([]string, error) {
+	var res []string
+	for k, v := range m {
+		meta, err := AnalyzeTemplate(v)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		if len(meta.Variables) == 0 { // property does not use any variables
-			props[key] = val
+		if !meta.UsesTemplating {
 			continue
 		}
-		// property uses variables
-		if len(meta.Variables) > 1 {
-			return nil, nil, fmt.Errorf("invalid property %q: can contain at most one variable, found %d variables", key, len(meta.Variables))
-		}
-		if !envVarRegex.MatchString(val) {
-			return nil, nil, fmt.Errorf(`invalid property %q: variable references should match the format "{{ .vars.variable_name }}"`, key)
-		}
-
-		after, _ := strings.CutPrefix(meta.Variables[0], "vars.")
-		propsFromVars[key] = after
+		res = append(res, k)
 	}
-	return props, propsFromVars, nil
+	return res, nil
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ChartTemplate from "@rilldata/web-common/features/templates/charts/ChartTemplate.svelte";
+  import Chart from "@rilldata/web-common/features/canvas-dashboards/Chart.svelte";
   import Image from "@rilldata/web-common/features/templates/image/Image.svelte";
   import KPITemplate from "@rilldata/web-common/features/templates/kpi/KPITemplate.svelte";
   import Markdown from "@rilldata/web-common/features/templates/markdown/Markdown.svelte";
@@ -35,11 +35,5 @@
 {:else if renderer === "switch"}
   <Switch {output} {rendererProperties} />
 {:else if resolverProperties}
-  <ChartTemplate
-    {chartView}
-    {input}
-    {renderer}
-    {componentName}
-    {rendererProperties}
-  />
+  <Chart {chartView} {input} {componentName} />
 {/if}

@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -103,16 +104,22 @@ func (i *Instance) ResolveOLAPConnector() string {
 }
 
 // ResolveVariables returns the final resolved variables
-func (i *Instance) ResolveVariables() map[string]string {
-	r := make(map[string]string, len(i.ProjectVariables))
+func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
+	r := make(map[string]string, len(i.ProjectVariables)+len(i.Variables))
 
 	// set ProjectVariables first i.e. Project defaults
 	for k, v := range i.ProjectVariables {
+		if withLowerKeys {
+			k = strings.ToLower(k)
+		}
 		r[k] = v
 	}
 
 	// override with instance Variables
 	for k, v := range i.Variables {
+		if withLowerKeys {
+			k = strings.ToLower(k)
+		}
 		r[k] = v
 	}
 	return r
@@ -134,7 +141,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	}
 
 	// Resolve variables
-	vars := i.ResolveVariables()
+	vars := i.ResolveVariables(true)
 
 	// Backwards compatibility: Use "__materialize_default" as alias for "rill.models.default_materialize".
 	if vars != nil {

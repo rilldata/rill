@@ -318,6 +318,21 @@ func (c *catalogStore) UpdateModelSplit(ctx context.Context, modelID string, spl
 	return nil
 }
 
+func (c *catalogStore) UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error {
+	_, err := c.db.ExecContext(
+		ctx,
+		"UPDATE model_splits SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
+		c.instanceID,
+		modelID,
+		splitKey,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *catalogStore) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
 	_, err := c.db.ExecContext(
 		ctx,

@@ -1,8 +1,8 @@
-import { buildGroupedComparisonBar } from "@rilldata/web-common/features/templates/charts/grouped-comparison-bar";
+import { ChartType } from "@rilldata/web-common/features/canvas-components/types";
 import { VisualizationSpec } from "svelte-vega";
-import { ChartType } from "../../charts/types";
 import { buildArea } from "./area";
 import { buildGroupedBar } from "./grouped-bar";
+import { buildGroupedComparisonBar } from "./grouped-comparison-bar";
 import { buildLine } from "./line";
 import { buildSimpleBar } from "./simple-bar";
 import { buildStackedArea } from "./stacked-area";
