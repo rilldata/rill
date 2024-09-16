@@ -216,10 +216,6 @@
     @apply border-b border-primary-600;
   }
 
-  .row:last-of-type td {
-    @apply border-b-0;
-  }
-
   .source-code {
     font-family: "Source Code Variable", monospace;
   }

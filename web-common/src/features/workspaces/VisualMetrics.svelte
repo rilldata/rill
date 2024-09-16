@@ -478,10 +478,6 @@
     @apply flex gap-x-3 p-4;
   }
 
-  p {
-    @apply font-medium text-sm;
-  }
-
   h1 {
     @apply text-[16px] font-medium;
   }

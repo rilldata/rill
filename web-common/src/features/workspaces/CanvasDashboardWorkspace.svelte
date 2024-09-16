@@ -36,7 +36,7 @@
 
   let canvasDashboardName: string;
   let selectedComponentFileArtifact: FileArtifact | undefined;
-  let selectedView = "split";
+  let selectedView: "split" | "code" | "viz" = "split";
   let showGrid = true;
   let showComponentEditor = false;
   let containerWidth: number;
