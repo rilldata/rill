@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils";
-  import type { PathOption, PathOptions } from "./Breadcrumbs.svelte";
+  import type { PathOption, PathOptions } from "./types";
 
   export let options: PathOptions;
   export let current: string;

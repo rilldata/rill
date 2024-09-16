@@ -1107,7 +1107,7 @@ func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID 
 	res := make([]*database.MagicAuthTokenWithUser, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsModel()
+		res[i], err = c.magicAuthTokenWithUserFromDTO(dto)
 		if err != nil {
 			return nil, err
 		}
@@ -1115,13 +1115,13 @@ func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID 
 	return res, nil
 }
 
-func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*database.MagicAuthToken, error) {
+func (c *connection) FindMagicAuthToken(ctx context.Context, id string, withSecret bool) (*database.MagicAuthToken, error) {
 	res := &magicAuthTokenDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM magic_auth_tokens t WHERE t.id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenFromDTO(res, withSecret)
 }
 
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
@@ -1130,7 +1130,7 @@ func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) 
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenWithUserFromDTO(res)
 }
 
 func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
@@ -1142,16 +1142,21 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		opts.MetricsViewFields = []string{}
 	}
 
+	encSecret, encKeyID, err := c.encrypt(opts.Secret)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &magicAuthTokenDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsModel()
+	return c.magicAuthTokenFromDTO(res, true)
 }
 
 func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -1962,6 +1967,37 @@ func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, 
 	return res, nil
 }
 
+// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
+func (c *connection) encrypt(text []byte) ([]byte, string, error) {
+	if len(c.encKeyring) == 0 {
+		return text, "", nil
+	}
+	// use the first key in the keyring for encryption
+	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+	if err != nil {
+		return nil, "", err
+	}
+	return encrypted, c.encKeyring[0].ID, nil
+}
+
+// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
+func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
+	if encKeyID == "" {
+		return text, nil
+	}
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+	return decrypt(text, encKey.Secret)
+}
+
 // returns the map with encrypted values and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the values are returned as is.
 func (c *connection) encryptMap(m map[string]string) (map[string]string, string, error) {
 	if len(c.encKeyring) == 0 {
@@ -1974,11 +2010,11 @@ func (c *connection) encryptMap(m map[string]string) (map[string]string, string,
 	for k, v := range m {
 		// use the first key in the keyring for encryption
 		encKeyID = c.encKeyring[0].ID
-		encrypted, err := encrypt(v, c.encKeyring[0].Secret)
+		encrypted, err := encrypt([]byte(v), c.encKeyring[0].Secret)
 		if err != nil {
 			return nil, "", err
 		}
-		vars[k] = encrypted
+		vars[k] = base64.StdEncoding.EncodeToString(encrypted)
 	}
 	return vars, encKeyID, nil
 }
@@ -2003,11 +2039,15 @@ func (c *connection) decryptMap(m map[string]string, encKeyID string) (map[strin
 	// copy the map to avoid modifying the original map
 	vars := make(map[string]string, len(m))
 	for k, v := range m {
-		decrypted, err := decrypt(v, encKey.Secret)
+		decoded, err := base64.StdEncoding.DecodeString(v)
 		if err != nil {
 			return nil, err
 		}
-		vars[k] = decrypted
+		decrypted, err := decrypt(decoded, encKey.Secret)
+		if err != nil {
+			return nil, err
+		}
+		vars[k] = string(decrypted)
 	}
 	return vars, nil
 }
@@ -2019,17 +2059,27 @@ type magicAuthTokenDTO struct {
 	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
 }
 
-func (m *magicAuthTokenDTO) AsModel() (*database.MagicAuthToken, error) {
-	err := m.Attributes.AssignTo(&m.MagicAuthToken.Attributes)
+func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
+	err := dto.Attributes.AssignTo(&dto.MagicAuthToken.Attributes)
 	if err != nil {
 		return nil, err
 	}
-	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.MagicAuthToken, nil
+	if fetchSecret {
+		dto.MagicAuthToken.Secret, err = c.decrypt(dto.MagicAuthToken.Secret, dto.MagicAuthToken.SecretEncryptionKeyID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dto.MagicAuthToken.Secret = nil
+		dto.MagicAuthToken.SecretEncryptionKeyID = ""
+	}
+
+	return dto.MagicAuthToken, nil
 }
 
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
@@ -2039,17 +2089,22 @@ type magicAuthTokenWithUserDTO struct {
 	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
 }
 
-func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser, error) {
-	err := m.Attributes.AssignTo(&m.MagicAuthTokenWithUser.Attributes)
+func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
+	err := dto.Attributes.AssignTo(&dto.MagicAuthTokenWithUser.Attributes)
 	if err != nil {
 		return nil, err
 	}
-	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.MagicAuthTokenWithUser, nil
+	dto.MagicAuthTokenWithUser.Secret, err = c.decrypt(dto.MagicAuthTokenWithUser.Secret, dto.MagicAuthTokenWithUser.SecretEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.MagicAuthTokenWithUser, nil
 }
 
 type organizationInviteDTO struct {
@@ -2157,53 +2212,48 @@ func parseErr(target string, err error) error {
 }
 
 // encrypts plaintext using AES-GCM with the given key and returns the base64 encoded ciphertext
-func encrypt(plaintext string, key []byte) (string, error) {
+func encrypt(plaintext, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	nonce := make([]byte, aesGCM.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// nonce is prepended to the ciphertext, so it can be used for decryption
-	ciphertext := aesGCM.Seal(nonce, nonce, []byte(plaintext), nil)
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
+	return ciphertext, nil
 }
 
-// decrypts the base64 encoded ciphertext using AES-GCM with the given key and returns the plaintext
-func decrypt(ciphertextBase64 string, key []byte) (string, error) {
-	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextBase64)
-	if err != nil {
-		return "", err
-	}
-
+// decrypts the ciphertext using AES-GCM with the given key and returns the plaintext
+func decrypt(ciphertext, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	nonceSize := aesGCM.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return "", errors.New("ciphertext too short")
+		return nil, errors.New("ciphertext too short")
 	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 	d, err := aesGCM.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(d), nil
+	return d, nil
 }

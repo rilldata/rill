@@ -60,10 +60,13 @@
         "comparison_range": {
           "type": "string"
         },
+        "filter": {
+          "type": "string"
+        },
         "measure": {
           "type": "string"
         },
-        "metric_view": {
+        "metrics_view": {
           "type": "string"
         },
         "time_range": {
@@ -72,7 +75,7 @@
       },
       "required": [
         "measure",
-        "metric_view",
+        "metrics_view",
         "time_range"
       ],
       "type": "object"
@@ -195,13 +198,16 @@
         "comparison_range": {
           "type": "string"
         },
+        "filter": {
+          "type": "string"
+        },
         "measures": {
           "items": {
             "type": "string"
           },
           "type": "array"
         },
-        "metric_view": {
+        "metrics_view": {
           "type": "string"
         },
         "row_dimensions": {
@@ -216,7 +222,7 @@
       },
       "required": [
         "measures",
-        "metric_view",
+        "metrics_view",
         "time_range"
       ],
       "type": "object"

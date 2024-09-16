@@ -4,11 +4,9 @@
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import Spinner from "../../entity-management/Spinner.svelte";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -58,7 +56,7 @@
     };
   }
 
-  let [send, receive] = crossfade({
+  let [send] = crossfade({
     fallback: (node, _params, _intro) => fly(node),
   });
 
@@ -142,14 +140,6 @@
         on:select={handleMeasureUpdate}
         ariaLabel="Select a measure to filter by"
       />
-    </div>
-  {:else}
-    <div
-      class="flex flex-row items-center"
-      style:grid-column-gap=".4rem"
-      in:receive|global={{ key: "loading-leaderboard-metric" }}
-    >
-      pulling leaderboards <Spinner status={EntityStatus.Running} />
     </div>
   {/if}
 </div>

@@ -4115,6 +4115,10 @@ definitions:
         type: string
       projectId:
         type: string
+      url:
+        type: string
+      token:
+        type: string
       createdOn:
         type: string
         format: date-time

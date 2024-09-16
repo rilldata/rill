@@ -2,18 +2,21 @@ import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/fi
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  V1ExportFormat,
-  V1TimeGrain,
   createQueryServiceExport,
-  V1TimeRange,
+  V1ExportFormat,
   V1MetricsViewAggregationRequest,
+  V1TimeGrain,
+  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
+import { getPivotConfig } from "./pivot-data-store";
+import { prepareMeasureForComparison } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -22,9 +25,6 @@ import {
   PivotRows,
   PivotState,
 } from "./types";
-import { prepareMeasureForComparison } from "./pivot-utils";
-import { getPivotConfig } from "./pivot-data-store";
-import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 
 export default async function exportPivot({
   ctx,
@@ -183,24 +183,9 @@ export function getPivotAggregationRequest(
 
   // Sort by the dimensions in the pivot's rows
   const sort = rowDimensions.map((d) => {
-    // NOTE: This the default sorting in the pivot aggregation query
-    if (!pivotState.sorting.length) {
-      return {
-        name: d.name,
-        desc: true,
-      };
-    }
-
-    if (d.alias) {
-      return {
-        name: d.alias,
-        desc: false,
-      };
-    }
-
     return {
-      name: d.name,
-      desc: false,
+      name: d.alias ? d.alias : d.name,
+      desc: pivotState.sorting.find((s) => s.id === d.name)?.desc ?? false,
     };
   });
 

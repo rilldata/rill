@@ -147,7 +147,8 @@ vega_lite: |
     name: "canvas-dashboard",
     extension: ".yaml",
     baseContent: `type: dashboard
-columns: 10
+title: "Canvas Dashboard"
+columns: 24
 gap: 2
 
 items:

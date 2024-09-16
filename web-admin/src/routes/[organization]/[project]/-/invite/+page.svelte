@@ -50,6 +50,8 @@
   }
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
+
+  let invited = false;
 </script>
 
 <div class="flex flex-col gap-5 w-[600px] my-16 sm:my-32 md:my-64 mx-auto">
@@ -60,7 +62,11 @@
       <div class="grow"></div>
       <CopyInviteLinkButton {copyLink} />
     </div>
-    <UserInviteForm {organization} {project} />
+    <UserInviteForm
+      {organization}
+      {project}
+      onInvite={() => (invited = true)}
+    />
   </div>
   {#if $userDomain.data && !$isPublicDomain.data}
     <div class="flex flex-col gap-y-1">
@@ -92,6 +98,6 @@
     wide
     class="mx-auto"
   >
-    Skip
+    {invited ? "Continue" : "Skip"}
   </Button>
 </div>
