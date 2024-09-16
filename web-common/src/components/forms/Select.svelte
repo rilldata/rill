@@ -3,7 +3,6 @@
   import { createEventDispatcher } from "svelte";
   import * as Select from "@rilldata/web-common/components/select";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import { builderActions } from "bits-ui";
 
   const dispatch = createEventDispatcher();
 
