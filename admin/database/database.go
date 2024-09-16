@@ -626,7 +626,7 @@ type MagicAuthToken struct {
 	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
 	MetricsViewFields     []string       `db:"metrics_view_fields"`
 	State                 string         `db:"state"`
-	Name                  string         `db:"name"`
+	Title                 string         `db:"title"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -648,7 +648,7 @@ type InsertMagicAuthTokenOptions struct {
 	MetricsViewFilterJSON string
 	MetricsViewFields     []string
 	State                 string
-	Name                  string
+	Title                 string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.

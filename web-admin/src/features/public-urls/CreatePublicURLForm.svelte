@@ -35,7 +35,7 @@
 
   $: ({ organization, project } = $page.params);
 
-  $: isNameEmpty = $form.name.trim() === "";
+  $: isTitleEmpty = $form.title.trim() === "";
 
   $: metricsViewFields = getMetricsViewFields(
     $dashboardStore,
@@ -56,12 +56,12 @@
 
   const initialValues = {
     expiresAt: null,
-    name: "",
+    title: "",
   };
 
   const validationSchema = object({
     expiresAt: string().nullable(),
-    name: string().required("Name is required"),
+    title: string().required("Title is required"),
   });
 
   const issueMagicAuthToken = createAdminServiceIssueMagicAuthToken();
@@ -88,7 +88,7 @@
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
               state: sanitizedState ? sanitizedState : undefined,
-              name: values.name,
+              title: values.title,
             },
           });
           token = _token;
@@ -145,7 +145,7 @@
         <input
           id="name-input"
           type="text"
-          bind:value={$form.name}
+          bind:value={$form.title}
           placeholder="Name this URL"
           class="w-full px-3 py-2 border border-gray-300 rounded-md"
         />
@@ -193,7 +193,7 @@
 
     <Button
       type="primary"
-      disabled={$submitting || isNameEmpty}
+      disabled={$submitting || isTitleEmpty}
       form={formId}
       submitForm
     >

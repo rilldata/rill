@@ -7270,11 +7270,11 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   state = "";
 
   /**
-   * Optional public url name to store with the token.
+   * Optional public url title to store with the token.
    *
-   * @generated from field: string name = 8;
+   * @generated from field: string title = 8;
    */
-  name = "";
+  title = "";
 
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
@@ -7291,7 +7291,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 5, name: "metrics_view_filter", kind: "message", T: Expression },
     { no: 6, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -12224,9 +12224,9 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   state = "";
 
   /**
-   * @generated from field: string name = 15;
+   * @generated from field: string title = 15;
    */
-  name = "";
+  title = "";
 
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
@@ -12250,7 +12250,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
     { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 15, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {

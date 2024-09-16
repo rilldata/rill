@@ -47,12 +47,12 @@
 
   const columns: ColumnDef<MagicAuthTokenProps, any>[] = [
     {
-      accessorKey: "name",
+      accessorKey: "title",
       header: "Label",
       cell: ({ row }) =>
         flexRender(DashboardLink, {
           href: row.original.url,
-          title: row.original.name,
+          title: row.original.title,
         }),
     },
     {

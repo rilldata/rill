@@ -163,8 +163,8 @@ If empty, all dimensions and measures are accessible. */
   metricsViewFields?: string[];
   /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
   state?: string;
-  /** Optional public url name to store with the token. */
-  name?: string;
+  /** Optional public url title to store with the token. */
+  title?: string;
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
@@ -829,7 +829,7 @@ export interface V1MagicAuthToken {
   metricsViewFilter?: V1Expression;
   metricsViewFields?: string[];
   state?: string;
-  name?: string;
+  title?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {

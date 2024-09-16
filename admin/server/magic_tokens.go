@@ -52,7 +52,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		MetricsView:       req.MetricsView,
 		MetricsViewFields: req.MetricsViewFields,
 		State:             req.State,
-		Name:              req.Name,
+		Title:             req.Title,
 	}
 
 	if req.TtlMinutes != 0 {
@@ -285,7 +285,7 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		MetricsViewFilter:  metricsViewFilter,
 		MetricsViewFields:  tkn.MetricsViewFields,
 		State:              tkn.State,
-		Name:               tkn.Name,
+		Title:              tkn.Title,
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)
