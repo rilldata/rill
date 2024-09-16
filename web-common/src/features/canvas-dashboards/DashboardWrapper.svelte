@@ -24,8 +24,15 @@
   });
 </script>
 
-<div class="size-full bg-gray-100 flex justify-center">
-  <div bind:contentRect class="wrapper {color} max-w-[1200px]">
+<div
+  class="size-full bg-gray-100 flex justify-center overflow-y-auto"
+  on:scroll
+>
+  <div
+    bind:contentRect
+    class="wrapper {color} max-w-[1440px]"
+    style:height="{height}px"
+  >
     {#if GridLinesComponent && (showGrid || changing)}
       <svelte:component
         this={GridLinesComponent}
@@ -36,17 +43,12 @@
         {scale}
       />
     {/if}
-    <div
-      role="presentation"
-      class="size-full overflow-y-auto overflow-x-hidden relative"
-      on:scroll
-      on:click|self
-    >
+    <div role="presentation" class="size-full relative" on:click|self>
       <div
         class="dash pointer-events-none"
         role="presentation"
         style:width="{width}px"
-        style:height="{height}}px"
+        style:height="{height}px"
         style:transform="scale({scale})"
       >
         <slot />
@@ -60,7 +62,7 @@
     width: 100%;
     height: 100%;
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; */
     user-select: none;
     margin: 0;
     pointer-events: auto;

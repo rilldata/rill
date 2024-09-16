@@ -166,8 +166,11 @@
 
   $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
+    console.log({ bottom });
     return Math.max(max, bottom);
   }, 0);
+
+  $: console.log({ gridCell });
 </script>
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
@@ -181,7 +184,7 @@
   {radius}
   {scale}
   {showGrid}
-  height={maxBottom * gridCell}
+  height={maxBottom * gridCell * scale}
   width={defaults.DASHBOARD_WIDTH}
   on:click={deselect}
   on:scroll={handleScroll}
