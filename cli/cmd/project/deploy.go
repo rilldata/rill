@@ -156,12 +156,20 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		return err
 	}
 
-	// check if the project with name already exists
-	projectExists, err := projectExists(ctx, ch, ch.Org, opts.Name)
+	projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
 	if err != nil {
-		return err
+		if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
+			return err
+		}
 	}
-	if projectExists {
+
+	// check if the project with name already exists
+	if projResp != nil {
+		if projResp.Project.GithubUrl != "" {
+			ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to %q to deploy.\n", projResp.Project.GithubUrl)
+			return nil
+		}
+
 		ch.Printer.Println("Found existing project. Starting re-upload.")
 		assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 		if err != nil {
