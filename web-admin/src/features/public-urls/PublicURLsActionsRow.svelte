@@ -41,7 +41,8 @@
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      class="font-normal flex items-center text-red-500 hover:text-red-600"
+      class="font-normal flex items-center"
+      type="destructive"
       on:click={handleDelete}
     >
       <Trash2Icon size="12px" />
