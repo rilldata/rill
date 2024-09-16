@@ -10,7 +10,7 @@ tags:
 
 Changes to the underlying data may require modification to your SQL / Dashboard in order to start visualizing your new data. 
 
-You will need to add the dimension/s back in Rill Developer and push the changes to Rill Cloud when you're ready.
+You will need to add the dimension/s back in Rill Developer and [push the changes to Rill Cloud](/tutorials/rill_advanced_features/advanced_developer/update-rill-cloud) when you're ready.
 
 ## Rill Developer
 

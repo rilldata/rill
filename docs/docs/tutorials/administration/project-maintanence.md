@@ -9,6 +9,31 @@ tags:
 
 import ComingSoon from '@site/src/components/ComingSoon';
 
+Changes to the project information, such as title and description is only modifable in the CLI. 
+
+To change the name of your project:
+```bash
+rill project rename
+? Select project to rename my-rill-tutorial
+? Enter the New Project Name my-Rill-tutorial
+? Do you want to rename the project "my-rill-tutorial" to "my-Rill-tutorial"? Yes
+Renamed project
+New web url is: https://ui.rilldata.io/Rill_Tutorial/my-Rill-tutorial
+  NAME               PUBLIC   GITHUB                                        ORGANIZATION   
+ ------------------ -------- --------------------------------------------- --------------- 
+  my-Rill-tutorial   No       https://github.com/royendo/my-rill-tutorial   Rill_Tutorial
+```
+
+To change the description, branch, and public access:
+```bash
+rill project edit
+
+? Select project my-rill-tutorial
+? Enter the description A project that follows the Rill Tutorials
+? Enter the production branch main
+? Make project public No
+```
+
 
 ## Status
 

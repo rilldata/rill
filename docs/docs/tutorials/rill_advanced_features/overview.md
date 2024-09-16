@@ -16,5 +16,5 @@ import CustomDocCardList from '@site/src/components/CustomDocCardList';
 ---
 
 :::tip Available on GitHub
-This project is available on our [GitHub Repository](https://github.com/rilldata/rill-examples/) under the 'Rill Expert' Folder.
+This project is available on our [GitHub Repository](https://github.com/rilldata/rill-examples/) under the '2. Rill Advanced' Folder.
 :::

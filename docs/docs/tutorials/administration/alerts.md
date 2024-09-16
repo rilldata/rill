@@ -55,11 +55,14 @@ Once we've created this, let's [push our changes to Rill Cloud](/tutorials/rill_
 
 ![img](/img/tutorials/admin/failing-dashboard.png)
 
-Now, you'll receive an email that gives you more information on the failing resource, in this case the dashboard.
+Now, you'll receive an email that gives you more information on the failing resource, in this case the dashboard. 
 
 
-> insert IMG of email 
+![img](/img/tutorials/admin/alert-email.png)
 
+You can view all the alerts (project and dashboard) from the Alerts page
+
+![img](/img/tutorials/admin/alert-code.png)
 
 ## Dashboard Alerts
 

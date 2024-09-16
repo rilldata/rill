@@ -162,7 +162,6 @@ const sidebars = {
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
             'tutorials/other/add-column-dimension',
-            'tutorials/other/change-project-details',
             'tutorials/other/avg_avg',
 
           ]
