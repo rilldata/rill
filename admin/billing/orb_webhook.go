@@ -94,7 +94,7 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 }
 
 func (o *orbWebhook) handleInvoicePaymentSucceeded(ctx context.Context, ie invoiceEvent) error {
-	res, err := o.jobs.InvoicePaymentSuccess(ctx, ie.OrbInvoice.Customer.ExternalCustomerID, ie.OrbInvoice.ID)
+	res, err := o.jobs.PaymentSuccess(ctx, ie.OrbInvoice.Customer.ExternalCustomerID, ie.OrbInvoice.ID)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (o *orbWebhook) handleInvoicePaymentSucceeded(ctx context.Context, ie invoi
 }
 
 func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceEvent) error {
-	res, err := o.jobs.InvoicePaymentFailed(ctx,
+	res, err := o.jobs.PaymentFailed(ctx,
 		ie.OrbInvoice.Customer.ExternalCustomerID,
 		ie.OrbInvoice.ID,
 		ie.OrbInvoice.InvoiceNumber,

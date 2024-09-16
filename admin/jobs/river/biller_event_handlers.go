@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type InvoicePaymentFailedArgs struct {
+type PaymentFailedArgs struct {
 	BillingCustomerID string
 	InvoiceID         string
 	InvoiceNumber     string
@@ -25,15 +25,15 @@ type InvoicePaymentFailedArgs struct {
 	FailedAt          time.Time
 }
 
-func (InvoicePaymentFailedArgs) Kind() string { return "invoice_payment_failed" }
+func (PaymentFailedArgs) Kind() string { return "payment_failed" }
 
-type InvoicePaymentFailedWorker struct {
-	river.WorkerDefaults[InvoicePaymentFailedArgs]
+type PaymentFailedWorker struct {
+	river.WorkerDefaults[PaymentFailedArgs]
 	admin  *admin.Service
 	logger *zap.Logger
 }
 
-func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[InvoicePaymentFailedArgs]) error {
+func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFailedArgs]) error {
 	org, err := w.admin.DB.FindOrganizationForBillingCustomerID(ctx, job.Args.BillingCustomerID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -45,7 +45,7 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[In
 
 	// schedule a job to check if the invoice is paid after end of grace period
 	gracePeriodEndDate := job.Args.FailedAt.Truncate(24*time.Hour).AddDate(0, 0, gracePeriodDays)
-	j, err := w.admin.Jobs.InvoicePaymentFailedGracePeriodCheck(ctx, org.ID, job.Args.InvoiceID, gracePeriodEndDate)
+	j, err := w.admin.Jobs.PaymentFailedGracePeriodCheck(ctx, org.ID, job.Args.InvoiceID, gracePeriodEndDate)
 	if err != nil {
 		return fmt.Errorf("failed to schedule invoice payment failed grace period check job: %w", err)
 	}
@@ -103,20 +103,20 @@ func (w *InvoicePaymentFailedWorker) Work(ctx context.Context, job *river.Job[In
 	return nil
 }
 
-type InvoicePaymentSuccessArgs struct {
+type PaymentSuccessArgs struct {
 	BillingCustomerID string
 	InvoiceID         string
 }
 
-func (InvoicePaymentSuccessArgs) Kind() string { return "invoice_payment_success" }
+func (PaymentSuccessArgs) Kind() string { return "payment_success" }
 
-type InvoicePaymentSuccessWorker struct {
-	river.WorkerDefaults[InvoicePaymentSuccessArgs]
+type PaymentSuccessWorker struct {
+	river.WorkerDefaults[PaymentSuccessArgs]
 	admin  *admin.Service
 	logger *zap.Logger
 }
 
-func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[InvoicePaymentSuccessArgs]) error {
+func (w *PaymentSuccessWorker) Work(ctx context.Context, job *river.Job[PaymentSuccessArgs]) error {
 	org, err := w.admin.DB.FindOrganizationForBillingCustomerID(ctx, job.Args.BillingCustomerID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -191,23 +191,23 @@ func (w *InvoicePaymentSuccessWorker) Work(ctx context.Context, job *river.Job[I
 	return nil
 }
 
-type InvoicePaymentFailedGracePeriodCheckArgs struct {
+type PaymentFailedGracePeriodCheckArgs struct {
 	OrgID              string
 	InvoiceID          string
 	GracePeriodEndDate time.Time
 }
 
-func (InvoicePaymentFailedGracePeriodCheckArgs) Kind() string {
-	return "invoice_payment_failed_grace_period_check"
+func (PaymentFailedGracePeriodCheckArgs) Kind() string {
+	return "payment_failed_grace_period_check"
 }
 
-type InvoicePaymentFailedGracePeriodCheckWorker struct {
-	river.WorkerDefaults[InvoicePaymentFailedGracePeriodCheckArgs]
+type PaymentFailedGracePeriodCheckWorker struct {
+	river.WorkerDefaults[PaymentFailedGracePeriodCheckArgs]
 	admin  *admin.Service
 	logger *zap.Logger
 }
 
-func (w *InvoicePaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[InvoicePaymentFailedGracePeriodCheckArgs]) error {
+func (w *PaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[PaymentFailedGracePeriodCheckArgs]) error {
 	org, err := w.admin.DB.FindOrganization(ctx, job.Args.OrgID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {

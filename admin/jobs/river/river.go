@@ -78,9 +78,9 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &CustomerAddressUpdatedWorker{admin: adm})
 
 	// biller event handlers
-	river.AddWorker(workers, &InvoicePaymentFailedWorker{admin: adm, logger: billingLogger})
-	river.AddWorker(workers, &InvoicePaymentSuccessWorker{admin: adm, logger: billingLogger})
-	river.AddWorker(workers, &InvoicePaymentFailedGracePeriodCheckWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &PaymentFailedWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &PaymentSuccessWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &PaymentFailedGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 
 	// trial checks worker
 	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm, logger: billingLogger})
@@ -232,8 +232,8 @@ func (c *Client) CustomerAddressUpdated(ctx context.Context, paymentCustomerID s
 	}, nil
 }
 
-func (c *Client) InvoicePaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, InvoicePaymentFailedArgs{
+func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PaymentFailedArgs{
 		BillingCustomerID: billingCustomerID,
 		InvoiceID:         invoiceID,
 		InvoiceNumber:     invoiceNumber,
@@ -252,7 +252,7 @@ func (c *Client) InvoicePaymentFailed(ctx context.Context, billingCustomerID, in
 	}
 
 	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("InvoicePaymentFailed job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID), zap.String("invoice_number", invoiceNumber), zap.String("invoice_url", invoiceURL), zap.String("amount", amount), zap.String("currency", currency), zap.Time("due_date", dueDate), zap.Time("failed_at", failedAt))
+		c.logger.Debug("PaymentFailed job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID), zap.String("invoice_number", invoiceNumber), zap.String("invoice_url", invoiceURL), zap.String("amount", amount), zap.String("currency", currency), zap.Time("due_date", dueDate), zap.Time("failed_at", failedAt))
 	}
 
 	return &jobs.InsertResult{
@@ -261,8 +261,8 @@ func (c *Client) InvoicePaymentFailed(ctx context.Context, billingCustomerID, in
 	}, nil
 }
 
-func (c *Client) InvoicePaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, InvoicePaymentSuccessArgs{
+func (c *Client) PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PaymentSuccessArgs{
 		BillingCustomerID: billingCustomerID,
 		InvoiceID:         invoiceID,
 	}, &river.InsertOpts{
@@ -275,7 +275,7 @@ func (c *Client) InvoicePaymentSuccess(ctx context.Context, billingCustomerID, i
 	}
 
 	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("InvoicePaymentSuccess job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID))
+		c.logger.Debug("PaymentSuccess job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID))
 	}
 
 	return &jobs.InsertResult{
@@ -284,8 +284,8 @@ func (c *Client) InvoicePaymentSuccess(ctx context.Context, billingCustomerID, i
 	}, nil
 }
 
-func (c *Client) InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, gracePeriodEndDate time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, InvoicePaymentFailedGracePeriodCheckArgs{
+func (c *Client) PaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, gracePeriodEndDate time.Time) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PaymentFailedGracePeriodCheckArgs{
 		OrgID:              orgID,
 		InvoiceID:          invoiceID,
 		GracePeriodEndDate: gracePeriodEndDate,
@@ -300,7 +300,7 @@ func (c *Client) InvoicePaymentFailedGracePeriodCheck(ctx context.Context, orgID
 	}
 
 	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("InvoicePaymentFailedGracePeriodCheck job skipped as duplicate", zap.String("org_id", orgID), zap.String("invoice_id", invoiceID), zap.Time("grace_period_end_date", gracePeriodEndDate))
+		c.logger.Debug("PaymentFailedGracePeriodCheck job skipped as duplicate", zap.String("org_id", orgID), zap.String("invoice_id", invoiceID), zap.Time("grace_period_end_date", gracePeriodEndDate))
 	}
 
 	return &jobs.InsertResult{
