@@ -6,9 +6,10 @@ import {
   createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { reverseMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
-const BinaryOperationMap = {
+const BinaryOperationMap: Record<string, V1Operation> = {
   "=": V1Operation.OPERATION_EQ,
   "!=": V1Operation.OPERATION_NEQ,
   ">": V1Operation.OPERATION_GT,
@@ -16,6 +17,7 @@ const BinaryOperationMap = {
   "<": V1Operation.OPERATION_LT,
   "<=": V1Operation.OPERATION_LTE,
 };
+export const BinaryOperationReverseMap = reverseMap(BinaryOperationMap);
 
 export const binaryPostprocessor = ([left, _1, op, _2, right]) =>
   createBinaryExpression(left, BinaryOperationMap[op], right);

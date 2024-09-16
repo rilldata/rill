@@ -31,6 +31,8 @@ export const load = async ({ params, depends }) => {
   > = ({ signal }) =>
     runtimeServiceGetResource(instanceId, queryParams, signal);
 
+  console.log(params);
+
   try {
     const response = await queryClient.fetchQuery({
       queryFn: queryFunction,

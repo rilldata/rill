@@ -1,14 +1,20 @@
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   PivotChipData,
   PivotChipType,
   PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type {
+  DimensionThresholdFilter,
+  MetricsExplorerEntity,
+} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   TDDChart,
   TDDState,
 } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { FromURLParamTimeDimensionMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -16,39 +22,55 @@ import {
   DashboardTimeControls,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
+import {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1Expression,
   V1MetricsViewSpec,
+  V1Operation,
 } from "@rilldata/web-common/runtime-client";
 
 export function getMetricsExplorerFromUrl(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
-) {
+): { entity: Partial<MetricsExplorerEntity>; errors: Error[] } {
   // TODO: replace this with V1ExplorePreset once it is available on main
   const entity: Partial<MetricsExplorerEntity> = {};
+  const errors: Error[] = [];
+
   const measures = getMapFromArray(metricsView.measures ?? [], (m) => m.name!);
   const dimensions = getMapFromArray(
     metricsView.dimensions ?? [],
     (d) => d.name!,
   );
 
-  // TODO: filter
+  if (searchParams.has("f")) {
+    const {
+      dimensionFilters,
+      dimensionThresholdFilters,
+      errors: filterErrors,
+    } = fromFilterUrlParam(searchParams.get("f") as string);
+    if (filterErrors) errors.push(...filterErrors);
+    entity.whereFilter = dimensionFilters;
+    entity.dimensionThresholdFilters = dimensionThresholdFilters;
+  }
 
   if (searchParams.has("tr")) {
-    entity.selectedTimeRange = fromTimeRangeUrlParam(
+    const { timeRange, error } = fromTimeRangeUrlParam(
       searchParams.get("tr") as string,
     );
+    if (error) errors.push(error);
+    entity.selectedTimeRange = timeRange;
   }
   if (searchParams.has("tz")) {
     entity.selectedTimezone = searchParams.get("tz") as string;
   }
   if (searchParams.has("ctr")) {
-    entity.selectedComparisonTimeRange = fromTimeRangeUrlParam(
+    const { timeRange, error } = fromTimeRangeUrlParam(
       searchParams.get("ctr") as string,
     );
+    if (error) errors.push(error);
+    entity.selectedComparisonTimeRange = timeRange;
   }
   if (searchParams.has("cd")) {
     const cd = searchParams.get("cd") as string;
@@ -66,19 +88,44 @@ export function getMetricsExplorerFromUrl(
 
   entity.pivot = fromPivotUrlParams(searchParams, measures, dimensions);
 
-  return entity;
+  return { entity, errors };
 }
 
-function fromTimeRangeUrlParam(timeRange: string) {
-  const selectedTimeRange: DashboardTimeControls = {
-    name: timeRange,
-  } as DashboardTimeControls;
-  // backwards compatibility
-  if (timeRange in TimeRangePreset) {
-    selectedTimeRange.name = TimeRangePreset[timeRange];
+function fromFilterUrlParam(filter: string): {
+  dimensionFilters?: V1Expression;
+  dimensionThresholdFilters?: DimensionThresholdFilter[];
+  errors?: Error[];
+} {
+  try {
+    let expr = convertFilterParamToExpression(filter);
+    // if root is not AND/OR then add AND
+    if (
+      expr?.cond?.op !== V1Operation.OPERATION_AND &&
+      expr?.cond?.op !== V1Operation.OPERATION_OR
+    ) {
+      expr = createAndExpression([expr]);
+    }
+    return splitWhereFilter(expr);
+  } catch (e) {
+    return { errors: [e] };
+  }
+}
+
+function fromTimeRangeUrlParam(tr: string): {
+  timeRange?: DashboardTimeControls;
+  error?: Error;
+} {
+  if (tr in TimeRangePreset) {
+    return {
+      timeRange: {
+        name: tr,
+      } as DashboardTimeControls,
+    };
   }
 
-  return selectedTimeRange;
+  return {
+    error: new Error(`unknown time range: ${tr}`),
+  };
 }
 
 function fromOverviewUrlParams(

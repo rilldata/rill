@@ -1,6 +1,8 @@
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export function getUrlFromMetricsExplorer(
@@ -11,6 +13,10 @@ export function getUrlFromMetricsExplorer(
   if (!metrics) return;
 
   // TODO: filter
+  const expr = mergeMeasureFilters(metrics);
+  if (expr && expr?.cond?.exprs?.length) {
+    searchParams.set("f", convertExpressionToFilterParam(expr));
+  }
 
   if (
     metrics.selectedTimeRange?.name &&
