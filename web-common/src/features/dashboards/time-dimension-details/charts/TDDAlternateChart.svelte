@@ -43,8 +43,6 @@
   let viewVL: View;
   let vegaSpec: VegaSpec;
 
-  const { customDashboards } = featureFlags;
-
   const dispatch = createEventDispatcher();
   const {
     selectors: {
@@ -219,7 +217,6 @@
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
-    canvasDashboard={$customDashboards}
     {isScrubbing}
   />
 {:else}
@@ -231,6 +228,5 @@
     {signalListeners}
     {expressionFunctions}
     {tooltipFormatter}
-    canvasDashboard={$customDashboards}
   />
 {/if}
