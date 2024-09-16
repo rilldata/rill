@@ -4,7 +4,7 @@ title: rill usergroup add
 ---
 ## rill usergroup add
 
-Add role to a user group in an organization or project
+Add a group to a project or organization
 
 ```
 rill usergroup add [flags]

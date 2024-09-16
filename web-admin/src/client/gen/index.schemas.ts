@@ -90,7 +90,10 @@ export type AdminServiceUpdateProjectBody = {
   prodVersion?: string;
 };
 
-export type AdminServiceGetProjectParams = { accessTokenTtlSeconds?: number };
+export type AdminServiceGetProjectParams = {
+  accessTokenTtlSeconds?: number;
+  issueSuperuserToken?: boolean;
+};
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
 
@@ -165,6 +168,11 @@ If empty, all dimensions and measures are accessible. */
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceAddProjectMemberUserBody = {
+  email?: string;
+  role?: string;
 };
 
 export type AdminServiceListProjectMemberUsersParams = {
@@ -243,6 +251,12 @@ export type AdminServiceRemoveOrganizationMemberUserParams = {
   keepProjectRoles?: boolean;
 };
 
+export type AdminServiceAddOrganizationMemberUserBody = {
+  email?: string;
+  role?: string;
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListOrganizationMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -262,6 +276,7 @@ export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
+  displayName?: string;
   billingEmail?: string;
 };
 
@@ -286,11 +301,6 @@ export type AdminServiceCreateReportBodyBody = {
 
 export type AdminServiceCreateAlertBodyBody = {
   options?: V1AlertOptions;
-};
-
-export type AdminServiceAddOrganizationMemberUserBodyBody = {
-  email?: string;
-  role?: string;
 };
 
 export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
@@ -449,6 +459,15 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+}
+
+export interface V1SudoUpdateOrganizationCustomDomainResponse {
+  organization?: V1Organization;
+}
+
+export interface V1SudoUpdateOrganizationCustomDomainRequest {
+  name?: string;
+  customDomain?: string;
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
@@ -634,6 +653,10 @@ export interface V1RemoveBookmarkResponse {
   [key: string]: any;
 }
 
+export interface V1RedeployProjectResponse {
+  [key: string]: any;
+}
+
 export interface V1RecordEventsResponse {
   [key: string]: any;
 }
@@ -698,6 +721,7 @@ export interface V1Project {
   prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
+  /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
   annotations?: V1ProjectAnnotations;
@@ -733,7 +757,9 @@ export interface V1OrganizationPermissions {
 export interface V1Organization {
   id?: string;
   name?: string;
+  displayName?: string;
   description?: string;
+  customDomain?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -783,6 +809,8 @@ export type V1MagicAuthTokenAttributes = { [key: string]: any };
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
+  url?: string;
+  token?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -963,6 +991,10 @@ export interface V1GetPaymentsPortalURLResponse {
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
+}
+
+export interface V1GetOrganizationNameForDomainResponse {
+  name?: string;
 }
 
 export interface V1GetIFrameResponse {

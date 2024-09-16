@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import type { PathOption, PathOptions } from "./Breadcrumbs.svelte";
+  import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils";
+  import type { PathOption, PathOptions } from "./types";
 
   export let options: PathOptions;
   export let current: string;
@@ -18,6 +20,7 @@
     depth: number,
     id: string,
     option: PathOption,
+    route: string,
   ) {
     if (onSelect) return undefined;
     if (option?.href) return option.href;
@@ -29,8 +32,10 @@
     if (option?.section) newPath.push(option.section);
 
     newPath.push(id);
+    const path = `/${newPath.join("/")}`;
 
-    return `/${newPath.join("/")}`;
+    // add the sub route if it has no variables
+    return path + getNonVariableSubRoute(path, route);
   }
 </script>
 
@@ -41,7 +46,7 @@
         on:click={() => {
           if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
-        href={linkMaker(currentPath, depth, current, selected)}
+        href={linkMaker(currentPath, depth, current, selected, "")}
         class="text-gray-500 hover:text-gray-600"
         class:current={isCurrentPage}
       >
@@ -65,7 +70,13 @@
               class="cursor-pointer"
               checked={selected}
               checkSize={"h-3 w-3"}
-              href={linkMaker(currentPath, depth, id, option)}
+              href={linkMaker(
+                currentPath,
+                depth,
+                id,
+                option,
+                $page.route.id ?? "",
+              )}
               on:click={() => {
                 if (onSelect) {
                   onSelect(id);

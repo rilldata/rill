@@ -18,7 +18,10 @@
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -39,12 +42,13 @@
   $: dashboard = useDashboard($runtime.instanceId, $dashboardName.data);
   $: dashboardTitle =
     $dashboard.data?.metricsView.spec.title || $dashboardName.data;
+  $: dashboardDoesNotExist = $dashboard.error?.response?.status === 404;
 
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
 
   $: metricsViewAggregationRequest = JSON.parse(
-    alertSpec?.resolverProperties?.query_args_json ??
-      alertSpec?.queryArgsJson ??
+    alertSpec?.resolverProperties?.query_args_json ||
+      alertSpec?.queryArgsJson ||
       "{}",
   ) as V1MetricsViewAggregationRequest;
 
@@ -116,19 +120,38 @@
     <div class="flex flex-wrap gap-x-16 gap-y-6">
       <!-- Dashboard -->
       <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Dashboard</MetadataLabel>
-        <MetadataValue>
-          <a href={`/${organization}/${project}/${$dashboardName.data}`}
-            >{dashboardTitle}</a
-          >
-        </MetadataValue>
+        {#if dashboardTitle}
+          <MetadataLabel>Dashboard</MetadataLabel>
+          <MetadataValue>
+            {#if dashboardDoesNotExist}
+              <div class="flex items-center gap-x-1">
+                {dashboardTitle}
+                <Tooltip distance={8}>
+                  <CancelCircle size="16px" className="text-red-500" />
+                  <TooltipContent slot="tooltip-content">
+                    Dashboard does not exist
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            {:else}
+              <a href={`/${organization}/${project}/${$dashboardName.data}`}>
+                {dashboardTitle}
+              </a>
+            {/if}
+          </MetadataValue>
+        {:else}
+          <MetadataLabel>Name</MetadataLabel>
+          <MetadataValue>
+            {$alertQuery.data?.resource?.meta?.name?.name}
+          </MetadataValue>
+        {/if}
       </div>
 
       <!-- Split by dimension -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Split by dimension</MetadataLabel>
         <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions[0]?.name ?? "None"}
+          {metricsViewAggregationRequest?.dimensions?.[0]?.name ?? "None"}
         </MetadataValue>
       </div>
 

@@ -3,11 +3,10 @@ package examples
 import (
 	"embed"
 	"errors"
+	"gopkg.in/yaml.v2"
 	"io/fs"
 	"os"
 	"path/filepath"
-
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 )
 
 //go:embed all:embed
@@ -38,15 +37,19 @@ func List() ([]Example, error) {
 			return nil, err
 		}
 
-		rillYaml, err := rillv1beta.ParseProjectConfig(rillYamlContents)
-		if err != nil {
+		contents := struct {
+			Title       string
+			Description string
+		}{}
+
+		if err := yaml.Unmarshal(rillYamlContents, &contents); err != nil {
 			return nil, err
 		}
 
 		exampleList = append(exampleList, Example{
 			Name:        entry.Name(),
-			Title:       rillYaml.Title,
-			Description: rillYaml.Description,
+			Title:       contents.Title,
+			Description: contents.Description,
 		})
 	}
 

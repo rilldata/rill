@@ -35,7 +35,28 @@ import {
 import { fileArtifacts } from "./file-artifacts";
 import { inferResourceKind } from "./infer-resource-kind";
 
-const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
+const UNSUPPORTED_EXTENSIONS = [
+  // Data formats
+  ".db",
+  ".db.wal",
+  ".parquet",
+  ".xls",
+  ".xlsx",
+
+  // Image formats
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".svg",
+
+  // Document formats
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".ppt",
+  ".pptx",
+];
 
 export class FileArtifact {
   readonly path: string;
@@ -217,10 +238,6 @@ export class FileArtifact {
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
-  softDeleteResource() {
-    this.reconciling.set(false);
-  }
-
   hardDeleteResource() {
     // To avoid a workspace flicker, first infer the *intended* resource kind
     this.inferredResourceKind.set(
@@ -238,8 +255,9 @@ export class FileArtifact {
         instanceId,
         name?.name as string,
         name?.kind as ResourceKind,
-        undefined,
-        queryClient,
+        {
+          queryClient,
+        },
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
   };

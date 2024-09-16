@@ -10,11 +10,31 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
-  $: user = createLocalServiceGetCurrentUser();
+  $: user = createLocalServiceGetCurrentUser({
+    query: {
+      // refetch in case user does a login/logout from outside of rill developer UI
+      refetchOnWindowFocus: true,
+    },
+  });
   $: metadata = createLocalServiceGetMetadata();
 
-  $: loginUrl = `${$metadata.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
-  $: logoutUrl = `${$metadata.data?.loginUrl}/logout?redirect=${$page.url.href}`;
+  let loginUrl: string;
+  $: if ($metadata.data?.loginUrl) {
+    const u = new URL($metadata.data.loginUrl);
+    u.searchParams.set(
+      "redirect",
+      `${window.location.origin}${window.location.pathname}`,
+    );
+    loginUrl = u.toString();
+  }
+
+  let logoutUrl: string;
+  $: if ($metadata.data?.loginUrl) {
+    const u = new URL($metadata.data.loginUrl + "/logout");
+    u.searchParams.set("redirect", $page.url.href);
+    logoutUrl = u.toString();
+  }
+
   $: loggedIn = $user.isSuccess && $user.data?.user;
 
   $: if ($user.data?.user) {
@@ -64,11 +84,19 @@
         <DropdownMenu.Item on:click={handlePylon}>
           Contact Rill support
         </DropdownMenu.Item>
-        <DropdownMenu.Item href={logoutUrl} class="text-gray-800 font-normal">
+        <DropdownMenu.Item
+          href={logoutUrl}
+          rel="external"
+          class="text-gray-800 font-normal"
+        >
           Logout
         </DropdownMenu.Item>
       {:else}
-        <DropdownMenu.Item href={loginUrl} class="text-gray-800 font-normal">
+        <DropdownMenu.Item
+          href={loginUrl}
+          rel="external"
+          class="text-gray-800 font-normal"
+        >
           Log in / Sign up
         </DropdownMenu.Item>
       {/if}

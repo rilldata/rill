@@ -5,7 +5,7 @@ import {
   AD_BIDS_INIT_WITH_TIME,
   AD_BIDS_NAME,
   initStateManagers,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
 import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
 import {
   TimeControlState,

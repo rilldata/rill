@@ -871,7 +871,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   where?: Expression;
 
   /**
-   * Optional. Either where or where_sql should be set
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string where_sql = 19;
    */
@@ -885,7 +885,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   having?: Expression;
 
   /**
-   * Optional. Either having or having_sql should be set
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string having_sql = 20;
    */
@@ -1152,6 +1152,12 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
      */
     value: MetricsViewAggregationMeasureComputePercentOfTotal;
     case: "percentOfTotal";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeURI uri = 11;
+     */
+    value: MetricsViewAggregationMeasureComputeURI;
+    case: "uri";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
@@ -1172,6 +1178,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 8, name: "comparison_delta", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonDelta, oneof: "compute" },
     { no: 9, name: "comparison_ratio", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonRatio, oneof: "compute" },
     { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
+    { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1404,6 +1411,43 @@ export class MetricsViewAggregationMeasureComputePercentOfTotal extends Message<
 
   static equals(a: MetricsViewAggregationMeasureComputePercentOfTotal | PlainMessage<MetricsViewAggregationMeasureComputePercentOfTotal> | undefined, b: MetricsViewAggregationMeasureComputePercentOfTotal | PlainMessage<MetricsViewAggregationMeasureComputePercentOfTotal> | undefined): boolean {
     return proto3.util.equals(MetricsViewAggregationMeasureComputePercentOfTotal, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeURI
+ */
+export class MetricsViewAggregationMeasureComputeURI extends Message<MetricsViewAggregationMeasureComputeURI> {
+  /**
+   * @generated from field: string dimension = 1;
+   */
+  dimension = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeURI>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeURI";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeURI | PlainMessage<MetricsViewAggregationMeasureComputeURI> | undefined, b: MetricsViewAggregationMeasureComputeURI | PlainMessage<MetricsViewAggregationMeasureComputeURI> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeURI, a, b);
   }
 }
 
@@ -1693,7 +1737,7 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   where?: Expression;
 
   /**
-   * Optional. Either where or where_sql should be set
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string where_sql = 17;
    */
@@ -1707,7 +1751,7 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   having?: Expression;
 
   /**
-   * Optional. Either having or having_sql should be set
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string having_sql = 18;
    */
@@ -2198,7 +2242,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   where?: Expression;
 
   /**
-   * Optional. Either where or where_sql should be set
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string where_sql = 13;
    */
@@ -2212,7 +2256,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   having?: Expression;
 
   /**
-   * Optional. Either having or having_sql should be set
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string having_sql = 14;
    */
@@ -2365,7 +2409,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   where?: Expression;
 
   /**
-   * Optional. Either where or where_sql should be set
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
    *
    * @generated from field: string where_sql = 11;
    */

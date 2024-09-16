@@ -19,16 +19,24 @@
   $: alert = useAlert($runtime.instanceId, alertId);
 
   let dashboardStateForAlert: ReturnType<typeof mapQueryToDashboard>;
-  $: dashboardStateForAlert = mapQueryToDashboard(
+  $: queryName =
     $alert.data?.resource?.alert?.spec?.resolverProperties?.query_name ??
-      $alert.data?.resource?.alert?.spec?.queryName ??
-      "",
+    $alert.data?.resource?.alert?.spec?.queryName ??
+    "";
+  $: queryArgsJson =
     $alert.data?.resource?.alert?.spec?.resolverProperties?.query_args_json ??
-      $alert.data?.resource?.alert?.spec?.queryArgsJson ??
-      "",
+    $alert.data?.resource?.alert?.spec?.queryArgsJson ??
+    "";
+  $: dashboardStateForAlert = mapQueryToDashboard(
+    queryName,
+    queryArgsJson,
     executionTime,
     $alert.data?.resource?.alert?.spec?.annotations ?? {},
   );
+
+  $: if ($alert.data?.resource?.alert?.spec && (!queryName || !queryArgsJson)) {
+    goto(`/${organization}/${project}/-/alerts/${alertId}`);
+  }
 
   $: if ($dashboardStateForAlert.data) {
     goto(

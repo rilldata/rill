@@ -116,20 +116,6 @@ function syncMeasures(
         metricsView.measures[0].name,
       ]);
     }
-
-    // check if current leaderboard measure is visible,
-    // if not set it to first visible measure
-    if (
-      metricsExplorer.visibleMeasureKeys.size &&
-      !metricsExplorer.visibleMeasureKeys.has(
-        metricsExplorer.leaderboardMeasureName,
-      )
-    ) {
-      const firstVisibleMeasure = metricsView.measures
-        .map((measure) => measure.name)
-        .find((key) => metricsExplorer.visibleMeasureKeys.has(key));
-      metricsExplorer.leaderboardMeasureName = firstVisibleMeasure;
-    }
   }
 }
 
@@ -252,6 +238,7 @@ const metricViewReducers = {
   setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot.rowPage = 1;
+      metricsExplorer.pivot.activeCell = null;
 
       const dimensions: PivotChipData[] = [];
 
@@ -278,6 +265,7 @@ const metricViewReducers = {
   setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot.rowPage = 1;
+      metricsExplorer.pivot.activeCell = null;
       metricsExplorer.pivot.expanded = {};
 
       const dimensions: PivotChipData[] = [];
@@ -309,6 +297,7 @@ const metricViewReducers = {
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot.rowPage = 1;
+      metricsExplorer.pivot.activeCell = null;
       if (value.type === PivotChipType.Measure) {
         metricsExplorer.pivot.columns.measure.push(value);
       } else {
@@ -340,6 +329,7 @@ const metricViewReducers = {
         sorting,
         rowPage: 1,
         expanded: {},
+        activeCell: null,
       };
     });
   },
@@ -362,6 +352,18 @@ const metricViewReducers = {
     });
   },
 
+  setPivotActiveCell(name: string, rowId: string, columnId: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.activeCell = { rowId, columnId };
+    });
+  },
+
+  removePivotActiveCell(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.activeCell = null;
+    });
+  },
+
   createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = {
@@ -373,6 +375,7 @@ const metricViewReducers = {
         sorting: [],
         columnPage: 1,
         rowPage: 1,
+        activeCell: null,
       };
     });
   },

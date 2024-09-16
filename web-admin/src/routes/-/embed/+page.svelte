@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
-  import CustomDashboardEmbed from "@rilldata/web-admin/features/embeds/CustomDashboardEmbed.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-admin/features/embeds/CanvasDashboardEmbed.svelte";
   import MetricsExplorerEmbed from "@rilldata/web-admin/features/embeds/MetricsExplorerEmbed.svelte";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -62,5 +62,5 @@
 {#if activeResource?.kind === ResourceKind.MetricsView.toString()}
   <MetricsExplorerEmbed {instanceId} dashboardName={activeResource.name} />
 {:else if activeResource?.kind === ResourceKind.Dashboard.toString()}
-  <CustomDashboardEmbed {instanceId} dashboardName={activeResource.name} />
+  <CanvasDashboardEmbed {instanceId} dashboardName={activeResource.name} />
 {/if}

@@ -49,7 +49,9 @@ paths:
         - AdminService
   /v1/deployments/{deploymentId}/reconcile:
     post:
-      summary: TriggerReconcile triggers reconcile for the project's prod deployment
+      summary: |-
+        TriggerReconcile triggers reconcile for the project's prod deployment.
+        DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
       operationId: AdminService_TriggerReconcile
       responses:
         "200":
@@ -74,7 +76,9 @@ paths:
         - AdminService
   /v1/deployments/{deploymentId}/refresh:
     post:
-      summary: TriggerRefreshSources refresh the source for production deployment
+      summary: |-
+        TriggerRefreshSources refresh the source for production deployment.
+        DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
       operationId: AdminService_TriggerRefreshSources
       responses:
         "200":
@@ -190,6 +194,29 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/organization-for-domain/{domain}:
+    get:
+      summary: |-
+        GetOrganizationNameForDomain finds the org name for a custom domain.
+        If the application detects it is running on a non-default domain, it can use this to find the org to present.
+        It can be called without being authenticated.
+      operationId: AdminService_GetOrganizationNameForDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationNameForDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -300,6 +327,8 @@ paths:
               description:
                 type: string
               newName:
+                type: string
+              displayName:
                 type: string
               billingEmail:
                 type: string
@@ -461,6 +490,8 @@ paths:
                 type: string
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/{email}:
@@ -1121,6 +1152,33 @@ paths:
             properties:
               role:
                 type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/redeploy:
+    post:
+      summary: |-
+        RedeployProject creates a new production deployment for a project.
+        If the project currently has another production deployment, the old deployment will be deprovisioned.
+        This RPC can be used to redeploy a project that has been hibernated.
+      operationId: AdminService_RedeployProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RedeployProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/reports:
@@ -2253,6 +2311,10 @@ paths:
           required: false
           type: integer
           format: int64
+        - name: issueSuperuserToken
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
@@ -2625,7 +2687,9 @@ paths:
         - AdminService
   /v1/projects/-/redeploy:
     post:
-      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      summary: |-
+        TriggerRedeploy is similar to RedeployProject.
+        DEPRECATED: Use RedeployProject instead.
       operationId: AdminService_TriggerRedeploy
       responses:
         "200":
@@ -2891,6 +2955,30 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
+      tags:
+        - AdminService
+  /v1/superuser/organization/custom-domain:
+    patch:
+      summary: |-
+        SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+        It only updates the custom domain in the database, which is used to ensure correct redirects.
+        The DNS records and ingress TLS must be configured separately.
+      operationId: AdminService_SudoUpdateOrganizationCustomDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
       tags:
         - AdminService
   /v1/superuser/projects/annotations:
@@ -3739,6 +3827,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationNameForDomainResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1GetOrganizationResponse:
     type: object
     properties:
@@ -4022,6 +4115,10 @@ definitions:
         type: string
       projectId:
         type: string
+      url:
+        type: string
+      token:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -4104,7 +4201,11 @@ definitions:
       name:
         type: string
         title: Globally unique
+      displayName:
+        type: string
       description:
+        type: string
+      customDomain:
         type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
@@ -4205,6 +4306,7 @@ definitions:
         type: string
       frontendUrl:
         type: string
+        description: 'Note: Does NOT incorporate the parent org''s custom domain.'
       prodTtlSeconds:
         type: string
         format: int64
@@ -4292,6 +4394,8 @@ definitions:
         items:
           type: object
   v1RecordEventsResponse:
+    type: object
+  v1RedeployProjectResponse:
     type: object
   v1RemoveBookmarkResponse:
     type: object
@@ -4532,6 +4636,18 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Subscription'
+  v1SudoUpdateOrganizationCustomDomainRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      customDomain:
+        type: string
+  v1SudoUpdateOrganizationCustomDomainResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:

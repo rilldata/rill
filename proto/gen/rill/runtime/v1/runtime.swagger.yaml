@@ -1287,13 +1287,13 @@ paths:
                 title: Optional
               whereSql:
                 type: string
-                title: Optional. Either where or where_sql should be set
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
               havingSql:
                 type: string
-                title: Optional. Either having or having_sql should be set
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               limit:
                 type: string
                 format: int64
@@ -1391,13 +1391,13 @@ paths:
                 title: Optional
               whereSql:
                 type: string
-                title: Optional. Either where or where_sql should be set
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
               havingSql:
                 type: string
-                title: Optional. Either having or having_sql should be set
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               aliases:
                 type: array
                 items:
@@ -1671,13 +1671,13 @@ paths:
                 title: Optional
               whereSql:
                 type: string
-                title: Optional. Either where or where_sql should be set
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               having:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
               havingSql:
                 type: string
-                title: Optional. Either having or having_sql should be set
+                description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
               timeZone:
                 type: string
                 title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -1807,7 +1807,7 @@ paths:
                 title: Optional
               whereSql:
                 type: string
-                title: Optional. Either where or where_sql should be set
+                description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
               priority:
                 type: integer
                 format: int32
@@ -2478,7 +2478,7 @@ paths:
   /v1/instances/{instanceId}/trigger:
     post:
       summary: |-
-        CreateTrigger creates a trigger in the catalog.
+        CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
         Triggers are ephemeral resources that will be cleaned up by the controller.
       operationId: RuntimeService_CreateTrigger
       responses:
@@ -2492,6 +2492,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to target.
           in: path
           required: true
           type: string
@@ -2501,10 +2502,31 @@ paths:
           schema:
             type: object
             properties:
-              pullTriggerSpec:
-                $ref: '#/definitions/v1PullTriggerSpec'
-              refreshTriggerSpec:
-                $ref: '#/definitions/v1RefreshTriggerSpec'
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+                description: Resources to trigger. See RefreshTriggerSpec for details.
+              models:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1RefreshModelTrigger'
+                description: Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+              parser:
+                type: boolean
+                description: |-
+                  Parser is a convenience flag to trigger the global project parser.
+                  Triggering the project parser ensures a pull of the repository and a full parse of all files.
+              allSourcesModels:
+                type: boolean
+                description: Convenience flag to trigger all sources and models.
+              allSourcesModelsFull:
+                type: boolean
+                description: |-
+                  Convenience flag to trigger all sources and models.
+                  Will trigger models with RefreshModelTrigger.full set to true.
       tags:
         - RuntimeService
   /v1/olap/tables:
@@ -3638,6 +3660,9 @@ definitions:
         type: boolean
   v1ComponentState:
     type: object
+    properties:
+      validSpec:
+        $ref: '#/definitions/v1ComponentSpec'
   v1ComponentVariable:
     type: object
     properties:
@@ -3670,11 +3695,16 @@ definitions:
         additionalProperties:
           type: string
         title: Config for the connector
+      templatedProperties:
+        type: array
+        items:
+          type: string
+        title: Properties in config that use templating
       configFromVariables:
         type: object
         additionalProperties:
           type: string
-        title: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
+        title: 'DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`'
   v1ConnectorDriver:
     type: object
     properties:
@@ -3732,12 +3762,16 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      templatedProperties:
+        type: array
+        items:
+          type: string
       propertiesFromVariables:
         type: object
         additionalProperties:
           type: string
         description: |-
-          properties_from_variables stores properties whose value is a variable.
+          DEPRECATED: properties_from_variables stores properties whose value is a variable.
           NOTE : properties_from_variables and properties both should be used to get all properties.
   v1ConnectorState:
     type: object
@@ -3846,6 +3880,9 @@ definitions:
           $ref: '#/definitions/v1DashboardItem'
   v1DashboardState:
     type: object
+    properties:
+      validSpec:
+        $ref: '#/definitions/v1DashboardSpec'
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -4244,6 +4281,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
       percentOfTotal:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
+      uri:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeURI'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -4270,6 +4309,11 @@ definitions:
     type: object
     properties:
       measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeURI:
+    type: object
+    properties:
+      dimension:
         type: string
   v1MetricsViewAggregationRequest:
     type: object
@@ -4327,13 +4371,13 @@ definitions:
         title: Optional
       whereSql:
         type: string
-        title: Optional. Either where or where_sql should be set
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
       havingSql:
         type: string
-        title: Optional. Either having or having_sql should be set
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       limit:
         type: string
         format: int64
@@ -4442,13 +4486,13 @@ definitions:
         title: Optional
       whereSql:
         type: string
-        title: Optional. Either where or where_sql should be set
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
       havingSql:
         type: string
-        title: Optional. Either having or having_sql should be set
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       aliases:
         type: array
         items:
@@ -4763,13 +4807,13 @@ definitions:
         title: Optional
       whereSql:
         type: string
-        title: Optional. Either where or where_sql should be set
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       having:
         $ref: '#/definitions/v1Expression'
         title: Optional
       havingSql:
         type: string
-        title: Optional. Either having or having_sql should be set
+        description: Optional. If both having and having_sql are set, both will be applied with an AND between them.
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -4877,7 +4921,7 @@ definitions:
         title: Optional
       whereSql:
         type: string
-        title: Optional. Either where or where_sql should be set
+        description: Optional. If both where and where_sql are set, both will be applied with an AND between them.
       priority:
         type: integer
         format: int32
@@ -4963,6 +5007,8 @@ definitions:
       outputProperties:
         type: object
       trigger:
+        type: boolean
+      triggerFull:
         type: boolean
   v1ModelSplit:
     type: object
@@ -5185,6 +5231,7 @@ definitions:
         $ref: '#/definitions/v1PullTriggerSpec'
       state:
         $ref: '#/definitions/v1PullTriggerState'
+    description: 'DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.'
   v1PullTriggerSpec:
     type: object
   v1PullTriggerState:
@@ -5305,6 +5352,25 @@ definitions:
       - RECONCILE_STATUS_PENDING
       - RECONCILE_STATUS_RUNNING
     default: RECONCILE_STATUS_UNSPECIFIED
+  v1RefreshModelTrigger:
+    type: object
+    properties:
+      model:
+        type: string
+        description: The model to refresh.
+      full:
+        type: boolean
+        description: |-
+          If true, the current table and state will be dropped before refreshing.
+          For non-incremental models, this is equivalent to a normal refresh.
+      splits:
+        type: array
+        items:
+          type: string
+        description: Keys of specific splits to refresh.
+      allErroredSplits:
+        type: boolean
+        description: If true, it will refresh all splits that errored on their last execution.
   v1RefreshTrigger:
     type: object
     properties:
@@ -5315,11 +5381,20 @@ definitions:
   v1RefreshTriggerSpec:
     type: object
     properties:
-      onlyNames:
+      resources:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
+        description: |-
+          Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+          If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes.
+      models:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1RefreshModelTrigger'
+        description: Models to refresh. These are specified separately to enable more fine-grained configuration.
   v1RefreshTriggerState:
     type: object
   v1RenameFileResponse:

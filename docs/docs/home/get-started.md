@@ -36,7 +36,6 @@ rill start my-rill-project
 </div>
 
 
-
 ## Example Projects Repository
 
 We have created several example projects that highlight common use cases for Rill. 

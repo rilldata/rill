@@ -17,7 +17,7 @@ export function userDomainIsPublic() {
       select: (data) => {
         if (!data.user?.email) return false;
         const domain = getDomain(data.user.email);
-        return !((window as any).RillPublicEmailDomains as string[]).includes(
+        return ((window as any).RillPublicEmailDomains as string[]).includes(
           domain,
         );
       },

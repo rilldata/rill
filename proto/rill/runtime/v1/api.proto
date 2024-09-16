@@ -185,7 +185,7 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/splits"};
   }
   
-  // CreateTrigger creates a trigger in the catalog.
+  // CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
   // Triggers are ephemeral resources that will be cleaned up by the controller.
   rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse) {
     option (google.api.http) = {
@@ -296,7 +296,9 @@ message Connector {
   string name = 2;
   // Config for the connector
   map<string, string> config = 3;
-  // config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
+  // Properties in config that use templating
+  repeated string templated_properties = 5;
+  // DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
   map<string, string> config_from_variables = 4;
 }
 
@@ -657,11 +659,20 @@ message GetModelSplitsResponse {
 }
 
 message CreateTriggerRequest {
+  // Instance to target.
   string instance_id = 1;
-  oneof trigger {
-    PullTriggerSpec pull_trigger_spec = 2;
-    RefreshTriggerSpec refresh_trigger_spec = 3;
-  }
+  // Resources to trigger. See RefreshTriggerSpec for details.
+  repeated ResourceName resources = 4;
+  // Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+  repeated RefreshModelTrigger models = 5;
+  // Parser is a convenience flag to trigger the global project parser.
+  // Triggering the project parser ensures a pull of the repository and a full parse of all files.
+  bool parser = 6;
+  // Convenience flag to trigger all sources and models.
+  bool all_sources_models = 7;
+  // Convenience flag to trigger all sources and models.
+  // Will trigger models with RefreshModelTrigger.full set to true.
+  bool all_sources_models_full = 8;
 }
 
 message CreateTriggerResponse {}
