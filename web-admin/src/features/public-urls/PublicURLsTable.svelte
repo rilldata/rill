@@ -48,7 +48,7 @@
   const columns: ColumnDef<MagicAuthTokenProps, any>[] = [
     {
       accessorKey: "name",
-      header: "Public URL label",
+      header: "Label",
       cell: ({ row }) =>
         flexRender(DashboardLink, {
           href: row.original.url,
@@ -75,7 +75,7 @@
     },
     {
       accessorKey: "usedOn",
-      header: "Last used",
+      header: "Last acccesed",
       cell: (info) => {
         if (!info.getValue()) return "-";
         const date = formatDate(info.getValue() as string);
@@ -213,7 +213,7 @@
   </tbody>
 </table>
 
-<div class="flex items-center gap-2 mt-4 justify-end">
+<!-- <div class="flex items-center gap-2 mt-4 justify-end">
   <button
     class="border border-slate-300 rounded-sm px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50"
     on:click={onNextPage}
@@ -221,7 +221,7 @@
   >
     Next
   </button>
-</div>
+</div> -->
 
 <style lang="postcss">
   table {

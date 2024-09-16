@@ -22,9 +22,6 @@
     hasDashboardWhereFilter,
   } from "./form-utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onMount } from "svelte";
 
   const queryClient = useQueryClient();
   const {
@@ -37,9 +34,6 @@
   } = getStateManagers();
 
   $: ({ organization, project } = $page.params);
-
-  $: dashboard = useDashboard($runtime.instanceId, $metricsViewName);
-  $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
 
   $: isNameEmpty = $form.name.trim() === "";
 
@@ -135,13 +129,6 @@
   }
 
   $: ({ length: allErrorsLength } = $allErrors);
-
-  // Set the dashboard title as the default name for the public URL name
-  onMount(() => {
-    if (dashboardTitle && !$form.name) {
-      $form.name = dashboardTitle;
-    }
-  });
 </script>
 
 {#if !token}
