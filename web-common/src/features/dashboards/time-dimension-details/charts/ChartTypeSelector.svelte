@@ -39,11 +39,6 @@
   function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
     if (isDisabled) return;
     metricsExplorerStore.setTDDChartType(metricViewName, type);
-
-    // Reset scrub range when chart type changes
-    if (type !== chartType) {
-      metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
-    }
   }
 
   // switch to default if current selected chart is not available
@@ -56,12 +51,13 @@
   {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
     {@const disabled = !hasComparison && comparisonCharts.includes(id)}
-    <button
-      class:bg-primary-100={active}
-      class="chart-icon-wrapper"
-      on:click={() => handleChartTypeChange(id, disabled)}
-    >
-      <IconButton {disabled} disableHover tooltipLocation="top">
+    <div class:bg-primary-100={active} class="chart-icon-wrapper">
+      <IconButton
+        {disabled}
+        disableHover
+        tooltipLocation="top"
+        on:click={() => handleChartTypeChange(id, disabled)}
+      >
         <Icon
           primaryColor={disabled ? "#9CA3AF" : "var(--color-primary-700)"}
           secondaryColor={disabled ? "#CBD5E1" : "var(--color-primary-300)"}
@@ -71,7 +67,7 @@
           {label}
         </svelte:fragment>
       </IconButton>
-    </button>
+    </div>
   {/each}
 </div>
 
