@@ -22,7 +22,6 @@
     updateChartOnTableCellHover,
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import VegaRenderer from "@rilldata/web-common/features/canvas-components/render/VegaRenderer.svelte";
   import {
     resolveSignalField,
