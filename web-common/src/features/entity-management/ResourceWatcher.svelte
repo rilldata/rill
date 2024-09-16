@@ -35,8 +35,8 @@
 
   function handleVisibilityChange() {
     if (document.visibilityState === "visible") {
-      fileWatcher.reconnect().catch(console.error);
-      resourceWatcher.reconnect().catch(console.error);
+      fileWatcher.heartbeat();
+      resourceWatcher.heartbeat();
     } else {
       fileWatcher.throttle(true);
       resourceWatcher.throttle(true);

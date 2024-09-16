@@ -78,11 +78,11 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.cancel();
   };
 
-  public throttle(priority: boolean = false) {
-    this.outOfFocusThrottler.throttle(this.close, priority);
+  public throttle(prioritize: boolean = false) {
+    this.outOfFocusThrottler.throttle(this.close, prioritize);
   }
 
-  public async reconnect() {
+  private async reconnect() {
     this.closed.set(false);
     clearTimeout(this.reconnectTimeout);
 
