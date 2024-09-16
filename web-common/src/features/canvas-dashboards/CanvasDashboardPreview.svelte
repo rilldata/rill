@@ -166,7 +166,6 @@
 
   $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
-    console.log({ bottom });
     return Math.max(max, bottom);
   }, 0);
 </script>
