@@ -12,11 +12,21 @@
   export let componentName: string;
   export let chartView: boolean;
   export let input: V1ComponentVariable[] | undefined;
-  export let vegaSpec: VisualizationSpec | string | undefined;
 
   let viewVL: View;
   let error: string | null = null;
   let parsedVegaSpec: VisualizationSpec | null = null;
+
+  $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
+  $: inputVariableParams = useVariableInputParams(dashboardName, input);
+
+  $: componentDataQuery = createQueryServiceResolveComponent(
+    $runtime.instanceId,
+    componentName,
+    { args: $inputVariableParams },
+  );
+  $: vegaSpec = $componentDataQuery?.data?.rendererProperties?.spec;
+  $: data = $componentDataQuery?.data?.data;
 
   $: try {
     if (typeof vegaSpec === "string") {
@@ -27,17 +37,6 @@
   } catch (e: unknown) {
     error = JSON.stringify(e);
   }
-
-  $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
-  $: inputVariableParams = useVariableInputParams(dashboardName, input);
-
-  $: componentDataQuery = createQueryServiceResolveComponent(
-    $runtime.instanceId,
-    componentName,
-    { args: $inputVariableParams },
-  );
-
-  $: data = $componentDataQuery?.data?.data;
 </script>
 
 {#if parsedVegaSpec}

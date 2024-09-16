@@ -1,5 +1,5 @@
 interface DataProperties {
-  metric_view: string;
+  metrics_view: string;
   filter?: string;
 }
 
