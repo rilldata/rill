@@ -85,37 +85,40 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string, query D
 		return nil, err
 	}
 
-	instanceHealth, ok := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version, resources)
-	if ok {
-		res.OLAP = instanceHealth.OLAP
-		res.Dashboards = instanceHealth.Dashboards
-		return res, nil
+	cacheEnabled := healthCheckCacheEnabled(olap)
+	if cacheEnabled {
+		instanceHealth, ok := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version, resources)
+		if ok {
+			res.OLAP = instanceHealth.OLAP
+			res.Dashboards = instanceHealth.Dashboards
+			return res, nil
+		}
 	}
 
 	err = olap.(drivers.Handle).Ping(ctx)
 	if err != nil {
 		res.OLAP = err.Error()
-	} else {
+	} else if query != nil {
 		// run queries against dashboards
-		if query != nil {
-			res.Dashboards = make(map[string]string, len(resources))
-			for _, mv := range resources {
-				q, err := query(ctx, ctrl.InstanceID, mv.Meta.Name.Name)
-				if err != nil {
-					res.Dashboards[mv.Meta.Name.Name] = err.Error()
-					continue
-				}
-				err = r.Query(ctx, ctrl.InstanceID, q, 1)
-				if err != nil {
-					res.Dashboards[mv.Meta.Name.Name] = err.Error()
-				}
+		res.Dashboards = make(map[string]string, len(resources))
+		for _, mv := range resources {
+			q, err := query(ctx, ctrl.InstanceID, mv.Meta.Name.Name)
+			if err != nil {
+				res.Dashboards[mv.Meta.Name.Name] = err.Error()
+				continue
+			}
+			err = r.Query(ctx, ctrl.InstanceID, q, 1)
+			if err != nil {
+				res.Dashboards[mv.Meta.Name.Name] = err.Error()
 			}
 		}
 	}
+	if !cacheEnabled {
+		return res, nil
+	}
 
 	// save to cache
-	// populate the versions
-	hash, err := r.healthResultHash(ctrl.catalog.version, resources)
+	hash, err := healthResultHash(ctrl.catalog.version, resources)
 	if err != nil {
 		return nil, err
 	}
@@ -161,27 +164,26 @@ func (r *Runtime) cachedInstanceHealth(ctx context.Context, instanceID string, c
 		return nil, false
 	}
 
-	hash, err := r.healthResultHash(ctrlVersion, resources)
+	hash, err := healthResultHash(ctrlVersion, resources)
 	if err != nil || hash != c.Hash {
 		return nil, false
 	}
 	return c, true
 }
 
-func (h *InstanceHealth) To() *runtimev1.InstanceHealth {
-	if h == nil {
-		return nil
+func healthCheckCacheEnabled(olap drivers.OLAPStore) bool {
+	if olap.Dialect() != drivers.DialectClickHouse {
+		return false
 	}
-	r := &runtimev1.InstanceHealth{
-		ControllerError: h.Controller,
-		RepoError:       h.Repo,
-		OlapError:       h.OLAP,
-		DashboardErrors: h.Dashboards,
+	m := olap.(drivers.Handle).Config()
+	enabled, ok := m["enable_health_check_cache"].(bool)
+	if !ok {
+		return true
 	}
-	return r
+	return enabled
 }
 
-func (r *Runtime) healthResultHash(ctrlVersion int64, resources []*runtimev1.Resource) (string, error) {
+func healthResultHash(ctrlVersion int64, resources []*runtimev1.Resource) (string, error) {
 	hash := md5.New()
 	err := binary.Write(hash, binary.BigEndian, ctrlVersion)
 	if err != nil {
@@ -196,4 +198,17 @@ func (r *Runtime) healthResultHash(ctrlVersion int64, resources []*runtimev1.Res
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func (h *InstanceHealth) To() *runtimev1.InstanceHealth {
+	if h == nil {
+		return nil
+	}
+	r := &runtimev1.InstanceHealth{
+		ControllerError: h.Controller,
+		RepoError:       h.Repo,
+		OlapError:       h.OLAP,
+		DashboardErrors: h.Dashboards,
+	}
+	return r
 }

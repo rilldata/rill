@@ -105,8 +105,9 @@ type configProperties struct {
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort int `mapstructure:"embed_port"`
 	// DataDir is the path to directory where db files will be created.
-	DataDir string `mapstructure:"data_dir"`
-	TempDir string `mapstructure:"temp_dir"`
+	DataDir                string `mapstructure:"data_dir"`
+	TempDir                string `mapstructure:"temp_dir"`
+	EnableHealthCheckCache bool   `mapstructure:"enable_health_check_cache"`
 }
 
 // Open connects to Clickhouse using std API.
