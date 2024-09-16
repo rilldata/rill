@@ -332,10 +332,12 @@ message ExploreSpec {
   // Dimensions to show.
   repeated string dimensions = 4;
   // If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+  // Since it is processed during validation, this will always be false in `state.valid_spec`.
   bool dimensions_exclude = 5;
   // Measures available
   repeated string measures = 6;
   // If true, `measures` will be inverted during validation to include all measures except the ones listed.
+  // Since it is processed during validation, this will always be false in `state.valid_spec`.
   bool measures_exclude = 7;
   // Theme to use
   string theme = 8;
@@ -351,7 +353,7 @@ message ExploreSpec {
   repeated ExplorePreset presets = 11;
   // Security for the explore dashboard.
   // These are not currently parsed from YAML, but will be derived from the parent metrics view.
-  repeated SecurityRule security_rules = 23;
+  repeated SecurityRule security_rules = 12;
 }
 
 message ExploreState {
@@ -379,10 +381,12 @@ message ExplorePreset {
   // Dimensions to show
   repeated string dimensions = 2;
   // If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+  // Since it is processed during validation, this will always be false in `state.valid_spec`.
   bool dimensions_exclude = 3;
   // Measures to show
   repeated string measures = 4;
   // If true, `measures` will be inverted during validation to include all measures except the ones listed.
+  // Since it is processed during validation, this will always be false in `state.valid_spec`.
   bool measures_exclude = 5;
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.

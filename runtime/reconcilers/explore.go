@@ -142,22 +142,20 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	spec.MeasuresExclude = false
 
 	// Validate and rewrite presets, now in the context of the explore's dimensions and measures resolved above.
-	if len(spec.Presets) > 0 {
-		for _, p := range spec.Presets {
-			dims, err = r.resolveNames(spec.Dimensions, p.Dimensions, p.DimensionsExclude)
-			if err != nil {
-				return nil, err
-			}
-			p.Dimensions = dims
-			p.DimensionsExclude = false
-
-			measures, err := r.resolveNames(spec.Measures, p.Measures, p.MeasuresExclude)
-			if err != nil {
-				return nil, err
-			}
-			p.Measures = measures
-			p.MeasuresExclude = false
+	for _, p := range spec.Presets {
+		dims, err = r.resolveNames(spec.Dimensions, p.Dimensions, p.DimensionsExclude)
+		if err != nil {
+			return nil, err
 		}
+		p.Dimensions = dims
+		p.DimensionsExclude = false
+
+		measures, err := r.resolveNames(spec.Measures, p.Measures, p.MeasuresExclude)
+		if err != nil {
+			return nil, err
+		}
+		p.Measures = measures
+		p.MeasuresExclude = false
 	}
 
 	// Done with rewriting

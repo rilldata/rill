@@ -3980,7 +3980,9 @@ definitions:
         title: Dimensions to show
       dimensionsExclude:
         type: boolean
-        description: If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+        description: |-
+          If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+          Since it is processed during validation, this will always be false in `state.valid_spec`.
       measures:
         type: array
         items:
@@ -3988,7 +3990,9 @@ definitions:
         title: Measures to show
       measuresExclude:
         type: boolean
-        description: If true, `measures` will be inverted during validation to include all measures except the ones listed.
+        description: |-
+          If true, `measures` will be inverted during validation to include all measures except the ones listed.
+          Since it is processed during validation, this will always be false in `state.valid_spec`.
       timeRange:
         type: string
         description: |-
@@ -4020,7 +4024,9 @@ definitions:
         description: Dimensions to show.
       dimensionsExclude:
         type: boolean
-        description: If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+        description: |-
+          If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+          Since it is processed during validation, this will always be false in `state.valid_spec`.
       measures:
         type: array
         items:
@@ -4028,7 +4034,9 @@ definitions:
         title: Measures available
       measuresExclude:
         type: boolean
-        description: If true, `measures` will be inverted during validation to include all measures except the ones listed.
+        description: |-
+          If true, `measures` will be inverted during validation to include all measures except the ones listed.
+          Since it is processed during validation, this will always be false in `state.valid_spec`.
       theme:
         type: string
         title: Theme to use

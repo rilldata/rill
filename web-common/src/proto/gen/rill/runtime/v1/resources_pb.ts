@@ -2087,6 +2087,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
 
   /**
    * If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+   * Since it is processed during validation, this will always be false in `state.valid_spec`.
    *
    * @generated from field: bool dimensions_exclude = 5;
    */
@@ -2101,6 +2102,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
 
   /**
    * If true, `measures` will be inverted during validation to include all measures except the ones listed.
+   * Since it is processed during validation, this will always be false in `state.valid_spec`.
    *
    * @generated from field: bool measures_exclude = 7;
    */
@@ -2142,7 +2144,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
    * Security for the explore dashboard.
    * These are not currently parsed from YAML, but will be derived from the parent metrics view.
    *
-   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 23;
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 12;
    */
   securityRules: SecurityRule[] = [];
 
@@ -2165,7 +2167,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "presets", kind: "message", T: ExplorePreset, repeated: true },
-    { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2337,6 +2339,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
 
   /**
    * If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+   * Since it is processed during validation, this will always be false in `state.valid_spec`.
    *
    * @generated from field: bool dimensions_exclude = 3;
    */
@@ -2351,6 +2354,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
 
   /**
    * If true, `measures` will be inverted during validation to include all measures except the ones listed.
+   * Since it is processed during validation, this will always be false in `state.valid_spec`.
    *
    * @generated from field: bool measures_exclude = 5;
    */

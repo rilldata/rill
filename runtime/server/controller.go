@@ -481,7 +481,8 @@ func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.R
 	}
 
 	// We only rewrite the ValidSpec at the moment.
-	// To avoid leaking field names in the main spec (which is not really used outside of the reconciler), we might consider not returning the spec at all for non-admins.
+	// In the future, to avoid leaking field names in the main spec (which is not really used outside of the reconciler),
+	// we might consider not returning the spec at all for non-admins.
 	spec := r.GetExplore().State.ValidSpec
 	if spec == nil {
 		return r

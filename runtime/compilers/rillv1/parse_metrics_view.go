@@ -807,7 +807,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	// For backwards compatibility, also emit an Explore resource for the metrics view.
 	// Hackily, we skip this if none of the explore-related props are set.
-	if tmp.DefaultTimeRange == "" && tmp.DefaultTheme == "" && len(tmp.AvailableTimeZones) == 0 && len(tmp.AvailableTimeRanges) == 0 {
+	if !strings.HasPrefix(node.Paths[0], "/dashboards/") {
 		return nil
 	}
 

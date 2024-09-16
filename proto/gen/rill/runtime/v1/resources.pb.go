@@ -2318,10 +2318,12 @@ type ExploreSpec struct {
 	// Dimensions to show.
 	Dimensions []string `protobuf:"bytes,4,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	// If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+	// Since it is processed during validation, this will always be false in `state.valid_spec`.
 	DimensionsExclude bool `protobuf:"varint,5,opt,name=dimensions_exclude,json=dimensionsExclude,proto3" json:"dimensions_exclude,omitempty"`
 	// Measures available
 	Measures []string `protobuf:"bytes,6,rep,name=measures,proto3" json:"measures,omitempty"`
 	// If true, `measures` will be inverted during validation to include all measures except the ones listed.
+	// Since it is processed during validation, this will always be false in `state.valid_spec`.
 	MeasuresExclude bool `protobuf:"varint,7,opt,name=measures_exclude,json=measuresExclude,proto3" json:"measures_exclude,omitempty"`
 	// Theme to use
 	Theme string `protobuf:"bytes,8,opt,name=theme,proto3" json:"theme,omitempty"`
@@ -2337,7 +2339,7 @@ type ExploreSpec struct {
 	Presets []*ExplorePreset `protobuf:"bytes,11,rep,name=presets,proto3" json:"presets,omitempty"`
 	// Security for the explore dashboard.
 	// These are not currently parsed from YAML, but will be derived from the parent metrics view.
-	SecurityRules []*SecurityRule `protobuf:"bytes,23,rep,name=security_rules,json=securityRules,proto3" json:"security_rules,omitempty"`
+	SecurityRules []*SecurityRule `protobuf:"bytes,12,rep,name=security_rules,json=securityRules,proto3" json:"security_rules,omitempty"`
 }
 
 func (x *ExploreSpec) Reset() {
@@ -2628,10 +2630,12 @@ type ExplorePreset struct {
 	// Dimensions to show
 	Dimensions []string `protobuf:"bytes,2,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	// If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+	// Since it is processed during validation, this will always be false in `state.valid_spec`.
 	DimensionsExclude bool `protobuf:"varint,3,opt,name=dimensions_exclude,json=dimensionsExclude,proto3" json:"dimensions_exclude,omitempty"`
 	// Measures to show
 	Measures []string `protobuf:"bytes,4,rep,name=measures,proto3" json:"measures,omitempty"`
 	// If true, `measures` will be inverted during validation to include all measures except the ones listed.
+	// Since it is processed during validation, this will always be false in `state.valid_spec`.
 	MeasuresExclude bool `protobuf:"varint,5,opt,name=measures_exclude,json=measuresExclude,proto3" json:"measures_exclude,omitempty"`
 	// Time range for the explore.
 	// It corresponds to the `range` property of the explore's `time_ranges`.
@@ -6883,7 +6887,7 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x78, 0x70, 0x6c, 0x6f, 0x72, 0x65,
 	0x50, 0x72, 0x65, 0x73, 0x65, 0x74, 0x52, 0x07, 0x70, 0x72, 0x65, 0x73, 0x65, 0x74, 0x73, 0x12,
 	0x44, 0x0a, 0x0e, 0x73, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74, 0x79, 0x5f, 0x72, 0x75, 0x6c, 0x65,
-	0x73, 0x18, 0x17, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
+	0x73, 0x18, 0x0c, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
 	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x63, 0x75, 0x72, 0x69,
 	0x74, 0x79, 0x52, 0x75, 0x6c, 0x65, 0x52, 0x0d, 0x73, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74, 0x79,
 	0x52, 0x75, 0x6c, 0x65, 0x73, 0x22, 0x4b, 0x0a, 0x0c, 0x45, 0x78, 0x70, 0x6c, 0x6f, 0x72, 0x65,

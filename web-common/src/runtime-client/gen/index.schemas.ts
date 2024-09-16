@@ -1816,10 +1816,12 @@ export const V1ExploreComparisonMode = {
 export interface V1ExplorePreset {
   label?: string;
   dimensions?: string[];
-  /** If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed. */
+  /** If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+Since it is processed during validation, this will always be false in `state.valid_spec`. */
   dimensionsExclude?: boolean;
   measures?: string[];
-  /** If true, `measures` will be inverted during validation to include all measures except the ones listed. */
+  /** If true, `measures` will be inverted during validation to include all measures except the ones listed.
+Since it is processed during validation, this will always be false in `state.valid_spec`. */
   measuresExclude?: boolean;
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
@@ -1836,10 +1838,12 @@ export interface V1ExploreSpec {
   metricsView?: string;
   /** Dimensions to show. */
   dimensions?: string[];
-  /** If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed. */
+  /** If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+Since it is processed during validation, this will always be false in `state.valid_spec`. */
   dimensionsExclude?: boolean;
   measures?: string[];
-  /** If true, `measures` will be inverted during validation to include all measures except the ones listed. */
+  /** If true, `measures` will be inverted during validation to include all measures except the ones listed.
+Since it is processed during validation, this will always be false in `state.valid_spec`. */
   measuresExclude?: boolean;
   theme?: string;
   /** List of selectable time ranges with comparison time ranges.
