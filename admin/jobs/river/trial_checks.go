@@ -25,8 +25,8 @@ func (TrialEndingSoonArgs) Kind() string { return "trial_ending_soon" }
 
 type TrialEndingSoonWorker struct {
 	river.WorkerDefaults[TrialEndingSoonArgs]
-	admin         *admin.Service
-	billingLogger *zap.Logger
+	admin  *admin.Service
+	logger *zap.Logger
 }
 
 func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEndingSoonArgs]) error {
@@ -77,7 +77,7 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEn
 	}
 
 	// trial period ending soon, log warn and send email
-	w.billingLogger.Warn("trial ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("trial_end_date", sub[0].TrialEndDate))
+	w.logger.Warn("trial ending soon", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Time("trial_end_date", sub[0].TrialEndDate))
 
 	// send email
 	err = w.admin.Email.SendTrialEndingSoon(&email.TrialEndingSoon{
@@ -103,8 +103,8 @@ func (TrialEndCheckArgs) Kind() string { return "trial_end_check" }
 
 type TrialEndCheckWorker struct {
 	river.WorkerDefaults[TrialEndCheckArgs]
-	admin         *admin.Service
-	billingLogger *zap.Logger
+	admin  *admin.Service
+	logger *zap.Logger
 }
 
 func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndCheckArgs]) error {
@@ -154,7 +154,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 	}
 
 	// trial period has ended, log warn, send email and schedule a job to hibernate projects after grace period days if still on trial
-	w.billingLogger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+	w.logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	gracePeriodEndDate := sub[0].TrialEndDate.AddDate(0, 0, gracePeriodDays)
 	// schedule a job to check if the org is still on trial after end of grace period date
@@ -201,8 +201,8 @@ func (TrialGracePeriodCheckArgs) Kind() string { return "trial_grace_period_chec
 
 type TrialGracePeriodCheckWorker struct {
 	river.WorkerDefaults[TrialGracePeriodCheckArgs]
-	admin         *admin.Service
-	billingLogger *zap.Logger
+	admin  *admin.Service
+	logger *zap.Logger
 }
 
 func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[TrialGracePeriodCheckArgs]) error {
@@ -288,7 +288,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 			break
 		}
 	}
-	w.billingLogger.Warn("projects hibernated due to trial grace period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+	w.logger.Warn("projects hibernated due to trial grace period ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	// send email
 	err = w.admin.Email.SendTrialGracePeriodEnded(&email.TrialGracePeriodEnded{

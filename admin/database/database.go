@@ -982,7 +982,7 @@ const (
 	BillingIssueTypeTrialEnded                             = 2
 	BillingIssueTypeNoPaymentMethod                        = 3
 	BillingIssueTypeNoBillableAddress                      = 4
-	BillingIssueTypeInvoicePaymentFailed                   = 5
+	BillingIssueTypePaymentFailed                          = 5
 	BillingIssueTypeSubscriptionCancelled                  = 6
 )
 
@@ -1021,11 +1021,11 @@ type BillingIssueMetadataNoPaymentMethod struct{}
 
 type BillingIssueMetadataNoBillableAddress struct{}
 
-type BillingIssueMetadataInvoicePaymentFailed struct {
-	Invoices map[string]InvoicePaymentFailedMeta `json:"invoices"`
+type BillingIssueMetadataPaymentFailed struct {
+	Invoices map[string]BillingIssueMetadataPaymentFailedMeta `json:"invoices"`
 }
 
-type InvoicePaymentFailedMeta struct {
+type BillingIssueMetadataPaymentFailedMeta struct {
 	ID                  string    `json:"id"`
 	Number              string    `json:"invoice_number"`
 	URL                 string    `json:"invoice_url"`

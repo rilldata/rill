@@ -385,7 +385,7 @@ func (s *Service) CheckBillingErrors(ctx context.Context, orgID string) error {
 		return fmt.Errorf("trial has ended")
 	}
 
-	be, err = s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeInvoicePaymentFailed)
+	be, err = s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypePaymentFailed)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return err

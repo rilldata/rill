@@ -495,8 +495,8 @@ func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
 	case database.BillingIssueTypeNoBillableAddress:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
-	case database.BillingIssueTypeInvoicePaymentFailed:
-		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED
+	case database.BillingIssueTypePaymentFailed:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_PAYMENT_FAILED
 	case database.BillingIssueTypeSubscriptionCancelled:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
 	default:
@@ -525,8 +525,8 @@ func dtoBillingIssueTypeToDB(t adminv1.BillingIssueType) (database.BillingIssueT
 		return database.BillingIssueTypeNoPaymentMethod, nil
 	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS:
 		return database.BillingIssueTypeNoBillableAddress, nil
-	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED:
-		return database.BillingIssueTypeInvoicePaymentFailed, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_PAYMENT_FAILED:
+		return database.BillingIssueTypePaymentFailed, nil
 	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
 		return database.BillingIssueTypeSubscriptionCancelled, nil
 	default:
@@ -564,22 +564,22 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 				NoBillableAddress: &adminv1.BillingIssueMetadataNoBillableAddress{},
 			},
 		}
-	case database.BillingIssueTypeInvoicePaymentFailed:
-		invoicePaymentFailed := m.(*database.BillingIssueMetadataInvoicePaymentFailed)
-		invoices := make([]*adminv1.InvoicePaymentFailedMeta, 0)
-		for k := range invoicePaymentFailed.Invoices {
-			invoices = append(invoices, &adminv1.InvoicePaymentFailedMeta{
-				InvoiceId:     invoicePaymentFailed.Invoices[k].ID,
-				InvoiceNumber: invoicePaymentFailed.Invoices[k].Number,
-				InvoiceUrl:    invoicePaymentFailed.Invoices[k].URL,
-				AmountDue:     invoicePaymentFailed.Invoices[k].Amount,
-				Currency:      invoicePaymentFailed.Invoices[k].Currency,
-				DueDate:       timestamppb.New(invoicePaymentFailed.Invoices[k].DueDate),
+	case database.BillingIssueTypePaymentFailed:
+		paymentFailed := m.(*database.BillingIssueMetadataPaymentFailed)
+		invoices := make([]*adminv1.BillingIssueMetadataPaymentFailedMeta, 0)
+		for k := range paymentFailed.Invoices {
+			invoices = append(invoices, &adminv1.BillingIssueMetadataPaymentFailedMeta{
+				InvoiceId:     paymentFailed.Invoices[k].ID,
+				InvoiceNumber: paymentFailed.Invoices[k].Number,
+				InvoiceUrl:    paymentFailed.Invoices[k].URL,
+				AmountDue:     paymentFailed.Invoices[k].Amount,
+				Currency:      paymentFailed.Invoices[k].Currency,
+				DueDate:       timestamppb.New(paymentFailed.Invoices[k].DueDate),
 			})
 		}
 		return &adminv1.BillingIssueMetadata{
-			Metadata: &adminv1.BillingIssueMetadata_InvoicePaymentFailed{
-				InvoicePaymentFailed: &adminv1.BillingIssueMetadataInvoicePaymentFailed{
+			Metadata: &adminv1.BillingIssueMetadata_PaymentFailed{
+				PaymentFailed: &adminv1.BillingIssueMetadataPaymentFailed{
 					Invoices: invoices,
 				},
 			},

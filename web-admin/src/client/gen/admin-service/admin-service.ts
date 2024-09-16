@@ -6551,7 +6551,7 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
     | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
     | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
-    | "BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED"
+    | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
     | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
@@ -6583,7 +6583,7 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
         | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
-        | "BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED"
+        | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED";
     },
     TContext
@@ -6601,7 +6601,7 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
         | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
-        | "BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED"
+        | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED";
     }
   > = (props) => {
@@ -6621,7 +6621,7 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
         | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
-        | "BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED"
+        | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
         | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED";
     },
     TContext

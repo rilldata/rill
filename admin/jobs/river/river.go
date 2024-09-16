@@ -78,18 +78,18 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &CustomerAddressUpdatedWorker{admin: adm})
 
 	// biller event handlers
-	river.AddWorker(workers, &InvoicePaymentFailedWorker{admin: adm, billingLogger: billingLogger})
-	river.AddWorker(workers, &InvoicePaymentSuccessWorker{admin: adm, billingLogger: billingLogger})
-	river.AddWorker(workers, &InvoicePaymentFailedGracePeriodCheckWorker{admin: adm, billingLogger: billingLogger})
+	river.AddWorker(workers, &InvoicePaymentFailedWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &InvoicePaymentSuccessWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &InvoicePaymentFailedGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 
 	// trial checks worker
-	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm, billingLogger: billingLogger})
-	river.AddWorker(workers, &TrialEndCheckWorker{admin: adm, billingLogger: billingLogger})
-	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm, billingLogger: billingLogger})
+	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &TrialEndCheckWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 
 	// subscription related workers
 	river.AddWorker(workers, &PlanChangeByAPIWorker{admin: adm})
-	river.AddWorker(workers, &SubscriptionCancellationWorker{admin: adm, billingLogger: billingLogger})
+	river.AddWorker(workers, &SubscriptionCancellationWorker{admin: adm, logger: billingLogger})
 
 	// org related workers
 	river.AddWorker(workers, &PurgeOrgWorker{admin: adm})

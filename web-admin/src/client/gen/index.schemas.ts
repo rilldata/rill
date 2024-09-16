@@ -935,15 +935,6 @@ export interface V1IssueMagicAuthTokenResponse {
   url?: string;
 }
 
-export interface V1InvoicePaymentFailedMeta {
-  invoiceId?: string;
-  invoiceNumber?: string;
-  invoiceUrl?: string;
-  amountDue?: string;
-  currency?: string;
-  dueDate?: string;
-}
-
 export interface V1HibernateProjectResponse {
   [key: string]: any;
 }
@@ -1302,8 +1293,7 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD: "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD",
   BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS:
     "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS",
-  BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED:
-    "BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED",
+  BILLING_ISSUE_TYPE_PAYMENT_FAILED: "BILLING_ISSUE_TYPE_PAYMENT_FAILED",
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
 } as const;
@@ -1314,6 +1304,19 @@ export interface V1BillingIssueMetadataTrialEnded {
 
 export interface V1BillingIssueMetadataSubscriptionCancelled {
   endDate?: string;
+}
+
+export interface V1BillingIssueMetadataPaymentFailedMeta {
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoiceUrl?: string;
+  amountDue?: string;
+  currency?: string;
+  dueDate?: string;
+}
+
+export interface V1BillingIssueMetadataPaymentFailed {
+  invoices?: V1BillingIssueMetadataPaymentFailedMeta[];
 }
 
 export interface V1BillingIssueMetadataOnTrial {
@@ -1328,16 +1331,12 @@ export interface V1BillingIssueMetadataNoBillableAddress {
   [key: string]: any;
 }
 
-export interface V1BillingIssueMetadataInvoicePaymentFailed {
-  invoices?: V1InvoicePaymentFailedMeta[];
-}
-
 export interface V1BillingIssueMetadata {
   onTrial?: V1BillingIssueMetadataOnTrial;
   trialEnded?: V1BillingIssueMetadataTrialEnded;
   noPaymentMethod?: V1BillingIssueMetadataNoPaymentMethod;
   noBillableAddress?: V1BillingIssueMetadataNoBillableAddress;
-  invoicePaymentFailed?: V1BillingIssueMetadataInvoicePaymentFailed;
+  paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
 }
 

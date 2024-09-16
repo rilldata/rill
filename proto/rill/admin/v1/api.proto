@@ -2330,7 +2330,7 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_TRIAL_ENDED = 2;
   BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD = 3;
   BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS = 4;
-  BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED = 5;
+  BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
 }
 
@@ -2355,7 +2355,7 @@ message BillingIssueMetadata {
     BillingIssueMetadataTrialEnded trial_ended = 2;
     BillingIssueMetadataNoPaymentMethod no_payment_method = 3;
     BillingIssueMetadataNoBillableAddress no_billable_address = 4;
-    BillingIssueMetadataInvoicePaymentFailed invoice_payment_failed = 5;
+    BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
   }
 }
@@ -2372,11 +2372,11 @@ message BillingIssueMetadataNoPaymentMethod {}
 
 message BillingIssueMetadataNoBillableAddress {}
 
-message BillingIssueMetadataInvoicePaymentFailed {
-  repeated InvoicePaymentFailedMeta invoices = 1;
+message BillingIssueMetadataPaymentFailed {
+  repeated BillingIssueMetadataPaymentFailedMeta invoices = 1;
 }
 
-message InvoicePaymentFailedMeta {
+message BillingIssueMetadataPaymentFailedMeta {
   string invoice_id = 1;
   string invoice_number = 2;
   string invoice_url = 3;

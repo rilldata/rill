@@ -3048,7 +3048,7 @@ paths:
             - BILLING_ISSUE_TYPE_TRIAL_ENDED
             - BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
             - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
-            - BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED
+            - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
       tags:
         - AdminService
@@ -3577,18 +3577,10 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataNoPaymentMethod'
       noBillableAddress:
         $ref: '#/definitions/v1BillingIssueMetadataNoBillableAddress'
-      invoicePaymentFailed:
-        $ref: '#/definitions/v1BillingIssueMetadataInvoicePaymentFailed'
+      paymentFailed:
+        $ref: '#/definitions/v1BillingIssueMetadataPaymentFailed'
       subscriptionCancelled:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
-  v1BillingIssueMetadataInvoicePaymentFailed:
-    type: object
-    properties:
-      invoices:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InvoicePaymentFailedMeta'
   v1BillingIssueMetadataNoBillableAddress:
     type: object
   v1BillingIssueMetadataNoPaymentMethod:
@@ -3597,6 +3589,30 @@ definitions:
     type: object
     properties:
       endDate:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataPaymentFailed:
+    type: object
+    properties:
+      invoices:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1BillingIssueMetadataPaymentFailedMeta'
+  v1BillingIssueMetadataPaymentFailedMeta:
+    type: object
+    properties:
+      invoiceId:
+        type: string
+      invoiceNumber:
+        type: string
+      invoiceUrl:
+        type: string
+      amountDue:
+        type: string
+      currency:
+        type: string
+      dueDate:
         type: string
         format: date-time
   v1BillingIssueMetadataSubscriptionCancelled:
@@ -3619,7 +3635,7 @@ definitions:
       - BILLING_ISSUE_TYPE_TRIAL_ENDED
       - BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
       - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
-      - BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED
+      - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
@@ -4070,22 +4086,6 @@ definitions:
     default: GITHUB_PERMISSION_UNSPECIFIED
   v1HibernateProjectResponse:
     type: object
-  v1InvoicePaymentFailedMeta:
-    type: object
-    properties:
-      invoiceId:
-        type: string
-      invoiceNumber:
-        type: string
-      invoiceUrl:
-        type: string
-      amountDue:
-        type: string
-      currency:
-        type: string
-      dueDate:
-        type: string
-        format: date-time
   v1IssueMagicAuthTokenResponse:
     type: object
     properties:

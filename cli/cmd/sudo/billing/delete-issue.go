@@ -42,8 +42,8 @@ func DeleteIssueCmd(ch *cmdutil.Helper) *cobra.Command {
 				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_ENDED
 			case "no-payment-method":
 				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
-			case "invoice-payment-failed":
-				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_INVOICE_PAYMENT_FAILED
+			case "payment-failed":
+				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_PAYMENT_FAILED
 			case "subscription-cancelled":
 				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
 			default:

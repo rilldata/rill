@@ -111,8 +111,8 @@ func (SubscriptionCancellationArgs) Kind() string { return "subscription_cancell
 
 type SubscriptionCancellationWorker struct {
 	river.WorkerDefaults[SubscriptionCancellationArgs]
-	admin         *admin.Service
-	billingLogger *zap.Logger
+	admin  *admin.Service
+	logger *zap.Logger
 }
 
 // Work This worker runs at end of the current subscription term after subscription cancellation
@@ -197,10 +197,10 @@ func (w *SubscriptionCancellationWorker) Work(ctx context.Context, job *river.Jo
 		OrgName: org.Name,
 	})
 	if err != nil {
-		w.billingLogger.Error("failed to send subscription ended email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+		w.logger.Error("failed to send subscription ended email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
 	}
 
-	w.billingLogger.Warn("projects hibernated due to subscription cancellation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+	w.logger.Warn("projects hibernated due to subscription cancellation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 	return nil
 }
 
