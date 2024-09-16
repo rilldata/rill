@@ -11,6 +11,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect } from "vitest";
+import grammar from "./expression.cjs";
+import nearley from "nearley";
 
 describe("expression", () => {
   describe("positive cases", () => {
@@ -63,8 +65,14 @@ describe("expression", () => {
       },
     ];
 
+    const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
     for (const { expr, expected_expression } of Cases) {
       it(expr, () => {
+        const parser = new nearley.Parser(compiledGrammar);
+        parser.feed(expr);
+        // assert that there is only match. this ensures unambiguous grammar.
+        expect(parser.results).length(1);
+
         expect(convertFilterParamToExpression(expr)).toEqual(
           expected_expression,
         );

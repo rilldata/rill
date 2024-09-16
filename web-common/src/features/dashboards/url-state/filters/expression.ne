@@ -15,15 +15,19 @@
 %}
 
 expr => boolean_expr                             {% id %}
+      # chain of AND expressions with a terminal that doesnt immediately contain AND
       | (boolean_expr _ "AND"i _):+ non_and_expr {% andOrPostprocessor %}
+      # chain of OR expressions with a terminal that doesnt immediately contain OR
       | (boolean_expr _ "OR"i _):+ non_or_expr   {% andOrPostprocessor %}
 
-# these are used to disambiguate matches
-non_and_expr => boolean_expr                            {% id %}
+# these are used to disambiguate matches.
+# these contain either boolean_expr or the other joiner (AND for non_and_expr, AND for non_or_expr)
+non_and_expr => boolean_expr                              {% id %}
               | (boolean_expr __ "OR"i __):+ non_and_expr {% andOrPostprocessor %}
-non_or_expr  => boolean_expr                            {% id %}
+non_or_expr  => boolean_expr                              {% id %}
               | (boolean_expr __ "AND"i __):+ non_or_expr {% andOrPostprocessor %}
 
+# expression that result in a boolean result excluding AND, OR
 boolean_expr => "(" expr ")"                               {% ([_, expr]) => expr %}
               | column __ in_operator _ "(" value_list ")" {% inPostprocessor %}
               | column __ "HAVING"i _ "(" expr ")"         {% havingPostprocessor %}
