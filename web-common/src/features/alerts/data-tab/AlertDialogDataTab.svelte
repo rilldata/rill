@@ -4,7 +4,7 @@
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";
-  import Select from "../../../components/forms/Select.svelte";
+  import Select from "../../../components/forms/SelectV2.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
   import { useMetricsView } from "../../dashboards/selectors";

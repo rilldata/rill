@@ -1,6 +1,5 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getTypeOptions } from "@rilldata/web-common/features/alerts/criteria-tab/getTypeOptions";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
@@ -10,7 +9,7 @@
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import SimpleSelect from "@rilldata/web-common/components/select/simple-select.svelte";
+  import Select from "@rilldata/web-common/components/forms/SelectV2.svelte";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;
@@ -57,12 +56,11 @@
   <Select
     bind:value={$form["criteria"][index].measure}
     id="field"
-    label=""
     options={measureOptions}
     placeholder="Measure"
     className="w-[160px]"
   />
-  <SimpleSelect
+  <Select
     bind:value={$form["criteria"][index].type}
     id="type"
     options={typeOptions}
@@ -71,7 +69,6 @@
   <Select
     bind:value={$form["criteria"][index].operation}
     id="operation"
-    label=""
     options={CriteriaOperationOptions}
     placeholder="Operator"
     className="w-[70px]"
