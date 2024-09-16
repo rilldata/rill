@@ -47,7 +47,7 @@
     <Button builders={[builder]} type="secondary">
       <Plus class="flex items-center justify-center" size="16px" />
       <div class="flex gap-x-1 items-center">
-        Add Component
+        Add component
         <ChevronDown size="14px" />
       </div>
     </Button>

@@ -16,9 +16,9 @@
     "info",
     "warning",
     "error",
-  ].map((value) => ({ value }));
+  ].map((value) => ({ value, label: value }));
   const iconTypeOptions = ["none", "alert", "check", "sleep", "loading"].map(
-    (value) => ({ value }),
+    (value) => ({ value, label: value }),
   );
 
   function showBanner() {

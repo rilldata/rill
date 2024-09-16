@@ -45,6 +45,7 @@
   on:change={handleNameChange}
   titleInput={fileName}
   {hasUnsavedChanges}
+  showInspectorToggle={false}
 >
   <svelte:fragment slot="cta">
     <PanelCTA side="right">
