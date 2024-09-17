@@ -178,6 +178,9 @@ type Parser struct {
 	Resources map[ResourceName]*Resource
 	Errors    []*runtimev1.ParseError
 
+	// Mapping of local data files to resource paths that depend on them
+	LocalDataToResourcepath map[string]map[string]any
+
 	// Internal state
 	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths
 	resourcesForUnspecifiedRef map[string][]*Resource // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
@@ -295,6 +298,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.DotEnv = nil
 	p.Resources = make(map[ResourceName]*Resource)
 	p.Errors = nil
+	p.LocalDataToResourcepath = make(map[string]map[string]any)
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
 	p.insertedResources = nil

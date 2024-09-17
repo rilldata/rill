@@ -3,9 +3,11 @@ package rillv1
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -141,6 +143,27 @@ func (p *Parser) parseModel(node *Node) error {
 		outputPropsPB, err = structpb.NewStruct(outputProps)
 		if err != nil {
 			return fmt.Errorf(`invalid property type in "output": %w`, err)
+		}
+	}
+
+	// hack to mark model as updated when local file changes
+	if inputConnector == "local_file" {
+		path, ok := inputProps["path"].(string)
+		if ok {
+			localPaths, err := doublestar.FilepathGlob(filepath.Join(p.Repo.Root(), path))
+			if err == nil {
+				for _, localPath := range localPaths {
+					localPath = strings.TrimPrefix(localPath, p.Repo.Root())
+					resources := p.LocalDataToResourcepath[localPath]
+					if _, ok := p.LocalDataToResourcepath[localPath]; !ok {
+						resources = make(map[string]any)
+						p.LocalDataToResourcepath[localPath] = resources
+					}
+					for _, resPath := range node.Paths {
+						resources[resPath] = nil
+					}
+				}
+			}
 		}
 	}
 
