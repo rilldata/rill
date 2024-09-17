@@ -5,6 +5,14 @@ sidebar_label: "Data Warehouse: Splits and Incremental Models"
 sidebar_position: 12
 ---
 
+import ComingSoon from '@site/src/components/ComingSoon';
+
+<ComingSoon />
+
+<div class='contents_to_overlay'>
+
+
+
 ## Once we have the data ready, we can post this one.
 
 
@@ -107,3 +115,5 @@ import DocsRating from '@site/src/components/DocsRating';
 
 ---
 <DocsRating />
+
+</div>
