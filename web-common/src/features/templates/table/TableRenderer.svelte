@@ -65,7 +65,7 @@
         onSortingChange,
         getExpandedRowModel: getExpandedRowModel(),
         getCoreRowModel: getCoreRowModel(),
-        enableSortingRemoval: true,
+        enableSortingRemoval: false,
         enableExpanding: true,
       };
     },
