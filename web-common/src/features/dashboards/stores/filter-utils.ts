@@ -51,7 +51,7 @@ export function createOrExpression(exprs: V1Expression[]): V1Expression {
 export function createBinaryExpression(
   ident: string,
   op: V1Operation,
-  val: number,
+  val: any,
 ): V1Expression {
   return {
     cond: {
@@ -86,6 +86,28 @@ export function createBetweenExpression(
   } else {
     return createAndExpression(exprs);
   }
+}
+
+export function createSubQueryExpression(
+  dimension: string,
+  measures: string[],
+  having: V1Expression | undefined,
+): V1Expression {
+  return {
+    cond: {
+      op: V1Operation.OPERATION_IN,
+      exprs: [
+        { ident: dimension },
+        {
+          subquery: {
+            dimension,
+            measures,
+            having,
+          },
+        },
+      ],
+    },
+  };
 }
 
 const conditionOperationComplement: Partial<Record<V1Operation, V1Operation>> =

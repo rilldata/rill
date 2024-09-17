@@ -169,7 +169,6 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
-
 	for _, d := range q.Dimensions {
 		res := metricsview.Dimension{Name: d.Name}
 		if d.Alias != "" {
@@ -226,6 +225,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 			case *runtimev1.MetricsViewAggregationMeasure_PercentOfTotal:
 				res.Compute = &metricsview.MeasureCompute{PercentOfTotal: &metricsview.MeasureComputePercentOfTotal{
 					Measure: c.PercentOfTotal.Measure,
+				}}
+			case *runtimev1.MetricsViewAggregationMeasure_Uri:
+				res.Compute = &metricsview.MeasureCompute{URI: &metricsview.MeasureComputeURI{
+					Dimension: c.Uri.Dimension,
 				}}
 			}
 		}

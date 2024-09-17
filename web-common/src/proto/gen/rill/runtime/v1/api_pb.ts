@@ -562,7 +562,14 @@ export class Connector extends Message<Connector> {
   config: { [key: string]: string } = {};
 
   /**
-   * config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
+   * Properties in config that use templating
+   *
+   * @generated from field: repeated string templated_properties = 5;
+   */
+  templatedProperties: string[] = [];
+
+  /**
+   * DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
    *
    * @generated from field: map<string, string> config_from_variables = 4;
    */
@@ -579,6 +586,7 @@ export class Connector extends Message<Connector> {
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 5, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "config_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 

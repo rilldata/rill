@@ -1900,6 +1900,64 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
 }
 
+func TestRefreshInDev(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		// Provide dashboard defaults in rill.yaml
+		`rill.yaml`: ``,
+		// model m1
+		`m1.yaml`: `
+type: model
+sql: SELECT 1
+refresh:
+  cron: 0 0 * * *
+`,
+		// model m2
+		`m2.yaml`: `
+type: model
+sql: SELECT 1
+refresh:
+  cron: 0 0 * * *
+  run_in_dev: true
+`,
+	})
+
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/m1.yaml"},
+		ModelSpec: &runtimev1.ModelSpec{
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+			OutputConnector: "duckdb",
+		},
+	}
+
+	m2 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+		Paths: []string{"/m2.yaml"},
+		ModelSpec: &runtimev1.ModelSpec{
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+			OutputConnector: "duckdb",
+		},
+	}
+
+	// Parse for prod and check
+	p, err := Parse(ctx, repo, "", "prod", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
+
+	// Clear the cron refresh only for m1
+	m1.ModelSpec.RefreshSchedule.Cron = ""
+
+	// Parse for dev and check
+	p, err = Parse(ctx, repo, "", "dev", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
+}
+
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
 	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, activity.NewNoopClient(), zap.NewNop())

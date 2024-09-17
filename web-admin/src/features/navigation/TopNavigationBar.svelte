@@ -4,8 +4,8 @@
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -29,9 +29,9 @@
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
+    isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
-    withinOrganization,
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
@@ -56,7 +56,7 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: withinOrgPage = withinOrganization($page);
+  $: onOrgPage = isOrganizationPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -161,7 +161,7 @@
 
 <div
   class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage && !withinOrgPage}
+  class:border-b={!onProjectPage && !onOrgPage}
 >
   <!-- Left side -->
   <a
@@ -185,15 +185,17 @@
       <UserInviteButton {organization} {project} />
     {/if}
     {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
-      <StateManagersProvider metricsViewName={dashboard}>
-        <LastRefreshedDate {dashboard} />
-        <GlobalDimensionSearch metricsViewName={dashboard} />
-        {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-          <CreateAlert />
-          <Bookmarks metricsViewName={dashboard} />
-          <ShareDashboardButton {createMagicAuthTokens} />
-        {/if}
-      </StateManagersProvider>
+      {#key dashboard}
+        <StateManagersProvider metricsViewName={dashboard}>
+          <LastRefreshedDate {dashboard} />
+          <GlobalDimensionSearch metricsViewName={dashboard} />
+          {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
+            <CreateAlert />
+            <Bookmarks metricsViewName={dashboard} />
+            <ShareDashboardButton {createMagicAuthTokens} />
+          {/if}
+        </StateManagersProvider>
+      {/key}
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

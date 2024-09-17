@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -41,7 +40,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Verify that the projectPath contains a Rill project
-			if !rillv1beta.HasRillProject(projectPath) {
+			if !cmdutil.HasRillProject(projectPath) {
 				ch.PrintfWarn("Directory at %q doesn't contain a valid Rill project.\n", projectPath)
 				ch.PrintfWarn("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
 				return nil
@@ -113,7 +112,7 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	connectors := parser.AnalyzeConnectors(ctx)
 	for _, c := range connectors {
 		if c.Err != nil {
-			return nil, fmt.Errorf("failed to extract connectors: %w", err)
+			return nil, fmt.Errorf("failed to extract connectors: %w", c.Err)
 		}
 	}
 

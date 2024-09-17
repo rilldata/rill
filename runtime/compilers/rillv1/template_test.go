@@ -99,3 +99,15 @@ func TestResolve(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "SELECT partner_id FROM domain_partner_mapping WHERE domain = 'rilldata.com' AND groups IN ('admin', 'user') OR true", resolved)
 }
+
+func TestVariables(t *testing.T) {
+	template := `a={{ .vars.a }} b.a={{ .vars.b.a }} b.a={{ get .vars "b.a" }}`
+	resolved, err := ResolveTemplate(template, TemplateData{
+		Variables: map[string]string{
+			"a":   "1",
+			"b.a": "2",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "a=1 b.a=2 b.a=2", resolved)
+}

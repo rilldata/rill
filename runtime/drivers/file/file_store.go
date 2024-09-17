@@ -26,7 +26,7 @@ func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 		return nil, err
 	}
 	if len(localPaths) == 0 {
-		return nil, fmt.Errorf("file does not exist at %s", conf.Path)
+		return nil, fmt.Errorf("file does not exist at %q", conf.Path)
 	}
 
 	return localPaths, nil

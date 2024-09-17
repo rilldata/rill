@@ -48,14 +48,14 @@ export function getTableConfig(
   tableProperties: TableProperties,
   pivotState: PivotState,
 ): Readable<PivotDataStoreConfig> {
-  const { metric_view, time_range, comparison_range } = tableProperties;
+  const { metrics_view, time_range, comparison_range } = tableProperties;
   return derived(
     [
-      useMetricsView(instanceId, tableProperties.metric_view),
-      useStartEndTime(instanceId, metric_view, time_range),
+      useMetricsView(instanceId, tableProperties.metrics_view),
+      useStartEndTime(instanceId, metrics_view, time_range),
       useComparisonStartEndTime(
         instanceId,
-        metric_view,
+        metrics_view,
         time_range,
         comparison_range,
       ),
@@ -106,7 +106,7 @@ export function hasValidTableSchema(
   tableProperties: TableProperties,
 ) {
   return derived(
-    [useMetricsView(instanceId, tableProperties.metric_view)],
+    [useMetricsView(instanceId, tableProperties.metrics_view)],
     ([metricsView]) => {
       const measures = tableProperties.measures;
       const rowDimensions = tableProperties.row_dimensions || [];

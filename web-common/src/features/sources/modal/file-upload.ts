@@ -7,7 +7,7 @@ import {
   PossibleZipExtensions,
   fileHasValidExtension,
 } from "@rilldata/web-common/features/sources/modal/possible-file-extensions";
-import { importOverlayVisible } from "@rilldata/web-common/layout/overlay-store";
+import { overlay } from "@rilldata/web-common/layout/overlay-store";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
 import { getTableNameFromFile } from "../extract-file-name";
@@ -50,7 +50,7 @@ export async function* uploadTableFiles(
     // if there was a duplicate and cancel was clicked then we do not upload
     if (!resolvedTableName) continue;
 
-    importOverlayVisible.set(true);
+    overlay.setDebounced({ title: `Uploading ${validFile.name}` });
 
     const filePath = await uploadFile(instanceId, validFile);
     // if upload failed for any reason continue
@@ -59,11 +59,11 @@ export async function* uploadTableFiles(
       yield { tableName: resolvedTableName, filePath };
     }
 
-    importOverlayVisible.set(false);
+    overlay.clear();
   }
 
   if (lastTableName && goToIfSuccessful) {
-    await goto(`/files/sources/${lastTableName}`);
+    await goto(`/files/sources/${lastTableName}.yaml`);
   }
 
   if (invalidFiles.length) {
