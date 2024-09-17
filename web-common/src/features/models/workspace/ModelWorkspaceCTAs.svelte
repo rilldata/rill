@@ -4,9 +4,12 @@
     Button,
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -14,22 +17,41 @@
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
-  import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ExportFormat,
+    V1ReconcileStatus,
+    V1Resource,
+    createRuntimeServiceCreateTrigger,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
+  export let resource: V1Resource | undefined;
   export let modelName: string;
-  export let suppressTooltips = false;
   export let modelHasError = false;
-
   export let collapse = false;
 
+  const triggerMutation = createRuntimeServiceCreateTrigger();
   const exportModelMutation = createExportTableMutation();
+
+  $: isModelIdle =
+    resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+
+  $: isIncrementalModel = resource?.model?.spec?.incremental;
 
   $: dashboardsQuery = useGetDashboardsForModel($runtime.instanceId, modelName);
 
   $: availableDashboards = $dashboardsQuery.data ?? [];
+
+  function refreshModel(full: boolean) {
+    void $triggerMutation.mutateAsync({
+      instanceId: $runtime.instanceId,
+      data: {
+        models: [{ model: resource?.meta?.name?.name, full: full }],
+      },
+    });
+  }
 
   const onExport = async (format: V1ExportFormat) => {
     return $exportModelMutation.mutateAsync({
@@ -42,71 +64,70 @@
   };
 </script>
 
-<Tooltip
-  alignment="middle"
-  distance={16}
-  location="left"
-  suppress={suppressTooltips}
->
-  <!-- attach floating element right here-->
-  <WithTogglableFloatingElement
-    alignment="end"
-    bind:active={suppressTooltips}
-    distance={8}
-    let:toggleFloatingElement
-    location="bottom"
-  >
+{#if isIncrementalModel}
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger asChild let:builder>
+      <Button type="secondary" builders={[builder]} disabled={!isModelIdle}>
+        <IconSpaceFixer pullLeft pullRight={collapse}>
+          <RefreshIcon size="14px" />
+        </IconSpaceFixer>
+        <ResponsiveButtonText {collapse}>Refresh</ResponsiveButtonText>
+        <IconSpaceFixer pullLeft pullRight={collapse}>
+          <CaretDownIcon />
+        </IconSpaceFixer>
+      </Button>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content>
+      <DropdownMenu.Item on:click={() => refreshModel(false)}>
+        Run model
+      </DropdownMenu.Item>
+      <DropdownMenu.Item on:click={() => refreshModel(true)}>
+        Reset & run model
+      </DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+{:else}
+  <Button type="secondary" on:click={() => refreshModel(true)}>
+    <IconSpaceFixer pullLeft pullRight={collapse}>
+      <RefreshIcon size="14px" />
+    </IconSpaceFixer>
+    <ResponsiveButtonText {collapse}>Refresh</ResponsiveButtonText>
+  </Button>
+{/if}
+
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger asChild let:builder>
     <Button
-      disabled={modelHasError}
-      on:click={toggleFloatingElement}
+      disabled={modelHasError || !isModelIdle}
       type="secondary"
+      builders={[builder]}
     >
-      <IconSpaceFixer pullLeft pullRight={collapse}
-        ><CaretDownIcon /></IconSpaceFixer
-      >
+      <IconSpaceFixer pullLeft pullRight={collapse}>
+        <Export />
+      </IconSpaceFixer>
 
       <ResponsiveButtonText {collapse}>Export</ResponsiveButtonText>
+      <CaretDownIcon />
     </Button>
-    <Menu
-      dark
-      let:toggleFloatingElement
-      on:click-outside={toggleFloatingElement}
-      on:escape={toggleFloatingElement}
-      slot="floating-element"
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content>
+    <DropdownMenu.Item
+      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
     >
-      <MenuItem
-        on:select={() => {
-          toggleFloatingElement();
-          onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET);
-        }}
-      >
-        Export as Parquet
-      </MenuItem>
-      <MenuItem
-        on:select={() => {
-          toggleFloatingElement();
-          onExport(V1ExportFormat.EXPORT_FORMAT_CSV);
-        }}
-      >
-        Export as CSV
-      </MenuItem>
-      <MenuItem
-        on:select={() => {
-          toggleFloatingElement();
-          onExport(V1ExportFormat.EXPORT_FORMAT_XLSX);
-        }}
-      >
-        Export as XLSX
-      </MenuItem>
-    </Menu>
-  </WithTogglableFloatingElement>
-  <TooltipContent slot="tooltip-content">
-    {#if modelHasError}Fix the errors in your model to export
-    {:else}
-      Export the modeled data as a file
-    {/if}
-  </TooltipContent>
-</Tooltip>
+      Export as Parquet
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_CSV)}
+    >
+      Export as CSV
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_XLSX)}
+    >
+      Export as XLSX
+    </DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
 
 {#if availableDashboards?.length === 0}
   <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
@@ -151,7 +172,7 @@
         on:escape={toggleFloatingElement}
         on:click-outside={toggleFloatingElement}
       >
-        {#each availableDashboards as resource}
+        {#each availableDashboards as resource (resource?.meta?.name?.name)}
           <MenuItem
             on:select={async () => {
               if (resource?.meta?.filePaths?.[0]) {
