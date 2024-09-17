@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { V1MetricsViewColumn } from "@rilldata/web-common/runtime-client";
-  import VirtualTableHeaderCell from "./VirtualTableHeaderCell.svelte";
-  import type VirtualTableRowHeader from "./VirtualTableRowHeader.svelte";
   import type { ComponentType } from "svelte";
+  import VirtualTableHeaderCell from "./VirtualTableHeaderCell.svelte";
   import type VirtualTableHeaderCellContent from "./VirtualTableHeaderCellContent.svelte";
+  import type VirtualTableRowHeader from "./VirtualTableRowHeader.svelte";
 
   export let rowHeaders: boolean;
   export let RowHeader: ComponentType<VirtualTableRowHeader>;
@@ -71,7 +71,7 @@
 
 <style lang="postcss">
   thead {
-    @apply sticky top-0 z-20;
+    @apply sticky top-0;
   }
 
   thead tr {
@@ -84,6 +84,6 @@
   }
 
   .row-number {
-    @apply sticky left-0 z-10 text-center;
+    @apply sticky left-0 text-center;
   }
 </style>

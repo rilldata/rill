@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type VirtualTableRowHeader from "./VirtualTableRowHeader.svelte";
-  import VirtualTableCell from "./VirtualTableCell.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import {
     V1MetricsViewColumn,
     V1MetricsViewRowsResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import { ComponentType } from "svelte";
+  import VirtualTableCell from "./VirtualTableCell.svelte";
+  import type VirtualTableRowHeader from "./VirtualTableRowHeader.svelte";
 
   export let selected: boolean;
   export let rowHeaders: boolean;
@@ -117,7 +117,7 @@
   }
 
   .row-number {
-    @apply sticky left-0 z-10 text-center;
+    @apply sticky left-0 text-center;
   }
 
   tr:hover > td {
