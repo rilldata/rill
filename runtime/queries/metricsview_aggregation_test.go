@@ -60,6 +60,9 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_with_offset", func(t *testing.T) { testMetricsViewsAggregation_comparison_with_offset(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_percent_of_totals", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_percent_of_totals_with_limit", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals_with_limit(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
+	})
 }
 
 func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
@@ -98,6 +101,9 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_with_offset", func(t *testing.T) { testMetricsViewsAggregation_comparison_with_offset(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_percent_of_totals", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals(t, rt, instanceID) })
 	t.Run("testMetricsViewAggregation_percent_of_totals_with_limit", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals_with_limit(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
+	})
 }
 
 func testClaims() *runtime.SecurityClaims {
@@ -4660,6 +4666,75 @@ func TestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
 	require.Equal(t, "news.yahoo.com,1.49,1.51", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
 	i++
 	require.Equal(t, "news.google.com,3.55,3.74", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+}
+
+func testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	limit := int64(2)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__d",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonDelta{
+					ComparisonDelta: &runtimev1.MetricsViewAggregationMeasureComputeComparisonDelta{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "m1__d",
+				Desc: true,
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		Offset:         3,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "dom,m1,m1__d", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "google.com,1.48,0.03", fieldsToString2digits(rows[i], "dom", "m1", "m1__d"))
+	i++
+	require.Equal(t, "sports.yahoo.com,3.74,-0.02", fieldsToString2digits(rows[i], "dom", "m1", "m1__d"))
 }
 
 func testMetricsViewsAggregation_comparison_with_offset(t *testing.T, rt *runtime.Runtime, instanceID string) {
