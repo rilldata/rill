@@ -15,6 +15,8 @@ import { MetricsService } from "@rilldata/web-common/metrics/service/MetricsServ
 import { ProductHealthEventFactory } from "@rilldata/web-common/metrics/service/ProductHealthEventFactory";
 import { get } from "svelte/store";
 
+export const cloudVersion = import.meta.env.RILL_UI_PUBLIC_VERSION;
+
 export async function initCloudMetrics() {
   const metricsService = new MetricsService(new RillAdminTelemetryClient(), [
     new ProductHealthEventFactory(),

@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -198,26 +200,19 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		}
 	}
 
-	// Search for connector definition in rill.yaml
-	vars := inst.ResolveVariables()
+	// Search for connector definitions from YAML files
 	for _, c := range inst.ProjectConnectors {
-		if c.Name == name {
-			res.Driver = c.Type
-			if c.Config != nil {
-				res.Project = maps.Clone(c.Config) // Cloning because Project may be mutated later, but the inst object is shared.
-			} else {
-				res.Project = make(map[string]string)
-			}
-			// Resolve properties obtained from connectors that depend on an env variable
-			for k, v := range c.ConfigFromVariables {
-				var ok bool
-				res.Project[k], ok = vars[v]
-				if !ok {
-					return nil, fmt.Errorf("variable %q referenced in connector property %q not found", v, k)
-				}
-			}
-			break
+		if c.Name != name {
+			continue
 		}
+
+		res.Driver = c.Type
+		res.Project, err = ResolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), c)
+		if err != nil {
+			return nil, err
+		}
+
+		break
 	}
 
 	// Search for implicit connectors (where the name matches a driver name)
@@ -234,6 +229,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	}
 
 	// Build res.Env config based on instance variables matching the format "connector.name.var"
+	vars := inst.ResolveVariables(true)
 	prefix := fmt.Sprintf("connector.%s.", name)
 	for k, v := range vars {
 		if after, found := strings.CutPrefix(k, prefix); found {
@@ -271,7 +267,12 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 			if err != nil {
 				return nil, err
 			}
-			res.setPreset("dsn", repo.Root(), true)
+			rootPath, err := repo.Root(ctx)
+			if err != nil {
+				release()
+				return nil, fmt.Errorf("failed to get root path: %w", err)
+			}
+			res.setPreset("dsn", rootPath, true)
 			release()
 		}
 	}
@@ -285,6 +286,41 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	res.setPreset("temp_dir", r.TempDir(instanceID), true)
 
 	// Done
+	return res, nil
+}
+
+// ResolveConnectorProperties resolves templating in the provided connector's properties.
+// It always returns a clone of the properties, even if no templating is found, so the output is safe for further mutations.
+func ResolveConnectorProperties(environment string, vars map[string]string, c *runtimev1.Connector) (map[string]string, error) {
+	res := maps.Clone(c.Config)
+	if res == nil {
+		res = make(map[string]string)
+	}
+
+	// DEPRECATED: ConfigFromVariables is deprecated, keeping this for short-term backwards compatibility.
+	for k, v := range c.ConfigFromVariables {
+		val, ok := vars[v]
+		if ok {
+			res[k] = val
+		}
+	}
+
+	// Resolve templating in properties that use it
+	for _, k := range c.TemplatedProperties {
+		v, ok := res[k]
+		if !ok {
+			continue
+		}
+		v, err := rillv1.ResolveTemplate(v, rillv1.TemplateData{
+			Environment: environment,
+			Variables:   vars,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve templated property %q: %w", k, err)
+		}
+		res[k] = v
+	}
+
 	return res, nil
 }
 

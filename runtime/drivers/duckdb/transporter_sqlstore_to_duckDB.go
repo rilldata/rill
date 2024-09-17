@@ -43,7 +43,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	}
 	defer func() {
 		err := rowIter.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, ctx.Err()) {
 			s.logger.Error("error in closing row iterator", zap.Error(err))
 		}
 	}()

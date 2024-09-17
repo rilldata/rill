@@ -517,7 +517,9 @@ message ComponentSpec {
   bool defined_in_dashboard = 6;
 }
 
-message ComponentState {}
+message ComponentState {
+  ComponentSpec valid_spec = 1;
+}
 
 message ComponentVariable {
   string name = 1;
@@ -538,7 +540,9 @@ message DashboardSpec {
   repeated DashboardItem items = 4;
 }
 
-message DashboardState {}
+message DashboardState {
+  DashboardSpec valid_spec = 1;
+}
 
 message DashboardItem {
   string component = 1;
@@ -601,7 +605,8 @@ message CharLocation {
 message ConnectorSpec {
   string driver = 1;
   map<string, string> properties = 2;
-  // properties_from_variables stores properties whose value is a variable.
+  repeated string templated_properties = 4;
+  // DEPRECATED: properties_from_variables stores properties whose value is a variable.
   // NOTE : properties_from_variables and properties both should be used to get all properties.
   map<string, string> properties_from_variables = 3;
 }

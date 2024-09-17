@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"time"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -20,6 +22,8 @@ func PingCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			ch.Printf("Ping: %s\n", time.Now().UTC().String())
 
 			pong, err := client.Ping(cmd.Context(), &adminv1.PingRequest{})
 			if err != nil {

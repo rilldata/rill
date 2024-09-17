@@ -37,7 +37,6 @@ import {
   DashboardState,
   DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
-  DashboardState_PivotRowJoinType,
   DashboardTimeRange,
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -294,14 +293,8 @@ const mapPivotDimensions: (
 };
 
 function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
-  if (!pivotState.active)
-    return {
-      pivotIsActive: false,
-      pivotExpanded: {},
-      pivotRowJoinType: DashboardState_PivotRowJoinType.UNSPECIFIED,
-    };
   return {
-    pivotIsActive: true,
+    pivotIsActive: pivotState.active,
     pivotRowAllDimensions: pivotState.rows.dimension.map(mapPivotDimensions),
     pivotColumnAllDimensions:
       pivotState.columns.dimension.map(mapPivotDimensions),

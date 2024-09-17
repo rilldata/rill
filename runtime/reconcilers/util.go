@@ -175,7 +175,7 @@ func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self comp
 	if err != nil {
 		return nil, err
 	}
-	vars := inst.ResolveVariables()
+	vars := inst.ResolveVariables(false)
 
 	templateData := compilerv1.TemplateData{
 		Environment: inst.Environment,

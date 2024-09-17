@@ -75,6 +75,7 @@ export function createPivotAggregationRowQuery(
           measures: prepareMeasureForComparison(measures),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
+          whereSql: config.pivot?.whereSql,
           timeRange: {
             start: timeRange?.start ? timeRange.start : config.time.timeStart,
             end: timeRange?.end ? timeRange.end : config.time.timeEnd,

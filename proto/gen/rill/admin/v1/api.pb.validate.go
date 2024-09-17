@@ -7918,6 +7918,8 @@ func (m *AddOrganizationMemberUserRequest) validate(all bool) error {
 
 	// no validation rules for Role
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return AddOrganizationMemberUserRequestMultiError(errors)
 	}
@@ -32545,6 +32547,10 @@ func (m *MagicAuthToken) validate(all bool) error {
 	// no validation rules for Id
 
 	// no validation rules for ProjectId
+
+	// no validation rules for Url
+
+	// no validation rules for Token
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

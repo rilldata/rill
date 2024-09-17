@@ -73,15 +73,6 @@ export class FileArtifacts {
     });
   }
 
-  /**
-   * This is called when a resource is deleted either because file was deleted or it errored out.
-   */
-  softDeleteResource(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.softDeleteResource();
-    });
-  }
-
   getFileArtifact = (filePath: string) => {
     let artifact = this.artifacts.get(filePath);
 

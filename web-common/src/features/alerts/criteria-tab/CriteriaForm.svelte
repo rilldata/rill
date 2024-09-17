@@ -1,6 +1,5 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getTypeOptions } from "@rilldata/web-common/features/alerts/criteria-tab/getTypeOptions";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
@@ -10,6 +9,7 @@
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;
@@ -27,7 +27,9 @@
   $: measureOptions = [
     {
       value: $form["measure"],
-      label: measure?.label?.length ? measure.label : measure?.expression,
+      label: measure?.label?.length
+        ? measure.label
+        : measure?.expression ?? $form["measure"],
     },
   ];
   $: selectedMeasure = $metricsView.data?.measures?.find(
@@ -59,7 +61,7 @@
     label=""
     options={measureOptions}
     placeholder="Measure"
-    className="w-[160px]"
+    width={160}
   />
   <Select
     bind:value={$form["criteria"][index].type}
@@ -67,7 +69,7 @@
     label=""
     options={typeOptions}
     placeholder="type"
-    className="w-[256px]"
+    width={256}
   />
   <Select
     bind:value={$form["criteria"][index].operation}
@@ -75,7 +77,7 @@
     label=""
     options={CriteriaOperationOptions}
     placeholder="Operator"
-    className="w-[70px]"
+    width={70}
   />
   <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
   <Input

@@ -36,7 +36,9 @@
           organization: organization,
           project: project,
           id: info.row.original.meta.name.name,
-          title: info.row.original.alert.spec.title,
+          title:
+            info.row.original.alert.spec.title ||
+            info.row.original.meta.name.name,
           lastTrigger:
             info.row.original.alert.state.executionHistory[0]?.finishedOn ??
             info.row.original.alert.state.executionHistory[0]?.startedOn,

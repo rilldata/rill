@@ -124,6 +124,7 @@
       time: time,
     });
   }
+
   const debounceHighlightCell = debounce(highlightCell, 50);
 
   function toggleFilter(e) {

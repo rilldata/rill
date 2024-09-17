@@ -445,6 +445,11 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 		// Rename if possible
 		renamed := false
 		for idx, rr := range deleteResources {
+			if rr == nil {
+				// Already renamed
+				continue
+			}
+
 			var err error
 			renamed, err = r.attemptRename(ctx, inst, self, def, rr)
 			if err != nil {

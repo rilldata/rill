@@ -143,7 +143,15 @@
             Access expires
           </label>
           <!-- TODO: use a Rill date picker, once we have one that can select a single day -->
-          <input id="expires-at" type="date" bind:value={$form.expiresAt} />
+          <!-- Minimum date is tomorrow -->
+          <input
+            id="expires-at"
+            type="date"
+            bind:value={$form.expiresAt}
+            min={new Date(Date.now() + 24 * 60 * 60 * 1000)
+              .toISOString()
+              .slice(0, 10)}
+          />
         </div>
       {/if}
     </div>

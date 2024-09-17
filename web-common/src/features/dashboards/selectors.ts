@@ -46,6 +46,12 @@ export function useValidDashboards(instanceId: string) {
   );
 }
 
+export function useValidCanvases(instanceId: string) {
+  return useFilteredResources(instanceId, ResourceKind.Dashboard, (data) =>
+    data?.resources?.filter((res) => !!res.dashboard?.state?.validSpec),
+  );
+}
+
 export function useValidVisualizations(instanceId: string) {
   return createRuntimeServiceListResources(
     instanceId,

@@ -81,7 +81,11 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
 
     // Avoid a race condition when switching between metrics views
     // (It's not necessary for Public URLs because there's no UI flow for switching from one Public URL to another)
-    if (!state.isPublicUrl && state?.urlName !== metricViewName) return;
+    if (
+      !state.isPublicUrl &&
+      state?.urlName?.toLowerCase() !== metricViewName.toLowerCase()
+    )
+      return;
 
     if (!state.isReady || !state.proto) return;
 

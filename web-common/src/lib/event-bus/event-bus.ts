@@ -52,7 +52,7 @@ export const eventBus = new EventBus();
 
 export interface Events {
   notification: NotificationMessage;
-  banner: BannerMessage;
+  banner: BannerMessage | null;
   highlightSelection: Reference[];
   "shift-click": null;
   "command-click": null;
