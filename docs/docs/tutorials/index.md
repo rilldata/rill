@@ -1,8 +1,7 @@
 ---
 title: Tutorials
 slug: /tutorials
-sidebar_label: Tutorials
-sidebar_position: 00
+sidebar_position: 100
 hide_table_of_contents: true
 ---
 
