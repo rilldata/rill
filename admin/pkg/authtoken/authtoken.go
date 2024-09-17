@@ -101,6 +101,22 @@ func FromString(s string) (*Token, error) {
 	}, nil
 }
 
+func FromParts(typ Type, id uuid.UUID, secret []byte) (*Token, error) {
+	if !typ.Validate() {
+		return nil, errors.New("invalid token type")
+	}
+
+	if len(secret) != 24 {
+		return nil, errors.New("secret must be 24 bytes")
+	}
+
+	return &Token{
+		Type:   typ,
+		ID:     id,
+		Secret: [24]byte(secret),
+	}, nil
+}
+
 // String canonically encodes the token as string.
 func (t *Token) String() string {
 	payload := make([]byte, 40)

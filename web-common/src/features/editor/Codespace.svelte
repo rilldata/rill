@@ -66,7 +66,7 @@
           const local = get(localContent);
           if (editor.state.doc.toString() === newRemoteContent) return;
 
-          if (!get(localContent)) {
+          if (local === null) {
             updateEditorContent(newRemoteContent);
           } else if (local !== newRemoteContent) {
             showWarning = true;

@@ -138,20 +138,16 @@ func toMemberTable(members []*adminv1.MemberUser) []*memberUser {
 
 func toMemberRow(m *adminv1.MemberUser) *memberUser {
 	return &memberUser{
-		Name:      m.UserName,
-		Email:     m.UserEmail,
-		RoleName:  m.RoleName,
-		CreatedOn: m.CreatedOn.AsTime().Local().Format(time.DateTime),
-		UpdatedOn: m.UpdatedOn.AsTime().Local().Format(time.DateTime),
+		Email:    m.UserEmail,
+		Name:     m.UserName,
+		RoleName: m.RoleName,
 	}
 }
 
 type memberUser struct {
-	Name      string `header:"name" json:"display_name"`
-	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role" json:"role_name"`
-	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
-	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+	Email    string `header:"email" json:"email"`
+	Name     string `header:"name" json:"display_name"`
+	RoleName string `header:"role" json:"role_name"`
 }
 
 func (p *Printer) PrintInvites(invites []*adminv1.UserInvite) {

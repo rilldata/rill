@@ -482,13 +482,6 @@ export function canEnablePivotComparison(
   if (pivotState.columns.measure.length >= 5) {
     return false;
   }
-  // Disable if time dimension is present in columns or rows
-  if (pivotState.columns.dimension.some((d) => d.type === "time")) {
-    return false;
-  }
-  if (pivotState.rows.dimension.some((d) => d.type === "time")) {
-    return false;
-  }
   // Disable if time comparison is not present
   if (!comparisonStart) {
     return false;

@@ -1310,9 +1310,14 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 	}
 	defer release()
 
+	repoRoot, err := repo.Root(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repo root: %w", err)
+	}
+
 	return &drivers.ModelEnv{
 		AllowHostAccess:    r.C.Runtime.AllowHostAccess(),
-		RepoRoot:           repo.Root(),
+		RepoRoot:           repoRoot,
 		StageChanges:       cfg.StageChanges,
 		DefaultMaterialize: cfg.ModelDefaultMaterialize,
 		AcquireConnector:   r.C.AcquireConn,
@@ -1345,7 +1350,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 	td := compilerv1.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]any{},
-		Variables:   inst.ResolveVariables(),
+		Variables:   inst.ResolveVariables(false),
 		State:       incrementalState,
 		ExtraProps:  extraProps,
 		Self: compilerv1.TemplateResource{
@@ -1381,7 +1386,7 @@ func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props m
 	if err != nil {
 		return nil, err
 	}
-	vars := inst.ResolveVariables()
+	vars := inst.ResolveVariables(false)
 
 	for k := range res {
 		k2 := strings.TrimPrefix(k, "vars.")

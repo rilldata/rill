@@ -170,6 +170,11 @@ export type AdminServiceListMagicAuthTokensParams = {
   pageToken?: string;
 };
 
+export type AdminServiceAddProjectMemberUserBody = {
+  email?: string;
+  role?: string;
+};
+
 export type AdminServiceListProjectMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -246,6 +251,12 @@ export type AdminServiceRemoveOrganizationMemberUserParams = {
   keepProjectRoles?: boolean;
 };
 
+export type AdminServiceAddOrganizationMemberUserBody = {
+  email?: string;
+  role?: string;
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListOrganizationMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -290,11 +301,6 @@ export type AdminServiceCreateReportBodyBody = {
 
 export type AdminServiceCreateAlertBodyBody = {
   options?: V1AlertOptions;
-};
-
-export type AdminServiceAddOrganizationMemberUserBodyBody = {
-  email?: string;
-  role?: string;
 };
 
 export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
@@ -803,6 +809,8 @@ export type V1MagicAuthTokenAttributes = { [key: string]: any };
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
+  url?: string;
+  token?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;

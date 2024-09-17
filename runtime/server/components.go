@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -35,13 +34,21 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to component data")
 	}
 
-	// Find the component resource
-	spec, err := s.getComponent(ctx, req.InstanceId, req.Component)
+	// Find the component spec
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: req.Component}, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return nil, status.Errorf(codes.NotFound, "component with name %q not found", req.Component)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+	spec := res.GetComponent().State.ValidSpec
+	if spec == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "component %q is invalid", req.Component)
 	}
 
 	// Get current instance metadata
@@ -57,7 +64,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	td := rillv1.TemplateData{
 		Environment: inst.Environment,
 		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
-		Variables:   inst.ResolveVariables(),
+		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
 			"args": args,
 		},
@@ -172,13 +179,21 @@ func (s *Server) componentDataHandler(w http.ResponseWriter, req *http.Request) 
 		args[k] = v[0]
 	}
 
-	// Find the component resource
-	componentSpec, err := s.getComponent(ctx, instanceID, component)
+	// Find the component spec
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
+	rs, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: component}, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return httputil.Errorf(http.StatusNotFound, "component with name %q not found", component)
 		}
 		return httputil.Error(http.StatusInternalServerError, err)
+	}
+	componentSpec := rs.GetComponent().State.ValidSpec
+	if componentSpec == nil {
+		return httputil.Errorf(http.StatusBadRequest, "component %q is invalid", component)
 	}
 
 	// Call the component's data resolver
@@ -206,24 +221,4 @@ func (s *Server) componentDataHandler(w http.ResponseWriter, req *http.Request) 
 	}
 
 	return nil
-}
-
-func (s *Server) getComponent(ctx context.Context, instanceID, name string) (*runtimev1.ComponentSpec, error) {
-	ctrl, err := s.runtime.Controller(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, false)
-	if err != nil {
-		return nil, err
-	}
-
-	ch := res.GetComponent()
-	spec := ch.Spec
-	if spec == nil {
-		return nil, fmt.Errorf("component %q is invalid", name)
-	}
-
-	return spec, nil
 }
