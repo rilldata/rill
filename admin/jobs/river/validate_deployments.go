@@ -97,23 +97,6 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 				return fmt.Errorf("validate deployments: %q is not in the provisioner set", depl.Provisioner)
 			}
 
-			v, err := p.ValidateConfig(ctx, depl.ProvisionID)
-			if err != nil {
-				w.admin.Logger.Warn("validate deployments: error validating provisioner config", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-				return err
-			}
-
-			// Trigger a redeploy if config is no longer valid
-			if !v {
-				w.admin.Logger.Info("validate deployments: config no longer valid, triggering redeploy", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-				_, err = w.admin.RedeployProject(ctx, proj, depl)
-				if err != nil {
-					return err
-				}
-				w.admin.Logger.Info("validate deployments: redeployed", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), observability.ZapCtx(ctx))
-				continue
-			}
-
 			// If project is running 'latest' version then update if needed, skip if 'static' provisioner type
 			if p.Type() != "static" && proj.ProdVersion == "latest" && depl.RuntimeVersion != latestVersion {
 				w.admin.Logger.Info("validate deployments: upgrading deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
