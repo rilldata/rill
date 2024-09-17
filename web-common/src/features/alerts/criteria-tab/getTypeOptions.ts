@@ -39,7 +39,7 @@ export function getTypeOptions(
         return {
           ...o,
           label: o.shortLabel,
-          tooltip: "Enable comparison for this option.",
+          tooltip: "Available when comparing time periods.",
           disabled: true,
         };
       }),
@@ -51,7 +51,7 @@ export function getTypeOptions(
   } else {
     options.push({
       ...MeasureFilterPercentOfTotalOption,
-      tooltip: "Measure does not support percent of totals.",
+      tooltip: "Measure does not support percent-of-total.",
       disabled: true,
     });
   }
