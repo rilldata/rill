@@ -671,7 +671,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
 	node, err := p.parseStem(paths, yamlPath, yaml, sqlPath, sql)
 	if err == nil {
-		err = p.parseNode(node)
+		err = p.parseNode(ctx, node)
 	}
 
 	// Spread error across the node's paths (YAML and/or SQL files)

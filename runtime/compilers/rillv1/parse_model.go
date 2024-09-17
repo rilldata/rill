@@ -1,6 +1,7 @@
 package rillv1
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -36,7 +37,7 @@ type ModelYAML struct {
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseModel(node *Node) error {
+func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &ModelYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
@@ -150,10 +151,14 @@ func (p *Parser) parseModel(node *Node) error {
 	if inputConnector == "local_file" {
 		path, ok := inputProps["path"].(string)
 		if ok {
-			localPaths, err := doublestar.FilepathGlob(filepath.Join(p.Repo.Root(), path))
+			root, err := p.Repo.Root(ctx)
+			if err != nil {
+				return err
+			}
+			localPaths, err := doublestar.FilepathGlob(filepath.Join(root, path))
 			if err == nil {
 				for _, localPath := range localPaths {
-					localPath = strings.TrimPrefix(localPath, p.Repo.Root())
+					localPath = strings.TrimPrefix(localPath, root)
 					resources := p.LocalDataToResourcepath[localPath]
 					if _, ok := p.LocalDataToResourcepath[localPath]; !ok {
 						resources = make(map[string]any)
