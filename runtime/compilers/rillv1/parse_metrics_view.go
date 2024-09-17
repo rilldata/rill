@@ -15,23 +15,20 @@ import (
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
-	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title              string           `yaml:"title"`
-	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
-	Description        string           `yaml:"description"`
-	Model              string           `yaml:"model"`
-	Database           string           `yaml:"database"`
-	DatabaseSchema     string           `yaml:"database_schema"`
-	Table              string           `yaml:"table"`
-	TimeDimension      string           `yaml:"timeseries"`
-	Watermark          string           `yaml:"watermark"`
-	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
-	DefaultTimeRange   string           `yaml:"default_time_range"`
-	AvailableTimeZones []string         `yaml:"available_time_zones"`
-	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
-	DefaultTheme       string           `yaml:"default_theme"`
-	Dimensions         []*struct {
+	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Title             string           `yaml:"title"`
+	DisplayName       string           `yaml:"display_name"` // Backwards compatibility
+	Description       string           `yaml:"description"`
+	Model             string           `yaml:"model"`
+	Database          string           `yaml:"database"`
+	DatabaseSchema    string           `yaml:"database_schema"`
+	Table             string           `yaml:"table"`
+	TimeDimension     string           `yaml:"timeseries"`
+	Watermark         string           `yaml:"watermark"`
+	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	Dimensions        []*struct {
 		Name        string
 		Label       string
 		Column      string
@@ -42,8 +39,7 @@ type MetricsViewYAML struct {
 		Unnest      bool
 		URI         string
 	}
-	DefaultDimensions []string `yaml:"default_dimensions"`
-	Measures          []*struct {
+	Measures []*struct {
 		Name                string
 		Label               string
 		Type                string
@@ -57,9 +53,15 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	DefaultMeasures   []string `yaml:"default_measures"`
-	Security          *MetricsViewSecurityPolicyYAML
-	DefaultComparison struct {
+	Security *MetricsViewSecurityPolicyYAML
+
+	// DEPRECATED FIELDS
+	DefaultTimeRange   string   `yaml:"default_time_range"`
+	AvailableTimeZones []string `yaml:"available_time_zones"`
+	DefaultTheme       string   `yaml:"default_theme"`
+	DefaultDimensions  []string `yaml:"default_dimensions"`
+	DefaultMeasures    []string `yaml:"default_measures"`
+	DefaultComparison  struct {
 		Mode      string `yaml:"mode"`
 		Dimension string `yaml:"dimension"`
 	} `yaml:"default_comparison"`
@@ -751,11 +753,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain
-	spec.DefaultTimeRange = tmp.DefaultTimeRange
-	spec.AvailableTimeZones = tmp.AvailableTimeZones
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
-	spec.DefaultTheme = tmp.DefaultTheme
 
 	for _, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -772,16 +771,25 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Uri:         dim.URI,
 		})
 	}
-	spec.DefaultDimensions = tmp.DefaultDimensions
 
 	spec.Measures = measures
-	spec.DefaultMeasures = tmp.DefaultMeasures
 
+	spec.SecurityRules = securityRules
+
+	// Backwards compatibility: When the version is 0, populate the deprecated fields and also emit an Explore resource for the metrics view.
+	if node.Version > 0 {
+		return nil
+	}
+
+	spec.DefaultTimeRange = tmp.DefaultTimeRange
+	spec.AvailableTimeZones = tmp.AvailableTimeZones
+	spec.DefaultTheme = tmp.DefaultTheme
+	spec.DefaultDimensions = tmp.DefaultDimensions
+	spec.DefaultMeasures = tmp.DefaultMeasures
 	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
 	if tmp.DefaultComparison.Dimension != "" {
 		spec.DefaultComparisonDimension = tmp.DefaultComparison.Dimension
 	}
-
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
 			// nolint:staticcheck // We still need to set it
@@ -801,13 +809,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			}
 			spec.AvailableTimeRanges = append(spec.AvailableTimeRanges, t)
 		}
-	}
-
-	spec.SecurityRules = securityRules
-
-	// For backwards compatibility, also emit an Explore resource for the metrics view if the version is 0.
-	if node.Version > 0 {
-		return nil
 	}
 
 	refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: node.Name}}
