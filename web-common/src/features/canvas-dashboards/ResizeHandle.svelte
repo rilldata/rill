@@ -15,7 +15,7 @@
   $: ew = side[0] !== 0.5;
   $: ns = side[1] !== 0.5;
   $: corner = ns && ew;
-  $: span = corner ? 12 : dimensions[Number(ew)] - 6;
+  $: span = corner ? 12 : Math.max(0, dimensions[Number(ew)] - 6);
 
   function handleMouseDown(e: MouseEvent) {
     dispatch("change", {
@@ -64,7 +64,7 @@
   }
 
   .square {
-    @apply aspect-square bg-white border-primary-400 z-50;
+    @apply aspect-square bg-white border-primary-400 z-50 flex-none;
   }
 
   .line {

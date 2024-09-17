@@ -30,7 +30,7 @@
 >
   <div
     bind:contentRect
-    class="wrapper {color} max-w-[1440px]"
+    class="wrapper {color} max-w-[1440px] min-h-full"
     style:height="{height}px"
   >
     {#if GridLinesComponent && (showGrid || changing)}
