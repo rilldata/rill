@@ -1,17 +1,18 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { getRillTheme } from "@rilldata/web-common/features/canvas-components/render/vega-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
   import {
     SignalListeners,
-    VegaLite,
+    Vega,
     View,
     VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
+  import { onDestroy } from "svelte";
+  import { getRillTheme } from "./vega-config";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -21,7 +22,8 @@
   export let canvasDashboard = false;
   export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
-  export let viewVL: View;
+  export let view: View;
+  export let isScrubbing: boolean;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let jwt = get(runtime).jwt;
@@ -29,10 +31,35 @@
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
 
-  $: if (viewVL && tooltipFormatter) {
+  let tooltipTimer: number | null = null;
+  const TOOLTIP_DELAY = 200;
+
+  function createHoverIntentTooltipHandler(baseHandler: any) {
+    return function (handler: any, event: MouseEvent, item: any, value: any) {
+      if (!event || isScrubbing) {
+        return;
+      }
+      if (event.type === "pointermove") {
+        if (tooltipTimer !== null) {
+          clearTimeout(tooltipTimer);
+        }
+        tooltipTimer = window.setTimeout(() => {
+          baseHandler.call(this, handler, event, item, value);
+        }, TOOLTIP_DELAY);
+      } else if (event.type === "pointerout") {
+        if (tooltipTimer !== null) {
+          clearTimeout(tooltipTimer);
+          tooltipTimer = null;
+        }
+        baseHandler.call(this, handler, event, item, null);
+      }
+    };
+  }
+
+  $: if (view && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
-    viewVL.tooltip(handler.handleTooltip);
-    void viewVL.runAsync();
+    view.tooltip(createHoverIntentTooltipHandler(handler.handleTooltip));
+    void view.runAsync();
   }
 
   $: options = <EmbedOptions>{
@@ -59,6 +86,12 @@
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
   };
+
+  onDestroy(() => {
+    if (tooltipTimer !== null) {
+      clearTimeout(tooltipTimer);
+    }
+  });
 </script>
 
 <div
@@ -76,12 +109,12 @@
       {error}
     </div>
   {:else}
-    <VegaLite
+    <Vega
       {data}
       {spec}
       {signalListeners}
       {options}
-      bind:view={viewVL}
+      bind:view
       on:onError={onError}
     />
   {/if}

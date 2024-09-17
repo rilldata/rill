@@ -13,7 +13,7 @@
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
-  import { Interval } from "luxon";
+  import { Interval, DateTime } from "luxon";
 
   export let metricViewName: string;
   export let showComparison = false;
@@ -27,6 +27,8 @@
     },
   } = StateManagers;
 
+  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: ({ selectedScrubRange } = $dashboardStore);
@@ -37,7 +39,10 @@
       : null;
 
   $: subInterval = selectedSubRange
-    ? Interval.fromDateTimes(selectedSubRange.start, selectedSubRange.end)
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedSubRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedSubRange.end).setZone(activeTimeZone),
+      )
     : null;
 
   function onKeyDown(e: KeyboardEvent) {
@@ -56,7 +61,7 @@
         if (panRange) updatePanRange(panRange.start, panRange.end);
       }
     } else if ($dashboardStore?.selectedScrubRange?.end) {
-      if (e.key === "z") {
+      if (e.key === "z" && !e.metaKey && !e.ctrlKey) {
         zoomScrub();
       } else if (
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
@@ -92,12 +97,12 @@
 
   function zoomScrub() {
     if (
-      $dashboardStore?.selectedScrubRange?.start instanceof Date &&
-      $dashboardStore?.selectedScrubRange?.end instanceof Date
+      selectedScrubRange?.start instanceof Date &&
+      selectedScrubRange?.end instanceof Date
     ) {
       const { start, end } = getOrderedStartEnd(
-        $dashboardStore.selectedScrubRange.start,
-        $dashboardStore.selectedScrubRange.end,
+        selectedScrubRange.start,
+        selectedScrubRange.end,
       );
       metricsExplorerStore.setSelectedTimeRange(metricViewName, {
         name: TimeRangePreset.CUSTOM,
