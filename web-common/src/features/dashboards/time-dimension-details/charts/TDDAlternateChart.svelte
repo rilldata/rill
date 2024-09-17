@@ -218,7 +218,7 @@
     {expressionFunctions}
     {tooltipFormatter}
     {isScrubbing}
-    on:pan={(e) => updateRange(e.detail.start, e.detail.end)}
+    on:pan={(e) => updatePanRange(e.detail.start, e.detail.end)}
   />
 {:else}
   <!-- JIC we add a new chart type without brush param -->
