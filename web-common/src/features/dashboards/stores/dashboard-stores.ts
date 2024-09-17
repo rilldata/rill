@@ -14,6 +14,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { getMetricsExplorerFromUrl } from "@rilldata/web-common/features/dashboards/url-state/fromUrl";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
@@ -204,6 +205,34 @@ const metricViewReducers = {
       }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.whereFilter);
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
+    });
+  },
+
+  syncFromUrlParams(
+    name: string,
+    urlParams: URLSearchParams,
+    metricsView: V1MetricsViewSpec,
+  ) {
+    if (!urlParams || !metricsView) return;
+    // not all data for MetricsExplorerEntity will be filled out here.
+    // Hence, it is a Partial<MetricsExplorerEntity>
+    const { entity } = getMetricsExplorerFromUrl(urlParams, metricsView);
+    if (!entity) return;
+    // TODO: errors
+    console.log(entity);
+
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      for (const key in entity) {
+        metricsExplorer[key] = entity[key];
+      }
+      // this hack is needed since what is shown for comparison is not a single source
+      // TODO: use an enum and get rid of this
+      if (!entity.showTimeComparison) {
+        metricsExplorer.showTimeComparison = false;
+      }
+      metricsExplorer.dimensionFilterExcludeMode =
+        includeExcludeModeFromFilters(entity.whereFilter);
       AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
     });
   },

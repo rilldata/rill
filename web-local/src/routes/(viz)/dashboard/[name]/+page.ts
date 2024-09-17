@@ -1,3 +1,4 @@
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import {
@@ -9,7 +10,7 @@ import type { QueryFunction } from "@tanstack/svelte-query";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
-export const load = async ({ params, depends }) => {
+export const load = async ({ params, depends, url }) => {
   const { instanceId } = get(runtime);
 
   const dashboardName = params.name;
@@ -31,8 +32,6 @@ export const load = async ({ params, depends }) => {
   > = ({ signal }) =>
     runtimeServiceGetResource(instanceId, queryParams, signal);
 
-  console.log(params);
-
   try {
     const response = await queryClient.fetchQuery({
       queryFn: queryFunction,
@@ -47,6 +46,7 @@ export const load = async ({ params, depends }) => {
 
     return {
       metricsView: metricsViewResource,
+      searchParams: url?.searchParams,
     };
   } catch (e) {
     console.error(e);

@@ -51,8 +51,9 @@ export function getMetricsExplorerFromUrl(
       errors: filterErrors,
     } = fromFilterUrlParam(searchParams.get("f") as string);
     if (filterErrors) errors.push(...filterErrors);
-    entity.whereFilter = dimensionFilters;
-    entity.dimensionThresholdFilters = dimensionThresholdFilters;
+    if (dimensionFilters) entity.whereFilter = dimensionFilters;
+    if (dimensionThresholdFilters)
+      entity.dimensionThresholdFilters = dimensionThresholdFilters;
   }
 
   if (searchParams.has("tr")) {

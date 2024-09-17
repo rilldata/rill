@@ -3,7 +3,7 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
-  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
@@ -64,11 +64,11 @@
   {#key metricsViewName}
     <StateManagersProvider {metricsViewName}>
       <DashboardStateProvider metricViewName={metricsViewName}>
-        <DashboardURLStateProvider metricViewName={metricsViewName}>
+        <DashboardURLStateSync searchParams={data.searchParams}>
           <DashboardThemeProvider>
             <Dashboard metricViewName={metricsViewName} />
           </DashboardThemeProvider>
-        </DashboardURLStateProvider>
+        </DashboardURLStateSync>
       </DashboardStateProvider>
     </StateManagersProvider>
   {/key}
