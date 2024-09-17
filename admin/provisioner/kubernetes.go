@@ -199,7 +199,6 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 			pvc.Spec.WithResources(&corev1ac.VolumeResourceRequirementsApplyConfiguration{
 				Requests: &oldPvc.Spec.Resources.Requests,
 			})
-			fmt.Printf("keep old size")
 		}
 	}
 
