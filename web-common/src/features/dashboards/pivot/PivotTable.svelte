@@ -166,6 +166,12 @@
       ? calculateFirstColumnWidth(firstColumnName)
       : 0;
 
+  $: firstMeasureHeader = headers.length > 1 ? headers[1] : null;
+  // Always show a desc sorting icon for the first dimension
+  $: if (firstMeasureHeader && sorting.length === 0) {
+    onSortingChange([{ id: firstMeasureHeader.id, desc: true }]);
+  }
+
   $: rows = $table.getRowModel().rows;
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
