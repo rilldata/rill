@@ -1,6 +1,5 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getTypeOptions } from "@rilldata/web-common/features/alerts/criteria-tab/getTypeOptions";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
@@ -10,6 +9,7 @@
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;

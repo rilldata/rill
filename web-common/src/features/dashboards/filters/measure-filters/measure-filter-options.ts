@@ -44,7 +44,6 @@ export const MeasureFilterBaseTypeOptions = [
   },
 ];
 export const MeasureFilterComparisonTypeOptions = [
-  ...MeasureFilterBaseTypeOptions,
   {
     value: MeasureFilterType.PercentChange,
     label: "% change from",
@@ -65,6 +64,7 @@ export const MeasureFilterPercentOfTotalOption = {
   description: "% of total",
 };
 export const AllMeasureFilterTypeOptions = [
+  ...MeasureFilterBaseTypeOptions,
   ...MeasureFilterComparisonTypeOptions,
   MeasureFilterPercentOfTotalOption,
 ];
