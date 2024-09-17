@@ -88,7 +88,7 @@
 <style lang="postcss">
   .sidebar {
     @apply flex flex-col flex-none relative overflow-hidden;
-    @apply h-screen border-r z-0;
+    @apply h-full border-r z-0;
     transition-property: width;
     will-change: width;
   }
