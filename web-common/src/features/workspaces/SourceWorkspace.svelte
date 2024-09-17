@@ -9,9 +9,9 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import WorkspaceInspector from "@rilldata/web-common/features/models/inspector/WorkspaceInspector.svelte";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
-  import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,

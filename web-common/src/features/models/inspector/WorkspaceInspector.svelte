@@ -5,11 +5,11 @@
   import { getSummaries } from "@rilldata/web-common/features/column-profile/queries";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import { useModels } from "@rilldata/web-common/features/models/selectors";
+  import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatConnectorType,
     getFileExtension,
-  } from "@rilldata/web-common/features/sources/inspector/helpers";
-  import { useSources } from "@rilldata/web-common/features/sources/selectors";
+  } from "@rilldata/web-common/features/sources/sourceUtils";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import {
     formatBigNumberPercentage,
@@ -17,6 +17,7 @@
   } from "@rilldata/web-common/lib/formatters";
   import {
     V1ModelV2,
+    V1Resource,
     V1SourceV2,
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
@@ -24,21 +25,24 @@
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import InspectorHeaderGrid from "../../../layout/inspector/InspectorHeaderGrid.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getTableReferences } from "../../models/utils/get-table-references";
-  import References from "../../models/workspace/inspector/References.svelte";
-  import WithModelResultTooltip from "../../models/workspace/inspector/WithModelResultTooltip.svelte";
-  import { getMatchingReferencesAndEntries } from "../../models/workspace/inspector/utils";
-  import InspectorHeaderGrid from "./InspectorHeaderGrid.svelte";
+  import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";
+  import SplitsBrowser from "../splits/SplitsBrowser.svelte";
+  import { getTableReferences } from "../utils/get-table-references";
+  import References from "./References.svelte";
+  import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+  import { getMatchingReferencesAndEntries } from "./utils";
 
   export let hasUnsavedChanges: boolean;
   export let connector: string;
   export let database: string;
   export let databaseSchema: string;
   export let tableName: string;
+  export let resource: V1Resource;
   export let source: V1SourceV2 | undefined = undefined;
   export let model: V1ModelV2 | undefined = undefined;
-  export let sourceIsReconciling: boolean;
+  export let sourceIsReconciling: boolean = false;
 
   export let isEmpty = false;
   export let hasErrors: boolean;
@@ -179,6 +183,8 @@
   $: rollup = cardinality / $inputCardinalities;
 
   $: columnDelta = profileColumnsCount - $sourceColumns;
+  $: isIncremental = model?.spec?.incremental;
+  $: isSplit = !!model?.state?.splitsModelId;
 </script>
 
 <div class="wrapper" class:grayscale={hasUnsavedChanges}>
@@ -274,7 +280,7 @@
     {/if}
 
     <div>
-      <div class=" pl-4 pr-4">
+      <div class="px-4">
         <CollapsibleSectionTitle
           tooltipText="available columns"
           bind:active={showColumns}
@@ -295,6 +301,20 @@
         </div>
       {/if}
     </div>
+
+    {#if model}
+      {#if isSplit}
+        <hr />
+        <div class="px-4 flex flex-col gap-y-2">
+          <SplitsBrowser {resource} />
+        </div>
+      {:else if isIncremental}
+        <hr />
+        <div class="px-4 flex flex-col gap-y-2">
+          <IncrementalProcessing {resource} />
+        </div>
+      {/if}
+    {/if}
   {/if}
 </div>
 
