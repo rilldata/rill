@@ -24,6 +24,7 @@ func TestLegacyAlert(t *testing.T) {
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
 		"/metrics/mv1.yaml": `
+version: 1
 type: metrics_view
 title: mv1
 model: bar
@@ -184,6 +185,7 @@ func TestAlert(t *testing.T) {
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
 		"/metrics/mv1.yaml": `
+version: 1
 type: metrics_view
 title: mv1
 model: bar
@@ -468,6 +470,7 @@ func TestAlertDataYAMLMetricsSQL(t *testing.T) {
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
 		"/metrics/mv1.yaml": `
+version: 1
 type: metrics_view
 title: mv1
 model: bar

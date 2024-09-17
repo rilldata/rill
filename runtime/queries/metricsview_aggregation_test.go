@@ -2252,6 +2252,7 @@ func testMetricsViewAggregationClickhouseEnum(t *testing.T) {
 				CAST(null, 'Nullable(Enum(\'a\' = 1, \'b\' = 2))') as b
 			`,
 			"metrics/bar.yaml": `
+version: 1
 type: metrics_view
 model: foo
 dimensions:

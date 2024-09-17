@@ -16,6 +16,7 @@ func TestBuiltinMetricsSQL(t *testing.T) {
 			`rill.yaml`:      ``,
 			`models/foo.sql`: `SELECT 10 AS a`,
 			`metrics/bar.yaml`: `
+version: 1
 type: metrics_view
 model: foo
 dimensions:

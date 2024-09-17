@@ -32,6 +32,7 @@ path: data/foo.csv
 SELECT * FROM foo
 `,
 		"/metrics/foobar.yaml": `
+version: 1
 type: metrics_view
 model: bar
 dimensions:
@@ -693,6 +694,7 @@ path: data/foo.csv
 		"/models/bar2.sql": `SELECT * FROM bar1`,
 		"/models/bar3.sql": `SELECT * FROM bar2`,
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar3
@@ -843,6 +845,7 @@ path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -863,6 +866,7 @@ measures:
 	// ignore invalid measure and dimension
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -884,6 +888,7 @@ measures:
 	// no measure, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -905,6 +910,7 @@ measures:
 	// no dimension. valid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -927,6 +933,7 @@ measures:
 	// duplicate measure name, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -947,6 +954,7 @@ measures:
 	// duplicate dimension name, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -967,6 +975,7 @@ measures:
 	// duplicate cross name between measures and dimensions, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -987,6 +996,7 @@ measures:
 	// reset to valid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -1032,6 +1042,7 @@ path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -1123,6 +1134,7 @@ path: data/foo.csv
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -1156,6 +1168,7 @@ path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
 		"/metrics/m1.yaml": `
+version: 1
 type: metrics_view
 model: bar
 dimensions:
@@ -1255,6 +1268,7 @@ path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
 		"/metrics/dash.yaml": `
+version: 1
 type: metrics_view
 title: dash
 model: bar
@@ -1276,6 +1290,7 @@ func TestExplores(t *testing.T) {
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"models/m1.sql": `SELECT 'foo' as foo, 'bar' as bar, 'int' as internal, 1 as x, 2 as y`,
 		"metrics_views/mv1.yaml": `
+version: 1
 type: metrics_view
 model: m1
 dimensions:

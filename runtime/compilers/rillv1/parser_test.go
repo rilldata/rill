@@ -119,7 +119,7 @@ func TestComplete(t *testing.T) {
 		`rill.yaml`: ``,
 		// init.sql
 		`init.sql`: `
-{{ configure "version" 2 }}
+{{ configure "max_version" 2 }}
 INSTALL 'hello';
 `,
 		// source s1
@@ -146,6 +146,7 @@ materialize: true
 `,
 		// dashboard d1
 		`metrics/d1.yaml`: `
+version: 1
 type: metrics_view
 model: m2
 dimensions:
@@ -178,7 +179,7 @@ presets:
 		// migration c1
 		`custom/c1.yml`: `
 type: migration
-version: 3
+max_version: 3
 sql: |
   CREATE TABLE a(a integer);
 `,
@@ -1020,6 +1021,7 @@ metrics_views:
 `,
 		// Metrics that inherits defaults
 		`mv1.yaml`: `
+version: 1
 type: metrics_view
 table: t1
 dimensions:
@@ -1031,6 +1033,7 @@ measures:
 `,
 		// Metrics that overrides defaults
 		`mv2.yaml`: `
+version: 1
 type: metrics_view
 table: t2
 dimensions:
@@ -1162,6 +1165,7 @@ func TestMetricsViewSecurity(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		`metrics/d1.yaml`: `
+version: 1
 type: metrics_view
 table: t1
 dimensions:
@@ -1461,6 +1465,7 @@ func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 		`rill.yaml`: ``,
 		// dashboard d1
 		`metrics/d1.yaml`: `
+version: 1
 type: metrics_view
 table: d1
 dimensions:
@@ -1794,6 +1799,7 @@ func TestAdvancedMeasures(t *testing.T) {
 		`rill.yaml`: ``,
 		// dashboard d1
 		`metrics/d1.yaml`: `
+version: 1
 type: metrics_view
 table: t1
 timeseries: t

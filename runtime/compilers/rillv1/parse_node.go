@@ -13,6 +13,7 @@ import (
 
 // Node represents one path stem in the project. It contains data derived from a YAML and/or SQL file (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
 type Node struct {
+	Version           int
 	Kind              ResourceKind
 	Name              string
 	Refs              []ResourceName
@@ -63,6 +64,8 @@ func (p *Parser) parseNode(node *Node) error {
 
 // commonYAML parses YAML fields common to all YAML files.
 type commonYAML struct {
+	// Version of the parser to use for this file. Enables backwards compatibility for breaking changes.
+	Version int `yaml:"version"`
 	// Type can be inferred from the directory name in certain cases, but otherwise must be specified manually.
 	Type *string `yaml:"type"`
 	// Deprecated: Changed to Type. "Kind" is still used internally to refer to resource types.
@@ -140,6 +143,7 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		}
 
 		// Copy basic properties
+		res.Version = cfg.Version
 		res.Name = cfg.Name
 		res.Connector = cfg.Connector
 		res.SQL = cfg.SQL

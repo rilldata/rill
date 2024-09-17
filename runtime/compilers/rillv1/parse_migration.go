@@ -6,7 +6,7 @@ import (
 
 // MigrationYAML is the raw structure of a Migration resource defined in YAML (does not include common fields)
 type MigrationYAML struct {
-	Version uint `yaml:"version" mapstructure:"version"`
+	MaxVersion uint `yaml:"max_version" mapstructure:"max_version"`
 }
 
 // parseMigration parses a migration definition and adds the resulting resource to p.Resources.
@@ -31,8 +31,8 @@ func (p *Parser) parseMigration(node *Node) error {
 	if node.SQL != "" {
 		r.MigrationSpec.Sql = strings.TrimSpace(node.SQL)
 	}
-	if tmp.Version > 0 {
-		r.MigrationSpec.Version = uint32(tmp.Version)
+	if tmp.MaxVersion > 0 {
+		r.MigrationSpec.Version = uint32(tmp.MaxVersion)
 	}
 
 	return nil

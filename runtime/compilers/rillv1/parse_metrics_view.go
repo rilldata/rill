@@ -805,9 +805,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	spec.SecurityRules = securityRules
 
-	// For backwards compatibility, also emit an Explore resource for the metrics view.
-	// Hackily, we skip this if none of the explore-related props are set.
-	if !strings.HasPrefix(node.Paths[0], "/dashboards/") {
+	// For backwards compatibility, also emit an Explore resource for the metrics view if the version is 0.
+	if node.Version > 0 {
 		return nil
 	}
 

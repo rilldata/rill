@@ -20,6 +20,7 @@ func TestResourceWatermark_MetricsView(t *testing.T) {
 	testruntime.PutFiles(t, rt, instanceID, map[string]string{
 		"/models/foo.sql": fmt.Sprintf(`SELECT '%s'::TIMESTAMP as time`, ts.Add(-time.Second).Format(time.RFC3339)),
 		"/metrics/bare.yaml": `
+version: 1
 type: metrics_view
 model: foo
 measures:
@@ -27,6 +28,7 @@ measures:
   expression: count(*)
 `,
 		"/metrics/with_time_dimension.yaml": `
+version: 1
 type: metrics_view
 model: foo
 timeseries: time
@@ -35,6 +37,7 @@ measures:
   expression: count(*)
 `,
 		"/metrics/with_watermark_expression.yaml": `
+version: 1
 type: metrics_view
 model: foo
 timeseries: time
