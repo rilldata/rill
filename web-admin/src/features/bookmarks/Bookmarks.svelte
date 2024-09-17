@@ -82,8 +82,7 @@
   <DropdownMenuTrigger asChild let:builder>
     <Button builders={[builder]} compact type="secondary">
       <BookmarkIcon
-        class="inline-flex"
-        fill={open ? "black" : "none"}
+        class="inline-flex {open && 'fill-primary-600'}"
         size="16px"
       />
     </Button>
@@ -95,6 +94,7 @@
     on:edit={({ detail }) => {
       showDialog = true;
       bookmark = detail;
+      selectBookmark(detail);
     }}
     on:select={({ detail }) => selectBookmark(detail)}
     {metricsViewName}

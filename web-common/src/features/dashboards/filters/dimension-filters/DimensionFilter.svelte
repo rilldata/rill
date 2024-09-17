@@ -54,7 +54,7 @@
 </script>
 
 <RemovableListChip
-  allValues={allValues[name]}
+  allValues={allValues[name] ?? []}
   colors={getColorForChip(isInclude)}
   excludeMode={!isInclude}
   label="View filter"

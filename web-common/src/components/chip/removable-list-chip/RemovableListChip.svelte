@@ -23,13 +23,23 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
+  import * as DropdownMenu from "../../dropdown-menu/";
+  // import { createEventDispatcher } from "svelte";
+  import Cancel from "../../icons/Cancel.svelte";
+  import Check from "../../icons/Check.svelte";
+  import Spacer from "../../icons/Spacer.svelte";
+  import { Menu, MenuItem } from "../../menu";
+  import { Search } from "../../search";
+  import Footer from "./Footer.svelte";
+  import Button from "../../button/Button.svelte";
 </script>
 
 <script lang="ts">
   export let name: string;
   export let selectedValues: string[];
-  export let allValues: string[] | null;
+  export let allValues: string[];
   export let enableSearch = true;
+  export let openOnMount = false;
 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
@@ -37,12 +47,13 @@ are details left to the consumer of the component; this component should remain 
   export let colors: ChipColors = defaultChipColors;
   export let label: string | undefined = undefined;
 
-  let active = !selectedValues.length;
+  let active = false;
 
   const dispatch = createEventDispatcher();
 
   onMount(() => {
     dispatch("mount");
+    active = openOnMount;
   });
 
   function handleDismiss() {
@@ -52,9 +63,148 @@ are details left to the consumer of the component; this component should remain 
       active = false;
     }
   }
+
+  function onSearch() {
+    dispatch("search", searchText);
+  }
+
+  function toggleValue(value: string) {
+    dispatch("apply", value);
+  }
+
+  let allSelected = false;
+  let searchText = "";
 </script>
 
-<WithTogglableFloatingElement
+<DropdownMenu.Root
+  typeahead={false}
+  bind:open={active}
+  closeOnItemClick={false}
+  onOpenChange={(open) => {
+    if (open) {
+      searchText = "";
+    }
+  }}
+>
+  <DropdownMenu.Trigger asChild let:builder>
+    <Tooltip
+      activeDelay={60}
+      alignment="start"
+      distance={8}
+      location="bottom"
+      suppress={active}
+    >
+      <Chip
+        builders={[builder]}
+        {...colors}
+        {active}
+        {label}
+        on:remove={() => dispatch("remove")}
+        outline
+        removable
+      >
+        <svelte:fragment slot="remove-tooltip">
+          <slot name="remove-tooltip-content">
+            remove {selectedValues.length}
+            value{#if selectedValues.length !== 1}s{/if} for {name}</slot
+          >
+        </svelte:fragment>
+
+        <RemovableListBody
+          {active}
+          label={name}
+          show={1}
+          slot="body"
+          values={selectedValues}
+        />
+      </Chip>
+      <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
+        <TooltipContent maxWidth="400px">
+          <TooltipTitle>
+            <svelte:fragment slot="name">{name}</svelte:fragment>
+            <svelte:fragment slot="description"
+              >{typeLabel || ""}</svelte:fragment
+            >
+          </TooltipTitle>
+          {#if $$slots["body-tooltip-content"]}
+            <slot name="body-tooltip-content">click to edit the values</slot>
+          {/if}
+        </TooltipContent>
+      </div>
+    </Tooltip>
+  </DropdownMenu.Trigger>
+
+  <DropdownMenu.Content
+    align="start"
+    class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
+  >
+    {#if enableSearch}
+      <div class="px-3 py-2 pt-3">
+        <Search
+          bind:value={searchText}
+          on:input={onSearch}
+          label="Search list"
+          showBorderOnFocus={false}
+        />
+      </div>
+    {/if}
+
+    <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
+      {#each allValues.sort() as value (value)}
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => {
+            toggleValue(value);
+          }}
+        >
+          {#if selectedValues.includes(value) && !excludeMode}
+            <Check size="20px" color="#15141A" />
+          {:else if selectedValues.includes(value) && excludeMode}
+            <Cancel size="20px" color="#15141A" />
+          {:else}
+            <Spacer size="20px" />
+          {/if}
+
+          <span
+            class:ui-copy-disabled={selectedValues.includes(value) &&
+              excludeMode}
+          >
+            {#if value?.length > 240}
+              {value.slice(0, 240)}...
+            {:else}
+              {value}
+            {/if}
+          </span>
+        </DropdownMenu.Item>
+      {:else}
+        <div
+          class="ui-copy-disabled text-center justify-center h-8 items-center flex"
+        >
+          no results
+        </div>
+      {/each}
+    </div>
+    <Footer>
+      <Button on:click={() => {}} type="text">
+        {#if allSelected}
+          Deselect all
+        {:else}
+          Select all
+        {/if}
+      </Button>
+
+      <Button on:click={() => dispatch("toggle")} type="secondary">
+        {#if excludeMode}
+          Include
+        {:else}
+          Exclude
+        {/if}
+      </Button>
+    </Footer>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
+
+<!-- <WithTogglableFloatingElement
   alignment="start"
   bind:active
   distance={8}
@@ -79,14 +229,14 @@ are details left to the consumer of the component; this component should remain 
       outline
       removable
     >
-      <!-- remove button tooltip -->
+
       <svelte:fragment slot="remove-tooltip">
         <slot name="remove-tooltip-content">
           remove {selectedValues.length}
           value{#if selectedValues.length !== 1}s{/if} for {name}</slot
         >
       </svelte:fragment>
-      <!-- body -->
+
       <RemovableListBody
         {active}
         label={name}
@@ -120,4 +270,4 @@ are details left to the consumer of the component; this component should remain 
     {selectedValues}
     slot="floating-element"
   />
-</WithTogglableFloatingElement>
+</WithTogglableFloatingElement> -->
