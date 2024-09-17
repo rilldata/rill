@@ -31,7 +31,8 @@ path: data/foo.csv
 		"/models/bar.sql": `
 SELECT * FROM foo
 `,
-		"/dashboards/foobar.yaml": `
+		"/metrics/foobar.yaml": `
+type: metrics_view
 model: bar
 dimensions:
 - name: a
@@ -109,7 +110,7 @@ measures:
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "foobar"},
 			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "bar"}},
 			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{"/dashboards/foobar.yaml"},
+			FilePaths: []string{"/metrics/foobar.yaml"},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
 			MetricsView: &runtimev1.MetricsViewV2{
@@ -165,7 +166,7 @@ path
 			Name:           &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "foobar"},
 			Refs:           []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "bar"}},
 			Owner:          runtime.GlobalProjectParserName,
-			FilePaths:      []string{"/dashboards/foobar.yaml"},
+			FilePaths:      []string{"/metrics/foobar.yaml"},
 			ReconcileError: "does not exist",
 		},
 		Resource: &runtimev1.Resource_MetricsView{
@@ -691,7 +692,8 @@ path: data/foo.csv
 		"/models/bar1.sql": `SELECT * FROM foo`,
 		"/models/bar2.sql": `SELECT * FROM bar1`,
 		"/models/bar3.sql": `SELECT * FROM bar2`,
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar3
 dimensions:
@@ -840,7 +842,8 @@ connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -859,7 +862,8 @@ measures:
 
 	// ignore invalid measure and dimension
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -879,7 +883,8 @@ measures:
 
 	// no measure, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -895,11 +900,12 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "must define at least one measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "must define at least one measure"})
 
 	// no dimension. valid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -920,7 +926,8 @@ measures:
 
 	// duplicate measure name, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -935,11 +942,12 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "found duplicate dimension or measure"})
 
 	// duplicate dimension name, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -954,11 +962,12 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "found duplicate dimension or measure"})
 
 	// duplicate cross name between measures and dimensions, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -973,11 +982,12 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "found duplicate dimension or measure"})
 
 	// reset to valid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -1021,7 +1031,8 @@ connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -1111,7 +1122,8 @@ path: data/foo.csv
 	testruntime.RequireResource(t, rt, id, modelRes)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -1143,7 +1155,7 @@ connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/m1.yaml": `
+		"/metrics/m1.yaml": `
 type: metrics_view
 model: bar
 dimensions:
@@ -1242,7 +1254,8 @@ connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/dash.yaml": `
+		"/metrics/dash.yaml": `
+type: metrics_view
 title: dash
 model: bar
 dimensions:
@@ -1464,7 +1477,7 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},
 			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: model}},
 			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{fmt.Sprintf("/dashboards/%s.yaml", name)},
+			FilePaths: []string{fmt.Sprintf("/metrics/%s.yaml", name)},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
 			MetricsView: metrics,

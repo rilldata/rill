@@ -15,7 +15,8 @@ func TestBuiltinMetricsSQL(t *testing.T) {
 		Files: map[string]string{
 			`rill.yaml`:      ``,
 			`models/foo.sql`: `SELECT 10 AS a`,
-			`dashboards/bar.yaml`: `
+			`metrics/bar.yaml`: `
+type: metrics_view
 model: foo
 dimensions:
 - column: a

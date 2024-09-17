@@ -145,7 +145,8 @@ SELECT * FROM m1
 materialize: true
 `,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+type: metrics_view
 model: m2
 dimensions:
   - name: a
@@ -266,7 +267,7 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Model:     "m2",
@@ -1160,7 +1161,8 @@ func TestMetricsViewSecurity(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+type: metrics_view
 table: t1
 dimensions:
   - name: a
@@ -1187,7 +1189,7 @@ security:
 	resources := []*Resource{
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t1",
@@ -1458,7 +1460,8 @@ func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+type: metrics_view
 table: d1
 dimensions:
   - name: a
@@ -1473,7 +1476,7 @@ measures:
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Refs:  nil, // NOTE: This is what we're testing – that it avoids inferring the missing "d1" as a self-reference
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "d1",
@@ -1790,7 +1793,8 @@ func TestAdvancedMeasures(t *testing.T) {
 		// rill.yaml
 		`rill.yaml`: ``,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+type: metrics_view
 table: t1
 timeseries: t
 dimensions:
@@ -1824,7 +1828,7 @@ measures:
 		// dashboard d1
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector:     "duckdb",
 				Table:         "t1",

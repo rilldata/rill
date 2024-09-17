@@ -23,7 +23,8 @@ func TestLegacyAlert(t *testing.T) {
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
-		"/dashboards/mv1.yaml": `
+		"/metrics/mv1.yaml": `
+type: metrics_view
 title: mv1
 model: bar
 timeseries: __time
@@ -182,7 +183,8 @@ func TestAlert(t *testing.T) {
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
-		"/dashboards/mv1.yaml": `
+		"/metrics/mv1.yaml": `
+type: metrics_view
 title: mv1
 model: bar
 timeseries: __time
@@ -465,7 +467,8 @@ func TestAlertDataYAMLMetricsSQL(t *testing.T) {
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
-		"/dashboards/mv1.yaml": `
+		"/metrics/mv1.yaml": `
+type: metrics_view
 title: mv1
 model: bar
 timeseries: __time
@@ -618,7 +621,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},
 			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: model}},
 			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{fmt.Sprintf("/dashboards/%s.yaml", name)},
+			FilePaths: []string{fmt.Sprintf("/metrics/%s.yaml", name)},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
 			MetricsView: metrics,
