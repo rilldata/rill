@@ -38,5 +38,5 @@
   loading={resource.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
 >
-  Re-run split
+  Refresh split
 </Button>
