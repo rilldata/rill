@@ -16,7 +16,13 @@ rill start my-rill-project
 ```
 
 ---
-<div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
   <iframe
     src="https://www.youtube.com/embed/GMsUyj_Bv3Q?autoplay=1&mute=1&rel=0&si=CMltjZI4S5oAAAtg"
     frameBorder="0"
