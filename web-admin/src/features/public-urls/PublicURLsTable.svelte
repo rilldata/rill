@@ -22,9 +22,7 @@
     dashboardTitle: string;
   }
 
-  // TODO: can rename to data
   export let data: MagicAuthTokenProps[];
-  export let pageSize: number;
   export let onDelete: (deletedTokenId: string) => void;
   export let query: any;
 
@@ -119,10 +117,6 @@
     columns,
     state: {
       sorting,
-      // pagination: {
-      //   pageSize,
-      //   pageIndex: 0, // Always 0 since we're using cursor-based pagination
-      // },
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
@@ -141,13 +135,6 @@
     }));
   }
 
-  function updateTable(data: MagicAuthTokenProps[]) {
-    options.update((old) => ({
-      ...old,
-      data: data,
-    }));
-  }
-
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: 0,
     getScrollElement: () => virtualListEl,
@@ -157,8 +144,6 @@
 
   $: rows = $table.getRowModel().rows;
 
-  $: console.log("query", query);
-
   $: {
     $virtualizer.setOptions({
       count: query.hasNextPage ? data.length + 1 : data.length,
@@ -167,6 +152,11 @@
     console.log("query.hasNextPage", query.hasNextPage);
 
     const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
+
+    console.log("lastItem", lastItem);
+    console.log("data.length", data.length);
+    console.log("query.hasNextPage", query.hasNextPage);
+    console.log("query.isFetchingNextPage", query.isFetchingNextPage);
 
     if (
       lastItem &&
@@ -180,9 +170,14 @@
   }
 
   // Update table when magicAuthTokens changes
+  $: safeData = Array.isArray(data) ? data : [];
+  $: console.log("safeData", safeData);
   $: {
-    if (data) {
-      updateTable(data);
+    if (safeData) {
+      options.update((old) => ({
+        ...old,
+        data: safeData,
+      }));
     }
   }
 </script>
@@ -228,12 +223,12 @@
         {/each}
       </thead>
       <tbody>
-        {#each $virtualizer.getVirtualItems() as row, idx (row.index)}
+        {#each $virtualizer.getVirtualItems() as virtualRow, idx (virtualRow.index)}
           <tr
-            style="height: {row.size}px; transform: translateY({row.start -
-              idx * row.size}px);"
+            style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
+              idx * virtualRow.size}px);"
           >
-            {#each rows[row.index]?.getVisibleCells() as cell (cell.id)}
+            {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
               <td
                 class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
                 data-label={cell.column.columnDef.header}

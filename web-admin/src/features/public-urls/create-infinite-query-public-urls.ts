@@ -68,13 +68,8 @@ export const createAdminServiceListMagicAuthTokensInfiniteQuery = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
-  > = ({ pageParam = undefined, signal }) =>
-    adminServiceListMagicAuthTokens(
-      organization,
-      project,
-      { ...params, pageToken: pageParam as string | undefined },
-      signal,
-    );
+  > = ({ signal }) =>
+    adminServiceListMagicAuthTokens(organization, project, params, signal);
 
   const query = createInfiniteQuery<
     Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
