@@ -165,7 +165,7 @@
   }
 </script>
 
-{#if priorRange || $dashboardStore?.selectedScrubRange?.end}
+{#if priorRange || (subInterval?.isValid && !subInterval.start.equals(subInterval.end))}
   <button
     bind:this={button}
     on:click|stopPropagation={handleClick}
