@@ -100,21 +100,3 @@ You can follow the same steps as above. The button will have changed from `deplo
 ### How do I share my dashboard to other users?
 
 You will need to [invite users to your organization/project](https://docs.rilldata.com/manage/user-management#option-1---admin-invites-user) or send them a URL for them to [request access to your dashboard](https://docs.rilldata.com/manage/user-management#option-2---user-requests-access). If you just want them to see the contents of your dashboard, you can look into using [public URLs](https://docs.rilldata.com/explore/share-url).
-
-## Rill Cloud Trial
-
-### What is Rill Cloud Trial?
-
-We now offer a self serve option for our users using Rill Cloud to get started. Before signing up for a [Teams plan](https://www.rilldata.com/pricing), you can create an account and start your free trial. 
-
-### How long does my Rill Cloud Trial last?
-
-Currently, a Rill Cloud Trial lasts for 30 days. If you have any comments or concerns, please reach out to us on our [various platforms](../contact.md)! 
-
-### What is included in the free trial? 
-
-The free trial is locked at 2 projects and up to 10GB of data each. You can invite as many users as required. 
-
-### What is project hibernation mean?
-
-When a project is inactive for a specific number of days, we automatically hibernate the project. What this means is that all of your information and metadata is saved and resource consumption will be zero. You will need to unhibernate the project to gain access to the dashboard again. If the project is hibernated due to payment issues, the project will stay in this state until payment is confirmed.
