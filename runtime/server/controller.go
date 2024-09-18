@@ -303,7 +303,16 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 	}
 	defer release()
 
-	splits, err := catalog.FindModelSplits(ctx, splitsModelID, afterIdx, afterKey, validPageSize(req.PageSize))
+	opts := &drivers.FindModelSplitsOptions{
+		ModelID:      splitsModelID,
+		WherePending: req.WherePending,
+		WhereErrored: req.WhereErrored,
+		AfterIndex:   afterIdx,
+		AfterKey:     afterKey,
+		Limit:        validPageSize(req.PageSize),
+	}
+
+	splits, err := catalog.FindModelSplits(ctx, opts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

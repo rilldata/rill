@@ -39,7 +39,7 @@ func testCatalogSplits(t *testing.T, catalog drivers.CatalogStore) {
 	err = catalog.InsertModelSplit(ctx, modelID, split)
 	require.NoError(t, err)
 
-	splits, err = catalog.FindModelSplitsByPending(ctx, modelID, 10)
+	splits, err = catalog.FindModelSplits(ctx, &drivers.FindModelSplitsOptions{ModelID: modelID, WherePending: true, Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, splits, 1)
 	requireSplitEqual(t, split, splits[0])

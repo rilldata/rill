@@ -993,6 +993,14 @@ paths:
           in: path
           required: true
           type: string
+        - name: wherePending
+          in: query
+          required: false
+          type: boolean
+        - name: whereErrored
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
