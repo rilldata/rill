@@ -63,8 +63,13 @@ export const createAdminServiceListMagicAuthTokensInfiniteQuery = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
-  > = ({ signal }) =>
-    adminServiceListMagicAuthTokens(organization, project, params, signal);
+  > = ({ pageParam, signal }) =>
+    adminServiceListMagicAuthTokens(
+      organization,
+      project,
+      { ...params, pageToken: pageParam },
+      signal,
+    );
 
   const query = createInfiniteQuery<
     Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
@@ -73,7 +78,12 @@ export const createAdminServiceListMagicAuthTokensInfiniteQuery = <
   >({
     queryKey,
     queryFn,
-    getNextPageParam: (lastPage) => lastPage.nextPageToken ?? undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.nextPageToken || lastPage.nextPageToken === "") {
+        return undefined;
+      }
+      return lastPage.nextPageToken;
+    },
     enabled: !!(organization && project),
     ...queryOptions,
   }) as CreateInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };

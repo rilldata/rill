@@ -17,6 +17,7 @@
   async function handleDelete() {
     try {
       onDelete(id);
+      open = false;
     } catch (error) {
       console.error("Failed to delete public URL:", error);
     }

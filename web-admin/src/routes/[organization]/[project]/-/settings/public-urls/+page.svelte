@@ -2,7 +2,6 @@
   import PublicURLsTable from "@rilldata/web-admin/features/public-urls/PublicURLsTable.svelte";
   import { page } from "$app/stores";
   import {
-    createAdminServiceListMagicAuthTokens,
     getAdminServiceListMagicAuthTokensQueryKey,
     createAdminServiceRevokeMagicAuthToken,
   } from "@rilldata/web-admin/client";
@@ -13,18 +12,27 @@
   import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import type { DashboardResource } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import {
-    adminServiceListMagicAuthTokens,
-    createAdminServiceListMagicAuthTokensInfiniteQuery,
-  } from "@rilldata/web-admin/features/public-urls/create-infinite-query-public-urls";
+  import { createAdminServiceListMagicAuthTokensInfiniteQuery } from "@rilldata/web-admin/features/public-urls/create-infinite-query-public-urls";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: infiniteSplitsQuery = createAdminServiceListMagicAuthTokensInfiniteQuery(
-    organization,
-    project,
+  const PAGE_SIZE = 12;
+
+  $: magicAuthTokensInfiniteQuery =
+    createAdminServiceListMagicAuthTokensInfiniteQuery(organization, project, {
+      pageSize: PAGE_SIZE,
+      pageToken: undefined,
+    });
+
+  $: console.log(
+    "magicAuthTokensInfiniteQuery.data.pages",
+    $magicAuthTokensInfiniteQuery.data?.pages,
   );
+  // $: console.log(
+  //   "infiniteSplitsQuery.data.pageParams",
+  //   $infiniteSplitsQuery.data?.pageParams,
+  // );
 
   function useValidDashboardTitle(dashboard: DashboardResource) {
     return (
@@ -34,7 +42,9 @@
   }
 
   $: allRows =
-    $infiniteSplitsQuery.data?.pages.flatMap((page) => page.tokens ?? []) ?? [];
+    $magicAuthTokensInfiniteQuery.data?.pages.flatMap(
+      (page) => page.tokens ?? [],
+    ) ?? [];
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
 
@@ -53,7 +63,6 @@
 
   async function handleDelete(deletedTokenId: string) {
     try {
-      // Perform the deletion
       await $revokeMagicAuthToken.mutateAsync({ tokenId: deletedTokenId });
 
       // Invalidate and refetch the query
@@ -74,22 +83,22 @@
 <div class="flex flex-col w-full">
   <div class="flex md:flex-row flex-col gap-6">
     <div class="w-full">
-      {#if $infiniteSplitsQuery.isLoading}
+      {#if $magicAuthTokensInfiniteQuery.isLoading}
         <DelayedSpinner
-          isLoading={$infiniteSplitsQuery.isLoading}
+          isLoading={$magicAuthTokensInfiniteQuery.isLoading}
           size="1rem"
         />
-      {:else if $infiniteSplitsQuery.error}
+      {:else if $magicAuthTokensInfiniteQuery.error}
         <div class="text-red-500">
-          Error loading public URLs: {$infiniteSplitsQuery.error}
+          Error loading public URLs: {$magicAuthTokensInfiniteQuery.error}
         </div>
-      {:else if !$infiniteSplitsQuery.data.pages.length}
+      {:else if !$magicAuthTokensInfiniteQuery.data.pages.length}
         <NoPublicURLCTA />
       {:else}
         <PublicURLsTable
           data={allRowsWithDashboardTitle}
+          query={$magicAuthTokensInfiniteQuery}
           onDelete={handleDelete}
-          query={$infiniteSplitsQuery}
         />
       {/if}
     </div>

@@ -22,12 +22,12 @@
     dashboardTitle: string;
   }
 
-  const ROW_HEIGHT = 32;
+  const ROW_HEIGHT = 42;
   const OVERSCAN = 5;
 
   export let data: MagicAuthTokenProps[];
-  export let onDelete: (deletedTokenId: string) => void;
   export let query: any;
+  export let onDelete: (deletedTokenId: string) => void;
 
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [
@@ -122,6 +122,8 @@
     }));
   };
 
+  // $: console.log("data: ", data);
+
   const options = writable<TableOptions<MagicAuthTokenProps>>({
     data,
     columns,
@@ -149,14 +151,9 @@
       count: query.hasNextPage ? data.length + 1 : data.length,
     });
 
-    console.log("query.hasNextPage", query.hasNextPage);
+    // console.log("query.hasNextPage", query.hasNextPage);
 
     const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
-
-    // console.log("lastItem", lastItem);
-    // console.log("data.length", data.length);
-    console.log("query.hasNextPage", query.hasNextPage);
-    // console.log("query.isFetchingNextPage", query.isFetchingNextPage);
 
     if (
       lastItem &&
@@ -170,16 +167,20 @@
   }
 
   // Update table when magicAuthTokens changes
-  $: safeData = Array.isArray(data) ? data : [];
-  $: console.log("safeData", safeData);
+  // $: safeData = Array.isArray(data) ? data : [];
   $: {
-    if (safeData) {
+    if (data) {
       options.update((old) => ({
         ...old,
-        data: safeData,
+        data: data,
       }));
     }
   }
+
+  // $: console.log(
+  //   "$virtualizer.getVirtualItems(); ",
+  //   $virtualizer.getVirtualItems(),
+  // );
 </script>
 
 <div class="list scroll-container" bind:this={virtualListEl}>
@@ -292,7 +293,7 @@
   }
 
   .scroll-container {
-    height: 800px;
+    height: 600px;
     width: 100%;
     overflow: auto;
   }
