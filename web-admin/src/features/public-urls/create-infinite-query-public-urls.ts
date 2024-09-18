@@ -1,9 +1,9 @@
-import type {
-  AdminServiceListMagicAuthTokensParams,
-  RpcStatus,
-  V1ListMagicAuthTokensResponse,
+import {
+  adminServiceListMagicAuthTokens,
+  getAdminServiceListMagicAuthTokensQueryKey,
+  type AdminServiceListMagicAuthTokensParams,
+  type RpcStatus,
 } from "@rilldata/web-admin/client";
-import httpClient from "@rilldata/web-admin/client/http-client";
 import {
   createInfiniteQuery,
   type CreateInfiniteQueryOptions,
@@ -12,34 +12,8 @@ import {
   type QueryKey,
 } from "@tanstack/svelte-query";
 
-export const adminServiceListMagicAuthTokens = (
-  organization: string,
-  project: string,
-  params?: AdminServiceListMagicAuthTokensParams,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1ListMagicAuthTokensResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceListMagicAuthTokensQueryKey = (
-  organization: string,
-  project: string,
-  params?: AdminServiceListMagicAuthTokensParams,
-) => [
-  `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
-  ...(params ? [params] : []),
-];
-
-export type AdminServiceListMagicAuthTokensQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
->;
-export type AdminServiceListMagicAuthTokensQueryError = RpcStatus;
-
+// Create an infinite query for listing magic auth tokens
+// Support `nextPageToken` pagination
 export const createAdminServiceListMagicAuthTokensInfiniteQuery = <
   TData = Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
   TError = RpcStatus,
