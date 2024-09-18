@@ -5,8 +5,6 @@ sidebar_position: 10
 ---
 import Video from '@site/src/components/Video';
 
-
-
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 ## Quickstart
