@@ -201,10 +201,10 @@ export class Resource extends Message<Resource> {
     case: "component";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.Dashboard dashboard = 14;
+     * @generated from field: rill.runtime.v1.Canvas canvas = 14;
      */
-    value: Dashboard;
-    case: "dashboard";
+    value: Canvas;
+    case: "canvas";
   } | {
     /**
      * @generated from field: rill.runtime.v1.API api = 15;
@@ -241,7 +241,7 @@ export class Resource extends Message<Resource> {
     { no: 8, name: "bucket_planner", kind: "message", T: BucketPlanner, oneof: "resource" },
     { no: 11, name: "theme", kind: "message", T: Theme, oneof: "resource" },
     { no: 13, name: "component", kind: "message", T: Component, oneof: "resource" },
-    { no: 14, name: "dashboard", kind: "message", T: Dashboard, oneof: "resource" },
+    { no: 14, name: "canvas", kind: "message", T: Canvas, oneof: "resource" },
     { no: 15, name: "api", kind: "message", T: API, oneof: "resource" },
     { no: 16, name: "connector", kind: "message", T: ConnectorV2, oneof: "resource" },
   ]);
@@ -1165,7 +1165,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   measures: MetricsViewSpec_MeasureV2[] = [];
 
   /**
-   * Security for the dashboard
+   * Security for the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 23;
    */
@@ -3978,9 +3978,9 @@ export class ComponentSpec extends Message<ComponentSpec> {
   show = "";
 
   /**
-   * @generated from field: bool defined_in_dashboard = 6;
+   * @generated from field: bool defined_in_canvas = 6;
    */
-  definedInDashboard = false;
+  definedInCanvas = false;
 
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
@@ -3999,7 +3999,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
     { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
@@ -4106,52 +4106,52 @@ export class ComponentVariable extends Message<ComponentVariable> {
 }
 
 /**
- * @generated from message rill.runtime.v1.Dashboard
+ * @generated from message rill.runtime.v1.Canvas
  */
-export class Dashboard extends Message<Dashboard> {
+export class Canvas extends Message<Canvas> {
   /**
-   * @generated from field: rill.runtime.v1.DashboardSpec spec = 1;
+   * @generated from field: rill.runtime.v1.CanvasSpec spec = 1;
    */
-  spec?: DashboardSpec;
+  spec?: CanvasSpec;
 
   /**
-   * @generated from field: rill.runtime.v1.DashboardState state = 2;
+   * @generated from field: rill.runtime.v1.CanvasState state = 2;
    */
-  state?: DashboardState;
+  state?: CanvasState;
 
-  constructor(data?: PartialMessage<Dashboard>) {
+  constructor(data?: PartialMessage<Canvas>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.Dashboard";
+  static readonly typeName = "rill.runtime.v1.Canvas";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "spec", kind: "message", T: DashboardSpec },
-    { no: 2, name: "state", kind: "message", T: DashboardState },
+    { no: 1, name: "spec", kind: "message", T: CanvasSpec },
+    { no: 2, name: "state", kind: "message", T: CanvasState },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Dashboard {
-    return new Dashboard().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Canvas {
+    return new Canvas().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Dashboard {
-    return new Dashboard().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Canvas {
+    return new Canvas().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Dashboard {
-    return new Dashboard().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Canvas {
+    return new Canvas().fromJsonString(jsonString, options);
   }
 
-  static equals(a: Dashboard | PlainMessage<Dashboard> | undefined, b: Dashboard | PlainMessage<Dashboard> | undefined): boolean {
-    return proto3.util.equals(Dashboard, a, b);
+  static equals(a: Canvas | PlainMessage<Canvas> | undefined, b: Canvas | PlainMessage<Canvas> | undefined): boolean {
+    return proto3.util.equals(Canvas, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.DashboardSpec
+ * @generated from message rill.runtime.v1.CanvasSpec
  */
-export class DashboardSpec extends Message<DashboardSpec> {
+export class CanvasSpec extends Message<CanvasSpec> {
   /**
    * @generated from field: string title = 1;
    */
@@ -4173,92 +4173,92 @@ export class DashboardSpec extends Message<DashboardSpec> {
   variables: ComponentVariable[] = [];
 
   /**
-   * @generated from field: repeated rill.runtime.v1.DashboardItem items = 4;
+   * @generated from field: repeated rill.runtime.v1.CanvasItem items = 4;
    */
-  items: DashboardItem[] = [];
+  items: CanvasItem[] = [];
 
-  constructor(data?: PartialMessage<DashboardSpec>) {
+  constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.DashboardSpec";
+  static readonly typeName = "rill.runtime.v1.CanvasSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
-    { no: 4, name: "items", kind: "message", T: DashboardItem, repeated: true },
+    { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardSpec {
-    return new DashboardSpec().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
+    return new CanvasSpec().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardSpec {
-    return new DashboardSpec().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasSpec {
+    return new CanvasSpec().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardSpec {
-    return new DashboardSpec().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasSpec {
+    return new CanvasSpec().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DashboardSpec | PlainMessage<DashboardSpec> | undefined, b: DashboardSpec | PlainMessage<DashboardSpec> | undefined): boolean {
-    return proto3.util.equals(DashboardSpec, a, b);
+  static equals(a: CanvasSpec | PlainMessage<CanvasSpec> | undefined, b: CanvasSpec | PlainMessage<CanvasSpec> | undefined): boolean {
+    return proto3.util.equals(CanvasSpec, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.DashboardState
+ * @generated from message rill.runtime.v1.CanvasState
  */
-export class DashboardState extends Message<DashboardState> {
+export class CanvasState extends Message<CanvasState> {
   /**
-   * @generated from field: rill.runtime.v1.DashboardSpec valid_spec = 1;
+   * @generated from field: rill.runtime.v1.CanvasSpec valid_spec = 1;
    */
-  validSpec?: DashboardSpec;
+  validSpec?: CanvasSpec;
 
-  constructor(data?: PartialMessage<DashboardState>) {
+  constructor(data?: PartialMessage<CanvasState>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.DashboardState";
+  static readonly typeName = "rill.runtime.v1.CanvasState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "valid_spec", kind: "message", T: DashboardSpec },
+    { no: 1, name: "valid_spec", kind: "message", T: CanvasSpec },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
-    return new DashboardState().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasState {
+    return new CanvasState().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardState {
-    return new DashboardState().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasState {
+    return new CanvasState().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardState {
-    return new DashboardState().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasState {
+    return new CanvasState().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DashboardState | PlainMessage<DashboardState> | undefined, b: DashboardState | PlainMessage<DashboardState> | undefined): boolean {
-    return proto3.util.equals(DashboardState, a, b);
+  static equals(a: CanvasState | PlainMessage<CanvasState> | undefined, b: CanvasState | PlainMessage<CanvasState> | undefined): boolean {
+    return proto3.util.equals(CanvasState, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.DashboardItem
+ * @generated from message rill.runtime.v1.CanvasItem
  */
-export class DashboardItem extends Message<DashboardItem> {
+export class CanvasItem extends Message<CanvasItem> {
   /**
    * @generated from field: string component = 1;
    */
   component = "";
 
   /**
-   * @generated from field: bool defined_in_dashboard = 8;
+   * @generated from field: bool defined_in_canvas = 8;
    */
-  definedInDashboard = false;
+  definedInCanvas = false;
 
   /**
    * @generated from field: optional uint32 x = 2;
@@ -4280,36 +4280,36 @@ export class DashboardItem extends Message<DashboardItem> {
    */
   height?: number;
 
-  constructor(data?: PartialMessage<DashboardItem>) {
+  constructor(data?: PartialMessage<CanvasItem>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.DashboardItem";
+  static readonly typeName = "rill.runtime.v1.CanvasItem";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "x", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardItem {
-    return new DashboardItem().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasItem {
+    return new CanvasItem().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardItem {
-    return new DashboardItem().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasItem {
+    return new CanvasItem().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardItem {
-    return new DashboardItem().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasItem {
+    return new CanvasItem().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DashboardItem | PlainMessage<DashboardItem> | undefined, b: DashboardItem | PlainMessage<DashboardItem> | undefined): boolean {
-    return proto3.util.equals(DashboardItem, a, b);
+  static equals(a: CanvasItem | PlainMessage<CanvasItem> | undefined, b: CanvasItem | PlainMessage<CanvasItem> | undefined): boolean {
+    return proto3.util.equals(CanvasItem, a, b);
   }
 }
 
