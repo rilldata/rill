@@ -82,9 +82,9 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		Type: "duckdb",
 		// duckdb DSN will automatically be computed based on these parameters
 		Config: map[string]string{
-			"cpu":                    strconv.Itoa(alloc.CPU),
-			"memory_limit_gb":        strconv.Itoa(alloc.MemoryGB),
-			"storage_limit_bytes":    strconv.FormatInt(alloc.StorageBytes, 10),
+			"cpu":                 strconv.Itoa(alloc.CPU),
+			"memory_limit_gb":     strconv.Itoa(alloc.MemoryGB),
+			"storage_limit_bytes": strconv.FormatInt(alloc.StorageBytes, 10),
 		},
 	})
 
