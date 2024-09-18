@@ -22,17 +22,7 @@
   $: magicAuthTokensInfiniteQuery =
     createAdminServiceListMagicAuthTokensInfiniteQuery(organization, project, {
       pageSize: PAGE_SIZE,
-      pageToken: undefined,
     });
-
-  $: console.log(
-    "magicAuthTokensInfiniteQuery.data.pages",
-    $magicAuthTokensInfiniteQuery.data?.pages,
-  );
-  // $: console.log(
-  //   "infiniteSplitsQuery.data.pageParams",
-  //   $infiniteSplitsQuery.data?.pageParams,
-  // );
 
   function useValidDashboardTitle(dashboard: DashboardResource) {
     return (

@@ -31,10 +31,11 @@
 
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [
-    {
-      id: "createdOn",
-      desc: true,
-    },
+    // Data gets arbitrary sorted as user scrolls for more data
+    // {
+    //   id: "createdOn",
+    //   desc: true,
+    // },
   ];
 
   function formatDate(value: string) {
@@ -45,6 +46,17 @@
       hour: "numeric",
       minute: "numeric",
     });
+  }
+
+  // Update table when magicAuthTokens changes
+  $: safeData = Array.isArray(data) ? data : [];
+  $: {
+    if (safeData) {
+      options.update((old) => ({
+        ...old,
+        data: safeData,
+      }));
+    }
   }
 
   const columns: ColumnDef<MagicAuthTokenProps, any>[] = [
@@ -122,10 +134,8 @@
     }));
   };
 
-  // $: console.log("data: ", data);
-
   const options = writable<TableOptions<MagicAuthTokenProps>>({
-    data,
+    data: safeData,
     columns,
     state: {
       sorting,
@@ -148,39 +158,20 @@
 
   $: {
     $virtualizer.setOptions({
-      count: query.hasNextPage ? data.length + 1 : data.length,
+      count: query.hasNextPage ? safeData.length + 1 : safeData.length,
     });
-
-    // console.log("query.hasNextPage", query.hasNextPage);
 
     const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
 
     if (
       lastItem &&
-      lastItem.index > data.length - 1 &&
+      lastItem.index > safeData.length - 1 &&
       query.hasNextPage &&
       !query.isFetchingNextPage
     ) {
-      console.log("Fetching next page...");
       query.fetchNextPage();
     }
   }
-
-  // Update table when magicAuthTokens changes
-  // $: safeData = Array.isArray(data) ? data : [];
-  $: {
-    if (data) {
-      options.update((old) => ({
-        ...old,
-        data: data,
-      }));
-    }
-  }
-
-  // $: console.log(
-  //   "$virtualizer.getVirtualItems(); ",
-  //   $virtualizer.getVirtualItems(),
-  // );
 </script>
 
 <div class="list scroll-container" bind:this={virtualListEl}>
