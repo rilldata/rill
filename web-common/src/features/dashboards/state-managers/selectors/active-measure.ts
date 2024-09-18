@@ -5,13 +5,12 @@ import { isSummableMeasure } from "../../dashboard-utils";
 export const activeMeasure = (
   dashData: DashboardDataSources,
 ): MetricsViewSpecMeasureV2 | undefined => {
-  const measures = dashData.metricsSpecQueryResult.data?.measures;
-  if (!measures) {
+  if (!dashData.validMetricsView?.measures) {
     return undefined;
   }
 
-  const activeMeasure = measures.find(
-    (measure) => measure.name === activeMeasureName(dashData),
+  const activeMeasure = dashData.validMetricsView.measures.find(
+    (measure) => measure === activeMeasureName(dashData),
   );
   return activeMeasure;
 };

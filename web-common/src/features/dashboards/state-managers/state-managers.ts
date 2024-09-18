@@ -8,10 +8,13 @@ import {
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
+  useValidExplore,
+  ValidExploreResponse,
+} from "@rilldata/web-common/features/explores/selectors";
+import {
   V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
   type RpcStatus,
-  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -24,10 +27,6 @@ import {
   updateMetricsExplorerByName,
   useDashboardStore,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
-import {
-  ResourceKind,
-  useResource,
-} from "../../entity-management/resource-selectors";
 import { createStateManagerActions, type StateManagerActions } from "./actions";
 import type { DashboardCallbackExecutor } from "./actions/types";
 import {
@@ -42,6 +41,9 @@ export type StateManagers = {
   dashboardStore: Readable<MetricsExplorerEntity>;
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
+  >;
+  validSpecStore: Readable<
+    QueryObserverResult<ValidExploreResponse, RpcStatus>
   >;
   queryClient: QueryClient;
   updateDashboard: DashboardCallbackExecutor;
@@ -86,30 +88,17 @@ export function createStateManagers({
     },
   );
 
-  // Note: this is equivalent to `useMetricsView`
-  const metricsSpecStore: Readable<
-    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
-  > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {
-    useResource(r.instanceId, metricViewName, ResourceKind.MetricsView, {
-      queryClient,
-    }).subscribe((result) => {
-      // In case the store was created with a name that has incorrect casing
-      if (result.data?.meta?.name?.name) {
-        metricsViewNameStore.set(result.data.meta.name.name);
-      }
-
-      return set({
-        ...result,
-        data: result.data?.metricsView?.state?.validSpec,
-      });
-    });
-  });
+  const validSpecStore: Readable<
+    QueryObserverResult<ValidExploreResponse, RpcStatus>
+  > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) =>
+    useValidExplore(r.instanceId, metricViewName).subscribe(set),
+  );
 
   const timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   > = derived(
-    [runtime, metricsViewNameStore, metricsSpecStore],
-    ([runtime, mvName, metricsView], set) =>
+    [runtime, metricsViewNameStore, validSpecStore],
+    ([runtime, mvName, validSpec], set) =>
       createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
         mvName,
@@ -117,7 +106,7 @@ export function createStateManagers({
         {
           query: {
             queryClient: queryClient,
-            enabled: !!metricsView.data?.timeDimension,
+            enabled: !!validSpec?.data?.metricsView?.timeDimension,
           },
         },
       ).subscribe(set),
@@ -144,6 +133,7 @@ export function createStateManagers({
     metricsViewName: metricsViewNameStore,
     metricsStore: metricsExplorerStore,
     timeRangeSummaryStore,
+    validSpecStore,
     queryClient,
     dashboardStore,
 
@@ -153,7 +143,7 @@ export function createStateManagers({
      */
     selectors: createStateManagerReadables({
       dashboardStore,
-      metricsSpecQueryResultStore: metricsSpecStore,
+      validSpecStore,
       timeRangeSummaryStore,
       queryClient,
     }),

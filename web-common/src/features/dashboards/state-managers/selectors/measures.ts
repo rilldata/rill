@@ -8,20 +8,25 @@ import {
 import type { DashboardDataSources } from "./types";
 
 export const allMeasures = ({
-  metricsSpecQueryResult,
+  validMetricsView,
+  validExplore,
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
-  const measures = metricsSpecQueryResult.data?.measures;
-  return measures === undefined ? [] : measures;
+  return (
+    validMetricsView?.measures?.filter((m) =>
+      validExplore?.measures?.includes(m.name ?? ""),
+    ) ?? []
+  );
 };
 
 export const visibleMeasures = ({
-  metricsSpecQueryResult,
+  validMetricsView,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
-  const measures = metricsSpecQueryResult.data?.measures?.filter(
-    (d) => d.name && dashboard.visibleMeasureKeys.has(d.name),
+  return (
+    validMetricsView?.measures?.filter(
+      (m) => m.name && dashboard.visibleMeasureKeys.has(m.name),
+    ) ?? []
   );
-  return measures === undefined ? [] : measures;
 };
 
 export const getMeasureByName = (
@@ -33,31 +38,32 @@ export const getMeasureByName = (
 };
 
 export const measureLabel = ({
-  metricsSpecQueryResult,
+  validMetricsView,
 }: DashboardDataSources): ((m: string) => string) => {
   return (measureName) => {
-    const measure = metricsSpecQueryResult.data?.measures?.find(
+    const measure = validMetricsView?.measures?.find(
       (d) => d.name === measureName,
     );
     return measure?.label ?? measureName;
   };
 };
 export const isMeasureValidPercentOfTotal = ({
-  metricsSpecQueryResult,
+  validMetricsView,
 }: DashboardDataSources): ((measureName: string) => boolean) => {
   return (measureName: string) => {
-    const measures = metricsSpecQueryResult.data?.measures;
-    const selectedMeasure = measures?.find((m) => m.name === measureName);
+    const selectedMeasure = validMetricsView?.measures?.find(
+      (m) => m.name === measureName,
+    );
     return selectedMeasure?.validPercentOfTotal ?? false;
   };
 };
 
 export const filteredSimpleMeasures = ({
-  metricsSpecQueryResult,
+  validMetricsView,
 }: DashboardDataSources) => {
   return () => {
     return (
-      metricsSpecQueryResult.data?.measures?.filter(
+      validMetricsView?.measures?.filter(
         (m) =>
           !m.window &&
           m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,

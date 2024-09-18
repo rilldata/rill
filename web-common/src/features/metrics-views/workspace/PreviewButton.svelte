@@ -14,7 +14,7 @@
   export let disabled: boolean;
   export let status: string[] = [];
   export let dashboardName: string | undefined;
-  export let type: "dashboard" | "custom" = "dashboard";
+  export let type: "dashboard" | "explore" | "custom" = "explore";
 
   const viewDashboard = () => {
     if (!dashboardName) return;
