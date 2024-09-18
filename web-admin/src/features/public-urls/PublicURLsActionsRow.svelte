@@ -4,6 +4,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { Trash2Icon, CopyIcon } from "lucide-svelte";
+  import DeletePublicURLConfirmDialog from "./DeletePublicURLConfirmDialog.svelte";
 
   export let id: string;
   export let url: string;
@@ -13,20 +14,13 @@
     copyToClipboard(url, "Public URL copied to clipboard");
   }
 
-  async function handleDelete() {
-    try {
-      onDelete(id);
-    } catch (error) {
-      console.error("Failed to delete magic auth token:", error);
-    }
-  }
-
-  let isOpen = false;
+  let isDropdownOpen = false;
+  let isDeleteConfirmOpen = false;
 </script>
 
-<DropdownMenu.Root bind:open={isOpen}>
+<DropdownMenu.Root bind:open={isDropdownOpen}>
   <DropdownMenu.Trigger class="flex-none">
-    <IconButton rounded active={isOpen}>
+    <IconButton rounded active={isDropdownOpen}>
       <ThreeDot size="16px" />
     </IconButton>
   </DropdownMenu.Trigger>
@@ -43,10 +37,14 @@
     <DropdownMenu.Item
       class="font-normal flex items-center"
       type="destructive"
-      on:click={handleDelete}
+      on:click={() => {
+        isDeleteConfirmOpen = true;
+      }}
     >
       <Trash2Icon size="12px" />
       <span class="ml-2">Delete</span>
     </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<DeletePublicURLConfirmDialog bind:open={isDeleteConfirmOpen} {id} {onDelete} />
