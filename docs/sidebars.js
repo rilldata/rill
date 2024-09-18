@@ -45,7 +45,7 @@ const sidebars = {
         },
 
 
-
+/**
         {
           type: 'category',
           label: "Rill's Advanced Features",
@@ -69,7 +69,7 @@ const sidebars = {
 
               ]
             },
-/**
+
             {
               type: 'category',
               label: 'Rill Canvas Dashboards',
@@ -81,7 +81,7 @@ const sidebars = {
                 'tutorials/rill_advanced_features/canvas_dashboards/canvas-dashboards',
               ]
             },
- */
+
             {
               type: 'category',
               label: 'Incremental Models',
@@ -92,6 +92,7 @@ const sidebars = {
 
               ]
             },
+            
             {
               type: 'category',
               label: 'Custom APIs',
@@ -103,6 +104,7 @@ const sidebars = {
             },
           ]
         },
+         */
         {
           type: 'category',
           label: 'Administration Topics',
