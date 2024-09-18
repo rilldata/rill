@@ -30,13 +30,7 @@
   export let onDelete: (deletedTokenId: string) => void;
 
   let virtualListEl: HTMLDivElement;
-  let sorting: SortingState = [
-    // Data gets arbitrary sorted as user scrolls for more data
-    // {
-    //   id: "createdOn",
-    //   desc: true,
-    // },
-  ];
+  let sorting: SortingState = [];
 
   function formatDate(value: string) {
     return new Date(value).toLocaleDateString(undefined, {
@@ -90,15 +84,6 @@
     {
       accessorKey: "usedOn",
       header: "Last acccesed",
-      cell: (info) => {
-        if (!info.getValue()) return "-";
-        const date = formatDate(info.getValue() as string);
-        return date;
-      },
-    },
-    {
-      accessorKey: "createdOn",
-      header: "Created on",
       cell: (info) => {
         if (!info.getValue()) return "-";
         const date = formatDate(info.getValue() as string);

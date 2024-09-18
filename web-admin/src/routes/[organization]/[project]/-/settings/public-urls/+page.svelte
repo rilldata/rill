@@ -48,6 +48,11 @@
     };
   });
 
+  // REVISIT when server-side sorting is implemented
+  $: sortedAllRowsWithDashboardTitle = allRowsWithDashboardTitle.sort(
+    (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+  );
+
   const queryClient = useQueryClient();
   const revokeMagicAuthToken = createAdminServiceRevokeMagicAuthToken();
 
@@ -86,7 +91,7 @@
         <NoPublicURLCTA />
       {:else}
         <PublicURLsTable
-          data={allRowsWithDashboardTitle}
+          data={sortedAllRowsWithDashboardTitle}
           query={$magicAuthTokensInfiniteQuery}
           onDelete={handleDelete}
         />
