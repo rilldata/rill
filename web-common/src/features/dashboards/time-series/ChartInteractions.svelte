@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
