@@ -4,7 +4,6 @@
     createSvelteTable,
     flexRender,
     getCoreRowModel,
-    getPaginationRowModel,
     getSortedRowModel,
   } from "@tanstack/svelte-table";
   import type {
