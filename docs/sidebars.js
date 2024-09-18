@@ -85,7 +85,17 @@ const sidebars = {
             {
               type: 'category',
               label: 'Incremental Models',
+              
               items: [
+                'tutorials/rill_advanced_features/incremental_models/introduction',
+                {
+                  type: 'category',
+                  label: 'Basic Incremental and Split Model Examples',
+                  items: [
+                    'tutorials/rill_advanced_features/incremental_models/simple-examples/incremental_now',
+                    'tutorials/rill_advanced_features/incremental_models/simple-examples/split_now',
+                  ]
+                },
                 'tutorials/rill_advanced_features/incremental_models/cloud-storage-splits',
                 'tutorials/rill_advanced_features/incremental_models/data-warehouse-splits',
                 'tutorials/rill_advanced_features/incremental_models/staging-connectors'

@@ -5,24 +5,16 @@ sidebar_label: "Cloud Storage: Splits and Incremental Models"
 sidebar_position: 12
 ---
 
-Another advanced concept within Rill is using [Incremental Models](https://docs.rilldata.com/build/advancedmodels/incremental). To understand incremental models, we will also need to discuss [splits](https://docs.rilldata.com/build/advancedmodels/splits). 
+Now that we understand what [Incremental Models](https://docs.rilldata.com/build/advancedmodels/incremental) and [splits](https://docs.rilldata.com/build/advancedmodels/splits) are, let's try to apply them to our project.
 
-
-## Understanding Splits in Models
-
-Here’s how it works at a high level:
-
-- **Split Definition**: Each row from the result set becomes one "split". The model processes each split separately.
-- **Execution Strategy**:
-  - **First Split**: Runs without incremental processing.
-  - **Subsequent Splits**: Run incrementally, following the output connector's `incremental_strategy` (either append or merge for SQL connectors).
+Since our ClickHouse data is hosted in GCS/S3, we will be using glob based splits.
 
 ### Let's create a basic split model.
-In the previous courses, we used a GCS connection to import ClickHouse's repository commit history. In this guide, we will use S3. The format of the files are the same, you just need to change `gs` to `s3`
-
+In the previous courses, we used a GCS connection to import ClickHouse's repository commit history. In this guide, we will use GCS. The format of the files are the same, so you can use either. Just ensure that you use the proper cloud provider `s3` or `gs`.
 
 ```
 s3://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet
+gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet
 ```
 1. Create a YAML file: `S3-splits-tutorial.yaml`
 
