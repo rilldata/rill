@@ -1,10 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import {
-  createTimeRangeSummary,
-  useMetricsView,
-} from "@rilldata/web-common/features/dashboards/selectors/index";
+import { createTimeRangeSummary } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -73,7 +70,6 @@ export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
  */
 export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
   const dashboardUrlState = useDashboardUrlState(ctx);
-  const metricsView = useMetricsView(ctx);
 
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
   return dashboardUrlState.subscribe((state) => {
@@ -91,15 +87,16 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
 
     if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard
-      gotoNewDashboardUrl(get(page).url, state.proto, state.defaultProto);
+      gotoNewDashboardUrl(get(page).url, state.proto, state.defaultProto!);
 
       lastKnownProto = state.proto;
     } else if (state.urlProto !== lastKnownProto) {
       // changed when user updated the url manually
       metricsExplorerStore.syncFromUrl(
         metricViewName,
-        state.urlProto,
-        get(metricsView).data,
+        state.urlProto!,
+        get(ctx.validSpecStore).data?.metricsView ?? {},
+        get(ctx.validSpecStore).data?.explore ?? {},
         schema,
       );
       lastKnownProto = state.urlProto;
@@ -141,10 +138,14 @@ export function useDashboardProto(ctx: StateManagers) {
 // TODO: we need to update the architecture to perhaps recreate all derived stores when the metricsViewName changes
 export function useDashboardDefaultProto(ctx: StateManagers) {
   return derived(
-    [useMetricsView(ctx), createTimeRangeSummary(ctx)],
-    ([metricsView, timeRangeSummary]) => {
-      const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
-      if (!metricsView.data || (hasTimeSeries && !timeRangeSummary.data))
+    [ctx.validSpecStore, createTimeRangeSummary(ctx)],
+    ([validSpec, timeRangeSummary]) => {
+      const hasTimeSeries = Boolean(validSpec.data?.metricsView?.timeDimension);
+      if (
+        !validSpec.data?.metricsView ||
+        !validSpec.data?.explore ||
+        (hasTimeSeries && !timeRangeSummary.data)
+      )
         return {
           isFetching: true,
           proto: "",
@@ -152,7 +153,8 @@ export function useDashboardDefaultProto(ctx: StateManagers) {
 
       const metricsExplorer = getDefaultMetricsExplorerEntity(
         get(ctx.metricsViewName),
-        metricsView.data,
+        validSpec.data.metricsView,
+        validSpec.data.explore,
         timeRangeSummary.data,
       );
       return {

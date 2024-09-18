@@ -3,7 +3,6 @@ import type { CompoundQueryResult } from "@rilldata/web-common/features/compound
 import {
   createMetricsViewSchema,
   createTimeRangeSummary,
-  useMetricsView,
 } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -31,20 +30,20 @@ export function createDashboardStateSync(
 ) {
   return derived(
     [
-      useMetricsView(ctx),
+      ctx.validSpecStore,
       createTimeRangeSummary(ctx),
       createMetricsViewSchema(ctx),
       ...(initialUrlStateStore ? [initialUrlStateStore] : []),
     ],
     ([
-      metricsViewSpecRes,
+      validSpecRes,
       timeRangeRes,
       metricsViewSchemaRes,
       initialUrlStateRes,
     ]) => {
       if (
         // still fetching
-        metricsViewSpecRes.isFetching ||
+        validSpecRes.isFetching ||
         timeRangeRes.isFetching ||
         metricsViewSchemaRes.isFetching ||
         initialUrlStateRes?.isFetching
@@ -53,22 +52,27 @@ export function createDashboardStateSync(
       }
 
       if (
-        !metricsViewSpecRes.data ||
-        (!!metricsViewSpecRes.data.timeDimension && !timeRangeRes.data) ||
+        !validSpecRes.data?.metricsView ||
+        (!!validSpecRes.data.metricsView?.timeDimension &&
+          !timeRangeRes.data) ||
+        !validSpecRes.data?.explore ||
         !metricsViewSchemaRes.data?.schema
       ) {
         return { isFetching: false, error: true };
       }
 
+      const { metricsView, explore } = validSpecRes.data;
+
       const metricViewName = get(ctx.metricsViewName);
       if (metricViewName in get(metricsExplorerStore).entities) {
         // Successive syncs with metrics view spec
-        metricsExplorerStore.sync(metricViewName, metricsViewSpecRes.data);
+        metricsExplorerStore.sync(metricViewName, explore);
       } else {
         // Running for the 1st time. Initialise the dashboard store.
         metricsExplorerStore.init(
           metricViewName,
-          metricsViewSpecRes.data,
+          metricsView,
+          explore,
           timeRangeRes.data,
         );
         const initialUrlState =
@@ -78,11 +82,12 @@ export function createDashboardStateSync(
           metricsExplorerStore.syncFromUrl(
             metricViewName,
             initialUrlState,
-            metricsViewSpecRes.data,
+            metricsView,
+            explore,
             metricsViewSchemaRes.data.schema,
           );
           // Call sync to make sure changes in dashboard are honoured
-          metricsExplorerStore.sync(metricViewName, metricsViewSpecRes.data);
+          metricsExplorerStore.sync(metricViewName, explore);
         }
       }
       return { isFetching: false, error: false };

@@ -18,17 +18,19 @@ import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
+import {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1ExploreComparisonMode,
+  V1ExplorePreset,
+  V1ExploreSpec,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import { MetricsViewSpecComparisonMode } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
 export function setDefaultTimeRange(
-  metricsView: V1MetricsViewSpec,
+  explorePreset: V1ExplorePreset | undefined,
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
@@ -43,7 +45,7 @@ export function setDefaultTimeRange(
   const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
   const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
   const timeRange = isoDurationToFullTimeRange(
-    metricsView.defaultTimeRange,
+    explorePreset?.timeRange,
     fullTimeStart,
     fullTimeEnd,
     timeZone,
@@ -61,34 +63,37 @@ export function setDefaultTimeRange(
 }
 
 function setDefaultComparison(
-  metricsView: V1MetricsViewSpec,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
-  switch (metricsView.defaultComparisonMode) {
-    case MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION:
+  const explorePreset = exploreSpec.presets?.[0];
+
+  switch (explorePreset?.comparisonMode) {
+    case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION:
       metricsExplorer.selectedComparisonDimension =
         normaliseName(
-          metricsView.defaultComparisonDimension,
-          metricsView.dimensions,
-        ) || metricsView.dimensions?.[0]?.name;
+          explorePreset.comparisonDimension,
+          metricsViewSpec.dimensions,
+        ) || exploreSpec.dimensions?.[0];
       break;
 
-    case MetricsViewSpecComparisonMode.COMPARISON_MODE_TIME:
+    case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME:
       setDefaultComparisonTimeRange(
-        metricsView,
+        explorePreset,
         metricsExplorer,
         fullTimeRange,
       );
       break;
 
     // if default_comparison is not specified it defaults to no comparison
-    case MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED:
+    case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_UNSPECIFIED:
   }
 }
 
 function setDefaultComparisonTimeRange(
-  metricsView: V1MetricsViewSpec,
+  explorePreset: V1ExplorePreset | undefined,
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
@@ -100,7 +105,7 @@ function setDefaultComparisonTimeRange(
     return;
   metricsExplorer.showTimeComparison = true;
 
-  const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
+  const preset = ISODurationToTimePreset(explorePreset?.timeRange, true);
   if (!preset) return;
   const comparisonOption = DEFAULT_TIME_RANGES[preset]
     ?.defaultComparison as TimeComparisonOption;
@@ -134,6 +139,7 @@ function setDefaultComparisonTimeRange(
 export function getDefaultMetricsExplorerEntity(
   name: string,
   metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ): MetricsExplorerEntity {
   // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
@@ -213,8 +219,8 @@ export function getDefaultMetricsExplorerEntity(
     contextColumnWidths: { ...contextColWidthDefaults },
   };
   // set time range related stuff
-  setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
-  setDefaultComparison(metricsView, metricsExplorer, fullTimeRange);
+  setDefaultTimeRange(explore.presets?.[0], metricsExplorer, fullTimeRange);
+  setDefaultComparison(metricsView, explore, metricsExplorer, fullTimeRange);
   return metricsExplorer;
 }
 
