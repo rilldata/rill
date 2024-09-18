@@ -267,7 +267,7 @@ func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
 }
 
 func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
-	expr := metricsview.NewExpressionFromProto(t.MetricsViewFilter)
+	expr := metricsview.NewExpressionFromProto(t.Filter)
 	filter, err := metricsview.ExpressionToString(expr)
 	if err != nil {
 		panic(err)
@@ -275,7 +275,7 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 
 	row := &magicAuthToken{
 		ID:        t.Id,
-		Dashboard: t.MetricsView,
+		Resource:  t.ResourceName,
 		Filter:    filter,
 		CreatedBy: t.CreatedByUserEmail,
 		CreatedOn: t.CreatedOn.AsTime().Local().Format(time.DateTime),
@@ -289,7 +289,7 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 
 type magicAuthToken struct {
 	ID        string `header:"id" json:"id"`
-	Dashboard string `header:"dashboard" json:"dashboard"`
+	Resource  string `header:"resource" json:"resource"`
 	Filter    string `header:"filter" json:"filter"`
 	CreatedBy string `header:"created by" json:"created_by"`
 	CreatedOn string `header:"created on" json:"created_on"`

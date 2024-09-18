@@ -1138,8 +1138,8 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
-	if opts.MetricsViewFields == nil {
-		opts.MetricsViewFields = []string{}
+	if opts.Fields == nil {
+		opts.Fields = []string{}
 	}
 
 	encSecret, encKeyID, err := c.encrypt(opts.Secret)
@@ -1149,9 +1149,9 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State,
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, resource_type, resource_name, filter_json, fields, state)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.ResourceType, opts.ResourceName, opts.FilterJSON, opts.Fields, opts.State,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
@@ -2064,7 +2064,7 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 	if err != nil {
 		return nil, err
 	}
-	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
+	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.Fields)
 	if err != nil {
 		return nil, err
 	}
@@ -2094,7 +2094,7 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	if err != nil {
 		return nil, err
 	}
-	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
+	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.Fields)
 	if err != nil {
 		return nil, err
 	}
