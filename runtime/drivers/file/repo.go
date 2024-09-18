@@ -20,8 +20,8 @@ func (c *connection) Driver() string {
 }
 
 // Root implements drivers.RepoStore.
-func (c *connection) Root() string {
-	return c.root
+func (c *connection) Root(ctx context.Context) (string, error) {
+	return c.root, nil
 }
 
 // CommitHash implements drivers.RepoStore.

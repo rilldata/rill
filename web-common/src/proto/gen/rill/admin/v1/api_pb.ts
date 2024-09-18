@@ -12356,11 +12356,6 @@ export class ReportOptions extends Message<ReportOptions> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: string open_project_subpath = 7;
-   */
-  openProjectSubpath = "";
-
-  /**
    * @generated from field: repeated string email_recipients = 8;
    */
   emailRecipients: string[] = [];
@@ -12381,7 +12376,14 @@ export class ReportOptions extends Message<ReportOptions> {
   slackWebhooks: string[] = [];
 
   /**
-   * base64 state url of the metrics_view when it was created
+   * Annotation for the subpath of <UI host>/org/project to open for the report.
+   *
+   * @generated from field: string web_open_path = 15;
+   */
+  webOpenPath = "";
+
+  /**
+   * Annotation for the base64-encoded UI state to open for the report.
    *
    * @generated from field: string web_open_state = 14;
    */
@@ -12403,11 +12405,11 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 7, name: "open_project_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -12502,7 +12504,14 @@ export class AlertOptions extends Message<AlertOptions> {
   slackWebhooks: string[] = [];
 
   /**
-   * base64 state url of the dashboard when it was created
+   * Annotation for the subpath of <UI host>/org/project to open for the report.
+   *
+   * @generated from field: string web_open_path = 15;
+   */
+  webOpenPath = "";
+
+  /**
+   * Annotation for the base64-encoded UI state to open for the report.
    *
    * @generated from field: string web_open_state = 12;
    */
@@ -12529,6 +12538,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

@@ -3,7 +3,6 @@ import {
   MeasureFilterBaseTypeOptions,
   MeasureFilterComparisonTypeOptions,
   MeasureFilterPercentOfTotalOption,
-  MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
 import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
@@ -12,7 +11,12 @@ export function getTypeOptions(
   formValues: AlertFormValues,
   selectedMeasure: MetricsViewSpecMeasureV2 | undefined,
 ) {
-  const options: typeof MeasureFilterComparisonTypeOptions = [];
+  const options: {
+    value: string;
+    label: string;
+    disabled?: boolean;
+    tooltip?: string;
+  }[] = [...MeasureFilterBaseTypeOptions];
 
   if (
     formValues.comparisonTimeRange?.isoDuration ||
@@ -23,11 +27,6 @@ export function getTypeOptions(
     ).toLowerCase();
     options.push(
       ...MeasureFilterComparisonTypeOptions.map((o) => {
-        if (
-          o.value !== MeasureFilterType.AbsoluteChange &&
-          o.value !== MeasureFilterType.PercentChange
-        )
-          return o;
         return {
           ...o,
           label: `${o.label} ${comparisonLabel}`,
@@ -35,11 +34,26 @@ export function getTypeOptions(
       }),
     );
   } else {
-    options.push(...MeasureFilterBaseTypeOptions);
+    options.push(
+      ...MeasureFilterComparisonTypeOptions.map((o) => {
+        return {
+          ...o,
+          label: o.shortLabel,
+          tooltip: "Available when comparing time periods.",
+          disabled: true,
+        };
+      }),
+    );
   }
 
   if (selectedMeasure?.validPercentOfTotal && formValues.splitByDimension) {
     options.push(MeasureFilterPercentOfTotalOption);
+  } else {
+    options.push({
+      ...MeasureFilterPercentOfTotalOption,
+      tooltip: "Measure does not support percent-of-total.",
+      disabled: true,
+    });
   }
 
   return options;

@@ -2,6 +2,7 @@
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { getRillTheme } from "@rilldata/web-common/features/canvas-components/render/vega-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { get } from "svelte/store";
   import {
     SignalListeners,
     VegaLite,
@@ -9,7 +10,6 @@
     VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
-  import { get } from "svelte/store";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
@@ -21,7 +21,6 @@
   export let canvasDashboard = false;
   export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
-  // Bind view to parent component
   export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
@@ -33,11 +32,11 @@
   $: if (viewVL && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
     viewVL.tooltip(handler.handleTooltip);
-    viewVL.runAsync();
+    void viewVL.runAsync();
   }
 
   $: options = <EmbedOptions>{
-    config: getRillTheme(),
+    config: getRillTheme(canvasDashboard),
     renderer: "svg",
     actions: false,
     logLevel: 0, // only show errors

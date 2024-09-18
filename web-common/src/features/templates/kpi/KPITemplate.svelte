@@ -31,7 +31,7 @@
   $: kpiProperties = rendererProperties as KPIProperties;
 
   $: ({
-    metric_view: metricViewName,
+    metrics_view: metricViewName,
     filter: whereSql,
     measure: measureName,
     time_range: timeRange,
@@ -44,7 +44,7 @@
     instanceId,
     metricViewName,
     measureName,
-    timeRange,
+    timeRange.toUpperCase(),
     whereSql,
   );
 
@@ -52,8 +52,8 @@
     instanceId,
     metricViewName,
     measureName,
-    comparisonTimeRange,
-    timeRange,
+    comparisonTimeRange?.toUpperCase(),
+    timeRange.toUpperCase(),
     whereSql,
     queryClient,
   );
@@ -62,7 +62,7 @@
     instanceId,
     metricViewName,
     measureName,
-    timeRange,
+    timeRange.toUpperCase(),
     whereSql,
     queryClient,
   );
@@ -123,7 +123,7 @@
 
     {#if comparisonTimeRange}
       <div class="comparison-value">
-        vs last {humaniseISODuration(comparisonTimeRange, false)}
+        vs last {humaniseISODuration(comparisonTimeRange.toUpperCase(), false)}
       </div>
     {/if}
   </div>

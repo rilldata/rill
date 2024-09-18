@@ -311,6 +311,21 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resou
 		} else {
 			rules = append(rules, spec.SecurityRules...)
 		}
+	// Determine access using the explore's security rules. If there are none, then everyone can access it.
+	case ResourceKindExplore:
+		spec := r.GetExplore().State.ValidSpec
+		if spec == nil {
+			// Tricky, since security rules on an explore are usually derived from its metrics view and added to ValidSpec during reconciliation.
+			// So we don't want to just fallback to r.GetExplore().Spec here.
+			// Instead, we give access to admins and not to others.
+			if claims.Admin() {
+				rules = append(rules, allowAccessRule)
+			}
+		} else if len(spec.SecurityRules) == 0 {
+			rules = append(rules, allowAccessRule)
+		} else {
+			rules = append(rules, spec.SecurityRules...)
+		}
 	// Admins and creators/recipients can access a report.
 	case ResourceKindReport:
 		spec := r.GetReport().Spec
@@ -464,13 +479,31 @@ func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, _ *runti
 
 // applySecurityRuleFieldAccess applies a field access rule to the resolved security.
 func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td rillv1.TemplateData) error {
-	// This rule currently only applies to metrics views.
+	// This rule currently only applies to metrics views and explores.
 	// Skip it for other resource types.
-	if r.Meta.Name.Kind != ResourceKindMetricsView {
-		return nil
-	}
-	mv := r.GetMetricsView().State.ValidSpec
-	if mv == nil {
+	var availableFields []string
+	switch r.Meta.Name.Kind {
+	case ResourceKindMetricsView:
+		mv := r.GetMetricsView().State.ValidSpec
+		if mv == nil {
+			return nil
+		}
+		availableFields = make([]string, 0, len(mv.Dimensions)+len(mv.Measures))
+		for _, f := range mv.Dimensions {
+			availableFields = append(availableFields, f.Name)
+		}
+		for _, f := range mv.Measures {
+			availableFields = append(availableFields, f.Name)
+		}
+	case ResourceKindExplore:
+		exp := r.GetExplore().State.ValidSpec
+		if exp == nil {
+			return nil
+		}
+		availableFields = make([]string, 0, len(exp.Dimensions)+len(exp.Measures))
+		availableFields = append(availableFields, exp.Dimensions...)
+		availableFields = append(availableFields, exp.Measures...)
+	default:
 		return nil
 	}
 
@@ -497,16 +530,10 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 
 	// Set if the field should be allowed or denied
 	if rule.AllFields {
-		for _, f := range mv.Dimensions {
-			v, ok := res.fieldAccess[f.Name]
+		for _, f := range availableFields {
+			v, ok := res.fieldAccess[f]
 			if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
-				res.fieldAccess[f.Name] = rule.Allow
-			}
-		}
-		for _, f := range mv.Measures {
-			v, ok := res.fieldAccess[f.Name]
-			if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
-				res.fieldAccess[f.Name] = rule.Allow
+				res.fieldAccess[f] = rule.Allow
 			}
 		}
 	} else {

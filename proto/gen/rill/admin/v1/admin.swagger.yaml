@@ -3537,9 +3537,12 @@ definitions:
         type: array
         items:
           type: string
+      webOpenPath:
+        type: string
+        description: Annotation for the subpath of <UI host>/org/project to open for the report.
       webOpenState:
         type: string
-        title: base64 state url of the dashboard when it was created
+        description: Annotation for the base64-encoded UI state to open for the report.
   v1ApproveProjectAccessResponse:
     type: object
   v1BillingIssue:
@@ -4618,8 +4621,6 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      openProjectSubpath:
-        type: string
       emailRecipients:
         type: array
         items:
@@ -4636,9 +4637,12 @@ definitions:
         type: array
         items:
           type: string
+      webOpenPath:
+        type: string
+        description: Annotation for the subpath of <UI host>/org/project to open for the report.
       webOpenState:
         type: string
-        title: base64 state url of the metrics_view when it was created
+        description: Annotation for the base64-encoded UI state to open for the report.
   v1RequestProjectAccessResponse:
     type: object
   v1RevokeCurrentAuthTokenResponse:

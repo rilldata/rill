@@ -2993,6 +2993,92 @@ export class GetResourceResponse extends Message<GetResourceResponse> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.GetExploreRequest
+ */
+export class GetExploreRequest extends Message<GetExploreRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<GetExploreRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetExploreRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetExploreRequest {
+    return new GetExploreRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetExploreRequest {
+    return new GetExploreRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetExploreRequest {
+    return new GetExploreRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetExploreRequest | PlainMessage<GetExploreRequest> | undefined, b: GetExploreRequest | PlainMessage<GetExploreRequest> | undefined): boolean {
+    return proto3.util.equals(GetExploreRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GetExploreResponse
+ */
+export class GetExploreResponse extends Message<GetExploreResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Resource explore = 1;
+   */
+  explore?: Resource;
+
+  /**
+   * @generated from field: rill.runtime.v1.Resource metrics_view = 2;
+   */
+  metricsView?: Resource;
+
+  constructor(data?: PartialMessage<GetExploreResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetExploreResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "explore", kind: "message", T: Resource },
+    { no: 2, name: "metrics_view", kind: "message", T: Resource },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetExploreResponse {
+    return new GetExploreResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetExploreResponse {
+    return new GetExploreResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetExploreResponse {
+    return new GetExploreResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetExploreResponse | PlainMessage<GetExploreResponse> | undefined, b: GetExploreResponse | PlainMessage<GetExploreResponse> | undefined): boolean {
+    return proto3.util.equals(GetExploreResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GetModelSplitsRequest
  */
 export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {

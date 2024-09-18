@@ -398,6 +398,9 @@ func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
+	if _, ok := status.FromError(err); ok {
+		return err
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return status.Error(codes.DeadlineExceeded, err.Error())
 	}

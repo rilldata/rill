@@ -81,6 +81,11 @@ measures:
     description: "Total revenue generated"
 `,
   },
+  [ResourceKind.Explore]: {
+    name: "explore",
+    extension: ".yaml",
+    baseContent: "", // TODO
+  },
   [ResourceKind.API]: {
     name: "api",
     extension: ".yaml",
@@ -147,7 +152,8 @@ vega_lite: |
     name: "canvas-dashboard",
     extension: ".yaml",
     baseContent: `type: dashboard
-columns: 10
+title: "Canvas Dashboard"
+columns: 24
 gap: 2
 
 items:

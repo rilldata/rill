@@ -68,7 +68,7 @@
   $: if (isValidSchema) {
     const stateManagerContext = createStateManagers({
       queryClient,
-      metricsViewName: tableProperties.metric_view,
+      metricsViewName: tableProperties.metrics_view,
       extraKeyPrefix: TABLE_PREFIX,
     });
 
