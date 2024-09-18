@@ -279,6 +279,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	} else if req.Kind != "" { // nolint:staticcheck // Deprecated but still used
 		iframeQuery["type"] = req.Kind
 	} else {
+		// Default to an explore if no type is explicitly provided
 		iframeQuery["type"] = runtime.ResourceKindExplore
 	}
 	iframeQuery["kind"] = iframeQuery["type"] // For backwards compatibility
