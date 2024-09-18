@@ -20,6 +20,7 @@ export enum ResourceKind {
   Connector = "rill.runtime.v1.Connector",
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
+  Explore = "rill.runtime.v1.Explore",
   Report = "rill.runtime.v1.Report",
   Alert = "rill.runtime.v1.Alert",
   Theme = "rill.runtime.v1.Theme",

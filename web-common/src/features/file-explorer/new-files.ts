@@ -81,6 +81,11 @@ measures:
     description: "Total revenue generated"
 `,
   },
+  [ResourceKind.Explore]: {
+    name: "explore",
+    extension: ".yaml",
+    baseContent: "", // TODO
+  },
   [ResourceKind.API]: {
     name: "api",
     extension: ".yaml",
