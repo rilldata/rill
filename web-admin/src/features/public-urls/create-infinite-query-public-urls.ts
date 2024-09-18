@@ -1,8 +1,3 @@
-/**
- *
- * Use `createInfiniteQuery` to fetch a list of public URLs.
- *
- */
 import type {
   AdminServiceListMagicAuthTokensParams,
   RpcStatus,

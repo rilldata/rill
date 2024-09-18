@@ -22,6 +22,9 @@
     dashboardTitle: string;
   }
 
+  const ROW_HEIGHT = 32;
+  const OVERSCAN = 5;
+
   export let data: MagicAuthTokenProps[];
   export let onDelete: (deletedTokenId: string) => void;
   export let query: any;
@@ -109,7 +112,14 @@
     } else {
       sorting = updater;
     }
-    updateTableOptions();
+
+    options.update((old) => ({
+      ...old,
+      state: {
+        ...old.state,
+        sorting,
+      },
+    }));
   };
 
   const options = writable<TableOptions<MagicAuthTokenProps>>({
@@ -125,24 +135,14 @@
 
   const table = createSvelteTable(options);
 
-  function updateTableOptions() {
-    options.update((old) => ({
-      ...old,
-      state: {
-        ...old.state,
-        sorting,
-      },
-    }));
-  }
+  $: rows = $table.getRowModel().rows;
 
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: 0,
     getScrollElement: () => virtualListEl,
-    estimateSize: () => 32,
-    overscan: 5,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: OVERSCAN,
   });
-
-  $: rows = $table.getRowModel().rows;
 
   $: {
     $virtualizer.setOptions({
@@ -153,10 +153,10 @@
 
     const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
 
-    console.log("lastItem", lastItem);
-    console.log("data.length", data.length);
+    // console.log("lastItem", lastItem);
+    // console.log("data.length", data.length);
     console.log("query.hasNextPage", query.hasNextPage);
-    console.log("query.isFetchingNextPage", query.isFetchingNextPage);
+    // console.log("query.isFetchingNextPage", query.isFetchingNextPage);
 
     if (
       lastItem &&
@@ -165,7 +165,7 @@
       !query.isFetchingNextPage
     ) {
       console.log("Fetching next page...");
-      query.fetchNextPage(); // Trigger the next page fetch
+      query.fetchNextPage();
     }
   }
 
