@@ -21,7 +21,7 @@
     [ResourceKind.Model, ModelWorkspace],
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Component, ComponentWorkspace],
-    [ResourceKind.Dashboard, CanvasDashboardWorkspace],
+    [ResourceKind.Canvas, CanvasDashboardWorkspace],
     [null, null],
     [undefined, null],
   ]);
@@ -42,6 +42,8 @@
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
+
+  $: console.log(workspace);
 
   $: extensions =
     resourceKind === ResourceKind.API

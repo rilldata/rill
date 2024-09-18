@@ -15,7 +15,7 @@ export const resourceIconMapping = {
   [ResourceKind.MetricsView]: MetricsExplorerIcon,
   [ResourceKind.API]: ApiIcon,
   [ResourceKind.Component]: Chart,
-  [ResourceKind.Dashboard]: CanvasDashboardIcon,
+  [ResourceKind.Canvas]: CanvasDashboardIcon,
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,
   [ResourceKind.Alert]: AlertCircleOutline,

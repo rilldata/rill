@@ -167,10 +167,10 @@
   }
 
   /**
-   * Put an example Custom Dashboard file in the `custom-dashbaords` directory
+   * Put an example Canvas file in the `canvas` directory
    */
   async function handleAddCanvasDashboard() {
-    const newRoute = await handleEntityCreate(ResourceKind.Dashboard);
+    const newRoute = await handleEntityCreate(ResourceKind.Canvas);
     await wrapNavigation(newRoute);
   }
 
@@ -281,7 +281,7 @@
             on:click={handleAddCanvasDashboard}
           >
             <svelte:component
-              this={resourceIconMapping[ResourceKind.Dashboard]}
+              this={resourceIconMapping[ResourceKind.Canvas]}
               className="text-gray-900"
               size="16px"
             />
