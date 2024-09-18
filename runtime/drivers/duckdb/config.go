@@ -66,6 +66,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	if strings.HasPrefix(cfg.DSN, ":memory:") {
 		inMemory = true
 		cfg.DSN = strings.Replace(cfg.DSN, ":memory:", "", 1)
+		cfg.ExtTableStorage = false
 	}
 
 	// Parse DSN as URL
