@@ -83,18 +83,20 @@
           isLoading={$magicAuthTokensInfiniteQuery.isLoading}
           size="1rem"
         />
-      {:else if $magicAuthTokensInfiniteQuery.error}
+      {:else if $magicAuthTokensInfiniteQuery.isError}
         <div class="text-red-500">
           Error loading public URLs: {$magicAuthTokensInfiniteQuery.error}
         </div>
-      {:else if !$magicAuthTokensInfiniteQuery.data.pages.length}
-        <NoPublicURLCTA />
-      {:else}
-        <PublicURLsTable
-          data={sortedAllRowsWithDashboardTitle}
-          query={$magicAuthTokensInfiniteQuery}
-          onDelete={handleDelete}
-        />
+      {:else if $magicAuthTokensInfiniteQuery.isSuccess}
+        {#if $magicAuthTokensInfiniteQuery.data.pages[0].tokens.length === 0}
+          <NoPublicURLCTA />
+        {:else}
+          <PublicURLsTable
+            data={sortedAllRowsWithDashboardTitle}
+            query={$magicAuthTokensInfiniteQuery}
+            onDelete={handleDelete}
+          />
+        {/if}
       {/if}
     </div>
   </div>
