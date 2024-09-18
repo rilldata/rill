@@ -29,6 +29,7 @@ type ExploreYAML struct {
 		ComparisonMode      string     `yaml:"comparison_mode"`
 		ComparisonDimension string     `yaml:"comparison_dimension"`
 	} `yaml:"presets"`
+	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
 // NamesYAML parses a list of names with support for a '*' scalar for all names,
@@ -268,6 +269,17 @@ func (p *Parser) parseExplore(node *Node) error {
 		})
 	}
 
+	// Build security rules
+	rules, err := tmp.Security.Proto()
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		if rule.GetAccess() == nil {
+			return fmt.Errorf("the 'explore' resource type only supports 'access' security rules")
+		}
+	}
+
 	// Track explore
 	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -286,6 +298,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.Presets = presets
+	r.ExploreSpec.SecurityRules = rules
 
 	return nil
 }

@@ -3385,6 +3385,11 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CanvasItem'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
   v1CanvasState:
     type: object
     properties:

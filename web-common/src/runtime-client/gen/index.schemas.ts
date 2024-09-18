@@ -2206,6 +2206,7 @@ export interface V1CanvasSpec {
   gap?: number;
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
+  securityRules?: V1SecurityRule[];
 }
 
 export interface V1CanvasState {

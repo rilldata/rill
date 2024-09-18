@@ -641,6 +641,7 @@ message CanvasSpec {
   uint32 gap = 3;
   repeated ComponentVariable variables = 5;
   repeated CanvasItem items = 4;
+  repeated SecurityRule security_rules = 6;
 }
 
 message CanvasState {
