@@ -459,6 +459,7 @@
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}
                 class:select-none={header.column.getCanSort()}
+                class:flex-row-reverse={header.column.columnDef.isMeasure}
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
