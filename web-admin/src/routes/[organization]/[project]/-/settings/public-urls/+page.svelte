@@ -7,11 +7,15 @@
     createAdminServiceRevokeMagicAuthToken,
   } from "@rilldata/web-admin/client";
   import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { useQueryClient, createInfiniteQuery } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import {
+    adminServiceListMagicAuthTokens,
+    createAdminServiceListMagicAuthTokensInfiniteQuery,
+  } from "@rilldata/web-admin/features/public-urls/create-infinite-query-public-urls";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -23,24 +27,44 @@
     organization,
     project,
   );
+  // $: console.log("magicAuthTokens", $magicAuthTokens.data);
+
+  $: magicAuthTokensInfiniteQuery =
+    createAdminServiceListMagicAuthTokensInfiniteQuery(organization, project);
+  $: console.log(
+    "magicAuthTokensInfiniteQuery.data",
+    $magicAuthTokensInfiniteQuery.data,
+  );
+
+  $: infiniteSplitsQuery = createInfiniteQuery({
+    queryKey: getAdminServiceListMagicAuthTokensQueryKey(organization, project),
+    queryFn: ({ pageParam }) => {
+      return adminServiceListMagicAuthTokens(organization, project, pageParam);
+    },
+    enabled: !!(organization && project),
+    getNextPageParam: (_lastGroup) => _lastGroup.nextPageToken,
+  });
+
+  $: allRows = $infiniteSplitsQuery.data && $infiniteSplitsQuery.data.tokens;
+  $: console.log("allRows: ", allRows);
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
 
   // Reset and update currentPageTokens when magicAuthTokens changes
-  $: currentPageTokens =
-    $magicAuthTokens.data && $dashboards.data
-      ? $magicAuthTokens.data.tokens.map((token) => {
-          const dashboard = $dashboards.data.find(
-            (d) => d.resource.meta.name.name === token.metricsView,
-          );
-          return {
-            ...token,
-            dashboardTitle:
-              dashboard?.resource.metricsView.state?.validSpec?.title ||
-              dashboard?.resource.meta.name.name,
-          };
-        })
-      : [];
+  // $: currentPageTokens =
+  //   $magicAuthTokens.data && $dashboards.data
+  //     ? $magicAuthTokens.data.tokens.map((token) => {
+  //         const dashboard = $dashboards.data.find(
+  //           (d) => d.resource.meta.name.name === token.metricsView,
+  //         );
+  //         return {
+  //           ...token,
+  //           dashboardTitle:
+  //             dashboard?.resource.metricsView.state?.validSpec?.title ||
+  //             dashboard?.resource.meta.name.name,
+  //         };
+  //       })
+  //     : [];
 
   const queryClient = useQueryClient();
   const revokeMagicAuthToken = createAdminServiceRevokeMagicAuthToken();
@@ -79,16 +103,17 @@
         <DelayedSpinner isLoading={$magicAuthTokens.isLoading} size="1rem" />
       {:else if $magicAuthTokens.error}
         <div class="text-red-500">
-          Error loading resources: {$magicAuthTokens.error?.message}
+          Error loading public URLs: {$magicAuthTokens.error?.message}
         </div>
       {:else if $magicAuthTokens.data}
         {#if $magicAuthTokens.data.tokens.length === 0}
           <NoPublicURLCTA />
         {:else}
           <PublicURLsTable
-            tableData={currentPageTokens}
+            data={allRows}
             {pageSize}
             onDelete={handleDelete}
+            query={$magicAuthTokensInfiniteQuery}
           />
         {/if}
       {/if}

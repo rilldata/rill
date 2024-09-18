@@ -16,15 +16,19 @@
   import DashboardLink from "./DashboardLink.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { V1MagicAuthToken } from "@rilldata/web-admin/client";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
 
   interface MagicAuthTokenProps extends V1MagicAuthToken {
     dashboardTitle: string;
   }
 
-  export let tableData: MagicAuthTokenProps[];
+  // TODO: can rename to data
+  export let data: MagicAuthTokenProps[];
   export let pageSize: number;
   export let onDelete: (deletedTokenId: string) => void;
+  export let query: any;
 
+  let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [
     {
       id: "createdOn",
@@ -111,14 +115,14 @@
   };
 
   const options = writable<TableOptions<MagicAuthTokenProps>>({
-    data: tableData,
-    columns: columns,
+    data,
+    columns,
     state: {
       sorting,
-      pagination: {
-        pageSize,
-        pageIndex: 0, // Always 0 since we're using cursor-based pagination
-      },
+      // pagination: {
+      //   pageSize,
+      //   pageIndex: 0, // Always 0 since we're using cursor-based pagination
+      // },
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
@@ -144,70 +148,109 @@
     }));
   }
 
+  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
+    count: 0,
+    getScrollElement: () => virtualListEl,
+    estimateSize: () => 32,
+    overscan: 5,
+  });
+
+  $: rows = $table.getRowModel().rows;
+
+  $: console.log("query", query);
+
+  $: {
+    $virtualizer.setOptions({
+      count: query.hasNextPage ? data.length + 1 : data.length,
+    });
+
+    console.log("query.hasNextPage", query.hasNextPage);
+
+    const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
+
+    if (
+      lastItem &&
+      lastItem.index > data.length - 1 &&
+      query.hasNextPage &&
+      !query.isFetchingNextPage
+    ) {
+      console.log("Fetching next page...");
+      query.fetchNextPage(); // Trigger the next page fetch
+    }
+  }
+
   // Update table when magicAuthTokens changes
   $: {
-    if (tableData) {
-      updateTable(tableData);
+    if (data) {
+      updateTable(data);
     }
   }
 </script>
 
-<div class="list scroll-container">
-  <table class="w-full">
-    <thead>
-      {#each $table.getHeaderGroups() as headerGroup}
-        <tr>
-          {#each headerGroup.headers as header}
-            <th
-              colSpan={header.colSpan}
-              class="px-4 py-2 text-left"
-              on:click={header.column.getToggleSortingHandler()}
-            >
-              {#if !header.isPlaceholder}
-                <div
-                  class:cursor-pointer={header.column.getCanSort()}
-                  class:select-none={header.column.getCanSort()}
-                  class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
-                >
-                  <svelte:component
-                    this={flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                  />
-                  {#if header.column.getIsSorted().toString() === "asc"}
-                    <span>
-                      <ArrowDown flip size="12px" />
-                    </span>
-                  {:else if header.column.getIsSorted().toString() === "desc"}
-                    <span>
-                      <ArrowDown size="12px" />
-                    </span>
-                  {/if}
-                </div>
-              {/if}
-            </th>
-          {/each}
-        </tr>
-      {/each}
-    </thead>
-    <tbody>
-      {#each $table.getRowModel().rows as row}
-        <tr>
-          {#each row.getVisibleCells() as cell}
-            <td
-              class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
-              data-label={cell.column.columnDef.header}
-            >
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            </td>
-          {/each}
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+<div class="list scroll-container" bind:this={virtualListEl}>
+  <div style="position: relative; height: {$virtualizer.getTotalSize()}px;">
+    <table class="w-full">
+      <thead>
+        {#each $table.getHeaderGroups() as headerGroup}
+          <tr>
+            {#each headerGroup.headers as header}
+              <th
+                colSpan={header.colSpan}
+                class="px-4 py-2 text-left"
+                on:click={header.column.getToggleSortingHandler()}
+              >
+                {#if !header.isPlaceholder}
+                  <div
+                    class:cursor-pointer={header.column.getCanSort()}
+                    class:select-none={header.column.getCanSort()}
+                    class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
+                  >
+                    <svelte:component
+                      this={flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                    />
+                    {#if header.column.getIsSorted().toString() === "asc"}
+                      <span>
+                        <ArrowDown flip size="12px" />
+                      </span>
+                    {:else if header.column.getIsSorted().toString() === "desc"}
+                      <span>
+                        <ArrowDown size="12px" />
+                      </span>
+                    {/if}
+                  </div>
+                {/if}
+              </th>
+            {/each}
+          </tr>
+        {/each}
+      </thead>
+      <tbody>
+        {#each $virtualizer.getVirtualItems() as row, idx (row.index)}
+          <tr
+            style="height: {row.size}px; transform: translateY({row.start -
+              idx * row.size}px);"
+          >
+            {#each rows[row.index]?.getVisibleCells() as cell (cell.id)}
+              <td
+                class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
+                data-label={cell.column.columnDef.header}
+              >
+                <svelte:component
+                  this={flexRender(
+                    cell.column.columnDef.cell,
+                    cell.getContext(),
+                  )}
+                />
+              </td>
+            {/each}
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <style lang="postcss">
