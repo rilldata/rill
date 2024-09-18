@@ -89,7 +89,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 
 	// subscription related workers
 	river.AddWorker(workers, &PlanChangeByAPIWorker{admin: adm})
-	river.AddWorker(workers, &SubscriptionCancellationWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &SubscriptionCancellationCheckWorker{admin: adm, logger: billingLogger})
 
 	// org related workers
 	river.AddWorker(workers, &PurgeOrgWorker{admin: adm})
@@ -97,6 +97,11 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
 		newPeriodicJob(&ValidateDeploymentsArgs{}, "* */6 * * *", true),
+		newPeriodicJob(&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true),  // daily at 1am UTC
+		newPeriodicJob(&TrialEndingSoonArgs{}, "5 1 * * *", true),                // daily at 1:05am UTC
+		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
+		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
+		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -112,7 +117,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		PeriodicJobs: periodicJobs,
 		Logger:       logger,
 		JobTimeout:   time.Hour,
-		MaxAttempts:  5, // default retry policy with backoff of attempt^4 seconds
+		MaxAttempts:  3, // default retry policy with backoff of attempt^4 seconds
 		ErrorHandler: &ErrorHandler{logger: adm.Logger},
 	})
 	if err != nil {
@@ -284,107 +289,6 @@ func (c *Client) PaymentSuccess(ctx context.Context, billingCustomerID, invoiceI
 	}, nil
 }
 
-func (c *Client) PaymentFailedGracePeriodCheck(ctx context.Context, orgID, invoiceID string, gracePeriodEndDate time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, PaymentFailedGracePeriodCheckArgs{
-		OrgID:              orgID,
-		InvoiceID:          invoiceID,
-		GracePeriodEndDate: gracePeriodEndDate,
-	}, &river.InsertOpts{
-		ScheduledAt: gracePeriodEndDate.AddDate(0, 0, 1).Add(1 * time.Hour), // end of grace period date + 1 hour buffer
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("PaymentFailedGracePeriodCheck job skipped as duplicate", zap.String("org_id", orgID), zap.String("invoice_id", invoiceID), zap.Time("grace_period_end_date", gracePeriodEndDate))
-	}
-
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
-func (c *Client) TrialEndingSoon(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, TrialEndingSoonArgs{
-		OrgID:  orgID,
-		SubID:  subID,
-		PlanID: planID,
-	}, &river.InsertOpts{
-		ScheduledAt: trialEndDate.AddDate(0, 0, -7), // 7 days before trial end date
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("TrialEndingSoon job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID))
-	}
-
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
-func (c *Client) TrialEndCheck(ctx context.Context, orgID, subID, planID string, trialEndDate time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, TrialEndCheckArgs{
-		OrgID:  orgID,
-		SubID:  subID,
-		PlanID: planID,
-	}, &river.InsertOpts{
-		ScheduledAt: trialEndDate.AddDate(0, 0, 1).Add(time.Hour * 1), // end of trial end date + 1 hour
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("TrialEndCheck job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID))
-	}
-
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
-func (c *Client) TrialGracePeriodCheck(ctx context.Context, orgID, subID, planID string, gracePeriodEndDate time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, TrialGracePeriodCheckArgs{
-		OrgID:              orgID,
-		SubID:              subID,
-		PlanID:             planID,
-		GracePeriodEndDate: gracePeriodEndDate,
-	}, &river.InsertOpts{
-		ScheduledAt: gracePeriodEndDate.AddDate(0, 0, 1).Add(1 * time.Hour), // end of grace period end date + 1 hour
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("TrialGracePeriodCheck job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("grace_period_end_date", gracePeriodEndDate))
-	}
-
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
 func (c *Client) PlanChangeByAPI(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, PlanChangeByAPIArgs{
 		OrgID:     orgID,
@@ -402,32 +306,6 @@ func (c *Client) PlanChangeByAPI(ctx context.Context, orgID, subID, planID strin
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("PlanChangeByAPI job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("start_date", subStartDate))
-	}
-
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
-func (c *Client) SubscriptionCancellation(ctx context.Context, orgID, subID, planID string, subEndDate time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, SubscriptionCancellationArgs{
-		OrgID:      orgID,
-		SubID:      subID,
-		PlanID:     planID,
-		SubEndDate: subEndDate,
-	}, &river.InsertOpts{
-		ScheduledAt: subEndDate.AddDate(0, 0, 1).Add(1 * time.Hour), // end of subscription end date + 1 hour
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("SubscriptionCancellation job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("sub_end_date", subEndDate))
 	}
 
 	return &jobs.InsertResult{
@@ -469,7 +347,7 @@ func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, p
 	return &river.ErrorHandlerResult{SetCancelled: true}
 }
 
-func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) *river.PeriodicJob {
+func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) *river.PeriodicJob { // nolint:unparam // runOnStart may be used in the future
 	schedule, err := cron.ParseStandard(cronExpr)
 	if err != nil {
 		panic(err)

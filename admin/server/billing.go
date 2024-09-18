@@ -114,13 +114,23 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
 	}
 
+	be, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypePaymentFailed)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+	if be != nil {
+		validationErrs = append(validationErrs, "a previous payment is due, please pay the outstanding amount")
+	}
+
 	if len(validationErrs) > 0 && !claims.Superuser(ctx) {
 		return nil, status.Errorf(codes.FailedPrecondition, "please fix following by visiting billing portal: %s", strings.Join(validationErrs, ", "))
 	}
 
 	if planDowngrade(plan, org) {
 		if claims.Superuser(ctx) {
-			s.logger.Warn("plan downgraded", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
+			s.logger.Named("billing").Warn("plan downgraded", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
 		} else {
 			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
 		}
@@ -252,19 +262,12 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		}
 	}
 
-	// schedule subscription cancellation job at end of the current subscription term + 1 hour
-	j, err := s.admin.Jobs.SubscriptionCancellation(ctx, org.ID, subs[0].ID, plan.ID, subEndDate)
-	if err != nil {
-		return nil, err
-	}
-
 	// raise a billing issue of the subscription cancellation
 	_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 		OrgID: org.ID,
 		Type:  database.BillingIssueTypeSubscriptionCancelled,
 		Metadata: database.BillingIssueMetadataSubscriptionCancelled{
-			EndDate:     subEndDate,
-			SubEndJobID: j.ID,
+			EndDate: subEndDate,
 		},
 		EventTime: time.Now(),
 	})

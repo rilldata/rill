@@ -395,11 +395,9 @@ func (c *Client) SendInvoicePaymentSuccess(opts *InvoicePaymentSuccess) error {
 }
 
 type InvoiceUnpaid struct {
-	ToEmail  string
-	ToName   string
-	OrgName  string
-	Currency string
-	Amount   string
+	ToEmail string
+	ToName  string
+	OrgName string
 }
 
 // SendInvoiceUnpaid sent after the payment grace period has ended
@@ -409,7 +407,7 @@ func (c *Client) SendInvoiceUnpaid(opts *InvoiceUnpaid) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Payment for %s is overdue", opts.OrgName),
 		Title:   fmt.Sprintf("Payment for %s is overdue", opts.OrgName),
-		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your Rill subscription on %q is overdue. Your projects have been hibernated.", opts.Currency, opts.Amount, opts.OrgName)),
+		Body:    template.HTML(fmt.Sprintf("The payment for your Rill subscription on %q is overdue. Your projects have been hibernated.", opts.OrgName)),
 	})
 }
 

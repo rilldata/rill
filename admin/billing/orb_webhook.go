@@ -84,7 +84,8 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		o.orb.logger.Warn("invoice issue failed", zap.String("customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.String("invoice_id", ie.OrbInvoice.ID), zap.String("props", fmt.Sprintf("%v", ie.Properties)))
+		// inefficient one time conversion to named logger as its rare event and no need to log every thing else with named logger
+		o.orb.logger.Named("billing").Warn("invoice issue failed", zap.String("customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.String("invoice_id", ie.OrbInvoice.ID), zap.String("props", fmt.Sprintf("%v", ie.Properties)))
 	default:
 		// do nothing
 	}

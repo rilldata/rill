@@ -41,32 +41,9 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	}
 	s.Logger.Info("created subscription", zap.String("org", org.Name), zap.String("subscription_id", sub.ID))
 
-	// scheduling it before the org update as repair billing job can take care of it if update fails
-	err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.StartDate, sub.TrialEndDate)
+	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, sub.ID, plan.ID, org.CreatedOn, sub.StartDate, sub.TrialEndDate)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	// raise no payment method billing issue
-	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
-		OrgID:     org.ID,
-		Type:      database.BillingIssueTypeNoPaymentMethod,
-		Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
-		EventTime: org.CreatedOn,
-	})
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
-	}
-
-	// raise no billable address billing issue
-	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
-		OrgID:     org.ID,
-		Type:      database.BillingIssueTypeNoBillableAddress,
-		Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
-		EventTime: org.CreatedOn,
-	})
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
 	}
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
@@ -112,32 +89,10 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 			subs = append(subs, sub)
 
-			// schedule trial end check job to the river queue, if it was already scheduled it will be ignored
-			err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.StartDate, sub.TrialEndDate)
+			// raise initial billing issues
+			err = s.RaiseNewOrgBillingIssues(ctx, org.ID, sub.ID, plan.ID, org.CreatedOn, sub.StartDate, sub.TrialEndDate)
 			if err != nil {
 				return nil, nil, err
-			}
-
-			// raise no payment method billing issue
-			_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
-				OrgID:     org.ID,
-				Type:      database.BillingIssueTypeNoPaymentMethod,
-				Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
-				EventTime: org.CreatedOn,
-			})
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
-			}
-
-			// raise no billable address billing issue
-			_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
-				OrgID:     org.ID,
-				Type:      database.BillingIssueTypeNoBillableAddress,
-				Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
-				EventTime: org.CreatedOn,
-			})
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
 			}
 		}
 		if len(subs) > 1 {
@@ -211,8 +166,7 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 		subs = append(subs, sub)
 
-		// schedule trial end check job to the river queue
-		err = s.ScheduleTrialEndCheckJobs(ctx, org.ID, sub.ID, plan.ID, sub.StartDate, sub.TrialEndDate)
+		err = s.RaiseNewOrgBillingIssues(ctx, org.ID, sub.ID, plan.ID, org.CreatedOn, sub.StartDate, sub.TrialEndDate)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -265,21 +219,28 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 	return org, subs, nil
 }
 
-func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, planID string, trialStartDate, trialEndDate time.Time) error {
-	if trialEndDate.Before(time.Now()) {
-		return nil
+// RaiseNewOrgBillingIssues raises billing issues for a new organization
+func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID, subID, planID string, creationTime, trialStartDate, trialEndDate time.Time) error {
+	// raise no payment method billing issue
+	_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID:     orgID,
+		Type:      database.BillingIssueTypeNoPaymentMethod,
+		Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
+		EventTime: creationTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upsert billing error: %w", err)
 	}
 
-	// schedule trial ending soon job
-	tes, err := s.Jobs.TrialEndingSoon(ctx, orgID, subID, planID, trialEndDate)
+	// raise no billable address billing issue
+	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID:     orgID,
+		Type:      database.BillingIssueTypeNoBillableAddress,
+		Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
+		EventTime: creationTime,
+	})
 	if err != nil {
-		return fmt.Errorf("failed to schedule trial ending soon job: %w", err)
-	}
-
-	// schedule trial end check job
-	tec, err := s.Jobs.TrialEndCheck(ctx, orgID, subID, planID, trialEndDate)
-	if err != nil {
-		return fmt.Errorf("failed to schedule trial end check job: %w", err)
+		return fmt.Errorf("failed to upsert billing error: %w", err)
 	}
 
 	// raise on-trial billing warning
@@ -287,9 +248,9 @@ func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, p
 		OrgID: orgID,
 		Type:  database.BillingIssueTypeOnTrial,
 		Metadata: &database.BillingIssueMetadataOnTrial{
-			EndDate:              trialEndDate,
-			TrialEndingSoonJobID: tes.ID,
-			TrialEndCheckJobID:   tec.ID,
+			SubID:   subID,
+			PlanID:  planID,
+			EndDate: trialEndDate,
 		},
 		EventTime: trialStartDate,
 	})
@@ -302,47 +263,31 @@ func (s *Service) ScheduleTrialEndCheckJobs(ctx context.Context, orgID, subID, p
 
 // CleanupTrialBillingIssues removes trial related billing issues and cancel associated jobs
 func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) error {
-	bitt, err := s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeTrialEnded)
+	bite, err := s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeTrialEnded)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing errors: %w", err)
+			return fmt.Errorf("failed to find billing issue: %w", err)
 		}
 	}
 
-	if bitt != nil {
-		metadata, ok := bitt.Metadata.(*database.BillingIssueMetadataTrialEnded)
-		if ok && metadata.GracePeriodEndJobID > 0 {
-			// cancel the trial end grace check job, ignore errors.
-			_ = s.Jobs.CancelJob(ctx, metadata.GracePeriodEndJobID)
-		}
-		err = s.DB.DeleteBillingIssue(ctx, bitt.ID)
+	if bite != nil {
+		err = s.DB.DeleteBillingIssue(ctx, bite.ID)
 		if err != nil {
-			return fmt.Errorf("failed to delete billing error: %w", err)
+			return fmt.Errorf("failed to delete billing issue: %w", err)
 		}
 	}
 
-	bwit, err := s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeOnTrial)
+	biot, err := s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeOnTrial)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing warnings: %w", err)
+			return fmt.Errorf("failed to find billing issue: %w", err)
 		}
 	}
 
-	if bwit != nil {
-		metadata, ok := bwit.Metadata.(*database.BillingIssueMetadataOnTrial)
-		if ok && metadata.TrialEndingSoonJobID > 0 {
-			// cancel the trial ending soon job, ignore errors.
-			_ = s.Jobs.CancelJob(ctx, metadata.TrialEndingSoonJobID)
-		}
-
-		if ok && metadata.TrialEndCheckJobID > 0 {
-			// cancel the trial end check job, ignore errors.
-			_ = s.Jobs.CancelJob(ctx, metadata.TrialEndCheckJobID)
-		}
-
-		err = s.DB.DeleteBillingIssue(ctx, bwit.ID)
+	if biot != nil {
+		err = s.DB.DeleteBillingIssue(ctx, biot.ID)
 		if err != nil {
-			return fmt.Errorf("failed to delete billing warning: %w", err)
+			return fmt.Errorf("failed to delete billing issue: %w", err)
 		}
 	}
 
@@ -359,11 +304,6 @@ func (s *Service) CleanupBillingErrorSubCancellation(ctx context.Context, orgID 
 	}
 
 	if bisc != nil {
-		metadata, ok := bisc.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled)
-		if ok && metadata.SubEndJobID > 0 {
-			// cancel the subscription end check job, ignore errors.
-			_ = s.Jobs.CancelJob(ctx, metadata.SubEndJobID)
-		}
 		err = s.DB.DeleteBillingIssue(ctx, bisc.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete billing error: %w", err)

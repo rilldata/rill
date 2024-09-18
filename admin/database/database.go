@@ -268,7 +268,10 @@ type DB interface {
 
 	FindBillingIssues(ctx context.Context, orgID string) ([]*BillingIssue, error)
 	FindBillingIssueByType(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
+	FindBillingIssueByTypeNotOverdueProcessed(ctx context.Context, errorType BillingIssueType) ([]*BillingIssue, error)
+	FindBillingIssueByTypeNotOverdueProcessedForOrg(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
 	UpsertBillingIssue(ctx context.Context, opts *UpsertBillingIssueOptions) (*BillingIssue, error)
+	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByType(ctx context.Context, orgID string, errorType BillingIssueType) error
 }
@@ -1007,14 +1010,15 @@ type BillingIssue struct {
 type BillingIssueMetadata interface{}
 
 type BillingIssueMetadataOnTrial struct {
-	EndDate              time.Time `json:"end_date"`
-	TrialEndingSoonJobID int64     `json:"trial_end_soon_job_id"`
-	TrialEndCheckJobID   int64     `json:"trial_end_check_job_id"`
+	SubID   string    `json:"subscription_id"`
+	PlanID  string    `json:"plan_id"`
+	EndDate time.Time `json:"end_date"`
 }
 
 type BillingIssueMetadataTrialEnded struct {
-	GracePeriodEndDate  time.Time `json:"grace_period_end_date"`
-	GracePeriodEndJobID int64     `json:"grace_period_end_job_id"`
+	SubID              string    `json:"subscription_id"`
+	PlanID             string    `json:"plan_id"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
 }
 
 type BillingIssueMetadataNoPaymentMethod struct{}
@@ -1022,23 +1026,22 @@ type BillingIssueMetadataNoPaymentMethod struct{}
 type BillingIssueMetadataNoBillableAddress struct{}
 
 type BillingIssueMetadataPaymentFailed struct {
-	Invoices map[string]BillingIssueMetadataPaymentFailedMeta `json:"invoices"`
+	Invoices map[string]*BillingIssueMetadataPaymentFailedMeta `json:"invoices"`
 }
 
 type BillingIssueMetadataPaymentFailedMeta struct {
-	ID                  string    `json:"id"`
-	Number              string    `json:"invoice_number"`
-	URL                 string    `json:"invoice_url"`
-	Amount              string    `json:"amount"`
-	Currency            string    `json:"currency"`
-	DueDate             time.Time `json:"due_date"`
-	FailedOn            time.Time `json:"failed_on"`
-	GracePeriodEndJobID int64     `json:"grace_period_end_job_id"`
+	ID                 string    `json:"id"`
+	Number             string    `json:"invoice_number"`
+	URL                string    `json:"invoice_url"`
+	Amount             string    `json:"amount"`
+	Currency           string    `json:"currency"`
+	DueDate            time.Time `json:"due_date"`
+	FailedOn           time.Time `json:"failed_on"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
 }
 
 type BillingIssueMetadataSubscriptionCancelled struct {
-	EndDate     time.Time `json:"end_date"`
-	SubEndJobID int64     `json:"sub_end_job_id"`
+	EndDate time.Time `json:"end_date"`
 }
 
 type UpsertBillingIssueOptions struct {

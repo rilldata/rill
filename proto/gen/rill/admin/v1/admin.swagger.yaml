@@ -3615,6 +3615,12 @@ definitions:
       dueDate:
         type: string
         format: date-time
+      failedOn:
+        type: string
+        format: date-time
+      gracePeriodEndDate:
+        type: string
+        format: date-time
   v1BillingIssueMetadataSubscriptionCancelled:
     type: object
     properties:

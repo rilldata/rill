@@ -1313,6 +1313,8 @@ export interface V1BillingIssueMetadataPaymentFailedMeta {
   amountDue?: string;
   currency?: string;
   dueDate?: string;
+  failedOn?: string;
+  gracePeriodEndDate?: string;
 }
 
 export interface V1BillingIssueMetadataPaymentFailed {

@@ -13165,6 +13165,16 @@ export class BillingIssueMetadataPaymentFailedMeta extends Message<BillingIssueM
    */
   dueDate?: Timestamp;
 
+  /**
+   * @generated from field: google.protobuf.Timestamp failed_on = 7;
+   */
+  failedOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp grace_period_end_date = 8;
+   */
+  gracePeriodEndDate?: Timestamp;
+
   constructor(data?: PartialMessage<BillingIssueMetadataPaymentFailedMeta>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13179,6 +13189,8 @@ export class BillingIssueMetadataPaymentFailedMeta extends Message<BillingIssueM
     { no: 4, name: "amount_due", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "currency", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "due_date", kind: "message", T: Timestamp },
+    { no: 7, name: "failed_on", kind: "message", T: Timestamp },
+    { no: 8, name: "grace_period_end_date", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataPaymentFailedMeta {

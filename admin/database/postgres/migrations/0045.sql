@@ -4,6 +4,7 @@ CREATE TABLE billing_issues (
     type INTEGER NOT NULL,
     level INTEGER NOT NULL,
     metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+    overdue_processed BOOLEAN NOT NULL DEFAULT FALSE,
     event_time TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_on TIMESTAMPTZ NOT NULL DEFAULT now(),
     FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
