@@ -17,15 +17,11 @@
   $: project = $page.params.project;
 
   let pageSize = 16;
-  let pageToken: string | undefined = undefined;
+  // let pageToken: string | undefined = undefined;
 
   $: magicAuthTokens = createAdminServiceListMagicAuthTokens(
     organization,
     project,
-    {
-      pageSize,
-      pageToken,
-    },
   );
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
@@ -69,11 +65,11 @@
   }
 
   // Forward cursor-based pagination with `nextPageToken`
-  function handleNextPage() {
-    if ($magicAuthTokens.data?.nextPageToken) {
-      pageToken = $magicAuthTokens.data.nextPageToken;
-    }
-  }
+  // function handleNextPage() {
+  //   if ($magicAuthTokens.data?.nextPageToken) {
+  //     pageToken = $magicAuthTokens.data.nextPageToken;
+  //   }
+  // }
 </script>
 
 <div class="flex flex-col w-full">
@@ -93,8 +89,6 @@
             tableData={currentPageTokens}
             {pageSize}
             onDelete={handleDelete}
-            onNextPage={handleNextPage}
-            hasNextPage={!!$magicAuthTokens.data?.nextPageToken}
           />
         {/if}
       {/if}
