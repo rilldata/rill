@@ -9,7 +9,6 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
-  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -21,10 +20,10 @@
     V1ExportFormat,
     V1ReconcileStatus,
     V1Resource,
-    createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
+  import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   export let resource: V1Resource | undefined;
@@ -32,26 +31,14 @@
   export let modelHasError = false;
   export let collapse = false;
 
-  const triggerMutation = createRuntimeServiceCreateTrigger();
   const exportModelMutation = createExportTableMutation();
 
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  $: isIncrementalModel = resource?.model?.spec?.incremental;
-
   $: dashboardsQuery = useGetDashboardsForModel($runtime.instanceId, modelName);
 
   $: availableDashboards = $dashboardsQuery.data ?? [];
-
-  function refreshModel(full: boolean) {
-    void $triggerMutation.mutateAsync({
-      instanceId: $runtime.instanceId,
-      data: {
-        models: [{ model: resource?.meta?.name?.name, full: full }],
-      },
-    });
-  }
 
   const onExport = async (format: V1ExportFormat) => {
     return $exportModelMutation.mutateAsync({
@@ -64,36 +51,7 @@
   };
 </script>
 
-{#if isIncrementalModel}
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <Button type="secondary" builders={[builder]} disabled={!isModelIdle}>
-        <IconSpaceFixer pullLeft pullRight={collapse}>
-          <RefreshIcon size="14px" />
-        </IconSpaceFixer>
-        <ResponsiveButtonText {collapse}>Refresh</ResponsiveButtonText>
-        <IconSpaceFixer pullLeft pullRight={collapse}>
-          <CaretDownIcon />
-        </IconSpaceFixer>
-      </Button>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content>
-      <DropdownMenu.Item on:click={() => refreshModel(false)}>
-        Run model
-      </DropdownMenu.Item>
-      <DropdownMenu.Item on:click={() => refreshModel(true)}>
-        Reset & run model
-      </DropdownMenu.Item>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{:else}
-  <Button type="secondary" on:click={() => refreshModel(true)}>
-    <IconSpaceFixer pullLeft pullRight={collapse}>
-      <RefreshIcon size="14px" />
-    </IconSpaceFixer>
-    <ResponsiveButtonText {collapse}>Refresh</ResponsiveButtonText>
-  </Button>
-{/if}
+<ModelRefreshButton {resource} {collapse} />
 
 <DropdownMenu.Root>
   <DropdownMenu.Trigger asChild let:builder>
