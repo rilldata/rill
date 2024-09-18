@@ -30,14 +30,14 @@
   $: currentResourceName = currentResource?.meta?.name?.name;
 
   $: breadcrumbOptions = visualizations?.reduce(
-    (map, { meta, metricsView, dashboard }) => {
+    (map, { meta, metricsView, canvas }) => {
       const name = meta.name.name;
       const isMetricsExplorer = !!metricsView;
       return map.set(name.toLowerCase(), {
         label:
           (isMetricsExplorer
             ? metricsView?.state?.validSpec?.title
-            : dashboard?.spec?.title) || name,
+            : canvas?.spec?.title) || name,
       });
     },
     new Map(),
