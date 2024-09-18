@@ -40,7 +40,8 @@
   export let multiline = false;
   export let fontFamily = "inherit";
   export let sameWidth = false;
-  export let ringFocus = false;
+  export let width = "100%";
+  export let textClass = "text-xs";
 
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
@@ -62,13 +63,14 @@
   function onElementBlur(
     e: FocusEvent & { currentTarget: EventTarget & HTMLDivElement },
   ) {
-    console.log("blur");
     focus = false;
     onBlur(e);
   }
+
+  $: console.log({ value });
 </script>
 
-<div class="flex flex-col gap-y-1" class:w-full={full}>
+<div class="flex flex-col gap-y-1" class:w-full={full} style:width>
   {#if label}
     <div class="label-wrapper">
       <label for={id} class="line-clamp-1">
@@ -108,28 +110,29 @@
 
   {#if !options?.length}
     <div
-      class="input-wrapper overflow-hidden"
-      class:ring-focus={ringFocus}
+      class="input-wrapper overflow-hidden {textClass}"
       style:font-family={fontFamily}
     >
+      {#if $$slots.icon}
+        <span class="mr-1">
+          <slot name="icon" />
+        </span>
+      {/if}
+
       {#if multiline}
         <div
           {id}
-          contentEditable="true"
+          contenteditable
           class="multiline-input"
           {placeholder}
           role="textbox"
+          tabindex="0"
+          bind:textContent={value}
           aria-multiline="true"
           bind:this={inputElement}
-          on:input={(e) => {
-            value = e.currentTarget.textContent ?? "";
-            onInput(value, e);
-          }}
           on:blur={onElementBlur}
           on:focus={() => (focus = true)}
-        >
-          {value ?? ""}
-        </div>
+        />
       {:else}
         <input
           {id}
@@ -166,7 +169,7 @@
     </div>
   {:else if options.length}
     <Select
-      {ringFocus}
+      ringFocus
       {sameWidth}
       {id}
       bind:selectElement
@@ -214,7 +217,6 @@
 
   .multiline-input {
     @apply overflow-auto break-words py-[5px];
-    @apply text-sm;
   }
 
   input {
@@ -225,16 +227,13 @@
     @apply flex justify-center items-center pl-2;
     @apply w-full;
     @apply border border-gray-300 rounded-[2px];
-    @apply text-xs;
+
     @apply cursor-pointer;
     @apply min-h-8 h-fit;
   }
 
   .input-wrapper:focus-within {
     @apply border-primary-500;
-  }
-
-  .ring-focus:focus-within {
     @apply ring-2 ring-primary-100;
   }
 

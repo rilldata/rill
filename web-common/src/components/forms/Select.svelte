@@ -20,7 +20,7 @@
   export let onChange: (value: string) => void = () => {};
   export let fontSize = 12;
   export let sameWidth = false;
-  export let ringFocus = false;
+  export let ringFocus = true;
 
   $: selected = options.find((option) => option.value === value);
 </script>

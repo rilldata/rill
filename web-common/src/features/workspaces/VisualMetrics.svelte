@@ -272,11 +272,12 @@
     <div class="flex gap-x-4">
       {#key confirmation}
         <Input
+          sameWidth
           full
           value={model}
           options={[...modelNames, ...sourceNames]}
           label="Model or source referenced"
-          onInput={(newModelName) => {
+          onChange={(newModelName) => {
             confirmation = {
               action: "switch",
               model: newModelName,
@@ -286,6 +287,7 @@
       {/key}
 
       <Input
+        sameWidth
         full
         value={timeDimension}
         options={timeOptions}
@@ -297,11 +299,12 @@
       />
 
       <Input
+        sameWidth
         full
         value={smallestTimeGrain}
         options={Object.entries(TIME_GRAIN).map(([_, { label }]) => label)}
         label="Smallest time grain"
-        hint="The smallest time grain that will be used in dashboards"
+        hint="The smallest time unit by which your charts and tables can be bucketed"
         onInput={async (value) => {
           await updateProperty("smallest_time_grain", value);
         }}
@@ -310,20 +313,17 @@
 
     <span class="h-[1px] w-full bg-gray-200" />
 
-    <div class="flex gap-x-2">
-      <form class="relative w-[320px] h-7">
-        <div class="flex absolute inset-y-0 items-center pl-2 ui-copy-icon">
-          <Search />
-        </div>
-        <input
-          type="text"
-          autocomplete="off"
-          class="border outline-none rounded-[2px] block w-full pl-8 p-1 text-sm"
-          placeholder="Search"
-          bind:value={searchValue}
-        />
-      </form>
-    </div>
+    <Input
+      width="320px"
+      textClass="text-sm"
+      placeholder="Search"
+      bind:value={searchValue}
+      onInput={(value) => {
+        searchValue = value;
+      }}
+    >
+      <Search slot="icon" size="16px" color="#374151" />
+    </Input>
 
     <div
       class="flex flex-col gap-y-2 h-fit w-full flex-shrink overflow-y-scroll"
@@ -422,10 +422,10 @@
           {/if}
         </AlertDialog.Title>
         <AlertDialog.Description>
-          {#if confirmation.action === "delete"}
+          {#if confirmation.action === "cancel"}
             You haven't saved changes to this {confirmation.type?.slice(0, -1)} yet,
             so closing this window will lose your work.
-          {:else if confirmation.action === "cancel"}
+          {:else if confirmation.action === "delete"}
             You will permanently remove this {confirmation.type?.slice(0, -1)} from
             all associated dashboards.
           {:else if confirmation.action === "switch"}
@@ -438,6 +438,7 @@
         <Button
           type="secondary"
           large
+          gray={confirmation.action === "delete"}
           on:click={() => {
             confirmation = null;
           }}
@@ -446,6 +447,7 @@
         </Button>
         <Button
           large
+          status={confirmation.action === "delete" ? "error" : "info"}
           type="primary"
           on:click={async () => {
             if (

@@ -74,8 +74,7 @@
     scroll = e.currentTarget.scrollLeft;
   }}
   bind:contentRect={wrapperRect}
-  style:max-height="{((items?.length ?? 0) + 1) * 40}px"
-  class:end-of-list={$insertIndex === items.length - 1 && $table === type}
+  style:max-height="{Math.max(80, ((items?.length ?? 0) + 1) * 40)}px"
 >
   <table bind:contentRect>
     <colgroup>
@@ -98,10 +97,7 @@
     </colgroup>
 
     <thead class="sticky top-0 z-10">
-      <tr
-        bind:this={clientWidth}
-        class:insert={$insertIndex === -1 && $table === type}
-      >
+      <tr bind:this={clientWidth}>
         <th class="!pl-[22px]">
           <Checkbox
             onChange={(checked) => {
@@ -154,6 +150,12 @@
       {/each}
     </tbody>
   </table>
+  {#if $insertIndex !== null && $table === type}
+    <span
+      style:top="{($insertIndex + 1) * ROW_HEIGHT + ROW_HEIGHT}px"
+      class="w-full h-[3px] bg-primary-300 absolute top-[40px] -translate-y-1/2 z-50"
+    />
+  {/if}
 </div>
 
 <style lang="postcss">
@@ -172,17 +174,12 @@
   }
 
   thead tr {
-    height: 40px;
+    height: 40px !important;
   }
 
   th {
     @apply text-left;
     @apply pl-4 text-slate-500 bg-background;
     @apply border-b;
-  }
-
-  .insert th,
-  .end-of-list {
-    @apply border-b-primary-500;
   }
 </style>

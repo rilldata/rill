@@ -67,7 +67,7 @@
     const movement = e.clientY - initialY;
     const rowDelta = Math.floor(movement / 40);
 
-    insertIndex.set(i + rowDelta);
+    insertIndex.set(Math.max(-1, i + rowDelta));
     clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
   }
 
@@ -112,7 +112,7 @@
   bind:this={row}
   class:insert={$table === type && $insertIndex === i}
 >
-  <td class="!pl-0">
+  <td class="!pl-0 sticky">
     <div class="gap-x-0.5 flex items-center pl-1">
       <button
         on:mousedown={handleDragStart}
@@ -159,8 +159,6 @@
     <td on:click={setEditing} aria-label="Format">
       <span>{item.get("format_preset") || item?.get("format_d3") || "-"}</span>
     </td>
-  {:else}
-    <!-- <td /> -->
   {/if}
 
   <td class="" on:click={setEditing} aria-label="Description">
@@ -201,7 +199,7 @@
   }
 
   td:hover:not(.editing) {
-    @apply text-primary-500;
+    @apply text-primary-700;
   }
 
   .editing {
@@ -212,9 +210,9 @@
     @apply pl-4 truncate border-b;
   }
 
-  .insert td {
-    @apply border-b border-primary-600;
-  }
+  /* .insert td {
+    @apply border-primary-300 border-b-2;
+  } */
 
   .source-code {
     font-family: "Source Code Variable", monospace;

@@ -272,7 +272,7 @@
       {:else}
         <Input
           id={`vme-${label}`}
-          ringFocus
+          textClass="text-sm"
           claimFocusOnMount={field === label}
           bind:value={editingClone[key]}
           {label}
@@ -296,7 +296,7 @@
 
     <span />
 
-    <h2>Preview</h2>
+    <!-- <h2>Preview</h2> -->
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto">

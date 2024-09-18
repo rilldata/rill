@@ -27,9 +27,9 @@
   on:pointermove
   on:focusin
 >
-  <span class="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
+  <span class="left-2 mr-2 flex h-3.5 w-3.5 items-center justify-center">
     <SelectPrimitive.ItemIndicator>
-      <Check class="h-3 w-3" />
+      <Check class="size-3.5 " />
     </SelectPrimitive.ItemIndicator>
   </span>
   <slot>

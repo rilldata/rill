@@ -115,8 +115,8 @@
       />
     {:else}
       <Input
+        textClass="text-sm"
         id="vme-SQL Expression"
-        ringFocus
         full
         bind:value={expression}
         multiline
