@@ -73,10 +73,14 @@
     const cellPosition = getCell(dragPosition, true);
     const dimensions = getCell(resizeDimenions, true);
 
-    items[selectedIndex].x =
-      dimensions[0] < 0 ? cellPosition[0] + dimensions[0] : cellPosition[0];
-    items[selectedIndex].y =
-      dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1];
+    items[selectedIndex].x = Math.max(
+      0,
+      dimensions[0] < 0 ? cellPosition[0] + dimensions[0] : cellPosition[0],
+    );
+    items[selectedIndex].y = Math.max(
+      0,
+      dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1],
+    );
 
     items[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
     items[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
@@ -181,7 +185,7 @@
   {radius}
   {scale}
   {showGrid}
-  height={maxBottom * gridCell}
+  height={maxBottom * gridCell * scale}
   width={defaults.DASHBOARD_WIDTH}
   on:click={deselect}
   on:scroll={handleScroll}

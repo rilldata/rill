@@ -609,11 +609,13 @@ export interface V1ReportOptions {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
-  openProjectSubpath?: string;
   emailRecipients?: string[];
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  /** Annotation for the subpath of <UI host>/org/project to open for the report. */
+  webOpenPath?: string;
+  /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
 }
 
@@ -1292,6 +1294,9 @@ export interface V1AlertOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  /** Annotation for the subpath of <UI host>/org/project to open for the report. */
+  webOpenPath?: string;
+  /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
 }
 

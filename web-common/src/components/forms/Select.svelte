@@ -1,16 +1,20 @@
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { InfoIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import * as Select from "@rilldata/web-common/components/select";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
 
   const dispatch = createEventDispatcher();
 
   export let value: string;
   export let id: string;
   export let label: string;
-  export let options: { value: string; label: string }[];
+  export let options: {
+    value: string;
+    label: string;
+    disabled?: boolean;
+    tooltip?: string;
+  }[];
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
@@ -29,16 +33,14 @@
         <span class="text-gray-500">(optional)</span>
       {/if}
       {#if tooltip}
-        <Tooltip distance={8}>
-          <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
-          <TooltipContent
-            slot="tooltip-content"
-            maxWidth="600px"
-            class="whitespace-pre-line"
-          >
+        <Tooltip.Root portal="body">
+          <Tooltip.Trigger>
+            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+          </Tooltip.Trigger>
+          <Tooltip.Content side="right">
             {tooltip}
-          </TooltipContent>
-        </Tooltip>
+          </Tooltip.Content>
+        </Tooltip.Root>
       {/if}
     </label>
   {/if}
@@ -64,13 +66,20 @@
       align="start"
       class="max-h-80 overflow-y-auto"
     >
-      {#each options as option (option.value)}
-        <Select.Item
-          value={option.value}
-          label={option.label}
-          class="text-[12px] "
-        >
-          {option?.label ?? option.value}
+      {#each options as { value, label, disabled, tooltip } (value)}
+        <Select.Item {value} {label} {disabled} class="text-[12px]">
+          {#if tooltip}
+            <Tooltip.Root portal="body">
+              <Tooltip.Trigger class="select-tooltip cursor-default">
+                {label ?? value}
+              </Tooltip.Trigger>
+              <Tooltip.Content side="right" sideOffset={8}>
+                {tooltip}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
+            {label ?? value}
+          {/if}
         </Select.Item>
       {/each}
     </Select.Content>

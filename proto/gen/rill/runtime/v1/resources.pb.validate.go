@@ -251,6 +251,47 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
+	case *Resource_Explore:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetExplore()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Explore",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Explore",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetExplore()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "Explore",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *Resource_Migration:
 		if v == nil {
 			err := ResourceValidationError{
@@ -3011,6 +3052,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for SmallestTimeGrain
+
 	// no validation rules for WatermarkExpression
 
 	for idx, item := range m.GetDimensions() {
@@ -3081,10 +3124,6 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
-	// no validation rules for SmallestTimeGrain
-
-	// no validation rules for DefaultTimeRange
-
 	for idx, item := range m.GetSecurityRules() {
 		_, _ = idx, item
 
@@ -3123,9 +3162,13 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for FirstMonthOfYear
 
+	// no validation rules for DefaultTimeRange
+
 	// no validation rules for DefaultComparisonMode
 
 	// no validation rules for DefaultComparisonDimension
+
+	// no validation rules for DefaultTheme
 
 	for idx, item := range m.GetAvailableTimeRanges() {
 		_, _ = idx, item
@@ -3160,8 +3203,6 @@ func (m *MetricsViewSpec) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for DefaultTheme
 
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
@@ -3947,6 +3988,857 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewStateValidationError{}
+
+// Validate checks the field values on Explore with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Explore) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Explore with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in ExploreMultiError, or nil if none found.
+func (m *Explore) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Explore) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ExploreMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExploreMultiError is an error wrapping multiple validation errors returned
+// by Explore.ValidateAll() if the designated constraints aren't met.
+type ExploreMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExploreMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExploreMultiError) AllErrors() []error { return m }
+
+// ExploreValidationError is the validation error returned by Explore.Validate
+// if the designated constraints aren't met.
+type ExploreValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExploreValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExploreValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExploreValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExploreValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExploreValidationError) ErrorName() string { return "ExploreValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExploreValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExplore.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExploreValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExploreValidationError{}
+
+// Validate checks the field values on ExploreSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExploreSpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExploreSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExploreSpecMultiError, or
+// nil if none found.
+func (m *ExploreSpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExploreSpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Title
+
+	// no validation rules for Description
+
+	// no validation rules for MetricsView
+
+	// no validation rules for DimensionsExclude
+
+	// no validation rules for MeasuresExclude
+
+	// no validation rules for Theme
+
+	for idx, item := range m.GetTimeRanges() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("TimeRanges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("TimeRanges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExploreSpecValidationError{
+					field:  fmt.Sprintf("TimeRanges[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetPresets() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("Presets[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("Presets[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExploreSpecValidationError{
+					field:  fmt.Sprintf("Presets[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetSecurityRules() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExploreSpecValidationError{
+					field:  fmt.Sprintf("SecurityRules[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ExploreSpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExploreSpecMultiError is an error wrapping multiple validation errors
+// returned by ExploreSpec.ValidateAll() if the designated constraints aren't met.
+type ExploreSpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExploreSpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExploreSpecMultiError) AllErrors() []error { return m }
+
+// ExploreSpecValidationError is the validation error returned by
+// ExploreSpec.Validate if the designated constraints aren't met.
+type ExploreSpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExploreSpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExploreSpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExploreSpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExploreSpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExploreSpecValidationError) ErrorName() string { return "ExploreSpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExploreSpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExploreSpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExploreSpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExploreSpecValidationError{}
+
+// Validate checks the field values on ExploreState with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExploreState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExploreState with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExploreStateMultiError, or
+// nil if none found.
+func (m *ExploreState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExploreState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetValidSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreStateValidationError{
+					field:  "ValidSpec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreStateValidationError{
+					field:  "ValidSpec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetValidSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreStateValidationError{
+				field:  "ValidSpec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ExploreStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExploreStateMultiError is an error wrapping multiple validation errors
+// returned by ExploreState.ValidateAll() if the designated constraints aren't met.
+type ExploreStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExploreStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExploreStateMultiError) AllErrors() []error { return m }
+
+// ExploreStateValidationError is the validation error returned by
+// ExploreState.Validate if the designated constraints aren't met.
+type ExploreStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExploreStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExploreStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExploreStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExploreStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExploreStateValidationError) ErrorName() string { return "ExploreStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExploreStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExploreState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExploreStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExploreStateValidationError{}
+
+// Validate checks the field values on ExploreTimeRange with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ExploreTimeRange) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExploreTimeRange with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExploreTimeRangeMultiError, or nil if none found.
+func (m *ExploreTimeRange) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExploreTimeRange) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Range
+
+	for idx, item := range m.GetComparisonTimeRanges() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExploreTimeRangeValidationError{
+						field:  fmt.Sprintf("ComparisonTimeRanges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExploreTimeRangeValidationError{
+						field:  fmt.Sprintf("ComparisonTimeRanges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExploreTimeRangeValidationError{
+					field:  fmt.Sprintf("ComparisonTimeRanges[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ExploreTimeRangeMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExploreTimeRangeMultiError is an error wrapping multiple validation errors
+// returned by ExploreTimeRange.ValidateAll() if the designated constraints
+// aren't met.
+type ExploreTimeRangeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExploreTimeRangeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExploreTimeRangeMultiError) AllErrors() []error { return m }
+
+// ExploreTimeRangeValidationError is the validation error returned by
+// ExploreTimeRange.Validate if the designated constraints aren't met.
+type ExploreTimeRangeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExploreTimeRangeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExploreTimeRangeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExploreTimeRangeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExploreTimeRangeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExploreTimeRangeValidationError) ErrorName() string { return "ExploreTimeRangeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExploreTimeRangeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExploreTimeRange.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExploreTimeRangeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExploreTimeRangeValidationError{}
+
+// Validate checks the field values on ExploreComparisonTimeRange with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ExploreComparisonTimeRange) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExploreComparisonTimeRange with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExploreComparisonTimeRangeMultiError, or nil if none found.
+func (m *ExploreComparisonTimeRange) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExploreComparisonTimeRange) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Offset
+
+	// no validation rules for Range
+
+	if len(errors) > 0 {
+		return ExploreComparisonTimeRangeMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExploreComparisonTimeRangeMultiError is an error wrapping multiple
+// validation errors returned by ExploreComparisonTimeRange.ValidateAll() if
+// the designated constraints aren't met.
+type ExploreComparisonTimeRangeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExploreComparisonTimeRangeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExploreComparisonTimeRangeMultiError) AllErrors() []error { return m }
+
+// ExploreComparisonTimeRangeValidationError is the validation error returned
+// by ExploreComparisonTimeRange.Validate if the designated constraints aren't met.
+type ExploreComparisonTimeRangeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExploreComparisonTimeRangeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExploreComparisonTimeRangeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExploreComparisonTimeRangeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExploreComparisonTimeRangeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExploreComparisonTimeRangeValidationError) ErrorName() string {
+	return "ExploreComparisonTimeRangeValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ExploreComparisonTimeRangeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExploreComparisonTimeRange.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExploreComparisonTimeRangeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExploreComparisonTimeRangeValidationError{}
+
+// Validate checks the field values on ExplorePreset with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExplorePreset) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExplorePreset with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExplorePresetMultiError, or
+// nil if none found.
+func (m *ExplorePreset) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExplorePreset) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Label
+
+	// no validation rules for DimensionsExclude
+
+	// no validation rules for MeasuresExclude
+
+	// no validation rules for TimeRange
+
+	// no validation rules for ComparisonMode
+
+	// no validation rules for ComparisonDimension
+
+	if len(errors) > 0 {
+		return ExplorePresetMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExplorePresetMultiError is an error wrapping multiple validation errors
+// returned by ExplorePreset.ValidateAll() if the designated constraints
+// aren't met.
+type ExplorePresetMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExplorePresetMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExplorePresetMultiError) AllErrors() []error { return m }
+
+// ExplorePresetValidationError is the validation error returned by
+// ExplorePreset.Validate if the designated constraints aren't met.
+type ExplorePresetValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExplorePresetValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExplorePresetValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExplorePresetValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExplorePresetValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExplorePresetValidationError) ErrorName() string { return "ExplorePresetValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExplorePresetValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExplorePreset.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExplorePresetValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExplorePresetValidationError{}
 
 // Validate checks the field values on Migration with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

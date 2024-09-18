@@ -107,15 +107,13 @@ In the following example, you can see the different levels of access to Rill via
 
 
 <img src = '/img/manage/project-management/project-access.png' class='rounded-gif' />
-<br />
 
 
 ### Key things to note
 1. There are **three** levels of access: organizations, projects, and groups.
 2. User groups can _only exist_ within an organization.
+    - In the case of adding a user who is not part of the organization to a user group, you will prompted to add them first.
 3. User groups permissions can either be added for the organization as a whole, or specific projects.
-    - `rill usergroup create [--project project_name]`
-4. User groups can currently only be applied to users within the organization. 
-    - In the above diagram, `pink_user` can not be added to a user group.
-5. All users added to an organization must have at least `viewer` privilege. 
-    - In the above diagram, `yellow_user` is redundant as there's already `viewer` access.
+    - `rill usergroup create [--project project_name]`    
+4. All users added to an organization must have at least `viewer` privilege. 
+    - In the above diagram, `User 5` is redundant as there's already `viewer` access.

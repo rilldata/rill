@@ -45,7 +45,7 @@
 <DashboardWrapper
   bind:contentRect
   {scale}
-  height={maxBottom * gridCell}
+  height={maxBottom * gridCell * scale}
   width={defaults.DASHBOARD_WIDTH}
 >
   {#each items as component, i (i)}

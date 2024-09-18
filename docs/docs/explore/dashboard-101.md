@@ -8,7 +8,9 @@ sidebar_position: 00
 
 ## Overview
 
-Depending on whether you are opening Rill Developer or logging into Rill Cloud, you will either the default "Getting started" landing page or a list of all projects available to your user. For the purposes of this article, we will assume that your project has already been [deployed to Rill Cloud](../deploy/existing-project/existing-project.md) and that you are looking to consume your dashboards in a production capacity. For more information on the differences, refer to [Rill Cloud vs Rill Developer](../concepts/developerVsCloud.md)
+
+Depending on whether you are opening Rill Developer or logging into Rill Cloud, you will either the default "Getting started" landing page or a list of all projects available to your user. For the purposes of this article, we will assume that your project has already been [deployed to Rill Cloud](../deploy/deploy-dashboard/) and that you are looking to consume your dashboards in a production capacity.
+
 
 After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](../manage/project-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
 
@@ -34,7 +36,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 - _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](https://docs.rilldata.com/explore/filters/pivot) by selecting either from the UI (see `pink` box)
 
-- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](./alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](bookmarks.md), or share the dashboard ([internally](../manage/user-management.md#option-1---admin-invites-user) or [externally](./public-url.md)) by clicking the `Share` button.
+- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](./alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](bookmarks.md), or share the dashboard ([internally](../manage/user-management#step-1---admin-invites-user) or [externally](./public-url.md)) by clicking the `Share` button.
 
 
 ### Metrics Panel

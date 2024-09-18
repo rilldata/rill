@@ -64,7 +64,12 @@ type rillYAML struct {
 	// Default YAML values for models
 	Models yaml.Node `yaml:"models"`
 	// Default YAML values for metric views
-	Dashboards yaml.Node `yaml:"dashboards"`
+	MetricsViews yaml.Node `yaml:"metrics_views"`
+	// Default YAML values for metric views.
+	// Deprecated: Use "metrics_views" instead
+	MetricsViewsLegacy yaml.Node `yaml:"dashboards"`
+	// Default YAML values for explores
+	Explores yaml.Node `yaml:"explores"`
 	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
@@ -130,8 +135,18 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			return newYAMLError(err)
 		}
 	}
-	if !tmp.Dashboards.IsZero() {
-		if err := tmp.Dashboards.Decode(&MetricsViewYAML{}); err != nil {
+	if !tmp.MetricsViews.IsZero() {
+		if err := tmp.MetricsViews.Decode(&MetricsViewYAML{}); err != nil {
+			return newYAMLError(err)
+		}
+	}
+	if !tmp.MetricsViewsLegacy.IsZero() {
+		if err := tmp.MetricsViewsLegacy.Decode(&MetricsViewYAML{}); err != nil {
+			return newYAMLError(err)
+		}
+	}
+	if !tmp.Explores.IsZero() {
+		if err := tmp.Explores.Decode(&ExploreYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}
@@ -168,20 +183,26 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		tmp.PublicPaths = []string{"public"}
 	}
 
+	defaults := map[ResourceKind]yaml.Node{
+		ResourceKindSource:      tmp.Sources,
+		ResourceKindModel:       tmp.Models,
+		ResourceKindMetricsView: tmp.MetricsViews,
+		ResourceKindExplore:     tmp.Explores,
+		ResourceKindMigration:   tmp.Migrations,
+	}
+	if !tmp.MetricsViewsLegacy.IsZero() {
+		defaults[ResourceKindMetricsView] = tmp.MetricsViewsLegacy
+	}
+
 	res := &RillYAML{
 		Title:         tmp.Title,
 		Description:   tmp.Description,
 		OLAPConnector: tmp.OLAPConnector,
 		Connectors:    make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:     make([]*VariableDef, len(tmp.Vars)),
-		Defaults: map[ResourceKind]yaml.Node{
-			ResourceKindSource:      tmp.Sources,
-			ResourceKindModel:       tmp.Models,
-			ResourceKindMetricsView: tmp.Dashboards,
-			ResourceKindMigration:   tmp.Migrations,
-		},
-		FeatureFlags: featureFlags,
-		PublicPaths:  tmp.PublicPaths,
+		Defaults:      defaults,
+		FeatureFlags:  featureFlags,
+		PublicPaths:   tmp.PublicPaths,
 	}
 
 	for i, c := range tmp.Connectors {

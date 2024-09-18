@@ -3,40 +3,30 @@
   import {
     dashboardVariablesStore,
     useVariable,
-    useVariableInputParams,
   } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import { SelectProperties } from "@rilldata/web-common/features/templates/types";
 
   import {
-    createQueryServiceResolveComponent,
     V1ComponentSpecRendererProperties,
     V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
 
   const MAX_OPTIONS = 250;
   $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
 
   export let componentName: string;
+  export let data: any[] | undefined;
   export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let input: V1ComponentVariable[] | undefined;
   export let output: V1ComponentVariable | undefined;
 
   $: outputVariableName = output?.name || "";
   $: outputVariableValue = useVariable(dashboardName, outputVariableName);
   $: selectProperties = rendererProperties as SelectProperties;
-  $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
   $: value = (value || $outputVariableValue || output?.defaultValue) as string;
 
-  $: componentDataQuery = createQueryServiceResolveComponent(
-    $runtime.instanceId,
-    componentName,
-    { args: $inputVariableParams },
-  );
-
-  $: selectOptions = ($componentDataQuery?.data?.data || [])
+  $: selectOptions = (data || [])
     .map((v) => ({
       value: String(v[selectProperties.valueField]),
       label: String(

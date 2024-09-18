@@ -11,7 +11,7 @@ import Video from '@site/src/components/Video';
 
 Run the following from the CLI to start Rill. Select a project from the UI or add your own data.
 
-```bash
+```
 rill start my-rill-project
 ```
 

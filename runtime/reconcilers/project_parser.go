@@ -445,6 +445,11 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 		// Rename if possible
 		renamed := false
 		for idx, rr := range deleteResources {
+			if rr == nil {
+				// Already renamed
+				continue
+			}
+
 			var err error
 			renamed, err = r.attemptRename(ctx, inst, self, def, rr)
 			if err != nil {
@@ -507,6 +512,10 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 	case compilerv1.ResourceKindMetricsView:
 		if existing == nil || !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsViewV2{Spec: def.MetricsViewSpec}}}
+		}
+	case compilerv1.ResourceKindExplore:
+		if existing == nil || !equalExploreSpec(existing.GetExplore().Spec, def.ExploreSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Explore{Explore: &runtimev1.Explore{Spec: def.ExploreSpec}}}
 		}
 	case compilerv1.ResourceKindMigration:
 		if existing == nil || !equalMigrationSpec(existing.GetMigration().Spec, def.MigrationSpec) {
@@ -689,6 +698,10 @@ func equalModelSpec(a, b *runtimev1.ModelSpec) bool {
 }
 
 func equalMetricsViewSpec(a, b *runtimev1.MetricsViewSpec) bool {
+	return proto.Equal(a, b)
+}
+
+func equalExploreSpec(a, b *runtimev1.ExploreSpec) bool {
 	return proto.Equal(a, b)
 }
 
