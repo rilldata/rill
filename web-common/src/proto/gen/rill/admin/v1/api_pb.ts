@@ -1386,7 +1386,14 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+   * Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
+   *
+   * @generated from field: string type = 14;
+   */
+  type = "";
+
+  /**
+   * Deprecated: Alias for `type`.
    *
    * @generated from field: string kind = 4;
    */
@@ -1442,6 +1449,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 9, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 10, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 11, name: "attributes", kind: "message", T: Struct, oneof: "for" },
+    { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -7091,26 +7099,34 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   ttlMinutes = protoInt64.zero;
 
   /**
-   * Metrics view the token will provide access to.
+   * Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
    *
-   * @generated from field: string metrics_view = 4;
+   * @generated from field: string resource_type = 8;
    */
-  metricsView = "";
+  resourceType = "";
 
   /**
-   * Optional filter to apply to all queries to the metrics view.
+   * Name of the resource to grant access to.
    *
-   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 5;
+   * @generated from field: string resource_name = 9;
    */
-  metricsViewFilter?: Expression;
+  resourceName = "";
 
   /**
-   * Optional list of names of dimensions and measures to limit access to.
-   * If empty, all dimensions and measures are accessible.
+   * Optional filter to apply as a row filter in queries.
+   * This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
    *
-   * @generated from field: repeated string metrics_view_fields = 6;
+   * @generated from field: rill.runtime.v1.Expression filter = 5;
    */
-  metricsViewFields: string[] = [];
+  filter?: Expression;
+
+  /**
+   * Optional list of fields to limit access to. If empty, no field access rule will be added.
+   * This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
+   *
+   * @generated from field: repeated string fields = 6;
+   */
+  fields: string[] = [];
 
   /**
    * Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
@@ -7130,9 +7146,10 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "metrics_view_filter", kind: "message", T: Expression },
-    { no: 6, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "filter", kind: "message", T: Expression },
+    { no: 6, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -11904,19 +11921,24 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   attributes?: Struct;
 
   /**
-   * @generated from field: string metrics_view = 9;
+   * @generated from field: string resource_type = 15;
    */
-  metricsView = "";
+  resourceType = "";
 
   /**
-   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 10;
+   * @generated from field: string resource_name = 9;
    */
-  metricsViewFilter?: Expression;
+  resourceName = "";
 
   /**
-   * @generated from field: repeated string metrics_view_fields = 11;
+   * @generated from field: rill.runtime.v1.Expression filter = 10;
    */
-  metricsViewFields: string[] = [];
+  filter?: Expression;
+
+  /**
+   * @generated from field: repeated string fields = 11;
+   */
+  fields: string[] = [];
 
   /**
    * @generated from field: string state = 12;
@@ -11941,9 +11963,10 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 6, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "created_by_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "attributes", kind: "message", T: Struct },
-    { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
-    { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "filter", kind: "message", T: Expression },
+    { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

@@ -956,7 +956,9 @@ message GetIFrameRequest {
     // If set, will use the provided attributes outright.
     google.protobuf.Struct attributes = 11;
   }
-  // Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+  // Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
+  string type = 14;
+  // Deprecated: Alias for `type`.
   string kind = 4;
   // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
   string resource = 5;
@@ -1596,7 +1598,6 @@ message ListServiceAuthTokensResponse {
   repeated ServiceToken tokens = 1;
 }
 
-
 message IssueMagicAuthTokenRequest {
   // Organization that owns the project.
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -1604,13 +1605,16 @@ message IssueMagicAuthTokenRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   // TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
   int64 ttl_minutes = 3;
-  // Metrics view the token will provide access to.
-  string metrics_view = 4;
-  // Optional filter to apply to all queries to the metrics view.
-  rill.runtime.v1.Expression metrics_view_filter = 5;
-  // Optional list of names of dimensions and measures to limit access to.
-  // If empty, all dimensions and measures are accessible.
-  repeated string metrics_view_fields = 6;
+  // Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+  string resource_type = 8;
+  // Name of the resource to grant access to.
+  string resource_name = 9;
+  // Optional filter to apply as a row filter in queries.
+  // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+  rill.runtime.v1.Expression filter = 5;
+  // Optional list of fields to limit access to. If empty, no field access rule will be added.
+  // This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
+  repeated string fields = 6;
   // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
   string state = 7;
 }
@@ -2197,9 +2201,10 @@ message MagicAuthToken {
   string created_by_user_id = 6;
   string created_by_user_email = 7;
   google.protobuf.Struct attributes = 8;
-  string metrics_view = 9;
-  rill.runtime.v1.Expression metrics_view_filter = 10;
-  repeated string metrics_view_fields = 11;
+  string resource_type = 15;
+  string resource_name = 9;
+  rill.runtime.v1.Expression filter = 10;
+  repeated string fields = 11;
   string state = 12;
 }
 
