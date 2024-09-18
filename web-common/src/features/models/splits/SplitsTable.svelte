@@ -25,11 +25,6 @@
 
   const columns = table.createColumns([
     table.column({
-      header: "Key",
-      accessor: (split) => split.key,
-      cell: ({ value }) => value?.slice(0, 6) + "...",
-    }),
-    table.column({
       header: "Data",
       accessor: (split) => split.data,
       cell: ({ value }) => (value ? JSON.stringify(value) : "-"),
