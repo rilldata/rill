@@ -1,7 +1,7 @@
 <script context="module" lang="ts">
   import { goto } from "$app/navigation";
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
-  import { V1DashboardItem } from "@rilldata/web-common/runtime-client";
+  import { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
   import Component from "./Component.svelte";
@@ -14,7 +14,7 @@
 
   export let i: number;
   export let gapSize: number;
-  export let component: V1DashboardItem;
+  export let component: V1CanvasItem;
   export let selected: boolean;
   export let interacting: boolean;
   export let width: number;
@@ -28,7 +28,7 @@
   let localZIndex = 0;
 
   $: componentName = component?.component;
-  $: inlineComponent = component?.definedInDashboard;
+  $: inlineComponent = component?.definedInCanvas;
 
   $: finalLeft = width < 0 ? left + width : left;
   $: finalTop = height < 0 ? top + height : top;
