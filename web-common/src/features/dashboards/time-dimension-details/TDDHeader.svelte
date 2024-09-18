@@ -14,7 +14,6 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
@@ -45,7 +44,7 @@
 
   const {
     selectors: {
-      measures: { measureLabel },
+      measures: { measureLabel, allMeasures },
       dimensions: { getDimensionDisplayName },
     },
     actions: {
@@ -53,14 +52,12 @@
     },
   } = getStateManagers();
 
-  $: metricsView = useMetricsView(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
   $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
-  $: allMeasures = $metricsView?.data?.measures ?? [];
 
-  $: selectableMeasures = allMeasures
-    ?.filter((m) => m.name !== undefined || m.label !== undefined)
+  $: selectableMeasures = $allMeasures
+    .filter((m) => m.name !== undefined || m.label !== undefined)
     .map((m) =>
       // Note: undefined values are filtered out above, so the
       // empty string fallback is unreachable.
@@ -70,10 +67,10 @@
       }),
     );
 
-  $: selectedItems = allMeasures?.map((m) => m.name === expandedMeasureName);
+  $: selectedItems = $allMeasures.map((m) => m.name === expandedMeasureName);
 
   $: selectedMeasureLabel =
-    allMeasures?.find((m) => m.name === expandedMeasureName)?.label ??
+    $allMeasures.find((m) => m.name === expandedMeasureName)?.label ??
     expandedMeasureName ??
     "";
 

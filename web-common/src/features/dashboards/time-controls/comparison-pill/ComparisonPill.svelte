@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Elements from "../super-pill/components";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     DashboardTimeControls,
@@ -21,12 +20,12 @@
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
-  const metricsView = useMetricsView(ctx);
   const {
     metricsViewName,
     selectors: {
       timeRangeSelectors: { timeComparisonOptionsState },
     },
+    validSpecStore,
   } = ctx;
 
   $: metricViewName = $metricsViewName;
@@ -42,7 +41,7 @@
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  $: metricsViewSpec = $metricsView.data ?? {};
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 

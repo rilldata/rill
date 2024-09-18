@@ -11,6 +11,8 @@ import {
 /**
  * Single use class to correct incorrect use of advanced measures.
  * Reason to use a class here is to avoid too many arguments in methods (especially measureIsValidForComponent).
+ * NOTE: this doesnt have to deal with V1ExploreSpec since it is assumed measures/dimensions not present are already removed
+ * TODO: this should not be necessary once we use V1ExplorePreset for everything
  */
 export class AdvancedMeasureCorrector {
   private measuresMap: Map<string, MetricsViewSpecMeasureV2>;

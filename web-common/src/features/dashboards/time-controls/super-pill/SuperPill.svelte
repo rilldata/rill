@@ -8,7 +8,6 @@
     RangeBuckets,
     deriveInterval,
   } from "../new-time-controls";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -31,24 +30,26 @@
   export let selectedTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
-  const metricsView = useMetricsView(ctx);
   const {
     metricsViewName,
     selectors: {
       timeRangeSelectors: { timeRangeSelectorState },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
+    validSpecStore,
   } = ctx;
 
   $: localUserPreferences = initLocalUserPreferenceStore(metricViewName);
 
   $: metricViewName = $metricsViewName;
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+  $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: selectedRange =
     $dashboardStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
-  $: defaultTimeRange = $metricsView.data?.defaultTimeRange;
+  $: defaultTimeRange = exploreSpec.presets?.[0]?.timeRange;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -59,9 +60,7 @@
 
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
-  $: availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
-
-  $: metricsViewSpec = $metricsView.data ?? {};
+  $: availableTimeZones = exploreSpec.timeZones ?? [];
 
   $: ({
     latestWindowTimeRanges,
@@ -157,10 +156,9 @@
 
     // Get valid option for the new time range
     const validComparison =
-      $metricsView.data &&
       allTimeRange &&
       getValidComparisonOption(
-        $metricsView.data,
+        exploreSpec,
         range,
         $dashboardStore.selectedComparisonTimeRange?.name as
           | TimeComparisonOption

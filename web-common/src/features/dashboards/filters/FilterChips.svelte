@@ -10,7 +10,6 @@ The main feature-set component for dashboard filters
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
-  import { useMetricsView } from "../selectors/index";
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
@@ -29,20 +28,20 @@ The main feature-set component for dashboard filters
       filters: { clearAllFilters },
     },
     selectors: {
+      dimensions: { allDimensions },
       dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
+      measures: { allMeasures },
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
     },
   } = StateManagers;
 
-  const metricsView = useMetricsView(StateManagers);
-
-  $: dimensions = $metricsView.data?.dimensions ?? [];
+  $: dimensions = $allDimensions;
   $: dimensionIdMap = getMapFromArray(
     dimensions,
     (dimension) => dimension.name as string,
   );
 
-  $: measures = $metricsView.data?.measures ?? [];
+  $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);

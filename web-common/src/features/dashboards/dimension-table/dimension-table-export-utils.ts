@@ -6,7 +6,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -32,12 +31,16 @@ export function getDimensionTableExportArgs(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      useMetricsView(ctx),
+      ctx.validSpecStore,
     ],
-    ([metricViewName, dashboardState, timeControlState, metricsView]) => {
-      if (!metricsView.data || !timeControlState.ready) return undefined;
+    ([metricViewName, dashboardState, timeControlState, validSpecStore]) => {
+      if (!validSpecStore.data?.explore || !timeControlState.ready)
+        return undefined;
 
-      const timeRange = mapTimeRange(timeControlState, metricsView.data);
+      const timeRange = mapTimeRange(
+        timeControlState,
+        validSpecStore.data.explore,
+      );
       if (!timeRange) return undefined;
 
       const comparisonTimeRange = mapComparisonTimeRange(

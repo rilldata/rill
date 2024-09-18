@@ -219,28 +219,28 @@ export function timeComparisonOptionsSelector([
 }
 
 export function getValidComparisonOption(
-  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   selectedTimeRange: TimeRange,
   prevComparisonOption: TimeComparisonOption | undefined,
   allTimeRange: TimeRange,
 ) {
-  if (!metricsView.availableTimeRanges?.length) {
+  if (!explore.timeRanges?.length) {
     return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
       ?.defaultComparison as TimeComparisonOption;
   }
 
-  const timeRange = metricsView.availableTimeRanges.find(
+  const timeRange = explore.timeRanges.find(
     (tr) => tr.range === selectedTimeRange.name,
   );
   if (!timeRange) return undefined;
 
   // If comparisonOffsets are not defined get default from presets.
-  if (!timeRange.comparisonOffsets?.length) {
+  if (!timeRange.comparisonTimeRanges?.length) {
     return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
       ?.defaultComparison as TimeComparisonOption;
   }
 
-  const existing = timeRange.comparisonOffsets?.find(
+  const existing = timeRange.comparisonTimeRanges?.find(
     (co) => co.offset === prevComparisonOption,
   );
 
@@ -256,5 +256,5 @@ export function getValidComparisonOption(
     return prevComparisonOption;
   }
 
-  return timeRange.comparisonOffsets[0].offset as TimeComparisonOption;
+  return timeRange.comparisonTimeRanges[0].offset as TimeComparisonOption;
 }

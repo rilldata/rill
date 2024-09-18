@@ -1,12 +1,10 @@
 <script lang="ts">
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-
   import {
     SortDirection,
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -29,7 +27,9 @@
   const {
     dashboardStore,
     selectors: {
+      dimensions: { allDimensions },
       dimensionFilters: { unselectedDimensionValues },
+      measures: { allMeasures },
     },
     actions: {
       dimensionsFilter: {
@@ -44,7 +44,6 @@
   const timeDimensionDataStore = useTimeDimensionDataStore(stateManagers);
   const timeControlStore = useTimeControlStore(stateManagers);
 
-  $: metricsView = useMetricsView(stateManagers);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
   $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
   $: comparing = $timeDimensionDataStore?.comparing;
@@ -53,17 +52,14 @@
 
   $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
-  $: measure = $metricsView?.data?.measures?.find(
-    (m) => m.name === expandedMeasureName,
-  );
+  $: measure = $allMeasures.find((m) => m.name === expandedMeasureName);
 
   $: measureLabel = measure?.label ?? "";
 
   let dimensionLabel = "";
   $: if (comparing === "dimension") {
     dimensionLabel =
-      $metricsView?.data?.dimensions?.find((d) => d.name === dimensionName)
-        ?.label ?? "";
+      $allDimensions.find((d) => d.name === dimensionName)?.label ?? "";
   } else if (comparing === "time") {
     dimensionLabel = "Time";
   } else if (comparing === "none") {

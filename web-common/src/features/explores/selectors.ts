@@ -1,4 +1,5 @@
 import type { CreateQueryOptions } from "@rilldata/svelte-query";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
   RpcStatus,
@@ -41,6 +42,7 @@ export function useValidExplore(instanceId: string, exploreName: string) {
             explore: data.explore?.explore?.state?.validSpec,
             metricsView: data.metricsView?.metricsView?.state?.validSpec,
           },
+        queryClient,
       },
     },
   );

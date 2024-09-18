@@ -10,7 +10,7 @@ export const activeMeasure = (
   }
 
   const activeMeasure = dashData.validMetricsView.measures.find(
-    (measure) => measure === activeMeasureName(dashData),
+    (measure) => measure.name === activeMeasureName(dashData),
   );
   return activeMeasure;
 };

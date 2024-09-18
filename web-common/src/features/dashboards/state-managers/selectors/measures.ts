@@ -10,7 +10,10 @@ import type { DashboardDataSources } from "./types";
 export const allMeasures = ({
   validMetricsView,
   validExplore,
-}: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
+}: Pick<
+  DashboardDataSources,
+  "validMetricsView" | "validExplore"
+>): MetricsViewSpecMeasureV2[] => {
   return (
     validMetricsView?.measures?.filter((m) =>
       validExplore?.measures?.includes(m.name ?? ""),
