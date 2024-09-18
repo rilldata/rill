@@ -28,6 +28,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "?custom_user_agent=rill&max_memory=1GB&threads=2", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
+	require.Equal(t, true, cfg.ExtTableStorage)
 
 	cfg, err = newConfig(map[string]any{"data_dir": "path/to"})
 	require.NoError(t, err)

@@ -54,7 +54,9 @@ type config struct {
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
-	cfg := &config{}
+	cfg := &config{
+		ExtTableStorage: true,
+	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)

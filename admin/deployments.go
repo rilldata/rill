@@ -85,7 +85,6 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 			"cpu":                    strconv.Itoa(alloc.CPU),
 			"memory_limit_gb":        strconv.Itoa(alloc.MemoryGB),
 			"storage_limit_bytes":    strconv.FormatInt(alloc.StorageBytes, 10),
-			"external_table_storage": strconv.FormatBool(true),
 		},
 	})
 
