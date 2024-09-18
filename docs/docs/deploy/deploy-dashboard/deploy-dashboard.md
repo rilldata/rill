@@ -101,19 +101,21 @@ Once completed, you'll see the newly updated repository on the UI of your status
 ## Deploying a project via the CLI
 
 :::note
-Starting from v0.49, we have deprecated `rill deploy` in favor of `rill project upload` and `rill project connect-github`.
+Starting from v0.49, we have deprecated `rill deploy` in favor of `rill project upload` and `rill project connect-github`. For more information on the `rill deploy` command click [here](#deprecated-rill-deploy).
 :::
 
 ### Deploy project without GitHub Repository
 You can add a GitHub Repository later.
 ```
-$rill project upload
+rill project deploy
 Using org "Rill_Learn".
 
 Starting upload.
 All files uploaded successfully.
 
 Created project "Rill_Learn/my-rill-tutorial". Use `rill project rename` to change name if required.
+
+...
 
 Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tutorial
 Opening project in browser...
@@ -146,6 +148,8 @@ rill project connect-github
 No git remote was found.
 ? Do you want to create a repo? Yes
 ? Select a Github account for the new repository royendo
+Repository name "my-rill-tutorial" is already taken
+? Please provide alternate name my-rill-tutorial-cli
 
 Request submitted for creating repository. Checking completion status
 
@@ -157,10 +161,12 @@ Successfully pushed your local project to Github
 
 Using org "Rill_Learn".
 
-Rill project names are derived from your Github repository name.
 Created project "Rill_Learn/my-rill-tutorial-cli". Use `rill project rename` to change name if required.
 
 Rill projects deploy continuously when you push changes to Github.
+
+...
+
 Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tutorial-cli
 Opening project in browser...
 ```
@@ -172,7 +178,7 @@ Once completed, you will see the following the in the status page. Note that the
 
 ## Continuous Deployment 
 
-Whether you decide to manage your Rill projects via the UI or using Github, Rill should automatically detect changes that you have pushed locally to GitHub and update your deployed project accordingly. Depending on the changes, this may results in a project reconcile to occur. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or you can run via the CLI:
+Whether you decide to manage your Rill projects using Github or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may results in a project reconcile to occur. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or you can run via the CLI:
 
 ```
 rill project status
@@ -210,3 +216,23 @@ Note that you must run `rill connect-github` from the <u>root</u> of your Git re
 :::
 
 
+
+## Deprecated Rill Deploy
+
+When running `rill deploy` you have two options: 
+1. Enable automatic deploys to Rill Cloud via GitHub
+2. Disable automatic deploys to Rill Cloud via GitHub
+
+```
+rill deploy
+? Enable automatic deploys to Rill Cloud from GitHub? 
+```
+
+### Enable Automatic deploys
+
+Like running `rill project connect-github`, you will be [prompted to create a github repository](#deploy-project-with-repository). Once created, Rill will deploy the project. You can confirm that the project has the correct repository linked from the UI on the status page.
+
+
+### Disable Automatic deploys
+
+In this case, the project will be deployed to Rill Cloud without a GitHub repository connected. You can always [add a repository via the UI](#syncing-your-github-repository) at a later time.
