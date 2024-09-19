@@ -185,7 +185,7 @@ export class WatchResourcesClient {
 
             // Refetch the model splits query
             if ((res.name.kind as ResourceKind) === ResourceKind.Model) {
-              void queryClient.refetchQueries(
+              void queryClient.invalidateQueries(
                 getRuntimeServiceGetModelSplitsQueryKey(
                   this.instanceId,
                   res.name.name,

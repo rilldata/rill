@@ -27,7 +27,7 @@
   $: modelName = resource?.meta?.name?.name as string;
 
   /**
-   * Inifinite Query
+   * Infinite Query
    */
   $: baseParams = {
     ...(whereErrored ? { whereErrored: true } : {}),
@@ -55,7 +55,6 @@
       );
     },
     enabled: !!modelName,
-    // initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       if (!lastPage.nextPageToken || lastPage.nextPageToken === "") {
         return undefined;
@@ -140,17 +139,17 @@
   $: ({ getHeaderGroups } = $table);
 
   // Update table when data changes
-  $: allRows =
-    ($query.data &&
-      $query.data.pages.flatMap((page) => page.splits as V1ModelSplit[])) ||
-    [];
+  let allRows: V1ModelSplit[] = [];
   $: {
-    if ($query.data) {
-      options.update((old) => ({
-        ...old,
-        data: allRows,
-      }));
-    }
+    allRows =
+      ($query.data &&
+        $query.data.pages.flatMap((page) => page.splits as V1ModelSplit[])) ||
+      [];
+
+    options.update((old) => ({
+      ...old,
+      data: allRows,
+    }));
   }
 
   /**
