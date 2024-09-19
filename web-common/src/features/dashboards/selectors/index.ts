@@ -2,14 +2,12 @@ import {
   createInExpression,
   createLikeExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   ResourceKind,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   RpcStatus,
-  V1MetricsViewComparisonResponse,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewComparison,
