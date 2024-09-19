@@ -263,7 +263,6 @@ export function getColumnDefForPivot(
         accessorKey: m.name,
         header: m.label || m.name,
         name: m.name,
-        isMeasure: true,
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;
           if (m.type === "comparison_percent") {

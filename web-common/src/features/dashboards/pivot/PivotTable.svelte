@@ -451,7 +451,7 @@
     <thead>
       {#each headerGroups as headerGroup (headerGroup.id)}
         <tr>
-          {#each headerGroup.headers as header (header.id)}
+          {#each headerGroup.headers as header, i (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
 
             <th colSpan={header.colSpan}>
@@ -459,7 +459,8 @@
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}
                 class:select-none={header.column.getCanSort()}
-                class:flex-row-reverse={header.column.columnDef.isMeasure}
+                class:flex-row-reverse={!hasDimension ||
+                  (header.depth === headerGroups.length && i > 0)}
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
