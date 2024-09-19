@@ -14,6 +14,10 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
   import { Interval, DateTime } from "luxon";
+  import {
+    ResourceKind,
+    useResource,
+  } from "../../entity-management/resource-selectors";
 
   export let metricViewName: string;
   export let showComparison = false;
@@ -30,6 +34,8 @@
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
+
+  $: validSpec = $metricsView?.data;
 
   $: ({ selectedScrubRange } = $dashboardStore);
 
@@ -86,13 +92,14 @@
         } as DashboardTimeControls) // FIXME wrong typecasting across application
       : undefined;
 
-    metricsExplorerStore.selectTimeRange(
-      metricViewName,
-      timeRange,
-      timeGrain,
-      comparisonTimeRange,
-      $metricsView.data ?? {},
-    );
+    if (validSpec)
+      metricsExplorerStore.selectTimeRange(
+        metricViewName,
+        timeRange,
+        timeGrain,
+        comparisonTimeRange,
+        validSpec.measures,
+      );
   }
 
   function zoomScrub() {

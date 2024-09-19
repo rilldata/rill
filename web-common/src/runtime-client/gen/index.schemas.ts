@@ -1206,8 +1206,8 @@ export interface V1Migration {
 }
 
 export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
+  spec: V1MetricsViewSpec;
+  state: V1MetricsViewState;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
@@ -1327,10 +1327,10 @@ Deprecated: Now defined in the Explore resource. */
 }
 
 export interface V1MetricsViewState {
-  validSpec?: V1MetricsViewSpec;
+  validSpec: V1MetricsViewSpec;
   /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
 It's set to true if the metrics view is based on an externally managed table. */
-  streaming?: boolean;
+  streaming: boolean;
 }
 
 export interface V1MetricsViewSort {
@@ -2499,16 +2499,16 @@ export const MetricsViewSpecMeasureType = {
 export interface MetricsViewSpecMeasureV2 {
   name: string;
   expression: string;
-  type: MetricsViewSpecMeasureType;
+  type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
-  perDimensions: MetricsViewSpecDimensionSelector[];
+  perDimensions?: MetricsViewSpecDimensionSelector[];
   requiredDimensions: MetricsViewSpecDimensionSelector[];
-  referencedMeasures: string[];
+  referencedMeasures?: string[];
   label?: string;
   description?: string;
   formatPreset?: string;
   formatD3?: string;
-  validPercentOfTotal: boolean;
+  validPercentOfTotal?: boolean;
 }
 
 export interface MetricsViewSpecDimensionV2 {

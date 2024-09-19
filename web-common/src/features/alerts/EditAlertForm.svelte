@@ -44,12 +44,17 @@
       alertSpec.queryArgsJson) as string,
   ) as V1MetricsViewAggregationRequest;
 
-  $: metricsViewSpec = useMetricsView($runtime?.instanceId, metricsViewName);
+  $: metricsViewSpecQuery = useMetricsView(
+    $runtime?.instanceId,
+    metricsViewName,
+  );
   $: timeRange = useMetricsViewTimeRange(
     $runtime?.instanceId,
     metricsViewName,
     { query: { queryClient } },
   );
+
+  $: validSpec = $metricsViewSpecQuery.data;
 
   const formState = createForm<AlertFormValues>({
     initialValues: {
@@ -59,7 +64,7 @@
       ...extractAlertNotification(alertSpec),
       ...extractAlertFormValues(
         queryArgsJson,
-        $metricsViewSpec?.data ?? {},
+        validSpec,
         $timeRange?.data ?? {},
       ),
     },
