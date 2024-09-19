@@ -11,5 +11,5 @@
 </script>
 
 <Chip type="measure" {label} readOnly>
-  <MeasureFilterBody slot="body" {dimensionName} {filter} {label} readOnly />
+  <MeasureFilterBody slot="body" {dimensionName} {filter} {label} />
 </Chip>
