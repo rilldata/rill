@@ -22,7 +22,7 @@
     dashboardTitle: string;
   }
 
-  const ROW_HEIGHT = 42;
+  const ROW_HEIGHT = 40;
   const OVERSCAN = 5;
 
   export let data: MagicAuthTokenProps[];
@@ -42,7 +42,7 @@
     });
   }
 
-  // Update table when magicAuthTokens changes
+  // Re-render table when data changes
   $: safeData = Array.isArray(data) ? data : [];
   $: {
     if (safeData) {
@@ -79,7 +79,6 @@
     {
       accessorFn: (row) => row.attributes.name,
       header: "Created by",
-      enableSorting: false,
     },
     {
       accessorKey: "usedOn",
@@ -160,11 +159,14 @@
 </script>
 
 <div class="list scroll-container" bind:this={virtualListEl}>
-  <div style="position: relative; height: {$virtualizer.getTotalSize()}px;">
-    <table class="w-full">
+  <div
+    class="table-wrapper"
+    style="position: relative; height: {$virtualizer.getTotalSize()}px;"
+  >
+    <table>
       <thead>
         {#each $table.getHeaderGroups() as headerGroup}
-          <tr>
+          <tr class="h-10">
             {#each headerGroup.headers as header}
               <th
                 colSpan={header.colSpan}
@@ -207,7 +209,7 @@
           >
             {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
               <td
-                class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
+                class={`px-4 py-2 max-w-[200px] truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
                 data-label={cell.column.columnDef.header}
               >
                 <svelte:component
@@ -227,33 +229,31 @@
 
 <style lang="postcss">
   table {
-    @apply border-separate border-spacing-0;
+    @apply border-separate border-spacing-0 w-full;
   }
   table th,
   table td {
     @apply border-b border-gray-200;
   }
-
+  thead {
+    @apply sticky top-0 z-30 bg-white;
+  }
   thead tr th {
     @apply border-t border-gray-200;
   }
   thead tr th:first-child {
-    @apply border-l rounded-tl-sm;
+    @apply border-l;
+    @apply rounded-tl-sm;
   }
   thead tr th:last-child {
-    @apply border-r rounded-tr-sm;
+    @apply border-r;
+    @apply rounded-tr-sm;
   }
   thead tr:last-child th {
     @apply border-b;
   }
-  tbody tr {
-    @apply border-t border-gray-200;
-  }
   tbody tr:first-child {
     @apply border-t-0;
-  }
-  tbody td {
-    @apply border-b border-gray-200;
   }
   tbody td:first-child {
     @apply border-l;
@@ -267,10 +267,9 @@
   tbody tr:last-child td:last-child {
     @apply rounded-br-sm;
   }
-
   .scroll-container {
-    height: 600px;
+    height: 680px;
     width: 100%;
-    overflow: auto;
+    overflow-y: auto;
   }
 </style>
