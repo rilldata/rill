@@ -1283,35 +1283,35 @@ export interface V1MetricsViewTimeRangeResponse {
 }
 
 export interface V1MetricsViewSpec {
-  connector?: string;
+  connector: string;
   database?: string;
   databaseSchema?: string;
   table?: string;
   /** Name of the model the metrics view is based on. Either table or model should be set. */
-  model?: string;
+  model: string;
   title?: string;
   description?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
-  dimensions?: MetricsViewSpecDimensionV2[];
-  measures?: MetricsViewSpecMeasureV2[];
-  securityRules?: V1SecurityRule[];
+  dimensions: MetricsViewSpecDimensionV2[];
+  measures: MetricsViewSpecMeasureV2[];
+  securityRules: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
-  firstDayOfWeek?: number;
+  firstDayOfWeek: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
-  firstMonthOfYear?: number;
+  firstMonthOfYear: number;
   /** List of selected dimensions by defaults.
 Deprecated: Now defined in the Explore resource. */
-  defaultDimensions?: string[];
+  defaultDimensions: string[];
   /** List of selected measures by defaults.
 Deprecated: Now defined in the Explore resource. */
-  defaultMeasures?: string[];
+  defaultMeasures: string[];
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string.
 Deprecated: Now defined in the Explore resource. */
   defaultTimeRange?: string;
-  defaultComparisonMode?: MetricsViewSpecComparisonMode;
+  defaultComparisonMode: MetricsViewSpecComparisonMode;
   /** If comparison mode is dimension then this determines which is the default dimension.
 Deprecated: Now defined in the Explore resource. */
   defaultComparisonDimension?: string;
@@ -1320,10 +1320,10 @@ Deprecated: Now defined in the Explore resource. */
   defaultTheme?: string;
   /** List of available time ranges with comparison ranges that would replace the default list.
 Deprecated: Now defined in the Explore resource. */
-  availableTimeRanges?: MetricsViewSpecAvailableTimeRange[];
+  availableTimeRanges: MetricsViewSpecAvailableTimeRange[];
   /** Available time zones list preferred time zones using IANA location identifiers.
 Deprecated: Now defined in the Explore resource. */
-  availableTimeZones?: string[];
+  availableTimeZones: string[];
 }
 
 export interface V1MetricsViewState {
@@ -1399,8 +1399,8 @@ export const V1MetricsViewComparisonSortType = {
 } as const;
 
 export interface V1MetricsViewComparisonRow {
-  dimensionValue?: unknown;
-  measureValues?: V1MetricsViewComparisonValue[];
+  dimensionValue: string;
+  measureValues: V1MetricsViewComparisonValue[];
 }
 
 export interface V1MetricsViewComparisonResponse {
@@ -2497,27 +2497,27 @@ export const MetricsViewSpecMeasureType = {
 } as const;
 
 export interface MetricsViewSpecMeasureV2 {
-  name?: string;
-  expression?: string;
-  type?: MetricsViewSpecMeasureType;
+  name: string;
+  expression: string;
+  type: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
-  perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions?: MetricsViewSpecDimensionSelector[];
-  referencedMeasures?: string[];
+  perDimensions: MetricsViewSpecDimensionSelector[];
+  requiredDimensions: MetricsViewSpecDimensionSelector[];
+  referencedMeasures: string[];
   label?: string;
   description?: string;
   formatPreset?: string;
   formatD3?: string;
-  validPercentOfTotal?: boolean;
+  validPercentOfTotal: boolean;
 }
 
 export interface MetricsViewSpecDimensionV2 {
-  name?: string;
+  name: string;
   column?: string;
   expression?: string;
   label?: string;
   description?: string;
-  unnest?: boolean;
+  unnest: boolean;
   uri?: string;
 }
 

@@ -2862,6 +2862,9 @@ definitions:
     title: Selector for a dimension
   MetricsViewSpecDimensionV2:
     type: object
+    required:
+      - name
+      - unnest
     properties:
       name:
         type: string
@@ -2889,6 +2892,14 @@ definitions:
     title: Type of measure query to generate
   MetricsViewSpecMeasureV2:
     type: object
+    required:
+      - name
+      - expression
+      - type
+      - referencedMeasures
+      - validPercentOfTotal
+      - requiredDimensions
+      - perDimensions
     properties:
       name:
         type: string
@@ -4715,8 +4726,12 @@ definitions:
     title: Response message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonRow:
     type: object
+    required:
+      - dimensionValue
+      - measureValues
     properties:
       dimensionValue:
+        type: string
         title: Not optional, not null
       measureValues:
         type: array
@@ -4857,6 +4872,19 @@ definitions:
         title: Optional, defaults to false
   v1MetricsViewSpec:
     type: object
+    required:
+      - connector
+      - availableTimeRanges
+      - availableTimeZones
+      - defaultMeasures
+      - defaultDimensions
+      - dimensions
+      - measures
+      - model
+      - securityRules
+      - defaultComparisonMode
+      - firstDayOfWeek
+      - firstMonthOfYear
     properties:
       connector:
         type: string
