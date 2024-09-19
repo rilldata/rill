@@ -1,21 +1,23 @@
 <script lang="ts">
-  import SelectMenu from "@rilldata/web-common/components/menu/shadcn/SelectMenu.svelte";
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-  import { crossfade, fly } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
+  import * as Select from "@rilldata/web-common/components/select";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let metricViewName: string;
 
   const {
     selectors: {
-      measures: { filteredSimpleMeasures },
+      measures: {
+        filteredSimpleMeasures,
+        leaderboardMeasureName,
+        getMeasureByName,
+      },
     },
     actions: {
       contextCol: { setContextColumn },
@@ -23,69 +25,15 @@
     },
   } = getStateManagers();
 
+  let active = false;
+
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: measures = $filteredSimpleMeasures();
 
-  let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  function handleMeasureUpdate(event: CustomEvent) {
-    setLeaderboardMeasureName(event.detail.key);
-  }
-
-  function measureKeyAndMain(measure: MetricsViewSpecMeasureV2) {
-    // CAST SAFETY: measure expression must exist!
-    const main = (
-      measure.label?.length ? measure.label : measure.expression
-    ) as string;
-    return {
-      main,
-      // CAST SAFETY: measure expression must exist!
-      key: measure.name ?? (measure.expression as string),
-    };
-  }
-
-  function formatForSelector(
-    measure: MetricsViewSpecMeasureV2,
-  ): (MetricsViewSpecMeasureV2 & { key: string; main: string }) | undefined {
-    if (!measure) return undefined;
-    return {
-      ...measure,
-      ...measureKeyAndMain(measure),
-    };
-  }
-
-  let [send] = crossfade({
-    fallback: (node, _params, _intro) => fly(node),
-  });
-
-  /** this should be a single element */
-  // reset selections based on the active leaderboard measure
-  let activeLeaderboardMeasure: ReturnType<typeof formatForSelector>;
-
-  $: unformattedMeasure =
-    measures?.length && metricsExplorer?.leaderboardMeasureName
-      ? measures.find(
-          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName,
-        )
-      : undefined;
-
-  $: activeLeaderboardMeasure =
-    unformattedMeasure && formatForSelector(unformattedMeasure);
-
-  /** this controls the animation direction */
-
-  $: options =
-    measures?.map((measure) => {
-      return {
-        ...measure,
-        ...measureKeyAndMain(measure),
-      };
-    }) || [];
-
-  /** set the selection only if measures is not undefined */
-  $: selection = unformattedMeasure && measureKeyAndMain(unformattedMeasure);
+  $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
@@ -117,10 +65,9 @@
 </script>
 
 <div>
-  {#if measures && options.length && selection}
+  {#if measures.length && activeLeaderboardMeasure}
     <div
       class="flex flex-row items-center ui-copy-muted gap-x-0.5"
-      in:send|global={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
       <SearchableFilterButton
@@ -133,13 +80,51 @@
         tooltipText="Choose dimensions to display"
       />
 
-      <SelectMenu
-        fixedText="Showing"
-        {options}
-        selections={[selection.key]}
-        on:select={handleMeasureUpdate}
-        ariaLabel="Select a measure to filter by"
-      />
+      <Select.Root
+        bind:open={active}
+        items={measures.map((measure) => ({
+          value: measure.name ?? "",
+          label: measure.label ?? measure.name,
+        }))}
+        onSelectedChange={(newSelection) => {
+          if (!newSelection) return;
+          setLeaderboardMeasureName(newSelection.value);
+        }}
+      >
+        <Select.Trigger class="outline-none border-none w-fit  px-0 gap-x-0.5">
+          <Button type="text" label="Select a measure to filter by">
+            <span class="truncate text-gray-700 hover:text-inherit">
+              Showing <b>
+                {activeLeaderboardMeasure?.label ??
+                  activeLeaderboardMeasure.name}
+              </b>
+            </span>
+          </Button>
+        </Select.Trigger>
+
+        <Select.Content
+          sameWidth={false}
+          align="start"
+          class="max-h-80 overflow-y-auto"
+        >
+          {#each measures as measure (measure.name)}
+            <Select.Item
+              role="menuitem"
+              value={measure.name}
+              label={measure.label ?? measure.name}
+              class="text-[12px] flex flex-col items-start"
+            >
+              <div class:font-bold={$leaderboardMeasureName === measure.name}>
+                {measure.label ?? measure.name}
+              </div>
+
+              <p class="ui-copy-muted" style:font-size="11px">
+                {measure.description}
+              </p>
+            </Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
     </div>
   {/if}
 </div>
