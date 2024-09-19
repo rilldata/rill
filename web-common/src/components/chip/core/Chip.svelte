@@ -4,30 +4,34 @@
 -->
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import { slideRight } from "../../../lib/transitions";
-  import { defaultChipColors } from "../chip-types";
-  import RemoveChipButton from "./RemoveChipButton.svelte";
+
+  import { get, Writable } from "svelte/store";
+  import Tooltip from "../../tooltip/Tooltip.svelte";
+  import CancelCircle from "../../icons/CancelCircle.svelte";
+  import TooltipContent from "../../tooltip/TooltipContent.svelte";
 
   export let removable = false;
   export let active = false;
   export let outline = false;
   export let readOnly = false;
-  export let grab = false;
+  export let type: "measure" | "dimension" | "time";
+  export let exclude = false;
   export let slideDuration = 150;
 
   /** chip style props */
-  export let extraRounded = true;
-  export let extraPadding = true;
+  // export let extraRounded = true;
+  // export let extraPadding = true;
 
   /** color elements elements */
-  export let bgBaseClass = defaultChipColors.bgBaseClass;
-  export let bgHoverClass = defaultChipColors.bgHoverClass;
-  export let textClass = defaultChipColors.textClass;
-  export let bgActiveClass = defaultChipColors.bgActiveClass;
-  export let outlineBaseClass = defaultChipColors.outlineBaseClass;
-  export let outlineHoverClass = defaultChipColors.outlineHoverClass;
-  export let outlineActiveClass = defaultChipColors.outlineActiveClass;
+  // export let bgBaseClass = defaultChipColors.bgBaseClass;
+  // export let bgHoverClass = defaultChipColors.bgHoverClass;
+  export let textClass = "text-black";
+  // export let bgActiveClass = defaultChipColors.bgActiveClass;
+  // export let outlineBaseClass = defaultChipColors.outlineBaseClass;
+  // export let outlineHoverClass = defaultChipColors.outlineHoverClass;
+  // export let outlineActiveClass = defaultChipColors.outlineActiveClass;
 
   /** if removable is true, these props control the tooltip positioning */
   export let supressTooltip = false;
@@ -42,10 +46,61 @@
   /** the maximum width for the tooltip of the main chip */
 
   const dispatch = createEventDispatcher();
+
+  const tooltipSuppression = getContext(
+    "rill:app:childRequestedTooltipSuppression",
+  ) as Writable<boolean>;
+
+  function focusOnRemove() {
+    if (tooltipSuppression) tooltipSuppression.set(true);
+  }
+  function blurOnRemove() {
+    if (tooltipSuppression) tooltipSuppression.set(false);
+  }
 </script>
 
 <div in:slideRight={{ duration: slideDuration }}>
-  {#if readOnly}
+  <div class="chip {type}" aria-label={label}>
+    {#if removable}
+      <Tooltip
+        location={removeButtonTooltipLocation}
+        alignment={removeButtonTooltipAlignment}
+        distance={removeButtonTooltipDistance}
+        suppress={supressTooltip}
+      >
+        <button
+          class="{textClass} pl-2"
+          on:mouseover={focusOnRemove}
+          on:focus={focusOnRemove}
+          on:mouseleave={blurOnRemove}
+          on:blur={blurOnRemove}
+          on:click|stopPropagation={() => dispatch("remove")}
+          aria-label="Remove"
+        >
+          <CancelCircle size="16px" />
+        </button>
+        <div slot="tooltip-content">
+          {#if $$slots["remove-tooltip"]}
+            <TooltipContent maxWidth="300px">
+              <slot name="remove-tooltip" />
+            </TooltipContent>
+          {/if}
+        </div>
+      </Tooltip>
+    {/if}
+
+    {#if $$slots.body}
+      <button
+        class="px-2 text-inherit w-full select-none"
+        {...getAttrs(builders)}
+        use:builderActions={{ builders }}
+      >
+        <slot name="body" />
+      </button>
+    {/if}
+  </div>
+
+  <!-- {#if readOnly}
     <div
       class="
       grid gap-x-2 items-center
@@ -61,9 +116,9 @@
       {$$slots.body ? "max-content" : ""}"
       aria-label={label}
     >
-      <!-- body -->
+   
       {#if $$slots.body}
-        <div>
+        <div class="px-2 text-inherit w-full select-none">
           <slot name="body" />
         </div>
       {/if}
@@ -87,7 +142,7 @@
       {...getAttrs(builders)}
       use:builderActions={{ builders }}
     >
-      <!-- a cancelable element, e.g. filter buttons -->
+     
       {#if removable}
         <RemoveChipButton
           {textClass}
@@ -104,7 +159,7 @@
           </svelte:fragment>
         </RemoveChipButton>
       {:else if $$slots.icon}
-        <!-- if there is a left icon, render it here -->
+      
         <button
           on:click|stopPropagation={() => {
             dispatch("click-icon");
@@ -113,7 +168,7 @@
           <slot name="icon" />
         </button>
       {/if}
-      <!-- body -->
+    
       {#if $$slots.body}
         <button
           on:click
@@ -128,11 +183,52 @@
         </button>
       {/if}
     </div>
-  {/if}
+  {/if} -->
 </div>
+
+<!-- bgBaseClass: "bg-secondary-50 dark:bg-secondary-600",
+bgHoverClass: "hover:bg-secondary-100 hover:dark:bg-secondary-800",
+bgActiveClass: "bg-secondary-100 dark:bg-secondary-600",
+outlineBaseClass:
+  "outline outline-1 outline-secondary-200 dark:outline-secondary-500",
+outlineHoverClass: "hover:outline-secondary-300",
+outlineActiveClass: "!outline-secondary-500 dark:outline-secondary-500",
+textClass: "text-secondary-800", -->
+
+<!-- bgBaseClass: "bg-primary-50 dark:bg-primary-600",
+bgHoverClass: "hover:bg-primary-100 hover:dark:bg-primary-800",
+bgActiveClass: "bg-primary-100 dark:bg-primary-700",
+outlineBaseClass:
+  "outline outline-1 outline-primary-100 dark:outline-primary-500",
+outlineHoverClass: "hover:outline-primary-200",
+outlineActiveClass: "!outline-primary-500 dark:outline-primary-500",
+textClass: "text-primary-800 dark:text-primary-50", -->
 
 <style lang="postcss">
   .grab {
     @apply cursor-grab;
+  }
+
+  .chip {
+    @apply flex flex-none gap-x-2;
+    @apply items-center justify-center;
+    @apply px-2 py-1 border;
+  }
+
+  .dimension {
+    @apply rounded-2xl;
+    @apply bg-primary-50;
+    @apply border-primary-100;
+    @apply text-primary-800;
+  }
+
+  .dimension:hover {
+    @apply bg-primary-100;
+  }
+
+  .measure {
+    @apply rounded-sm;
+    @apply bg-secondary-50;
+    @apply border-secondary-200;
   }
 </style>

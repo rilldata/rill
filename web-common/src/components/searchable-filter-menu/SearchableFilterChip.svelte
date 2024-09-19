@@ -29,7 +29,7 @@ props as needed.
 
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
-  import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
+
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
@@ -70,9 +70,8 @@ props as needed.
   >
     <!-- TODO: Switch to Measure colors once Theming supports it -->
     <Chip
-      {...defaultChipColors}
+      type="measure"
       {active}
-      extraRounded={false}
       {label}
       on:click={toggleFloatingElement}
       outline={true}

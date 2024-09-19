@@ -19,7 +19,7 @@ are details left to the consumer of the component; this component should remain 
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
-  import { ChipColors, defaultChipColors } from "../chip-types";
+
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
@@ -30,11 +30,11 @@ are details left to the consumer of the component; this component should remain 
   export let selectedValues: string[];
   export let allValues: string[] | null;
   export let enableSearch = true;
-
+  export let type: "measure" | "dimension" | "time";
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
   export let excludeMode: boolean;
-  export let colors: ChipColors = defaultChipColors;
+
   export let label: string | undefined = undefined;
 
   let active = !selectedValues.length;
@@ -68,9 +68,10 @@ are details left to the consumer of the component; this component should remain 
     suppress={active}
   >
     <Chip
-      {...colors}
+      {type}
       {active}
       {label}
+      exclude={excludeMode}
       on:click={() => {
         toggleFloatingElement();
         dispatch("click");
