@@ -21,7 +21,6 @@
     getSanitizedDashboardStateParam,
     hasDashboardWhereFilter,
   } from "./form-utils";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const queryClient = useQueryClient();
   const {
