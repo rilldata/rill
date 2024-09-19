@@ -664,8 +664,8 @@ message GetExploreResponse {
 message GetModelSplitsRequest {
   string instance_id = 1;
   string model = 2;
-  bool where_pending = 5;
-  bool where_errored = 6;
+  bool pending = 5;
+  bool errored = 6;
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
   string page_token = 4;
 }
