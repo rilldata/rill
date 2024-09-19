@@ -56,7 +56,12 @@
     },
     enabled: !!modelName,
     // initialPageParam: 1,
-    getNextPageParam: (_lastGroup) => _lastGroup.nextPageToken,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.nextPageToken || lastPage.nextPageToken === "") {
+        return undefined;
+      }
+      return lastPage.nextPageToken;
+    },
   });
 
   /**
