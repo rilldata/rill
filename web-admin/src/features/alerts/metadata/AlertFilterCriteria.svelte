@@ -34,7 +34,6 @@
                 dimensionName=""
                 {filter}
                 label={filter.measure}
-                readOnly
                 {comparisonLabel}
                 labelMaxWidth=""
               />
