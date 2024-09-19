@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
-    editingItem,
+    editingIndex,
+    editingType,
     YAMLDimension,
     YAMLMeasure,
   } from "../workspaces/VisualMetrics.svelte";
@@ -15,18 +16,19 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import SimpleSqlExpression from "./SimpleSQLExpression.svelte";
 
   export let item: YAMLMap<string, string> | undefined;
-  export let onDelete: () => void;
-  export let onCancel: (unsavedChanges: boolean) => void;
   export let fileArtifact: FileArtifact;
   export let index: number;
   export let type: "measures" | "dimensions";
-  export let switchView: () => void;
   export let columns: V1ProfileColumn[];
-
-  let editingClone =
-    type === "measures" ? new YAMLMeasure(item) : new YAMLDimension(item);
+  export let field: string | null | undefined;
+  export let editing: boolean;
+  export let editingClone: YAMLMeasure | YAMLDimension;
+  export let switchView: () => void;
+  export let onDelete: () => void;
+  export let onCancel: (unsavedChanges: boolean) => void;
 
   let columnNames = columns.map((column) => column.name).filter(isDefined);
 
@@ -36,11 +38,11 @@
       label: string;
       selected: number;
       optional?: true;
+      fontFamily?: string;
       fields: Array<{
         key: string;
         hint?: string;
         label: string;
-
         options?: string[];
         placeholder?: string;
         boolean?: true;
@@ -50,7 +52,7 @@
     measures: [
       {
         label: "SQL Expression",
-
+        fontFamily: `"Source Code Variable", monospace`,
         fields: [
           {
             key: "expression",
@@ -63,10 +65,11 @@
             label: "Advanced",
           },
         ],
-        selected: item?.has("expression") ? 1 : 0,
+        selected: editingClone.expression ? 1 : 0,
       },
       {
         label: "Name",
+        fontFamily: `"Source Code Variable", monospace`,
         fields: [
           {
             key: "name",
@@ -103,7 +106,7 @@
             key: "format_d3",
           },
         ],
-        selected: item?.get("format_d3") ? 1 : 0,
+        selected: editingClone["format_d3"] ? 1 : 0,
       },
       {
         optional: true,
@@ -134,6 +137,7 @@
     dimensions: [
       {
         label: "SQL Expression",
+        fontFamily: `"Source Code Variable", monospace`,
         fields: [
           {
             placeholder: "Column from model",
@@ -146,10 +150,11 @@
             key: "expression",
           },
         ],
-        selected: item?.has("column") ? 0 : 1,
+        selected: editingClone.expression ? 1 : 0,
       },
       {
         label: "Name",
+        fontFamily: `"Source Code Variable", monospace`,
         fields: [
           {
             key: "name",
@@ -191,14 +196,9 @@
 
   $: ({ remoteContent, localContent, saveContent } = fileArtifact);
 
-  $: adding = index === -1;
-
-  $: readyToGo = properties[type].every(
-    ({ fields, label, optional, selected }) => {
-      console.log(label, optional, editingClone[fields[selected].key]);
-      return optional || editingClone[fields[selected].key];
-    },
-  );
+  $: readyToGo = properties[type].every(({ fields, optional, selected }) => {
+    return optional || editingClone[fields[selected].key];
+  });
 
   $: unsavedChanges = Object.keys(editingClone).some(
     (key) => editingClone[key] !== item?.get(key),
@@ -215,14 +215,15 @@
       if (editingClone[key]) newItem.set(key, editingClone[key]);
     });
 
-    if (adding) {
-      items.push(newItem);
-    } else {
+    if (editing) {
       items[index] = newItem;
+    } else {
+      items.push(newItem);
     }
 
     await saveContent(parsedDocument.toString());
-    editingItem.set(null);
+    editingIndex.set(null);
+    editingType.set(null);
   }
 
   function isDefined(value: string | undefined): value is string {
@@ -237,14 +238,14 @@
 />
 
 <div
-  class="h-full w-[320px] bg-background flex-none p-6 flex flex-col border select-none"
+  class="h-full w-[320px] bg-background flex-none p-6 px-5 flex flex-col border select-none"
 >
-  <h1>{adding ? "Add" : "Edit"} {type.slice(0, -1)}</h1>
+  <h1>{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
   <div
-    class="flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible"
+    class="flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible px-1"
   >
-    {#each properties[type] as { fields, selected, label, optional } (label)}
+    {#each properties[type] as { fields, selected, label, optional, fontFamily } (label)}
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
       {#if boolean}
         <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
@@ -261,23 +262,41 @@
             </Tooltip>
           {/if}
         </div>
+      {:else if key === "expression" && type === "measures"}
+        <SimpleSqlExpression
+          {editing}
+          {columnNames}
+          bind:expression={editingClone.expression}
+          bind:name={editingClone.name}
+        />
       {:else}
         <Input
+          id={`vme-${label}`}
+          textClass="text-sm"
+          claimFocusOnMount={field === label}
           bind:value={editingClone[key]}
           {label}
           {hint}
           {optional}
           {placeholder}
+          multiline={key === "description"}
           bind:selected
+          {fontFamily}
           fields={fields.map(({ label }) => label)}
           {options}
+          onChange={(e) => {
+            if (!editing && key === "column" && type === "dimensions") {
+              editingClone.name = e;
+            }
+          }}
+          sameWidth={true}
         />
       {/if}
     {/each}
 
     <span />
 
-    <h2>Preview</h2>
+    <!-- <h2>Preview</h2> -->
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto">
@@ -287,8 +306,8 @@
         edit in YAML
       </button>
     </p>
-    <div class="flex justify-{adding ? 'end' : 'between'}">
-      {#if !adding}
+    <div class="flex justify-{editing ? 'between' : 'end'}">
+      {#if editing}
         <Button type="text" on:click={onDelete}>Delete</Button>
       {/if}
       <div class="flex gap-x-2 self-end">
@@ -305,7 +324,7 @@
           on:click={saveChanges}
           disabled={!readyToGo || !unsavedChanges}
         >
-          {adding ? "Add " + type.slice(0, -1) : "Save changes"}
+          {editing ? "Save changes" : "Add " + type.slice(0, -1)}
         </Button>
       </div>
     </div>

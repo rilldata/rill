@@ -7,19 +7,21 @@
 
 <script lang="ts">
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
-  import { measureChipColors as colors } from "@rilldata/web-common/components/chip/chip-types";
   import EditControls from "./EditControls.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import Checkbox from "./Checkbox.svelte";
-  import { editingItem } from "../workspaces/VisualMetrics.svelte";
+  import {
+    editingIndex,
+    editingType,
+  } from "../workspaces/VisualMetrics.svelte";
   import {
     defaultChipColors,
     measureChipColors,
   } from "@rilldata/web-common/components/chip/chip-types";
   import { YAMLMap } from "yaml";
+  import { tick } from "svelte";
 
-  const ROW_HEIGHT = 40;
-
+  export let rowHeight: number;
   export let item: YAMLMap<string, string>;
   export let i: number;
   export let selected: boolean;
@@ -38,10 +40,12 @@
   export let scrollLeft: number;
   export let tableWidth: number;
   export let type: "measures" | "dimensions";
+  export let expressionWidth: number;
 
   let row: HTMLTableRowElement;
   let initialY = 0;
   let clone: HTMLTableRowElement;
+  let hovered = false;
 
   function handleDragStart(e: MouseEvent) {
     if (e.button !== 0) return;
@@ -50,10 +54,7 @@
 
     clone = row.cloneNode(true) as HTMLTableRowElement;
 
-    clone.classList.remove("row");
     clone.style.opacity = "0.6";
-    // clone.style.position = "fixed";
-    // clone.style.display = "table-row";
     clone.style.width = "100%";
     clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
     row.parentElement?.appendChild(clone);
@@ -66,7 +67,7 @@
     const movement = e.clientY - initialY;
     const rowDelta = Math.floor(movement / 40);
 
-    insertIndex.set(i + rowDelta);
+    insertIndex.set(Math.max(-1, i + rowDelta));
     clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
   }
 
@@ -82,34 +83,37 @@
     table.set(null);
     insertIndex.set(null);
   }
-  let hovered = false;
 
-  // function isMeasure(
-  //   item: MetricsViewSpecDimensionV2 | MetricsViewSpecMeasureV2,
-  // ): item is MetricsViewSpecMeasureV2 {
-  //   return "formatPreset" in item;
-  // }
+  async function setEditing(
+    e?: MouseEvent & {
+      currentTarget: EventTarget & HTMLTableCellElement;
+    },
+  ) {
+    const field = e?.currentTarget?.getAttribute("aria-label");
 
-  function setEditing() {
-    editingItem.set({ index: i, type });
+    editingIndex.set(i);
+    editingType.set(type);
+
+    await tick();
+    document.getElementById(`vme-${field}`)?.focus();
   }
 
-  $: editing = $editingItem?.index === i && $editingItem?.type === type;
+  $: editing = $editingIndex === i && $editingType === type;
 </script>
 
 <tr
   id={item.get("name") || item.get("label")}
   style:transform="translateY(0px)"
-  class="relative text-sm row"
-  style:height="{ROW_HEIGHT}px"
+  class="relative text-sm"
+  style:height="{rowHeight}px"
   class:editing
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
   bind:this={row}
   class:insert={$table === type && $insertIndex === i}
 >
-  <td class="!pl-0">
-    <div class="gap-x-0.5 flex items-center w-14 pl-1">
+  <td class="!pl-0 sticky">
+    <div class="gap-x-0.5 flex items-center pl-1">
       <button
         on:mousedown={handleDragStart}
         class:opacity-0={!hovered}
@@ -121,37 +125,44 @@
       <Checkbox onChange={onCheckedChange} checked={selected} />
     </div>
   </td>
-  <td class="max-w-64 source-code" on:click={setEditing}>
-    {item?.get("name")}</td
-  >
 
-  <td class="source-code max-w-72" on:click={setEditing}>
-    {item.get("expression") || item.get("column")}
+  <td class="source-code truncate" on:click={setEditing} aria-label="Name">
+    <span>{item?.get("name") ?? "-"}</span>
   </td>
-  <td on:click={setEditing}>
-    <div class="pointer-events-none text-[12px]">
+  <td on:click={setEditing} aria-label="Label">
+    <div class=" text-[12px] pr-4">
       <Chip
-        {...colors}
         slideDuration={0}
-        extraRounded={false}
+        extraRounded={type === "dimensions"}
         extraPadding={false}
         {...type === "measures" ? measureChipColors : defaultChipColors}
         label={item.get("label") || item.get("name")}
         outline
       >
-        <span slot="body" class="font-bold truncate">
+        <div slot="body" class="font-bold">
           {item.get("label") || item.get("name")}
-        </span>
+        </div>
       </Chip>
     </div>
   </td>
+
+  <td
+    class="source-code truncate"
+    on:click={setEditing}
+    aria-label="SQL Expression"
+    style:max-width="{expressionWidth}px"
+  >
+    <span>{item.get("expression") || item.get("column")}</span>
+  </td>
+
   {#if type === "measures"}
-    <td on:click={setEditing}>
-      {item.get("format_preset") || item?.get("format_d3") || "-"}</td
-    >
+    <td on:click={setEditing} aria-label="Format">
+      <span>{item.get("format_preset") || item?.get("format_d3") || "-"}</span>
+    </td>
   {/if}
-  <td class="max-w-72" on:click={setEditing}>
-    {item?.get("description") || "-"}
+
+  <td class="" on:click={setEditing} aria-label="Description">
+    <span>{item?.get("description") || "-"}</span>
   </td>
 
   {#if hovered}
@@ -187,6 +198,10 @@
     @apply bg-gray-50;
   }
 
+  td:hover:not(.editing) {
+    @apply text-primary-700;
+  }
+
   .editing {
     @apply bg-gray-100;
   }
@@ -195,15 +210,15 @@
     @apply pl-4 truncate border-b;
   }
 
-  .insert td {
-    @apply border-b border-primary-500;
-  }
-
-  .row:last-of-type td {
-    @apply border-b-0;
-  }
+  /* .insert td {
+    @apply border-primary-300 border-b-2;
+  } */
 
   .source-code {
     font-family: "Source Code Variable", monospace;
+  }
+
+  span {
+    @apply pr-4;
   }
 </style>

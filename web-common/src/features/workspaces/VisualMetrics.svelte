@@ -1,9 +1,7 @@
 <script lang="ts" context="module">
-  export const editingItem: Writable<{
-    index: number;
-    type: "measures" | "dimensions";
-    field?: string;
-  } | null> = writable(null);
+  export const editingIndex = writable<number | null>(null);
+  export const editingType = writable<"measures" | "dimensions" | null>(null);
+  export const editingField = writable<string | null>(null);
 
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
@@ -51,33 +49,44 @@
 </script>
 
 <script lang="ts">
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createQueryServiceTableColumns } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import { PlusIcon } from "lucide-svelte";
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
-  import { writable, Writable } from "svelte/store";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { writable } from "svelte/store";
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import * as Select from "@rilldata/web-common/components/select";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
+  import {
+    ResourceKind,
+    useResource,
+  } from "../entity-management/resource-selectors";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { useModels } from "../models/selectors";
+  import { useSources } from "../sources/selectors";
 
   export let fileArtifact: FileArtifact;
   export let switchView: () => void;
 
   let searchValue = "";
-  let measuresCollapsed = false;
-  let dimensionsCollapsed = false;
+  let confirmation: {
+    action: "cancel" | "delete" | "switch";
+    type?: "measures" | "dimensions";
+    model?: string;
+    index?: number;
+  } | null = null;
+  let collapsed = {
+    measures: false,
+    dimensions: false,
+  };
 
-  $: resource = fileArtifact.getResource(queryClient, $runtime.instanceId);
+  $: ({ instanceId } = $runtime);
 
   $: ({
     remoteContent,
@@ -87,24 +96,38 @@
     saveLocalContent,
   } = fileArtifact);
 
-  $: ({ data } = $resource);
+  $: modelsQuery = useModels(instanceId);
+  $: sourcesQuery = useSources(instanceId);
+
+  $: modelNames =
+    $modelsQuery.data
+      ?.map((resource) => {
+        return resource.meta?.name?.name;
+      })
+      .filter(isDefined) ?? [];
+  $: sourceNames =
+    $sourcesQuery.data
+      ?.map((resource) => {
+        return resource.meta?.name?.name;
+      })
+      .filter(isDefined) ?? [];
 
   $: timeDimension = (parsedDocument.get("timeseries") ?? "") as string;
 
-  $: connector = data?.metricsView?.state?.validSpec?.connector ?? "";
-  $: database = data?.metricsView?.state?.validSpec?.database ?? "";
-  $: databaseSchema = data?.metricsView?.state?.validSpec?.databaseSchema ?? "";
-  $: table = data?.metricsView?.state?.validSpec?.table ?? "";
+  $: databaseSchema = (parsedDocument.get("database_schema") ?? "") as string;
+  $: model = (parsedDocument.get("model") ??
+    parsedDocument.get("table") ??
+    "") as string;
 
-  $: columnsQuery = createQueryServiceTableColumns(
-    $runtime?.instanceId,
-    table,
-    {
-      connector,
-      database,
-      databaseSchema,
-    },
-  );
+  $: resourceQuery = useResource(instanceId, model, ResourceKind.Model);
+  $: modelResource = $resourceQuery?.data?.model;
+  $: connector = modelResource?.spec?.outputConnector;
+
+  $: columnsQuery = createQueryServiceTableColumns(instanceId, model, {
+    connector,
+    database: "", // models use the default database
+    databaseSchema,
+  });
   $: ({ data: columnsResponse } = $columnsQuery);
 
   $: columns = columnsResponse?.profileColumns ?? [
@@ -113,9 +136,12 @@
 
   $: timeOptions = columns
     .filter(({ type }) => type === "TIMESTAMP")
-    .map(({ name }) => ({ value: name }));
+    .map(({ name }) => name)
+    .filter(isDefined);
 
-  $: selected = timeOptions.find((option) => option.value === timeDimension);
+  function isDefined<T>(x: T | undefined): x is T {
+    return x !== undefined;
+  }
 
   $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
@@ -136,6 +162,9 @@
     ["dimensions", yamlDimensions],
   ]) as Map<"measures" | "dimensions", Array<YAMLMap<string, string>>>;
 
+  $: smallestTimeGrain = (parsedDocument.get("smallest_time_grain") ??
+    "") as string;
+
   function filter(item: YAMLMap<string, string>, searchValue: string) {
     return (
       item?.get("name")?.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -148,11 +177,10 @@
     );
   }
 
-  async function handleColumnSelection(column: string) {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    parsedDocument.set("timeseries", column);
-    updateLocalContent(parsedDocument.toString(), true);
-    await saveLocalContent();
+  async function updateProperty(property: string, value: unknown) {
+    parsedDocument.set(property, value);
+
+    await saveContent(parsedDocument.toString());
   }
 
   async function reorderList(
@@ -203,10 +231,20 @@
 
     const items = measures.items as Array<YAMLMap>;
 
-    const newItem = items[item].clone() as YAMLMap;
+    const originalItem = items[item];
+    const originalName = originalItem.get("name");
+    const newItem = originalItem.clone() as YAMLMap;
 
-    if (type === "measures")
-      newItem.set("name", `${newItem.get("name")}_copy_${items.length}`);
+    const itemNames = items.map((i) => i.get("name"));
+    let count = 0;
+    let newName = `${originalName}_copy`;
+    newItem.set("name", newName);
+
+    while (itemNames.includes(newName)) {
+      count++;
+      newName = `${originalName}_copy_${count}`;
+      newItem.set("name", newName);
+    }
 
     items.splice(item + 1, 0, newItem);
 
@@ -215,64 +253,77 @@
     await saveContent(parsedDocument.toString());
   }
 
-  let confirmation: {
-    action: "cancel" | "delete";
-    index: number;
-    type: "measures" | "dimensions";
-  } | null = null;
+  $: item =
+    ($editingType !== null &&
+      $editingIndex !== null &&
+      itemGroups.get($editingType)?.[$editingIndex]) ||
+    undefined;
+
+  $: editingClone =
+    $editingIndex !== null
+      ? $editingType === "measures"
+        ? new YAMLMeasure(item)
+        : new YAMLDimension(item)
+      : undefined;
 </script>
 
 <div class="wrapper">
   <div class="main-area">
-    <div class="flex flex-col gap-y-1">
-      <span class="flex items-center gap-x-1">
-        <p>Time column</p>
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500">
-            <InfoCircle size="13px" />
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            Time column description
-          </TooltipContent>
-        </Tooltip>
-      </span>
+    <div class="flex gap-x-4">
+      {#key confirmation}
+        <Input
+          sameWidth
+          full
+          value={model}
+          options={[...modelNames, ...sourceNames]}
+          label="Model or source referenced"
+          onChange={(newModelName) => {
+            confirmation = {
+              action: "switch",
+              model: newModelName,
+            };
+          }}
+        />
+      {/key}
 
-      <Select.Root
-        {selected}
-        onSelectedChange={(newSelection) => {
-          if (newSelection?.value) handleColumnSelection(newSelection.value);
+      <Input
+        sameWidth
+        full
+        value={timeDimension}
+        options={timeOptions}
+        label="Time column"
+        hint="Column from model that will be used as primary time dimension in dashboards"
+        onInput={async (value) => {
+          await updateProperty("timeseries", value);
         }}
-        items={timeOptions}
-      >
-        <Select.Trigger class="w-[300px] rounded-[2px] shadow-none">
-          <Select.Value placeholder={timeDimension} class="text-[12px]" />
-        </Select.Trigger>
-        <Select.Content>
-          {#each timeOptions as { value } (value)}
-            <Select.Item {value} class="text-[12px]">
-              {value}
-            </Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+      />
+
+      <Input
+        sameWidth
+        full
+        value={smallestTimeGrain}
+        options={Object.entries(TIME_GRAIN).map(([_, { label }]) => label)}
+        label="Smallest time grain"
+        hint="The smallest time unit by which your charts and tables can be bucketed"
+        onInput={async (value) => {
+          await updateProperty("smallest_time_grain", value);
+        }}
+      />
     </div>
 
     <span class="h-[1px] w-full bg-gray-200" />
 
-    <div class="flex gap-x-2">
-      <form class="relative w-[320px] h-7">
-        <div class="flex absolute inset-y-0 items-center pl-2 ui-copy-icon">
-          <Search />
-        </div>
-        <input
-          type="text"
-          autocomplete="off"
-          class="border outline-none rounded-[2px] block w-full pl-8 p-1"
-          placeholder="Search"
-          bind:value={searchValue}
-        />
-      </form>
-    </div>
+    <Input
+      width="320px"
+      textClass="text-sm"
+      placeholder="Search"
+      bind:value={searchValue}
+      onInput={(value) => {
+        searchValue = value;
+      }}
+    >
+      <Search slot="icon" size="16px" color="#374151" />
+    </Input>
 
     <div
       class="flex flex-col gap-y-2 h-fit w-full flex-shrink overflow-y-scroll"
@@ -286,12 +337,15 @@
               gray
               noStroke
               on:click={() => {
-                if (type === "measures") measuresCollapsed = !measuresCollapsed;
-                if (type === "dimensions")
-                  dimensionsCollapsed = !dimensionsCollapsed;
+                collapsed[type] = !collapsed[type];
               }}
             >
-              <CaretDownIcon size="18px" className="!fill-gray-700" />
+              <span
+                class="transition-transform"
+                class:-rotate-90={collapsed[type]}
+              >
+                <CaretDownIcon size="16px" className="!fill-gray-700" />
+              </span>
             </Button>
             <h1 class="capitalize font-medium">{type}</h1>
             <Button
@@ -300,16 +354,14 @@
               gray
               noStroke
               on:click={() => {
-                editingItem.set({
-                  index: -1,
-                  type,
-                });
+                editingIndex.set(-1);
+                editingType.set(type);
               }}
             >
               <PlusIcon size="16px" />
             </Button>
           </header>
-          {#if (!measuresCollapsed && type === "measures") || (!dimensionsCollapsed && type === "dimensions")}
+          {#if !collapsed[type]}
             <MetricsTable
               {reorderList}
               dimensions={type === "dimensions"}
@@ -323,27 +375,32 @@
     </div>
   </div>
 
-  {#if $editingItem}
-    {#key $editingItem}
+  {#if $editingIndex !== null && $editingType !== null && editingClone}
+    {#key editingClone}
       <Sidebar
+        {item}
+        {editingClone}
         {columns}
-        item={itemGroups.get($editingItem.type)?.[$editingItem.index]}
         onDelete={() => {
-          triggerDelete($editingItem.index, $editingItem.type);
+          if ($editingType) triggerDelete($editingIndex, $editingType);
         }}
         onCancel={(unsavedChanges) => {
           if (unsavedChanges) {
             confirmation = {
               action: "cancel",
-              index: $editingItem.index,
-              type: $editingItem.type,
+              index: $editingIndex,
+              type: $editingType,
             };
           } else {
-            editingItem.set(null);
+            editingField.set(null);
+            editingIndex.set(null);
+            editingType.set(null);
           }
         }}
-        index={$editingItem.index}
-        type={$editingItem.type}
+        index={$editingIndex}
+        type={$editingType}
+        field={$editingField}
+        editing={$editingIndex !== -1}
         {fileArtifact}
         {switchView}
       />
@@ -357,18 +414,23 @@
       <AlertDialog.Header>
         <AlertDialog.Title>
           {#if confirmation.action === "delete"}
-            <h2>Delete this {confirmation.type.slice(0, -1)}?</h2>
-          {:else}
-            <h2>Cancel changes to {confirmation.type.slice(0, -1)}?</h2>
-          {/if}</AlertDialog.Title
-        >
+            <h2>Delete this {confirmation.type?.slice(0, -1)}?</h2>
+          {:else if confirmation.action === "cancel"}
+            <h2>Cancel changes to {confirmation.type?.slice(0, -1)}?</h2>
+          {:else if confirmation.action === "switch"}
+            <h2>Switch reference model?</h2>
+          {/if}
+        </AlertDialog.Title>
         <AlertDialog.Description>
-          {#if confirmation.action === "delete"}
-            You haven't saved changes to this {confirmation.type.slice(0, -1)} yet,
+          {#if confirmation.action === "cancel"}
+            You haven't saved changes to this {confirmation.type?.slice(0, -1)} yet,
             so closing this window will lose your work.
-          {:else}
-            You will permanently remove this {confirmation.type.slice(0, -1)} from
+          {:else if confirmation.action === "delete"}
+            You will permanently remove this {confirmation.type?.slice(0, -1)} from
             all associated dashboards.
+          {:else if confirmation.action === "switch"}
+            Switching to a different model may break your measures and
+            dimensions unless the new model has similar data.
           {/if}
         </AlertDialog.Description>
       </AlertDialog.Header>
@@ -376,24 +438,35 @@
         <Button
           type="secondary"
           large
+          gray={confirmation.action === "delete"}
           on:click={() => {
             confirmation = null;
           }}
         >
-          {#if confirmation.action === "delete"}Cancel{:else}Keep editing{/if}
+          {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
         </Button>
         <Button
           large
+          status={confirmation.action === "delete" ? "error" : "info"}
           type="primary"
           on:click={async () => {
-            if (confirmation?.action === "delete") {
-              await deleteItem(confirmation.index, confirmation.type);
+            if (
+              confirmation?.action === "delete" &&
+              confirmation?.index !== undefined &&
+              confirmation.type
+            ) {
+              await deleteItem(confirmation?.index, confirmation.type);
+            } else if (confirmation?.action === "switch") {
+              await updateProperty("model", confirmation.model);
             }
             confirmation = null;
-            editingItem.set(null);
+            editingIndex.set(null);
+            editingType.set(null);
           }}
         >
-          {#if confirmation.action === "delete"}Yes, delete{:else}Close{/if}
+          {#if confirmation.action === "delete"}Yes, delete{:else if confirmation.action === "switch"}Switch
+            model{:else}
+            Close{/if}
         </Button>
       </AlertDialog.Footer>
     </AlertDialog.Content>
@@ -405,10 +478,6 @@
     @apply size-full max-w-full max-h-full flex-none;
     @apply overflow-hidden;
     @apply flex gap-x-3 p-4;
-  }
-
-  p {
-    @apply font-medium text-sm;
   }
 
   h1 {
