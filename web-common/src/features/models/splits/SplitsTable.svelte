@@ -137,6 +137,7 @@
     getSortedRowModel: getSortedRowModel(),
   });
   const table = createSvelteTable(options);
+  $: ({ getHeaderGroups } = $table);
 
   // Update table when data changes
   $: allRows =
@@ -179,13 +180,14 @@
       void $query.fetchNextPage();
     }
   }
+  $: ({ getVirtualItems, getTotalSize } = $virtualizer);
 </script>
 
 <div class="list scroll-container" bind:this={virtualListEl}>
-  <div style="position: relative; height: {$virtualizer.getTotalSize()}px;">
+  <div style="position: relative; height: {getTotalSize()}px;">
     <table class="w-full">
       <thead>
-        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
+        {#each getHeaderGroups() as headerGroup (headerGroup.id)}
           <tr>
             {#each headerGroup.headers as header (header.id)}
               <th colSpan={header.colSpan} class="px-4 py-2 text-left">
@@ -207,26 +209,34 @@
         {/each}
       </thead>
       <tbody>
-        {#each $virtualizer.getVirtualItems() as virtualRow, idx (virtualRow.index)}
-          <tr
-            style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
-              idx * virtualRow.size}px);"
-          >
-            {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
-              <td
-                class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
-                data-label={cell.column.columnDef.header}
-              >
-                <svelte:component
-                  this={flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  )}
-                />
-              </td>
-            {/each}
+        {#if allRows.length === 0}
+          <tr>
+            <td class="text-center py-4" colspan={columns.length}>
+              <div class="text-gray-500">None</div>
+            </td>
           </tr>
-        {/each}
+        {:else}
+          {#each getVirtualItems() as virtualRow, idx (virtualRow.index)}
+            <tr
+              style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
+                idx * virtualRow.size}px);"
+            >
+              {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
+                <td
+                  class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
+                  data-label={cell.column.columnDef.header}
+                >
+                  <svelte:component
+                    this={flexRender(
+                      cell.column.columnDef.cell,
+                      cell.getContext(),
+                    )}
+                  />
+                </td>
+              {/each}
+            </tr>
+          {/each}
+        {/if}
       </tbody>
     </table>
   </div>
