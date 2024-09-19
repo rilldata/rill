@@ -25,10 +25,15 @@
   function onValidDateInput(date: DateTime) {
     let newInterval: Interval;
 
-    if (selectingStart) {
+    const selectedEndDateBeforeStart =
+      calendarInterval?.start && date < calendarInterval.start;
+
+    if (selectingStart || selectedEndDateBeforeStart) {
       newInterval = calendarInterval.set({ start: date });
+      selectingStart = false;
     } else {
       newInterval = calendarInterval.set({ end: date });
+      selectingStart = true;
     }
 
     if (newInterval.isValid) {
@@ -39,10 +44,10 @@
         calendarInterval = singleDay;
       }
     }
+
     if (calendarInterval.isValid) {
       firstVisibleMonth = calendarInterval.start;
     }
-    selectingStart = !selectingStart;
   }
 </script>
 

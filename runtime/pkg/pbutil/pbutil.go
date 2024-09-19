@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
+	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -175,6 +176,12 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(*v), nil
 	case *net.IP:
 		return structpb.NewStringValue(v.String()), nil
+	case orb.Point:
+		st, err := structpb.NewList([]any{v[0], v[1]})
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewListValue(st), nil
 	default:
 	}
 	if t != nil && t.ArrayElementType != nil {

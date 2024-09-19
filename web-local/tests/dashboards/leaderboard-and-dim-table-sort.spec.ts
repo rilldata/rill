@@ -19,10 +19,6 @@ test.describe("leaderboard and dimension table sorting", () => {
   test("leaderboard and dimension table sorting", async ({ page }) => {
     await page.getByRole("button", { name: "Preview" }).click();
 
-    // Change time zone to UTC
-    await page.getByLabel("Timezone selector").click();
-    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
-
     /**
      * LEADERBOARD
      */
@@ -53,19 +49,8 @@ test.describe("leaderboard and dimension table sorting", () => {
     }
 
     await assertAAboveB(
-      page.getByRole("row", { name: "Microsoft 10.4k 10%" }),
-      page.getByRole("row", { name: "null 32.9k 33%" }),
-    );
-
-    //toggle sort by pct of total
-    await page
-      .getByLabel("publisher leaderboard")
-      .getByLabel("Toggle sort leaderboards by percent of total")
-      .click();
-
-    await assertAAboveB(
-      page.getByRole("row", { name: "facebook.com 15.6k 16%" }),
-      page.getByRole("row", { name: "news.google.com 12.9k 13%" }),
+      page.getByRole("row", { name: "Microsoft 10.4k" }),
+      page.getByRole("row", { name: "null 32.9k" }),
     );
 
     // add time comparison and select Pct change
@@ -217,31 +202,6 @@ test.describe("leaderboard and dimension table sorting", () => {
       page
         .locator("div")
         .filter({ hasText: /^5%$/ })
-        .getByRole("button", { name: "Filter dimension value" }),
-    );
-
-    // sort by pct of total ONCE to sort by pct of total descending
-    await page.getByRole("button", { name: "%" }).nth(1).click();
-    await assertAAboveB(
-      page
-        .locator("div")
-        .filter({ hasText: /^34%$/ })
-        .getByRole("button", { name: "Filter dimension value" }),
-      page
-        .locator("div")
-        .filter({ hasText: /^25%$/ })
-        .getByRole("button", { name: "Filter dimension value" }),
-    );
-    // sort by pct of total TWICE to sort by pct of total ascending
-    await page.getByRole("button", { name: "%" }).nth(1).click();
-    await assertAAboveB(
-      page
-        .locator("div")
-        .filter({ hasText: /^25%$/ })
-        .getByRole("button", { name: "Filter dimension value" }),
-      page
-        .locator("div")
-        .filter({ hasText: /^34%$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     );
   });

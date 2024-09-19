@@ -3,12 +3,11 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -58,10 +57,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -80,10 +76,7 @@ func (s *Server) GetOrganizationNameForDomain(ctx context.Context, req *adminv1.
 
 	org, err := s.admin.DB.FindOrganizationByCustomDomain(ctx, req.Domain)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// NOTE: Not checking auth on purpose. This needs to be a public endpoint.
@@ -141,18 +134,9 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org")
 	}
 
-	err = s.admin.DB.DeleteOrganization(ctx, req.Name)
+	_, err = s.admin.Jobs.PurgeOrg(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	// cancel subscription
-	if org.BillingCustomerID != "" {
-		err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
-		if err != nil {
-			s.logger.Error("failed to cancel subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
-		}
-		s.logger.Warn("canceled subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.DeleteOrganizationResponse{}, nil
@@ -198,7 +182,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if nameChanged {
@@ -224,187 +208,6 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	return &adminv1.UpdateOrganizationResponse{
 		Organization: organizationToDTO(org),
 	}, nil
-}
-
-func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBillingSubscriptionRequest) (*adminv1.GetBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to read org subscriptions")
-	}
-
-	if org.BillingCustomerID == "" {
-		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
-	}
-
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if len(subs) == 0 {
-		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
-	}
-
-	if len(subs) > 1 {
-		s.logger.Warn("multiple subscriptions found for the organization", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-	}
-
-	return &adminv1.GetBillingSubscriptionResponse{
-		Organization:     organizationToDTO(org),
-		Subscription:     subscriptionToDTO(subs[0]),
-		BillingPortalUrl: subs[0].Customer.PortalURL,
-	}, nil
-}
-
-func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.UpdateBillingSubscriptionRequest) (*adminv1.UpdateBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
-	if req.PlanName != "" {
-		observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
-	}
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to update org billing plan")
-	}
-
-	if req.PlanName == "" {
-		return nil, status.Error(codes.InvalidArgument, "plan name must be provided")
-	}
-
-	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
-	if err != nil {
-		if errors.Is(err, billing.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "plan not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	org, subs, err := s.admin.RepairOrgBilling(ctx, org)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	for _, sub := range subs {
-		if sub.Plan.ID == plan.ID {
-			return nil, status.Errorf(codes.FailedPrecondition, "organization already subscribed to the plan %s", plan.Name)
-		}
-	}
-
-	// plan change needed
-	// check for a payment method
-	c, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if !c.HasPaymentMethod && !claims.Superuser(ctx) {
-		return nil, status.Errorf(codes.FailedPrecondition, "no payment method found for the organization")
-	}
-
-	if planDowngrade(plan, org) {
-		if claims.Superuser(ctx) {
-			s.logger.Warn("plan downgrade", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan", subs[0].Plan.Name), zap.String("new_plan", plan.Name))
-		} else {
-			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
-		}
-	}
-
-	if len(subs) == 1 {
-		// schedule plan change
-		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	} else {
-		// multiple subscriptions, cancel them first immediately and assign new plan should not happen unless externally assigned multiple subscriptions to the same org in the billing system.
-		// RepairOrgBilling does not fix multiple subscription issue, we are not sure which subscription to cancel and which to keep. However, in case of plan change we can safely cancel all older subscriptions and create a new one with new plan.
-		for _, sub := range subs {
-			err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		}
-
-		// create new subscription
-		_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-
-	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		CustomDomain:                        org.CustomDomain,
-		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	subs, err = s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	var subscriptions []*adminv1.Subscription
-	for _, sub := range subs {
-		subscriptions = append(subscriptions, subscriptionToDTO(sub))
-	}
-
-	return &adminv1.UpdateBillingSubscriptionResponse{
-		Organization:  organizationToDTO(org),
-		Subscriptions: subscriptions,
-	}, nil
-}
-
-func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
-	observability.AddRequestAttributes(ctx, attribute.String("args.return_url", req.ReturnUrl))
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
-	}
-
-	if org.PaymentCustomerID == "" {
-		_, _, err = s.admin.RepairOrgBilling(ctx, org)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-
-	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &adminv1.GetPaymentsPortalURLResponse{Url: url}, nil
 }
 
 func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.ListOrganizationMemberUsersRequest) (*adminv1.ListOrganizationMemberUsersResponse, error) {
@@ -504,7 +307,8 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
@@ -544,16 +348,28 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			OrgID:     org.ID,
 			RoleID:    role.ID,
 		})
-		// continue sending an email if the user already exists
-		if err != nil && !errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.Internal, err.Error())
+		if err != nil {
+			if !errors.Is(err, database.ErrNotUnique) {
+				return nil, err
+			}
+			// Already invited. Update the invitation role.
+			invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+			if err != nil {
+				return nil, err
+			}
+			// Update the role of the invite
+			err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
+			if err != nil {
+				return nil, err
+			}
+			// Fallthrough so we send the email again.
 		}
 
 		// Send invitation email
 		err = s.admin.Email.SendOrganizationInvite(&email.OrganizationInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
-			AcceptURL:     s.admin.URLs.OrganizationInviteAccept(org.Name),
+			AcceptURL:     s.admin.URLs.WithCustomDomain(org.CustomDomain).OrganizationInviteAccept(org.Name),
 			OrgName:       org.Name,
 			RoleName:      role.Name,
 			InvitedByName: invitedByName,
@@ -567,42 +383,42 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		}, nil
 	}
 
-	ctx, tx, err := s.admin.DB.NewTx(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	errored := false
-	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
-	// continue sending an email if the user already exists
-	if err != nil {
-		errored = true
-		if !errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+	// Insert the user in the org and AllUsergroup transactionally.
+	err = func() error {
+		ctx, tx, err := s.admin.DB.NewTx(ctx)
+		if err != nil {
+			return err
 		}
-	}
+		defer func() { _ = tx.Rollback() }()
 
-	if !errored {
-		// if previous statement errored we cannot continue with this since transaction would be invalid
+		err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+		if err != nil {
+			return err
+		}
+
 		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
-			if !errors.Is(err, database.ErrNotUnique) {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			// If the user is already in the all user group, we can ignore the error
+			return fmt.Errorf("failed to add user to all user group: %w", err)
 		}
 
-		err = tx.Commit()
+		return tx.Commit()
+	}()
+	if err != nil {
+		if !errors.Is(err, database.ErrNotUnique) {
+			return nil, err
+		}
+
+		// The user is already in the org. Instead of erroring, we update their role and fallthrough to send the email again.
+		err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
 	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
-		OpenURL:       s.admin.URLs.Organization(org.Name),
+		OpenURL:       s.admin.URLs.WithCustomDomain(org.CustomDomain).Organization(org.Name),
 		OrgName:       org.Name,
 		RoleName:      role.Name,
 		InvitedByName: invitedByName,
@@ -643,10 +459,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 		// Check if there is a pending invite
 		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
 		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.InvalidArgument, "user not found")
-			}
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		err = s.admin.DB.DeleteOrganizationInvite(ctx, invite.ID)
@@ -744,14 +557,11 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 		// Check if there is a pending invite for this user
 		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
 		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.InvalidArgument, "user not found")
-			}
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 	}
@@ -775,7 +585,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 
 	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
@@ -865,10 +675,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !claims.Superuser(ctx) {
@@ -891,10 +698,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "role not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// find existing users belonging to the whitelisted domain to the org
@@ -928,19 +732,19 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		Domain:    req.Domain,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	for _, user := range newUsers {
 		err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// add to all user group
 		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -962,10 +766,7 @@ func (s *Server) RemoveWhitelistedDomain(ctx context.Context, req *adminv1.Remov
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !(claims.OrganizationPermissions(ctx, org.ID).ManageOrg || claims.Superuser(ctx)) {
@@ -974,10 +775,7 @@ func (s *Server) RemoveWhitelistedDomain(ctx context.Context, req *adminv1.Remov
 
 	invite, err := s.admin.DB.FindOrganizationWhitelistedDomain(ctx, org.ID, req.Domain)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "whitelist not found for org %q and domain %q", org.Name, req.Domain)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	err = s.admin.DB.DeleteOrganizationWhitelistedDomain(ctx, invite.ID)
@@ -997,10 +795,7 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !(claims.OrganizationPermissions(ctx, org.ID).ManageOrg || claims.Superuser(ctx)) {
@@ -1023,7 +818,7 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 }
 
 func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.SudoUpdateOrganizationQuotasRequest) (*adminv1.SudoUpdateOrganizationQuotasResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 	if req.Projects != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int("args.projects", int(*req.Projects)))
 	}
@@ -1045,13 +840,13 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, err
 	}
 
 	opts := &database.UpdateOrganizationOptions{
-		Name:                                req.OrgName,
+		Name:                                req.Organization,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        org.CustomDomain,
@@ -1073,65 +868,6 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 
 	return &adminv1.SudoUpdateOrganizationQuotasResponse{
 		Organization: organizationToDTO(updatedOrg),
-	}, nil
-}
-
-// SudoUpdateOrganizationBillingCustomer updates the billing customer id for an organization. May be useful if customer is initialized manually in billing system
-func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingCustomerRequest) (*adminv1.SudoUpdateOrganizationBillingCustomerResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrgName),
-		attribute.String("args.billing_customer_id", req.BillingCustomerId),
-	)
-
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can manage billing customer")
-	}
-
-	if req.BillingCustomerId == "" {
-		return nil, status.Error(codes.InvalidArgument, "billing customer id is required")
-	}
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
-	if err != nil {
-		return nil, err
-	}
-
-	opts := &database.UpdateOrganizationOptions{
-		Name:                                req.OrgName,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		CustomDomain:                        org.CustomDomain,
-		QuotaProjects:                       org.QuotaProjects,
-		QuotaDeployments:                    org.QuotaDeployments,
-		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-		BillingCustomerID:                   req.BillingCustomerId,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-	}
-
-	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// get subscriptions if present
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	var subscriptions []*adminv1.Subscription
-	for _, sub := range subs {
-		subscriptions = append(subscriptions, subscriptionToDTO(sub))
-	}
-
-	return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-		Organization:  organizationToDTO(org),
-		Subscriptions: subscriptions,
 	}, nil
 }
 
@@ -1175,25 +911,6 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 	}, nil
 }
 
-func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPublicBillingPlansRequest) (*adminv1.ListPublicBillingPlansResponse, error) {
-	observability.AddRequestAttributes(ctx)
-
-	// no permissions required to list public billing plans
-	plans, err := s.admin.Biller.GetPublicPlans(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	var dtos []*adminv1.BillingPlan
-	for _, plan := range plans {
-		dtos = append(dtos, billingPlanToDTO(plan))
-	}
-
-	return &adminv1.ListPublicBillingPlansResponse{
-		Plans: dtos,
-	}, nil
-}
-
 func organizationToDTO(o *database.Organization) *adminv1.Organization {
 	return &adminv1.Organization{
 		Id:           o.ID,
@@ -1217,39 +934,6 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 	}
 }
 
-func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
-	return &adminv1.Subscription{
-		Id:                           sub.ID,
-		PlanId:                       sub.Plan.ID,
-		PlanName:                     sub.Plan.Name,
-		PlanDisplayName:              sub.Plan.DisplayName,
-		StartDate:                    valOrNullTime(sub.StartDate),
-		EndDate:                      valOrNullTime(sub.EndDate),
-		CurrentBillingCycleStartDate: valOrNullTime(sub.CurrentBillingCycleStartDate),
-		CurrentBillingCycleEndDate:   valOrNullTime(sub.CurrentBillingCycleEndDate),
-		TrialEndDate:                 valOrNullTime(sub.TrialEndDate),
-	}
-}
-
-func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
-	return &adminv1.BillingPlan{
-		Id:              plan.ID,
-		Name:            plan.Name,
-		DisplayName:     plan.DisplayName,
-		Description:     plan.Description,
-		TrialPeriodDays: uint32(plan.TrialPeriodDays),
-		Default:         plan.Default,
-		Quotas: &adminv1.Quotas{
-			Projects:                       valOrEmptyString(plan.Quotas.NumProjects),
-			Deployments:                    valOrEmptyString(plan.Quotas.NumDeployments),
-			SlotsTotal:                     valOrEmptyString(plan.Quotas.NumSlotsTotal),
-			SlotsPerDeployment:             valOrEmptyString(plan.Quotas.NumSlotsPerDeployment),
-			OutstandingInvites:             valOrEmptyString(plan.Quotas.NumOutstandingInvites),
-			StorageLimitBytesPerDeployment: val64OrEmptyString(plan.Quotas.StorageLimitBytesPerDeployment),
-		},
-	}
-}
-
 func valOrEmptyString(v *int) string {
 	if v != nil {
 		return strconv.Itoa(*v)
@@ -1264,53 +948,9 @@ func val64OrEmptyString(v *int64) string {
 	return ""
 }
 
-func valOrNullTime(v time.Time) *timestamppb.Timestamp {
-	if v.IsZero() {
-		return nil
-	}
-	return timestamppb.New(v)
-}
-
 func whitelistedDomainToPB(a *database.OrganizationWhitelistedDomainWithJoinedRoleNames) *adminv1.WhitelistedDomain {
 	return &adminv1.WhitelistedDomain{
 		Domain: a.Domain,
 		Role:   a.RoleName,
 	}
-}
-
-func planDowngrade(newPan *billing.Plan, org *database.Organization) bool {
-	// nil or negative values are considered as unlimited
-	if comparableInt(newPan.Quotas.NumProjects) < comparableInt(&org.QuotaProjects) {
-		return true
-	}
-	if comparableInt(newPan.Quotas.NumDeployments) < comparableInt(&org.QuotaDeployments) {
-		return true
-	}
-	if comparableInt(newPan.Quotas.NumSlotsTotal) < comparableInt(&org.QuotaSlotsTotal) {
-		return true
-	}
-	if comparableInt(newPan.Quotas.NumSlotsPerDeployment) < comparableInt(&org.QuotaSlotsPerDeployment) {
-		return true
-	}
-	if comparableInt(newPan.Quotas.NumOutstandingInvites) < comparableInt(&org.QuotaOutstandingInvites) {
-		return true
-	}
-	if comparableInt64(newPan.Quotas.StorageLimitBytesPerDeployment) < comparableInt64(&org.QuotaStorageLimitBytesPerDeployment) {
-		return true
-	}
-	return false
-}
-
-func comparableInt(v *int) int {
-	if v == nil || *v < 0 {
-		return math.MaxInt
-	}
-	return *v
-}
-
-func comparableInt64(v *int64) int64 {
-	if v == nil || *v < 0 {
-		return math.MaxInt64
-	}
-	return *v
 }

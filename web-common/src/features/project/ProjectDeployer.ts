@@ -165,7 +165,8 @@ export class ProjectDeployer {
           org: `${org}${i === 0 ? "" : "-" + i}`,
           upload: true,
         });
-        void behaviourEvent?.fireDeployEvent(
+        // wait for the telemetry to finish since the page will be redirected after a deploy success
+        await behaviourEvent?.fireDeployEvent(
           BehaviourEventAction.DeploySuccess,
         );
         return resp.frontendUrl;

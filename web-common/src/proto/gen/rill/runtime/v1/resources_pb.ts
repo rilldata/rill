@@ -44,6 +44,38 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.ExploreComparisonMode
+ */
+export enum ExploreComparisonMode {
+  /**
+   * @generated from enum value: EXPLORE_COMPARISON_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EXPLORE_COMPARISON_MODE_NONE = 1;
+   */
+  NONE = 1,
+
+  /**
+   * @generated from enum value: EXPLORE_COMPARISON_MODE_TIME = 2;
+   */
+  TIME = 2,
+
+  /**
+   * @generated from enum value: EXPLORE_COMPARISON_MODE_DIMENSION = 3;
+   */
+  DIMENSION = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ExploreComparisonMode)
+proto3.util.setEnumType(ExploreComparisonMode, "rill.runtime.v1.ExploreComparisonMode", [
+  { no: 0, name: "EXPLORE_COMPARISON_MODE_UNSPECIFIED" },
+  { no: 1, name: "EXPLORE_COMPARISON_MODE_NONE" },
+  { no: 2, name: "EXPLORE_COMPARISON_MODE_TIME" },
+  { no: 3, name: "EXPLORE_COMPARISON_MODE_DIMENSION" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.AssertionStatus
  */
 export enum AssertionStatus {
@@ -113,6 +145,12 @@ export class Resource extends Message<Resource> {
      */
     value: MetricsViewV2;
     case: "metricsView";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.Explore explore = 17;
+     */
+    value: Explore;
+    case: "explore";
   } | {
     /**
      * @generated from field: rill.runtime.v1.Migration migration = 9;
@@ -194,6 +232,7 @@ export class Resource extends Message<Resource> {
     { no: 3, name: "source", kind: "message", T: SourceV2, oneof: "resource" },
     { no: 4, name: "model", kind: "message", T: ModelV2, oneof: "resource" },
     { no: 5, name: "metrics_view", kind: "message", T: MetricsViewV2, oneof: "resource" },
+    { no: 17, name: "explore", kind: "message", T: Explore, oneof: "resource" },
     { no: 9, name: "migration", kind: "message", T: Migration, oneof: "resource" },
     { no: 10, name: "report", kind: "message", T: Report, oneof: "resource" },
     { no: 12, name: "alert", kind: "message", T: Alert, oneof: "resource" },
@@ -825,6 +864,11 @@ export class ModelSpec extends Message<ModelSpec> {
    */
   trigger = false;
 
+  /**
+   * @generated from field: bool trigger_full = 22;
+   */
+  triggerFull = false;
+
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -849,6 +893,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
@@ -1070,14 +1115,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   model = "";
 
   /**
-   * User friendly label for the dashboard
+   * User-facing title
    *
    * @generated from field: string title = 3;
    */
   title = "";
 
   /**
-   * Description of the dashboard
+   * User-facing description
    *
    * @generated from field: string description = 4;
    */
@@ -1089,6 +1134,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    * @generated from field: string time_dimension = 5;
    */
   timeDimension = "";
+
+  /**
+   * The smallest time grain that can be queried for.
+   * This can be useful to set if the time_dimension is not available below a certain granularity.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 8;
+   */
+  smallestTimeGrain = TimeGrain.UNSPECIFIED;
 
   /**
    * Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
@@ -1105,46 +1158,11 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   dimensions: MetricsViewSpec_DimensionV2[] = [];
 
   /**
-   * List of selected dimensions by defaults
-   *
-   * @generated from field: repeated string default_dimensions = 18;
-   */
-  defaultDimensions: string[] = [];
-
-  /**
    * Measures in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.MeasureV2 measures = 7;
    */
   measures: MetricsViewSpec_MeasureV2[] = [];
-
-  /**
-   * List of selected measures by defaults
-   *
-   * @generated from field: repeated string default_measures = 19;
-   */
-  defaultMeasures: string[] = [];
-
-  /**
-   * Smallest time grain to show in the dashboard
-   *
-   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 8;
-   */
-  smallestTimeGrain = TimeGrain.UNSPECIFIED;
-
-  /**
-   * Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-   *
-   * @generated from field: string default_time_range = 9;
-   */
-  defaultTimeRange = "";
-
-  /**
-   * Available time zones list preferred time zones using IANA location identifiers
-   *
-   * @generated from field: repeated string available_time_zones = 10;
-   */
-  availableTimeZones: string[] = [];
 
   /**
    * Security for the dashboard
@@ -1168,32 +1186,68 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   firstMonthOfYear = 0;
 
   /**
+   * List of selected dimensions by defaults.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: repeated string default_dimensions = 18;
+   */
+  defaultDimensions: string[] = [];
+
+  /**
+   * List of selected measures by defaults.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: repeated string default_measures = 19;
+   */
+  defaultMeasures: string[] = [];
+
+  /**
+   * Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: string default_time_range = 9;
+   */
+  defaultTimeRange = "";
+
+  /**
    * Selected default comparison mode.
+   * Deprecated: Now defined in the Explore resource.
    *
    * @generated from field: rill.runtime.v1.MetricsViewSpec.ComparisonMode default_comparison_mode = 14;
    */
   defaultComparisonMode = MetricsViewSpec_ComparisonMode.UNSPECIFIED;
 
   /**
-   * If comparison mode is dimension then this determines which is the default dimension
+   * If comparison mode is dimension then this determines which is the default dimension.
+   * Deprecated: Now defined in the Explore resource.
    *
    * @generated from field: string default_comparison_dimension = 15;
    */
   defaultComparisonDimension = "";
 
   /**
+   * Default theme to apply.
+   * Deprecated: Now defined in the Explore resource.
+   *
+   * @generated from field: string default_theme = 17;
+   */
+  defaultTheme = "";
+
+  /**
    * List of available time ranges with comparison ranges that would replace the default list.
+   * Deprecated: Now defined in the Explore resource.
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.AvailableTimeRange available_time_ranges = 16;
    */
   availableTimeRanges: MetricsViewSpec_AvailableTimeRange[] = [];
 
   /**
-   * Default theme to apply
+   * Available time zones list preferred time zones using IANA location identifiers.
+   * Deprecated: Now defined in the Explore resource.
    *
-   * @generated from field: string default_theme = 17;
+   * @generated from field: repeated string available_time_zones = 10;
    */
-  defaultTheme = "";
+  availableTimeZones: string[] = [];
 
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
@@ -1211,21 +1265,21 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_DimensionV2, repeated: true },
-    { no: 18, name: "default_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_MeasureV2, repeated: true },
-    { no: 19, name: "default_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
-    { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 18, name: "default_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 19, name: "default_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "default_comparison_mode", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_ComparisonMode) },
     { no: 15, name: "default_comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 16, name: "available_time_ranges", kind: "message", T: MetricsViewSpec_AvailableTimeRange, repeated: true },
     { no: 17, name: "default_theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "available_time_ranges", kind: "message", T: MetricsViewSpec_AvailableTimeRange, repeated: true },
+    { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1280,6 +1334,9 @@ proto3.util.setEnumType(MetricsViewSpec_MeasureType, "rill.runtime.v1.MetricsVie
 ]);
 
 /**
+ * DEPRECATED FIELDS
+ * Deprecated: Now defined in the Explore resource.
+ *
  * @generated from enum rill.runtime.v1.MetricsViewSpec.ComparisonMode
  */
 export enum MetricsViewSpec_ComparisonMode {
@@ -1604,6 +1661,8 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
 }
 
 /**
+ * Deprecated: Now defined in the Explore resource.
+ *
  * @generated from message rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
  */
 export class MetricsViewSpec_AvailableComparisonOffset extends Message<MetricsViewSpec_AvailableComparisonOffset> {
@@ -1649,6 +1708,8 @@ export class MetricsViewSpec_AvailableComparisonOffset extends Message<MetricsVi
 }
 
 /**
+ * Deprecated: Now defined in the Explore resource.
+ *
  * @generated from message rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
  */
 export class MetricsViewSpec_AvailableTimeRange extends Message<MetricsViewSpec_AvailableTimeRange> {
@@ -1946,6 +2007,414 @@ export class MetricsViewState extends Message<MetricsViewState> {
 
   static equals(a: MetricsViewState | PlainMessage<MetricsViewState> | undefined, b: MetricsViewState | PlainMessage<MetricsViewState> | undefined): boolean {
     return proto3.util.equals(MetricsViewState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Explore
+ */
+export class Explore extends Message<Explore> {
+  /**
+   * @generated from field: rill.runtime.v1.ExploreSpec spec = 1;
+   */
+  spec?: ExploreSpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExploreState state = 2;
+   */
+  state?: ExploreState;
+
+  constructor(data?: PartialMessage<Explore>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Explore";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: ExploreSpec },
+    { no: 2, name: "state", kind: "message", T: ExploreState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Explore {
+    return new Explore().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Explore {
+    return new Explore().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Explore {
+    return new Explore().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Explore | PlainMessage<Explore> | undefined, b: Explore | PlainMessage<Explore> | undefined): boolean {
+    return proto3.util.equals(Explore, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExploreSpec
+ */
+export class ExploreSpec extends Message<ExploreSpec> {
+  /**
+   * User-facing title
+   *
+   * @generated from field: string title = 1;
+   */
+  title = "";
+
+  /**
+   * User-facing description
+   *
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  /**
+   * The metrics view the explore is based on
+   *
+   * @generated from field: string metrics_view = 3;
+   */
+  metricsView = "";
+
+  /**
+   * Dimensions to show.
+   *
+   * @generated from field: repeated string dimensions = 4;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+   * Since it is processed during validation, this will always be false in `state.valid_spec`.
+   *
+   * @generated from field: bool dimensions_exclude = 5;
+   */
+  dimensionsExclude = false;
+
+  /**
+   * Measures available
+   *
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * If true, `measures` will be inverted during validation to include all measures except the ones listed.
+   * Since it is processed during validation, this will always be false in `state.valid_spec`.
+   *
+   * @generated from field: bool measures_exclude = 7;
+   */
+  measuresExclude = false;
+
+  /**
+   * Theme to use
+   *
+   * @generated from field: string theme = 8;
+   */
+  theme = "";
+
+  /**
+   * List of selectable time ranges with comparison time ranges.
+   * If the list is empty, a default list should be shown.
+   *
+   * @generated from field: repeated rill.runtime.v1.ExploreTimeRange time_ranges = 9;
+   */
+  timeRanges: ExploreTimeRange[] = [];
+
+  /**
+   * List of selectable time zones.
+   * If the list is empty, a default list should be shown.
+   * The values should be valid IANA location identifiers.
+   *
+   * @generated from field: repeated string time_zones = 10;
+   */
+  timeZones: string[] = [];
+
+  /**
+   * List of preconfigured UI states that can be toggled between.
+   * If the list is not empty, the first item should be selected by default.
+   *
+   * @generated from field: repeated rill.runtime.v1.ExplorePreset presets = 11;
+   */
+  presets: ExplorePreset[] = [];
+
+  /**
+   * Security for the explore dashboard.
+   * These are not currently parsed from YAML, but will be derived from the parent metrics view.
+   *
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 12;
+   */
+  securityRules: SecurityRule[] = [];
+
+  constructor(data?: PartialMessage<ExploreSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExploreSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "dimensions_exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "measures_exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "presets", kind: "message", T: ExplorePreset, repeated: true },
+    { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
+    return new ExploreSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExploreSpec {
+    return new ExploreSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExploreSpec {
+    return new ExploreSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExploreSpec | PlainMessage<ExploreSpec> | undefined, b: ExploreSpec | PlainMessage<ExploreSpec> | undefined): boolean {
+    return proto3.util.equals(ExploreSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExploreState
+ */
+export class ExploreState extends Message<ExploreState> {
+  /**
+   * @generated from field: rill.runtime.v1.ExploreSpec valid_spec = 1;
+   */
+  validSpec?: ExploreSpec;
+
+  constructor(data?: PartialMessage<ExploreState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExploreState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "valid_spec", kind: "message", T: ExploreSpec },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreState {
+    return new ExploreState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExploreState {
+    return new ExploreState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExploreState {
+    return new ExploreState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExploreState | PlainMessage<ExploreState> | undefined, b: ExploreState | PlainMessage<ExploreState> | undefined): boolean {
+    return proto3.util.equals(ExploreState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExploreTimeRange
+ */
+export class ExploreTimeRange extends Message<ExploreTimeRange> {
+  /**
+   * ISO 8601 duration string for the time range
+   *
+   * @generated from field: string range = 1;
+   */
+  range = "";
+
+  /**
+   * Comparison time ranges available for this time range
+   *
+   * @generated from field: repeated rill.runtime.v1.ExploreComparisonTimeRange comparison_time_ranges = 2;
+   */
+  comparisonTimeRanges: ExploreComparisonTimeRange[] = [];
+
+  constructor(data?: PartialMessage<ExploreTimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExploreTimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "comparison_time_ranges", kind: "message", T: ExploreComparisonTimeRange, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreTimeRange {
+    return new ExploreTimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExploreTimeRange {
+    return new ExploreTimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExploreTimeRange {
+    return new ExploreTimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExploreTimeRange | PlainMessage<ExploreTimeRange> | undefined, b: ExploreTimeRange | PlainMessage<ExploreTimeRange> | undefined): boolean {
+    return proto3.util.equals(ExploreTimeRange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExploreComparisonTimeRange
+ */
+export class ExploreComparisonTimeRange extends Message<ExploreComparisonTimeRange> {
+  /**
+   * ISO 8601 duration string to use as an offset from the base time range.
+   *
+   * @generated from field: string offset = 1;
+   */
+  offset = "";
+
+  /**
+   * ISO 8601 duration string for the duration of the comparison time range.
+   * If not specified, it should fallback to the range of the base time range.
+   *
+   * @generated from field: string range = 2;
+   */
+  range = "";
+
+  constructor(data?: PartialMessage<ExploreComparisonTimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExploreComparisonTimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreComparisonTimeRange {
+    return new ExploreComparisonTimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExploreComparisonTimeRange {
+    return new ExploreComparisonTimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExploreComparisonTimeRange {
+    return new ExploreComparisonTimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExploreComparisonTimeRange | PlainMessage<ExploreComparisonTimeRange> | undefined, b: ExploreComparisonTimeRange | PlainMessage<ExploreComparisonTimeRange> | undefined): boolean {
+    return proto3.util.equals(ExploreComparisonTimeRange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExplorePreset
+ */
+export class ExplorePreset extends Message<ExplorePreset> {
+  /**
+   * Display name of the preset
+   *
+   * @generated from field: string label = 1;
+   */
+  label = "";
+
+  /**
+   * Dimensions to show
+   *
+   * @generated from field: repeated string dimensions = 2;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+   * Since it is processed during validation, this will always be false in `state.valid_spec`.
+   *
+   * @generated from field: bool dimensions_exclude = 3;
+   */
+  dimensionsExclude = false;
+
+  /**
+   * Measures to show
+   *
+   * @generated from field: repeated string measures = 4;
+   */
+  measures: string[] = [];
+
+  /**
+   * If true, `measures` will be inverted during validation to include all measures except the ones listed.
+   * Since it is processed during validation, this will always be false in `state.valid_spec`.
+   *
+   * @generated from field: bool measures_exclude = 5;
+   */
+  measuresExclude = false;
+
+  /**
+   * Time range for the explore.
+   * It corresponds to the `range` property of the explore's `time_ranges`.
+   * If not found in `time_ranges`, it should be added to the list.
+   *
+   * @generated from field: string time_range = 6;
+   */
+  timeRange = "";
+
+  /**
+   * Comparison mode.
+   *
+   * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 7;
+   */
+  comparisonMode = ExploreComparisonMode.UNSPECIFIED;
+
+  /**
+   * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+   *
+   * @generated from field: string comparison_dimension = 8;
+   */
+  comparisonDimension = "";
+
+  constructor(data?: PartialMessage<ExplorePreset>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExplorePreset";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "dimensions_exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "measures_exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
+    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
+    return new ExplorePreset().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExplorePreset {
+    return new ExplorePreset().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExplorePreset {
+    return new ExplorePreset().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExplorePreset | PlainMessage<ExplorePreset> | undefined, b: ExplorePreset | PlainMessage<ExplorePreset> | undefined): boolean {
+    return proto3.util.equals(ExplorePreset, a, b);
   }
 }
 
@@ -2807,6 +3276,8 @@ export class AssertionResult extends Message<AssertionResult> {
 }
 
 /**
+ * DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
+ *
  * @generated from message rill.runtime.v1.PullTrigger
  */
 export class PullTrigger extends Message<PullTrigger> {
@@ -2959,9 +3430,19 @@ export class RefreshTrigger extends Message<RefreshTrigger> {
  */
 export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   /**
-   * @generated from field: repeated rill.runtime.v1.ResourceName only_names = 1;
+   * Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+   * If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName resources = 1;
    */
-  onlyNames: ResourceName[] = [];
+  resources: ResourceName[] = [];
+
+  /**
+   * Models to refresh. These are specified separately to enable more fine-grained configuration.
+   *
+   * @generated from field: repeated rill.runtime.v1.RefreshModelTrigger models = 2;
+   */
+  models: RefreshModelTrigger[] = [];
 
   constructor(data?: PartialMessage<RefreshTriggerSpec>) {
     super();
@@ -2971,7 +3452,8 @@ export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.RefreshTriggerSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "only_names", kind: "message", T: ResourceName, repeated: true },
+    { no: 1, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 2, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshTriggerSpec {
@@ -3019,6 +3501,70 @@ export class RefreshTriggerState extends Message<RefreshTriggerState> {
 
   static equals(a: RefreshTriggerState | PlainMessage<RefreshTriggerState> | undefined, b: RefreshTriggerState | PlainMessage<RefreshTriggerState> | undefined): boolean {
     return proto3.util.equals(RefreshTriggerState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.RefreshModelTrigger
+ */
+export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
+  /**
+   * The model to refresh.
+   *
+   * @generated from field: string model = 1;
+   */
+  model = "";
+
+  /**
+   * If true, the current table and state will be dropped before refreshing.
+   * For non-incremental models, this is equivalent to a normal refresh.
+   *
+   * @generated from field: bool full = 2;
+   */
+  full = false;
+
+  /**
+   * Keys of specific splits to refresh.
+   *
+   * @generated from field: repeated string splits = 3;
+   */
+  splits: string[] = [];
+
+  /**
+   * If true, it will refresh all splits that errored on their last execution.
+   *
+   * @generated from field: bool all_errored_splits = 4;
+   */
+  allErroredSplits = false;
+
+  constructor(data?: PartialMessage<RefreshModelTrigger>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RefreshModelTrigger";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "splits", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "all_errored_splits", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RefreshModelTrigger {
+    return new RefreshModelTrigger().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RefreshModelTrigger | PlainMessage<RefreshModelTrigger> | undefined, b: RefreshModelTrigger | PlainMessage<RefreshModelTrigger> | undefined): boolean {
+    return proto3.util.equals(RefreshModelTrigger, a, b);
   }
 }
 
@@ -3477,6 +4023,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
  * @generated from message rill.runtime.v1.ComponentState
  */
 export class ComponentState extends Message<ComponentState> {
+  /**
+   * @generated from field: rill.runtime.v1.ComponentSpec valid_spec = 1;
+   */
+  validSpec?: ComponentSpec;
+
   constructor(data?: PartialMessage<ComponentState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3485,6 +4036,7 @@ export class ComponentState extends Message<ComponentState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ComponentState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "valid_spec", kind: "message", T: ComponentSpec },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentState {
@@ -3661,6 +4213,11 @@ export class DashboardSpec extends Message<DashboardSpec> {
  * @generated from message rill.runtime.v1.DashboardState
  */
 export class DashboardState extends Message<DashboardState> {
+  /**
+   * @generated from field: rill.runtime.v1.DashboardSpec valid_spec = 1;
+   */
+  validSpec?: DashboardSpec;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3669,6 +4226,7 @@ export class DashboardState extends Message<DashboardState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.DashboardState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "valid_spec", kind: "message", T: DashboardSpec },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -4183,7 +4741,12 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   properties: { [key: string]: string } = {};
 
   /**
-   * properties_from_variables stores properties whose value is a variable.
+   * @generated from field: repeated string templated_properties = 4;
+   */
+  templatedProperties: string[] = [];
+
+  /**
+   * DEPRECATED: properties_from_variables stores properties whose value is a variable.
    * NOTE : properties_from_variables and properties both should be used to get all properties.
    *
    * @generated from field: map<string, string> properties_from_variables = 3;
@@ -4200,6 +4763,7 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 3, name: "properties_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 

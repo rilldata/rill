@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
     "storybook:smoketest": "STORYBOOK_MODE=true storybook dev --smoke-test",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "build-filter-grammar": "nearleyc src/features/dashboards/url-state/filters/expression.ne -o src/features/dashboards/url-state/filters/expression.cjs"
   },
   "devDependencies": {
     "@bufbuild/protobuf": "^1.0.0",
@@ -71,6 +72,7 @@
     "luxon": "^3.4.3",
     "marked": "^12.0.1",
     "match-sorter": "^6.3.1",
+    "nearley": "^2.20.1",
     "orval": "6.12.0",
     "regular-table": "^0.5.9",
     "storybook": "^7.0.18",
@@ -84,11 +86,12 @@
     "tailwind-merge": "^2.1.0",
     "tailwind-variants": "^0.1.19",
     "tailwindcss": "^3.2.7",
-    "ts-json-schema-generator": "^2.2.0",
+    "ts-json-schema-generator": "^2.3.0",
     "tsx": "^4.7.0",
     "ua-parser-js": "^1.0.2",
     "uuid": "^9.0.0",
     "vega-lite": "^5.17.0",
+    "vega-typings": "^1.3.1",
     "vitest": "^0.31.0",
     "yaml": "^2.4.5",
     "yup": "^1.4.0"

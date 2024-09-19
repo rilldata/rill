@@ -2,9 +2,12 @@ package database
 
 import (
 	"context"
-	"errors"
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Drivers is a registry of drivers
@@ -19,13 +22,19 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new database connection.
-func Open(driver, dsn string) (DB, error) {
+// See ParseEncryptionKeyring for the expected format for encKeyringConfig.
+func Open(driver, dsn, encKeyringConfig string) (DB, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)
 	}
 
-	db, err := d.Open(dsn)
+	encKeyring, err := ParseEncryptionKeyring(encKeyringConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing encryption keyring: %w", err)
+	}
+
+	db, err := d.Open(dsn, encKeyring)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +44,7 @@ func Open(driver, dsn string) (DB, error) {
 
 // Driver is the interface for DB drivers.
 type Driver interface {
-	Open(dsn string) (DB, error)
+	Open(dsn string, encKeyring []*EncryptionKey) (DB, error)
 }
 
 // DB is the interface for a database connection.
@@ -156,7 +165,7 @@ type DB interface {
 	DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
-	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
+	FindMagicAuthToken(ctx context.Context, id string, withSecret bool) (*MagicAuthToken, error)
 	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
@@ -252,7 +261,19 @@ type DB interface {
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
 
-	FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*Organization, error)
+	FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*Organization, error)
+
+	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
+	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
+
+	FindBillingIssues(ctx context.Context, orgID string) ([]*BillingIssue, error)
+	FindBillingIssueByType(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
+	FindBillingIssueByTypeNotOverdueProcessed(ctx context.Context, errorType BillingIssueType) ([]*BillingIssue, error)
+	FindBillingIssueByTypeNotOverdueProcessedForOrg(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
+	UpsertBillingIssue(ctx context.Context, opts *UpsertBillingIssueOptions) (*BillingIssue, error)
+	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
+	DeleteBillingIssue(ctx context.Context, id string) error
+	DeleteBillingIssueByType(ctx context.Context, orgID string, errorType BillingIssueType) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -265,12 +286,6 @@ type Tx interface {
 	// This means that a call to Rollback should almost always be defer'ed right after a call to NewTx.
 	Rollback() error
 }
-
-// ErrNotFound is returned for single row queries that return no values.
-var ErrNotFound = errors.New("database: not found")
-
-// ErrNotUnique is returned when a unique constraint is violated
-var ErrNotUnique = errors.New("database: violates unique constraint")
 
 // Organization represents a tenant.
 type Organization struct {
@@ -339,21 +354,22 @@ type Project struct {
 	Provisioner     string
 	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
-	ArchiveAssetID       *string           `db:"archive_asset_id"`
-	GithubURL            *string           `db:"github_url"`
-	GithubInstallationID *int64            `db:"github_installation_id"`
-	Subpath              string            `db:"subpath"`
-	ProdVersion          string            `db:"prod_version"`
-	ProdBranch           string            `db:"prod_branch"`
-	ProdVariables        map[string]string `db:"prod_variables"`
-	ProdOLAPDriver       string            `db:"prod_olap_driver"`
-	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
-	ProdSlots            int               `db:"prod_slots"`
-	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string           `db:"prod_deployment_id"`
-	Annotations          map[string]string `db:"annotations"`
-	CreatedOn            time.Time         `db:"created_on"`
-	UpdatedOn            time.Time         `db:"updated_on"`
+	ArchiveAssetID               *string           `db:"archive_asset_id"`
+	GithubURL                    *string           `db:"github_url"`
+	GithubInstallationID         *int64            `db:"github_installation_id"`
+	Subpath                      string            `db:"subpath"`
+	ProdVersion                  string            `db:"prod_version"`
+	ProdBranch                   string            `db:"prod_branch"`
+	ProdVariables                map[string]string `db:"prod_variables"`
+	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
+	ProdOLAPDriver               string            `db:"prod_olap_driver"`
+	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
+	ProdSlots                    int               `db:"prod_slots"`
+	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID             *string           `db:"prod_deployment_id"`
+	Annotations                  map[string]string `db:"annotations"`
+	CreatedOn                    time.Time         `db:"created_on"`
+	UpdatedOn                    time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -598,6 +614,8 @@ type InsertDeploymentAuthTokenOptions struct {
 type MagicAuthToken struct {
 	ID                    string
 	SecretHash            []byte         `db:"secret_hash"`
+	Secret                []byte         `db:"secret"`
+	SecretEncryptionKeyID string         `db:"secret_encryption_key_id"`
 	ProjectID             string         `db:"project_id"`
 	CreatedOn             time.Time      `db:"created_on"`
 	ExpiresOn             *time.Time     `db:"expires_on"`
@@ -620,6 +638,7 @@ type MagicAuthTokenWithUser struct {
 type InsertMagicAuthTokenOptions struct {
 	ID                    string
 	SecretHash            []byte
+	Secret                []byte
 	ProjectID             string `validate:"required"`
 	ExpiresOn             *time.Time
 	CreatedByUserID       *string
@@ -917,4 +936,117 @@ type Asset struct {
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+// EncryptionKey represents an encryption key for column-level encryption/decryption.
+// Column-level encryption provides an extra layer of security for highly sensitive columns in the database.
+// It is implemented on the application side before writes to and after reads from the database.
+type EncryptionKey struct {
+	ID     string `json:"key_id"`
+	Secret []byte `json:"key"`
+}
+
+// ParseEncryptionKeyring parses a JSON string containing an array of EncryptionKey objects.
+// If the provided string is empty, an empty keyring is returned.
+// When using an empty keyring, columns will be read and written without applying encryption/decryption.
+func ParseEncryptionKeyring(keyring string) ([]*EncryptionKey, error) {
+	if keyring == "" {
+		return nil, nil
+	}
+
+	var encKeyring []*EncryptionKey
+	err := json.Unmarshal([]byte(keyring), &encKeyring)
+	if err != nil {
+		return nil, err
+	}
+
+	return encKeyring, nil
+}
+
+func NewRandomKeyring() ([]*EncryptionKey, error) {
+	secret := make([]byte, 32) // 32 bytes for AES-256
+	_, err := rand.Read(secret)
+	if err != nil {
+		return nil, err
+	}
+
+	encKeyRing := []*EncryptionKey{
+		{ID: uuid.New().String(), Secret: secret},
+	}
+
+	return encKeyRing, nil
+}
+
+type BillingIssueType int
+
+const (
+	BillingIssueTypeUnspecified           BillingIssueType = iota
+	BillingIssueTypeOnTrial                                = 1
+	BillingIssueTypeTrialEnded                             = 2
+	BillingIssueTypeNoPaymentMethod                        = 3
+	BillingIssueTypeNoBillableAddress                      = 4
+	BillingIssueTypePaymentFailed                          = 5
+	BillingIssueTypeSubscriptionCancelled                  = 6
+)
+
+type BillingIssueLevel int
+
+const (
+	BillingIssueLevelUnspecified BillingIssueLevel = iota
+	BillingIssueLevelWarning                       = 1
+	BillingIssueLevelError                         = 2
+)
+
+type BillingIssue struct {
+	ID        string
+	OrgID     string
+	Type      BillingIssueType
+	Level     BillingIssueLevel
+	Metadata  BillingIssueMetadata
+	EventTime time.Time
+	CreatedOn time.Time
+}
+
+type BillingIssueMetadata interface{}
+
+type BillingIssueMetadataOnTrial struct {
+	SubID   string    `json:"subscription_id"`
+	PlanID  string    `json:"plan_id"`
+	EndDate time.Time `json:"end_date"`
+}
+
+type BillingIssueMetadataTrialEnded struct {
+	SubID              string    `json:"subscription_id"`
+	PlanID             string    `json:"plan_id"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
+}
+
+type BillingIssueMetadataNoPaymentMethod struct{}
+
+type BillingIssueMetadataNoBillableAddress struct{}
+
+type BillingIssueMetadataPaymentFailed struct {
+	Invoices map[string]*BillingIssueMetadataPaymentFailedMeta `json:"invoices"`
+}
+
+type BillingIssueMetadataPaymentFailedMeta struct {
+	ID                 string    `json:"id"`
+	Number             string    `json:"invoice_number"`
+	URL                string    `json:"invoice_url"`
+	Amount             string    `json:"amount"`
+	Currency           string    `json:"currency"`
+	DueDate            time.Time `json:"due_date"`
+	FailedOn           time.Time `json:"failed_on"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
+}
+
+type BillingIssueMetadataSubscriptionCancelled struct {
+	EndDate time.Time `json:"end_date"`
+}
+
+type UpsertBillingIssueOptions struct {
+	OrgID     string           `validate:"required"`
+	Type      BillingIssueType `validate:"required"`
+	Metadata  BillingIssueMetadata
+	EventTime time.Time `validate:"required"`
 }

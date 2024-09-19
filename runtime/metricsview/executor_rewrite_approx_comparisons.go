@@ -48,10 +48,14 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 	}
 	sortField := a.Root.OrderBy[0]
 
-	// if there are unnests in the query, we can't rewrite the query for Druid
-	// it fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
-	if e.olap.Dialect() == drivers.DialectDruid && len(a.unnests) > 0 {
-		return false
+	if e.olap.Dialect() == drivers.DialectDruid {
+		// if there are unnests in the query, we can't rewrite the query for Druid
+		// it fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
+		for _, dim := range n.FromSelect.DimFields {
+			if dim.AutoUnnest {
+				return false
+			}
+		}
 	}
 
 	// Find out what we're sorting by
@@ -155,6 +159,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
 			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
 		}
+	} else if sortDelta {
+		return false
 	}
 	// TODO: Good ideas for approx delta sorts?
 

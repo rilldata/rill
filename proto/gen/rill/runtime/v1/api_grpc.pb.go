@@ -45,6 +45,7 @@ const (
 	RuntimeService_ListResources_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListResources"
 	RuntimeService_WatchResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/WatchResources"
 	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
+	RuntimeService_GetExplore_FullMethodName              = "/rill.runtime.v1.RuntimeService/GetExplore"
 	RuntimeService_GetModelSplits_FullMethodName          = "/rill.runtime.v1.RuntimeService/GetModelSplits"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
@@ -113,9 +114,11 @@ type RuntimeServiceClient interface {
 	WatchResources(ctx context.Context, in *WatchResourcesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchResourcesResponse], error)
 	// GetResource looks up a specific catalog resource
 	GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error)
+	// GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
+	GetExplore(ctx context.Context, in *GetExploreRequest, opts ...grpc.CallOption) (*GetExploreResponse, error)
 	// GetModelSplits returns the splits of a model
 	GetModelSplits(ctx context.Context, in *GetModelSplitsRequest, opts ...grpc.CallOption) (*GetModelSplitsResponse, error)
-	// CreateTrigger creates a trigger in the catalog.
+	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
 	// ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
@@ -425,6 +428,16 @@ func (c *runtimeServiceClient) GetResource(ctx context.Context, in *GetResourceR
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GetExplore(ctx context.Context, in *GetExploreRequest, opts ...grpc.CallOption) (*GetExploreResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetExploreResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetExplore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) GetModelSplits(ctx context.Context, in *GetModelSplitsRequest, opts ...grpc.CallOption) (*GetModelSplitsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetModelSplitsResponse)
@@ -545,9 +558,11 @@ type RuntimeServiceServer interface {
 	WatchResources(*WatchResourcesRequest, grpc.ServerStreamingServer[WatchResourcesResponse]) error
 	// GetResource looks up a specific catalog resource
 	GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error)
+	// GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
+	GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error)
 	// GetModelSplits returns the splits of a model
 	GetModelSplits(context.Context, *GetModelSplitsRequest) (*GetModelSplitsResponse, error)
-	// CreateTrigger creates a trigger in the catalog.
+	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
 	// ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
@@ -647,6 +662,9 @@ func (UnimplementedRuntimeServiceServer) WatchResources(*WatchResourcesRequest, 
 }
 func (UnimplementedRuntimeServiceServer) GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetResource not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetExplore not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetModelSplits(context.Context, *GetModelSplitsRequest) (*GetModelSplitsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetModelSplits not implemented")
@@ -1134,6 +1152,24 @@ func _RuntimeService_GetResource_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GetExplore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExploreRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetExplore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetExplore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetExplore(ctx, req.(*GetExploreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_GetModelSplits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetModelSplitsRequest)
 	if err := dec(in); err != nil {
@@ -1340,6 +1376,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetResource",
 			Handler:    _RuntimeService_GetResource_Handler,
+		},
+		{
+			MethodName: "GetExplore",
+			Handler:    _RuntimeService_GetExplore_Handler,
 		},
 		{
 			MethodName: "GetModelSplits",

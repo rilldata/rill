@@ -42,7 +42,7 @@ If you plan to deploy a project containing a DuckDB source to Rill Cloud, it is 
 
 ### Cloud deployment
 
-Once a project with a DuckDB source has been deployed using `rill deploy`, Rill Cloud will need to be able to have access to and retrieve the underlying persisted database file. In most cases, this means that the corresponding DuckDB database file should be included within a directory in your Git repository, which will allow you to specify a relative path in your source definition (from the project root).
+Once a project with a DuckDB source has been deployed using, Rill Cloud will need to be able to have access to and retrieve the underlying persisted database file. In most cases, this means that the corresponding DuckDB database file should be included within a directory in your Git repository, which will allow you to specify a relative path in your source definition (from the project root).
 
 :::warning When Using An External DuckDB Database
 
@@ -80,7 +80,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 ### Cloud deployment
 
-Once a project with a MotherDuck source has been deployed using `rill deploy`, Rill requires you to explicitly provide the motherduck token using the following command:
+Once a project with a MotherDuck source has been deployed, Rill requires you to explicitly provide the motherduck token using the following command:
 
 ```
 rill env configure

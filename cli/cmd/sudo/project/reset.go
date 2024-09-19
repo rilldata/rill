@@ -49,7 +49,7 @@ func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: ch.Org, Project: project})
+			_, err = client.RedeployProject(ctx, &adminv1.RedeployProjectRequest{Organization: ch.Org, Project: project})
 			if err != nil {
 				return err
 			}

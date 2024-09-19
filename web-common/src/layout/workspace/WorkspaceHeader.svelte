@@ -119,7 +119,7 @@
 
   header {
     @apply justify-between;
-    @apply flex items-center pl-4 py-2 border-b border-gray-300 overflow-hidden;
+    @apply flex items-center pl-4 py-2 border-b overflow-hidden;
     height: var(--header-height);
   }
 

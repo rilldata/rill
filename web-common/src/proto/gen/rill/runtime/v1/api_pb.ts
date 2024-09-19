@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
-import { PullTriggerSpec, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
+import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -562,7 +562,14 @@ export class Connector extends Message<Connector> {
   config: { [key: string]: string } = {};
 
   /**
-   * config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
+   * Properties in config that use templating
+   *
+   * @generated from field: repeated string templated_properties = 5;
+   */
+  templatedProperties: string[] = [];
+
+  /**
+   * DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
    *
    * @generated from field: map<string, string> config_from_variables = 4;
    */
@@ -579,6 +586,7 @@ export class Connector extends Message<Connector> {
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 5, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "config_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
@@ -2985,6 +2993,92 @@ export class GetResourceResponse extends Message<GetResourceResponse> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.GetExploreRequest
+ */
+export class GetExploreRequest extends Message<GetExploreRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<GetExploreRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetExploreRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetExploreRequest {
+    return new GetExploreRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetExploreRequest {
+    return new GetExploreRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetExploreRequest {
+    return new GetExploreRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetExploreRequest | PlainMessage<GetExploreRequest> | undefined, b: GetExploreRequest | PlainMessage<GetExploreRequest> | undefined): boolean {
+    return proto3.util.equals(GetExploreRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GetExploreResponse
+ */
+export class GetExploreResponse extends Message<GetExploreResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Resource explore = 1;
+   */
+  explore?: Resource;
+
+  /**
+   * @generated from field: rill.runtime.v1.Resource metrics_view = 2;
+   */
+  metricsView?: Resource;
+
+  constructor(data?: PartialMessage<GetExploreResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetExploreResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "explore", kind: "message", T: Resource },
+    { no: 2, name: "metrics_view", kind: "message", T: Resource },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetExploreResponse {
+    return new GetExploreResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetExploreResponse {
+    return new GetExploreResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetExploreResponse {
+    return new GetExploreResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetExploreResponse | PlainMessage<GetExploreResponse> | undefined, b: GetExploreResponse | PlainMessage<GetExploreResponse> | undefined): boolean {
+    return proto3.util.equals(GetExploreResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GetModelSplitsRequest
  */
 export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
@@ -3087,26 +3181,48 @@ export class GetModelSplitsResponse extends Message<GetModelSplitsResponse> {
  */
 export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
   /**
+   * Instance to target.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * @generated from oneof rill.runtime.v1.CreateTriggerRequest.trigger
+   * Resources to trigger. See RefreshTriggerSpec for details.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName resources = 4;
    */
-  trigger: {
-    /**
-     * @generated from field: rill.runtime.v1.PullTriggerSpec pull_trigger_spec = 2;
-     */
-    value: PullTriggerSpec;
-    case: "pullTriggerSpec";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.RefreshTriggerSpec refresh_trigger_spec = 3;
-     */
-    value: RefreshTriggerSpec;
-    case: "refreshTriggerSpec";
-  } | { case: undefined; value?: undefined } = { case: undefined };
+  resources: ResourceName[] = [];
+
+  /**
+   * Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+   *
+   * @generated from field: repeated rill.runtime.v1.RefreshModelTrigger models = 5;
+   */
+  models: RefreshModelTrigger[] = [];
+
+  /**
+   * Parser is a convenience flag to trigger the global project parser.
+   * Triggering the project parser ensures a pull of the repository and a full parse of all files.
+   *
+   * @generated from field: bool parser = 6;
+   */
+  parser = false;
+
+  /**
+   * Convenience flag to trigger all sources and models.
+   *
+   * @generated from field: bool all_sources_models = 7;
+   */
+  allSourcesModels = false;
+
+  /**
+   * Convenience flag to trigger all sources and models.
+   * Will trigger models with RefreshModelTrigger.full set to true.
+   *
+   * @generated from field: bool all_sources_models_full = 8;
+   */
+  allSourcesModelsFull = false;
 
   constructor(data?: PartialMessage<CreateTriggerRequest>) {
     super();
@@ -3117,8 +3233,11 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
   static readonly typeName = "rill.runtime.v1.CreateTriggerRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "pull_trigger_spec", kind: "message", T: PullTriggerSpec, oneof: "trigger" },
-    { no: 3, name: "refresh_trigger_spec", kind: "message", T: RefreshTriggerSpec, oneof: "trigger" },
+    { no: 4, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 5, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
+    { no: 6, name: "parser", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "all_sources_models", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "all_sources_models_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTriggerRequest {

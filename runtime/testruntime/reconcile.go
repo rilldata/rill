@@ -76,7 +76,7 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
-					OnlyNames: []*runtimev1.ResourceName{n},
+					Resources: []*runtimev1.ResourceName{n},
 				},
 			},
 		},
@@ -119,6 +119,16 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 	require.Equal(t, lenParseErrs, len(parseErrs), "parse errors: %s", strings.Join(parseErrs, "\n"))
 	require.Equal(t, lenReconcileErrs, len(reconcileErrs), "reconcile errors: %s", strings.Join(reconcileErrs, "\n"))
 	require.Equal(t, lenResources, len(rs), "resources: %s", strings.Join(names, "\n"))
+}
+
+func GetResource(t testing.TB, rt *runtime.Runtime, id, kind, name string) *runtimev1.Resource {
+	ctrl, err := rt.Controller(context.Background(), id)
+	require.NoError(t, err)
+
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: kind, Name: name}, true)
+	require.NoError(t, err)
+
+	return r
 }
 
 func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.Resource) {

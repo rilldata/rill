@@ -4,9 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/spf13/cobra"
 )
 
@@ -18,14 +16,9 @@ func SplitsCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	splitsCmd := &cobra.Command{
 		Use:   "splits [<project>] <model>",
-		Args:  cobra.MaximumNArgs(2),
+		Args:  cobra.RangeArgs(1, 2),
 		Short: "List splits for a model",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := ch.Client()
-			if err != nil {
-				return err
-			}
-
 			if len(args) == 1 {
 				model = args[0]
 			} else if len(args) == 2 {
@@ -34,44 +27,16 @@ func SplitsCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !local && !cmd.Flags().Changed("project") && len(args) <= 1 && ch.Interactive {
+				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return err
 				}
 			}
 
-			var host, instanceID, jwt string
-			if local {
-				// This is the default port that Rill localhost uses for gRPC.
-				// TODO: In the future, we should capture the gRPC port in ~/.rill and use it here.
-				host = "http://localhost:49009"
-				instanceID = "default"
-			} else {
-				proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-					OrganizationName: ch.Org,
-					Name:             project,
-				})
-				if err != nil {
-					return err
-				}
-
-				depl := proj.ProdDeployment
-				if depl == nil {
-					return fmt.Errorf("project %q is not currently deployed", project)
-				}
-				if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-					ch.PrintfWarn("Deployment status not OK: %s\n", depl.Status.String())
-					return nil
-				}
-
-				host = depl.RuntimeHost
-				instanceID = depl.RuntimeInstanceId
-				jwt = proj.Jwt
-			}
-
-			rt, err := runtimeclient.New(host, jwt)
+			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
 			if err != nil {
-				return fmt.Errorf("failed to connect to runtime: %w", err)
+				return err
 			}
 
 			res, err := rt.GetModelSplits(cmd.Context(), &runtimev1.GetModelSplitsRequest{

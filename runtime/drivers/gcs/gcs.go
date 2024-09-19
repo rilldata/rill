@@ -20,6 +20,10 @@ import (
 func init() {
 	drivers.Register("gcs", driver{})
 	drivers.RegisterAsConnector("gcs", driver{})
+
+	// Alternate name
+	drivers.Register("gs", driver{})
+	drivers.RegisterAsConnector("gs", driver{})
 }
 
 var spec = drivers.Spec{

@@ -11,7 +11,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete <name>",
-		Short: "Delete a user group",
+		Short: "Delete a group",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/robfig/cron/v3"
@@ -29,16 +30,25 @@ var (
 type Worker struct {
 	logger *zap.Logger
 	admin  *admin.Service
+	jobs   jobs.Client
 }
 
-func New(logger *zap.Logger, adm *admin.Service) *Worker {
+func New(logger *zap.Logger, adm *admin.Service, jobsClient jobs.Client) *Worker {
 	return &Worker{
 		logger: logger,
 		admin:  adm,
+		jobs:   jobsClient,
 	}
 }
 
 func (w *Worker) Run(ctx context.Context) error {
+	// Start jobs client workers
+	err := w.jobs.Work(ctx)
+	if err != nil {
+		panic(err)
+	}
+	w.logger.Info("jobs client worker started")
+
 	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error {
 		return w.schedule(ctx, "check_provisioner_capacity", w.checkProvisionerCapacity, 15*time.Minute)
@@ -59,9 +69,6 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "hibernate_expired_deployments", w.hibernateExpiredDeployments, 15*time.Minute)
 	})
 	group.Go(func() error {
-		return w.schedule(ctx, "validate_deployments", w.validateDeployments, 6*time.Hour)
-	})
-	group.Go(func() error {
 		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
 	})
 	group.Go(func() error {
@@ -79,12 +86,8 @@ func (w *Worker) Run(ctx context.Context) error {
 
 	if w.admin.Biller.Name() != "noop" {
 		group.Go(func() error {
+			// deprecate this in next version when all orgs are migrated to billing system and init org billing is moved to a background retryable job
 			return w.schedule(ctx, "run_billing_repair", w.repairOrgBilling, 10*time.Minute)
-		})
-
-		group.Go(func() error {
-			// run every midnight
-			return w.scheduleCron(ctx, "run_trial_end_check", w.trialEndCheck, "0 0 * * *")
 		})
 	}
 	// NOTE: Add new scheduled jobs here
@@ -99,9 +102,8 @@ func (w *Worker) RunJob(ctx context.Context, name string) error {
 	case "check_provisioner_capacity":
 		return w.runJob(ctx, name, w.checkProvisionerCapacity)
 	case "reset_all_deployments":
-		return w.runJob(ctx, name, w.resetAllDeployments)
-	case "validate_deployments":
-		return w.runJob(ctx, name, w.validateDeployments)
+		_, err := w.jobs.ResetAllDeployments(ctx)
+		return err
 	// NOTE: Add new ad-hoc jobs here
 	default:
 		return fmt.Errorf("unknown job: %s", name)

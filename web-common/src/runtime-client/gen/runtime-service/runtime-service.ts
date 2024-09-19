@@ -69,6 +69,8 @@ import type {
   RuntimeServiceListResourcesParams,
   RuntimeServiceWatchResources200,
   RuntimeServiceWatchResourcesParams,
+  V1GetExploreResponse,
+  RuntimeServiceGetExploreParams,
   V1CreateTriggerResponse,
   RuntimeServiceCreateTriggerBody,
   V1PingResponse,
@@ -2001,7 +2003,80 @@ export const createRuntimeServiceWatchResources = <
 };
 
 /**
- * @summary CreateTrigger creates a trigger in the catalog.
+ * @summary GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
+ */
+export const runtimeServiceGetExplore = (
+  instanceId: string,
+  params?: RuntimeServiceGetExploreParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetExploreResponse>({
+    url: `/v1/instances/${instanceId}/resources/explore`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetExploreQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceGetExploreParams,
+) => [
+  `/v1/instances/${instanceId}/resources/explore`,
+  ...(params ? [params] : []),
+];
+
+export type RuntimeServiceGetExploreQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetExplore>>
+>;
+export type RuntimeServiceGetExploreQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGetExplore = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetExplore>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceGetExploreParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetExplore>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetExploreQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetExplore>>
+  > = ({ signal }) => runtimeServiceGetExplore(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetExplore>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 Triggers are ephemeral resources that will be cleaned up by the controller.
  */
 export const runtimeServiceCreateTrigger = (

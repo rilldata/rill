@@ -4,7 +4,7 @@ title: rill usergroup create
 ---
 ## rill usergroup create
 
-Create a user group
+Create a group
 
 ```
 rill usergroup create [<name>] [flags]

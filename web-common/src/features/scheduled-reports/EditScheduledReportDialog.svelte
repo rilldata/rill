@@ -94,9 +94,6 @@
               queryArgsJson: JSON.stringify(queryArgs),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              openProjectSubpath: (
-                reportSpec.annotations as V1ReportSpecAnnotations
-              )["web_open_project_subpath"],
               emailRecipients: values.recipients
                 .map((r) => r.email)
                 .filter(Boolean),

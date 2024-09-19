@@ -368,7 +368,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	c.logger.Debug("insert table", zap.String("name", name), zap.Bool("byName", byName), zap.String("strategy", string(strategy)), zap.Strings("uniqueKey", uniqueKey))
 
 	if !c.config.ExtTableStorage {
-		return c.execIncrementalInsert(ctx, safeSQLName(name), sql, byName, strategy, uniqueKey)
+		return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+			return c.execIncrementalInsert(ctx, safeSQLName(name), sql, byName, strategy, uniqueKey)
+		})
 	}
 
 	if inPlace {
@@ -383,7 +385,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		db := dbName(name, version)
 		safeName := fmt.Sprintf("%s.default", safeSQLName(db))
 
-		return c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
+		return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+			return c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
+		})
 	}
 
 	var cleanupFunc func()
@@ -650,7 +654,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 			if i != 0 {
 				where += " AND "
 			}
-			where += fmt.Sprintf("base.%s = tmp.%s", key, key)
+			where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
 		}
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeName, safeSQLName(tmp), where),

@@ -44,10 +44,10 @@
   } from "@rilldata/web-admin/client";
   import { isProjectPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
-  import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
+  import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
@@ -140,6 +140,7 @@
       projectId: project,
       organizationId: organization,
       userId: $user.data?.user?.id,
+      version: cloudVersion,
     });
   }
 </script>
@@ -181,9 +182,7 @@
         : projectData.jwt}
       {authContext}
     >
-      <ProjectDashboardsListener>
-        <slot />
-      </ProjectDashboardsListener>
+      <slot />
     </RuntimeProvider>
   {/if}
 {/if}

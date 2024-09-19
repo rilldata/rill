@@ -39,7 +39,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
-  private outOfFocusThrottler = new Throttler(10000);
+  private outOfFocusThrottler = new Throttler(120000, 30000);
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -47,7 +47,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     ["response", []],
     ["reconnect", []],
   ]);
-  private closed = false;
+  public closed = writable(false);
 
   public on<K extends keyof EventMap<Res>>(
     event: K,
@@ -56,25 +56,34 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.listeners.get(event)?.push(listener);
   }
 
+  public heartbeat = () => {
+    if (this.closed) {
+      this.reconnect().catch(console.error);
+    }
+    this.throttle();
+  };
+
   public watch(url: string) {
     this.cancel();
     this.url = url;
+
     this.listen().catch(console.error);
+
+    // Start throttling after the first connection
+    this.throttle();
   }
 
-  public close() {
-    this.closed = true;
+  public close = () => {
+    this.closed.set(true);
     this.cancel();
+  };
+
+  public throttle(prioritize: boolean = false) {
+    this.outOfFocusThrottler.throttle(this.close, prioritize);
   }
 
-  public throttle() {
-    this.outOfFocusThrottler.throttle(() => {
-      this.close();
-    });
-  }
-
-  public async reconnect() {
-    this.closed = false;
+  private async reconnect() {
+    this.closed.set(false);
     clearTimeout(this.reconnectTimeout);
 
     if (this.outOfFocusThrottler.isThrottling()) {

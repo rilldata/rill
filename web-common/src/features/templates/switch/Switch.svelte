@@ -5,7 +5,7 @@
   import {
     dashboardVariablesStore,
     useVariable,
-  } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import { SwitchProperties } from "@rilldata/web-common/features/templates/types";
 
   import {
@@ -17,7 +17,7 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let output: V1ComponentVariable | undefined;
 
-  $: dashboardName = getContext("rill::custom-dashboard:name") as string;
+  $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
   $: outputVariableName = output?.name || "";
   $: outputVariableValue = useVariable(dashboardName, outputVariableName);
   $: switchProperties = rendererProperties as SwitchProperties;

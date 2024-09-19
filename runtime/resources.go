@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -13,6 +14,7 @@ const (
 	ResourceKindSource         string = "rill.runtime.v1.Source"
 	ResourceKindModel          string = "rill.runtime.v1.Model"
 	ResourceKindMetricsView    string = "rill.runtime.v1.MetricsView"
+	ResourceKindExplore        string = "rill.runtime.v1.Explore"
 	ResourceKindMigration      string = "rill.runtime.v1.Migration"
 	ResourceKindReport         string = "rill.runtime.v1.Report"
 	ResourceKindAlert          string = "rill.runtime.v1.Alert"
@@ -35,6 +37,8 @@ func ResourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceN
 		return &runtimev1.ResourceName{Kind: ResourceKindModel, Name: name.Name}
 	case compilerv1.ResourceKindMetricsView:
 		return &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: name.Name}
+	case compilerv1.ResourceKindExplore:
+		return &runtimev1.ResourceName{Kind: ResourceKindExplore, Name: name.Name}
 	case compilerv1.ResourceKindMigration:
 		return &runtimev1.ResourceName{Kind: ResourceKindMigration, Name: name.Name}
 	case compilerv1.ResourceKindReport:
@@ -65,6 +69,8 @@ func ResourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindModel, Name: name.Name}
 	case ResourceKindMetricsView:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindMetricsView, Name: name.Name}
+	case ResourceKindExplore:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindExplore, Name: name.Name}
 	case ResourceKindMigration:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindMigration, Name: name.Name}
 	case ResourceKindReport:
@@ -83,5 +89,28 @@ func ResourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindConnector, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource type %q", name.Kind))
+	}
+}
+
+// PrettifyResourceKind returns the resource kind in a user-friendly format suitable for printing.
+func PrettifyResourceKind(k string) string {
+	k = strings.TrimPrefix(k, "rill.runtime.v1.")
+	k = strings.TrimSuffix(k, "V2")
+	return k
+}
+
+// PrettifyReconcileStatus returns the reconcile status in a user-friendly format suitable for printing.
+func PrettifyReconcileStatus(s runtimev1.ReconcileStatus) string {
+	switch s {
+	case runtimev1.ReconcileStatus_RECONCILE_STATUS_UNSPECIFIED:
+		return "Unknown"
+	case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
+		return "Idle"
+	case runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING:
+		return "Pending"
+	case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
+		return "Running"
+	default:
+		panic(fmt.Errorf("unknown reconcile status: %s", s.String()))
 	}
 }

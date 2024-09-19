@@ -28,7 +28,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.SudoUpdateOrganizationBillingCustomer(ctx, &adminv1.SudoUpdateOrganizationBillingCustomerRequest{
-				OrgName:           org,
+				Organization:      org,
 				BillingCustomerId: customerID,
 			})
 			if err != nil {

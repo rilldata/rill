@@ -1,12 +1,12 @@
 <script lang="ts">
+  import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import TooltipTitle from "../tooltip/TooltipTitle.svelte";
-  import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
+  import FormattedDataType from "../data-types/FormattedDataType.svelte";
   import Shortcut from "../tooltip/Shortcut.svelte";
   import StackingWord from "../tooltip/StackingWord.svelte";
-  import FormattedDataType from "../data-types/FormattedDataType.svelte";
-  import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "../tooltip/TooltipTitle.svelte";
 
   type HoveringData = {
     value: string | number | null;
@@ -21,6 +21,7 @@
   export let pinned: boolean;
   export let hovering: HoveringData;
   export let sortable: boolean;
+  export let customShortcuts: { description: string; shortcut: string }[] = [];
 </script>
 
 <aside
@@ -65,6 +66,12 @@
             <Shortcut>
               <span style="font-family: var(--system);">⇧</span> + Click
             </Shortcut>
+          {/if}
+          {#if customShortcuts.length > 0}
+            {#each customShortcuts as { description, shortcut }}
+              <div>{description}</div>
+              <Shortcut>{shortcut}</Shortcut>
+            {/each}
           {/if}
         </TooltipShortcutContainer>
       {/if}

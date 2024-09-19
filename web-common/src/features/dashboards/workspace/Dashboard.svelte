@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import {
     useDashboard,
@@ -17,7 +18,6 @@
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   export let metricViewName: string;
 
@@ -47,7 +47,7 @@
 </script>
 
 <article
-  class="flex flex-col h-screen w-full overflow-y-hidden dashboard-theme-boundary"
+  class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
   bind:clientWidth={exploreContainerWidth}
 >
   <div
@@ -114,7 +114,7 @@
   {/if}
 </article>
 
-{#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !showPivot && !mockUserHasNoAccess}
+{#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !mockUserHasNoAccess}
   <RowsViewerAccordion {metricViewName} />
 {/if}
 

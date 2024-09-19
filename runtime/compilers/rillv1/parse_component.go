@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -11,11 +10,6 @@ import (
 
 	_ "embed"
 )
-
-//go:embed data/vega-lite-v5.json
-var vegaLiteSpec string
-
-var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema/vega-lite/v5.json", vegaLiteSpec)
 
 //go:embed data/component-template-v1.json
 var componentTemplateSpec string
@@ -90,14 +84,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	var rendererProps *structpb.Struct
 	if tmp.VegaLite != nil {
 		n++
-
-		var vegaLiteSpec interface{}
-		if err := json.Unmarshal([]byte(*tmp.VegaLite), &vegaLiteSpec); err != nil {
-			return nil, nil, errors.New(`failed to parse "vega_lite" as JSON`)
-		}
-		if err := vegaLiteSchema.Validate(vegaLiteSpec); err != nil {
-			return nil, nil, fmt.Errorf(`failed to validate "vega_lite": %w`, err)
-		}
 
 		renderer = "vega_lite"
 		rendererProps = must(structpb.NewStruct(map[string]any{"spec": *tmp.VegaLite}))
