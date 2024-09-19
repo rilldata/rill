@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -1920,13 +1921,120 @@ func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageRepo
 	return checkUpdateRow("billing usage", res, err)
 }
 
-func (c *connection) FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*database.Organization, error) {
+func (c *connection) FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
 	if err != nil {
-		return nil, parseErr("billing orgs without payment id", err)
+		return nil, parseErr("billing orgs without billing id", err)
 	}
 	return res, nil
+}
+
+func (c *connection) FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM orgs WHERE payment_customer_id = $1`, customerID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("billing org for payment id", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM orgs WHERE billing_customer_id = $1`, customerID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("billing org for billing id", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindBillingIssues(ctx context.Context, orgID string) ([]*database.BillingIssue, error) {
+	var res []*billingIssueDTO
+	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE org_id = $1`, orgID)
+	if err != nil {
+		return nil, parseErr("billing issues", err)
+	}
+
+	var billingErrors []*database.BillingIssue
+	for _, dto := range res {
+		billingErrors = append(billingErrors, dto.AsModel())
+	}
+	return billingErrors, nil
+}
+
+func (c *connection) FindBillingIssueByType(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
+	res := &billingIssueDTO{}
+	err := c.db.GetContext(ctx, res, `SELECT * FROM billing_issues WHERE org_id = $1 AND type = $2`, orgID, errorType)
+	if err != nil {
+		return nil, parseErr("billing issue", err)
+	}
+	return res.AsModel(), nil
+}
+
+func (c *connection) FindBillingIssueByTypeNotOverdueProcessed(ctx context.Context, errorType database.BillingIssueType) ([]*database.BillingIssue, error) {
+	var res []*billingIssueDTO
+	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1 AND overdue_processed = false`, errorType)
+	if err != nil {
+		return nil, parseErr("billing issues", err)
+	}
+
+	var billingErrors []*database.BillingIssue
+	for _, dto := range res {
+		billingErrors = append(billingErrors, dto.AsModel())
+	}
+	return billingErrors, nil
+}
+
+func (c *connection) FindBillingIssueByTypeNotOverdueProcessedForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
+	res := &billingIssueDTO{}
+	err := c.db.GetContext(ctx, res, `SELECT * FROM billing_issues WHERE org_id = $1 AND type = $2 AND overdue_processed = false`, orgID, errorType)
+	if err != nil {
+		return nil, parseErr("billing issue", err)
+	}
+	return res.AsModel(), nil
+}
+
+func (c *connection) UpsertBillingIssue(ctx context.Context, opts *database.UpsertBillingIssueOptions) (*database.BillingIssue, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	metadata, err := json.Marshal(opts.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	temp := &billingIssueDTO{
+		OrgID:     opts.OrgID,
+		Type:      opts.Type,
+		Metadata:  metadata,
+		EventTime: opts.EventTime,
+	}
+
+	temp.Level = temp.getBillingIssueLevel()
+
+	res := &billingIssueDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_issues (org_id, type, level, metadata, event_time) VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (org_id, type) DO UPDATE SET metadata = $4, event_time = $5 RETURNING *`, temp.OrgID, temp.Type, temp.Level, temp.Metadata, temp.EventTime).StructScan(res)
+	if err != nil {
+		return nil, parseErr("billing issue", err)
+	}
+	return res.AsModel(), nil
+}
+
+func (c *connection) UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_issues SET overdue_processed = true WHERE id = $1`, id)
+	return checkUpdateRow("billing issue", res, err)
+}
+
+func (c *connection) DeleteBillingIssue(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_issues WHERE id = $1", id)
+	return checkDeleteRow("billing issue", res, err)
+}
+
+func (c *connection) DeleteBillingIssueByType(ctx context.Context, orgID string, errorType database.BillingIssueType) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_issues WHERE org_id = $1 AND type = $2", orgID, errorType)
+	return checkDeleteRow("billing issue", res, err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
@@ -2119,6 +2227,58 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 	}
 
 	return o.OrganizationInvite, nil
+}
+
+type billingIssueDTO struct {
+	ID               string                     `db:"id"`
+	OrgID            string                     `db:"org_id"`
+	Type             database.BillingIssueType  `db:"type"`
+	Level            database.BillingIssueLevel `db:"level"`
+	Metadata         json.RawMessage            `db:"metadata"`
+	OverdueProcessed bool                       `db:"overdue_processed"`
+	EventTime        time.Time                  `db:"event_time"`
+	CreatedOn        time.Time                  `db:"created_on"`
+}
+
+func (b *billingIssueDTO) AsModel() *database.BillingIssue {
+	var metadata database.BillingIssueMetadata
+	switch b.Type {
+	case database.BillingIssueTypeOnTrial:
+		metadata = &database.BillingIssueMetadataOnTrial{}
+	case database.BillingIssueTypeTrialEnded:
+		metadata = &database.BillingIssueMetadataTrialEnded{}
+	case database.BillingIssueTypeNoPaymentMethod:
+		metadata = &database.BillingIssueMetadataNoPaymentMethod{}
+	case database.BillingIssueTypeNoBillableAddress:
+		metadata = &database.BillingIssueMetadataNoBillableAddress{}
+	case database.BillingIssueTypePaymentFailed:
+		metadata = &database.BillingIssueMetadataPaymentFailed{}
+	case database.BillingIssueTypeSubscriptionCancelled:
+		metadata = &database.BillingIssueMetadataSubscriptionCancelled{}
+	default:
+	}
+	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {
+		return nil
+	}
+	return &database.BillingIssue{
+		ID:        b.ID,
+		OrgID:     b.OrgID,
+		Type:      b.Type,
+		Level:     b.Level,
+		Metadata:  metadata,
+		EventTime: b.EventTime,
+		CreatedOn: b.CreatedOn,
+	}
+}
+
+func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
+	if b.Type == database.BillingIssueTypeUnspecified {
+		return database.BillingIssueLevelUnspecified
+	}
+	if b.Type == database.BillingIssueTypeOnTrial {
+		return database.BillingIssueLevelWarning
+	}
+	return database.BillingIssueLevelError
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

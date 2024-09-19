@@ -14,6 +14,7 @@ const (
 	ResourceKindSource         string = "rill.runtime.v1.Source"
 	ResourceKindModel          string = "rill.runtime.v1.Model"
 	ResourceKindMetricsView    string = "rill.runtime.v1.MetricsView"
+	ResourceKindExplore        string = "rill.runtime.v1.Explore"
 	ResourceKindMigration      string = "rill.runtime.v1.Migration"
 	ResourceKindReport         string = "rill.runtime.v1.Report"
 	ResourceKindAlert          string = "rill.runtime.v1.Alert"
@@ -36,6 +37,8 @@ func ResourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceN
 		return &runtimev1.ResourceName{Kind: ResourceKindModel, Name: name.Name}
 	case compilerv1.ResourceKindMetricsView:
 		return &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: name.Name}
+	case compilerv1.ResourceKindExplore:
+		return &runtimev1.ResourceName{Kind: ResourceKindExplore, Name: name.Name}
 	case compilerv1.ResourceKindMigration:
 		return &runtimev1.ResourceName{Kind: ResourceKindMigration, Name: name.Name}
 	case compilerv1.ResourceKindReport:
@@ -66,6 +69,8 @@ func ResourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindModel, Name: name.Name}
 	case ResourceKindMetricsView:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindMetricsView, Name: name.Name}
+	case ResourceKindExplore:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindExplore, Name: name.Name}
 	case ResourceKindMigration:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindMigration, Name: name.Name}
 	case ResourceKindReport:

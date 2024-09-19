@@ -42,36 +42,38 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
-	DatabaseURL            string                 `split_words:"true"`
-	RiverDatabaseURL       string                 `split_words:"true"`
-	RedisURL               string                 `default:"" split_words:"true"`
-	ProvisionerSetJSON     string                 `split_words:"true"`
-	DefaultProvisioner     string                 `split_words:"true"`
-	Jobs                   []string               `split_words:"true"`
-	LogLevel               zapcore.Level          `default:"info" split_words:"true"`
-	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
-	TracesExporter         observability.Exporter `default:"" split_words:"true"`
-	HTTPPort               int                    `default:"8080" split_words:"true"`
-	GRPCPort               int                    `default:"9090" split_words:"true"`
-	DebugPort              int                    `split_words:"true"`
-	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
-	ExternalGRPCURL        string                 `envconfig:"external_grpc_url"`
-	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
-	AllowedOrigins         []string               `default:"*" split_words:"true"`
-	SessionKeyPairs        []string               `split_words:"true"`
-	SigningJWKS            string                 `split_words:"true"`
-	SigningKeyID           string                 `split_words:"true"`
-	AuthDomain             string                 `split_words:"true"`
-	AuthClientID           string                 `split_words:"true"`
-	AuthClientSecret       string                 `split_words:"true"`
-	GithubAppID            int64                  `split_words:"true"`
-	GithubAppName          string                 `split_words:"true"`
-	GithubAppPrivateKey    string                 `split_words:"true"`
-	GithubAppWebhookSecret string                 `split_words:"true"`
-	GithubClientID         string                 `split_words:"true"`
-	GithubClientSecret     string                 `split_words:"true"`
-	AssetsBucket           string                 `split_words:"true"`
+	DatabaseDriver string `default:"postgres" split_words:"true"`
+	DatabaseURL    string `split_words:"true"`
+	// json encoded array of database.EncryptionKey
+	DatabaseEncryptionKeyring string                 `split_words:"true"`
+	RiverDatabaseURL          string                 `split_words:"true"`
+	RedisURL                  string                 `default:"" split_words:"true"`
+	ProvisionerSetJSON        string                 `split_words:"true"`
+	DefaultProvisioner        string                 `split_words:"true"`
+	Jobs                      []string               `split_words:"true"`
+	LogLevel                  zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter           observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter            observability.Exporter `default:"" split_words:"true"`
+	HTTPPort                  int                    `default:"8080" split_words:"true"`
+	GRPCPort                  int                    `default:"9090" split_words:"true"`
+	DebugPort                 int                    `split_words:"true"`
+	ExternalURL               string                 `default:"http://localhost:8080" split_words:"true"`
+	ExternalGRPCURL           string                 `envconfig:"external_grpc_url"`
+	FrontendURL               string                 `default:"http://localhost:3000" split_words:"true"`
+	AllowedOrigins            []string               `default:"*" split_words:"true"`
+	SessionKeyPairs           []string               `split_words:"true"`
+	SigningJWKS               string                 `split_words:"true"`
+	SigningKeyID              string                 `split_words:"true"`
+	AuthDomain                string                 `split_words:"true"`
+	AuthClientID              string                 `split_words:"true"`
+	AuthClientSecret          string                 `split_words:"true"`
+	GithubAppID               int64                  `split_words:"true"`
+	GithubAppName             string                 `split_words:"true"`
+	GithubAppPrivateKey       string                 `split_words:"true"`
+	GithubAppWebhookSecret    string                 `split_words:"true"`
+	GithubClientID            string                 `split_words:"true"`
+	GithubClientSecret        string                 `split_words:"true"`
+	AssetsBucket              string                 `split_words:"true"`
 	// AssetsBucketGoogleCredentialsJSON is only required to be set for local development.
 	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
 	AssetsBucketGoogleCredentialsJSON string `split_words:"true"`
@@ -89,9 +91,9 @@ type Config struct {
 	MetricsProject                    string `default:"" split_words:"true"`
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
+	OrbWebhookSecret                  string `split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
-	// json encoded array of database.EncryptionKey
-	DatabaseEncryptionKeyring string `split_words:"true"`
+	StripeWebhookSecret               string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -261,14 +263,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var biller billing.Biller
 			if conf.OrbAPIKey != "" {
-				biller = billing.NewOrb(conf.OrbAPIKey)
+				biller = billing.NewOrb(logger, conf.OrbAPIKey, conf.OrbWebhookSecret)
 			} else {
 				biller = billing.NewNoop()
 			}
 
 			var p payment.Provider
 			if conf.StripeAPIKey != "" {
-				p = payment.NewStripe(conf.StripeAPIKey)
+				p = payment.NewStripe(logger, conf.StripeAPIKey, conf.StripeWebhookSecret)
 			} else {
 				p = payment.NewNoop()
 			}
@@ -277,6 +279,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			admOpts := &admin.Options{
 				DatabaseDriver:            conf.DatabaseDriver,
 				DatabaseDSN:               conf.DatabaseURL,
+				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
 				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
 				FrontendURL:               conf.FrontendURL,
 				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
@@ -286,7 +289,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectOrg:         metricsProjectOrg,
 				MetricsProjectName:        metricsProjectName,
 				AutoscalerCron:            conf.AutoscalerCron,
-				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
 			if err != nil {

@@ -119,7 +119,7 @@ func TestComplete(t *testing.T) {
 		`rill.yaml`: ``,
 		// init.sql
 		`init.sql`: `
-{{ configure "version" 2 }}
+{{ configure "max_version" 2 }}
 INSTALL 'hello';
 `,
 		// source s1
@@ -145,7 +145,9 @@ SELECT * FROM m1
 materialize: true
 `,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
 model: m2
 dimensions:
   - name: a
@@ -155,7 +157,15 @@ measures:
     expression: count(*)
 first_day_of_week: 7
 first_month_of_year: 3
-available_time_ranges:
+`,
+		// explore e1
+		`explores/e1.yaml`: `
+type: explore
+title: E1
+metrics_view: d1
+measures:
+  - b
+time_ranges:
   - P2W
   - range: P4W
   - range: P2M
@@ -163,11 +173,13 @@ available_time_ranges:
       - P1M
       - offset: P4M
         range: P2M
+presets:
+  - time_range: P4W
 `,
 		// migration c1
 		`custom/c1.yml`: `
 type: migration
-version: 3
+max_version: 3
 sql: |
   CREATE TABLE a(a integer);
 `,
@@ -256,7 +268,7 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Model:     "m2",
@@ -268,16 +280,31 @@ schema: default
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
-				AvailableTimeRanges: []*runtimev1.MetricsViewSpec_AvailableTimeRange{
+			},
+		},
+		// explore e1
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e1"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "d1"}},
+			Paths: []string{"/explores/e1.yaml"},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				Title:             "E1",
+				MetricsView:       "d1",
+				DimensionsExclude: true,
+				Measures:          []string{"b"},
+				TimeRanges: []*runtimev1.ExploreTimeRange{
 					{Range: "P2W"},
 					{Range: "P4W"},
 					{
 						Range: "P2M",
-						ComparisonOffsets: []*runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+						ComparisonTimeRanges: []*runtimev1.ExploreComparisonTimeRange{
 							{Offset: "P1M"},
 							{Offset: "P4M", Range: "P2M"},
 						},
 					},
+				},
+				Presets: []*runtimev1.ExplorePreset{
+					{TimeRange: "P4W"},
 				},
 			},
 		},
@@ -985,17 +1012,17 @@ SELECT * FROM t2
 func TestProjectDashboardDefaults(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
-		// Provide dashboard defaults in rill.yaml
+		// Provide metrics view defaults in rill.yaml
 		`rill.yaml`: `
-dashboards:
+metrics_views:
   first_day_of_week: 7
-  available_time_zones:
-    - America/New_York
   security:
     access: true
 `,
-		// Dashboard that inherits defaults
-		`dashboards/d1.yaml`: `
+		// Metrics that inherits defaults
+		`mv1.yaml`: `
+version: 1
+type: metrics_view
 table: t1
 dimensions:
   - name: a
@@ -1004,8 +1031,10 @@ measures:
   - name: b
     expression: count(*)
 `,
-		// Dashboard that overrides defaults
-		`dashboards/d2.yaml`: `
+		// Metrics that overrides defaults
+		`mv2.yaml`: `
+version: 1
+type: metrics_view
 table: t2
 dimensions:
   - name: a
@@ -1014,17 +1043,16 @@ measures:
   - name: b
     expression: count(*)
 first_day_of_week: 1
-available_time_zones: []
 security:
   row_filter: true
 `,
 	})
 
 	resources := []*Resource{
-		// dashboard d1
+		// metrics view mv1
 		{
-			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
+			Paths: []string{"/mv1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t1",
@@ -1034,8 +1062,7 @@ security:
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
-				FirstDayOfWeek:     7,
-				AvailableTimeZones: []string{"America/New_York"},
+				FirstDayOfWeek: 7,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
 						Condition: "true",
@@ -1044,10 +1071,10 @@ security:
 				},
 			},
 		},
-		// dashboard d2
+		// metrics view mv2
 		{
-			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d2"},
-			Paths: []string{"/dashboards/d2.yaml"},
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"},
+			Paths: []string{"/mv2.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t2",
@@ -1057,8 +1084,7 @@ security:
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
-				FirstDayOfWeek:     1,
-				AvailableTimeZones: []string{},
+				FirstDayOfWeek: 1,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
 						Condition: "true",
@@ -1138,7 +1164,9 @@ func TestMetricsViewSecurity(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
 table: t1
 dimensions:
   - name: a
@@ -1165,7 +1193,7 @@ security:
 	resources := []*Resource{
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t1",
@@ -1436,7 +1464,9 @@ func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
 table: d1
 dimensions:
   - name: a
@@ -1451,7 +1481,7 @@ measures:
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Refs:  nil, // NOTE: This is what we're testing – that it avoids inferring the missing "d1" as a self-reference
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "d1",
@@ -1768,7 +1798,9 @@ func TestAdvancedMeasures(t *testing.T) {
 		// rill.yaml
 		`rill.yaml`: ``,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
 table: t1
 timeseries: t
 dimensions:
@@ -1802,7 +1834,7 @@ measures:
 		// dashboard d1
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector:     "duckdb",
 				Table:         "t1",
@@ -1851,53 +1883,6 @@ measures:
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
-}
-
-func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
-	// Check errors
-	// NOTE: Assumes there's at most one parse error per file path
-	// NOTE: Matches error messages using Contains (exact match not required)
-	gotErrors := slices.Clone(p.Errors)
-	for _, want := range wantErrors {
-		found := false
-		for i, got := range gotErrors {
-			if want.FilePath == got.FilePath {
-				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
-				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
-				gotErrors = slices.Delete(gotErrors, i, i+1)
-				found = true
-				break
-			}
-		}
-		require.True(t, found, "missing error for path %q", want.FilePath)
-	}
-	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
-
-	// Check resources
-	gotResources := maps.Clone(p.Resources)
-	for _, want := range wantResources {
-		found := false
-		for _, got := range gotResources {
-			if want.Name == got.Name {
-				require.Equal(t, want.Name, got.Name)
-				require.ElementsMatch(t, want.Refs, got.Refs, "for resource %q", want.Name)
-				require.ElementsMatch(t, want.Paths, got.Paths, "for resource %q", want.Name)
-				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
-				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
-				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
-				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
-				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
-				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
-				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
-
-				delete(gotResources, got.Name)
-				found = true
-				break
-			}
-		}
-		require.True(t, found, "missing resource %q", want.Name)
-	}
-	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
 }
 
 func TestRefreshInDev(t *testing.T) {
@@ -1956,6 +1941,53 @@ refresh:
 	p, err = Parse(ctx, repo, "", "dev", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
+}
+
+func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
+	// Check errors
+	// NOTE: Assumes there's at most one parse error per file path
+	// NOTE: Matches error messages using Contains (exact match not required)
+	gotErrors := slices.Clone(p.Errors)
+	for _, want := range wantErrors {
+		found := false
+		for i, got := range gotErrors {
+			if want.FilePath == got.FilePath {
+				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
+				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
+				gotErrors = slices.Delete(gotErrors, i, i+1)
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "missing error for path %q", want.FilePath)
+	}
+	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
+
+	// Check resources
+	gotResources := maps.Clone(p.Resources)
+	for _, want := range wantResources {
+		found := false
+		for _, got := range gotResources {
+			if want.Name == got.Name {
+				require.Equal(t, want.Name, got.Name)
+				require.ElementsMatch(t, want.Refs, got.Refs, "for resource %q", want.Name)
+				require.ElementsMatch(t, want.Paths, got.Paths, "for resource %q", want.Name)
+				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
+				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
+				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
+
+				delete(gotResources, got.Name)
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "missing resource %q", want.Name)
+	}
+	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
 }
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {

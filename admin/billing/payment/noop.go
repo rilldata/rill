@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
 
 var _ Provider = &noop{}
@@ -36,4 +38,8 @@ func (n noop) DeleteCustomer(ctx context.Context, customerID string) error {
 
 func (n noop) GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error) {
 	return "", nil
+}
+
+func (n noop) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
+	return nil
 }
