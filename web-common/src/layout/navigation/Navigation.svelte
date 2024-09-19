@@ -1,10 +1,10 @@
 <script lang="ts" context="module">
   export const navigationOpen = (() => {
-    const { set, subscribe, update } = writable(true);
+    const { subscribe, update, set } = writable(true);
     return {
-      subscribe: subscribe,
       toggle: () => update((open) => !open),
       set,
+      subscribe,
     };
   })();
 </script>
