@@ -21,26 +21,37 @@
   import TriggerSplit from "./TriggerSplit.svelte";
 
   export let resource: V1Resource;
+  export let whereErrored: boolean;
+  export let wherePending: boolean;
 
   $: modelName = resource?.meta?.name?.name as string;
 
   /**
    * Inifinite Query
    */
+  $: baseParams = {
+    ...(whereErrored ? { whereErrored: true } : {}),
+    ...(wherePending ? { wherePending: true } : {}),
+  };
   $: query = createInfiniteQuery({
     queryKey: getRuntimeServiceGetModelSplitsQueryKey(
       $runtime.instanceId,
       modelName,
+      baseParams,
     ),
     queryFn: ({ pageParam }) => {
-      return runtimeServiceGetModelSplits(
-        $runtime.instanceId,
-        modelName,
-        pageParam
+      const getModelSplitsParams = {
+        ...baseParams,
+        ...(pageParam
           ? {
               pageToken: pageParam as string,
             }
-          : undefined,
+          : {}),
+      };
+      return runtimeServiceGetModelSplits(
+        $runtime.instanceId,
+        modelName,
+        getModelSplitsParams,
       );
     },
     enabled: !!modelName,
