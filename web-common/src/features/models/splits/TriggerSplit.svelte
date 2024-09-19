@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "../../../components/button";
   import {
-    V1ModelSplit,
     V1ReconcileStatus,
     V1Resource,
     createRuntimeServiceCreateTrigger,
@@ -9,9 +8,8 @@
   import { runtime } from "../../../runtime-client/runtime-store";
 
   export let resource: V1Resource;
-  export let split: V1ModelSplit;
+  export let splitKey: string;
 
-  $: splitKey = split.key as string;
   $: ({ instanceId } = $runtime);
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
@@ -37,6 +35,7 @@
     V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
   loading={resource.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
+  noWrap
 >
   Refresh split
 </Button>

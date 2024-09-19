@@ -148,7 +148,7 @@
           {#if allErrors.length > 0}
             <div
               transition:slide={{ duration: 200 }}
-              class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
+              class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] bg-gray-100 flex flex-col gap-2"
             >
               {#each allErrors as error (error.message)}
                 <div>{error.message}</div>

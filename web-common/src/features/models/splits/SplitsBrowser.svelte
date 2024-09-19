@@ -10,7 +10,7 @@
 
   let active = true;
 
-  let selectedFilter: "all" | "errors" | "pending" = "errors";
+  let selectedFilter: "all" | "errors" | "pending" = "all";
   let options = [
     { main: "all", key: "all" },
     { main: "pending", key: "pending" },

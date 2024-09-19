@@ -2,6 +2,7 @@
   import { createInfiniteQuery } from "@tanstack/svelte-query";
   import {
     ColumnDef,
+    Row,
     TableOptions,
     createSvelteTable,
     flexRender,
@@ -17,6 +18,7 @@
     runtimeServiceGetModelSplits,
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
   import TriggerSplit from "./TriggerSplit.svelte";
 
@@ -66,13 +68,15 @@
   /**
    * Table Options
    */
-
   const isIncremental = resource.model?.spec?.incremental;
   const columns: ColumnDef<V1ModelSplit>[] = [
     {
       accessorKey: "data",
       header: "Data",
-      cell: (info) => (info.getValue() ? JSON.stringify(info.getValue()) : "-"),
+      cell: ({ row }) => flexRender(DataCell, { data: row.original.data }),
+      meta: {
+        widthPercent: 30,
+      },
     },
     {
       accessorKey: "executedOn",
@@ -88,11 +92,17 @@
               fractionalSecondDigits: 3,
             })
           : "-",
+      meta: {
+        widthPercent: 10,
+      },
     },
     {
       accessorKey: "elapsedMs",
       header: "Elapsed time",
       cell: ({ row }) => row.original.elapsedMs + "ms",
+      meta: {
+        widthPercent: 10,
+      },
     },
     {
       accessorKey: "watermark",
@@ -108,21 +118,31 @@
               fractionalSecondDigits: 3,
             })
           : "-",
+      meta: {
+        widthPercent: 10,
+      },
     },
     {
       accessorKey: "error",
       header: "Error",
       cell: ({ row }) => flexRender(ErrorCell, { error: row.original.error }),
+      meta: {
+        widthPercent: 25,
+      },
     },
     ...(isIncremental
       ? [
           {
-            accessorKey: "split",
+            accessorKey: "key",
             header: "",
+            id: "actions",
+            meta: {
+              widthPercent: 10,
+            },
             cell: ({ row }) =>
               flexRender(TriggerSplit, {
                 resource,
-                split: row.original,
+                splitKey: (row as Row<V1ModelSplit>).original.key as string,
               }),
           },
         ]
@@ -155,8 +175,8 @@
   /**
    * Virtualizer
    */
-  const ROW_HEIGHT = 50;
-  const OVERSCAN = 5;
+  const ROW_HEIGHT = 71;
+  const OVERSCAN = 10;
   let virtualListEl: HTMLDivElement;
   $: rows = $table.getRowModel().rows;
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
@@ -183,17 +203,19 @@
 </script>
 
 <div class="list scroll-container" bind:this={virtualListEl}>
-  <div style="position: relative; height: {getTotalSize()}px;">
-    <table class="w-full">
+  <div class="relative" style="height: {getTotalSize()}px;">
+    <table>
       <thead>
         {#each getHeaderGroups() as headerGroup (headerGroup.id)}
           <tr>
             {#each headerGroup.headers as header (header.id)}
-              <th colSpan={header.colSpan} class="px-4 py-2 text-left">
+              <th
+                colSpan={header.colSpan}
+                class="text-left"
+                style={`width: ${header.column.columnDef.meta?.widthPercent}%;`}
+              >
                 {#if !header.isPlaceholder}
-                  <div
-                    class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
-                  >
+                  <div class="font-semibold text-gray-500">
                     <svelte:component
                       this={flexRender(
                         header.column.columnDef.header,
@@ -210,7 +232,7 @@
       <tbody>
         {#if allRows.length === 0}
           <tr>
-            <td class="text-center py-4" colspan={columns.length}>
+            <td class="text-center h-16" colspan={columns.length}>
               <div class="text-gray-500">None</div>
             </td>
           </tr>
@@ -221,10 +243,7 @@
                 idx * virtualRow.size}px);"
             >
               {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
-                <td
-                  class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
-                  data-label={cell.column.columnDef.header}
-                >
+                <td data-label={cell.column.columnDef.header}>
                   <svelte:component
                     this={flexRender(
                       cell.column.columnDef.cell,
@@ -243,10 +262,12 @@
 
 <style lang="postcss">
   table {
+    @apply table-fixed w-full;
     @apply border-separate border-spacing-0;
   }
   table th,
   table td {
+    @apply px-4 py-2;
     @apply border-b border-gray-200;
   }
   thead tr th {
