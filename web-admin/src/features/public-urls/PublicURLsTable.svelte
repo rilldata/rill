@@ -159,6 +159,7 @@
 </script>
 
 <div class="list scroll-container" bind:this={virtualListEl}>
+  <!-- FIXME: hide the bleeding corner in the sticky header -->
   <div
     class="table-wrapper"
     style="position: relative; height: {$virtualizer.getTotalSize()}px;"
