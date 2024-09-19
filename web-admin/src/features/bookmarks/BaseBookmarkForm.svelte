@@ -18,9 +18,10 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let metricsViewName: string;
+  export let exploreName: string;
   export let formState: ReturnType<typeof createForm<BookmarkFormValues>>;
 
-  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: dashboardStore = useDashboardStore(exploreName);
 
   let timeRange: V1TimeRange;
   $: timeRange = {
@@ -33,6 +34,7 @@
     queryClient,
     $runtime?.instanceId,
     metricsViewName,
+    exploreName,
   );
 
   const { form, errors } = formState;
@@ -70,7 +72,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     <FilterChipsReadOnly
       dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
       filters={$dashboardStore.whereFilter}
-      {metricsViewName}
+      {exploreName}
       {timeRange}
     />
   </div>

@@ -4,9 +4,9 @@
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
-  export let metricsViewName: string;
+  export let exploreName: string;
 
-  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: dashboardStore = useDashboardStore(exploreName);
 
   let timeRange: V1TimeRange;
   $: timeRange = {
@@ -24,7 +24,7 @@
   <FilterChipsReadOnly
     dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
     filters={$dashboardStore.whereFilter}
-    {metricsViewName}
+    {exploreName}
     {timeRange}
   />
 </FormSection>

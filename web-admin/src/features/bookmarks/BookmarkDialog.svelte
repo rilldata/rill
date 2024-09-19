@@ -22,6 +22,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let metricsViewName: string;
+  export let exploreName: string;
   export let bookmark: BookmarkEntry | null = null;
   export let onClose = () => {};
 
@@ -65,8 +66,8 @@
             displayName: values.displayName,
             description: values.description,
             projectId: $projectId.data ?? "",
-            resourceKind: ResourceKind.MetricsView,
-            resourceName: metricsViewName,
+            resourceKind: ResourceKind.Explore,
+            resourceName: exploreName,
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
               $dashboardStore,
@@ -83,8 +84,8 @@
       await queryClient.refetchQueries(
         getAdminServiceListBookmarksQueryKey({
           projectId: $projectId.data ?? "",
-          resourceKind: ResourceKind.MetricsView,
-          resourceName: metricsViewName,
+          resourceKind: ResourceKind.Explore,
+          resourceName: exploreName,
         }),
       );
       eventBus.emit("notification", {
@@ -96,7 +97,7 @@
   const { handleSubmit, handleReset } = formState;
 
   $: ({ params } = $page);
-  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: dashboardStore = useDashboardStore(exploreName);
   $: projectId = useProjectId(params.organization, params.project);
 </script>
 
@@ -113,7 +114,7 @@
       </Dialog.Title>
     </Dialog.Header>
 
-    <BaseBookmarkForm {formState} {metricsViewName} />
+    <BaseBookmarkForm {formState} {metricsViewName} {exploreName} />
 
     <div class="flex flex-row mt-4 gap-2">
       <div class="grow" />

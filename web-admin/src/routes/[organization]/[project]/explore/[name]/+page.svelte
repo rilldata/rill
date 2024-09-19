@@ -5,15 +5,15 @@
   import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
+  import { errorStore } from "@rilldata/web-admin/features/errors/error-store";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
+  import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { errorStore } from "../../../../features/errors/error-store";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -26,10 +26,10 @@
   $: ({
     organization: orgName,
     project: projectName,
-    dashboard: dashboardName,
+    name: exploreName,
   } = $page.params);
 
-  $: dashboard = useDashboard(instanceId, dashboardName, {
+  $: explore = useExplore(instanceId, exploreName, {
     refetchInterval: () => {
       if (isDashboardReconcilingForFirstTime) {
         return PollIntervalWhenDashboardFirstReconciling;
@@ -42,19 +42,20 @@
   });
 
   $: isDashboardNotFound =
-    !$dashboard.data &&
-    $dashboard.isError &&
-    $dashboard.error?.response?.status === 404;
+    !$explore.data &&
+    $explore.isError &&
+    $explore.error?.response?.status === 404;
+  // TODO: should these be checking metricsView or explore?
   $: isDashboardReconcilingForFirstTime =
-    $dashboard?.data?.metricsView?.state?.validSpec === null &&
-    !$dashboard?.data?.meta?.reconcileError;
+    $explore?.data?.metricsView?.metricsView?.state?.validSpec === null &&
+    !$explore?.data?.metricsView?.meta?.reconcileError;
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
   $: isDashboardErrored =
-    $dashboard?.data?.metricsView?.state?.validSpec === null &&
-    !!$dashboard?.data?.meta?.reconcileError;
-  $: metricViewName = $dashboard.data?.meta.name.name;
+    $explore?.data?.metricsView?.metricsView?.state?.validSpec === null &&
+    !!$explore?.data?.metricsView?.meta?.reconcileError;
+  $: metricViewName = $explore.data?.metricsView?.meta?.name?.name;
 
   // If no dashboard is found, show a 404 page
   $: if (isDashboardNotFound) {
@@ -74,30 +75,30 @@
 </script>
 
 <svelte:head>
-  <title>{dashboardName} - Rill</title>
+  <title>{exploreName} - Rill</title>
 </svelte:head>
 
-{#if $dashboard.isSuccess}
+{#if $explore.isSuccess}
   {#if isDashboardReconcilingForFirstTime}
     <DashboardBuilding />
   {:else if isDashboardErrored}
     <DashboardErrored organization={orgName} project={projectName} />
   {:else if metricViewName}
     {#key metricViewName}
-      <StateManagersProvider metricsViewName={metricViewName}>
+      <StateManagersProvider metricsViewName={metricViewName} {exploreName}>
         {#if $user.isSuccess && $user.data.user}
           <DashboardBookmarksStateProvider {metricViewName}>
             <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard {metricViewName} />
+                <Dashboard {metricViewName} {exploreName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardBookmarksStateProvider>
         {:else}
-          <DashboardStateProvider {metricViewName}>
+          <DashboardStateProvider {exploreName}>
             <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard {metricViewName} />
+                <Dashboard {metricViewName} {exploreName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardStateProvider>

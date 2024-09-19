@@ -24,20 +24,22 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let metricsViewName: string;
+  export let exploreName: string;
 
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
-  $: bookmarkApplier = createBookmarkApplier(
-    $runtime?.instanceId,
-    metricsViewName,
-  );
+  $: bookmarkApplier = createBookmarkApplier($runtime?.instanceId, exploreName);
 
-  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: dashboardStore = useDashboardStore(exploreName);
   $: projectId = useProjectId($page.params.organization, $page.params.project);
 
   const queryClient = useQueryClient();
-  $: homeBookmarkModifier = createHomeBookmarkModifier($runtime?.instanceId);
+  $: homeBookmarkModifier = createHomeBookmarkModifier(
+    $runtime?.instanceId,
+    metricsViewName,
+    exploreName,
+  );
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   function selectBookmark(bookmark: BookmarkEntry) {
@@ -52,8 +54,8 @@
     return queryClient.refetchQueries(
       getAdminServiceListBookmarksQueryKey({
         projectId: $projectId.data ?? "",
-        resourceKind: ResourceKind.MetricsView,
-        resourceName: metricsViewName,
+        resourceKind: ResourceKind.Explore,
+        resourceName: exploreName,
       }),
     );
   }
@@ -98,6 +100,7 @@
     }}
     on:select={({ detail }) => selectBookmark(detail)}
     {metricsViewName}
+    {exploreName}
   />
 </DropdownMenu>
 
@@ -105,6 +108,7 @@
   <BookmarkDialog
     {bookmark}
     {metricsViewName}
+    {exploreName}
     onClose={() => {
       showDialog = false;
       bookmark = null;
