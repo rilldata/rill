@@ -20,6 +20,7 @@
   resetSelectedMockUserAfterNavigate(queryClient);
 
   $: exploreName = data.explore.meta?.name?.name as string;
+  $: metricsViewName = data.metricsView?.meta?.name?.name as string;
 
   $: ({ instanceId } = $runtime);
 
@@ -65,11 +66,11 @@
   />
 {:else}
   {#key exploreName}
-    <StateManagersProvider metricsViewName={exploreName}>
+    <StateManagersProvider {metricsViewName} {exploreName}>
       <DashboardStateProvider metricViewName={exploreName}>
-        <DashboardURLStateProvider metricViewName={exploreName}>
+        <DashboardURLStateProvider metricViewName={metricsViewName}>
           <DashboardThemeProvider>
-            <Dashboard metricViewName={exploreName} />
+            <Dashboard metricViewName={metricsViewName} {exploreName} />
           </DashboardThemeProvider>
         </DashboardURLStateProvider>
       </DashboardStateProvider>

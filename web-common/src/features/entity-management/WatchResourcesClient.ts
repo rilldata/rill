@@ -45,9 +45,6 @@ export class WatchResourcesClient {
       return;
     }
 
-    // temporarily ignore Explore. a future PR will refactor to incorporate it
-    if (res.name.kind === ResourceKind.Explore) return;
-
     // Get the previous resource from the query cache
     const previousResource = queryClient.getQueryData<{
       resource: V1Resource | undefined;
@@ -193,6 +190,20 @@ export class WatchResourcesClient {
           case ResourceKind.MetricsView: {
             const failed = !!res.resource.meta?.reconcileError;
             void invalidateMetricsViewData(queryClient, res.name.name, failed);
+
+            // Done
+            return;
+          }
+
+          case ResourceKind.Explore: {
+            const failed = !!res.resource.meta?.reconcileError;
+            if (res.resource.explore?.state?.validSpec?.metricsView) {
+              void invalidateMetricsViewData(
+                queryClient,
+                res.resource.explore.state.validSpec.metricsView,
+                failed,
+              );
+            }
 
             // Done
             return;

@@ -61,18 +61,6 @@ export class FileArtifacts {
     });
   }
 
-  updateReconciling(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateReconciling(resource);
-    });
-  }
-
-  updateLastUpdated(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateLastUpdated(resource);
-    });
-  }
-
   getFileArtifact = (filePath: string) => {
     let artifact = this.artifacts.get(filePath);
 

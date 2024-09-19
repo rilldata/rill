@@ -125,6 +125,7 @@ export const FolderNameToResourceKind: Record<string, ResourceKind> = {
   sources: ResourceKind.Source,
   models: ResourceKind.Model,
   dashboards: ResourceKind.MetricsView,
+  // explores: ResourceKind.Explore, // This does not happen on backend
   charts: ResourceKind.Component,
   "custom-dashboards": ResourceKind.Dashboard,
 };
@@ -136,6 +137,7 @@ export const ResourceShortNameToResourceKind: Record<string, ResourceKind> = {
   dashboard: ResourceKind.Dashboard,
   metrics_view: ResourceKind.MetricsView,
   metricsview: ResourceKind.MetricsView,
+  explore: ResourceKind.Explore,
   model: ResourceKind.Model,
   report: ResourceKind.Report,
   source: ResourceKind.Source,

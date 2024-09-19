@@ -6,12 +6,10 @@
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
 
-  export let metricViewName: string;
+  export let exploreName: string;
 
   const {
     selectors: {
@@ -21,14 +19,13 @@
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
+    validSpecStore,
   } = getStateManagers();
-
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: measures = $filteredSimpleMeasures();
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   function handleMeasureUpdate(event: CustomEvent) {
     setLeaderboardMeasureName(event.detail.key);
@@ -101,8 +98,8 @@
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
-    metricViewName,
-    metricsView,
+    exploreName,
+    validSpecStore,
   );
 
   const toggleDimensionVisibility = (e) => {

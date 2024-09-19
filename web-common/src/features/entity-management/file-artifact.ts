@@ -225,19 +225,6 @@ export class FileArtifact {
     );
   }
 
-  updateReconciling(resource: V1Resource) {
-    this.updateResourceNameIfChanged(resource);
-    this.reconciling.set(
-      resource.meta?.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
-    );
-  }
-
-  updateLastUpdated(resource: V1Resource) {
-    this.updateResourceNameIfChanged(resource);
-    this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
-  }
-
   hardDeleteResource() {
     // To avoid a workspace flicker, first infer the *intended* resource kind
     this.inferredResourceKind.set(
@@ -314,13 +301,19 @@ export class FileArtifact {
     );
   }
 
-  getEntityName() {
-    return get(this.resourceName)?.name ?? extractFileName(this.path);
-  }
-
   private updateResourceNameIfChanged(resource: V1Resource) {
     const isSubResource = !!resource.component?.spec?.definedInDashboard;
     if (isSubResource) return;
+
+    // Temporary fix to avoid associating V1MetricsView and V1Explore to same file
+    const kind = inferResourceKind(this.path, get(this.remoteContent) ?? "");
+    if (
+      kind === ResourceKind.MetricsView &&
+      resource.meta?.name?.kind === ResourceKind.Explore
+    ) {
+      return;
+    }
+
     const curName = get(this.resourceName);
     if (
       curName?.name !== resource.meta?.name?.name ||

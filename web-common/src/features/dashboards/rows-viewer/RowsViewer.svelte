@@ -14,6 +14,7 @@
   import ReconcilingSpinner from "../../entity-management/ReconcilingSpinner.svelte";
 
   export let metricViewName = "";
+  export let exploreName: string;
   export let height: number;
   export let filters: V1Expression | undefined;
   export let timeRange: TimeRangeString;
@@ -21,7 +22,7 @@
   const SAMPLE_SIZE = 10000;
   const FALLBACK_SAMPLE_SIZE = 1000;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  $: dashboardStore = useDashboardStore(exploreName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let limit = writable(SAMPLE_SIZE);
@@ -70,7 +71,7 @@
       {rows}
       columnNames={tableColumns}
       rowHeight={32}
-      name={metricViewName}
+      name={exploreName}
     />
   {:else}
     <ReconcilingSpinner />

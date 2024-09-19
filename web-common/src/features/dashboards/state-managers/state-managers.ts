@@ -37,6 +37,7 @@ import {
 export type StateManagers = {
   runtime: Writable<Runtime>;
   metricsViewName: Writable<string>;
+  exploreName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
   dashboardStore: Readable<MetricsExplorerEntity>;
   timeRangeSummaryStore: Readable<
@@ -73,15 +74,19 @@ export function getStateManagers(): StateManagers {
 export function createStateManagers({
   queryClient,
   metricsViewName,
+  exploreName,
   extraKeyPrefix,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
+  exploreName: string;
   extraKeyPrefix?: string;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
+  const exploreNameStore = writable(exploreName);
+
   const dashboardStore: Readable<MetricsExplorerEntity> = derived(
-    [metricsViewNameStore],
+    [exploreNameStore],
     ([name], set) => {
       const store = useDashboardStore(name);
       return store.subscribe(set);
@@ -90,8 +95,8 @@ export function createStateManagers({
 
   const validSpecStore: Readable<
     QueryObserverResult<ValidExploreResponse, RpcStatus>
-  > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) =>
-    useValidExplore(r.instanceId, metricViewName).subscribe(set),
+  > = derived([runtime, exploreNameStore], ([r, exploreName], set) =>
+    useValidExplore(r.instanceId, exploreName).subscribe(set),
   );
 
   const timeRangeSummaryStore: Readable<
@@ -125,12 +130,13 @@ export function createStateManagers({
   );
 
   // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
-  initPersistentDashboardStore((extraKeyPrefix || "") + metricsViewName);
+  initPersistentDashboardStore((extraKeyPrefix || "") + exploreName);
   const persistentDashboardStore = getPersistentDashboardStore();
 
   return {
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
+    exploreName: exploreNameStore,
     metricsStore: metricsExplorerStore,
     timeRangeSummaryStore,
     validSpecStore,

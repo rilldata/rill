@@ -10,7 +10,7 @@
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
@@ -23,7 +23,6 @@
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { extent } from "d3-array";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
@@ -44,7 +43,7 @@
   } from "./utils";
 
   export let measure: MetricsViewSpecMeasureV2;
-  export let metricViewName: string;
+  export let exploreName: string;
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
   export let xMin: Date | undefined = undefined;
@@ -69,6 +68,8 @@
   export let isScrubbing = false;
   export let scrubStart;
   export let scrubEnd;
+
+  const { validSpecStore } = getStateManagers();
 
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
@@ -163,14 +164,12 @@
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
 
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
-
   function inBounds(min, max, value) {
     return value >= min && value <= max;
   }
 
   function resetScrub() {
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+    metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
   }
 
   function zoomScrub() {
@@ -180,7 +179,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+    metricsExplorerStore.setSelectedTimeRange(exploreName, {
       name: TimeRangePreset.CUSTOM,
       start: adjustedStart,
       end: adjustedEnd,
@@ -191,7 +190,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+    metricsExplorerStore.setSelectedScrubRange(exploreName, {
       start: adjustedStart,
       end: adjustedEnd,
       isScrubbing: isScrubbing,
@@ -212,11 +211,11 @@
       : undefined;
 
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      exploreName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
-      $metricsView.data ?? {},
+      $validSpecStore.data?.metricsView ?? {},
     );
   }
 

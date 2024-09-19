@@ -22,6 +22,7 @@
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   export let metricViewName: string;
+  export let exploreName: string;
 
   const DEFAULT_LABEL = "Model Data";
   const INITIAL_HEIGHT_EXPANDED = 300;
@@ -38,7 +39,7 @@
 
   const stateManagers = getStateManagers();
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  $: dashboardStore = useDashboardStore(exploreName);
   $: pivotDataStore = usePivotDataStore(stateManagers);
   $: showPivot = $dashboardStore.pivot.active;
   $: activeCellFilters = $pivotDataStore.activeCellFilters;
@@ -158,7 +159,7 @@
   </div>
 
   {#if isOpen}
-    <RowsViewer {filters} {timeRange} {metricViewName} {height} />
+    <RowsViewer {filters} {timeRange} {metricViewName} {exploreName} {height} />
   {/if}
 </div>
 

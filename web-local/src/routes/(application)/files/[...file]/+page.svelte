@@ -9,6 +9,7 @@
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import CanvasDashboardWorkspace from "@rilldata/web-common/features/workspaces/CanvasDashboardWorkspace.svelte";
   import ComponentWorkspace from "@rilldata/web-common/features/workspaces/ComponentWorkspace.svelte";
+  import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
   import SourceWorkspace from "@rilldata/web-common/features/workspaces/SourceWorkspace.svelte";
@@ -20,9 +21,9 @@
     [ResourceKind.Source, SourceWorkspace],
     [ResourceKind.Model, ModelWorkspace],
     [ResourceKind.MetricsView, MetricsWorkspace],
+    [ResourceKind.Explore, ExploreWorkspace],
     [ResourceKind.Component, ComponentWorkspace],
     [ResourceKind.Dashboard, CanvasDashboardWorkspace],
-    [null, null],
     [undefined, null],
   ]);
 

@@ -19,6 +19,7 @@
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
 
+  export let exploreName: string;
   export let metricViewName: string;
 
   const { cloudDataViewer, readOnly } = featureFlags;
@@ -27,7 +28,7 @@
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: metricsExplorer = useDashboardStore(metricViewName);
+  $: metricsExplorer = useDashboardStore(exploreName);
 
   $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
   $: expandedMeasureName = $metricsExplorer?.tdd?.expandedMeasureName;
@@ -58,7 +59,7 @@
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
-      {#key metricViewName}
+      {#key exploreName}
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
@@ -86,21 +87,24 @@
       class:left-shift={extraLeftPadding}
     >
       <div class="pt-2">
-        {#key metricViewName}
+        {#key exploreName}
           {#if hasTimeSeries}
             <MetricsTimeSeriesCharts
-              {metricViewName}
+              {exploreName}
               workspaceWidth={exploreContainerWidth}
             />
           {:else}
-            <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+            <MeasuresContainer
+              {exploreContainerWidth}
+              metricViewName={exploreName}
+            />
           {/if}
         {/key}
       </div>
 
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
-        <TimeDimensionDisplay {metricViewName} />
+        <TimeDimensionDisplay metricViewName={exploreName} />
       {:else if selectedDimensionName}
         <div class="pt-2 pl-1 border-l overflow-auto w-full">
           <DimensionDisplay />
@@ -115,7 +119,7 @@
 </article>
 
 {#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !mockUserHasNoAccess}
-  <RowsViewerAccordion {metricViewName} />
+  <RowsViewerAccordion {metricViewName} {exploreName} />
 {/if}
 
 <style lang="postcss">

@@ -1,3 +1,4 @@
+import type { QueryObserverResult } from "@rilldata/svelte-query";
 import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 import {
   updateMetricsExplorerByName,
@@ -5,13 +6,12 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import { ValidExploreResponse } from "@rilldata/web-common/features/explores/selectors";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   RpcStatus,
-  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, get } from "svelte/store";
 
 export type ShowHideSelectorState = {
@@ -29,7 +29,9 @@ export type ShowHideSelectorStore = Readable<ShowHideSelectorState> &
 
 function createShowHideStore<Item>(
   metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
+  validSpecStore: Readable<
+    QueryObserverResult<ValidExploreResponse, RpcStatus>
+  >,
   type: "dimensions" | "measures",
   labelSelector: (i: Item) => string,
 ) {
@@ -51,13 +53,14 @@ function createShowHideStore<Item>(
   const persistentStore = getPersistentDashboardStore();
 
   const derivedStore = derived(
-    [metricsView, useDashboardStore(metricsViewName)],
-    ([meta, metricsExplorer]) => {
+    [validSpecStore, useDashboardStore(metricsViewName)],
+    ([validSpec, metricsExplorer]) => {
       if (
-        !meta?.data ||
+        !validSpec?.data?.metricsView ||
+        !validSpec?.data?.explore ||
         !metricsExplorer ||
-        !meta.isSuccess ||
-        meta.isRefetching
+        !validSpec.isSuccess ||
+        validSpec.isRefetching
       ) {
         return {
           selectableItems: [],
@@ -66,14 +69,18 @@ function createShowHideStore<Item>(
         };
       }
 
-      const items = meta.data[type] ?? [];
+      const items = validSpec.data.explore[type] ?? [];
       const selectableItems: Array<SearchableFilterSelectableItem> = items.map(
         (i) => ({
-          name: i.name,
-          label: labelSelector(i),
+          name: i,
+          label: labelSelector(
+            validSpec.data.metricsView?.[type]?.find(
+              (r) => r.name === i,
+            ) as Item,
+          ),
         }),
       );
-      const availableKeys = items.map((i) => i.name);
+      const availableKeys = [...items];
       const visibleKeysSet = metricsExplorer[visibleFieldInStore];
 
       return {
@@ -130,34 +137,38 @@ function createShowHideStore<Item>(
 
 export function createShowHideMeasuresStore(
   metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
+  validSpecStore: Readable<
+    QueryObserverResult<ValidExploreResponse, RpcStatus>
+  >,
 ) {
   return createShowHideStore<MetricsViewSpecMeasureV2>(
     metricsViewName,
-    metricsView,
+    validSpecStore,
     "measures",
     /*
      * This selector returns the best available string for each measure,
      * using the "label" if available but falling back to the expression
      * if needed.
      */
-    (m) => m.label || m.expression,
+    (m) => m.label || m.expression || m.name!,
   );
 }
 
 export function createShowHideDimensionsStore(
   metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
+  validSpecStore: Readable<
+    QueryObserverResult<ValidExploreResponse, RpcStatus>
+  >,
 ) {
   return createShowHideStore<MetricsViewSpecDimensionV2>(
     metricsViewName,
-    metricsView,
+    validSpecStore,
     "dimensions",
     /*
      * This selector returns the best available string for each dimension,
      * using the "label" if available but falling back to the name of
      * the categorical column (which must be present) if needed
      */
-    (d) => d.label || d.name,
+    (d) => d.label || d.name!,
   );
 }

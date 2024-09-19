@@ -10,7 +10,6 @@
     PivotChipData,
     PivotChipType,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
@@ -36,7 +35,6 @@
   } from "@rilldata/web-common/lib/time/types";
   import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import ChartInteractions from "./ChartInteractions.svelte";
@@ -49,17 +47,19 @@
     updateChartInteractionStore,
   } from "./utils";
 
-  export let metricViewName: string;
+  export let exploreName: string;
   export let workspaceWidth: number;
 
   const {
     selectors: {
       measures: {
+        allMeasures,
         isMeasureValidPercentOfTotal,
         getFilteredMeasuresAndDimensions,
       },
       dimensionFilters: { includedDimensionValues },
     },
+    validSpecStore,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -75,15 +75,11 @@
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-  $: instanceId = $runtime.instanceId;
-
-  // query the `/meta` endpoint to get the measures and the default time grain
-  $: metricsView = useMetricsView(instanceId, metricViewName);
+  $: dashboardStore = useDashboardStore(exploreName);
 
   $: showHideMeasures = createShowHideMeasuresStore(
-    metricViewName,
-    metricsView,
+    exploreName,
+    validSpecStore,
   );
 
   $: expandedMeasureName = $dashboardStore?.tdd?.expandedMeasureName;
@@ -110,14 +106,13 @@
   // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasureV2[];
   $: {
-    renderedMeasures =
-      $metricsView.data?.measures?.filter(
-        expandedMeasureName
-          ? (measure) => measure.name === expandedMeasureName
-          : (_, i) => $showHideMeasures.selectedItems[i],
-      ) ?? [];
+    renderedMeasures = $allMeasures.filter(
+      expandedMeasureName
+        ? (measure) => measure.name === expandedMeasureName
+        : (_, i) => $showHideMeasures.selectedItems[i],
+    );
     const { measures } = $getFilteredMeasuresAndDimensions(
-      $metricsView.data ?? {},
+      $validSpecStore.data?.metricsView ?? {},
       renderedMeasures.map((m) => m.name ?? ""),
     );
     renderedMeasures = renderedMeasures.filter((rm) =>
@@ -208,7 +203,7 @@
       $dashboardStore?.selectedTimezone,
       interval,
       $timeControlsStore.selectedTimeRange?.name,
-      $metricsView?.data?.defaultTimeRange,
+      $validSpecStore.data?.explore?.presets?.[0]?.timeRange,
       $dashboardStore?.tdd.chartType,
     );
 
@@ -289,7 +284,7 @@
       });
 
     metricsExplorerStore.createPivot(
-      metricViewName,
+      exploreName,
       { dimension: [getTimeDimension()] },
       {
         dimension: [],
@@ -307,12 +302,12 @@
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if isInTimeDimensionView}
-      <BackToOverview {metricViewName} />
+      <BackToOverview {exploreName} />
       <ChartTypeSelector
         hasComparison={Boolean(
           showComparison || includedValuesForDimension.length,
         )}
-        {metricViewName}
+        {exploreName}
         chartType={tddChartType}
       />
     {:else}
@@ -339,11 +334,7 @@
 
   <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
     <div class="relative w-full">
-      <ChartInteractions
-        {metricViewName}
-        {showComparison}
-        timeGrain={interval}
-      />
+      <ChartInteractions {exploreName} {showComparison} timeGrain={interval} />
       {#if tddChartType === TDDChart.DEFAULT}
         <div class="translate-x-5">
           {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
@@ -396,7 +387,7 @@
                 : EntityStatus.Idle}
             on:expand-measure={() => {
               metricsExplorerStore.setExpandedMeasureName(
-                metricViewName,
+                exploreName,
                 measure.name,
               );
             }}
@@ -442,7 +433,7 @@
                   $dashboardStore.selectedTimezone,
                 );
 
-                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                metricsExplorerStore.setSelectedScrubRange(exploreName, {
                   start,
                   end,
                   isScrubbing: true,
@@ -455,7 +446,7 @@
                   $dashboardStore.selectedTimezone,
                 );
 
-                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                metricsExplorerStore.setSelectedScrubRange(exploreName, {
                   start,
                   end,
                   isScrubbing: false,
@@ -464,7 +455,7 @@
               on:chart-brush-clear={(e) => {
                 const { start, end } = e.detail;
 
-                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                metricsExplorerStore.setSelectedScrubRange(exploreName, {
                   start,
                   end,
                   isScrubbing: false,
@@ -479,7 +470,7 @@
               {isScrubbing}
               {scrubStart}
               {scrubEnd}
-              {metricViewName}
+              {exploreName}
               data={formattedData}
               {dimensionData}
               zone={$dashboardStore.selectedTimezone}

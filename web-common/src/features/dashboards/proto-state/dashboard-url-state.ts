@@ -73,13 +73,13 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
 
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
   return dashboardUrlState.subscribe((state) => {
-    const metricViewName = get(ctx.metricsViewName);
+    const exploreName = get(ctx.exploreName);
 
     // Avoid a race condition when switching between metrics views
     // (It's not necessary for Public URLs because there's no UI flow for switching from one Public URL to another)
     if (
       !state.isPublicUrl &&
-      state?.urlName?.toLowerCase() !== metricViewName.toLowerCase()
+      state?.urlName?.toLowerCase() !== exploreName.toLowerCase()
     )
       return;
 
@@ -93,7 +93,7 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
     } else if (state.urlProto !== lastKnownProto) {
       // changed when user updated the url manually
       metricsExplorerStore.syncFromUrl(
-        metricViewName,
+        exploreName,
         state.urlProto!,
         get(ctx.validSpecStore).data?.metricsView ?? {},
         get(ctx.validSpecStore).data?.explore ?? {},

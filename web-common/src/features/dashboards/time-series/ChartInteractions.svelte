@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
@@ -11,11 +10,10 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
   import { Interval, DateTime } from "luxon";
 
-  export let metricViewName: string;
+  export let exploreName: string;
   export let showComparison = false;
   export let timeGrain: V1TimeGrain | undefined;
 
@@ -25,11 +23,10 @@
     selectors: {
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
+    validSpecStore,
   } = StateManagers;
 
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
-
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: ({ selectedScrubRange } = $dashboardStore);
 
@@ -67,7 +64,7 @@
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
         e.key === "Escape"
       ) {
-        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+        metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
       }
     }
   }
@@ -87,11 +84,11 @@
       : undefined;
 
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      exploreName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
-      $metricsView.data ?? {},
+      $validSpecStore.data?.metricsView ?? {},
     );
   }
 
@@ -104,7 +101,7 @@
         selectedScrubRange.start,
         selectedScrubRange.end,
       );
-      metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+      metricsExplorerStore.setSelectedTimeRange(exploreName, {
         name: TimeRangePreset.CUSTOM,
         start,
         end,

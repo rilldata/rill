@@ -63,14 +63,14 @@ export function createDashboardStateSync(
 
       const { metricsView, explore } = validSpecRes.data;
 
-      const metricViewName = get(ctx.metricsViewName);
-      if (metricViewName in get(metricsExplorerStore).entities) {
+      const exploreName = get(ctx.exploreName);
+      if (exploreName in get(metricsExplorerStore).entities) {
         // Successive syncs with metrics view spec
-        metricsExplorerStore.sync(metricViewName, explore);
+        metricsExplorerStore.sync(exploreName, explore);
       } else {
         // Running for the 1st time. Initialise the dashboard store.
         metricsExplorerStore.init(
-          metricViewName,
+          exploreName,
           metricsView,
           explore,
           timeRangeRes.data,
@@ -80,14 +80,14 @@ export function createDashboardStateSync(
         if (initialUrlState) {
           // If there is data to be loaded, load it during the init
           metricsExplorerStore.syncFromUrl(
-            metricViewName,
+            exploreName,
             initialUrlState,
             metricsView,
             explore,
             metricsViewSchemaRes.data.schema,
           );
           // Call sync to make sure changes in dashboard are honoured
-          metricsExplorerStore.sync(metricViewName, explore);
+          metricsExplorerStore.sync(exploreName, explore);
         }
       }
       return { isFetching: false, error: false };
