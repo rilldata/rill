@@ -17,7 +17,6 @@
   } from "../stores/dashboard-stores";
   import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
-
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import { useMetricsView } from "../selectors";
 
@@ -104,7 +103,12 @@
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}
   <DropdownMenu.Root bind:open>
     <DropdownMenu.Trigger asChild let:builder>
-      <Chip type="time" builders={[builder]} active={open}>
+      <Chip
+        type="time"
+        builders={[builder]}
+        active={open}
+        label="Select a time grain"
+      >
         <div slot="body" class="flex gap-x-2 items-center">
           <svelte:element this={tdd ? "b" : "span"}>
             {tdd ? "Time" : "by"}
