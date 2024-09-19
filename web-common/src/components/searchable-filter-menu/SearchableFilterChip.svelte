@@ -26,11 +26,7 @@ props as needed.
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
-
-  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
-
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
@@ -68,29 +64,16 @@ props as needed.
     location="bottom"
     suppress={active}
   >
-    <!-- TODO: Switch to Measure colors once Theming supports it -->
     <Chip
       type="measure"
       {active}
       {label}
       on:click={toggleFloatingElement}
-      outline={true}
+      caret
     >
-      <div class="flex gap-x-2" slot="body">
-        <div
-          class="font-bold text-ellipsis overflow-hidden whitespace-nowrap ml-2"
-        >
-          {label}
-        </div>
-
-        <div class="flex items-center">
-          <IconSpaceFixer pullRight>
-            <div class="transition-transform" class:-rotate-180={active}>
-              <CaretDownIcon size="14px" />
-            </div>
-          </IconSpaceFixer>
-        </div>
-      </div>
+      <span slot="body" class="font-bold truncate">
+        {label}
+      </span>
     </Chip>
     <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
       <TooltipContent maxWidth="400px">

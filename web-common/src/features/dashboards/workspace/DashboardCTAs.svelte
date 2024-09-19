@@ -49,9 +49,9 @@
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
-  {#if $dashboardPolicyCheck.data}
-    <ViewAsButton />
-  {/if}
+  <!-- {#if $dashboardPolicyCheck.data} -->
+  <ViewAsButton />
+  <!-- {/if} -->
   <GlobalDimensionSearch metricsViewName={metricViewName} />
   {#if !$readOnly}
     <Tooltip distance={8}>

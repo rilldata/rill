@@ -1,7 +1,6 @@
 <script lang="ts">
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import { Chip } from "@rilldata/web-common/components/chip";
-
   import { mapExprToMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
@@ -29,13 +28,7 @@
     {#if filtersLength}
       {#each measureFilters as filter, index (index)}
         <div animate:flip={{ duration: 200 }}>
-          <Chip
-            type="measure"
-            extraRounded={false}
-            label={filter.measure}
-            outline
-            readOnly
-          >
+          <Chip type="measure" label={filter.measure} readOnly>
             <div class="mx-2" slot="body">
               <MeasureFilterBody
                 dimensionName=""

@@ -76,23 +76,17 @@ are details left to the consumer of the component; this component should remain 
         toggleFloatingElement();
         dispatch("click");
       }}
+      caret
       on:remove={() => dispatch("remove")}
-      outline
       removable
+      removeTooltipText={`remove ${selectedValues.length} value${
+        selectedValues.length !== 1 ? "s" : ""
+      } for ${name}`}
     >
-      <!-- remove button tooltip -->
-      <svelte:fragment slot="remove-tooltip">
-        <slot name="remove-tooltip-content">
-          remove {selectedValues.length}
-          value{#if selectedValues.length !== 1}s{/if} for {name}</slot
-        >
-      </svelte:fragment>
-      <!-- body -->
       <RemovableListBody
-        {active}
+        slot="body"
         label={name}
         show={1}
-        slot="body"
         values={selectedValues}
       />
     </Chip>
@@ -103,9 +97,8 @@ are details left to the consumer of the component; this component should remain 
           <svelte:fragment slot="description">{typeLabel || ""}</svelte:fragment
           >
         </TooltipTitle>
-        {#if $$slots["body-tooltip-content"]}
-          <slot name="body-tooltip-content">click to edit the values</slot>
-        {/if}
+
+        <slot name="body-tooltip-content">click to edit the values</slot>
       </TooltipContent>
     </div>
   </Tooltip>

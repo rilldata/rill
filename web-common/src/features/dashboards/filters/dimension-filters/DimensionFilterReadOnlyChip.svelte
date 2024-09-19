@@ -9,12 +9,6 @@
   $: effectiveLabel = isInclude ? label : `Exclude ${label}`;
 </script>
 
-<Chip
-  type="dimension"
-  label={effectiveLabel}
-  outline
-  readOnly
-  exclude={!isInclude}
->
-  <RemovableListBody slot="body" label={effectiveLabel} {values} readOnly />
+<Chip type="dimension" label={effectiveLabel} readOnly exclude={!isInclude}>
+  <RemovableListBody slot="body" label={effectiveLabel} {values} />
 </Chip>

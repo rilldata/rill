@@ -11,7 +11,7 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
 </script>
 
-<Chip type="time" outline readOnly>
+<Chip type="time" readOnly>
   <svelte:fragment slot="body">
     <div class="font-bold text-xs text-slate-800 px-2">
       {#if timeRange.isoDuration && timeRange.isoDuration !== TimeRangePreset.CUSTOM}
@@ -35,7 +35,7 @@
 </Chip>
 
 {#if comparisonTimeRange}
-  <Chip {...timeChipColors} outline readOnly>
+  <Chip type="time" readOnly>
     <svelte:fragment slot="body">
       <div class=" text-xs text-slate-800 px-2">
         vs <b>{getComparisonLabel(comparisonTimeRange)}</b>
