@@ -20794,6 +20794,8 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 
 	// no validation rules for State
 
+	// no validation rules for Title
+
 	if len(errors) > 0 {
 		return IssueMagicAuthTokenRequestMultiError(errors)
 	}
@@ -33378,6 +33380,8 @@ func (m *MagicAuthToken) validate(all bool) error {
 	}
 
 	// no validation rules for State
+
+	// no validation rules for Title
 
 	if len(errors) > 0 {
 		return MagicAuthTokenMultiError(errors)
