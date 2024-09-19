@@ -43,8 +43,6 @@
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
 
-  $: console.log(workspace);
-
   $: extensions =
     resourceKind === ResourceKind.API
       ? [customYAMLwithJSONandSQL]

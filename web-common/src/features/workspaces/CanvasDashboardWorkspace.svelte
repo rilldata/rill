@@ -177,8 +177,6 @@
 
     if ($autoSave) await updateComponentFile();
   }
-
-  $: console.log("errors", errors);
 </script>
 
 <svelte:window
