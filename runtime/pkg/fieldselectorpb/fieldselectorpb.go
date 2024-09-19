@@ -3,11 +3,17 @@ package fieldselectorpb
 import (
 	"fmt"
 	"regexp"
+	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+// Resolve resolves a field selector against a list of all available fields.
 func Resolve(fs *runtimev1.FieldSelector, all []string) ([]string, error) {
+	if fs == nil {
+		return nil, fmt.Errorf("empty field selector")
+	}
+
 	if fs.Selector == nil {
 		if fs.Invert {
 			return all, nil
@@ -41,16 +47,13 @@ func Resolve(fs *runtimev1.FieldSelector, all []string) ([]string, error) {
 		}
 
 		// Inverted – return all fields except those in selectorFields
+		if len(all) == len(selectorFields) {
+			// Optimization for exclude all
+			return nil, nil
+		}
 		res := make([]string, 0, len(all)-len(selectorFields))
 		for _, f := range all {
-			found := false
-			for _, s := range selectorFields {
-				if f == s {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !slices.Contains(selectorFields, f) {
 				res = append(res, f)
 			}
 		}
@@ -79,8 +82,27 @@ func Resolve(fs *runtimev1.FieldSelector, all []string) ([]string, error) {
 		}
 		return res, nil
 	case *runtimev1.FieldSelector_DuckdbExpression:
-		// TODO: Implement DuckDB expression parsing
-		return nil, fmt.Errorf("DuckDB expression field selectors are not yet supported")
+		selectorFields, err := resolveDuckDBExpression(fs.GetDuckdbExpression(), all)
+		if err != nil {
+			return nil, fmt.Errorf("error evaluating DuckDB field selector expression: %w", err)
+		}
+
+		if !fs.Invert {
+			return selectorFields, nil
+		}
+
+		// Invert the selector fields
+		if len(all) == len(selectorFields) {
+			// Optimization for exclude all
+			return nil, nil
+		}
+		res := make([]string, 0, len(all)-len(selectorFields))
+		for _, f := range all {
+			if !slices.Contains(selectorFields, f) {
+				res = append(res, f)
+			}
+		}
+		return res, nil
 	default:
 		return nil, fmt.Errorf("invalid field selector %T", fs.Selector)
 	}
