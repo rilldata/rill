@@ -19,9 +19,9 @@
   import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
   import DeployDashboardCta from "./DeployDashboardCTA.svelte";
 
-  export let metricViewName: string;
+  export let exploreName: string;
 
-  $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
+  $: dashboardQuery = useDashboard($runtime.instanceId, exploreName);
   $: filePath = $dashboardQuery.data?.meta?.filePaths?.[0] ?? "";
 
   $: dashboardPolicyCheck = useDashboardPolicyCheck(
@@ -38,7 +38,7 @@
   function fireTelemetry() {
     behaviourEvent
       .fireNavigationEvent(
-        metricViewName,
+        exploreName,
         BehaviourEventMedium.Button,
         MetricsEventSpace.Workspace,
         MetricsEventScreenName.Dashboard,
@@ -52,7 +52,7 @@
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
-  <GlobalDimensionSearch metricsViewName={metricViewName} />
+  <GlobalDimensionSearch />
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button

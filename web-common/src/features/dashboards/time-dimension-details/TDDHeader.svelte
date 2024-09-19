@@ -15,10 +15,7 @@
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -32,7 +29,7 @@
   import type { TDDComparison } from "./types";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
 
-  export let metricViewName: string;
+  export let exploreName: string;
   export let dimensionName: string;
   export let isFetching = false;
   export let comparing: TDDComparison | undefined;
@@ -50,9 +47,8 @@
     actions: {
       dimensionsFilter: { toggleDimensionFilterMode },
     },
+    dashboardStore,
   } = getStateManagers();
-
-  $: dashboardStore = useDashboardStore(metricViewName);
 
   $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
 
@@ -105,7 +101,7 @@
   }
 
   function switchMeasure(event) {
-    metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
+    metricsExplorerStore.setExpandedMeasureName(exploreName, event.detail);
   }
 
   let showReplacePivotModal = false;
@@ -139,7 +135,7 @@
         ]
       : [];
     metricsExplorerStore.createPivot(
-      metricViewName,
+      exploreName,
       { dimension: rowDimensions },
       {
         dimension: [
@@ -168,7 +164,7 @@
         <Row size="16px" /> Rows
       </div>
 
-      <ComparisonSelector chipStyle {metricViewName} />
+      <ComparisonSelector chipStyle {exploreName} />
     </div>
 
     <div class="flex items-center gap-x-4 pl-2">
@@ -176,7 +172,7 @@
         <Column size="16px" /> Columns
       </div>
       <div class="flex items-center gap-x-2">
-        <TimeGrainSelector {metricViewName} pill />
+        <TimeGrainSelector {exploreName} pill />
         <SearchableFilterChip
           label={selectedMeasureLabel}
           on:item-clicked={switchMeasure}
@@ -248,10 +244,7 @@
       </Tooltip>
 
       {#if $exports}
-        <TDDExportButton
-          {metricViewName}
-          includeScheduledReport={$adminServer}
-        />
+        <TDDExportButton {exploreName} includeScheduledReport={$adminServer} />
       {/if}
       <Button
         compact

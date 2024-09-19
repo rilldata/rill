@@ -21,7 +21,7 @@
   } from "./time-dimension-data-store";
   import type { TDDComparison, TableData } from "./types";
 
-  export let metricViewName: string;
+  export let exploreName: string;
 
   const stateManagers = getStateManagers();
   const {
@@ -167,7 +167,7 @@
     else if (pinIndex === -1) {
       newPinIndex = formattedData?.selectedValues?.length - 1;
     }
-    metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
+    metricsExplorerStore.setPinIndex(exploreName, newPinIndex);
   }
 
   function handleKeyDown(e) {
@@ -196,9 +196,9 @@
     {dimensionName}
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
     isRowsEmpty={!rowHeaderLabels.length}
-    {metricViewName}
+    {exploreName}
     on:search={(e) => {
-      metricsExplorerStore.setSearchText(metricViewName, e.detail);
+      metricsExplorerStore.setSearchText(exploreName, e.detail);
     }}
     on:toggle-all-search-items={() => toggleAllSearchItems()}
   />

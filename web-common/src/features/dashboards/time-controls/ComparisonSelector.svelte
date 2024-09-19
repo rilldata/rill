@@ -16,27 +16,27 @@ This component needs to do the following:
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
   import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { matchSorter } from "match-sorter";
 
-  export let metricViewName: string;
+  export let exploreName: string;
   export let chipStyle = false;
+
+  const {
+    dashboardStore,
+    selectors: {
+      dimensions: { allDimensions },
+    },
+  } = getStateManagers();
 
   let dimensions: MetricsViewSpecDimensionV2[] | undefined = [];
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
-
   $: showTimeComparison = $dashboardStore?.showTimeComparison;
   $: selectedDimension = $dashboardStore?.selectedComparisonDimension;
-  $: dimensions = $metricsView?.data?.dimensions;
+  $: dimensions = $allDimensions;
 
   let searchText = "";
 
@@ -64,16 +64,16 @@ This component needs to do the following:
 
   function enableComparison(type: string, name = "") {
     if (type === "time") {
-      metricsExplorerStore.displayTimeComparison(metricViewName, true);
+      metricsExplorerStore.displayTimeComparison(exploreName, true);
     } else {
       // Temporary until these are not mutually exclusive
-      metricsExplorerStore.displayTimeComparison(metricViewName, false);
-      metricsExplorerStore.setComparisonDimension(metricViewName, name);
+      metricsExplorerStore.displayTimeComparison(exploreName, false);
+      metricsExplorerStore.setComparisonDimension(exploreName, name);
     }
   }
 
   function disableAllComparisons() {
-    metricsExplorerStore.disableAllComparisons(metricViewName);
+    metricsExplorerStore.disableAllComparisons(exploreName);
   }
 </script>
 

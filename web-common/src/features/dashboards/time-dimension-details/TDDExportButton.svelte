@@ -13,7 +13,7 @@
   import exportTDD from "./export-tdd";
 
   export let includeScheduledReport: boolean;
-  export let metricViewName: string;
+  export let exploreName: string;
 
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
@@ -21,7 +21,7 @@
   const ctx = getStateManagers();
   const { runtime, dashboardStore } = ctx;
   $: metricsViewProto = $dashboardStore.proto;
-  const metricsView = useDashboard($runtime.instanceId, metricViewName);
+  const metricsView = useDashboard($runtime.instanceId, exploreName);
 
   const exportDash = createQueryServiceExport();
   const handleExportTDD = async (format: V1ExportFormat) => {

@@ -28,7 +28,7 @@ export type ShowHideSelectorStore = Readable<ShowHideSelectorState> &
   ShowHideSelectorReducers;
 
 function createShowHideStore<Item>(
-  metricsViewName: string,
+  exploreName: string,
   validSpecStore: Readable<
     QueryObserverResult<ValidExploreResponse, RpcStatus>
   >,
@@ -53,7 +53,7 @@ function createShowHideStore<Item>(
   const persistentStore = getPersistentDashboardStore();
 
   const derivedStore = derived(
-    [validSpecStore, useDashboardStore(metricsViewName)],
+    [validSpecStore, useDashboardStore(exploreName)],
     ([validSpec, metricsExplorer]) => {
       if (
         !validSpec?.data?.metricsView ||
@@ -92,7 +92,7 @@ function createShowHideStore<Item>(
   ) as ShowHideSelectorStore;
 
   derivedStore.setAllToVisible = () => {
-    updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
+    updateMetricsExplorerByName(exploreName, (metricsExplorer) => {
       metricsExplorer[visibleFieldInStore] = new Set(
         get(derivedStore).availableKeys,
       );
@@ -104,7 +104,7 @@ function createShowHideStore<Item>(
   };
 
   derivedStore.setAllToNotVisible = () => {
-    updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
+    updateMetricsExplorerByName(exploreName, (metricsExplorer) => {
       // Remove all keys except for the first one
       const firstKey = get(derivedStore).availableKeys.slice(0, 1);
       metricsExplorer[visibleFieldInStore] = new Set(firstKey);
@@ -117,7 +117,7 @@ function createShowHideStore<Item>(
   };
 
   derivedStore.toggleVisibility = (key) => {
-    updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
+    updateMetricsExplorerByName(exploreName, (metricsExplorer) => {
       if (metricsExplorer[visibleFieldInStore].has(key)) {
         metricsExplorer[visibleFieldInStore].delete(key);
       } else {
@@ -136,13 +136,13 @@ function createShowHideStore<Item>(
 }
 
 export function createShowHideMeasuresStore(
-  metricsViewName: string,
+  exploreName: string,
   validSpecStore: Readable<
     QueryObserverResult<ValidExploreResponse, RpcStatus>
   >,
 ) {
   return createShowHideStore<MetricsViewSpecMeasureV2>(
-    metricsViewName,
+    exploreName,
     validSpecStore,
     "measures",
     /*
@@ -155,13 +155,13 @@ export function createShowHideMeasuresStore(
 }
 
 export function createShowHideDimensionsStore(
-  metricsViewName: string,
+  exploreName: string,
   validSpecStore: Readable<
     QueryObserverResult<ValidExploreResponse, RpcStatus>
   >,
 ) {
   return createShowHideStore<MetricsViewSpecDimensionV2>(
-    metricsViewName,
+    exploreName,
     validSpecStore,
     "dimensions",
     /*

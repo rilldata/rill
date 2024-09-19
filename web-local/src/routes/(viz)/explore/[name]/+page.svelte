@@ -67,7 +67,7 @@
 {:else}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardStateProvider metricViewName={exploreName}>
+      <DashboardStateProvider {exploreName}>
         <DashboardURLStateProvider metricViewName={metricsViewName}>
           <DashboardThemeProvider>
             <Dashboard metricViewName={metricsViewName} {exploreName} />

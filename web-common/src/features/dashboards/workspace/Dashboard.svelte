@@ -96,7 +96,8 @@
           {:else}
             <MeasuresContainer
               {exploreContainerWidth}
-              metricViewName={exploreName}
+              {metricViewName}
+              {exploreName}
             />
           {/if}
         {/key}
@@ -104,7 +105,7 @@
 
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
-        <TimeDimensionDisplay metricViewName={exploreName} />
+        <TimeDimensionDisplay {exploreName} />
       {:else if selectedDimensionName}
         <div class="pt-2 pl-1 border-l overflow-auto w-full">
           <DimensionDisplay />
