@@ -57,7 +57,7 @@ export const createStateManagerActions = (
     dimensions: createDashboardUpdaters(actionArgs, dimensionActions),
 
     /**
-     * Actions related to dimensions.
+     * Actions related to measures.
      */
     measures: createDashboardUpdaters(actionArgs, measureActions),
 
