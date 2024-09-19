@@ -11,7 +11,6 @@ import {
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
-  type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1Operation,
   V1TimeRange,
