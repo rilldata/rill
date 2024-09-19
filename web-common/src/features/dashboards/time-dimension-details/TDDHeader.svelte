@@ -39,6 +39,7 @@
   export let comparing: TDDComparison | undefined;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = false;
+  export let expandedMeasureName: string;
 
   const dispatch = createEventDispatcher();
   const { adminServer, exports } = featureFlags;
@@ -56,7 +57,6 @@
   $: metricsView = useMetricsView(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
   $: allMeasures = $metricsView?.data?.measures ?? [];
 
   $: selectableMeasures = allMeasures
