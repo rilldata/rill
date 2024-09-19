@@ -3,18 +3,17 @@ import type { DashboardDataSources } from "./types";
 
 export const allDimensions = ({
   metricsSpecQueryResult,
-}: DashboardDataSources): MetricsViewSpecDimensionV2[] | undefined => {
+}: DashboardDataSources) => {
   return metricsSpecQueryResult.data?.dimensions;
 };
 
 export const visibleDimensions = ({
   metricsSpecQueryResult,
   dashboard,
-}: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
-  const dimensions = metricsSpecQueryResult.data?.dimensions?.filter(
+}: DashboardDataSources) => {
+  return metricsSpecQueryResult.data?.dimensions.filter(
     (d) => d.name && dashboard.visibleDimensionKeys.has(d.name),
   );
-  return dimensions === undefined ? [] : dimensions;
 };
 
 export const dimensionTableDimName = ({
