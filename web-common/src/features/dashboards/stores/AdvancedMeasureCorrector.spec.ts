@@ -104,6 +104,7 @@ describe("AdvancedMeasureCorrector", () => {
         },
         {
           name: AD_BIDS_IMPRESSIONS_MEASURE_DAY_GRAIN,
+          expression: "",
           requiredDimensions: [
             {
               name: AD_BIDS_TIMESTAMP_DIMENSION,
@@ -113,6 +114,7 @@ describe("AdvancedMeasureCorrector", () => {
         },
         {
           name: AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
+          expression: "",
           requiredDimensions: [
             {
               name: AD_BIDS_TIMESTAMP_DIMENSION,
@@ -122,6 +124,7 @@ describe("AdvancedMeasureCorrector", () => {
         },
         {
           name: AD_BIDS_IMPRESSIONS_MEASURE_WINDOW,
+          expression: "",
           window: {
             partition: true,
           },

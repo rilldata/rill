@@ -421,10 +421,9 @@ export function prepareDimensionTableRows(
 ): DimensionTableRow[] {
   if (!queryRows || !queryRows.length) return [];
 
-  const formattersForMeasures: { [key: string]: (val: number) => string } =
-    Object.fromEntries(
-      allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)]),
-    );
+  const formattersForMeasures = Object.fromEntries(
+    allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)]),
+  );
 
   const tableRows: DimensionTableRow[] = queryRows
     .filter(
