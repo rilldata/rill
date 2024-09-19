@@ -32,9 +32,10 @@ export type AlertFormValuesSubset = Pick<
 
 export function extractAlertFormValues(
   queryArgs: V1MetricsViewAggregationRequest,
-  metricsViewSpec: V1MetricsViewSpec,
+  defaultTimeRange: string | undefined,
   allTimeRange: V1MetricsViewTimeRangeResponse,
 ): AlertFormValuesSubset {
+  console.log({ defaultTimeRange });
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
   const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
@@ -42,7 +43,7 @@ export function extractAlertFormValues(
     queryArgs.dimensions as V1MetricsViewAggregationDimension[];
 
   const timeRange = (queryArgs.timeRange as V1TimeRange) ?? {
-    isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
+    isoDuration: defaultTimeRange ?? TimeRangePreset.ALL_TIME,
   };
   if (!timeRange.end && allTimeRange.timeRangeSummary?.max) {
     // alerts only have duration optionally offset, end is added during execution by reconciler

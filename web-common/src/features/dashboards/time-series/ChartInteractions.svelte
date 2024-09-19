@@ -14,10 +14,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
   import { Interval, DateTime } from "luxon";
-  import {
-    ResourceKind,
-    useResource,
-  } from "../../entity-management/resource-selectors";
 
   export let metricViewName: string;
   export let showComparison = false;
