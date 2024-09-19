@@ -111,6 +111,12 @@ func TestResolve(t *testing.T) {
 			all:      []string{"a", "b", "c"},
 			want:     []string{"c"},
 		},
+		{
+			name:     "duckdb columns wildcard except",
+			selector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_DuckdbExpression{DuckdbExpression: "* EXCLUDE (c)"}},
+			all:      []string{"a", "b", "c"},
+			want:     []string{"a", "b"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
