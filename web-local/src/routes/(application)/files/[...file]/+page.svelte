@@ -21,7 +21,7 @@
     [ResourceKind.Model, ModelWorkspace],
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Component, ComponentWorkspace],
-    [ResourceKind.Dashboard, CanvasDashboardWorkspace],
+    [ResourceKind.Canvas, CanvasDashboardWorkspace],
     [null, null],
     [undefined, null],
   ]);

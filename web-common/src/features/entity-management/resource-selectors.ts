@@ -25,7 +25,7 @@ export enum ResourceKind {
   Alert = "rill.runtime.v1.Alert",
   Theme = "rill.runtime.v1.Theme",
   Component = "rill.runtime.v1.Component",
-  Dashboard = "rill.runtime.v1.Dashboard",
+  Canvas = "rill.runtime.v1.Canvas",
   API = "rill.runtime.v1.API",
 }
 
