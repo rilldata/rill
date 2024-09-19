@@ -98,17 +98,9 @@
             "URL copied to clipboard",
           );
 
-          void queryClient.refetchQueries(
+          void queryClient.invalidateQueries(
             getAdminServiceListMagicAuthTokensQueryKey(organization, project),
           );
-
-          eventBus.emit("notification", {
-            message: "Public URL created",
-            link: {
-              href: `/${organization}/${project}/-/settings/public-urls`,
-              text: "Go to public URLs",
-            },
-          });
         } catch (error) {
           const typedError = error as HTTPError;
           apiError = typedError.response?.data?.message ?? typedError.message;

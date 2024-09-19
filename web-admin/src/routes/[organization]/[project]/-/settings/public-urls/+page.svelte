@@ -60,7 +60,6 @@
     try {
       await $revokeMagicAuthToken.mutateAsync({ tokenId: deletedTokenId });
 
-      // Invalidate and refetch the query
       await queryClient.invalidateQueries(
         getAdminServiceListMagicAuthTokensQueryKey(organization, project),
       );
@@ -77,27 +76,25 @@
 
 <div class="flex flex-col w-full">
   <div class="flex md:flex-row flex-col gap-6">
-    <div class="w-full">
-      {#if $magicAuthTokensInfiniteQuery.isLoading}
-        <DelayedSpinner
-          isLoading={$magicAuthTokensInfiniteQuery.isLoading}
-          size="1rem"
+    {#if $magicAuthTokensInfiniteQuery.isLoading}
+      <DelayedSpinner
+        isLoading={$magicAuthTokensInfiniteQuery.isLoading}
+        size="1rem"
+      />
+    {:else if $magicAuthTokensInfiniteQuery.isError}
+      <div class="text-red-500">
+        Error loading public URLs: {$magicAuthTokensInfiniteQuery.error}
+      </div>
+    {:else if $magicAuthTokensInfiniteQuery.isSuccess}
+      {#if $magicAuthTokensInfiniteQuery.data.pages[0].tokens.length === 0}
+        <NoPublicURLCTA />
+      {:else}
+        <PublicURLsTable
+          data={sortedAllRowsWithDashboardTitle}
+          query={$magicAuthTokensInfiniteQuery}
+          onDelete={handleDelete}
         />
-      {:else if $magicAuthTokensInfiniteQuery.isError}
-        <div class="text-red-500">
-          Error loading public URLs: {$magicAuthTokensInfiniteQuery.error}
-        </div>
-      {:else if $magicAuthTokensInfiniteQuery.isSuccess}
-        {#if $magicAuthTokensInfiniteQuery.data.pages[0].tokens.length === 0}
-          <NoPublicURLCTA />
-        {:else}
-          <PublicURLsTable
-            data={sortedAllRowsWithDashboardTitle}
-            query={$magicAuthTokensInfiniteQuery}
-            onDelete={handleDelete}
-          />
-        {/if}
       {/if}
-    </div>
+    {/if}
   </div>
 </div>
