@@ -142,17 +142,32 @@ func (c *catalogStore) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-func (c *catalogStore) FindModelSplits(ctx context.Context, modelID string, afterIndex int, afterKey string, limit int) ([]drivers.ModelSplit, error) {
-	rows, err := c.db.QueryContext(
-		ctx,
-		"SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND (idx > ? OR (idx = ? AND key > ?)) ORDER BY idx, key LIMIT ?",
-		c.instanceID,
-		modelID,
-		afterIndex,
-		afterIndex,
-		afterKey,
-		limit,
-	)
+func (c *catalogStore) FindModelSplits(ctx context.Context, opts *drivers.FindModelSplitsOptions) ([]drivers.ModelSplit, error) {
+	var qry strings.Builder
+	var args []any
+
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=?")
+	args = append(args, c.instanceID, opts.ModelID)
+
+	if opts.WhereErrored {
+		qry.WriteString(" AND error != ''")
+	}
+
+	if opts.WherePending {
+		qry.WriteString(" AND executed_on IS NULL")
+	}
+
+	if opts.AfterIndex != 0 || opts.AfterKey != "" {
+		qry.WriteString(" AND (idx > ? OR (idx = ? AND key > ?)) ORDER BY idx, key")
+		args = append(args, opts.AfterIndex, opts.AfterIndex, opts.AfterKey)
+	}
+
+	if opts.Limit != 0 {
+		qry.WriteString(" LIMIT ?")
+		args = append(args, opts.Limit)
+	}
+
+	rows, err := c.db.QueryContext(ctx, qry.String(), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -196,38 +211,6 @@ func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string
 	qry.WriteString(") ORDER BY key")
 
 	rows, err := c.db.QueryxContext(ctx, qry.String(), args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var res []drivers.ModelSplit
-	for rows.Next() {
-		var elapsedMs int64
-		r := drivers.ModelSplit{}
-		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
-		if err != nil {
-			return nil, err
-		}
-		r.Elapsed = time.Duration(elapsedMs) * time.Millisecond
-		res = append(res, r)
-	}
-
-	if rows.Err() != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func (c *catalogStore) FindModelSplitsByPending(ctx context.Context, modelID string, limit int) ([]drivers.ModelSplit, error) {
-	rows, err := c.db.QueryxContext(
-		ctx,
-		"SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND executed_on IS NULL ORDER BY idx LIMIT ?",
-		c.instanceID,
-		modelID,
-		limit,
-	)
 	if err != nil {
 		return nil, err
 	}

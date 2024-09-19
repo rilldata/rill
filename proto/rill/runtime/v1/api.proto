@@ -180,6 +180,11 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resource"};
   }
 
+  // GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
+  rpc GetExplore(GetExploreRequest) returns (GetExploreResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/explore"};
+  }
+
   // GetModelSplits returns the splits of a model
   rpc GetModelSplits(GetModelSplitsRequest) returns (GetModelSplitsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/splits"};
@@ -646,9 +651,21 @@ message GetResourceResponse {
   Resource resource = 1;
 }
 
+message GetExploreRequest {
+  string instance_id = 1;
+  string name = 2;
+}
+
+message GetExploreResponse {
+  Resource explore = 1;
+  Resource metrics_view = 2;
+}
+
 message GetModelSplitsRequest {
   string instance_id = 1;
   string model = 2;
+  bool where_pending = 5;
+  bool where_errored = 6;
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
   string page_token = 4;
 }

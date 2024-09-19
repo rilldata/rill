@@ -43,6 +43,7 @@ type Resource struct {
 	SourceSpec      *runtimev1.SourceSpec
 	ModelSpec       *runtimev1.ModelSpec
 	MetricsViewSpec *runtimev1.MetricsViewSpec
+	ExploreSpec     *runtimev1.ExploreSpec
 	MigrationSpec   *runtimev1.MigrationSpec
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
@@ -78,6 +79,7 @@ const (
 	ResourceKindSource
 	ResourceKindModel
 	ResourceKindMetricsView
+	ResourceKindExplore
 	ResourceKindMigration
 	ResourceKindReport
 	ResourceKindAlert
@@ -100,6 +102,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindModel, nil
 	case "metricsview", "metrics_view":
 		return ResourceKindMetricsView, nil
+	case "explore":
+		return ResourceKindExplore, nil
 	case "migration":
 		return ResourceKindMigration, nil
 	case "report":
@@ -131,6 +135,8 @@ func (k ResourceKind) String() string {
 		return "Model"
 	case ResourceKindMetricsView:
 		return "MetricsView"
+	case ResourceKindExplore:
+		return "Explore"
 	case ResourceKindMigration:
 		return "Migration"
 	case ResourceKindReport:
@@ -808,6 +814,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.ModelSpec = &runtimev1.ModelSpec{}
 	case ResourceKindMetricsView:
 		r.MetricsViewSpec = &runtimev1.MetricsViewSpec{}
+	case ResourceKindExplore:
+		r.ExploreSpec = &runtimev1.ExploreSpec{}
 	case ResourceKindMigration:
 		r.MigrationSpec = &runtimev1.MigrationSpec{}
 	case ResourceKindReport:

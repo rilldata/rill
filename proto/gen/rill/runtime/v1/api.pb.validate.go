@@ -7490,6 +7490,272 @@ var _ interface {
 	ErrorName() string
 } = GetResourceResponseValidationError{}
 
+// Validate checks the field values on GetExploreRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GetExploreRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetExploreRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetExploreRequestMultiError, or nil if none found.
+func (m *GetExploreRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetExploreRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return GetExploreRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetExploreRequestMultiError is an error wrapping multiple validation errors
+// returned by GetExploreRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GetExploreRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetExploreRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetExploreRequestMultiError) AllErrors() []error { return m }
+
+// GetExploreRequestValidationError is the validation error returned by
+// GetExploreRequest.Validate if the designated constraints aren't met.
+type GetExploreRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetExploreRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetExploreRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetExploreRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetExploreRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetExploreRequestValidationError) ErrorName() string {
+	return "GetExploreRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetExploreRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetExploreRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetExploreRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetExploreRequestValidationError{}
+
+// Validate checks the field values on GetExploreResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetExploreResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetExploreResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetExploreResponseMultiError, or nil if none found.
+func (m *GetExploreResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetExploreResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetExplore()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetExploreResponseValidationError{
+					field:  "Explore",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetExploreResponseValidationError{
+					field:  "Explore",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExplore()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetExploreResponseValidationError{
+				field:  "Explore",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetMetricsView()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetExploreResponseValidationError{
+					field:  "MetricsView",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetExploreResponseValidationError{
+					field:  "MetricsView",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMetricsView()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetExploreResponseValidationError{
+				field:  "MetricsView",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetExploreResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetExploreResponseMultiError is an error wrapping multiple validation errors
+// returned by GetExploreResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GetExploreResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetExploreResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetExploreResponseMultiError) AllErrors() []error { return m }
+
+// GetExploreResponseValidationError is the validation error returned by
+// GetExploreResponse.Validate if the designated constraints aren't met.
+type GetExploreResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetExploreResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetExploreResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetExploreResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetExploreResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetExploreResponseValidationError) ErrorName() string {
+	return "GetExploreResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetExploreResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetExploreResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetExploreResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetExploreResponseValidationError{}
+
 // Validate checks the field values on GetModelSplitsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -7515,6 +7781,10 @@ func (m *GetModelSplitsRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Model
+
+	// no validation rules for WherePending
+
+	// no validation rules for WhereErrored
 
 	if m.GetPageSize() != 0 {
 
