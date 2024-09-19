@@ -461,11 +461,11 @@ func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 		PlanId:                       sub.Plan.ID,
 		PlanName:                     sub.Plan.Name,
 		PlanDisplayName:              sub.Plan.DisplayName,
-		StartDate:                    timestamppb.New(sub.StartDate),
-		EndDate:                      timestamppb.New(sub.EndDate),
-		CurrentBillingCycleStartDate: timestamppb.New(sub.CurrentBillingCycleStartDate),
-		CurrentBillingCycleEndDate:   timestamppb.New(sub.CurrentBillingCycleEndDate),
-		TrialEndDate:                 timestamppb.New(sub.TrialEndDate),
+		StartDate:                    valOrNullTime(sub.StartDate),
+		EndDate:                      valOrNullTime(sub.EndDate),
+		CurrentBillingCycleStartDate: valOrNullTime(sub.CurrentBillingCycleStartDate),
+		CurrentBillingCycleEndDate:   valOrNullTime(sub.CurrentBillingCycleEndDate),
+		TrialEndDate:                 valOrNullTime(sub.TrialEndDate),
 	}
 }
 
@@ -486,6 +486,13 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 			StorageLimitBytesPerDeployment: val64OrEmptyString(plan.Quotas.StorageLimitBytesPerDeployment),
 		},
 	}
+}
+
+func valOrNullTime(v time.Time) *timestamppb.Timestamp {
+	if v.IsZero() {
+		return nil
+	}
+	return timestamppb.New(v)
 }
 
 func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType {

@@ -6,7 +6,8 @@
   } from "@rilldata/web-admin/client";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import SettingsItemContainer from "@rilldata/web-admin/features/settings/SettingsItemContainer.svelte";
+  import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
+  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -30,7 +31,7 @@
     if (!teamPlan) return;
 
     await $planUpdater.mutateAsync({
-      orgName: organization,
+      organization,
       data: {
         planName: teamPlan.name,
       },
@@ -40,12 +41,12 @@
   let open = false;
 </script>
 
-<SettingsItemContainer title={plan.name}>
-  <div slot="description">
+<SettingsContainer title={plan.name}>
+  <div slot="body">
     <div>
       Your trial expires in {subscription.trialEndDate}. Ready to get started
       with Rill?
-      <a href="https://www.rilldata.com/pricing">See pricing details -></a>
+      <PricingDetails />
     </div>
     <PlanQuotas {organization} quotas={plan.quotas} />
   </div>
@@ -56,49 +57,42 @@
     </Button>
   </svelte:fragment>
 
-  {#if teamPlan}
-    <AlertDialog bind:open slot="action">
-      <AlertDialogTrigger asChild let:builder>
-        <Button builders={[builder]} type="primary">
-          End trial and start Team plan
+  <AlertDialog bind:open slot="action">
+    <AlertDialogTrigger asChild let:builder>
+      <Button builders={[builder]} type="primary">
+        End trial and start Team plan
+      </Button>
+    </AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Start Team plan</AlertDialogTitle>
+
+        <AlertDialogDescription>
+          Your trial will end and your billing cycle will start today. Pricing
+          is based on amount of data ingested (and compressed) into Rill.
+          <PricingDetails />
+          <ul>
+            <li>Starts at $250/month with 10 GB included, $25/GB thereafter</li>
+            <li>Unlimited projects, limited to 50 GB each</li>
+          </ul>
+        </AlertDialogDescription>
+
+        {#if $planUpdater.error}
+          <div class="text-red-500 text-sm py-px">
+            {$planUpdater.error.message}
+          </div>
+        {/if}
+      </AlertDialogHeader>
+      <AlertDialogFooter class="mt-3">
+        <Button type="secondary" on:click={() => (open = false)}>Close</Button>
+        <Button
+          type="primary"
+          on:click={handleUpgradePlan}
+          loading={$planUpdater.isLoading}
+        >
+          Continue
         </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Start Team plan</AlertDialogTitle>
-
-          <AlertDialogDescription>
-            Your trial will end and your billing cycle will start today. Pricing
-            is based on amount of data ingested (and compressed) into Rill.
-            <a href="https://www.rilldata.com/pricing">See pricing details -></a
-            >
-            <ul>
-              <li>
-                Starts at $250/month with 10 GB included, $25/GB thereafter
-              </li>
-              <li>Unlimited projects, limited to 50 GB each</li>
-            </ul>
-          </AlertDialogDescription>
-
-          {#if $planUpdater.error}
-            <div class="text-red-500 text-sm py-px">
-              {$planUpdater.error.message}
-            </div>
-          {/if}
-        </AlertDialogHeader>
-        <AlertDialogFooter class="mt-3">
-          <Button type="secondary" on:click={() => (open = false)}>
-            Close
-          </Button>
-          <Button
-            type="primary"
-            on:click={handleUpgradePlan}
-            loading={$planUpdater.isLoading}
-          >
-            Continue
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  {/if}
-</SettingsItemContainer>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+</SettingsContainer>

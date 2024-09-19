@@ -1,12 +1,16 @@
 <script lang="ts">
   import {
-    createAdminServiceUpdateBillingSubscription,
+    createAdminServiceCancelBillingSubscription,
     type V1BillingPlan,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
-  import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import SettingsItemContainer from "@rilldata/web-admin/features/settings/SettingsItemContainer.svelte";
+  import {
+    getCategorisedPlans,
+    getNextBillingCycleDate,
+  } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
+  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -25,24 +29,25 @@
   $: categorisedPlans = getCategorisedPlans();
   $: teamPlan = $categorisedPlans.data.trialPlan;
 
-  $: planUpdater = createAdminServiceUpdateBillingSubscription();
-  async function handleUpgradePlan() {
+  $: planCanceller = createAdminServiceCancelBillingSubscription();
+  async function handleCancelPlan() {
     if (!teamPlan) return;
 
-    await $planUpdater.mutateAsync({
-      orgName: organization,
-      data: {
-        planName: teamPlan.name,
-      },
+    await $planCanceller.mutateAsync({
+      organization,
     });
   }
 
   let open = false;
 </script>
 
-<SettingsItemContainer title={plan.name}>
-  <div slot="description">
-    <div>Next billing cycle will start on {subscription.endDate}</div>
+<SettingsContainer title={plan.name}>
+  <div slot="body">
+    <div>
+      Next billing cycle will start on
+      <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>
+      <PricingDetails />
+    </div>
     <PlanQuotas {organization} quotas={plan.quotas} />
   </div>
   <svelte:fragment slot="contact">
@@ -52,39 +57,37 @@
     </Button>
   </svelte:fragment>
 
-  {#if teamPlan}
-    <AlertDialog bind:open slot="action">
-      <AlertDialogTrigger asChild let:builder>
-        <Button builders={[builder]} type="primary">Cancel plan</Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Start Team plan</AlertDialogTitle>
+  <AlertDialog bind:open slot="action">
+    <AlertDialogTrigger asChild let:builder>
+      <Button builders={[builder]} type="primary">Cancel plan</Button>
+    </AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
 
-          <AlertDialogDescription>
-            Your trial will end and your billing cycle will start today. Pricing
-            is based on amount of data ingested (and compressed) into Rill.
-          </AlertDialogDescription>
+        <AlertDialogDescription>
+          If you cancel your plan, you’ll still be able to access your account
+          through <end of paid period>. </end>
+        </AlertDialogDescription>
 
-          {#if $planUpdater.error}
-            <div class="text-red-500 text-sm py-px">
-              {$planUpdater.error.message}
-            </div>
-          {/if}
-        </AlertDialogHeader>
-        <AlertDialogFooter class="mt-3">
-          <Button
-            type="secondary"
-            on:click={handleUpgradePlan}
-            loading={$planUpdater.isLoading}
-          >
-            Cancel plan
-          </Button>
-          <Button type="primary" on:click={() => (open = false)}>
-            Keep plan
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  {/if}
-</SettingsItemContainer>
+        {#if $planCanceller.error}
+          <div class="text-red-500 text-sm py-px">
+            {$planCanceller.error.message}
+          </div>
+        {/if}
+      </AlertDialogHeader>
+      <AlertDialogFooter class="mt-3">
+        <Button
+          type="secondary"
+          on:click={handleCancelPlan}
+          loading={$planCanceller.isLoading}
+        >
+          Cancel plan
+        </Button>
+        <Button type="primary" on:click={() => (open = false)}>
+          Keep plan
+        </Button>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+</SettingsContainer>

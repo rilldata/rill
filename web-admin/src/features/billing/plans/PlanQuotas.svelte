@@ -18,13 +18,16 @@
     : quotas.storageLimitBytesPerDeployment
       ? formatDataSizeQuota(quotas.storageLimitBytesPerDeployment)
       : "";
+
+  $: projectQuota =
+    quotas.projects && quotas.projects !== "-1" ? quotas.projects : "Unlimited";
 </script>
 
 <div class="quotas">
   <div class="quota-entry">
     <div class="quota-entry-title">Projects</div>
     <div>
-      {$projects.data?.projects?.length} of {quotas.projects ?? "Unlimited"}
+      {$projects.data?.projects?.length} of {projectQuota}
     </div>
   </div>
 
@@ -37,7 +40,14 @@
           max={Number(quotas.storageLimitBytesPerDeployment)}
         />
       {:else}
-        <Button type="link" href="/#todo"></Button>
+        <Button
+          type="link"
+          compact
+          href="/#todo"
+          forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"
+        >
+          See project size breakdown
+        </Button>
       {/if}
     </div>
   </div>
@@ -45,11 +55,11 @@
 
 <style lang="postcss">
   .quotas {
-    @apply flex flex-row items-center;
+    @apply flex flex-row items-center gap-x-20 mt-2;
   }
 
   .quota-entry {
-    @apply flex flex-col;
+    @apply flex flex-col min-w-24;
   }
 
   .quota-entry-title {

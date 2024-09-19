@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceGetBillingSubscription,
+    createAdminServiceListOrganizationBillingIssues,
     createAdminServiceListPublicBillingPlans,
   } from "@rilldata/web-admin/client";
 
@@ -8,5 +9,5 @@
 
   $: subscription = createAdminServiceGetBillingSubscription(organization);
   const plans = createAdminServiceListPublicBillingPlans();
-  $: console.log($subscription.data?.subscription, $plans.data);
+  $: issues = createAdminServiceListOrganizationBillingIssues(organization);
 </script>
