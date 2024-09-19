@@ -814,6 +814,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// Not setting Kind because for backwards compatibility, it may actually be a source or an external table.
 		node.Refs = append(node.Refs, ResourceName{Name: tmp.Model})
 	}
+	if tmp.Table != "" {
+		// By convention, if the table name matches a source or model name we add a DAG link.
+		// We may want to remove this at some point, but the cases where it would not be desired are very rare.
+		// Not setting Kind so that inference kicks in.
+		node.Refs = append(node.Refs, ResourceName{Name: tmp.Table})
+	}
+
 	if tmp.DefaultTheme != "" {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
