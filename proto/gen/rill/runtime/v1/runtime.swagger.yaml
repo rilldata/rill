@@ -2833,6 +2833,8 @@ definitions:
     title: Selector for a dimension
   MetricsViewSpecDimensionV2:
     type: object
+    required:
+      - name
     properties:
       name:
         type: string
@@ -2860,6 +2862,9 @@ definitions:
     title: Type of measure query to generate
   MetricsViewSpecMeasureV2:
     type: object
+    required:
+      - name
+      - expression
     properties:
       name:
         type: string
@@ -4531,8 +4536,11 @@ definitions:
     title: Response message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonRow:
     type: object
+    required:
+      - dimensionValue
     properties:
       dimensionValue:
+        type: string
         title: Not optional, not null
       measureValues:
         type: array

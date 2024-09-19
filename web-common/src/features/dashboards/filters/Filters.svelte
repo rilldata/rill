@@ -1,3 +1,7 @@
+<script context="module">
+  export const suppressFilterMenus = writable(false);
+</script>
+
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
@@ -17,10 +21,13 @@
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
   import FilterButton from "./FilterButton.svelte";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
+  import { writable } from "svelte/store";
 
   export let readOnly = false;
+  export let bookmarks = false;
   export let hideRanges = false;
   export let hideIcons = false;
+  export let timePills = true;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "28px";
@@ -32,12 +39,17 @@
       dimensionsFilter: {
         toggleDimensionValueSelection,
         removeDimensionFilter,
+        toggleDimensionFilterMode,
       },
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
       filters: { clearAllFilters },
     },
     selectors: {
-      dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
+      dimensionFilters: {
+        getDimensionFilterItems,
+        getAllDimensionFilterItems,
+        isFilterExcludeMode,
+      },
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
       pivot: { showPivot },
     },
@@ -97,7 +109,7 @@
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
-  {#if hasTimeSeries}
+  {#if hasTimeSeries && timePills}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
       {#if !hideIcons}
         <Calendar size="16px" />
@@ -140,12 +152,16 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName}
               <DimensionFilter
+                {readOnly}
                 {name}
                 {label}
                 {selectedValues}
-                on:remove={() => removeDimensionFilter(name)}
-                on:apply={(event) =>
-                  toggleDimensionValueSelection(name, event.detail, true)}
+                excludeMode={$isFilterExcludeMode(name)}
+                openOnMount={bookmarks || !$suppressFilterMenus}
+                onRemove={() => removeDimensionFilter(name)}
+                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
+                onSelect={(value) =>
+                  toggleDimensionValueSelection(name, value, true)}
               />
             {/if}
           </div>

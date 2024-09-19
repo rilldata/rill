@@ -1391,7 +1391,7 @@ export interface V1MetricsViewComparisonSort {
 }
 
 export interface V1MetricsViewComparisonRow {
-  dimensionValue?: unknown;
+  dimensionValue: string;
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
@@ -2396,8 +2396,8 @@ export const MetricsViewSpecMeasureType = {
 } as const;
 
 export interface MetricsViewSpecMeasureV2 {
-  name?: string;
-  expression?: string;
+  name: string;
+  expression: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
   perDimensions?: MetricsViewSpecDimensionSelector[];
@@ -2411,7 +2411,7 @@ export interface MetricsViewSpecMeasureV2 {
 }
 
 export interface MetricsViewSpecDimensionV2 {
-  name?: string;
+  name: string;
   column?: string;
   expression?: string;
   label?: string;

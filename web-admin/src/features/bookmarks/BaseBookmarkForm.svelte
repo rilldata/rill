@@ -32,7 +32,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     <Label class="flex flex-col gap-y-1 text-sm">
       <div class="text-gray-800 font-medium">Filters</div>
     </Label>
-    <Filters hideRanges hideIcons />
+    <Filters hideRanges hideIcons bookmarks />
   </div>
   <Input
     bind:value={$form["displayName"]}

@@ -48,7 +48,7 @@
   {#if readOnly}
     <div
       class="
-      grid gap-x-2 items-center
+      grid items-center
       py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'}
       {textClass}
       {active ? bgActiveClass : bgBaseClass}
@@ -63,7 +63,7 @@
     >
       <!-- body -->
       {#if $$slots.body}
-        <div>
+        <div class="px-2 text-inherit w-full select-none">
           <slot name="body" />
         </div>
       {/if}

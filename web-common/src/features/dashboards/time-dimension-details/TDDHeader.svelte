@@ -70,8 +70,6 @@
       }),
     );
 
-  $: selectedItems = allMeasures?.map((m) => m.name === expandedMeasureName);
-
   $: selectedMeasureLabel =
     allMeasures?.find((m) => m.name === expandedMeasureName)?.label ??
     expandedMeasureName ??
@@ -107,8 +105,8 @@
     toggleDimensionFilterMode(dimensionName);
   }
 
-  function switchMeasure(event) {
-    metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
+  function switchMeasure(measureName: string) {
+    metricsExplorerStore.setExpandedMeasureName(metricViewName, measureName);
   }
 
   let showReplacePivotModal = false;
@@ -182,9 +180,9 @@
         <TimeGrainSelector {metricViewName} pill />
         <SearchableFilterChip
           label={selectedMeasureLabel}
-          on:item-clicked={switchMeasure}
+          onSelect={switchMeasure}
           selectableItems={selectableMeasures}
-          {selectedItems}
+          selectedItems={[expandedMeasureName]}
           tooltipText="Choose a measure to display"
         />
       </div>

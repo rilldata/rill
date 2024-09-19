@@ -22,10 +22,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { suppressFilterMenus } from "@rilldata/web-common/features/dashboards/filters/Filters.svelte";
 
   export let metricsViewName: string;
 
-  let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
   $: bookmarkApplier = createBookmarkApplier(
@@ -88,11 +88,11 @@
     </Button>
   </DropdownMenuTrigger>
   <BookmarksContent
-    on:create={() => (showDialog = true)}
+    on:create={() => suppressFilterMenus.set(true)}
     on:create-home={() => createHomeBookmark()}
     on:delete={({ detail }) => deleteBookmark(detail)}
     on:edit={({ detail }) => {
-      showDialog = true;
+      suppressFilterMenus.set(true);
       bookmark = detail;
       selectBookmark(detail);
     }}
@@ -101,12 +101,12 @@
   />
 </DropdownMenu>
 
-{#if showDialog}
+{#if $suppressFilterMenus}
   <BookmarkDialog
     {bookmark}
     {metricsViewName}
     onClose={() => {
-      showDialog = false;
+      suppressFilterMenus.set(false);
       bookmark = null;
     }}
   />

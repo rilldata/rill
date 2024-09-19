@@ -1,29 +1,27 @@
 <script lang="ts">
   import SelectMenu from "@rilldata/web-common/components/menu/shadcn/SelectMenu.svelte";
-  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-  import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
 
   export let metricViewName: string;
 
   const {
     selectors: {
       measures: { filteredSimpleMeasures },
+      dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
+      dimensions: { toggleDimensionVisibility, setVisibleDimensions },
+
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
   } = getStateManagers();
-
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: measures = $filteredSimpleMeasures();
 
@@ -100,20 +98,16 @@
     setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
 
-  $: showHideDimensions = createShowHideDimensionsStore(
-    metricViewName,
-    metricsView,
-  );
+  $: visibleDimensionsNames = $visibleDimensions
+    .map(({ name }) => name)
+    .filter(isDefined);
+  $: allDimensionNames = $allDimensions
+    .map(({ name }) => name)
+    .filter(isDefined);
 
-  const toggleDimensionVisibility = (e) => {
-    showHideDimensions.toggleVisibility(e.detail.name);
-  };
-  const setAllDimensionsNotVisible = () => {
-    showHideDimensions.setAllToNotVisible();
-  };
-  const setAllDimensionsVisible = () => {
-    showHideDimensions.setAllToVisible();
-  };
+  function isDefined(value: string | undefined): value is string {
+    return value !== undefined;
+  }
 </script>
 
 <div>
@@ -123,14 +117,22 @@
       in:send|global={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
-      <SearchableFilterButton
-        selectableItems={$showHideDimensions.selectableItems}
-        selectedItems={$showHideDimensions.selectedItems}
-        on:item-clicked={toggleDimensionVisibility}
-        on:deselect-all={setAllDimensionsNotVisible}
-        on:select-all={setAllDimensionsVisible}
-        label="Dimensions"
+      <DashboardVisibilityDropdown
+        category="Dimensions"
         tooltipText="Choose dimensions to display"
+        onSelect={(name) => toggleDimensionVisibility(name)}
+        selectableItems={$allDimensions.map(({ name, label }) => ({
+          name,
+          label: label ?? name,
+        }))}
+        selectedItems={visibleDimensionsNames}
+        onToggleSelectAll={() => {
+          const deselectAll =
+            visibleDimensionsNames.length === allDimensionNames.length;
+          setVisibleDimensions(
+            allDimensionNames.slice(0, deselectAll ? 1 : undefined),
+          );
+        }}
       />
 
       <SelectMenu
