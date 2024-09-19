@@ -21,6 +21,8 @@
     getSanitizedDashboardStateParam,
     hasDashboardWhereFilter,
   } from "./form-utils";
+  import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
+  import { Divider } from "@rilldata/web-common/components/menu";
 
   const queryClient = useQueryClient();
   const {
@@ -49,6 +51,7 @@
 
   let token: string;
   let setExpiration = false;
+  let lockTimeRange = false;
   let apiError: string;
 
   const formId = "create-public-url-form";
@@ -109,6 +112,7 @@
   );
 
   $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
+  $: console.log("hasWhereFilter", hasWhereFilter);
 
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
@@ -120,6 +124,33 @@
   }
 
   $: ({ length: allErrorsLength } = $allErrors);
+
+  // Minimum date is tomorrow
+  $: minExpirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  function formatDate(date: Date) {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(new Date(date));
+  }
+
+  $: abbreviation = getAbbreviationForIANA(
+    new Date(),
+    $dashboardStore.selectedTimezone,
+  );
+  $: console.log("dashboardStore: ", $dashboardStore);
+  $: console.log(
+    "$dashboardStore.selectedTimeRange: ",
+    $dashboardStore.selectedTimeRange,
+  );
+  // $: lockTimeRangeLabel = $dashboardStore.selectedTimeRange
+  //   ? `${formatDate($dashboardStore.selectedTimeRange?.start) ?? ""} - ${formatDate($dashboardStore.selectedTimeRange?.end) ?? ""} ${abbreviation}`
+  //   : "";
+  // $: console.log("lockTimeRangeLabel: ", lockTimeRangeLabel);
 </script>
 
 {#if !token}
@@ -132,12 +163,12 @@
       </ul>
 
       <div class="name-input-container">
-        <Label for="name-input" class="text-xs">URL label</Label>
+        <!-- <Label for="name-input" class="text-xs">URL label</Label> -->
         <input
           id="name-input"
           type="text"
           bind:value={$form.title}
-          placeholder="Name this URL"
+          placeholder="Label this URL"
           class="w-full px-3 py-2 border border-gray-300 rounded-md"
         />
       </div>
@@ -156,31 +187,59 @@
       {/if}
     </div>
 
-    <!-- Expiration -->
-    <div>
-      <div class="has-expiration-container">
+    <div class="mt-4">
+      <div class="flex items-center gap-x-2">
         <Switch small id="has-expiration" bind:checked={setExpiration} />
         <Label class="text-xs" for="has-expiration">Set expiration</Label>
       </div>
       {#if setExpiration}
-        <div class="expires-at-container">
-          <label for="expires-at" class="expires-at-label w-1/3">
+        <div class="flex items-center gap-x-2 pl-[30px]">
+          <label for="expires-at" class="text-slate-500 font-medium w-2/3">
             Access expires
           </label>
-          <!-- TODO: use a Rill date picker, once we have one that can select a single day -->
-          <!-- Minimum date is tomorrow -->
           <input
             id="expires-at"
             type="date"
             bind:value={$form.expiresAt}
-            min={new Date(Date.now() + 24 * 60 * 60 * 1000)
-              .toISOString()
-              .slice(0, 10)}
-            class="w-2/3"
+            min={minExpirationDate}
+            class="w-1/3"
           />
         </div>
       {/if}
     </div>
+
+    <div class="mt-4">
+      <div class="flex items-center gap-x-2">
+        <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
+        <Label class="text-xs" for="lock-time-range">Lock time range</Label>
+      </div>
+      {#if lockTimeRange}
+        <div class="w-full pl-[30px]">
+          <label for="lock-time-range" class="text-slate-500 font-medium">
+            <!-- TODO: use lock time range text -->
+            test
+          </label>
+        </div>
+      {/if}
+    </div>
+
+    <Divider marginTop={4} marginBottom={4} />
+
+    <div class="flex flex-col gap-y-1">
+      <p class="text-xs text-gray-800 font-normal">
+        The following filters will be locked and hidden:
+      </p>
+      <div class="flex flex-row gap-1 mt-2">
+        <!-- TODO: replace with pills -->
+        <span class="w-[140px]">Pill 1</span>
+        <span class="w-[120px]">Pill 2</span>
+        <span class="w-[185px]">Pill 3</span>
+      </div>
+    </div>
+
+    <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
+      Measures and dimensions will be limited to current visible set.
+    </p>
 
     <Button
       type="primary"
@@ -208,7 +267,7 @@
 
 <style lang="postcss">
   form {
-    @apply flex flex-col gap-y-4;
+    @apply flex flex-col;
   }
 
   h3 {
@@ -225,19 +284,6 @@
 
   .name-input-container {
     @apply flex flex-col gap-y-1;
-  }
-
-  .has-expiration-container {
-    @apply flex items-center gap-x-2;
-  }
-
-  .expires-at-container {
-    @apply mt-2;
-    @apply flex items-center gap-x-2;
-  }
-
-  .expires-at-label {
-    @apply text-slate-500 font-medium;
   }
 
   input {
