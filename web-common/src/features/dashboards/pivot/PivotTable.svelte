@@ -167,8 +167,7 @@
       : 0;
 
   $: firstDimension = headers.length > 1 ? headers[1] : null;
-  // Always show a desc sorting icon for the first dimension
-  $: if (firstDimension && sorting.length === 0) {
+  $: if (headerGroups.length === 1 && firstDimension && sorting.length === 0) {
     onSortingChange([{ id: firstDimension.id, desc: true }]);
   }
 
