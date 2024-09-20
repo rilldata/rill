@@ -211,19 +211,14 @@
             {#each headerGroup.headers as header (header.id)}
               <th
                 colSpan={header.colSpan}
-                class="text-left"
                 style={`width: ${header.column.columnDef.meta?.widthPercent}%;`}
               >
-                {#if !header.isPlaceholder}
-                  <div class="font-semibold text-gray-500">
-                    <svelte:component
-                      this={flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    />
-                  </div>
-                {/if}
+                <svelte:component
+                  this={flexRender(
+                    header.column.columnDef.header,
+                    header.getContext(),
+                  )}
+                />
               </th>
             {/each}
           </tr>
@@ -233,7 +228,7 @@
         {#if allRows.length === 0}
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
-              <div class="text-gray-500">None</div>
+              <span class="text-gray-500">None</span>
             </td>
           </tr>
         {:else}
@@ -283,6 +278,7 @@
   }
   thead tr th {
     @apply border-t border-gray-200;
+    @apply text-left font-semibold text-gray-500;
   }
   thead tr th:first-child {
     @apply border-l rounded-tl-sm;
