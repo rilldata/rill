@@ -58,13 +58,11 @@
                 </Select.Content>
               </Select.Root> -->
           </div>
-          <div class="max-h-[80vh]">
-            <SplitsTable
-              {resource}
-              whereErrored={selectedFilter === "errors"}
-              wherePending={selectedFilter === "pending"}
-            />
-          </div>
+          <SplitsTable
+            {resource}
+            whereErrored={selectedFilter === "errors"}
+            wherePending={selectedFilter === "pending"}
+          />
         </Dialog.Content>
       </Dialog.Root>
     </span>

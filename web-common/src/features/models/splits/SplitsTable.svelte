@@ -202,8 +202,8 @@
   $: ({ getVirtualItems, getTotalSize } = $virtualizer);
 </script>
 
-<div class="list scroll-container" bind:this={virtualListEl}>
-  <div class="relative" style="height: {getTotalSize()}px;">
+<div class="scroll-container" bind:this={virtualListEl}>
+  <div class="table-wrapper" style="height: {getTotalSize()}px;">
     <table>
       <thead>
         {#each getHeaderGroups() as headerGroup (headerGroup.id)}
@@ -261,8 +261,19 @@
 </div>
 
 <style lang="postcss">
+  .scroll-container {
+    @apply h-[600px];
+    @apply min-w-full;
+    @apply overflow-auto;
+  }
+
+  .table-wrapper {
+    @apply relative;
+    @apply min-w-full;
+  }
+
   table {
-    @apply table-fixed w-full;
+    @apply table-fixed min-w-full;
     @apply border-separate border-spacing-0;
   }
   table th,
@@ -302,10 +313,5 @@
   }
   tbody tr:last-child td:last-child {
     @apply rounded-br-sm;
-  }
-  .scroll-container {
-    height: 600px;
-    width: 100%;
-    overflow: auto;
   }
 </style>
