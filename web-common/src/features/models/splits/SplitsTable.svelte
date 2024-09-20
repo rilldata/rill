@@ -12,11 +12,14 @@
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
   import {
+    RpcStatus,
+    V1GetModelSplitsResponse,
     V1ModelSplit,
     V1Resource,
     getRuntimeServiceGetModelSplitsQueryKey,
     runtimeServiceGetModelSplits,
   } from "../../../runtime-client";
+  import type { ErrorType } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
@@ -35,7 +38,10 @@
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
   };
-  $: query = createInfiniteQuery({
+  $: query = createInfiniteQuery<
+    V1GetModelSplitsResponse,
+    ErrorType<RpcStatus>
+  >({
     queryKey: getRuntimeServiceGetModelSplitsQueryKey(
       $runtime.instanceId,
       modelName,
@@ -64,6 +70,7 @@
       return lastPage.nextPageToken;
     },
   });
+  $: ({ error } = $query);
 
   /**
    * Table Options
@@ -222,7 +229,15 @@
         {/each}
       </thead>
       <tbody>
-        {#if allRows.length === 0}
+        {#if error}
+          <tr>
+            <td class="text-center h-16" colspan={columns.length}>
+              <span class="text-red-500 font-semibold"
+                >Error: {error.message}</span
+              >
+            </td>
+          </tr>
+        {:else if allRows.length === 0}
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
               <span class="text-gray-500">None</span>
