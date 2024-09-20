@@ -141,7 +141,6 @@
             },
             cell: ({ row }) =>
               flexRender(TriggerSplit, {
-                resource,
                 splitKey: (row as Row<V1ModelSplit>).original.key as string,
               }),
           },
