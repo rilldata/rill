@@ -297,8 +297,8 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resou
 	// Everyone can access a component.
 	case ResourceKindComponent:
 		rules = append(rules, allowAccessRule)
-	// Everyone can access a dashboard.
-	case ResourceKindDashboard:
+	// Everyone can access a canvas.
+	case ResourceKindCanvas:
 		rules = append(rules, allowAccessRule)
 	// Determine access using the metrics view's security rules. If there are none, then everyone can access it.
 	case ResourceKindMetricsView:

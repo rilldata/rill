@@ -459,7 +459,7 @@ const (
 	nameIsDimension uint8 = 2
 )
 
-// parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
+// parseMetricsView parses a metrics view definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(node *Node) error {
 	// Parse YAML
 	tmp := &MetricsViewYAML{}

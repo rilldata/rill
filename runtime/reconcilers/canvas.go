@@ -10,24 +10,24 @@ import (
 )
 
 func init() {
-	runtime.RegisterReconcilerInitializer(runtime.ResourceKindDashboard, newDashboardReconciler)
+	runtime.RegisterReconcilerInitializer(runtime.ResourceKindCanvas, newCanvasReconciler)
 }
 
-type DashboardReconciler struct {
+type CanvasReconciler struct {
 	C *runtime.Controller
 }
 
-func newDashboardReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &DashboardReconciler{C: c}
+func newCanvasReconciler(c *runtime.Controller) runtime.Reconciler {
+	return &CanvasReconciler{C: c}
 }
 
-func (r *DashboardReconciler) Close(ctx context.Context) error {
+func (r *CanvasReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (r *DashboardReconciler) AssignSpec(from, to *runtimev1.Resource) error {
-	a := from.GetDashboard()
-	b := to.GetDashboard()
+func (r *CanvasReconciler) AssignSpec(from, to *runtimev1.Resource) error {
+	a := from.GetCanvas()
+	b := to.GetCanvas()
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign spec from %T to %T", from.Resource, to.Resource)
 	}
@@ -35,9 +35,9 @@ func (r *DashboardReconciler) AssignSpec(from, to *runtimev1.Resource) error {
 	return nil
 }
 
-func (r *DashboardReconciler) AssignState(from, to *runtimev1.Resource) error {
-	a := from.GetDashboard()
-	b := to.GetDashboard()
+func (r *CanvasReconciler) AssignState(from, to *runtimev1.Resource) error {
+	a := from.GetCanvas()
+	b := to.GetCanvas()
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
@@ -45,19 +45,19 @@ func (r *DashboardReconciler) AssignState(from, to *runtimev1.Resource) error {
 	return nil
 }
 
-func (r *DashboardReconciler) ResetState(res *runtimev1.Resource) error {
-	res.GetDashboard().State = &runtimev1.DashboardState{}
+func (r *CanvasReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetCanvas().State = &runtimev1.CanvasState{}
 	return nil
 }
 
-func (r *DashboardReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
+func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
-	d := self.GetDashboard()
-	if d == nil {
-		return runtime.ReconcileResult{Err: errors.New("not a dashboard")}
+	c := self.GetCanvas()
+	if c == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a canvas")}
 	}
 
 	// Exit early for deletion
@@ -70,9 +70,9 @@ func (r *DashboardReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
-		d.State.ValidSpec = d.Spec
+		c.State.ValidSpec = c.Spec
 	} else {
-		d.State.ValidSpec = nil
+		c.State.ValidSpec = nil
 	}
 
 	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.

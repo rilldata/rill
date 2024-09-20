@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type DashboardYAML struct {
+type CanvasYAML struct {
 	commonYAML `yaml:",inline"`         // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string                   `yaml:"title"`
 	Columns    uint32                   `yaml:"columns"`
@@ -24,9 +24,9 @@ type DashboardYAML struct {
 	} `yaml:"items"`
 }
 
-func (p *Parser) parseDashboard(node *Node) error {
+func (p *Parser) parseCanvas(node *Node) error {
 	// Parse YAML
-	tmp := &DashboardYAML{}
+	tmp := &CanvasYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)
 	if err != nil {
 		return err
@@ -34,10 +34,10 @@ func (p *Parser) parseDashboard(node *Node) error {
 
 	// Validate SQL or connector isn't set
 	if node.SQL != "" {
-		return fmt.Errorf("dashboards cannot have SQL")
+		return fmt.Errorf("canvases cannot have SQL")
 	}
 	if !node.ConnectorInferred && node.Connector != "" {
-		return fmt.Errorf("dashboards cannot have a connector")
+		return fmt.Errorf("canvases cannot have a connector")
 	}
 
 	// Parse variable definitions.
@@ -51,14 +51,14 @@ func (p *Parser) parseDashboard(node *Node) error {
 
 	// Parse items.
 	// Each item can either reference an externally defined component by name or define a component inline.
-	items := make([]*runtimev1.DashboardItem, len(tmp.Items))
+	items := make([]*runtimev1.CanvasItem, len(tmp.Items))
 	var inlineComponentDefs []*componentDef
 	for i, item := range tmp.Items {
 		if item == nil {
 			return fmt.Errorf("item at index %d is nil", i)
 		}
 
-		component, inlineComponentDef, err := p.parseDashboardItemComponent(node.Name, i, item.Component)
+		component, inlineComponentDef, err := p.parseCanvasItemComponent(node.Name, i, item.Component)
 		if err != nil {
 			return fmt.Errorf("invalid component at index %d: %w", i, err)
 		}
@@ -68,37 +68,37 @@ func (p *Parser) parseDashboard(node *Node) error {
 			inlineComponentDefs = append(inlineComponentDefs, inlineComponentDef)
 		}
 
-		items[i] = &runtimev1.DashboardItem{
-			Component:          component,
-			DefinedInDashboard: inlineComponentDef != nil,
-			X:                  item.X,
-			Y:                  item.Y,
-			Width:              item.Width,
-			Height:             item.Height,
+		items[i] = &runtimev1.CanvasItem{
+			Component:       component,
+			DefinedInCanvas: inlineComponentDef != nil,
+			X:               item.X,
+			Y:               item.Y,
+			Width:           item.Width,
+			Height:          item.Height,
 		}
 
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})
 	}
 
-	// Track dashboard
-	r, err := p.insertResource(ResourceKindDashboard, node.Name, node.Paths, node.Refs...)
+	// Track canvas
+	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.DashboardSpec.Title = tmp.Title
-	r.DashboardSpec.Columns = tmp.Columns
-	r.DashboardSpec.Gap = tmp.Gap
-	r.DashboardSpec.Variables = variables
-	r.DashboardSpec.Items = items
+	r.CanvasSpec.Title = tmp.Title
+	r.CanvasSpec.Columns = tmp.Columns
+	r.CanvasSpec.Gap = tmp.Gap
+	r.CanvasSpec.Variables = variables
+	r.CanvasSpec.Items = items
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {
 		r, err := p.insertResource(ResourceKindComponent, def.name, node.Paths, def.refs...)
 		if err != nil {
-			// Normally we could return the error, but we can't do that here because we've already inserted the dashboard.
-			// Since the component has been validated with insertDryRun in parseDashboardItemComponent, this error should never happen in practice.
+			// Normally we could return the error, but we can't do that here because we've already inserted the canvas.
+			// Since the component has been validated with insertDryRun in parseCanvasItemComponent, this error should never happen in practice.
 			// So let's panic.
 			panic(err)
 		}
@@ -108,9 +108,9 @@ func (p *Parser) parseDashboard(node *Node) error {
 	return nil
 }
 
-// parseDashboardItemComponent parses a dashboard item's "component" property.
+// parseCanvasItemComponent parses a canvas item's "component" property.
 // It may be a string (name of an externally defined component) or an inline component definition.
-func (p *Parser) parseDashboardItemComponent(dashboardName string, idx int, n yaml.Node) (string, *componentDef, error) {
+func (p *Parser) parseCanvasItemComponent(canvasName string, idx int, n yaml.Node) (string, *componentDef, error) {
 	if n.Kind == yaml.ScalarNode {
 		var name string
 		err := n.Decode(&name)
@@ -135,13 +135,13 @@ func (p *Parser) parseDashboardItemComponent(dashboardName string, idx int, n ya
 		return "", nil, err
 	}
 
-	spec.DefinedInDashboard = true
+	spec.DefinedInCanvas = true
 
-	name := fmt.Sprintf("%s--component-%d", dashboardName, idx)
+	name := fmt.Sprintf("%s--component-%d", canvasName, idx)
 
 	err = p.insertDryRun(ResourceKindComponent, name)
 	if err != nil {
-		name = fmt.Sprintf("%s--component-%d-%s", dashboardName, idx, uuid.New())
+		name = fmt.Sprintf("%s--component-%d-%s", canvasName, idx, uuid.New())
 		err = p.insertDryRun(ResourceKindComponent, name)
 		if err != nil {
 			return "", nil, err

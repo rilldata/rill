@@ -61,6 +61,6 @@
 
 {#if activeResource?.kind === ResourceKind.MetricsView.toString()}
   <MetricsExplorerEmbed {instanceId} dashboardName={activeResource.name} />
-{:else if activeResource?.kind === ResourceKind.Dashboard.toString()}
-  <CanvasDashboardEmbed {instanceId} dashboardName={activeResource.name} />
+{:else if activeResource?.kind === ResourceKind.Canvas.toString()}
+  <CanvasDashboardEmbed {instanceId} canvasName={activeResource.name} />
 {/if}
