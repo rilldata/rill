@@ -8,7 +8,7 @@
   $: whatsLeft = values.length - show;
 </script>
 
-<div class="flex gap-x-2 items-center" class:px-2={!readOnly}>
+<div class="flex gap-x-2 items-center" class:px-2={readOnly}>
   <span class="font-bold truncate" style:max-width={labelMaxWidth}>
     {label}
   </span>
