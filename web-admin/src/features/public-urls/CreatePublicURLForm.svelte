@@ -21,10 +21,8 @@
     getSanitizedDashboardStateParam,
     hasDashboardWhereFilter,
   } from "./form-utils";
-  import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
   import { Divider } from "@rilldata/web-common/components/menu";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { DateTime, Interval } from "luxon";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -39,8 +37,6 @@
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
-
-  $: ({ selectedTimeRange, allTimeRange } = $timeControlsStore);
 
   $: ({ organization, project } = $page.params);
 
@@ -59,7 +55,6 @@
 
   let token: string;
   let setExpiration = false;
-  let lockTimeRange = false;
   let apiError: string;
 
   const formId = "create-public-url-form";
@@ -136,29 +131,6 @@
   $: minExpirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
-
-  function formatDate(date: Date) {
-    if (!date) return "-";
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(date));
-  }
-
-  $: abbreviation = getAbbreviationForIANA(
-    new Date(),
-    $dashboardStore.selectedTimezone,
-  );
-
-  $: timezone = $dashboardStore.selectedTimezone;
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: interval = selectedTimeRange?.start
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(timezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(timezone),
-      )
-    : undefined;
 </script>
 
 {#if !token}
