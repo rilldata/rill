@@ -163,6 +163,8 @@ If empty, all dimensions and measures are accessible. */
   metricsViewFields?: string[];
   /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
   state?: string;
+  /** Optional public url title to store with the token. */
+  title?: string;
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
@@ -452,7 +454,7 @@ export interface V1SudoUpdateOrganizationQuotasResponse {
 }
 
 export interface V1SudoUpdateOrganizationQuotasRequest {
-  orgName?: string;
+  organization?: string;
   projects?: number;
   deployments?: number;
   slotsTotal?: number;
@@ -476,7 +478,7 @@ export interface V1SudoUpdateOrganizationBillingCustomerResponse {
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
-  orgName?: string;
+  organization?: string;
   billingCustomerId?: string;
 }
 
@@ -508,6 +510,10 @@ export interface V1SudoGetResourceResponse {
   project?: V1Project;
   deployment?: V1Deployment;
   instance?: V1Deployment;
+}
+
+export interface V1SudoDeleteOrganizationBillingIssueResponse {
+  [key: string]: any;
 }
 
 export interface V1Subscription {
@@ -823,6 +829,7 @@ export interface V1MagicAuthToken {
   metricsViewFilter?: V1Expression;
   metricsViewFields?: string[];
   state?: string;
+  title?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -892,6 +899,10 @@ export interface V1ListOrganizationMemberUsergroupsResponse {
 export interface V1ListOrganizationInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
+}
+
+export interface V1ListOrganizationBillingIssuesResponse {
+  issues?: V1BillingIssue[];
 }
 
 export interface V1ListMagicAuthTokensResponse {
@@ -1247,6 +1258,10 @@ export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
 }
 
+export interface V1CancelBillingSubscriptionResponse {
+  [key: string]: any;
+}
+
 export interface V1Bookmark {
   id?: string;
   displayName?: string;
@@ -1270,6 +1285,85 @@ export interface V1BillingPlan {
   trialPeriodDays?: number;
   default?: boolean;
   quotas?: V1Quotas;
+}
+
+export type V1BillingIssueType =
+  (typeof V1BillingIssueType)[keyof typeof V1BillingIssueType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingIssueType = {
+  BILLING_ISSUE_TYPE_UNSPECIFIED: "BILLING_ISSUE_TYPE_UNSPECIFIED",
+  BILLING_ISSUE_TYPE_ON_TRIAL: "BILLING_ISSUE_TYPE_ON_TRIAL",
+  BILLING_ISSUE_TYPE_TRIAL_ENDED: "BILLING_ISSUE_TYPE_TRIAL_ENDED",
+  BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD: "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD",
+  BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS:
+    "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS",
+  BILLING_ISSUE_TYPE_PAYMENT_FAILED: "BILLING_ISSUE_TYPE_PAYMENT_FAILED",
+  BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
+    "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
+} as const;
+
+export interface V1BillingIssueMetadataTrialEnded {
+  gracePeriodEndDate?: string;
+}
+
+export interface V1BillingIssueMetadataSubscriptionCancelled {
+  endDate?: string;
+}
+
+export interface V1BillingIssueMetadataPaymentFailedMeta {
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoiceUrl?: string;
+  amountDue?: string;
+  currency?: string;
+  dueDate?: string;
+  failedOn?: string;
+  gracePeriodEndDate?: string;
+}
+
+export interface V1BillingIssueMetadataPaymentFailed {
+  invoices?: V1BillingIssueMetadataPaymentFailedMeta[];
+}
+
+export interface V1BillingIssueMetadataOnTrial {
+  endDate?: string;
+}
+
+export interface V1BillingIssueMetadataNoPaymentMethod {
+  [key: string]: any;
+}
+
+export interface V1BillingIssueMetadataNoBillableAddress {
+  [key: string]: any;
+}
+
+export interface V1BillingIssueMetadata {
+  onTrial?: V1BillingIssueMetadataOnTrial;
+  trialEnded?: V1BillingIssueMetadataTrialEnded;
+  noPaymentMethod?: V1BillingIssueMetadataNoPaymentMethod;
+  noBillableAddress?: V1BillingIssueMetadataNoBillableAddress;
+  paymentFailed?: V1BillingIssueMetadataPaymentFailed;
+  subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
+}
+
+export type V1BillingIssueLevel =
+  (typeof V1BillingIssueLevel)[keyof typeof V1BillingIssueLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingIssueLevel = {
+  BILLING_ISSUE_LEVEL_UNSPECIFIED: "BILLING_ISSUE_LEVEL_UNSPECIFIED",
+  BILLING_ISSUE_LEVEL_WARNING: "BILLING_ISSUE_LEVEL_WARNING",
+  BILLING_ISSUE_LEVEL_ERROR: "BILLING_ISSUE_LEVEL_ERROR",
+} as const;
+
+export interface V1BillingIssue {
+  organization?: string;
+  type?: V1BillingIssueType;
+  level?: V1BillingIssueLevel;
+  metadata?: V1BillingIssueMetadata;
+  eventTime?: string;
+  createdOn?: string;
 }
 
 export interface V1ApproveProjectAccessResponse {

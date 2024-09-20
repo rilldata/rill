@@ -339,6 +339,15 @@
     return target instanceof HTMLElement;
   }
 
+  function isMeasureColumn(header, colNumber: number) {
+    // Measure columns are the last columns in the header group
+    if (header.depth !== headerGroups.length) return;
+    // If there is a row dimension, the first column is not a measure column
+    if (!hasDimension) {
+      return true;
+    } else return colNumber > 0;
+  }
+
   function isCellActive(cell: Cell<PivotDataRow, unknown>) {
     return (
       cell.row.id === activeCell?.rowId &&
@@ -451,7 +460,7 @@
     <thead>
       {#each headerGroups as headerGroup (headerGroup.id)}
         <tr>
-          {#each headerGroup.headers as header (header.id)}
+          {#each headerGroup.headers as header, i (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
 
             <th colSpan={header.colSpan}>
@@ -459,6 +468,7 @@
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}
                 class:select-none={header.column.getCanSort()}
+                class:flex-row-reverse={isMeasureColumn(header, i)}
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
