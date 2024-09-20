@@ -4722,6 +4722,7 @@ definitions:
     type: object
     required:
       - dimensionValue
+      - measureValues
     properties:
       dimensionValue:
         type: string
@@ -4865,6 +4866,9 @@ definitions:
         title: Optional, defaults to false
   v1MetricsViewSpec:
     type: object
+    required:
+      - dimensions
+      - measures
     properties:
       connector:
         type: string
@@ -4975,6 +4979,8 @@ definitions:
           Deprecated: Now defined in the Explore resource.
   v1MetricsViewState:
     type: object
+    required:
+      - validSpec
     properties:
       validSpec:
         $ref: '#/definitions/v1MetricsViewSpec'
@@ -5152,6 +5158,9 @@ definitions:
         title: Not optional, not null
   v1MetricsViewV2:
     type: object
+    required:
+      - spec
+      - state
     properties:
       spec:
         $ref: '#/definitions/v1MetricsViewSpec'

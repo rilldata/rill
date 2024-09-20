@@ -1206,8 +1206,8 @@ export interface V1Migration {
 }
 
 export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
+  spec: V1MetricsViewSpec;
+  state: V1MetricsViewState;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
@@ -1295,8 +1295,8 @@ export interface V1MetricsViewSpec {
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
-  dimensions?: MetricsViewSpecDimensionV2[];
-  measures?: MetricsViewSpecMeasureV2[];
+  dimensions: MetricsViewSpecDimensionV2[];
+  measures: MetricsViewSpecMeasureV2[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1327,7 +1327,7 @@ Deprecated: Now defined in the Explore resource. */
 }
 
 export interface V1MetricsViewState {
-  validSpec?: V1MetricsViewSpec;
+  validSpec: V1MetricsViewSpec;
   /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
 It's set to true if the metrics view is based on an externally managed table. */
   streaming?: boolean;
@@ -1400,7 +1400,7 @@ export const V1MetricsViewComparisonSortType = {
 
 export interface V1MetricsViewComparisonRow {
   dimensionValue: string;
-  measureValues?: V1MetricsViewComparisonValue[];
+  measureValues: V1MetricsViewComparisonValue[];
 }
 
 export interface V1MetricsViewComparisonResponse {
