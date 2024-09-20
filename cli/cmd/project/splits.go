@@ -74,3 +74,4 @@ func SplitsCmd(ch *cmdutil.Helper) *cobra.Command {
 	splitsCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return splitsCmd
+}
