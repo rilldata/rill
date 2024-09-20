@@ -46,7 +46,7 @@
         </IconSpaceFixer>
       </Button>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content>
+    <DropdownMenu.Content align="end">
       <DropdownMenu.Item on:click={() => refreshModel(false)}>
         Incremental refresh
       </DropdownMenu.Item>

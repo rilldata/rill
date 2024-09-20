@@ -68,7 +68,7 @@
       <CaretDownIcon />
     </Button>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content>
+  <DropdownMenu.Content align="end">
     <DropdownMenu.Item
       on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
     >
