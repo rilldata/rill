@@ -77,6 +77,7 @@
    * Table Options
    */
   const isIncremental = resource.model?.spec?.incremental;
+
   const columns: ColumnDef<V1ModelSplit>[] = [
     {
       accessorKey: "data",
@@ -178,22 +179,26 @@
       data: allRows,
     }));
   }
+  $: rows = $table.getRowModel().rows;
 
   /**
    * Virtualizer
    */
   const ROW_HEIGHT = 71;
   const OVERSCAN = 10;
+
   let virtualListEl: HTMLDivElement;
-  $: rows = $table.getRowModel().rows;
+
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: 0,
     getScrollElement: () => virtualListEl,
     estimateSize: () => ROW_HEIGHT,
     overscan: OVERSCAN,
   });
+  $: ({ getVirtualItems, getTotalSize, setOptions } = $virtualizer);
+
   $: {
-    $virtualizer.setOptions({
+    setOptions({
       count: $query.hasNextPage ? allRows.length + 1 : allRows.length,
     });
     const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
@@ -206,7 +211,6 @@
       void $query.fetchNextPage();
     }
   }
-  $: ({ getVirtualItems, getTotalSize } = $virtualizer);
 </script>
 
 <div class="scroll-container" bind:this={virtualListEl}>

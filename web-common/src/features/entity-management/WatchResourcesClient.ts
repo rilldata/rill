@@ -183,7 +183,7 @@ export class WatchResourcesClient {
             // The following invalidations are only needed if the Source/Model has an active table
             if (!connectorName || !tableName) return;
 
-            // Refetch the model splits query
+            // Invalidate the model splits query
             if ((res.name.kind as ResourceKind) === ResourceKind.Model) {
               void queryClient.invalidateQueries(
                 getRuntimeServiceGetModelSplitsQueryKey(

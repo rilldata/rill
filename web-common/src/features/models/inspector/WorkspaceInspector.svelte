@@ -303,14 +303,10 @@
     {#if model}
       {#if isSplit}
         <hr />
-        <div class="px-4 flex flex-col gap-y-2">
-          <SplitsBrowser {resource} />
-        </div>
+        <SplitsBrowser {resource} />
       {:else if isIncremental}
         <hr />
-        <div class="px-4 flex flex-col gap-y-2">
-          <IncrementalProcessing {resource} />
-        </div>
+        <IncrementalProcessing {resource} />
       {/if}
     {/if}
   {/if}

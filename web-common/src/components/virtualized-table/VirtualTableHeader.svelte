@@ -71,7 +71,7 @@
 
 <style lang="postcss">
   thead {
-    @apply sticky top-0;
+    @apply sticky top-0 z-20;
   }
 
   thead tr {
@@ -84,6 +84,6 @@
   }
 
   .row-number {
-    @apply sticky left-0 text-center;
+    @apply sticky left-0 z-10 text-center;
   }
 </style>
