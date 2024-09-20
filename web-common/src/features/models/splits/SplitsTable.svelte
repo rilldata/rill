@@ -69,6 +69,7 @@
       }
       return lastPage.nextPageToken;
     },
+    refetchOnMount: true,
   });
   $: ({ error } = $query);
 
