@@ -993,11 +993,11 @@ paths:
           in: path
           required: true
           type: string
-        - name: wherePending
+        - name: pending
           in: query
           required: false
           type: boolean
-        - name: whereErrored
+        - name: errored
           in: query
           required: false
           type: boolean
@@ -3346,6 +3346,63 @@ definitions:
       - BUILTIN_MEASURE_COUNT
       - BUILTIN_MEASURE_COUNT_DISTINCT
     default: BUILTIN_MEASURE_UNSPECIFIED
+  v1Canvas:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1CanvasSpec'
+      state:
+        $ref: '#/definitions/v1CanvasState'
+  v1CanvasItem:
+    type: object
+    properties:
+      component:
+        type: string
+      definedInCanvas:
+        type: boolean
+      x:
+        type: integer
+        format: int64
+      "y":
+        type: integer
+        format: int64
+      width:
+        type: integer
+        format: int64
+      height:
+        type: integer
+        format: int64
+  v1CanvasSpec:
+    type: object
+    properties:
+      title:
+        type: string
+      columns:
+        type: integer
+        format: int64
+      gap:
+        type: integer
+        format: int64
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
+      items:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasItem'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+  v1CanvasState:
+    type: object
+    properties:
+      validSpec:
+        $ref: '#/definitions/v1CanvasSpec'
   v1CategoricalSummary:
     type: object
     properties:
@@ -3693,7 +3750,7 @@ definitions:
       show:
         type: string
         description: Templated string that should evaluate to a boolean.
-      definedInDashboard:
+      definedInCanvas:
         type: boolean
   v1ComponentState:
     type: object
@@ -3868,58 +3925,6 @@ definitions:
     title: Response message for RuntimeService.CreateInstance
   v1CreateTriggerResponse:
     type: object
-  v1Dashboard:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1DashboardSpec'
-      state:
-        $ref: '#/definitions/v1DashboardState'
-  v1DashboardItem:
-    type: object
-    properties:
-      component:
-        type: string
-      definedInDashboard:
-        type: boolean
-      x:
-        type: integer
-        format: int64
-      "y":
-        type: integer
-        format: int64
-      width:
-        type: integer
-        format: int64
-      height:
-        type: integer
-        format: int64
-  v1DashboardSpec:
-    type: object
-    properties:
-      title:
-        type: string
-      columns:
-        type: integer
-        format: int64
-      gap:
-        type: integer
-        format: int64
-      variables:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ComponentVariable'
-      items:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1DashboardItem'
-  v1DashboardState:
-    type: object
-    properties:
-      validSpec:
-        $ref: '#/definitions/v1DashboardSpec'
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -4915,7 +4920,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1SecurityRule'
-        title: Security for the dashboard
+        title: Security for the metrics view
       firstDayOfWeek:
         type: integer
         format: int64
@@ -5740,8 +5745,8 @@ definitions:
         $ref: '#/definitions/v1Theme'
       component:
         $ref: '#/definitions/v1Component'
-      dashboard:
-        $ref: '#/definitions/v1Dashboard'
+      canvas:
+        $ref: '#/definitions/v1Canvas'
       api:
         $ref: '#/definitions/v1API'
       connector:

@@ -47,8 +47,8 @@ export function useValidDashboards(instanceId: string) {
 }
 
 export function useValidCanvases(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Dashboard, (data) =>
-    data?.resources?.filter((res) => !!res.dashboard?.state?.validSpec),
+  return useFilteredResources(instanceId, ResourceKind.Canvas, (data) =>
+    data?.resources?.filter((res) => !!res.canvas?.state?.validSpec),
   );
 }
 
@@ -61,7 +61,7 @@ export function useValidVisualizations(instanceId: string) {
         select: (data) => {
           // Filter for valid Metrics Explorers and all Custom Dashboards (which don't yet have a valid/invalid state)
           return data?.resources?.filter(
-            (res) => !!res.metricsView?.state?.validSpec || res.dashboard,
+            (res) => !!res.metricsView?.state?.validSpec || res.canvas,
           );
         },
       },

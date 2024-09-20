@@ -537,9 +537,9 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalComponentSpec(existing.GetComponent().Spec, def.ComponentSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Component{Component: &runtimev1.Component{Spec: def.ComponentSpec}}}
 		}
-	case compilerv1.ResourceKindDashboard:
-		if existing == nil || !equalDashboardSpec(existing.GetDashboard().Spec, def.DashboardSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Dashboard{Dashboard: &runtimev1.Dashboard{Spec: def.DashboardSpec}}}
+	case compilerv1.ResourceKindCanvas:
+		if existing == nil || !equalCanvasSpec(existing.GetCanvas().Spec, def.CanvasSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Canvas{Canvas: &runtimev1.Canvas{Spec: def.CanvasSpec}}}
 		}
 	case compilerv1.ResourceKindAPI:
 		if existing == nil || !equalAPISpec(existing.GetApi().Spec, def.APISpec) {
@@ -725,7 +725,7 @@ func equalComponentSpec(a, b *runtimev1.ComponentSpec) bool {
 	return proto.Equal(a, b)
 }
 
-func equalDashboardSpec(a, b *runtimev1.DashboardSpec) bool {
+func equalCanvasSpec(a, b *runtimev1.CanvasSpec) bool {
 	return proto.Equal(a, b)
 }
 

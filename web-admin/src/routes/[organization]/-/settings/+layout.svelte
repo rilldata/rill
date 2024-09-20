@@ -1,3 +1,5 @@
+<!-- ORG SETTINGS -->
+
 <script lang="ts">
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";

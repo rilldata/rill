@@ -14,7 +14,7 @@
     [ResourceKind.API]: "Building API",
     [ResourceKind.Alert]: "Building alert",
     [ResourceKind.Component]: "Building chart",
-    [ResourceKind.Dashboard]: "Building dashboard",
+    [ResourceKind.Canvas]: "Building canvas",
     [ResourceKind.MetricsView]: "Building dashboard",
     [ResourceKind.Model]: "Building model",
     [ResourceKind.Report]: "Building report",

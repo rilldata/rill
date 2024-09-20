@@ -51,8 +51,8 @@ func (p *Parser) parseNode(node *Node) error {
 		return p.parseTheme(node)
 	case ResourceKindComponent:
 		return p.parseComponent(node)
-	case ResourceKindDashboard:
-		return p.parseDashboard(node)
+	case ResourceKindCanvas:
+		return p.parseCanvas(node)
 	case ResourceKindAPI:
 		return p.parseAPI(node)
 	case ResourceKindConnector:

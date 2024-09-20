@@ -343,8 +343,8 @@ export type QueryServiceColumnCardinalityParams = {
 };
 
 export type RuntimeServiceGetModelSplitsParams = {
-  wherePending?: boolean;
-  whereErrored?: boolean;
+  pending?: boolean;
+  errored?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
@@ -831,7 +831,7 @@ export interface V1Resource {
   bucketPlanner?: V1BucketPlanner;
   theme?: V1Theme;
   component?: V1Component;
-  dashboard?: V1Dashboard;
+  canvas?: V1Canvas;
   api?: V1API;
   connector?: V1ConnectorV2;
 }
@@ -1894,32 +1894,6 @@ export interface V1DeleteFileResponse {
   [key: string]: any;
 }
 
-export interface V1DashboardItem {
-  component?: string;
-  definedInDashboard?: boolean;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-}
-
-export interface V1DashboardSpec {
-  title?: string;
-  columns?: number;
-  gap?: number;
-  variables?: V1ComponentVariable[];
-  items?: V1DashboardItem[];
-}
-
-export interface V1DashboardState {
-  validSpec?: V1DashboardSpec;
-}
-
-export interface V1Dashboard {
-  spec?: V1DashboardSpec;
-  state?: V1DashboardState;
-}
-
 export interface V1CreateTriggerResponse {
   [key: string]: any;
 }
@@ -2041,7 +2015,7 @@ export interface V1ComponentSpec {
   output?: V1ComponentVariable;
   /** Templated string that should evaluate to a boolean. */
   show?: string;
-  definedInDashboard?: boolean;
+  definedInCanvas?: boolean;
 }
 
 export interface V1ComponentState {
@@ -2189,10 +2163,6 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2217,6 +2187,37 @@ export interface V1CharLocation {
 export interface V1CategoricalSummary {
   topK?: V1TopK;
   cardinality?: number;
+}
+
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
+export interface V1CanvasItem {
+  component?: string;
+  definedInCanvas?: boolean;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface V1CanvasSpec {
+  title?: string;
+  columns?: number;
+  gap?: number;
+  variables?: V1ComponentVariable[];
+  items?: V1CanvasItem[];
+  securityRules?: V1SecurityRule[];
+}
+
+export interface V1CanvasState {
+  validSpec?: V1CanvasSpec;
+}
+
+export interface V1Canvas {
+  spec?: V1CanvasSpec;
+  state?: V1CanvasState;
 }
 
 export type V1BuiltinMeasure =

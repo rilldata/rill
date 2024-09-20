@@ -71,7 +71,7 @@ Starting from version 0.48, you can add a user to a specific project via the UI!
 
 ### Via the UI
 
-#### Step 1 - Admin invites user
+#### Option 1 - Admin invites user
 
 From the project's splash screen, please select share and type the email[s] along with the type of permissions.
 
@@ -81,7 +81,7 @@ Once sent, your invited users will receive this email and will need to accept it
 
 ![img](/img/manage/user-management/email-invite.png)
 
-#### Step 2 - User requests access
+#### Option 2 - User requests access
 
 Alternatively, if you provide the project URL to your users, they can request access to the group admin. Users can request access via the page below:
 

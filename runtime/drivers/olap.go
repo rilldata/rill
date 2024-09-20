@@ -308,8 +308,8 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	if dimension.Column != "" {
 		return d.EscapeIdentifier(dimension.Column)
 	}
-	// backwards compatibility for older projects that have not run reconcile on this dashboard
-	// in that case `column` will not be present
+	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
+	// In that case `column` will not be present.
 	return d.EscapeIdentifier(dimension.Name)
 }
 

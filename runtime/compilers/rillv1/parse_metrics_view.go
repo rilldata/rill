@@ -53,7 +53,7 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	Security *MetricsViewSecurityPolicyYAML
+	Security *SecurityPolicyYAML
 
 	// DEPRECATED FIELDS
 	DefaultTimeRange   string   `yaml:"default_time_range"`
@@ -191,7 +191,7 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	return nil
 }
 
-type MetricsViewSecurityPolicyYAML struct {
+type SecurityPolicyYAML struct {
 	Access    string `yaml:"access"`
 	RowFilter string `yaml:"row_filter"`
 	Include   []*struct {
@@ -202,10 +202,10 @@ type MetricsViewSecurityPolicyYAML struct {
 		Condition string    `yaml:"if"`
 		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
 	}
-	Rules []*MetricsViewSecurityRuleYAML `yaml:"rules"`
+	Rules []*SecurityRuleYAML `yaml:"rules"`
 }
 
-func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
+func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
 	if p == nil {
 		return rules, nil
@@ -355,7 +355,7 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 	return rules, nil
 }
 
-type MetricsViewSecurityRuleYAML struct {
+type SecurityRuleYAML struct {
 	Type   string
 	Action string
 	If     string
@@ -364,7 +364,7 @@ type MetricsViewSecurityRuleYAML struct {
 	SQL    string
 }
 
-func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
+func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 	condition := r.If
 	if condition != "" {
 		tmp, err := ResolveTemplate(condition, validationTemplateData)
@@ -459,7 +459,7 @@ const (
 	nameIsDimension uint8 = 2
 )
 
-// parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
+// parseMetricsView parses a metrics view definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(node *Node) error {
 	// Parse YAML
 	tmp := &MetricsViewYAML{}
@@ -732,6 +732,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// Not setting Kind because for backwards compatibility, it may actually be a source or an external table.
 		node.Refs = append(node.Refs, ResourceName{Name: tmp.Model})
 	}
+	if tmp.Table != "" {
+		// By convention, if the table name matches a source or model name we add a DAG link.
+		// We may want to remove this at some point, but the cases where it would not be desired are very rare.
+		// Not setting Kind so that inference kicks in.
+		node.Refs = append(node.Refs, ResourceName{Name: tmp.Table})
+	}
+
 	if tmp.DefaultTheme != "" {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}

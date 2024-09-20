@@ -288,7 +288,7 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 		return &runtimev1.GetModelSplitsResponse{}, nil
 	}
 
-	afterIdx := -1
+	afterIdx := 0
 	afterKey := ""
 	if req.PageToken != "" {
 		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
@@ -305,8 +305,8 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 
 	opts := &drivers.FindModelSplitsOptions{
 		ModelID:      splitsModelID,
-		WherePending: req.WherePending,
-		WhereErrored: req.WhereErrored,
+		WherePending: req.Pending,
+		WhereErrored: req.Errored,
 		AfterIndex:   afterIdx,
 		AfterKey:     afterKey,
 		Limit:        validPageSize(req.PageSize),

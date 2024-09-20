@@ -18,7 +18,7 @@ rill start my-rill-project
   <span> · </span>
   <a href="https://docs.rilldata.com/home/install">Install</a>
   <span> · </span>
-  <a href="https://docs.rilldata.com/home/get-started#example-projects-repository">Example Projects</a>
+  <a href="https://docs.rilldata.com/home/get-started#example-projects">Example Projects</a>
   <span> · </span>
   <a href="https://discord.gg/DJ5qcsxE2m">Community</a>
 </h3>

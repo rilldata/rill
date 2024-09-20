@@ -32,8 +32,8 @@
    * Infinite Query
    */
   $: baseParams = {
-    ...(whereErrored ? { whereErrored: true } : {}),
-    ...(wherePending ? { wherePending: true } : {}),
+    ...(whereErrored ? { errored: true } : {}),
+    ...(wherePending ? { pending: true } : {}),
   };
   $: query = createInfiniteQuery({
     queryKey: getRuntimeServiceGetModelSplitsQueryKey(
