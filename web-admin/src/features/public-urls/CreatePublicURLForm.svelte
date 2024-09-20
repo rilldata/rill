@@ -22,7 +22,6 @@
     hasDashboardWhereFilter,
   } from "./form-utils";
   import { Divider } from "@rilldata/web-common/components/menu";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -35,8 +34,6 @@
       dimensions: { visibleDimensions },
     },
   } = StateManagers;
-
-  const timeControlsStore = useTimeControlStore(StateManagers);
 
   $: ({ organization, project } = $page.params);
 
