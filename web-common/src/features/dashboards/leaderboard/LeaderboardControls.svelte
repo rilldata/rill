@@ -109,7 +109,6 @@
         >
           {#each measures as measure (measure.name)}
             <Select.Item
-              role="menuitem"
               value={measure.name}
               label={measure.label ?? measure.name}
               class="text-[12px] flex flex-col items-start"
