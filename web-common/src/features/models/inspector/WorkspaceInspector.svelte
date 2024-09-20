@@ -16,9 +16,7 @@
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import {
-    V1ModelV2,
     V1Resource,
-    V1SourceV2,
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
@@ -40,8 +38,6 @@
   export let databaseSchema: string;
   export let tableName: string;
   export let resource: V1Resource;
-  export let source: V1SourceV2 | undefined = undefined;
-  export let model: V1ModelV2 | undefined = undefined;
   export let sourceIsReconciling: boolean = false;
 
   export let isEmpty = false;
@@ -51,6 +47,8 @@
   let showColumns = true;
 
   $: instanceId = $runtime.instanceId;
+  $: source = resource?.source;
+  $: model = resource?.model;
 
   $: connectorType = source && formatConnectorType(source);
   $: fileExtension = source && getFileExtension(source);

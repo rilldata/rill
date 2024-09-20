@@ -18,6 +18,11 @@
     { value: "errors", label: "errors" },
   ];
   let selectedFilter = options[0];
+
+  function onSelectedChange(newSelection: { value: string; label: string }) {
+    if (!newSelection) return;
+    selectedFilter = newSelection;
+  }
 </script>
 
 <CollapsibleSectionTitle tooltipText="model splits" bind:active>
@@ -44,10 +49,7 @@
           <div class="flex justify-end">
             <Select.Root
               items={options}
-              onSelectedChange={(newSelection) => {
-                if (!newSelection) return;
-                selectedFilter = newSelection;
-              }}
+              {onSelectedChange}
               bind:open={openFilterMenu}
             >
               <Select.Trigger

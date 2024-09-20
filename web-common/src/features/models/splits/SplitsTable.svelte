@@ -208,10 +208,8 @@
         {#each getHeaderGroups() as headerGroup (headerGroup.id)}
           <tr>
             {#each headerGroup.headers as header (header.id)}
-              <th
-                colSpan={header.colSpan}
-                style={`width: ${header.column.columnDef.meta?.widthPercent}%;`}
-              >
+              {@const widthPercent = header.column.columnDef.meta?.widthPercent}
+              <th colSpan={header.colSpan} style={`width: ${widthPercent}%;`}>
                 <svelte:component
                   this={flexRender(
                     header.column.columnDef.header,

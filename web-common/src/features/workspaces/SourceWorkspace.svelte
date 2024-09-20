@@ -57,12 +57,13 @@
   $: allErrors = $allErrorsStore;
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: resource = $resourceQuery.data?.source;
-  $: connector = (resource as V1SourceV2)?.spec?.sinkConnector as string;
+  $: resource = $resourceQuery.data;
+  $: source = $resourceQuery.data?.source;
+  $: connector = (source as V1SourceV2)?.spec?.sinkConnector as string;
   const database = ""; // Sources are ingested into the default database
   const databaseSchema = ""; // Sources are ingested into the default database schema
-  $: tableName = (resource as V1SourceV2)?.state?.table as string;
-  $: refreshedOn = resource?.state?.refreshedOn;
+  $: tableName = (source as V1SourceV2)?.state?.table as string;
+  $: refreshedOn = source?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
@@ -202,7 +203,7 @@
         {tableName}
         hasErrors={$hasErrors}
         hasUnsavedChanges={$hasUnsavedChanges}
-        source={resource}
+        {resource}
         isEmpty={!$remoteContent?.length}
         sourceIsReconciling={resourceIsReconciling}
       />

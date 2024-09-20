@@ -170,7 +170,6 @@
         hasErrors={$hasErrors}
         hasUnsavedChanges={$hasUnsavedChanges}
         {resource}
-        {model}
         isEmpty={!$remoteContent?.length}
       />
     {/if}
