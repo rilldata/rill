@@ -7,18 +7,27 @@ import (
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/billingportal/session"
 	"github.com/stripe/stripe-go/v79/customer"
+	"go.uber.org/zap"
 )
 
 var _ Provider = &Stripe{}
 
-type Stripe struct{}
+type Stripe struct {
+	logger        *zap.Logger
+	webhookSecret string
+}
 
-func NewStripe(stripeKey string) *Stripe {
+func NewStripe(logger *zap.Logger, stripeKey, stripeWebhookSecret string) *Stripe {
 	stripe.Key = stripeKey
-	return &Stripe{}
+	return &Stripe{
+		logger:        logger,
+		webhookSecret: stripeWebhookSecret,
+	}
 }
 
 func (s *Stripe) CreateCustomer(ctx context.Context, organization *database.Organization) (*Customer, error) {
@@ -118,4 +127,12 @@ func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL 
 	}
 
 	return sess.URL, nil
+}
+
+func (s *Stripe) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
+	if s.webhookSecret == "" {
+		return nil
+	}
+	sw := &stripeWebhook{stripe: s, jobs: jc}
+	return sw.handleWebhook
 }

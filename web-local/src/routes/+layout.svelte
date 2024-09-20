@@ -17,6 +17,7 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
+  import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
 
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
@@ -61,7 +62,10 @@
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <ResourceWatcher {host} {instanceId}>
-      <div class="body h-screen w-screen overflow-hidden absolute">
+      <div
+        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+      >
+        <BannerCenter />
         <RepresentingUserBanner />
         <slot />
       </div>

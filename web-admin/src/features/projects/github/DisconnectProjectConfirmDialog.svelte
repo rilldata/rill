@@ -66,7 +66,7 @@
           This project will be disconnected from GitHub and no longer under
           version control. Are you sure want to disconnect?
           <a
-            href="https://docs.rilldata.com/deploy/existing-project/github-101"
+            href="https://docs.rilldata.com/deploy/deploy-dashboard/github-101"
             target="_blank"
             class="text-primary-600"
           >

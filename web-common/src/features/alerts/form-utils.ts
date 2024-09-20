@@ -125,8 +125,7 @@ export const alertFormValidationSchema = yup.object({
         .test((value, context) => {
           const criteria = context.parent as MeasureFilterEntry;
           if (
-            (criteria.type === MeasureFilterType.PercentOfTotal ||
-              criteria.type === MeasureFilterType.PercentChange) &&
+            criteria.type === MeasureFilterType.PercentOfTotal &&
             (value < 0 || value > 100)
           ) {
             return context.createError({

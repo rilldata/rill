@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -13,11 +12,15 @@
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
-  import { Interval } from "luxon";
+  import { Interval, DateTime } from "luxon";
+  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
 
   export let metricViewName: string;
   export let showComparison = false;
   export let timeGrain: V1TimeGrain | undefined;
+
+  let priorRange: DashboardTimeControls | null = null;
+  let button: HTMLButtonElement;
 
   const StateManagers = getStateManagers();
   const {
@@ -26,6 +29,8 @@
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
   } = StateManagers;
+
+  $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
@@ -37,7 +42,10 @@
       : null;
 
   $: subInterval = selectedSubRange
-    ? Interval.fromDateTimes(selectedSubRange.start, selectedSubRange.end)
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedSubRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedSubRange.end).setZone(activeTimeZone),
+      )
     : null;
 
   function onKeyDown(e: KeyboardEvent) {
@@ -45,6 +53,9 @@
     if (["INPUT", "TEXTAREA", "SELECT"].includes(targetTagName)) {
       return;
     }
+
+    const isMac = window.navigator.userAgent.includes("Macintosh");
+
     if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {
         const panRange = $getNewPanRange("left");
@@ -56,7 +67,7 @@
         if (panRange) updatePanRange(panRange.start, panRange.end);
       }
     } else if ($dashboardStore?.selectedScrubRange?.end) {
-      if (e.key === "z") {
+      if (e.key === "z" && !e.metaKey && !e.ctrlKey) {
         zoomScrub();
       } else if (
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
@@ -64,6 +75,13 @@
       ) {
         metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
       }
+    } else if (
+      priorRange &&
+      e.key === "z" &&
+      ((isMac && e.metaKey) || (!isMac && e.ctrlKey))
+    ) {
+      e.preventDefault();
+      undoZoom();
     }
   }
 
@@ -92,39 +110,97 @@
 
   function zoomScrub() {
     if (
-      $dashboardStore?.selectedScrubRange?.start instanceof Date &&
-      $dashboardStore?.selectedScrubRange?.end instanceof Date
+      selectedScrubRange?.start instanceof Date &&
+      selectedScrubRange?.end instanceof Date
     ) {
+      if ($dashboardStore.selectedTimeRange) {
+        priorRange = $dashboardStore.selectedTimeRange;
+      }
+
       const { start, end } = getOrderedStartEnd(
-        $dashboardStore.selectedScrubRange.start,
-        $dashboardStore.selectedScrubRange.end,
+        selectedScrubRange.start,
+        selectedScrubRange.end,
       );
       metricsExplorerStore.setSelectedTimeRange(metricViewName, {
         name: TimeRangePreset.CUSTOM,
         start,
         end,
       });
+
+      window.addEventListener("click", cancelUndo, true);
+    }
+  }
+
+  function clearPriorRange() {
+    priorRange = null;
+  }
+
+  function undoZoom() {
+    if (priorRange) {
+      metricsExplorerStore.setSelectedTimeRange(metricViewName, priorRange);
+      clearPriorRange();
+    }
+  }
+
+  function cancelUndo(e: MouseEvent) {
+    window.removeEventListener("click", cancelUndo, true);
+
+    if (
+      !priorRange ||
+      (e.target instanceof HTMLElement && e.target === button)
+    ) {
+      return;
+    }
+
+    clearPriorRange();
+  }
+
+  function handleClick() {
+    if (priorRange) {
+      undoZoom();
+    } else {
+      zoomScrub();
     }
   }
 </script>
 
-{#if $dashboardStore?.selectedScrubRange?.end}
-  <div
-    class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2 z-50 bg-white"
+{#if priorRange || (subInterval?.isValid && !subInterval.start.equals(subInterval.end))}
+  <button
+    bind:this={button}
+    on:click|stopPropagation={handleClick}
+    aria-label={priorRange ? "Undo zoom" : "Zoom"}
   >
-    <Button compact type="plain" on:click={() => zoomScrub()}>
-      <div class="flex items-center gap-x-2">
-        <span class="flex-none">
-          <Zoom size="16px" />
-        </span>
-        {#if subInterval?.isValid && timeGrain}
-          <RangeDisplay interval={subInterval} grain={timeGrain} />
+    <div class="content-wrapper">
+      <span class="flex-none">
+        <Zoom size="16px" />
+      </span>
+
+      {#if subInterval?.isValid && timeGrain}
+        <RangeDisplay interval={subInterval} grain={timeGrain} />
+      {/if}
+
+      <span class="font-medium line-clamp-1 flex-none whitespace-nowrap">
+        {#if priorRange}
+          Undo Zoom (<MetaKey plusses={false} action="Z" />)
+        {:else}
+          Zoom (Z)
         {/if}
-        <span class="font-semibold">(Z)</span>
-      </div>
-    </Button>
-  </div>
+      </span>
+    </div>
+  </button>
 {/if}
 
 <!-- Only to be used on singleton components to avoid multiple state dispatches -->
 <svelte:window on:keydown={onKeyDown} />
+
+<style lang="postcss">
+  button {
+    @apply border rounded-[2px] bg-background pointer-events-auto;
+    @apply absolute left-1/2 -top-8 -translate-x-1/2 z-50;
+  }
+
+  .content-wrapper {
+    @apply py-1 px-2 flex gap-x-1 w-fit flex-none;
+    @apply pointer-events-none;
+  }
+</style>

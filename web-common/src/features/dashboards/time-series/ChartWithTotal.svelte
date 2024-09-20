@@ -5,7 +5,7 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
-  import TddAlternateChart from "../time-dimension-details/charts/TDDAlternateChart.svelte";
+  import TDDAlternateChart from "../time-dimension-details/charts/TDDAlternateChart.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../entity-management/types";
@@ -20,7 +20,11 @@
   import { sanitiseExpression } from "../stores/filter-utils";
   import { getStateManagers } from "../state-managers/state-managers";
   import { useTimeControlStore } from "../time-controls/time-control-store";
-  import { prepareTimeSeries, updateChartInteractionStore } from "./utils";
+  import {
+    prepareTimeSeries,
+    updateChartInteractionStore,
+    adjustTimeInterval,
+  } from "./utils";
   import { Period } from "@rilldata/web-common/lib/time/types";
   import { TDDChart } from "../time-dimension-details/types";
   import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
@@ -183,10 +187,6 @@
     dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
 
-  // $: timeSeriesData = $timeSeriesQuery;
-
-  // $: console.log({ data: timeSeriesData.data?.data });
-
   $: ({
     error: primaryTotalError,
     isFetching: primaryTotalIsFetching,
@@ -234,7 +234,7 @@
       {/if}
     </div>
   {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
-    <TddAlternateChart
+    <TDDAlternateChart
       timeGrain={interval}
       chartType={tddChartType}
       {expandedMeasureName}
@@ -243,9 +243,46 @@
       xMin={startValue}
       xMax={endValue}
       isTimeComparison={isComparison}
+      isScrubbing={Boolean(isScrubbing)}
       on:chart-hover={(e) => {
         const { dimension, ts } = e.detail;
+
         updateChartInteractionStore(ts, dimension, isAllTime, formattedData);
+      }}
+      on:chart-brush={(e) => {
+        const { interval } = e.detail;
+        const { start, end } = adjustTimeInterval(
+          interval,
+          dashboardStore.selectedTimezone,
+        );
+
+        metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+          start,
+          end,
+          isScrubbing: true,
+        });
+      }}
+      on:chart-brush-end={(e) => {
+        const { interval } = e.detail;
+        const { start, end } = adjustTimeInterval(
+          interval,
+          dashboardStore.selectedTimezone,
+        );
+
+        metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+          start,
+          end,
+          isScrubbing: false,
+        });
+      }}
+      on:chart-brush-clear={(e) => {
+        const { start, end } = e.detail;
+
+        metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+          start,
+          end,
+          isScrubbing: false,
+        });
       }}
     />
   {:else if formattedData && interval}

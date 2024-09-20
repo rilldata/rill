@@ -20,11 +20,12 @@ export enum ResourceKind {
   Connector = "rill.runtime.v1.Connector",
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
+  Explore = "rill.runtime.v1.Explore",
   Report = "rill.runtime.v1.Report",
   Alert = "rill.runtime.v1.Alert",
   Theme = "rill.runtime.v1.Theme",
   Component = "rill.runtime.v1.Component",
-  Dashboard = "rill.runtime.v1.Dashboard",
+  Canvas = "rill.runtime.v1.Canvas",
   API = "rill.runtime.v1.API",
 }
 
@@ -74,6 +75,7 @@ export function useResource<T = V1Resource>(
   );
 }
 
+// FIXME: To remove this duplicate of `useResource` https://github.com/rilldata/rill/pull/5531#discussion_r1733027626
 /**
  * `useResourceV2` is a more flexible version of `useResource` that accepts
  *  any `queryOptions`, not just `select` and `queryClient`.
@@ -112,13 +114,22 @@ export function useResourceV2<T = V1Resource>(
   );
 }
 
-export function useProjectParser(queryClient: QueryClient, instanceId: string) {
+export function useProjectParser(
+  queryClient: QueryClient,
+  instanceId: string,
+  queryOptions?: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    V1Resource
+  >,
+) {
   return useResource(
     instanceId,
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
     {
       queryClient,
+      ...queryOptions,
     },
   );
 }
@@ -132,7 +143,7 @@ export function useFilteredResources<T = Array<V1Resource>>(
   return createRuntimeServiceListResources(
     instanceId,
     {
-      kind,
+      kind: kind,
     },
     {
       query: {

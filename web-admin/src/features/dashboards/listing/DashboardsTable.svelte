@@ -40,7 +40,7 @@
         const isMetricsExplorer = !!resource?.metricsView;
         const title = isMetricsExplorer
           ? resource.metricsView.spec.title
-          : resource.dashboard.spec.title;
+          : resource.canvas.spec.title;
         const description = isMetricsExplorer
           ? resource.metricsView.spec.description
           : "";
@@ -58,8 +58,13 @@
     },
     {
       id: "title",
-      accessorFn: (row: DashboardResource) =>
-        row.resource.metricsView.spec.title,
+      accessorFn: (row: DashboardResource) => {
+        const resource = row.resource;
+        const isMetricsExplorer = !!resource?.metricsView;
+        return isMetricsExplorer
+          ? resource.metricsView.spec.title
+          : resource.canvas.spec.title;
+      },
     },
     {
       id: "name",
@@ -71,8 +76,11 @@
     },
     {
       id: "description",
-      accessorFn: (row: DashboardResource) =>
-        row.resource.metricsView.spec.description,
+      accessorFn: (row: DashboardResource) => {
+        const resource = row.resource;
+        const isMetricsExplorer = !!resource?.metricsView;
+        return isMetricsExplorer ? resource.metricsView.spec.description : "";
+      },
     },
   ];
 

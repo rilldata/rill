@@ -238,10 +238,6 @@ export class FileArtifact {
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
-  softDeleteResource() {
-    this.reconciling.set(false);
-  }
-
   hardDeleteResource() {
     // To avoid a workspace flicker, first infer the *intended* resource kind
     this.inferredResourceKind.set(
@@ -323,7 +319,7 @@ export class FileArtifact {
   }
 
   private updateResourceNameIfChanged(resource: V1Resource) {
-    const isSubResource = !!resource.component?.spec?.definedInDashboard;
+    const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;
     const curName = get(this.resourceName);
     if (

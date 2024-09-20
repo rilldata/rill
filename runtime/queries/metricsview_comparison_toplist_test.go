@@ -222,7 +222,8 @@ func TestMetricsViewsComparison_Druid_dim_order(t *testing.T) {
 				Desc: true,
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)

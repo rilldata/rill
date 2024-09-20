@@ -36,7 +36,6 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import ChartInteractions from "./ChartInteractions.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
   import ChartWithTotal from "./ChartWithTotal.svelte";
 
@@ -64,7 +63,6 @@
   let endValue: Date;
 
   let dataCopy: TimeSeriesDatum[];
-  let dimensionDataCopy: DimensionDataItem[] = [];
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: instanceId = $runtime.instanceId;
@@ -93,7 +91,7 @@
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
-  $: isAlternateChart = tddChartType != TDDChart.DEFAULT;
+  $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasureV2[];
@@ -113,9 +111,6 @@
     );
   }
 
-  $: totals = $timeSeriesDataStore.total;
-  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
-
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
   // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
@@ -126,15 +121,6 @@
     dataCopy = $timeSeriesDataStore.timeSeriesData;
   }
   $: formattedData = dataCopy;
-
-  $: if (
-    $timeSeriesDataStore?.dimensionChartData?.length ||
-    !comparisonDimension ||
-    includedValuesForDimension.length === 0
-  ) {
-    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData || [];
-  }
-  $: dimensionData = dimensionDataCopy;
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
@@ -151,18 +137,33 @@
     const slicedData = isAllTime
       ? formattedData?.slice(1)
       : formattedData?.slice(1, -1);
+
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
+      let startDirection, endDirection;
+
+      if (
+        tddChartType === TDDChart.GROUPED_BAR ||
+        tddChartType === TDDChart.STACKED_BAR
+      ) {
+        startDirection = "left";
+        endDirection = "right";
+      } else {
+        startDirection = "center";
+        endDirection = "center";
+      }
+
       const { position: startPos } = bisectData(
         start,
-        "center",
+        startDirection,
         "ts_position",
         slicedData,
       );
+
       const { position: endPos } = bisectData(
         end,
-        "center",
+        endDirection,
         "ts_position",
         slicedData,
       );
@@ -216,12 +217,6 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
-
-  $: hasTotalsError = Object.hasOwn($timeSeriesDataStore?.error, "totals");
-  $: hasTimeseriesError = Object.hasOwn(
-    $timeSeriesDataStore?.error,
-    "timeseries",
-  );
 
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
 
@@ -312,14 +307,14 @@
     {/if}
   </div>
 
-  {#if tddChartType == TDDChart.DEFAULT || !expandedMeasureName}
-    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
-      <div class="relative w-full">
-        <ChartInteractions
-          {metricViewName}
-          {showComparison}
-          timeGrain={interval}
-        />
+  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
+    <div class="relative w-full">
+      <ChartInteractions
+        {metricViewName}
+        {showComparison}
+        timeGrain={interval}
+      />
+      {#if tddChartType === TDDChart.DEFAULT}
         <div class="translate-x-5">
           {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
             <SimpleDataGraphic
@@ -335,11 +330,10 @@
             </SimpleDataGraphic>
           {/if}
         </div>
-      </div>
+      {/if}
     </div>
-  {/if}
+  </div>
 
-  <!-- bignumbers and line charts -->
   {#if renderedMeasures}
     <div
       bind:this={parentElement}

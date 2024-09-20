@@ -16,7 +16,7 @@ export const load = async ({ params, depends }) => {
   depends(dashboardName, "dashboard");
 
   const queryParams = {
-    "name.kind": ResourceKind.Dashboard,
+    "name.kind": ResourceKind.Canvas,
     "name.name": dashboardName,
   };
 
@@ -36,7 +36,7 @@ export const load = async ({ params, depends }) => {
       queryKey,
     });
 
-    const dashboard = response.resource?.dashboard;
+    const dashboard = response.resource?.canvas;
 
     if (!dashboard || !dashboard.spec) {
       throw error(404, "Dashboard not found");

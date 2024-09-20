@@ -18,7 +18,7 @@
   $: time = displayedInterval.toFormat(timeFormat, { separator: "-" });
 </script>
 
-<div class="flex gap-x-1" title="{date} {time}">
+<div class="flex gap-x-1 whitespace-nowrap" title="{date} {time}">
   <span class="line-clamp-1 text-left">
     {date}
     {#if showTime}

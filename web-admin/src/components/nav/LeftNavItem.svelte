@@ -5,13 +5,13 @@
 </script>
 
 <a class:selected href={link}>
-  {label}
+  <span class="text-slate-900">{label}</span>
 </a>
 
 <style lang="postcss">
   a {
     @apply p-2 flex gap-x-1 items-center;
-    @apply rounded-sm text-slate-900;
+    @apply rounded-sm;
     @apply text-sm font-medium;
   }
 
