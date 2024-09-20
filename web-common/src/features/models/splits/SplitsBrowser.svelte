@@ -1,7 +1,8 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import SelectMenu from "../../../components/menu/shadcn/SelectMenu.svelte";
+  import * as Select from "@rilldata/web-common/components/select";
+  import Button from "../../../components/button/Button.svelte";
   import CollapsibleSectionTitle from "../../../layout/CollapsibleSectionTitle.svelte";
   import { V1Resource } from "../../../runtime-client";
   import SplitsTable from "./SplitsTable.svelte";
@@ -10,12 +11,13 @@
 
   let active = true;
 
-  let selectedFilter: "all" | "errors" | "pending" = "all";
-  let options = [
-    { main: "all", key: "all" },
-    { main: "pending", key: "pending" },
-    { main: "errors", key: "errors" },
+  let openFilterMenu = false;
+  const options = [
+    { value: "all", label: "all" },
+    { value: "pending", label: "pending" },
+    { value: "errors", label: "errors" },
   ];
+  let selectedFilter = options[0];
 </script>
 
 <CollapsibleSectionTitle tooltipText="model splits" bind:active>
@@ -39,29 +41,41 @@
           <Dialog.Header>
             <Dialog.Title>Model splits</Dialog.Title>
           </Dialog.Header>
-          <div class="flex justify-end gap-x-2">
-            <SelectMenu
-              fixedText="Showing"
-              {options}
-              selections={[selectedFilter]}
-              on:select={(event) => (selectedFilter = event.detail.key)}
-              ariaLabel="Filter splits"
-            />
-            <!-- <Select.Root bind:value={selectedFilter}>
-                <Select.Trigger class="w-[200px]">
-                  <Select.Value placeholder="Select abc" />
-                </Select.Trigger>
-                <Select.Content>
-                  <Select.Item value="all">Show all</Select.Item>
-                  <Select.Item value="pending">Show pending</Select.Item>
-                  <Select.Item value="errors">Show errored</Select.Item>
-                </Select.Content>
-              </Select.Root> -->
+          <div class="flex justify-end">
+            <Select.Root
+              items={options}
+              onSelectedChange={(newSelection) => {
+                if (!newSelection) return;
+                selectedFilter = newSelection;
+              }}
+              bind:open={openFilterMenu}
+            >
+              <Select.Trigger
+                class="outline-none border-none w-fit px-0 gap-x-0.5"
+              >
+                <Button type="text" label="Filter splits">
+                  <span class="text-gray-700 hover:text-inherit">
+                    Showing <b>{selectedFilter.label}</b>
+                  </span>
+                </Button>
+              </Select.Trigger>
+              <Select.Content sameWidth={false} align="end">
+                {#each options as option (option.value)}
+                  <Select.Item
+                    value={option.value}
+                    label={option.label}
+                    class={`text-xs flex flex-col items-start ${
+                      selectedFilter.value === option.value ? "font-bold" : ""
+                    }`}
+                  />
+                {/each}
+              </Select.Content>
+            </Select.Root>
           </div>
           <SplitsTable
             {resource}
-            whereErrored={selectedFilter === "errors"}
-            wherePending={selectedFilter === "pending"}
+            whereErrored={selectedFilter.value === "errors"}
+            wherePending={selectedFilter.value === "pending"}
           />
         </Dialog.Content>
       </Dialog.Root>
