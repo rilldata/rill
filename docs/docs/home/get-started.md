@@ -24,7 +24,8 @@ rill start my-rill-project
   boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
 }}>
   <iframe
-    src="https://www.youtube.com/embed/GMsUyj_Bv3Q?autoplay=1&mute=1&rel=0&si=E1Rkh7v2Arp8MCnS&&origin=https://deploy-preview-5743--rill-developer.netlify.app"
+    src="https://www.youtube.com/embed/GMsUyj_Bv3Q?autoplay=1&mute=1&rel=0&si=E1Rkh7v2Arp8MCnS"
+    credentialless
     frameBorder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     allowFullScreen
