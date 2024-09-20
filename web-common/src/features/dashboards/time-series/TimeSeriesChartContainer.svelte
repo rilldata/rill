@@ -5,6 +5,7 @@ A container GraphicContext for the time series in a metrics dashboard.
   import { GraphicContext } from "@rilldata/web-common/components/data-graphic/elements";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
   import { MEASURE_CONFIG } from "../config";
+
   export let start: Date;
   export let end: Date;
   export let workspaceWidth: number;
@@ -13,7 +14,7 @@ A container GraphicContext for the time series in a metrics dashboard.
   const paddingForFullWidth = 80;
 </script>
 
-<div class="max-w-full h-fit flex flex-col max-h-full pr-2">
+<div class="max-w-full h-full w-full flex flex-col max-h-full pr-2">
   <GraphicContext
     bottom={4}
     height={enableFullWidth

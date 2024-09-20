@@ -16,7 +16,6 @@
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
-  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
 
   export let metricViewName: string;
@@ -80,12 +79,10 @@
     <PivotDisplay />
   {:else}
     <div
-      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide"
-      class:flex-col={expandedMeasureName}
-      class:flex-row={!expandedMeasureName}
+      class="flex size-full overflow-hidden pl-4 slide"
       class:left-shift={extraLeftPadding}
     >
-      <div class="pt-2">
+      <section class="pt-2 w-full" class:!w-fit={!expandedMeasureName}>
         {#key metricViewName}
           {#if hasTimeSeries}
             <MetricsTimeSeriesCharts
@@ -96,19 +93,16 @@
             <MeasuresContainer {exploreContainerWidth} {metricViewName} />
           {/if}
         {/key}
-      </div>
+      </section>
 
-      {#if expandedMeasureName}
-        <hr class="border-t border-gray-200 -ml-4" />
-        <TimeDimensionDisplay {metricViewName} />
-      {:else if selectedDimensionName}
-        <div class="pt-2 pl-1 border-l overflow-auto w-full">
-          <DimensionDisplay />
-        </div>
-      {:else}
-        <div class="pt-2 pl-1 border-l overflow-auto w-full">
-          <LeaderboardDisplay />
-        </div>
+      {#if !expandedMeasureName}
+        <section class="pt-2 pl-1 border-l overflow-auto w-full">
+          {#if selectedDimensionName}
+            <DimensionDisplay />
+          {:else}
+            <LeaderboardDisplay />
+          {/if}
+        </section>
       {/if}
     </div>
   {/if}

@@ -43,6 +43,8 @@
     niceMeasureExtents,
   } from "./utils";
 
+  import { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
   export let width: number | undefined = undefined;
@@ -77,7 +79,7 @@
   $: numberKind = numberKindForMeasure(measure);
 
   const tweenProps = { duration: 400, easing: cubicOut };
-  const xScale = getContext(contexts.scale("x"));
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
   let hovered: boolean = false;
   let scrub;
@@ -91,7 +93,7 @@
 
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
-  $: mouseOverCords = $xScale(mouseoverValue?.x);
+  $: mouseOverCords = $xScale(Number(mouseoverValue?.x));
 
   let isOverStart = false;
   let isOverEnd = false;

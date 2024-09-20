@@ -10,14 +10,16 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "../stores/dashboard-stores";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import { createQueryServiceMetricsViewTimeSeries } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { mergeMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
-  import { sanitiseExpression } from "../stores/filter-utils";
+  import {
+    createAndExpression,
+    filterExpressions,
+    matchExpressionByName,
+    sanitiseExpression,
+  } from "../stores/filter-utils";
   import { getStateManagers } from "../state-managers/state-managers";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import {
@@ -30,6 +32,14 @@
   import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
   import { onMount } from "svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
+  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
+
+  const {
+    dashboardStore: dashboardStoreReadable,
+    selectors: {
+      dimensions: { comparisonDimension },
+    },
+  } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
@@ -41,14 +51,14 @@
   export let mouseoverValue: DomainCoordinates<number | Date> | undefined;
   export let expandedMeasureName: string | undefined;
   export let isAllTime: boolean;
-
-  export let scrubStart;
-  export let scrubEnd;
-  export let startValue;
-  export let endValue;
+  export let scrubStart: Date | undefined;
+  export let scrubEnd: Date | undefined;
+  export let startValue: Date;
+  export let endValue: Date;
   export let isScrubbing: boolean;
 
   let visible = false;
+  let container: HTMLElement;
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -60,29 +70,37 @@
       threshold: 0,
     },
   );
-  let container: HTMLElement;
+
   onMount(() => {
     observer.observe(container);
   });
+
+  $: ({ instanceId } = $runtime);
 
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
 
   $: measureName = measure.name as string;
 
-  $: ({ instanceId } = $runtime);
-
-  $: dashboardStoreStore = useDashboardStore(metricViewName);
-
-  $: dashboardStore = $dashboardStoreStore;
+  $: dashboardStore = $dashboardStoreReadable;
 
   $: timeControls = $timeControlsStore;
+
+  $: whereFilter = sanitiseExpression(
+    mergeMeasureFilters(dashboardStore),
+    undefined,
+  );
+
+  $: updatedFilter = filterExpressions(
+    whereFilter || createAndExpression([]),
+    (e) => !matchExpressionByName(e, $comparisonDimension?.name ?? ""),
+  );
 
   $: comparisonTimeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
     instanceId,
     metricViewName,
     {
       measureNames: [measureName],
-      where: sanitiseExpression(mergeMeasureFilters(dashboardStore), undefined),
+      where: whereFilter,
       timeStart: timeControls.comparisonAdjustedStart,
       timeEnd: timeControls.comparisonAdjustedEnd,
       timeGranularity:
@@ -108,7 +126,7 @@
     metricViewName,
     {
       measureNames: [measureName],
-      where: sanitiseExpression(mergeMeasureFilters(dashboardStore), undefined),
+      where: whereFilter,
       timeStart: timeControls.adjustedStart,
       timeEnd: timeControls.adjustedEnd,
       timeGranularity:
@@ -129,7 +147,7 @@
     metricViewName,
     {
       measures: [measure],
-      where: sanitiseExpression(mergeMeasureFilters(dashboardStore), undefined),
+      where: whereFilter,
       timeRange: {
         start: timeControls?.comparisonTimeStart,
 
@@ -149,7 +167,7 @@
     metricViewName,
     {
       measures: [measure],
-      where: sanitiseExpression(mergeMeasureFilters(dashboardStore), undefined),
+      where: whereFilter,
       timeRange: {
         start: timeControls.timeStart,
         end: timeControls.timeEnd,
@@ -162,16 +180,34 @@
     },
   );
 
+  $: unfilteredTotalQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricViewName,
+    {
+      measures: [measure],
+      where: updatedFilter,
+      timeRange: {
+        start: timeControls.timeStart,
+        end: timeControls.timeEnd,
+      },
+    },
+    {
+      query: {
+        enabled: !!timeControls.ready && !!dashboardStore,
+      },
+    },
+  );
+
+  $: ({ data: unfilteredTotalData } = $unfilteredTotalQuery);
+
+  $: unfilteredTotal = unfilteredTotalData?.data?.[0]?.[measureName];
+
   $: interval =
     timeControls.selectedTimeRange?.interval ??
     timeControls.minTimeGrain ??
     V1TimeGrain.TIME_GRAIN_DAY;
 
-  $: ({
-    data: primaryData,
-    error: primaryError,
-    isFetching: primaryIsFetching,
-  } = $primaryTimeSeriesQuery);
+  $: ({ data: primaryData, error: primaryError } = $primaryTimeSeriesQuery);
   $: comparison = $comparisonTimeSeriesQuery;
 
   $: intervalDuration = TIME_GRAIN[interval]?.duration as Period;
@@ -201,9 +237,23 @@
   $: tddChartType = dashboardStore?.tdd?.chartType;
 
   $: dimensionData = [];
+
+  $: if (
+    isInTimeDimensionView &&
+    formattedData &&
+    $timeControlsStore.selectedTimeRange &&
+    !isScrubbing
+  ) {
+    updateChartInteractionStore(
+      mouseoverValue?.x,
+      undefined,
+      isAllTime,
+      formattedData,
+    );
+  }
 </script>
 
-<div class="flex flex-row gap-x-4" bind:this={container}>
+<div class="flex flex-row gap-x-4w-full" bind:this={container}>
   <MeasureBigNumber
     {measure}
     value={primaryTotal}
@@ -322,3 +372,18 @@
     </div>
   {/if}
 </div>
+
+{#if expandedMeasureName}
+  <hr class="border-t border-gray-200 -ml-4" />
+  <TimeDimensionDisplay
+    error={primaryError}
+    {measure}
+    {metricViewName}
+    formattedTimeSeriesData={formattedData}
+    {primaryTotal}
+    {comparisonTotal}
+    {unfilteredTotal}
+    comparisonDimension={$comparisonDimension}
+    showTimeComparison={isComparison}
+  />
+{/if}

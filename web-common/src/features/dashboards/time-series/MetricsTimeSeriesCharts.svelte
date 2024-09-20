@@ -2,7 +2,6 @@
   import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
-  import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import {
@@ -18,13 +17,8 @@
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
-  import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
-  import {
-    TimeSeriesDatum,
-    useTimeSeriesDataStore,
-  } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
@@ -36,7 +30,6 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import ChartInteractions from "./ChartInteractions.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
   import ChartWithTotal from "./ChartWithTotal.svelte";
 
   export let metricViewName: string;
@@ -53,21 +46,16 @@
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
-  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
 
-  let scrubStart;
-  let scrubEnd;
-
+  let scrubStart: Date | undefined = undefined;
+  let scrubEnd: Date | undefined = undefined;
   let mouseoverValue: DomainCoordinates | undefined = undefined;
-  let startValue: Date;
-  let endValue: Date;
+  let parentElement: HTMLDivElement;
 
-  let dataCopy: TimeSeriesDatum[];
+  $: ({ instanceId } = $runtime);
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: instanceId = $runtime.instanceId;
 
-  // query the `/meta` endpoint to get the measures and the default time grain
   $: metricsView = useMetricsView(instanceId, metricViewName);
 
   $: showHideMeasures = createShowHideMeasuresStore(
@@ -111,18 +99,6 @@
     );
   }
 
-  // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
-  // temporarily undefined as results are fetched.
-  // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
-  // we make a copy of the data that avoids `undefined` transition states.
-  // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
-
-  $: if ($timeSeriesDataStore?.timeSeriesData) {
-    dataCopy = $timeSeriesDataStore.timeSeriesData;
-  }
-  $: formattedData = dataCopy;
-
-  // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
@@ -133,80 +109,17 @@
       $dashboardStore?.selectedScrubRange?.end,
       $dashboardStore.selectedTimezone,
     );
-
-    const slicedData = isAllTime
-      ? formattedData?.slice(1)
-      : formattedData?.slice(1, -1);
-
-    chartInteractionColumn.update((state) => {
-      const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-
-      let startDirection, endDirection;
-
-      if (
-        tddChartType === TDDChart.GROUPED_BAR ||
-        tddChartType === TDDChart.STACKED_BAR
-      ) {
-        startDirection = "left";
-        endDirection = "right";
-      } else {
-        startDirection = "center";
-        endDirection = "center";
-      }
-
-      const { position: startPos } = bisectData(
-        start,
-        startDirection,
-        "ts_position",
-        slicedData,
-      );
-
-      const { position: endPos } = bisectData(
-        end,
-        endDirection,
-        "ts_position",
-        slicedData,
-      );
-
-      return {
-        yHover: isScrubbing ? undefined : state.yHover,
-        xHover: isScrubbing ? undefined : state.xHover,
-        scrubStart: startPos,
-        scrubEnd: endPos,
-      };
-    });
-
-    const adjustedChartValue = getAdjustedChartTime(
-      $timeControlsStore.selectedTimeRange?.start,
-      $timeControlsStore.selectedTimeRange?.end,
-      $dashboardStore?.selectedTimezone,
-      interval,
-      $timeControlsStore.selectedTimeRange?.name,
-      $metricsView?.data?.defaultTimeRange,
-      $dashboardStore?.tdd.chartType,
-    );
-
-    if (adjustedChartValue?.start) {
-      startValue = adjustedChartValue?.start;
-    }
-    if (adjustedChartValue?.end) {
-      endValue = adjustedChartValue?.end;
-    }
   }
 
-  $: if (
-    isInTimeDimensionView &&
-    formattedData &&
-    $timeControlsStore.selectedTimeRange &&
-    !isScrubbing
-  ) {
-    updateChartInteractionStore(
-      mouseoverValue?.x,
-      undefined,
-      isAllTime,
-      formattedData,
-    );
-  }
+  $: ({ start: startValue, end: endValue } = getAdjustedChartTime(
+    $timeControlsStore.selectedTimeRange?.start,
+    $timeControlsStore.selectedTimeRange?.end,
+    $dashboardStore?.selectedTimezone,
+    interval,
+    $timeControlsStore.selectedTimeRange?.name,
+    $metricsView?.data?.defaultTimeRange,
+    $dashboardStore?.tdd.chartType,
+  ));
 
   const toggleMeasureVisibility = (e) => {
     showHideMeasures.toggleVisibility(e.detail.name);
@@ -265,104 +178,104 @@
       },
     );
   }
-
-  let parentElement: HTMLDivElement;
 </script>
 
-<TimeSeriesChartContainer
-  enableFullWidth={isInTimeDimensionView}
-  end={endValue}
-  start={startValue}
-  {workspaceWidth}
->
-  <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
-    {#if isInTimeDimensionView}
-      <BackToOverview {metricViewName} />
-      <ChartTypeSelector
-        hasComparison={Boolean(
-          showComparison || includedValuesForDimension.length,
-        )}
-        {metricViewName}
-        chartType={tddChartType}
-      />
-    {:else}
-      <SearchableFilterButton
-        label="Measures"
-        on:deselect-all={setAllMeasuresNotVisible}
-        on:item-clicked={toggleMeasureVisibility}
-        on:select-all={setAllMeasuresVisible}
-        selectableItems={$showHideMeasures.selectableItems}
-        selectedItems={$showHideMeasures.selectedItems}
-        tooltipText="Choose measures to display"
-      />
+{#if startValue && endValue}
+  <TimeSeriesChartContainer
+    enableFullWidth={isInTimeDimensionView}
+    end={endValue}
+    start={startValue}
+    {workspaceWidth}
+  >
+    <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
+      {#if isInTimeDimensionView}
+        <BackToOverview {metricViewName} />
+        <ChartTypeSelector
+          hasComparison={Boolean(
+            showComparison || includedValuesForDimension.length,
+          )}
+          {metricViewName}
+          chartType={tddChartType}
+        />
+      {:else}
+        <SearchableFilterButton
+          label="Measures"
+          on:deselect-all={setAllMeasuresNotVisible}
+          on:item-clicked={toggleMeasureVisibility}
+          on:select-all={setAllMeasuresVisible}
+          selectableItems={$showHideMeasures.selectableItems}
+          selectedItems={$showHideMeasures.selectedItems}
+          tooltipText="Choose measures to display"
+        />
 
-      <button
-        class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
-        on:click={() => {
-          startPivotForTimeseries();
-        }}
-      >
-        Start Pivot
-      </button>
-    {/if}
-  </div>
-
-  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
-    <div class="relative w-full">
-      <ChartInteractions
-        {metricViewName}
-        {showComparison}
-        timeGrain={interval}
-      />
-      {#if tddChartType === TDDChart.DEFAULT}
-        <div class="translate-x-5">
-          {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
-            <SimpleDataGraphic
-              height={26}
-              overflowHidden={false}
-              top={29}
-              bottom={0}
-              right={isInTimeDimensionView ? 10 : 25}
-              xMin={startValue}
-              xMax={endValue}
-            >
-              <Axis superlabel side="top" placement="start" />
-            </SimpleDataGraphic>
-          {/if}
-        </div>
+        <button
+          class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
+          on:click={() => {
+            startPivotForTimeseries();
+          }}
+        >
+          Start Pivot
+        </button>
       {/if}
     </div>
-  </div>
 
-  {#if renderedMeasures}
-    <div
-      bind:this={parentElement}
-      class:pb-4={!isInTimeDimensionView}
-      class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
-    >
-      <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-      {#each renderedMeasures as measure (measure.name)}
-        <ChartWithTotal
-          {isScrubbing}
-          {scrubStart}
-          {scrubEnd}
-          {startValue}
-          {endValue}
-          {isAllTime}
-          {parentElement}
-          bind:mouseoverValue
-          {expandedMeasureName}
-          isComparison={showComparison}
-          {measure}
+    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
+      <div class="relative w-full">
+        <ChartInteractions
           {metricViewName}
-          isValidPercTotal={measure.name
-            ? $isMeasureValidPercentOfTotal(measure.name)
-            : false}
+          {showComparison}
+          timeGrain={interval}
         />
-      {/each}
+        {#if tddChartType === TDDChart.DEFAULT}
+          <div class="translate-x-5">
+            {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
+              <SimpleDataGraphic
+                height={26}
+                overflowHidden={false}
+                top={29}
+                bottom={0}
+                right={isInTimeDimensionView ? 10 : 25}
+                xMin={startValue}
+                xMax={endValue}
+              >
+                <Axis superlabel side="top" placement="start" />
+              </SimpleDataGraphic>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
-  {/if}
-</TimeSeriesChartContainer>
+
+    {#if renderedMeasures}
+      <div
+        bind:this={parentElement}
+        class:pb-4={!isInTimeDimensionView}
+        class="flex flex-col gap-y-2 w-full overflow-y-scroll h-full max-h-fit"
+      >
+        {#each renderedMeasures as measure (measure.name)}
+          <ChartWithTotal
+            {isScrubbing}
+            {scrubStart}
+            {scrubEnd}
+            {startValue}
+            {endValue}
+            {isAllTime}
+            {parentElement}
+            bind:mouseoverValue
+            {expandedMeasureName}
+            isComparison={showComparison}
+            {measure}
+            {metricViewName}
+            isValidPercTotal={measure.name
+              ? $isMeasureValidPercentOfTotal(measure.name)
+              : false}
+          />
+        {/each}
+      </div>
+    {/if}
+  </TimeSeriesChartContainer>
+{/if}
+
 <ReplacePivotDialog
   open={showReplacePivotModal}
   on:close={() => {
