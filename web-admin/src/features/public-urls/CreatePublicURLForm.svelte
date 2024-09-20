@@ -186,7 +186,7 @@
     lockTimeRangeLabel = timeRange
       ? `${formatDate(timeRange.start) ?? ""} - ${formatDate(timeRange.end) ?? ""} ${abbreviation}`
       : "";
-    console.log("lockTimeRangeLabel", lockTimeRangeLabel);
+    // console.log("lockTimeRangeLabel", lockTimeRangeLabel);
   }
 </script>
 
@@ -261,8 +261,6 @@
       {/if}
     </div>
 
-    <!-- NOTE: Measures and dimensions will be limited to current visible set. -->
-    <!-- NOTE: Filters will be locked and hidden. -->
     {#if hasWhereFilter}
       <Divider marginTop={4} marginBottom={4} />
 
@@ -271,11 +269,10 @@
           The following filters will be locked and hidden:
         </p>
         <div class="flex flex-row gap-1 mt-2">
-          <!-- TODO: Why isn't MeasureFilter showing up? -->
           <FilterChipsReadOnly
             metricsViewName={$metricsViewName}
             filters={$dashboardStore.whereFilter}
-            dimensionThresholdFilters={[]}
+            dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
             timeRange={undefined}
             comparisonTimeRange={undefined}
           />
