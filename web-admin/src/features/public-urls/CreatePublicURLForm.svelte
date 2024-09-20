@@ -23,8 +23,11 @@
   } from "./form-utils";
   import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
   import { Divider } from "@rilldata/web-common/components/menu";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 
   const queryClient = useQueryClient();
+  const StateManagers = getStateManagers();
+
   const {
     dashboardStore,
     metricsViewName,
@@ -32,7 +35,23 @@
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
     },
-  } = getStateManagers();
+  } = StateManagers;
+
+  const timeControlsStore = useTimeControlStore(StateManagers);
+
+  $: ({
+    selectedTimeRange,
+    allTimeRange,
+    showTimeComparison,
+    selectedComparisonTimeRange,
+    minTimeGrain,
+  } = $timeControlsStore);
+
+  // $: console.log("selectedTimeRange: ", selectedTimeRange);
+  // $: console.log("allTimeRange: ", allTimeRange);
+  // $: console.log("showTimeComparison: ", showTimeComparison);
+  // $: console.log("selectedComparisonTimeRange: ", selectedComparisonTimeRange);
+  // $: console.log("minTimeGrain: ", minTimeGrain);
 
   $: ({ organization, project } = $page.params);
 
@@ -112,7 +131,7 @@
   );
 
   $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
-  $: console.log("hasWhereFilter", hasWhereFilter);
+  // $: console.log("hasWhereFilter", hasWhereFilter);
 
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
@@ -131,6 +150,7 @@
     .slice(0, 10);
 
   function formatDate(date: Date) {
+    if (!date) return "-";
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
@@ -142,27 +162,40 @@
     new Date(),
     $dashboardStore.selectedTimezone,
   );
-  $: console.log("dashboardStore: ", $dashboardStore);
-  $: console.log(
-    "$dashboardStore.selectedTimeRange: ",
-    $dashboardStore.selectedTimeRange,
-  );
-  // $: lockTimeRangeLabel = $dashboardStore.selectedTimeRange
-  //   ? `${formatDate($dashboardStore.selectedTimeRange?.start) ?? ""} - ${formatDate($dashboardStore.selectedTimeRange?.end) ?? ""} ${abbreviation}`
-  //   : "";
-  // $: console.log("lockTimeRangeLabel: ", lockTimeRangeLabel);
+
+  $: lockTimeRangeLabel = $dashboardStore.selectedTimeRange
+    ? `${formatDate($dashboardStore.selectedTimeRange?.start) ?? ""} - ${formatDate($dashboardStore.selectedTimeRange?.end) ?? ""} ${abbreviation}`
+    : `${formatDate(allTimeRange?.start) ?? ""} - ${formatDate(allTimeRange?.end) ?? ""} ${abbreviation}`;
+
+  // $: console.log(
+  //   "selectedTimeRange",
+  //   formatDate($dashboardStore.selectedTimeRange?.start),
+  //   formatDate($dashboardStore.selectedTimeRange?.end),
+  // );
+  // $: console.log(
+  //   "allTimeRange",
+  //   formatDate(allTimeRange?.start),
+  //   formatDate(allTimeRange?.end),
+  // );
+
+  $: {
+    const timeRange = $dashboardStore.selectedTimeRange || allTimeRange;
+    lockTimeRangeLabel = timeRange
+      ? `${formatDate(timeRange.start) ?? ""} - ${formatDate(timeRange.end) ?? ""} ${abbreviation}`
+      : "";
+    console.log("lockTimeRangeLabel", lockTimeRangeLabel);
+  }
 </script>
 
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
-    <div class="information-container">
-      <h3>Create a shareable public URL for this view</h3>
-      <ul>
-        <li>Measures and dimensions will be limited to current visible set.</li>
-        <li>Filters will be locked and hidden.</li>
-      </ul>
+    <div class="flex flex-col gap-y-4">
+      <h3 class="text-sm text-gray-800 font-semibold">
+        Create a shareable public URL for this view
+      </h3>
 
       <div class="name-input-container">
+        <!-- TODO: this was added because we populate the label with the title of the dashboard -->
         <!-- <Label for="name-input" class="text-xs">URL label</Label> -->
         <input
           id="name-input"
@@ -172,19 +205,6 @@
           class="w-full px-3 py-2 border border-gray-300 rounded-md"
         />
       </div>
-
-      <!-- Filters -->
-      {#if hasWhereFilter}
-        <div>
-          <FilterChipsReadOnly
-            metricsViewName={$metricsViewName}
-            filters={$dashboardStore.whereFilter}
-            dimensionThresholdFilters={[]}
-            timeRange={undefined}
-            comparisonTimeRange={undefined}
-          />
-        </div>
-      {/if}
     </div>
 
     <div class="mt-4">
@@ -208,7 +228,12 @@
       {/if}
     </div>
 
-    <div class="mt-4">
+    <!-- We currently lock time range no matter what -->
+    <!-- Does that mean we need to strip time range from the stored public url state if user decides not to lock time range? -->
+    <!-- What does locking time range mean? Does public url user get to edit the time range? -->
+    <!-- If locked, is it read only? -->
+    <!-- TODO: provide ability to not lock time range -->
+    <div class="mt-4" class:mb-4={!hasWhereFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
         <Label class="text-xs" for="lock-time-range">Lock time range</Label>
@@ -216,30 +241,37 @@
       {#if lockTimeRange}
         <div class="w-full pl-[30px]">
           <label for="lock-time-range" class="text-slate-500 font-medium">
-            <!-- TODO: use lock time range text -->
-            test
+            {lockTimeRangeLabel}
           </label>
         </div>
       {/if}
     </div>
 
-    <Divider marginTop={4} marginBottom={4} />
+    <!-- NOTE: Measures and dimensions will be limited to current visible set. -->
+    <!-- NOTE: Filters will be locked and hidden. -->
+    {#if hasWhereFilter}
+      <Divider marginTop={4} marginBottom={4} />
 
-    <div class="flex flex-col gap-y-1">
-      <p class="text-xs text-gray-800 font-normal">
-        The following filters will be locked and hidden:
-      </p>
-      <div class="flex flex-row gap-1 mt-2">
-        <!-- TODO: replace with pills -->
-        <span class="w-[140px]">Pill 1</span>
-        <span class="w-[120px]">Pill 2</span>
-        <span class="w-[185px]">Pill 3</span>
+      <div class="flex flex-col gap-y-1">
+        <p class="text-xs text-gray-800 font-normal">
+          The following filters will be locked and hidden:
+        </p>
+        <div class="flex flex-row gap-1 mt-2">
+          <!-- TODO: Why isn't MeasureFilter showing up? -->
+          <FilterChipsReadOnly
+            metricsViewName={$metricsViewName}
+            filters={$dashboardStore.whereFilter}
+            dimensionThresholdFilters={[]}
+            timeRange={undefined}
+            comparisonTimeRange={undefined}
+          />
+        </div>
       </div>
-    </div>
 
-    <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
-      Measures and dimensions will be limited to current visible set.
-    </p>
+      <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
+        Measures and dimensions will be limited to current visible set.
+      </p>
+    {/if}
 
     <Button
       type="primary"
@@ -272,14 +304,6 @@
 
   h3 {
     @apply font-semibold;
-  }
-
-  .information-container {
-    @apply flex flex-col gap-y-2;
-  }
-
-  ul {
-    @apply list-disc list-inside;
   }
 
   .name-input-container {

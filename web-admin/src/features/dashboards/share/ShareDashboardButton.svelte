@@ -36,7 +36,8 @@
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
         <div class="flex flex-col gap-y-2">
-          <h3>Share your current view with another project member.</h3>
+          <!-- <h3>Share your current view with another project member.</h3> -->
+          <!-- TODO: https://www.figma.com/design/Qt6EyotCBS3V6O31jVhMQ7/RILL?node-id=13077-805393&node-type=frame&t=9qtAFQ3xiQds2fvD-0 -->
           <Button
             type="secondary"
             on:click={() => {
@@ -44,7 +45,7 @@
             }}
           >
             <Link size="16px" className="text-primary-500" />
-            Copy URL
+            Copy URL for this view
           </Button>
         </div>
       </TabsContent>
