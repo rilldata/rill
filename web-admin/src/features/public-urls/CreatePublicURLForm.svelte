@@ -24,6 +24,9 @@
   import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
   import { Divider } from "@rilldata/web-common/components/menu";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -236,7 +239,18 @@
     <div class="mt-4" class:mb-4={!hasWhereFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
-        <Label class="text-xs" for="lock-time-range">Lock time range</Label>
+
+        <div class="flex flex-row items-center gap-x-1">
+          <Label class="text-xs" for="lock-time-range">Lock time range</Label>
+          <Tooltip location="right" alignment="middle" distance={8}>
+            <div class="text-gray-500">
+              <InfoCircle size="12px" />
+            </div>
+            <TooltipContent maxWidth="400px" slot="tooltip-content">
+              Lock time range to prevent the user from changing the time range.
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
       {#if lockTimeRange}
         <div class="w-full pl-[30px]">
