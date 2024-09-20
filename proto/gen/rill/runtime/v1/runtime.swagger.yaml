@@ -2862,8 +2862,6 @@ definitions:
     title: Selector for a dimension
   MetricsViewSpecDimensionV2:
     type: object
-    required:
-      - name
     properties:
       name:
         type: string
@@ -2880,6 +2878,8 @@ definitions:
       uri:
         type: string
     title: Dimensions are columns to filter and group by
+    required:
+      - name
   MetricsViewSpecMeasureType:
     type: string
     enum:
@@ -2891,9 +2891,6 @@ definitions:
     title: Type of measure query to generate
   MetricsViewSpecMeasureV2:
     type: object
-    required:
-      - name
-      - expression
     properties:
       name:
         type: string
@@ -2928,6 +2925,9 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+    required:
+      - name
+      - expression
   MetricsViewSpecMeasureWindow:
     type: object
     properties:
@@ -4720,9 +4720,6 @@ definitions:
     title: Response message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonRow:
     type: object
-    required:
-      - dimensionValue
-      - measureValues
     properties:
       dimensionValue:
         type: string
@@ -4733,6 +4730,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonValue'
         title: Not optional, not null
+    required:
+      - dimensionValue
+      - measureValues
   v1MetricsViewComparisonSort:
     type: object
     properties:
@@ -4866,9 +4866,6 @@ definitions:
         title: Optional, defaults to false
   v1MetricsViewSpec:
     type: object
-    required:
-      - dimensions
-      - measures
     properties:
       connector:
         type: string
@@ -4977,10 +4974,11 @@ definitions:
         description: |-
           Available time zones list preferred time zones using IANA location identifiers.
           Deprecated: Now defined in the Explore resource.
+    required:
+      - dimensions
+      - measures
   v1MetricsViewState:
     type: object
-    required:
-      - validSpec
     properties:
       validSpec:
         $ref: '#/definitions/v1MetricsViewSpec'
@@ -4990,6 +4988,8 @@ definitions:
         description: |-
           Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
           It's set to true if the metrics view is based on an externally managed table.
+    required:
+      - validSpec
   v1MetricsViewTimeRangeResponse:
     type: object
     properties:
@@ -5158,14 +5158,14 @@ definitions:
         title: Not optional, not null
   v1MetricsViewV2:
     type: object
-    required:
-      - spec
-      - state
     properties:
       spec:
         $ref: '#/definitions/v1MetricsViewSpec'
       state:
         $ref: '#/definitions/v1MetricsViewState'
+    required:
+      - spec
+      - state
   v1Migration:
     type: object
     properties:
