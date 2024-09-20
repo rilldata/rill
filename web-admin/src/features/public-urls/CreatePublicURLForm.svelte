@@ -24,10 +24,6 @@
   import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
   import { Divider } from "@rilldata/web-common/components/menu";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import { DateTime, Interval } from "luxon";
 
   const queryClient = useQueryClient();
