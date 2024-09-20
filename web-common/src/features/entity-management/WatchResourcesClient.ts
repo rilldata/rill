@@ -45,6 +45,9 @@ export class WatchResourcesClient {
       return;
     }
 
+    // temporarily ignore Explore. a future PR will refactor to incorporate it
+    if (res.name.kind === ResourceKind.Explore) return;
+
     // Get the previous resource from the query cache
     const previousResource = queryClient.getQueryData<{
       resource: V1Resource | undefined;

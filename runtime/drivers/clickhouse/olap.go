@@ -685,6 +685,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_STRING
 	case "OTHER":
 		t.Code = runtimev1.Type_CODE_JSON
+	case "NOTHING":
+		t.Code = runtimev1.Type_CODE_STRING
 	case "POINT":
 		return databaseTypeToPB("Array(Float64)", nullable)
 	case "RING":

@@ -21,6 +21,6 @@ You can see a few different example projects by visiting our [example github rep
 
 :::tip
 
-For more information about using Git or cloning projects locally, please see our page on [Github Basics](/deploy/existing-project/github-101).
+For more information about using Git or cloning projects locally, please see our page on [Github Basics](/deploy/deploy-dashboard/github-101).
 
 :::

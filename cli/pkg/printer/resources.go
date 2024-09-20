@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -498,4 +499,42 @@ type modelSplit struct {
 	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`
 	Elapsed    string `header:"elapsed" json:"elapsed"`
 	Error      string `header:"error" json:"error"`
+}
+
+func (p *Printer) PrintBillingIssues(errs []*adminv1.BillingIssue) {
+	if len(errs) == 0 {
+		return
+	}
+
+	p.PrintData(toBillingIssuesTable(errs))
+}
+
+func toBillingIssuesTable(errs []*adminv1.BillingIssue) []*billingIssue {
+	res := make([]*billingIssue, 0, len(errs))
+	for _, e := range errs {
+		res = append(res, toBillingIssueRow(e))
+	}
+	return res
+}
+
+func toBillingIssueRow(e *adminv1.BillingIssue) *billingIssue {
+	meta, err := json.Marshal(e.Metadata)
+	if err != nil || !utf8.Valid(meta) {
+		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
+	}
+	return &billingIssue{
+		Organization: e.Organization,
+		Type:         e.Type.String(),
+		Level:        e.Level.String(),
+		Metadata:     string(meta), // TODO pretty print
+		EventTime:    e.EventTime.AsTime().Local().Format(time.DateTime),
+	}
+}
+
+type billingIssue struct {
+	Organization string `header:"organization" json:"organization"`
+	Type         string `header:"type" json:"type"`
+	Level        string `header:"level" json:"level"`
+	Metadata     string `header:"metadata" json:"metadata"`
+	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }

@@ -16,11 +16,15 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let createMagicAuthTokens: boolean;
+
+  let isOpen = false;
 </script>
 
-<Popover>
+<Popover bind:open={isOpen}>
   <PopoverTrigger asChild let:builder>
-    <Button type="secondary" builders={[builder]}>Share</Button>
+    <Button type="secondary" builders={[builder]} selected={isOpen}
+      >Share</Button
+    >
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[402px] p-0">
     <Tabs>

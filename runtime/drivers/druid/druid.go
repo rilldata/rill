@@ -304,6 +304,9 @@ func dsnFromConfig(conf *configProperties) (string, error) {
 func correctURL(dsn string) (string, error) {
 	u, err := url.Parse(dsn)
 	if err != nil {
+		if strings.Contains(err.Error(), dsn) { // avoid returning the actual DSN with the password which will be logged
+			return "", fmt.Errorf("%s", strings.ReplaceAll(err.Error(), dsn, "<masked>"))
+		}
 		return "", err
 	}
 

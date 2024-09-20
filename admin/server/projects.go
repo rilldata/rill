@@ -1445,6 +1445,17 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 		attribute.String("args.project", req.Project),
 	)
 
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// check if org has blocking billing errors and return error if it does
+	err = s.admin.CheckBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -1503,6 +1514,17 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		attribute.String("args.deployment_id", req.DeploymentId),
 	)
 
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// check if org has blocking billing errors and return error if it does
+	err = s.admin.CheckBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	// For backwards compatibility, this RPC supports passing either DeploymentId or Organization+Project names
 	var proj *database.Project
 	var depl *database.Deployment
@@ -1537,7 +1559,7 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
-	_, err := s.admin.RedeployProject(ctx, proj, depl)
+	_, err = s.admin.RedeployProject(ctx, proj, depl)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

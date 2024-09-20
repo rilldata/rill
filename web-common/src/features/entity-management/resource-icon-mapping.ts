@@ -1,6 +1,6 @@
 import ApiIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
 import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-import CanvasDashboardIcon from "@rilldata/web-common/components/icons/CanvasDashboardIcon.svelte";
+import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
 import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
 import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
 import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
@@ -15,7 +15,7 @@ export const resourceIconMapping = {
   [ResourceKind.MetricsView]: MetricsExplorerIcon,
   [ResourceKind.API]: ApiIcon,
   [ResourceKind.Component]: Chart,
-  [ResourceKind.Dashboard]: CanvasDashboardIcon,
+  [ResourceKind.Canvas]: CanvasIcon,
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,
   [ResourceKind.Alert]: AlertCircleOutline,

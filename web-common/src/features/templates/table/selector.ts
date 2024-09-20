@@ -52,11 +52,11 @@ export function getTableConfig(
   return derived(
     [
       useMetricsView(instanceId, tableProperties.metrics_view),
-      useStartEndTime(instanceId, metrics_view, time_range),
+      useStartEndTime(instanceId, metrics_view, time_range.toUpperCase()),
       useComparisonStartEndTime(
         instanceId,
         metrics_view,
-        time_range,
+        time_range.toUpperCase(),
         comparison_range,
       ),
     ],
