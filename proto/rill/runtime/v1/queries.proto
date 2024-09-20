@@ -146,7 +146,7 @@ service QueryService {
     };
   }
 
-  // Dashboard APIs
+  // Canvas APIs
 
   // ResolveComponent resolves the data and renderer for a Component resource.
   rpc ResolveComponent(ResolveComponentRequest) returns (ResolveComponentResponse) {
@@ -752,7 +752,7 @@ message MetricsViewSearchResponse {
 }
 
 // **********
-// Dashboard APIs
+// Canvas APIs
 // **********
 
 message ResolveComponentRequest {

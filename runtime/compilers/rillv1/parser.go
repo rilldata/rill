@@ -49,7 +49,7 @@ type Resource struct {
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
 	ComponentSpec   *runtimev1.ComponentSpec
-	DashboardSpec   *runtimev1.DashboardSpec
+	CanvasSpec      *runtimev1.CanvasSpec
 	APISpec         *runtimev1.APISpec
 	ConnectorSpec   *runtimev1.ConnectorSpec
 }
@@ -85,7 +85,7 @@ const (
 	ResourceKindAlert
 	ResourceKindTheme
 	ResourceKindComponent
-	ResourceKindDashboard
+	ResourceKindCanvas
 	ResourceKindAPI
 	ResourceKindConnector
 )
@@ -114,8 +114,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindTheme, nil
 	case "component":
 		return ResourceKindComponent, nil
-	case "dashboard":
-		return ResourceKindDashboard, nil
+	case "canvas":
+		return ResourceKindCanvas, nil
 	case "api":
 		return ResourceKindAPI, nil
 	case "connector":
@@ -147,8 +147,8 @@ func (k ResourceKind) String() string {
 		return "Theme"
 	case ResourceKindComponent:
 		return "Component"
-	case ResourceKindDashboard:
-		return "Dashboard"
+	case ResourceKindCanvas:
+		return "Canvas"
 	case ResourceKindAPI:
 		return "API"
 	case ResourceKindConnector:
@@ -826,8 +826,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
 	case ResourceKindComponent:
 		r.ComponentSpec = &runtimev1.ComponentSpec{}
-	case ResourceKindDashboard:
-		r.DashboardSpec = &runtimev1.DashboardSpec{}
+	case ResourceKindCanvas:
+		r.CanvasSpec = &runtimev1.CanvasSpec{}
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
 	case ResourceKindConnector:

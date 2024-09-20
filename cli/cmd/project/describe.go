@@ -111,8 +111,8 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindTheme
 	case "component":
 		return runtime.ResourceKindComponent
-	case "dashboard":
-		return runtime.ResourceKindDashboard
+	case "canvas":
+		return runtime.ResourceKindCanvas
 	case "api":
 		return runtime.ResourceKindAPI
 	case "connector":

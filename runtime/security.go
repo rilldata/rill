@@ -297,9 +297,17 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resou
 	// Everyone can access a component.
 	case ResourceKindComponent:
 		rules = append(rules, allowAccessRule)
-	// Everyone can access a dashboard.
-	case ResourceKindDashboard:
-		rules = append(rules, allowAccessRule)
+	// Determine access using the canvas' security rules. If there are none, then everyone can access it.
+	case ResourceKindCanvas:
+		spec := r.GetCanvas().State.ValidSpec
+		if spec == nil {
+			spec = r.GetCanvas().Spec // Not ideal, but better than giving access to the full resource
+		}
+		if len(spec.SecurityRules) == 0 {
+			rules = append(rules, allowAccessRule)
+		} else {
+			rules = append(rules, spec.SecurityRules...)
+		}
 	// Determine access using the metrics view's security rules. If there are none, then everyone can access it.
 	case ResourceKindMetricsView:
 		spec := r.GetMetricsView().State.ValidSpec
