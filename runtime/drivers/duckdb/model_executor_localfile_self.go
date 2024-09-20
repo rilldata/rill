@@ -2,11 +2,7 @@ package duckdb
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -117,16 +113,6 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		View:          asView,
 		UsedModelName: usedModelName,
 	}
-	if inputProps.InvalidateOnChange {
-		resultProps.LocalFilePathsToHashes = make(map[string]any, len(localPaths))
-		// Need to store file path and its hashe to invalidate on change
-		for _, p := range localPaths {
-			resultProps.LocalFilePathsToHashes[p], err = fileHash(p)
-			if err != nil {
-				return nil, fmt.Errorf("failed to hash local file: %w", err)
-			}
-		}
-	}
 	resultPropsMap := map[string]interface{}{}
 	err = mapstructure.WeakDecode(resultProps, &resultPropsMap)
 	if err != nil {
@@ -139,18 +125,4 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Properties: resultPropsMap,
 		Table:      tableName,
 	}, nil
-}
-
-func fileHash(path string) (string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	hasher := md5.New()
-	if _, err := io.Copy(hasher, file); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hasher.Sum(nil)), nil
 }

@@ -2,13 +2,16 @@ package rillv1
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -109,6 +112,44 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		inputProps["sql"] = sql
 	}
 
+	// special handling to mark model as updated when local file changes
+	if inputConnector == "local_file" {
+		path, ok := inputProps["path"].(string)
+		if ok {
+			entries, err := p.Repo.ListRecursive(ctx, path, true)
+			if err == nil && len(entries) > 0 {
+				var localPaths []string
+				root, err := p.Repo.Root(ctx)
+				if err != nil {
+					return err
+				}
+
+				// Update parser's localDataToResourcepath map to track which resources depend on the local file
+				for _, entry := range entries {
+					localPaths = append(localPaths, filepath.Join(root, entry.Path))
+					resources, ok := p.localDataToResourcepath[entry.Path]
+					if !ok {
+						resources = make(map[string]any)
+						p.localDataToResourcepath[entry.Path] = resources
+					}
+					for _, resPath := range node.Paths {
+						resources[resPath] = nil
+					}
+				}
+
+				if c, ok := inputProps["invalidate_on_change"].(bool); ok && c {
+					// Calculate hash of local files
+					hash, err := fileHash(localPaths)
+					if err != nil {
+						return err
+					}
+					// Add hash to input properties so that the model spec is considered updated when the local file changes
+					inputProps["local_files_hash"] = hash
+				}
+			}
+		}
+	}
+
 	inputPropsPB, err := structpb.NewStruct(inputProps)
 	if err != nil {
 		return fmt.Errorf(`found invalid input property type: %w`, err)
@@ -144,31 +185,6 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		outputPropsPB, err = structpb.NewStruct(outputProps)
 		if err != nil {
 			return fmt.Errorf(`invalid property type in "output": %w`, err)
-		}
-	}
-
-	// hack to mark model as updated when local file changes
-	if inputConnector == "local_file" {
-		path, ok := inputProps["path"].(string)
-		if ok {
-			root, err := p.Repo.Root(ctx)
-			if err != nil {
-				return err
-			}
-			localPaths, err := doublestar.FilepathGlob(filepath.Join(root, path))
-			if err == nil {
-				for _, localPath := range localPaths {
-					localPath = strings.TrimPrefix(localPath, root)
-					resources := p.LocalDataToResourcepath[localPath]
-					if _, ok := p.LocalDataToResourcepath[localPath]; !ok {
-						resources = make(map[string]any)
-						p.LocalDataToResourcepath[localPath] = resources
-					}
-					for _, resPath := range node.Paths {
-						resources[resPath] = nil
-					}
-				}
-			}
 		}
 	}
 
@@ -275,4 +291,21 @@ func findLineNumber(text string, pos int) int {
 	}
 
 	return lineNumber
+}
+
+func fileHash(paths []string) (string, error) {
+	hasher := md5.New()
+	for _, path := range paths {
+		file, err := os.Open(path)
+		if err != nil {
+			return "", err
+		}
+
+		if _, err := io.Copy(hasher, file); err != nil {
+			file.Close()
+			return "", err
+		}
+		file.Close()
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }

@@ -196,12 +196,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 					}
 					continue
 				}
-				paths, ok := parser.LocalDataToResourcepath[e.Path]
-				if ok {
-					changedPaths = append(changedPaths, keys(paths)...)
-					hasDuplicates = true
-				}
-				continue
 			}
 			changedPaths = append(changedPaths, e.Path)
 		}
@@ -689,10 +683,6 @@ func equalSourceSpec(a, b *runtimev1.SourceSpec) bool {
 }
 
 func equalModelSpec(a, b *runtimev1.ModelSpec) bool {
-	if a.InputConnector == "local_file" {
-		// hack to make sure that models with `local_file` as input connector are always reconciled
-		return false
-	}
 	return proto.Equal(a, b)
 }
 

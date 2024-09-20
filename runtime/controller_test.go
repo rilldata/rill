@@ -88,7 +88,7 @@ measures:
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
 					ResultConnector:   "duckdb",
-					ResultProperties:  must(structpb.NewStruct(map[string]any{"paths_to_hashes": map[string]any{}, "table": "bar", "used_model_name": true, "view": true})),
+					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "bar", "used_model_name": true, "view": true})),
 					ResultTable:       "bar",
 				},
 			},
@@ -577,7 +577,7 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	modelRes.Meta.Name.Name = "bar_new"
 	modelRes.Meta.FilePaths[0] = "/models/bar_new.sql"
-	model.State.ResultProperties = must(structpb.NewStruct(map[string]any{"paths_to_hashes": map[string]any{}, "table": "bar_new", "used_model_name": true, "view": true}))
+	model.State.ResultProperties = must(structpb.NewStruct(map[string]any{"table": "bar_new", "used_model_name": true, "view": true}))
 	model.State.ResultTable = "bar_new"
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar_new")
@@ -589,7 +589,7 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	modelRes.Meta.Name.Name = "Bar_New"
 	modelRes.Meta.FilePaths[0] = "/models/Bar_New.sql"
-	model.State.ResultProperties = must(structpb.NewStruct(map[string]any{"paths_to_hashes": map[string]any{}, "table": "Bar_New", "used_model_name": true, "view": true}))
+	model.State.ResultProperties = must(structpb.NewStruct(map[string]any{"table": "Bar_New", "used_model_name": true, "view": true}))
 	model.State.ResultTable = "Bar_New"
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "Bar_New")
@@ -1290,7 +1290,7 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
 			ResultConnector:   "duckdb",
-			ResultProperties:  must(structpb.NewStruct(map[string]any{"paths_to_hashes": map[string]any{}, "table": name, "used_model_name": true, "view": true})),
+			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": true})),
 			ResultTable:       name,
 		},
 	}

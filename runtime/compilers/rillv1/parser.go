@@ -179,7 +179,7 @@ type Parser struct {
 	Errors    []*runtimev1.ParseError
 
 	// Mapping of local data files to resource paths that depend on them
-	LocalDataToResourcepath map[string]map[string]any
+	localDataToResourcepath map[string]map[string]any
 
 	// Internal state
 	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths
@@ -272,7 +272,14 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 // IsSkippable returns true if the path will be skipped by Reparse.
 // It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
 func (p *Parser) IsSkippable(path string) bool {
-	return pathIsIgnored(path) || !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+	if pathIsIgnored(path) {
+		return true
+	}
+	_, ok := p.localDataToResourcepath[path]
+	if ok {
+		return false
+	}
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
 }
 
 // TrackedPathsInDir returns the paths under the given directory that the parser currently has cached results for.
@@ -298,7 +305,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.DotEnv = nil
 	p.Resources = make(map[ResourceName]*Resource)
 	p.Errors = nil
-	p.LocalDataToResourcepath = make(map[string]map[string]any)
+	p.localDataToResourcepath = make(map[string]map[string]any)
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
 	p.insertedResources = nil
@@ -375,6 +382,15 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 
 		// Skip ignored paths
 		if pathIsIgnored(path) {
+			continue
+		}
+
+		// add paths corresponding to local data files
+		resources, ok := p.localDataToResourcepath[path]
+		if ok {
+			for res := range resources {
+				checkPaths = append(checkPaths, res)
+			}
 			continue
 		}
 
