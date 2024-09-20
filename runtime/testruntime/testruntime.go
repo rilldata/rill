@@ -18,6 +18,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"go.uber.org/zap"
 
 	// Load database drivers for testing.
@@ -86,6 +88,12 @@ type InstanceOptions struct {
 	Variables    map[string]string
 	WatchRepo    bool
 	StageChanges bool
+}
+
+type InstanceOptionsForResolvers struct {
+	InstanceOptions
+	OLAPDriver string
+	OLAPDSN    string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -157,6 +165,105 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	return rt, inst.ID
 }
 
+func NewInstanceForResolvers(t *testing.T, opts InstanceOptionsForResolvers) (*runtime.Runtime, string) {
+	rt := New(t)
+
+	if opts.OLAPDriver == "" {
+		opts.OLAPDriver = "duckdb"
+		opts.OLAPDSN = ":memory:"
+	}
+
+	tmpDir := t.TempDir()
+
+	switch opts.OLAPDriver {
+	case "clickhouse":
+		ctx := context.Background()
+		clickHouseContainer, err := clickhouse.Run(
+			ctx,
+			"clickhouse/clickhouse-server:24.6.2.17",
+			clickhouse.WithUsername("clickhouse"),
+			clickhouse.WithPassword("clickhouse"),
+			clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+			withUsersConfig("../testruntime/testdata/users.xml"),
+		)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			err := clickHouseContainer.Terminate(ctx)
+			require.NoError(t, err)
+		})
+
+		host, err := clickHouseContainer.Host(ctx)
+		require.NoError(t, err)
+		port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+		require.NoError(t, err)
+
+		opts.OLAPDSN = fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
+	case "druid":
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil { // avoid .env in CI environment
+			require.NoError(t, godotenv.Load(envPath))
+		}
+
+		opts.OLAPDSN = os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
+		require.NotEqual(t, "", opts.OLAPDSN)
+	}
+
+	vars := make(map[string]string)
+	maps.Copy(vars, opts.Variables)
+	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+
+	inst := &drivers.Instance{
+		Environment:      "test",
+		OLAPConnector:    opts.OLAPDriver,
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": tmpDir},
+			},
+			{
+				Type:   opts.OLAPDriver,
+				Name:   opts.OLAPDriver,
+				Config: map[string]string{"dsn": opts.OLAPDSN},
+			},
+			{
+				Type: "sqlite",
+				Name: "catalog",
+				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+				// "cache=shared" is needed to prevent threading problems.
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+			},
+		},
+		Variables: vars,
+		WatchRepo: opts.WatchRepo,
+	}
+
+	for path, data := range opts.Files {
+		abs := filepath.Join(tmpDir, path)
+		require.NoError(t, os.MkdirAll(filepath.Dir(abs), os.ModePerm))
+		require.NoError(t, os.WriteFile(abs, []byte(data), 0o644))
+	}
+
+	err := rt.CreateInstance(context.Background(), inst)
+	require.NoError(t, err)
+	require.NotEmpty(t, inst.ID)
+
+	ctrl, err := rt.Controller(context.Background(), inst.ID)
+	require.NoError(t, err)
+
+	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilIdle(context.Background(), opts.WatchRepo)
+	require.NoError(t, err)
+
+	return rt, inst.ID
+}
+
 // NewInstance is a convenience wrapper around NewInstanceWithOptions, using defaults sensible for most tests.
 func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	return NewInstanceWithOptions(t, InstanceOptions{
@@ -185,9 +292,22 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", name)
 
+	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER") // todo: refactor a couple of tests that use envs
+	if olapDriver == "" {
+		olapDriver = "duckdb"
+	}
+	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
+	if olapDSN == "" {
+		olapDSN = ":memory:"
+	}
+	embedCatalog := true
+	if olapDriver == "clickhouse" {
+		embedCatalog = false
+	}
+
 	inst := &drivers.Instance{
 		Environment:      "test",
-		OLAPConnector:    "duckdb",
+		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
@@ -197,9 +317,9 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": projectPath},
 			},
 			{
-				Type:   "duckdb",
-				Name:   "duckdb",
-				Config: map[string]string{"dsn": ":memory:"},
+				Type:   olapDriver,
+				Name:   olapDriver,
+				Config: map[string]string{"dsn": olapDSN},
 			},
 			{
 				Type: "sqlite",
@@ -209,7 +329,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		EmbedCatalog: true,
+		EmbedCatalog: embedCatalog,
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)
@@ -287,4 +407,17 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 	require.NoError(t, err)
 
 	return rt, inst.ID, nil
+}
+
+func withUsersConfig(configFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      configFile,
+			ContainerFilePath: "/etc/clickhouse-server/users.xml",
+			FileMode:          0o755,
+		}
+		req.Files = append(req.Files, cf)
+
+		return nil
+	}
 }

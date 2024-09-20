@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
 
 type Provider interface {
@@ -16,6 +18,9 @@ type Provider interface {
 	DeleteCustomer(ctx context.Context, customerID string) error
 	// GetBillingPortalURL returns the payment portal URL to collect payment information from the customer.
 	GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error)
+
+	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers. jobs is used to enqueue jobs for processing the webhook events.
+	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler
 }
 
 type Customer struct {

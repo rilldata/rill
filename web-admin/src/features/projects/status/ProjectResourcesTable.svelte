@@ -83,7 +83,7 @@
 <div class="border rounded-md">
   <Table.Root {...$tableAttrs}>
     <Table.Header>
-      {#each $headerRows as headerRow}
+      {#each $headerRows as headerRow (headerRow.id)}
         <Subscribe rowAttrs={headerRow.attrs()}>
           <Table.Row>
             {#each headerRow.cells as cell (cell.id)}
