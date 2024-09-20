@@ -207,7 +207,7 @@
     </div>
 
     <!-- TODO: revisit when time range lock is implemented -->
-    <div class="mt-4" class:mb-4={!hasWhereFilter}>
+    <!-- <div class="mt-4" class:mb-4={!hasWhereFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
 
@@ -218,7 +218,7 @@
               <InfoCircle size="12px" />
             </div>
             <TooltipContent maxWidth="400px" slot="tooltip-content">
-              Lock time range to prevent the user from changing the time range.
+              Only data within this range will be visible
             </TooltipContent>
           </Tooltip>
         </div>
@@ -232,7 +232,7 @@
           </label>
         </div>
       {/if}
-    </div>
+    </div> -->
 
     {#if hasWhereFilter}
       <Divider marginTop={4} marginBottom={4} />
