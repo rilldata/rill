@@ -26,7 +26,7 @@
   $: ({
     organization: orgName,
     project: projectName,
-    name: exploreName,
+    dashboard: exploreName,
   } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
@@ -87,7 +87,7 @@
     {#key metricViewName}
       <StateManagersProvider metricsViewName={metricViewName} {exploreName}>
         {#if $user.isSuccess && $user.data.user}
-          <DashboardBookmarksStateProvider {metricViewName}>
+          <DashboardBookmarksStateProvider {metricViewName} {exploreName}>
             <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
                 <Dashboard {metricViewName} {exploreName} />

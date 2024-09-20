@@ -10,8 +10,9 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
   export let metricViewName: string;
+  export let exploreName: string;
 
-  $: initLocalUserPreferenceStore(metricViewName);
+  $: initLocalUserPreferenceStore(exploreName);
   const queryClient = useQueryClient();
   const homeBookmark = getHomeBookmarkData(
     queryClient,
@@ -19,6 +20,7 @@
     $page.params.organization,
     $page.params.project,
     metricViewName,
+    exploreName,
   );
 
   $: dashboardStoreReady = createDashboardStateSync(

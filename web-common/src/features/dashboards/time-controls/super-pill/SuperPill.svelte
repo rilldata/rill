@@ -32,6 +32,7 @@
   const ctx = getStateManagers();
   const {
     metricsViewName,
+    exploreName,
     selectors: {
       timeRangeSelectors: { timeRangeSelectorState },
       charts: { canPanLeft, canPanRight, getNewPanRange },
@@ -39,7 +40,7 @@
     validSpecStore,
   } = ctx;
 
-  $: localUserPreferences = initLocalUserPreferenceStore(metricViewName);
+  $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
 
   $: metricViewName = $metricsViewName;
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};

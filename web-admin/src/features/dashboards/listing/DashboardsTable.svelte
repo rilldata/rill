@@ -37,12 +37,12 @@
         const name = resource.meta.name.name;
 
         // If not a Metrics Explorer, it's a Custom Dashboard.
-        const isMetricsExplorer = !!resource?.metricsView;
+        const isMetricsExplorer = !!resource?.explore;
         const title = isMetricsExplorer
-          ? resource.metricsView.spec.title
+          ? resource.explore.spec.title
           : resource.dashboard.spec.title;
         const description = isMetricsExplorer
-          ? resource.metricsView.spec.description
+          ? resource.explore.spec.description
           : "";
 
         return flexRender(DashboardsTableCompositeCell, {
@@ -60,9 +60,9 @@
       id: "title",
       accessorFn: (row: DashboardResource) => {
         const resource = row.resource;
-        const isMetricsExplorer = !!resource?.metricsView;
+        const isMetricsExplorer = !!resource?.explore;
         return isMetricsExplorer
-          ? resource.metricsView.spec.title
+          ? resource.explore.spec.title
           : resource.dashboard.spec.title;
       },
     },
@@ -78,8 +78,8 @@
       id: "description",
       accessorFn: (row: DashboardResource) => {
         const resource = row.resource;
-        const isMetricsExplorer = !!resource?.metricsView;
-        return isMetricsExplorer ? resource.metricsView.spec.description : "";
+        const isMetricsExplorer = !!resource?.explore;
+        return isMetricsExplorer ? resource.explore.spec.description : "";
       },
     },
   ];

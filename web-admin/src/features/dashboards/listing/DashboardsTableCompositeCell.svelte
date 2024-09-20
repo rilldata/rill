@@ -24,7 +24,7 @@
   $: href = isEmbedded
     ? undefined
     : isMetricsExplorer
-      ? `/${organization}/${project}/${name}`
+      ? `/${organization}/${project}/explore/${name}`
       : `/${organization}/${project}/-/dashboards/${name}`;
 </script>
 

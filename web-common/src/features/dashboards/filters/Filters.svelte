@@ -25,6 +25,7 @@
   const StateManagers = getStateManagers();
   const {
     metricsViewName,
+    exploreName,
     actions: {
       dimensionsFilter: {
         toggleDimensionValueSelection,
@@ -107,7 +108,7 @@
           {selectedComparisonTimeRange}
         />
         {#if !$showPivot && minTimeGrain}
-          <TimeGrainSelector metricViewName={$metricsViewName} />
+          <TimeGrainSelector exploreName={$exploreName} />
         {/if}
       {/if}
     </div>
