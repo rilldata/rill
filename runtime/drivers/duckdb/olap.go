@@ -647,6 +647,28 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 			return err
 		}
 
+		// check the count of the new data
+		// skip if the count is 0
+		// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
+		res, err := c.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp)),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		var empty bool
+		for res.Next() {
+			if err := res.Scan(&empty); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+		if empty {
+			return nil
+		}
+
 		// Drop the rows from the target table where the unique key is present in the temporary table
 		where := ""
 		for i, key := range uniqueKey {
