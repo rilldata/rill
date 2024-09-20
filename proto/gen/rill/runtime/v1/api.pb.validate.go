@@ -7782,6 +7782,10 @@ func (m *GetModelSplitsRequest) validate(all bool) error {
 
 	// no validation rules for Model
 
+	// no validation rules for Pending
+
+	// no validation rules for Errored
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 10000 {

@@ -343,6 +343,8 @@ export type QueryServiceColumnCardinalityParams = {
 };
 
 export type RuntimeServiceGetModelSplitsParams = {
+  pending?: boolean;
+  errored?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
