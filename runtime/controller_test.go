@@ -1152,7 +1152,7 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func TestDashboardTheme(t *testing.T) {
+func TestExploreTheme(t *testing.T) {
 	// Create source and model
 	rt, id := testruntime.NewInstance(t)
 	testruntime.PutFiles(t, rt, id, map[string]string{

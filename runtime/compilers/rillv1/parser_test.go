@@ -1009,7 +1009,7 @@ SELECT * FROM t2
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
-func TestProjectDashboardDefaults(t *testing.T) {
+func TestProjectMetricsViewDefaults(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		// Provide metrics view defaults in rill.yaml
@@ -1539,7 +1539,7 @@ colors:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
-func TestComponentsAndDashboard(t *testing.T) {
+func TestComponentsAndCanvas(t *testing.T) {
 	vegaLiteSpec := `
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
@@ -1580,8 +1580,8 @@ line_chart:
   x: time
   y: total_sales
 `,
-		`dashboards/d1.yaml`: `
-type: dashboard
+		`canvases/d1.yaml`: `
+type: canvas
 columns: 4
 gap: 3
 items:
@@ -1630,25 +1630,25 @@ items:
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-2"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/canvases/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello world!"})),
-				DefinedInDashboard: true,
+				DefinedInCanvas:    true,
 			},
 		},
 		{
-			Name:  ResourceName{Kind: ResourceKindDashboard, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "d1"},
+			Paths: []string{"/canvases/d1.yaml"},
 			Refs: []ResourceName{
 				{Kind: ResourceKindComponent, Name: "c1"},
 				{Kind: ResourceKindComponent, Name: "c2"},
 				{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			},
-			DashboardSpec: &runtimev1.DashboardSpec{
+			CanvasSpec: &runtimev1.CanvasSpec{
 				Columns: 4,
 				Gap:     3,
-				Items: []*runtimev1.DashboardItem{
+				Items: []*runtimev1.CanvasItem{
 					{Component: "c1"},
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
 					{Component: "d1--component-2"},
@@ -1888,7 +1888,6 @@ measures:
 func TestRefreshInDev(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
-		// Provide dashboard defaults in rill.yaml
 		`rill.yaml`: ``,
 		// model m1
 		`m1.yaml`: `
