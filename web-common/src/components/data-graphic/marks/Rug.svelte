@@ -3,7 +3,7 @@
   import { getContext } from "svelte";
   import { contexts } from "../../../components/data-graphic/constants";
   import WithSimpleLinearScale from "../../../components/data-graphic/functional-components/WithSimpleLinearScale.svelte";
-  import type { ScaleStore } from "../../../components/data-graphic/state/types";
+  import type { ScaleStore } from "../state/types";
   import type { SimpleConfigurationStore } from "../state/types";
   import type { NumericOutliersOutlier } from "@rilldata/web-common/runtime-client";
 

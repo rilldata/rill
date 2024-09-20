@@ -268,7 +268,9 @@ export function getDimensionValueTimeSeries(
   ctx: StateManagers,
   measures: string[],
   surface: "chart" | "table",
+  visible = true,
 ): Readable<DimensionDataItem[]> {
+  if (!visible) return derived([], () => []);
   return derived(
     [
       ctx.dashboardStore,

@@ -3,10 +3,7 @@
   import { tweened } from "svelte/motion";
   import { outline } from "../../../components/data-graphic/actions/outline";
   import { contexts } from "../../../components/data-graphic/constants";
-  import type {
-    ScaleStore,
-    SimpleConfigurationStore,
-  } from "../../../components/data-graphic/state/types";
+  import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
 
   const config = getContext(contexts.config) as SimpleConfigurationStore;
   const xScale = getContext(contexts.scale("x")) as ScaleStore;

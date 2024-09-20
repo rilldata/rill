@@ -33,15 +33,19 @@
   import { onMount } from "svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
+  import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
+  import { getFilteredMeasuresAndDimensions } from "../state-managers/selectors/measures";
+  import { useMetricsView } from "../selectors";
 
+  const StateManagers = getStateManagers();
   const {
     dashboardStore: dashboardStoreReadable,
     selectors: {
       dimensions: { comparisonDimension },
     },
-  } = getStateManagers();
+  } = StateManagers;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(StateManagers);
 
   export let measure: MetricsViewSpecMeasureV2;
   export let isValidPercTotal: boolean;
@@ -77,13 +81,26 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: isInTimeDimensionView = Boolean(expandedMeasureName);
+  $: metricsViewQuery = useMetricsView(instanceId, metricViewName);
+
+  $: metricsView = $metricsViewQuery.data;
+
+  $: isPercOfTotalAsContextColumn =
+    dashboardStore?.leaderboardContextColumn ===
+    LeaderboardContextColumn.PERCENT;
 
   $: measureName = measure.name as string;
 
   $: dashboardStore = $dashboardStoreReadable;
 
   $: timeControls = $timeControlsStore;
+
+  $: timeGranularity =
+    timeControls.selectedTimeRange?.interval ??
+    timeControls.minTimeGrain ??
+    V1TimeGrain.TIME_GRAIN_DAY;
+
+  $: tddChartType = dashboardStore?.tdd?.chartType;
 
   $: whereFilter = sanitiseExpression(
     mergeMeasureFilters(dashboardStore),
@@ -95,32 +112,6 @@
     (e) => !matchExpressionByName(e, $comparisonDimension?.name ?? ""),
   );
 
-  $: comparisonTimeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
-    instanceId,
-    metricViewName,
-    {
-      measureNames: [measureName],
-      where: whereFilter,
-      timeStart: timeControls.comparisonAdjustedStart,
-      timeEnd: timeControls.comparisonAdjustedEnd,
-      timeGranularity:
-        timeControls.selectedTimeRange?.interval ?? timeControls.minTimeGrain,
-      timeZone: dashboardStore.selectedTimezone,
-    },
-    {
-      query: {
-        enabled:
-          visible &&
-          !!timeControls.ready &&
-          !!dashboardStore &&
-          // in case of comparison, we need to wait for the comparison start time to be available
-          (!isComparison || !!timeControls.comparisonAdjustedStart),
-
-        keepPreviousData: true,
-      },
-    },
-  );
-
   $: primaryTimeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
     instanceId,
     metricViewName,
@@ -129,35 +120,36 @@
       where: whereFilter,
       timeStart: timeControls.adjustedStart,
       timeEnd: timeControls.adjustedEnd,
-      timeGranularity:
-        timeControls.selectedTimeRange?.interval ?? timeControls.minTimeGrain,
+      timeGranularity,
       timeZone: dashboardStore.selectedTimezone,
     },
     {
       query: {
         enabled: visible && !!timeControls.ready && !!dashboardStore,
-
         keepPreviousData: true,
       },
     },
   );
 
-  $: comparisonTotalQuery = createQueryServiceMetricsViewAggregation(
+  $: comparisonTimeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
     instanceId,
     metricViewName,
     {
-      measures: [measure],
+      measureNames: [measureName],
       where: whereFilter,
-      timeRange: {
-        start: timeControls?.comparisonTimeStart,
-
-        end: timeControls?.comparisonTimeEnd,
-      },
+      timeStart: timeControls.comparisonAdjustedStart,
+      timeEnd: timeControls.comparisonAdjustedEnd,
+      timeGranularity,
+      timeZone: dashboardStore.selectedTimezone,
     },
     {
       query: {
         enabled:
-          visible && !isComparison && !!timeControls.ready && !!dashboardStore,
+          visible &&
+          !!timeControls.ready &&
+          !!dashboardStore &&
+          (!isComparison || !!timeControls.comparisonAdjustedStart),
+        keepPreviousData: true,
       },
     },
   );
@@ -180,6 +172,25 @@
     },
   );
 
+  $: comparisonTotalQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricViewName,
+    {
+      measures: [measure],
+      where: whereFilter,
+      timeRange: {
+        start: timeControls?.comparisonTimeStart,
+        end: timeControls?.comparisonTimeEnd,
+      },
+    },
+    {
+      query: {
+        enabled:
+          visible && isComparison && !!timeControls.ready && !!dashboardStore,
+      },
+    },
+  );
+
   $: unfilteredTotalQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricViewName,
@@ -198,48 +209,45 @@
     },
   );
 
-  $: ({ data: unfilteredTotalData } = $unfilteredTotalQuery);
-
-  $: unfilteredTotal = unfilteredTotalData?.data?.[0]?.[measureName];
-
-  $: interval =
-    timeControls.selectedTimeRange?.interval ??
-    timeControls.minTimeGrain ??
-    V1TimeGrain.TIME_GRAIN_DAY;
-
   $: ({ data: primaryData, error: primaryError } = $primaryTimeSeriesQuery);
-  $: comparison = $comparisonTimeSeriesQuery;
-
-  $: intervalDuration = TIME_GRAIN[interval]?.duration as Period;
-
-  $: formattedData = prepareTimeSeries(
-    primaryData?.data || [],
-    comparison?.data?.data || [],
-    intervalDuration,
-    dashboardStore.selectedTimezone,
-  );
-
-  $: isPercOfTotalAsContextColumn =
-    dashboardStore?.leaderboardContextColumn ===
-    LeaderboardContextColumn.PERCENT;
+  $: ({ data: comparisonData } = $comparisonTimeSeriesQuery);
 
   $: ({
     error: primaryTotalError,
     isFetching: primaryTotalIsFetching,
     data: primaryTotalData,
   } = $primaryTotalQuery);
-
-  $: primaryTotal = primaryTotalData?.data?.[0]?.[measureName];
-
   $: ({ data: comparisonTotalData } = $comparisonTotalQuery);
+  $: ({ data: unfilteredTotalData } = $unfilteredTotalQuery);
 
+  $: unfilteredTotal = unfilteredTotalData?.data?.[0]?.[measureName];
+  $: primaryTotal = primaryTotalData?.data?.[0]?.[measureName];
   $: comparisonTotal = comparisonTotalData?.data?.[0]?.[measureName];
-  $: tddChartType = dashboardStore?.tdd?.chartType;
 
-  $: dimensionData = [];
+  $: intervalDuration = TIME_GRAIN[timeGranularity]?.duration as Period;
+
+  $: formattedData = prepareTimeSeries(
+    primaryData?.data || [],
+    comparisonData?.data || [],
+    intervalDuration,
+    dashboardStore.selectedTimezone,
+  );
+
+  $: ({ measures: filteredMeasures } = getFilteredMeasuresAndDimensions({
+    dashboard: dashboardStore,
+  })(metricsView ?? {}, metricsView?.measures?.map((m) => m.name ?? "") ?? []));
+
+  $: dimensionDataQuery = getDimensionValueTimeSeries(
+    StateManagers,
+    filteredMeasures,
+    "chart",
+    visible,
+  );
+
+  $: dimensionData = $dimensionDataQuery;
 
   $: if (
-    isInTimeDimensionView &&
+    expandedMeasureName &&
     formattedData &&
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
@@ -257,7 +265,7 @@
   <MeasureBigNumber
     {measure}
     value={primaryTotal}
-    isMeasureExpanded={isInTimeDimensionView}
+    isMeasureExpanded={!!expandedMeasureName}
     showComparison={isComparison}
     comparisonValue={comparisonTotal}
     errorMessage={primaryTotalError?.message}
@@ -285,7 +293,7 @@
     </div>
   {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
     <TDDAlternateChart
-      timeGrain={interval}
+      timeGrain={timeGranularity}
       chartType={tddChartType}
       {expandedMeasureName}
       totalsData={formattedData}
@@ -335,11 +343,11 @@
         });
       }}
     />
-  {:else if formattedData && interval}
+  {:else if formattedData && timeGranularity}
     <MeasureChart
       bind:mouseoverValue
       {measure}
-      {isInTimeDimensionView}
+      isInTimeDimensionView={!!expandedMeasureName}
       {isScrubbing}
       {scrubStart}
       {scrubEnd}
@@ -349,7 +357,7 @@
       zone={dashboardStore.selectedTimezone}
       xAccessor="ts_position"
       labelAccessor="ts"
-      timeGrain={interval}
+      timeGrain={timeGranularity}
       yAccessor={measure.name}
       xMin={startValue}
       xMax={endValue}
@@ -358,10 +366,10 @@
         ? primaryTotal
         : null}
       mouseoverTimeFormat={(value) => {
-        return interval
+        return timeGranularity
           ? new Date(value).toLocaleDateString(
               undefined,
-              TIME_GRAIN[interval].formatDate,
+              TIME_GRAIN[timeGranularity].formatDate,
             )
           : value.toString();
       }}

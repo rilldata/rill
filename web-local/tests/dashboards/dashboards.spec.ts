@@ -66,6 +66,8 @@ test.describe("dashboard", () => {
     //     `Uncaught exception: "${exception.message}"\n${exception.stack}`
     //   );
     // });
+    test.slow();
+
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);

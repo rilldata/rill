@@ -42,7 +42,6 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-
   import { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let measure: MetricsViewSpecMeasureV2;
