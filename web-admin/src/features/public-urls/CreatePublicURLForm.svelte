@@ -27,6 +27,8 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
+  import { DateTime, Interval } from "luxon";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -42,19 +44,7 @@
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
-  $: ({
-    selectedTimeRange,
-    allTimeRange,
-    showTimeComparison,
-    selectedComparisonTimeRange,
-    minTimeGrain,
-  } = $timeControlsStore);
-
-  // $: console.log("selectedTimeRange: ", selectedTimeRange);
-  // $: console.log("allTimeRange: ", allTimeRange);
-  // $: console.log("showTimeComparison: ", showTimeComparison);
-  // $: console.log("selectedComparisonTimeRange: ", selectedComparisonTimeRange);
-  // $: console.log("minTimeGrain: ", minTimeGrain);
+  $: ({ selectedTimeRange, allTimeRange } = $timeControlsStore);
 
   $: ({ organization, project } = $page.params);
 
@@ -134,7 +124,6 @@
   );
 
   $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
-  // $: console.log("hasWhereFilter", hasWhereFilter);
 
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
@@ -166,28 +155,14 @@
     $dashboardStore.selectedTimezone,
   );
 
-  $: lockTimeRangeLabel = $dashboardStore.selectedTimeRange
-    ? `${formatDate($dashboardStore.selectedTimeRange?.start) ?? ""} - ${formatDate($dashboardStore.selectedTimeRange?.end) ?? ""} ${abbreviation}`
-    : `${formatDate(allTimeRange?.start) ?? ""} - ${formatDate(allTimeRange?.end) ?? ""} ${abbreviation}`;
-
-  // $: console.log(
-  //   "selectedTimeRange",
-  //   formatDate($dashboardStore.selectedTimeRange?.start),
-  //   formatDate($dashboardStore.selectedTimeRange?.end),
-  // );
-  // $: console.log(
-  //   "allTimeRange",
-  //   formatDate(allTimeRange?.start),
-  //   formatDate(allTimeRange?.end),
-  // );
-
-  $: {
-    const timeRange = $dashboardStore.selectedTimeRange || allTimeRange;
-    lockTimeRangeLabel = timeRange
-      ? `${formatDate(timeRange.start) ?? ""} - ${formatDate(timeRange.end) ?? ""} ${abbreviation}`
-      : "";
-    // console.log("lockTimeRangeLabel", lockTimeRangeLabel);
-  }
+  $: timezone = $dashboardStore.selectedTimezone;
+  $: activeTimeGrain = selectedTimeRange?.interval;
+  $: interval = selectedTimeRange?.start
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(timezone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(timezone),
+      )
+    : undefined;
 </script>
 
 {#if !token}
@@ -231,11 +206,7 @@
       {/if}
     </div>
 
-    <!-- We currently lock time range no matter what -->
-    <!-- Does that mean we need to strip time range from the stored public url state if user decides not to lock time range? -->
-    <!-- What does locking time range mean? Does public url user get to edit the time range? -->
-    <!-- If locked, is it read only? -->
-    <!-- TODO: provide ability to not lock time range -->
+    <!-- TODO: revisit when time range lock is implemented -->
     <div class="mt-4" class:mb-4={!hasWhereFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
@@ -255,7 +226,9 @@
       {#if lockTimeRange}
         <div class="w-full pl-[30px]">
           <label for="lock-time-range" class="text-slate-500 font-medium">
-            {lockTimeRangeLabel}
+            {#if interval.isValid}
+              <RangeDisplay {interval} grain={activeTimeGrain} {abbreviation} />
+            {/if}
           </label>
         </div>
       {/if}
