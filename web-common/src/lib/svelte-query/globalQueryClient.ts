@@ -4,7 +4,7 @@ export function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        refetchOnMount: false,
+        refetchOnMount: true,
         refetchOnReconnect: false,
         refetchOnWindowFocus: false,
         retry: false,
