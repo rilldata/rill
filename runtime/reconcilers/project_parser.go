@@ -196,6 +196,8 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 					}
 					continue
 				}
+
+				continue
 			}
 			changedPaths = append(changedPaths, e.Path)
 		}
@@ -733,12 +735,4 @@ func equalAPISpec(a, b *runtimev1.APISpec) bool {
 
 func equalConnectorSpec(a, b *runtimev1.ConnectorSpec) bool {
 	return proto.Equal(a, b)
-}
-
-func keys(m map[string]any) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
 }

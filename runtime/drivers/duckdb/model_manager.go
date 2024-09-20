@@ -111,15 +111,6 @@ func (c *connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 	}
 
 	_, err := olap.InformationSchema().Lookup(ctx, "", "", res.Table)
-	if err != nil {
-		return false, nil
-	}
-
-	props := &ModelResultProperties{}
-	err = mapstructure.Decode(res.Properties, props)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse model result properties: %w", err)
-	}
 	return err == nil, nil
 }
 
