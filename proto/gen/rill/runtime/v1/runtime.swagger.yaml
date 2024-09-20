@@ -2864,7 +2864,6 @@ definitions:
     type: object
     required:
       - name
-      - unnest
     properties:
       name:
         type: string
@@ -2895,7 +2894,6 @@ definitions:
     required:
       - name
       - expression
-      - requiredDimensions
     properties:
       name:
         type: string
@@ -4869,18 +4867,8 @@ definitions:
   v1MetricsViewSpec:
     type: object
     required:
-      - connector
-      - availableTimeRanges
-      - availableTimeZones
-      - defaultMeasures
-      - defaultDimensions
       - dimensions
       - measures
-      - model
-      - securityRules
-      - defaultComparisonMode
-      - firstDayOfWeek
-      - firstMonthOfYear
     properties:
       connector:
         type: string
@@ -4993,7 +4981,6 @@ definitions:
     type: object
     required:
       - validSpec
-      - streaming
     properties:
       validSpec:
         $ref: '#/definitions/v1MetricsViewSpec'
@@ -5172,8 +5159,8 @@ definitions:
   v1MetricsViewV2:
     type: object
     required:
-      - state
       - spec
+      - state
     properties:
       spec:
         $ref: '#/definitions/v1MetricsViewSpec'

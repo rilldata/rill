@@ -1283,12 +1283,12 @@ export interface V1MetricsViewTimeRangeResponse {
 }
 
 export interface V1MetricsViewSpec {
-  connector: string;
+  connector?: string;
   database?: string;
   databaseSchema?: string;
   table?: string;
   /** Name of the model the metrics view is based on. Either table or model should be set. */
-  model: string;
+  model?: string;
   title?: string;
   description?: string;
   timeDimension?: string;
@@ -1297,21 +1297,21 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions: MetricsViewSpecDimensionV2[];
   measures: MetricsViewSpecMeasureV2[];
-  securityRules: V1SecurityRule[];
+  securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
-  firstDayOfWeek: number;
+  firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
-  firstMonthOfYear: number;
+  firstMonthOfYear?: number;
   /** List of selected dimensions by defaults.
 Deprecated: Now defined in the Explore resource. */
-  defaultDimensions: string[];
+  defaultDimensions?: string[];
   /** List of selected measures by defaults.
 Deprecated: Now defined in the Explore resource. */
-  defaultMeasures: string[];
+  defaultMeasures?: string[];
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string.
 Deprecated: Now defined in the Explore resource. */
   defaultTimeRange?: string;
-  defaultComparisonMode: MetricsViewSpecComparisonMode;
+  defaultComparisonMode?: MetricsViewSpecComparisonMode;
   /** If comparison mode is dimension then this determines which is the default dimension.
 Deprecated: Now defined in the Explore resource. */
   defaultComparisonDimension?: string;
@@ -1320,17 +1320,17 @@ Deprecated: Now defined in the Explore resource. */
   defaultTheme?: string;
   /** List of available time ranges with comparison ranges that would replace the default list.
 Deprecated: Now defined in the Explore resource. */
-  availableTimeRanges: MetricsViewSpecAvailableTimeRange[];
+  availableTimeRanges?: MetricsViewSpecAvailableTimeRange[];
   /** Available time zones list preferred time zones using IANA location identifiers.
 Deprecated: Now defined in the Explore resource. */
-  availableTimeZones: string[];
+  availableTimeZones?: string[];
 }
 
 export interface V1MetricsViewState {
   validSpec: V1MetricsViewSpec;
   /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
 It's set to true if the metrics view is based on an externally managed table. */
-  streaming: boolean;
+  streaming?: boolean;
 }
 
 export interface V1MetricsViewSort {
@@ -2502,7 +2502,7 @@ export interface MetricsViewSpecMeasureV2 {
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
   perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions: MetricsViewSpecDimensionSelector[];
+  requiredDimensions?: MetricsViewSpecDimensionSelector[];
   referencedMeasures?: string[];
   label?: string;
   description?: string;
@@ -2517,7 +2517,7 @@ export interface MetricsViewSpecDimensionV2 {
   expression?: string;
   label?: string;
   description?: string;
-  unnest: boolean;
+  unnest?: boolean;
   uri?: string;
 }
 
