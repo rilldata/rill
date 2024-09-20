@@ -158,9 +158,11 @@ func (c *catalogStore) FindModelSplits(ctx context.Context, opts *drivers.FindMo
 	}
 
 	if opts.AfterIndex != 0 || opts.AfterKey != "" {
-		qry.WriteString(" AND (idx > ? OR (idx = ? AND key > ?)) ORDER BY idx, key")
+		qry.WriteString(" AND (idx > ? OR (idx = ? AND key > ?))")
 		args = append(args, opts.AfterIndex, opts.AfterIndex, opts.AfterKey)
 	}
+
+	qry.WriteString(" ORDER BY idx, key")
 
 	if opts.Limit != 0 {
 		qry.WriteString(" LIMIT ?")
