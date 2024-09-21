@@ -22,6 +22,7 @@
     hasDashboardWhereFilter,
   } from "./form-utils";
   import { Divider } from "@rilldata/web-common/components/menu";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -137,10 +138,8 @@
         Create a shareable public URL for this view
       </h3>
 
-      <div class="name-input-container">
-        <!-- TODO: this was added because we populate the label with the title of the dashboard -->
-        <!-- <Label for="name-input" class="text-xs">URL label</Label> -->
-        <input
+      <div class="flex flex-col gap-y-1">
+        <Input
           id="name-input"
           type="text"
           bind:value={$form.title}
@@ -160,7 +159,7 @@
           <label for="expires-at" class="text-slate-500 font-medium w-2/3">
             Access expires
           </label>
-          <input
+          <Input
             id="expires-at"
             type="date"
             bind:value={$form.expiresAt}
@@ -253,28 +252,5 @@
 
   h3 {
     @apply font-semibold;
-  }
-
-  .name-input-container {
-    @apply flex flex-col gap-y-1;
-  }
-
-  input {
-    @apply size-full outline-none border-0;
-  }
-
-  #name-input {
-    @apply flex justify-center items-center overflow-hidden;
-    @apply h-8 pl-2 w-full;
-    @apply border border-gray-300 rounded-sm;
-    @apply text-xs;
-  }
-
-  #name-input:focus-within {
-    @apply border-primary-500;
-  }
-
-  #name-input::placeholder {
-    @apply text-xs;
   }
 </style>
