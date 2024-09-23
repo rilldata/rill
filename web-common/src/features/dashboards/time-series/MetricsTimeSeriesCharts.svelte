@@ -250,7 +250,7 @@
       <div
         bind:this={parentElement}
         class:pb-4={!isInTimeDimensionView}
-        class="flex flex-col gap-y-2 w-full overflow-y-scroll h-full max-h-fit"
+        class="flex flex-col gap-y-2 w-full overflow-y-scroll h-full"
       >
         {#each renderedMeasures as measure (measure.name)}
           <ChartWithTotal

@@ -261,7 +261,7 @@
   }
 </script>
 
-<div class="flex flex-row gap-x-4w-full" bind:this={container}>
+<div class="flex flex-row gap-x-4 w-full" bind:this={container}>
   <MeasureBigNumber
     {measure}
     value={primaryTotal}
