@@ -244,7 +244,7 @@
       </Tooltip>
 
       {#if $exports}
-        <TDDExportButton {exploreName} includeScheduledReport={$adminServer} />
+        <TDDExportButton includeScheduledReport={$adminServer} />
       {/if}
       <Button
         compact

@@ -17,7 +17,7 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const { dashboardStore } = ctx;
+  const { dashboardStore, exploreName } = ctx;
   $: metricsViewProto = $dashboardStore.proto;
 
   const exportDash = createQueryServiceExport();
@@ -115,6 +115,7 @@
 {#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog && $scheduledReportsQueryArgs}
   <svelte:component
     this={CreateScheduledReportDialog}
+    exploreName={$exploreName}
     queryName="MetricsViewAggregation"
     queryArgs={$scheduledReportsQueryArgs}
     {metricsViewProto}

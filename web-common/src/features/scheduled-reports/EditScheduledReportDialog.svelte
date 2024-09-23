@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditReport } from "@rilldata/web-admin/client";
+  import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -34,6 +35,7 @@
   $: project = $page.params.project;
   $: reportName = $page.params.report;
   $: metricsViewName = getDashboardNameFromReport(reportSpec) ?? "";
+  $: exploreName = getExploreName(reportSpec.annotations?.web_open_path ?? "");
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -100,6 +102,7 @@
               webOpenState: (reportSpec.annotations as V1ReportSpecAnnotations)[
                 "web_open_state"
               ],
+              webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
             },
           },
         });

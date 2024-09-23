@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
+  import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import {
     extractAlertFormValues,
     extractAlertNotification,
@@ -51,9 +52,12 @@
     { query: { queryClient } },
   );
 
+  $: exploreName = getExploreName(alertSpec.annotations?.web_open_path ?? "");
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: alertSpec.title as string,
+      exploreName: exploreName ?? metricsViewName,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertNotification(alertSpec),
@@ -89,6 +93,7 @@
                 : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
+              webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
             },
           },
         });

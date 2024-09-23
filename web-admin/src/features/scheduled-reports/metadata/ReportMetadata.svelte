@@ -5,7 +5,7 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
   import EditScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/EditScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -36,9 +36,8 @@
 
   // Get dashboard
   $: dashboardName = useReportDashboardName($runtime.instanceId, report);
-  $: dashboard = useDashboard($runtime.instanceId, $dashboardName.data);
-  $: dashboardTitle =
-    $dashboard.data?.metricsView.spec.title || $dashboardName.data;
+  $: dashboard = useValidExplore($runtime.instanceId, $dashboardName.data);
+  $: dashboardTitle = $dashboard.data?.explore?.title || $dashboardName.data;
 
   // Get human-readable frequency
   $: humanReadableFrequency =
@@ -140,7 +139,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Dashboard</MetadataLabel>
         <MetadataValue>
-          <a href={`/${organization}/${project}/${$dashboardName.data}`}
+          <a href={`/${organization}/${project}/explore/${$dashboardName.data}`}
             >{dashboardTitle}</a
           >
         </MetadataValue>

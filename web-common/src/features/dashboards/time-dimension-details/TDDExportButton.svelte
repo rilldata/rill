@@ -13,15 +13,14 @@
   import exportTDD from "./export-tdd";
 
   export let includeScheduledReport: boolean;
-  export let exploreName: string;
 
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const { runtime, dashboardStore } = ctx;
+  const { runtime, dashboardStore, metricsViewName, exploreName } = ctx;
   $: metricsViewProto = $dashboardStore.proto;
-  const metricsView = useDashboard($runtime.instanceId, exploreName);
+  const metricsView = useDashboard($runtime.instanceId, $metricsViewName);
 
   const exportDash = createQueryServiceExport();
   const handleExportTDD = async (format: V1ExportFormat) => {
@@ -120,6 +119,7 @@
 {#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog}
   <svelte:component
     this={CreateScheduledReportDialog}
+    exploreName={$exploreName}
     queryName="MetricsViewAggregation"
     queryArgs={$scheduledReportsQueryArgs}
     {metricsViewProto}

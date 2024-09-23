@@ -26,6 +26,7 @@
   } from "./time-utils";
 
   export let open: boolean;
+  export let exploreName: string;
   export let queryName: string;
   export let queryArgs: any;
   export let metricsViewProto: string;
@@ -82,6 +83,7 @@
                 .map((r) => r.email)
                 .filter(Boolean),
               webOpenState: metricsViewProto,
+              webOpenPath: `/explore/${exploreName}`,
             },
           },
         });

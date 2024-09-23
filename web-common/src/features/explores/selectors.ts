@@ -43,6 +43,7 @@ export function useValidExplore(instanceId: string, exploreName: string) {
             metricsView: data.metricsView?.metricsView?.state?.validSpec,
           },
         queryClient,
+        enabled: !!exploreName,
       },
     },
   );
