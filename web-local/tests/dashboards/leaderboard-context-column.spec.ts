@@ -43,7 +43,7 @@ test.describe("leaderboard context column", () => {
     await watcher.updateAndWaitForDashboard(metricsWithValidPercentOfTotal);
 
     async function clickMenuItem(itemName: string, wait = true) {
-      await clickMenuButton(page, itemName);
+      await clickMenuButton(page, itemName, "option");
       if (wait) {
         await page.getByRole("menu").waitFor({ state: "hidden" });
       }

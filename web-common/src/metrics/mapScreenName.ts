@@ -17,8 +17,8 @@ export function mapScreenName(page: Page): MetricsEventScreenName {
       return MetricsEventScreenName.Model;
     case "/(application)/chart/[name]":
       return MetricsEventScreenName.Chart;
-    case "/(application)/custom-dashboard/[name]":
-      return MetricsEventScreenName.CanvasDashboard;
+    case "/(application)/canvas/[name]":
+      return MetricsEventScreenName.Canvas;
     case "/(application)":
       return MetricsEventScreenName.Home;
   }

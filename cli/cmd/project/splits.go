@@ -10,7 +10,7 @@ import (
 
 func SplitsCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, model string
-	var local bool
+	var pending, errored, local bool
 	var pageSize uint32
 	var pageToken string
 
@@ -42,6 +42,8 @@ func SplitsCmd(ch *cmdutil.Helper) *cobra.Command {
 			res, err := rt.GetModelSplits(cmd.Context(), &runtimev1.GetModelSplitsRequest{
 				InstanceId: instanceID,
 				Model:      model,
+				Pending:    pending,
+				Errored:    errored,
 				PageSize:   pageSize,
 				PageToken:  pageToken,
 			})
@@ -64,6 +66,9 @@ func SplitsCmd(ch *cmdutil.Helper) *cobra.Command {
 	splitsCmd.Flags().StringVar(&project, "project", "", "Project Name")
 	splitsCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	splitsCmd.Flags().StringVar(&model, "model", "", "Model Name")
+	splitsCmd.Flags().BoolVar(&pending, "pending", false, "Only fetch pending splits")
+	splitsCmd.Flags().BoolVar(&errored, "errored", false, "Only fetch errored splits")
+	splitsCmd.MarkFlagsMutuallyExclusive("pending", "errored")
 	splitsCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
 	splitsCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of splits to return per page")
 	splitsCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")

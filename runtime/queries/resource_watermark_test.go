@@ -19,20 +19,26 @@ func TestResourceWatermark_MetricsView(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 	testruntime.PutFiles(t, rt, instanceID, map[string]string{
 		"/models/foo.sql": fmt.Sprintf(`SELECT '%s'::TIMESTAMP as time`, ts.Add(-time.Second).Format(time.RFC3339)),
-		"/dashboards/bare.yaml": `
+		"/metrics/bare.yaml": `
+version: 1
+type: metrics_view
 model: foo
 measures:
 - name: a
   expression: count(*)
 `,
-		"/dashboards/with_time_dimension.yaml": `
+		"/metrics/with_time_dimension.yaml": `
+version: 1
+type: metrics_view
 model: foo
 timeseries: time
 measures:
 - name: a
   expression: count(*)
 `,
-		"/dashboards/with_watermark_expression.yaml": `
+		"/metrics/with_watermark_expression.yaml": `
+version: 1
+type: metrics_view
 model: foo
 timeseries: time
 watermark: max(time) - interval '1 day'

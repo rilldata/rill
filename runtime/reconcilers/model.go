@@ -902,7 +902,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	// This enables the first split to create the initial result (such as a table) that the other splits incrementally build upon.
 	if !incrementalRun {
 		// Find the first split
-		splits, err := catalog.FindModelSplitsByPending(ctx, model.State.SplitsModelId, 1)
+		splits, err := catalog.FindModelSplits(ctx, &drivers.FindModelSplitsOptions{
+			ModelID:      model.State.SplitsModelId,
+			WherePending: true,
+			Limit:        1,
+		})
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to load first split: %w", err)
 		}
@@ -930,7 +934,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Get a batch of pending splits
 		// Note: We do this when no workers are running because splits are considered pending if they have not completed execution yet.
 		// This reduces concurrency when processing the last handful of splits in each batch, but with large batch sizes it's worth the simplicity for now.
-		splits, err := catalog.FindModelSplitsByPending(ctx, model.State.SplitsModelId, _modelPendingSplitsBatchSize)
+		splits, err := catalog.FindModelSplits(ctx, &drivers.FindModelSplitsOptions{
+			ModelID:      model.State.SplitsModelId,
+			WherePending: true,
+			Limit:        _modelPendingSplitsBatchSize,
+		})
 		if err != nil {
 			return "", nil, err
 		}
@@ -1310,9 +1318,14 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 	}
 	defer release()
 
+	repoRoot, err := repo.Root(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repo root: %w", err)
+	}
+
 	return &drivers.ModelEnv{
 		AllowHostAccess:    r.C.Runtime.AllowHostAccess(),
-		RepoRoot:           repo.Root(),
+		RepoRoot:           repoRoot,
 		StageChanges:       cfg.StageChanges,
 		DefaultMaterialize: cfg.ModelDefaultMaterialize,
 		AcquireConnector:   r.C.AcquireConn,

@@ -1,9 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
+  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
+  import {
+    useValidCanvases,
+    useValidDashboards,
+  } from "@rilldata/web-common/features/dashboards/selectors.js";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
@@ -17,21 +21,15 @@
   } = $page);
 
   $: dashboardsQuery = useValidDashboards(instanceId);
+  $: canvasQuery = useValidCanvases(instanceId);
   $: projectTitleQuery = useProjectTitle(instanceId);
 
   $: projectTitle = $projectTitleQuery.data ?? "Untitled Rill Project";
 
   $: dashboards = $dashboardsQuery.data ?? [];
+  $: canvases = $canvasQuery.data ?? [];
 
-  $: dashboardOptions = dashboards.reduce((map, dimension) => {
-    const label = dimension.metricsView?.state?.validSpec?.title ?? "";
-    const name = dimension.meta?.name?.name ?? "";
-
-    if (label && name)
-      map.set(name.toLowerCase(), { label, section: "dashboard", depth: 0 });
-
-    return map;
-  }, new Map<string, PathOption>());
+  $: dashboardOptions = getBreadcrumbOptions(dashboards, canvases);
 
   $: projectPath = <PathOption>{
     label: projectTitle,
@@ -54,7 +52,7 @@
   $: metricsViewName = currentDashboard?.meta?.name?.name;
 </script>
 
-<div class="flex flex-col size-full">
+<div class="flex flex-col size-full overflow-hidden">
   <header>
     {#if $dashboardsQuery.data}
       <Breadcrumbs {pathParts} {currentPath}>

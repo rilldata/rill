@@ -264,6 +264,9 @@ func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
 	if r.rows.Err() != nil {
 		return nil, r.rows.Err()
 	}
+	if out == nil { // fixes 'null' output when there are no rows
+		out = []map[string]any{}
+	}
 	return json.Marshal(out)
 }
 
