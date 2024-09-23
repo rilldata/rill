@@ -82,8 +82,10 @@
   let suppressTooltip = false;
 
   const handleExpandMeasure = () => {
-    isMeasureExpanded = !isMeasureExpanded;
-    dispatch("expand-measure");
+    if (!isMeasureExpanded) {
+      isMeasureExpanded = true;
+      dispatch("expand-measure");
+    }
   };
 </script>
 
