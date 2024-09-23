@@ -132,9 +132,7 @@
 
   $: ({ length: allErrorsLength } = $allErrors);
 
-  $: includingTomorrowDate = DateTime.now().plus({ days: 0 }).startOf("day");
-
-  $: console.log("hasWhereFilter: ", hasWhereFilter);
+  $: includingTomorrowDate = DateTime.now().plus({ days: 1 }).startOf("day");
 
   let popoverOpen = false;
 </script>
