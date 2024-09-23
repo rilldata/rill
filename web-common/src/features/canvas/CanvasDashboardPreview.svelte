@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { dashboardVariablesStore } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
+  import { canvasVariablesStore } from "@rilldata/web-common/features/canvas/variables-store";
   import {
+    V1CanvasItem,
     V1ComponentVariable,
-    V1DashboardItem,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
@@ -17,7 +17,7 @@
 
   export let canvasDashboardName: string;
   export let columns: number | undefined;
-  export let items: V1DashboardItem[];
+  export let items: V1CanvasItem[];
   export let gap: number | undefined;
   export let variables: V1ComponentVariable[];
   export let showGrid = false;
@@ -64,7 +64,7 @@
 
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
   $: if (variables.length) {
-    dashboardVariablesStore.init(canvasDashboardName, variables);
+    canvasVariablesStore.init(canvasDashboardName, variables);
   }
 
   function handleMouseUp() {

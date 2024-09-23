@@ -8,6 +8,9 @@ import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
+const folderName = (resourceName) =>
+  resourceName === "canvas" ? "canvases" : `${resourceName}s`;
+
 export async function handleEntityCreate(kind: ResourceKind) {
   if (!(kind in ResourceKindMap)) return;
   const instanceId = get(runtime).instanceId;
@@ -21,7 +24,7 @@ export async function handleEntityCreate(kind: ResourceKind) {
       : fileArtifacts.getNamesForKind(kind);
   const { name, extension, baseContent } = ResourceKindMap[kind];
   const newName = getName(name, allNames);
-  const newPath = `${name + "s"}/${newName}${extension}`;
+  const newPath = `${folderName(name)}/${newName}${extension}`;
 
   await runtimeServicePutFile(instanceId, {
     path: newPath,
@@ -148,10 +151,10 @@ vega_lite: |
     }
   }`,
   },
-  [ResourceKind.Dashboard]: {
-    name: "canvas-dashboard",
+  [ResourceKind.Canvas]: {
+    name: "canvas",
     extension: ".yaml",
-    baseContent: `type: dashboard
+    baseContent: `type: canvas
 title: "Canvas Dashboard"
 columns: 24
 gap: 2
@@ -162,6 +165,7 @@ items:
         content: "First Component"
         css:
           font-size: "40px"
+          background-color: "#fff"
     width: 4
     height: 3
     x: 2

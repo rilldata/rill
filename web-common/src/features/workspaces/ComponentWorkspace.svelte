@@ -3,7 +3,7 @@
   import ComponentStatusDisplay from "@rilldata/web-common/features/canvas-components/ComponentStatusDisplay.svelte";
   import ComponentsHeader from "@rilldata/web-common/features/canvas-components/ComponentsHeader.svelte";
   import ComponentsEditor from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditor.svelte";
-  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas-dashboards/CanvasDashboardEmbed.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -17,7 +17,7 @@
 
   export let fileArtifact: FileArtifact;
 
-  const dashboardName = getContext("rill::canvas-dashboard:name") as string;
+  const canvasName = getContext("rill::canvas:name") as string;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -70,7 +70,7 @@
     <div class="size-full flex-col flex overflow-hidden">
       <ComponentStatusDisplay {isFetching} {componentName}>
         <CanvasDashboardEmbed
-          {dashboardName}
+          {canvasName}
           chartView
           gap={8}
           columns={10}

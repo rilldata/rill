@@ -1,8 +1,4 @@
 <script lang="ts">
-  import {
-    defaultChipColors,
-    excludeChipColors,
-  } from "@rilldata/web-common/components/chip/chip-types";
   import { getStateManagers } from "../../state-managers/state-managers";
   import { fly } from "svelte/transition";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -39,8 +35,6 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: colors = getColorForChip(!excludeMode);
-
   $: ({ timeStart, timeEnd, ready: timeControlsReady } = $timeControls);
 
   $: ({ leaderboardMeasureName } = $dashboardStore);
@@ -63,10 +57,6 @@
   $: allSelected = Boolean(
     selectedValues.length && allValues?.length === selectedValues.length,
   );
-
-  function getColorForChip(isInclude: boolean) {
-    return isInclude ? defaultChipColors : excludeChipColors;
-  }
 
   function onToggleSelectAll() {
     allValues?.forEach(({ dimensionValue }) => {
@@ -101,11 +91,10 @@
     >
       <Chip
         builders={[builder]}
-        {...colors}
+        type="dimension"
         active={open}
         label="View filter"
         on:remove={onRemove}
-        outline
         removable={!readOnly}
         {readOnly}
       >
@@ -118,8 +107,6 @@
 
         <RemovableListBody
           slot="body"
-          active={open}
-          {readOnly}
           label={excludeMode ? `Exclude ${label}` : label}
           show={1}
           values={selectedValues}

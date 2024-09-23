@@ -1,7 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
-  import { useVariableInputParams } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
+  import { useVariableInputParams } from "@rilldata/web-common/features/canvas/variables-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -19,13 +19,13 @@
   export let resolverProperties: V1ComponentSpecResolverProperties | undefined;
   export let input: V1ComponentVariable[] | undefined;
 
-  const dashboardName = getContext("rill::custom-dashboard:name") as string;
+  const canvasName = getContext("rill::canvas:name") as string;
 
   $: ({ instanceId } = $runtime);
 
   $: tableHeight = tablePercentage * containerHeight;
 
-  $: inputVariableParams = useVariableInputParams(dashboardName, input);
+  $: inputVariableParams = useVariableInputParams(canvasName, input);
 
   $: componentDataQuery = resolverProperties
     ? createQueryServiceResolveComponent(instanceId, componentName, {

@@ -4,43 +4,43 @@ import { Readable, derived, writable } from "svelte/store";
 interface ComponentVariable extends V1ComponentVariable {
   currentValue?: unknown;
 }
-export interface DashboardStoreType {
-  dashboards: Record<string, ComponentVariable[]>;
+export interface CanvasStoreType {
+  canvases: Record<string, ComponentVariable[]>;
 }
 const { update, subscribe } = writable({
-  dashboards: {},
-} as DashboardStoreType);
+  canvases: {},
+} as CanvasStoreType);
 
-export const updateDashboardByName = (
+export const updateCanvasByName = (
   name: string,
   callback: (variables: ComponentVariable[]) => void,
 ) => {
   update((state) => {
-    if (!state.dashboards[name]) {
+    if (!state.canvases[name]) {
       return state;
     }
 
-    callback(state.dashboards[name]);
+    callback(state.canvases[name]);
     return state;
   });
 };
 
-const dashboardVariableReducers = {
+const canvasVariableReducers = {
   init(name: string, variables: ComponentVariable[]) {
     update((state) => {
-      if (state.dashboards[name]) return state;
-      state.dashboards[name] = variables;
+      if (state.canvases[name]) return state;
+      state.canvases[name] = variables;
       return state;
     });
   },
   remove(name: string) {
     update((state) => {
-      delete state.dashboards[name];
+      delete state.canvases[name];
       return state;
     });
   },
   updateVariable(name: string, variableName: string, value: unknown) {
-    updateDashboardByName(name, (variables) => {
+    updateCanvasByName(name, (variables) => {
       const variable = variables.find((v) => v.name === variableName);
 
       if (variable) {
@@ -50,15 +50,15 @@ const dashboardVariableReducers = {
   },
 };
 
-export const dashboardVariablesStore: Readable<DashboardStoreType> &
-  typeof dashboardVariableReducers = {
+export const canvasVariablesStore: Readable<CanvasStoreType> &
+  typeof canvasVariableReducers = {
   subscribe,
-  ...dashboardVariableReducers,
+  ...canvasVariableReducers,
 };
 
 export function useVariableStore(name: string): Readable<ComponentVariable[]> {
-  return derived(dashboardVariablesStore, ($store) => {
-    return $store.dashboards[name];
+  return derived(canvasVariablesStore, ($store) => {
+    return $store.canvases[name];
   });
 }
 
@@ -66,8 +66,8 @@ export function useVariable(
   name: string,
   variableName: string,
 ): Readable<unknown> {
-  return derived(dashboardVariablesStore, ($store) => {
-    const variables = $store.dashboards[name] || [];
+  return derived(canvasVariablesStore, ($store) => {
+    const variables = $store.canvases[name] || [];
     const variable = variables.find((v) => v.name === variableName);
 
     return variable?.currentValue || variable?.defaultValue;
@@ -78,11 +78,11 @@ export function useVariableInputParams(
   name: string,
   inputParams: V1ComponentVariable[] | undefined,
 ): Readable<Record<string, unknown>> {
-  return derived(dashboardVariablesStore, ($store) => {
+  return derived(canvasVariablesStore, ($store) => {
     if (!inputParams || !inputParams?.length) return {};
 
     const result: Record<string, unknown> = {};
-    const variables: ComponentVariable[] = $store.dashboards?.[name] || [];
+    const variables: ComponentVariable[] = $store.canvases?.[name] || [];
 
     inputParams.forEach((param) => {
       if (!param?.name) return;

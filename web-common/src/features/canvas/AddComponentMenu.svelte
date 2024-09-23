@@ -26,7 +26,7 @@
   );
   $: componentFileNames =
     $componentsQuery.data
-      ?.filter((c) => !c.component?.spec?.definedInDashboard)
+      ?.filter((c) => !c.component?.spec?.definedInCanvas)
       .map((c) => c.meta?.name?.name ?? "") ?? [];
 
   async function handleAddComponent() {

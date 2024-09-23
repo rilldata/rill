@@ -124,7 +124,7 @@
           {hideRanges}
         />
         {#if !$showPivot && minTimeGrain}
-          <TimeGrainSelector metricViewName={$metricsViewName} />
+          <TimeGrainSelector metricsViewName={$metricsViewName} />
         {/if}
       {/if}
     </div>

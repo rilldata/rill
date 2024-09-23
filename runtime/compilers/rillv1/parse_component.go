@@ -64,7 +64,7 @@ func (p *Parser) parseComponent(node *Node) error {
 }
 
 // parseComponentYAML parses and validates a ComponentYAML.
-// It is separated from parseComponent to allow inline creation of components from a dashboard YAML file.
+// It is separated from parseComponent to allow inline creation of components from a canvas YAML file.
 func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpec, []ResourceName, error) {
 	// Parse the data YAML
 	var refs []ResourceName
