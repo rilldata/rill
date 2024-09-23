@@ -2012,7 +2012,7 @@ export interface V1ComponentSpec {
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
   input?: V1ComponentVariable[];
-  output?: V1ComponentVariable;
+  output?: V1ComponentVariable[];
   /** Templated string that should evaluate to a boolean. */
   show?: string;
   definedInCanvas?: boolean;

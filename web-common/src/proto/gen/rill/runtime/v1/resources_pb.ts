@@ -3966,9 +3966,9 @@ export class ComponentSpec extends Message<ComponentSpec> {
   input: ComponentVariable[] = [];
 
   /**
-   * @generated from field: rill.runtime.v1.ComponentVariable output = 9;
+   * @generated from field: repeated rill.runtime.v1.ComponentVariable output = 9;
    */
-  output?: ComponentVariable;
+  output: ComponentVariable[] = [];
 
   /**
    * Templated string that should evaluate to a boolean.
@@ -3997,7 +3997,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
-    { no: 9, name: "output", kind: "message", T: ComponentVariable },
+    { no: 9, name: "output", kind: "message", T: ComponentVariable, repeated: true },
     { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

@@ -21,7 +21,7 @@ type ComponentYAML struct {
 	Title      string                    `yaml:"title"`
 	Subtitle   string                    `yaml:"subtitle"`
 	Input      []*ComponentVariableYAML  `yaml:"input"`
-	Output     *ComponentVariableYAML    `yaml:"output"`
+	Output     []*ComponentVariableYAML  `yaml:"output"`
 	Data       *DataYAML                 `yaml:"data"`
 	Show       string                    `yaml:"show"`
 	VegaLite   *string                   `yaml:"vega_lite"`
@@ -128,12 +128,12 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	}
 
 	// Parse the output variable
-	var output *runtimev1.ComponentVariable
-	if tmp.Output != nil {
+	output := make([]*runtimev1.ComponentVariable, len(tmp.Output))
+	for i, v := range tmp.Output {
 		var err error
-		output, err = tmp.Output.Proto()
+		output[i], err = v.Proto()
 		if err != nil {
-			return nil, nil, fmt.Errorf("invalid output variable: %w", err)
+			return nil, nil, fmt.Errorf("invalid input variable at index %d: %w", i, err)
 		}
 	}
 

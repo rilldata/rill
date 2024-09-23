@@ -3746,7 +3746,10 @@ definitions:
           type: object
           $ref: '#/definitions/v1ComponentVariable'
       output:
-        $ref: '#/definitions/v1ComponentVariable'
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
       show:
         type: string
         description: Templated string that should evaluate to a boolean.

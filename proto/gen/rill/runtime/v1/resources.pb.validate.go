@@ -9186,33 +9186,38 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	}
 
-	if all {
-		switch v := interface{}(m.GetOutput()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ComponentSpecValidationError{
-					field:  "Output",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
+	for idx, item := range m.GetOutput() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ComponentSpecValidationError{
+						field:  fmt.Sprintf("Output[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ComponentSpecValidationError{
+						field:  fmt.Sprintf("Output[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
 			}
-		case interface{ Validate() error }:
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ComponentSpecValidationError{
-					field:  "Output",
+				return ComponentSpecValidationError{
+					field:  fmt.Sprintf("Output[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
-				})
+				}
 			}
 		}
-	} else if v, ok := interface{}(m.GetOutput()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ComponentSpecValidationError{
-				field:  "Output",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
+
 	}
 
 	// no validation rules for Show
