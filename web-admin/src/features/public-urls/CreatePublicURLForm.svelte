@@ -157,6 +157,7 @@
           <label for="expires-at" class="text-slate-500 font-medium w-2/3">
             Access expires
           </label>
+          <!-- FIXME: use DatePicker -->
           <input
             id="expires-at"
             type="date"
