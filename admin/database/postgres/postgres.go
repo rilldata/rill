@@ -2163,8 +2163,8 @@ func (c *connection) decryptMap(m map[string]string, encKeyID string) (map[strin
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenDTO struct {
 	*database.MagicAuthToken
-	Attributes        pgtype.JSON      `db:"attributes"`
-	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+	Attributes pgtype.JSON      `db:"attributes"`
+	Fields     pgtype.TextArray `db:"fields"`
 }
 
 func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
@@ -2172,7 +2172,7 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 	if err != nil {
 		return nil, err
 	}
-	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.Fields)
+	err = dto.Fields.AssignTo(&dto.MagicAuthToken.Fields)
 	if err != nil {
 		return nil, err
 	}
@@ -2193,8 +2193,8 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes        pgtype.JSON      `db:"attributes"`
-	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+	Attributes pgtype.JSON      `db:"attributes"`
+	Fields     pgtype.TextArray `db:"fields"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -2202,7 +2202,7 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	if err != nil {
 		return nil, err
 	}
-	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.Fields)
+	err = dto.Fields.AssignTo(&dto.MagicAuthToken.Fields)
 	if err != nil {
 		return nil, err
 	}

@@ -9,15 +9,16 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import {
     convertDateToMinutes,
-    getMetricsViewFields,
+    getExploreFields,
     getSanitizedDashboardStateParam,
     hasDashboardWhereFilter,
   } from "./form-utils";
@@ -25,18 +26,17 @@
   const queryClient = useQueryClient();
   const {
     dashboardStore,
-    metricsViewName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
     },
   } = getStateManagers();
 
-  $: ({ organization, project } = $page.params);
+  $: ({ organization, project, dashboard } = $page.params);
 
   $: isTitleEmpty = $form.title.trim() === "";
 
-  $: metricsViewFields = getMetricsViewFields(
+  $: exploreFields = getExploreFields(
     $dashboardStore,
     $visibleDimensions,
     $visibleMeasures,
@@ -44,7 +44,7 @@
 
   $: sanitizedState = getSanitizedDashboardStateParam(
     $dashboardStore,
-    metricsViewFields,
+    exploreFields,
   );
 
   let token: string;
@@ -78,11 +78,10 @@
             organization,
             project,
             data: {
-              metricsView: $metricsViewName,
-              metricsViewFilter: hasWhereFilter
-                ? $dashboardStore.whereFilter
-                : undefined,
-              metricsViewFields,
+              resourceType: ResourceKind.Explore as string,
+              resourceName: dashboard,
+              filter: hasWhereFilter ? $dashboardStore.whereFilter : undefined,
+              fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
@@ -146,7 +145,7 @@
       {#if hasWhereFilter}
         <div>
           <FilterChipsReadOnly
-            metricsViewName={$metricsViewName}
+            exploreName={dashboard}
             filters={$dashboardStore.whereFilter}
             dimensionThresholdFilters={[]}
             timeRange={undefined}
