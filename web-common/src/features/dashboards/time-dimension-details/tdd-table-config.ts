@@ -48,8 +48,8 @@ export function getTDDConfig(
       ]);
 
       const time: PivotTimeConfig = {
-        timeStart: timeControl.timeStart,
-        timeEnd: timeControl.timeEnd,
+        timeStart: timeControl.selectedTimeRange?.start.toISOString(),
+        timeEnd: timeControl.selectedTimeRange?.end.toISOString(),
         timeZone: dashboardStore?.selectedTimezone || "UTC",
         timeDimension: metricsView?.data?.timeDimension || "",
       };
@@ -61,8 +61,8 @@ export function getTDDConfig(
       let comparisonTime: TimeRangeString | undefined = undefined;
       if (enableComparison) {
         comparisonTime = {
-          start: timeControl.comparisonTimeStart,
-          end: timeControl.comparisonTimeEnd,
+          start: timeControl.selectedComparisonTimeRange?.start.toISOString(),
+          end: timeControl.selectedComparisonTimeRange?.end.toISOString(),
         };
       }
 
