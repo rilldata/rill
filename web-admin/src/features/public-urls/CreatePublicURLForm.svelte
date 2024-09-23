@@ -125,17 +125,16 @@
 
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
-    $form.expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10); // ISO string formatted for input[type="date"]
+    $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
   } else if (!setExpiration) {
     $form.expiresAt = null;
   }
 
   $: ({ length: allErrorsLength } = $allErrors);
 
-  // Minimum date is tomorrow
-  $: minExpirationDate = DateTime.now().plus({ days: 1 });
+  $: includingTomorrowDate = DateTime.now().plus({ days: 0 }).startOf("day");
+
+  $: console.log("hasWhereFilter: ", hasWhereFilter);
 
   let popoverOpen = false;
 </script>
@@ -179,7 +178,7 @@
               <Calendar
                 firstVisibleMonth={DateTime.now()}
                 singleDaySelection
-                minDate={minExpirationDate}
+                minDate={includingTomorrowDate}
                 onSelectDay={(date) => {
                   $form.expiresAt = date.toISO();
                   popoverOpen = false;

@@ -16,7 +16,7 @@
       : DateTime.now();
   export let singleDaySelection = isValidDateTime(selection);
   export let onSelectDay: (date: DateTime<true>) => void;
-  export let minDate: DateTime<true> | undefined;
+  export let minDate: DateTime<true> | undefined = undefined;
 
   let potentialEnd: DateTime<true> | undefined;
   let potentialStart: DateTime<true> | undefined;
