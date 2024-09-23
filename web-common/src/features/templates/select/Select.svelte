@@ -18,9 +18,9 @@
   export let componentName: string;
   export let data: any[] | undefined;
   export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let output: V1ComponentVariable | undefined;
+  export let output: V1ComponentVariable[] | undefined;
 
-  $: outputVariableName = output?.name || "";
+  $: outputVariableNames = output?.map((o) => o.name);
   $: outputVariableValue = useVariable(canvasName, outputVariableName);
   $: selectProperties = rendererProperties as SelectProperties;
 
