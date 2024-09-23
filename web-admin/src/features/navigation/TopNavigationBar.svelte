@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import Banner from "@rilldata/web-admin/features/billing/banner/Banner.svelte";
+  import Banner from "@rilldata/web-admin/features/billing/banner/BillingBannerHandler.svelte";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
