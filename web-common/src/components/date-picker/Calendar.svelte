@@ -16,6 +16,7 @@
       : DateTime.now();
   export let singleDaySelection = isValidDateTime(selection);
   export let onSelectDay: (date: DateTime<true>) => void;
+  export let minDate: DateTime<true> | undefined;
 
   let potentialEnd: DateTime<true> | undefined;
   let potentialStart: DateTime<true> | undefined;
@@ -48,6 +49,10 @@
   ): value is Interval<true> {
     return Boolean(value && value instanceof Interval && value?.isValid);
   }
+
+  function isDateSelectable(date: DateTime<true>): boolean {
+    return !minDate || date >= minDate;
+  }
 </script>
 
 <div class="flex gap-x-3 p-2 w-full min-w-56">
@@ -64,6 +69,7 @@
       bind:potentialEnd
       {onSelectDay}
       {onPan}
+      {isDateSelectable}
     />
   {/each}
 </div>

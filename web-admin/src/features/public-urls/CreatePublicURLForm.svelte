@@ -23,6 +23,15 @@
   } from "./form-utils";
   import { Divider } from "@rilldata/web-common/components/menu";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+  } from "@rilldata/web-common/components/popover";
+  import { Pencil } from "lucide-svelte";
+  import { IconButton } from "@rilldata/web-common/components/button";
+  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
+  import { Interval, DateTime } from "luxon";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -126,9 +135,9 @@
   $: ({ length: allErrorsLength } = $allErrors);
 
   // Minimum date is tomorrow
-  $: minExpirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  $: minExpirationDate = DateTime.now().plus({ days: 1 });
+
+  let popoverOpen = false;
 </script>
 
 {#if !token}
@@ -153,18 +162,31 @@
         <Label class="text-xs" for="has-expiration">Set expiration</Label>
       </div>
       {#if setExpiration}
-        <div class="flex items-center gap-x-2 pl-[30px]">
-          <label for="expires-at" class="text-slate-500 font-medium w-2/3">
-            Access expires
+        <div class="flex items-center gap-x-1 pl-[30px]">
+          <label for="expires-at" class="text-slate-500 font-medium">
+            Access expires {new Date($form.expiresAt).toLocaleDateString(
+              "en-US",
+              { year: "numeric", month: "short", day: "numeric" },
+            )}
           </label>
-          <!-- FIXME: use DatePicker -->
-          <input
-            id="expires-at"
-            type="date"
-            bind:value={$form.expiresAt}
-            min={minExpirationDate}
-            class="w-1/3"
-          />
+          <Popover bind:open={popoverOpen}>
+            <PopoverTrigger>
+              <IconButton>
+                <Pencil size="14px" class="text-primary-600" />
+              </IconButton>
+            </PopoverTrigger>
+            <PopoverContent align="end" class="p-0">
+              <Calendar
+                firstVisibleMonth={DateTime.now()}
+                singleDaySelection
+                minDate={minExpirationDate}
+                onSelectDay={(date) => {
+                  $form.expiresAt = date.toISO();
+                  popoverOpen = false;
+                }}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       {/if}
     </div>
