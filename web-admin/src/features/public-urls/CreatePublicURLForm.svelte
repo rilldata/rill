@@ -141,10 +141,8 @@
       <div class="flex flex-col gap-y-1">
         <Input
           id="name-input"
-          type="text"
           bind:value={$form.title}
           placeholder="Label this URL"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md"
         />
       </div>
     </div>
@@ -159,7 +157,7 @@
           <label for="expires-at" class="text-slate-500 font-medium w-2/3">
             Access expires
           </label>
-          <Input
+          <input
             id="expires-at"
             type="date"
             bind:value={$form.expiresAt}
