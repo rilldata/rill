@@ -20,7 +20,7 @@ import (
 // b) populating values at resolve time (such as {{ .vars ... }} and {{ ref ... }})
 //
 // The resolve time of a template varies. For models, the resolve time is when they are created in the database.
-// But for dashboard expressions, the resolve time is when the dashboard is rendered.
+// But for metrics expressions, the resolve time is when the metrics are queried.
 //
 // Note that no template resolution happens at parse time. This means templating can't be used to alter the structure of YAML files.
 // Instead, templating can be used to alter values in certain YAML properties at resolve time.

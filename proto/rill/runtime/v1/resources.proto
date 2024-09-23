@@ -33,7 +33,7 @@ message Resource {
     BucketPlanner bucket_planner = 8;
     Theme theme = 11;
     Component component = 13;
-    Dashboard dashboard = 14;
+    Canvas canvas = 14;
     API api = 15;
     ConnectorV2 connector = 16;
   }
@@ -230,7 +230,7 @@ message MetricsViewSpec {
   repeated DimensionV2 dimensions = 6;
   // Measures in the metrics view
   repeated MeasureV2 measures = 7;
-  // Security for the dashboard
+  // Security for the metrics view
   repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
   uint32 first_day_of_week = 12;
@@ -617,7 +617,7 @@ message ComponentSpec {
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
   string show = 10; // Templated string that should evaluate to a boolean.
-  bool defined_in_dashboard = 6;
+  bool defined_in_canvas = 6;
 }
 
 message ComponentState {
@@ -630,26 +630,27 @@ message ComponentVariable {
   google.protobuf.Value default_value = 3;
 }
 
-message Dashboard {
-  DashboardSpec spec = 1;
-  DashboardState state = 2;
+message Canvas {
+  CanvasSpec spec = 1;
+  CanvasState state = 2;
 }
 
-message DashboardSpec {
+message CanvasSpec {
   string title = 1;
   uint32 columns = 2;
   uint32 gap = 3;
   repeated ComponentVariable variables = 5;
-  repeated DashboardItem items = 4;
+  repeated CanvasItem items = 4;
+  repeated SecurityRule security_rules = 6;
 }
 
-message DashboardState {
-  DashboardSpec valid_spec = 1;
+message CanvasState {
+  CanvasSpec valid_spec = 1;
 }
 
-message DashboardItem {
+message CanvasItem {
   string component = 1;
-  bool defined_in_dashboard = 8;
+  bool defined_in_canvas = 8;
   optional uint32 x = 2;
   optional uint32 y = 3;
   optional uint32 width = 4;

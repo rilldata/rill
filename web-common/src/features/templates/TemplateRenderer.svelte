@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Chart from "@rilldata/web-common/features/canvas-dashboards/Chart.svelte";
-  import { useVariableInputParams } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
+  import Chart from "@rilldata/web-common/features/canvas/Chart.svelte";
+  import { useVariableInputParams } from "@rilldata/web-common/features/canvas/variables-store";
   import Image from "@rilldata/web-common/features/templates/image/Image.svelte";
   import KPITemplate from "@rilldata/web-common/features/templates/kpi/KPITemplate.svelte";
   import Markdown from "@rilldata/web-common/features/templates/markdown/Markdown.svelte";
@@ -24,9 +24,9 @@
   export let output: V1ComponentVariable | undefined;
   export let resolverProperties: V1ComponentSpecResolverProperties | undefined;
 
-  const dashboardName = getContext("rill::canvas-dashboard:name") as string;
+  const canvasName = getContext("rill::canvas:name") as string;
 
-  $: inputVariableParams = useVariableInputParams(dashboardName, input);
+  $: inputVariableParams = useVariableInputParams(canvasName, input);
   $: componentQuery = createQueryServiceResolveComponent(
     $runtime.instanceId,
     componentName,

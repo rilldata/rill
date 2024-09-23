@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { useVariableInputParams } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
   import {
     createQueryServiceResolveComponent,
     V1ComponentVariable,
@@ -8,6 +7,7 @@
   import { getContext } from "svelte";
   import type { View, VisualizationSpec } from "svelte-vega";
   import VegaLiteRenderer from "../canvas-components/render/VegaLiteRenderer.svelte";
+  import { useVariableInputParams } from "./variables-store";
 
   export let componentName: string;
   export let chartView: boolean;
@@ -17,8 +17,8 @@
   let error: string | null = null;
   let parsedVegaSpec: VisualizationSpec | null = null;
 
-  $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
-  $: inputVariableParams = useVariableInputParams(dashboardName, input);
+  $: canvasName = getContext("rill::canvas:name") as string;
+  $: inputVariableParams = useVariableInputParams(canvasName, input);
 
   $: componentDataQuery = createQueryServiceResolveComponent(
     $runtime.instanceId,

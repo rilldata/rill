@@ -3093,6 +3093,16 @@ export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
   model = "";
 
   /**
+   * @generated from field: bool pending = 5;
+   */
+  pending = false;
+
+  /**
+   * @generated from field: bool errored = 6;
+   */
+  errored = false;
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -3112,6 +3122,8 @@ export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "pending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "errored", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
