@@ -302,7 +302,7 @@ export class FileArtifact {
   }
 
   private updateResourceNameIfChanged(resource: V1Resource) {
-    const isSubResource = !!resource.component?.spec?.definedInDashboard;
+    const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;
 
     // Temporary fix to avoid associating V1MetricsView and V1Explore to same file

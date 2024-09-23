@@ -29,7 +29,7 @@ export function startRuntimeForEachTest() {
       'compiler: rill-beta\ntitle: "Test Project"',
     );
 
-    const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} --db ${TEST_PROJECT_DIRECTORY}/stage.db?rill_pool_size=4 ${TEST_PROJECT_DIRECTORY}`;
+    const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} --db ${TEST_PROJECT_DIRECTORY}/stage.db?rill_pool_size=4 ${TEST_PROJECT_DIRECTORY} --env connector.duckdb.external_table_storage=false`;
 
     childProcess = spawn("../rill", cmd.split(" "), {
       stdio: "pipe",

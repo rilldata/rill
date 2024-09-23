@@ -20,7 +20,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
 	dbPath := filepath.Join(temp, "default", "normal.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")
@@ -287,7 +287,7 @@ func Test_connection_AddTableColumn(t *testing.T) {
 }
 
 func Test_connection_RenameToExistingTableOld(t *testing.T) {
-	handle, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:", "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -361,7 +361,7 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
 	dbPath := filepath.Join(temp, "default", "normal.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")

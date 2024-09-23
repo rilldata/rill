@@ -15,6 +15,8 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
     page.route.id === "/[organization]/[project]/-/status" ||
+    page.route.id === "/[organization]/[project]/-/settings" ||
+    page.route.id === "/[organization]/[project]/-/settings/public-urls" ||
     !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
 }
@@ -31,6 +33,7 @@ export function isMetricsExplorerPage(page: Page): boolean {
 }
 
 export function isCanvasDashboardPage(page: Page): boolean {
+  // TODO: Change the route to canvas
   return page.route.id === "/[organization]/[project]/-/dashboards/[dashboard]";
 }
 
@@ -78,6 +81,8 @@ export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
       return MetricsEventScreenName.Project;
     case isMetricsExplorerPage(page):
       return MetricsEventScreenName.Dashboard;
+    case isCanvasDashboardPage(page):
+      return MetricsEventScreenName.Canvas;
     case isReportPage(page):
       return MetricsEventScreenName.Report;
     case isAlertPage(page):

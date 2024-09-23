@@ -21,6 +21,10 @@ export const allMeasures = ({
   );
 };
 
+export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
+  return dashboard.leaderboardMeasureName;
+};
+
 export const visibleMeasures = ({
   validMetricsView,
   dashboard,
@@ -197,4 +201,5 @@ export const measureSelectors = {
   filteredSimpleMeasures,
 
   getFilteredMeasuresAndDimensions,
+  leaderboardMeasureName,
 };

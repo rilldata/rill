@@ -12,6 +12,7 @@ func BillingCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	billingCmd.AddCommand(SetCmd(ch))
+	billingCmd.AddCommand(DeleteIssueCmd(ch))
 
 	return billingCmd
 }

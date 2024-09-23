@@ -92,7 +92,7 @@ export function useDashboardsV2(
         );
         const allDashboards: DashboardResource[] = [];
         // filter canvas dashboards
-        const canvasDashboards = data.resources.filter((res) => res.dashboard);
+        const canvasDashboards = data.resources.filter((res) => res.canvas);
         allDashboards.push(
           ...canvasDashboards.map((resource) => {
             // Add `refreshedOn` to each resource
@@ -135,7 +135,7 @@ export function useDashboardV2(
           (r) => `${r.meta.name.kind}_${r.meta.name.name}`,
         );
 
-        if (resource.dashboard) {
+        if (resource.canvas) {
           const refreshedOn = getDashboardRefreshedOn(resource, allResources);
           return { resource, refreshedOn };
         }

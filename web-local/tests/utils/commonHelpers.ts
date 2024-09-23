@@ -24,8 +24,12 @@ export async function clickModalButton(page: Page, text: string) {
   return page.getByText(text).click();
 }
 
-export async function clickMenuButton(page: Page, text: string) {
-  await page.getByRole("menuitem", { name: text }).click();
+export async function clickMenuButton(
+  page: Page,
+  text: string,
+  role: "menuitem" | "option" = "menuitem",
+) {
+  await page.getByRole(role, { name: text }).click();
 }
 
 export async function waitForProfiling(

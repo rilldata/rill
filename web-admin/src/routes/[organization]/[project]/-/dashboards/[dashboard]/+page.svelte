@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas-dashboards/CanvasDashboardEmbed.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import {
     ResourceKind,
     useResource,
@@ -8,21 +8,17 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
 
   $: instanceId = $runtime?.instanceId;
-  $: dashboardName = $page.params.dashboard;
+  $: canvasName = $page.params.dashboard;
 
-  $: dashboardQuery = useResource(
-    instanceId,
-    dashboardName,
-    ResourceKind.Dashboard,
-  );
+  $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas);
 
-  $: dashboard = $dashboardQuery.data?.dashboard.spec;
+  $: canvas = $canvasQuery.data?.canvas.spec;
 
   $: ({
     items = [],
     columns,
     gap,
-  } = dashboard || { items: [], columns: 24, gap: 2 });
+  } = canvas || { items: [], columns: 24, gap: 2 });
 </script>
 
-<CanvasDashboardEmbed {dashboardName} {columns} {items} {gap} />
+<CanvasDashboardEmbed {canvasName} {columns} {items} {gap} />

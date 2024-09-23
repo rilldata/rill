@@ -73,6 +73,8 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	}
 
 	// The table may have been created by a model. Search for a model with the same name in the same connector.
+	// NOTE: If it's a source, we will also mark it as a model. The metrics view YAML supports that, and we'll anyway deprecate sources soon.
+	var isModel bool
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -82,10 +84,22 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		return nil, err
 	}
 	if model != nil {
+		// Check model is for this table.
 		modelState := model.GetModel().State
-		if modelState.ResultConnector != req.Connector || modelState.ResultTable != tbl.Name {
-			// The model is not for this table. Ignore it.
-			model = nil
+		if modelState.ResultConnector == req.Connector && strings.EqualFold(modelState.ResultTable, tbl.Name) {
+			isModel = true
+		}
+	} else {
+		// Check if it's a source
+		source, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: tbl.Name}, false)
+		if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, err
+		}
+		if source != nil {
+			sourceState := source.GetSource().State
+			if sourceState.Connector == req.Connector && strings.EqualFold(sourceState.Table, tbl.Name) {
+				isModel = true
+			}
 		}
 	}
 
@@ -95,7 +109,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, model != nil)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, isModel)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
 		} else {
@@ -123,7 +137,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
 	if data == "" {
-		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, model != nil, tbl.Schema)
+		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, isModel, tbl.Schema)
 		if err != nil {
 			return nil, err
 		}
@@ -411,7 +425,7 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 	buf := new(bytes.Buffer)
 
 	buf.WriteString("# Metrics view YAML\n")
-	buf.WriteString("# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views\n")
+	buf.WriteString("# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards\n")
 	if aiPowered {
 		buf.WriteString("# This file was generated using AI.\n")
 	}

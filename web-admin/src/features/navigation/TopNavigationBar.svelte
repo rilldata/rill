@@ -109,7 +109,7 @@
       label:
         (isMetricsExplorer
           ? resource?.explore?.spec?.title
-          : resource?.dashboard?.spec?.title) || name,
+          : resource?.canvas?.spec?.title) || name,
       section: isMetricsExplorer ? "/explore" : "-/dashboards",
     });
   }, new Map<string, PathOption>());

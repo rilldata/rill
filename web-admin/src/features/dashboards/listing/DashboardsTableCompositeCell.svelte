@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import CanvasDashboardIcon from "@rilldata/web-common/components/icons/CanvasDashboardIcon.svelte";
+  import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -38,7 +38,7 @@
     {#if isMetricsExplorer}
       <MetricsExplorerIcon size={"14px"} className="text-slate-500" />
     {:else}
-      <CanvasDashboardIcon size={"14px"} className="text-slate-500" />
+      <CanvasIcon size={"14px"} className="text-slate-500" />
     {/if}
     <div
       class="text-gray-700 text-sm font-semibold group-hover:text-primary-600"

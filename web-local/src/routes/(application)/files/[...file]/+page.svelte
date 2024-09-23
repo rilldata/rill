@@ -23,7 +23,8 @@
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Explore, ExploreWorkspace],
     [ResourceKind.Component, ComponentWorkspace],
-    [ResourceKind.Dashboard, CanvasDashboardWorkspace],
+    [ResourceKind.Canvas, CanvasDashboardWorkspace],
+    [null, null],
     [undefined, null],
   ]);
 

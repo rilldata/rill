@@ -40,7 +40,7 @@
         const isMetricsExplorer = !!resource?.explore;
         const title = isMetricsExplorer
           ? resource.explore.spec.title
-          : resource.dashboard.spec.title;
+          : resource.canvas.spec.title;
         const description = isMetricsExplorer
           ? resource.explore.spec.description
           : "";
@@ -63,7 +63,7 @@
         const isMetricsExplorer = !!resource?.explore;
         return isMetricsExplorer
           ? resource.explore.spec.title
-          : resource.dashboard.spec.title;
+          : resource.canvas.spec.title;
       },
     },
     {
