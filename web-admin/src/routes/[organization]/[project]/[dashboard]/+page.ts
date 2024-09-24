@@ -2,8 +2,8 @@ import { redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
 /**
- * Previously, Explores were located at `/[organization]/[project]/[dashboard]`.
- * Now we redirect this route to `/[organization]/[project]/explore/[dashboard]`.
+ * Redirect `/[organization]/[project]/[dashboard]` to `/[organization]/[project]/explore/[dashboard]`.
+ * Maintains backwards compatibility with legacy URLs.
  */
 export const load: PageLoad = ({ params }) => {
   throw redirect(
