@@ -89,7 +89,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 }
 
 func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
-	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeNotOverdueProcessed(ctx, database.BillingIssueTypeOnTrial)
+	onTrialOrgs, err := w.admin.DB.FindBillingIssueByType(ctx, database.BillingIssueTypeOnTrial)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no orgs have this billing issue
@@ -114,7 +114,13 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 		w.logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 		gracePeriodEndDate := m.EndDate.AddDate(0, 0, gracePeriodDays)
-		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+
+		cctx, tx, err := w.admin.DB.NewTx(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to start transaction: %w", err)
+		}
+
+		_, err = w.admin.DB.UpsertBillingIssue(cctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeTrialEnded,
 			Metadata: &database.BillingIssueMetadataTrialEnded{
@@ -123,7 +129,21 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			EventTime: m.EndDate.AddDate(0, 0, 1),
 		})
 		if err != nil {
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("failed to rollback transaction: %w", err)
+			}
 			return fmt.Errorf("failed to add billing error: %w", err)
+		}
+
+		// delete the on-trial billing issue
+		err = w.admin.DB.DeleteBillingIssue(cctx, o.ID)
+		if err != nil {
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("failed to rollback transaction: %w", err)
+			}
+			return fmt.Errorf("failed to delete billing issue: %w", err)
 		}
 
 		// send email
@@ -134,13 +154,16 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			GracePeriodEndDate: gracePeriodEndDate,
 		})
 		if err != nil {
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("failed to rollback transaction: %w", err)
+			}
 			return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
 		}
 
-		// mark the billing issue as processed
-		err = w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, o.ID)
+		err = tx.Commit()
 		if err != nil {
-			return fmt.Errorf("failed to update billing issue as processed: %w", err)
+			return fmt.Errorf("failed to commit transaction: %w", err)
 		}
 	}
 

@@ -266,14 +266,15 @@ type DB interface {
 	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
 	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
 
-	FindBillingIssues(ctx context.Context, orgID string) ([]*BillingIssue, error)
-	FindBillingIssueByType(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
+	FindBillingIssuesForOrg(ctx context.Context, orgID string) ([]*BillingIssue, error)
+	FindBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
+	FindBillingIssueByType(ctx context.Context, errorType BillingIssueType) ([]*BillingIssue, error)
 	FindBillingIssueByTypeNotOverdueProcessed(ctx context.Context, errorType BillingIssueType) ([]*BillingIssue, error)
 	FindBillingIssueByTypeNotOverdueProcessedForOrg(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
 	UpsertBillingIssue(ctx context.Context, opts *UpsertBillingIssueOptions) (*BillingIssue, error)
 	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
 	DeleteBillingIssue(ctx context.Context, id string) error
-	DeleteBillingIssueByType(ctx context.Context, orgID string, errorType BillingIssueType) error
+	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.

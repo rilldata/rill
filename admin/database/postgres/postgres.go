@@ -1948,7 +1948,7 @@ func (c *connection) FindOrganizationForBillingCustomerID(ctx context.Context, c
 	return res, nil
 }
 
-func (c *connection) FindBillingIssues(ctx context.Context, orgID string) ([]*database.BillingIssue, error) {
+func (c *connection) FindBillingIssuesForOrg(ctx context.Context, orgID string) ([]*database.BillingIssue, error) {
 	var res []*billingIssueDTO
 	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE org_id = $1`, orgID)
 	if err != nil {
@@ -1962,13 +1962,27 @@ func (c *connection) FindBillingIssues(ctx context.Context, orgID string) ([]*da
 	return billingErrors, nil
 }
 
-func (c *connection) FindBillingIssueByType(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
+func (c *connection) FindBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
 	res := &billingIssueDTO{}
 	err := c.db.GetContext(ctx, res, `SELECT * FROM billing_issues WHERE org_id = $1 AND type = $2`, orgID, errorType)
 	if err != nil {
 		return nil, parseErr("billing issue", err)
 	}
 	return res.AsModel(), nil
+}
+
+func (c *connection) FindBillingIssueByType(ctx context.Context, errorType database.BillingIssueType) ([]*database.BillingIssue, error) {
+	var res []*billingIssueDTO
+	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1`, errorType)
+	if err != nil {
+		return nil, parseErr("billing issues", err)
+	}
+
+	var billingErrors []*database.BillingIssue
+	for _, dto := range res {
+		billingErrors = append(billingErrors, dto.AsModel())
+	}
+	return billingErrors, nil
 }
 
 func (c *connection) FindBillingIssueByTypeNotOverdueProcessed(ctx context.Context, errorType database.BillingIssueType) ([]*database.BillingIssue, error) {
@@ -2032,7 +2046,7 @@ func (c *connection) DeleteBillingIssue(ctx context.Context, id string) error {
 	return checkDeleteRow("billing issue", res, err)
 }
 
-func (c *connection) DeleteBillingIssueByType(ctx context.Context, orgID string, errorType database.BillingIssueType) error {
+func (c *connection) DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_issues WHERE org_id = $1 AND type = $2", orgID, errorType)
 	return checkDeleteRow("billing issue", res, err)
 }
