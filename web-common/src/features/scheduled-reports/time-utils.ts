@@ -93,7 +93,7 @@ export function getDayOfWeekFromCronExpression(cronExpr: string): string {
 
 export function getTimeOfDayFromCronExpression(cronExpr: string): string {
   const [minute, hour, , ,] = cronExpr.split(" ");
-  return `${hour}:${minute}`;
+  return `${hour}:${minute === "0" ? "00" : minute}`;
 }
 
 export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {

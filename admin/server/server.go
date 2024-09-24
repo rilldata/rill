@@ -228,6 +228,26 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
 
+	// Add biller webhook handler if any
+	if s.admin.Biller != nil {
+		handlerFunc := s.admin.Biller.WebhookHandlerFunc(ctx, s.admin.Jobs)
+		if handlerFunc != nil {
+			inner := http.NewServeMux()
+			observability.MuxHandle(inner, "/billing/webhook", handlerFunc)
+			mux.Handle("/billing/webhook", observability.Middleware("admin", s.logger, inner))
+		}
+	}
+
+	// Add payment webhook handler if any
+	if s.admin.PaymentProvider != nil {
+		handlerFunc := s.admin.PaymentProvider.WebhookHandlerFunc(ctx, s.admin.Jobs)
+		if handlerFunc != nil {
+			inner := http.NewServeMux()
+			observability.MuxHandle(inner, "/payment/webhook", handlerFunc)
+			mux.Handle("/payment/webhook", observability.Middleware("admin", s.logger, inner))
+		}
+	}
+
 	// Build CORS options for admin server
 
 	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
@@ -377,6 +397,9 @@ func errorMappingStreamServerInterceptor() grpc.StreamServerInterceptor {
 func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
+	}
+	if _, ok := status.FromError(err); ok {
+		return err
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return status.Error(codes.DeadlineExceeded, err.Error())

@@ -1,3 +1,4 @@
+import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -8,21 +9,24 @@ import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/g
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
-  V1MetricsViewAggregationMeasure,
-  V1Expression,
   QueryServiceMetricsViewAggregationBody,
+  V1Expression,
+  V1MetricsViewAggregationMeasure,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { TimeControlState } from "./time-controls/time-control-store";
 import { SortType } from "./proto-state/derived-types";
+import type { TimeControlState } from "./time-controls/time-control-store";
 
 const countRegex = /count(?=[^(]*\()/i;
 const sumRegex = /sum(?=[^(]*\()/i;
 
 export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
   const expression = measure.expression?.toLowerCase();
-  return !!(expression?.match(countRegex) || expression?.match(sumRegex));
+  return (
+    !!(expression?.match(countRegex) || expression?.match(sumRegex)) ||
+    Boolean(measure.validPercentOfTotal)
+  );
 }
-
 /**
  * Returns a sanitized column name appropriate for use in e.g. filters.
  *
@@ -143,4 +147,35 @@ export function getComparisonRequestMeasures(
       },
     },
   ];
+}
+
+export function getBreadcrumbOptions(
+  dashboardResources: V1Resource[],
+  canvaseResources: V1Resource[],
+): Map<string, PathOption> {
+  const dashboardOptions = dashboardResources.reduce(
+    (map, dashboardResource) => {
+      const name = dashboardResource.meta?.name?.name ?? "";
+      const label =
+        dashboardResource.metricsView?.state?.validSpec?.title || name;
+
+      if (label && name)
+        map.set(name.toLowerCase(), { label, section: "dashboard", depth: 0 });
+
+      return map;
+    },
+    new Map<string, PathOption>(),
+  );
+
+  const canvasOptions = canvaseResources.reduce((map, canvasResource) => {
+    const name = canvasResource.meta?.name?.name ?? "";
+    const label = canvasResource?.canvas?.spec?.title || name;
+
+    if (label && name)
+      map.set(name.toLowerCase(), { label, section: "custom", depth: 0 });
+
+    return map;
+  }, new Map<string, PathOption>());
+
+  return new Map([...dashboardOptions, ...canvasOptions]);
 }

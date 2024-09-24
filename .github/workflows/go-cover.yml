@@ -30,6 +30,8 @@ jobs:
         # Run tests with coverage output
         # NOTE(2024-03-01): Coverage fails on the generated code in 'proto/gen' without GOEXPERIMENT=nocoverageredesign. See https://github.com/golang/go/issues/55953.
         GOEXPERIMENT=nocoverageredesign go test ./... -short -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
+      env:
+        RILL_RUNTIME_DRUID_TEST_DSN: ${{ secrets.RILL_RUNTIME_DRUID_TEST_DSN }}
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
       with:

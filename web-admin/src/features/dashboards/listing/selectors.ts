@@ -69,7 +69,7 @@ export function useDashboardsV2(
       select: (data) => {
         // Filter for Metrics Explorers and Custom Dashboards
         const resources = data.resources.filter(
-          (res) => res.metricsView || res.dashboard,
+          (res) => res.metricsView || res.canvas,
         );
         // Add `refreshedOn` to each resource
         return resources.map((resource) => {

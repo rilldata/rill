@@ -1,8 +1,2 @@
-PRAGMA foreign_keys = ON;
+UPDATE catalogv2 SET kind = 'rill.runtime.v1.Canvas' WHERE kind = 'rill.runtime.v1.Dashboard';
 
-CREATE TABLE instance_health (
-    instance_id TEXT PRIMARY KEY,
-    health BLOB NOT NULL,
-    created_on TIMESTAMP NOT NULL,
-    FOREIGN KEY (instance_id) REFERENCES instances(id) ON DELETE CASCADE
-);

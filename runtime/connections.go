@@ -267,7 +267,12 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 			if err != nil {
 				return nil, err
 			}
-			res.setPreset("dsn", repo.Root(), true)
+			rootPath, err := repo.Root(ctx)
+			if err != nil {
+				release()
+				return nil, fmt.Errorf("failed to get root path: %w", err)
+			}
+			res.setPreset("dsn", rootPath, true)
 			release()
 		}
 	}
