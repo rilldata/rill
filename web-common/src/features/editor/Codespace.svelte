@@ -6,9 +6,7 @@
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
   import { get } from "svelte/store";
-  // import Dialog from "@rilldata/web-common/components/modal/dialog/Dialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { underlineSelection } from "./highlight-field";
