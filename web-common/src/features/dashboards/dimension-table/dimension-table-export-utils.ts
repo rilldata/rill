@@ -33,7 +33,7 @@ export function getDimensionTableExportArgs(
       useTimeControlStore(ctx),
       ctx.validSpecStore,
     ],
-    ([metricViewName, dashboardState, timeControlState, validSpecStore]) => {
+    ([metricsViewName, dashboardState, timeControlState, validSpecStore]) => {
       if (!validSpecStore.data?.explore || !timeControlState.ready)
         return undefined;
 
@@ -50,7 +50,7 @@ export function getDimensionTableExportArgs(
       );
 
       return getDimensionTableAggregationRequestForTime(
-        metricViewName,
+        metricsViewName,
         dashboardState,
         timeRange,
         comparisonTimeRange,

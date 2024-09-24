@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { useQueryClient } from "@rilldata/svelte-query";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
@@ -68,9 +68,9 @@
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
       <DashboardStateProvider {exploreName}>
-        <DashboardURLStateProvider metricViewName={metricsViewName}>
+        <DashboardURLStateProvider {metricsViewName}>
           <DashboardThemeProvider>
-            <Dashboard metricViewName={metricsViewName} {exploreName} />
+            <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>
         </DashboardURLStateProvider>
       </DashboardStateProvider>

@@ -1,18 +1,18 @@
 <script lang="ts">
-  import * as Elements from "../super-pill/components";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     DashboardTimeControls,
     TimeComparisonOption,
     TimeRange,
   } from "@rilldata/web-common/lib/time/types";
+  import { DateTime, Interval } from "luxon";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { DateTime, Interval } from "luxon";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import * as Elements from "../super-pill/components";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -28,9 +28,9 @@
     validSpecStore,
   } = ctx;
 
-  $: metricViewName = $metricsViewName;
+  $: metricsViewName = $metricsViewName;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  $: dashboardStore = useDashboardStore(metricsViewName);
 
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
@@ -52,12 +52,12 @@
   ) {
     if (!showTimeComparison) {
       metricsExplorerStore.displayTimeComparison(
-        metricViewName,
+        metricsViewName,
         !showTimeComparison,
       );
     }
     metricsExplorerStore.setSelectedComparisonRange(
-      metricViewName,
+      metricsViewName,
       {
         name,
         start,
@@ -73,7 +73,7 @@
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
       metricsExplorerStore.displayTimeComparison(
-        metricViewName,
+        metricsViewName,
         !showTimeComparison,
       );
     }}

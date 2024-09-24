@@ -13,7 +13,7 @@
   import { PreviewTable } from "../../../components/preview-table";
   import ReconcilingSpinner from "../../entity-management/ReconcilingSpinner.svelte";
 
-  export let metricViewName = "";
+  export let metricsViewName = "";
   export let exploreName: string;
   export let height: number;
   export let filters: V1Expression | undefined;
@@ -29,7 +29,7 @@
 
   $: tableQuery = createQueryServiceMetricsViewRows(
     $runtime?.instanceId,
-    metricViewName,
+    metricsViewName,
     {
       limit: $limit,
       where: filters,

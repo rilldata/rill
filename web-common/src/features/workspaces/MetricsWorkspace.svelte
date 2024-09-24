@@ -39,9 +39,9 @@
     fileName,
   } = fileArtifact);
 
-  $: metricViewName = getNameFromFile(filePath);
+  $: metricsViewName = getNameFromFile(filePath);
 
-  $: initLocalUserPreferenceStore(metricViewName);
+  $: initLocalUserPreferenceStore(metricsViewName);
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
@@ -109,7 +109,7 @@
   >
     <div class="flex gap-x-2" slot="cta">
       <PreviewButton
-        dashboardName={metricViewName}
+        dashboardName={metricsViewName}
         disabled={previewDisabled}
         status={previewStatus}
       />
@@ -124,7 +124,7 @@
       {fileArtifact}
       {filePath}
       {allErrors}
-      {metricViewName}
+      {metricsViewName}
     />
   </WorkspaceEditorContainer>
 

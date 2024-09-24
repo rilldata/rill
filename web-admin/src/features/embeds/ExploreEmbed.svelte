@@ -39,9 +39,9 @@
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>
         <DashboardStateProvider {exploreName}>
-          <DashboardURLStateProvider metricViewName={metricsViewName}>
+          <DashboardURLStateProvider {metricsViewName}>
             <DashboardThemeProvider>
-              <Dashboard {exploreName} metricViewName={metricsViewName} />
+              <Dashboard {exploreName} {metricsViewName} />
             </DashboardThemeProvider>
           </DashboardURLStateProvider>
         </DashboardStateProvider>

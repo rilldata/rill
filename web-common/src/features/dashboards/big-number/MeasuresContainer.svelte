@@ -11,7 +11,7 @@
 
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
 
-  export let metricViewName: string;
+  export let metricsViewName: string;
   export let exploreName: string;
   export let exploreContainerWidth;
 
@@ -125,7 +125,7 @@
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
-    metricViewName,
+    metricsViewName,
     {
       measures: $selectedMeasureNames.map((name) => ({ name })),
       where: sanitiseExpression($dashboardStore?.whereFilter, undefined),

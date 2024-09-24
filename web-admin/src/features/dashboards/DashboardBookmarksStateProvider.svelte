@@ -5,11 +5,11 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createDashboardStateSync } from "@rilldata/web-common/features/dashboards/stores/syncDashboardState";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  export let metricViewName: string;
+  export let metricsViewName: string;
   export let exploreName: string;
 
   $: initLocalUserPreferenceStore(exploreName);
@@ -19,7 +19,7 @@
     $runtime?.instanceId,
     $page.params.organization,
     $page.params.project,
-    metricViewName,
+    metricsViewName,
     exploreName,
   );
 

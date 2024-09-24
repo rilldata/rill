@@ -24,7 +24,7 @@ import { ErrorType } from "../../runtime-client/http-client";
 
 export function useDashboard(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   queryOptions?: CreateQueryOptions<
     V1GetResourceResponse,
     ErrorType<RpcStatus>,
@@ -33,7 +33,7 @@ export function useDashboard(
 ) {
   return useResource(
     instanceId,
-    metricViewName,
+    metricsViewName,
     ResourceKind.MetricsView,
     queryOptions,
   );
@@ -75,10 +75,10 @@ export function useValidVisualizations(instanceId: string) {
  */
 export const useMetricsView = <T = V1MetricsViewSpec>(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
 ) => {
-  return useResource<T>(instanceId, metricViewName, ResourceKind.MetricsView, {
+  return useResource<T>(instanceId, metricsViewName, ResourceKind.MetricsView, {
     select: (data) =>
       selector
         ? selector(data.resource?.metricsView?.state?.validSpec)
@@ -89,9 +89,9 @@ export const useMetricsView = <T = V1MetricsViewSpec>(
 // TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange
 export const useModelHasTimeSeries = (
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
 ) =>
-  useMetricsView(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
+  useMetricsView(instanceId, metricsViewName, (meta) => !!meta?.timeDimension);
 
 export function useMetricsViewTimeRange(
   instanceId: string,
@@ -121,19 +121,19 @@ export function useMetricsViewTimeRange(
 
 export const useMetaMeasure = (
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   measureName: string,
 ) =>
-  useMetricsView(instanceId, metricViewName, (meta) =>
+  useMetricsView(instanceId, metricsViewName, (meta) =>
     meta?.measures?.find((measure) => measure.name === measureName),
   );
 
 export const useMetaDimension = (
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   dimensionName: string,
 ) =>
-  useMetricsView(instanceId, metricViewName, (meta) => {
+  useMetricsView(instanceId, metricsViewName, (meta) => {
     const dim = meta?.dimensions?.find(
       (dimension) => dimension.name === dimensionName,
     );

@@ -20,7 +20,7 @@
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
 
   export let exploreName: string;
-  export let metricViewName: string;
+  export let metricsViewName: string;
 
   const { cloudDataViewer, readOnly } = featureFlags;
 
@@ -35,14 +35,14 @@
   $: showPivot = $metricsExplorer?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
-    metricViewName,
+    metricsViewName,
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the dashboard
-  $: dashboard = useDashboard($runtime.instanceId, metricViewName);
+  $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 </script>
@@ -96,7 +96,7 @@
           {:else}
             <MeasuresContainer
               {exploreContainerWidth}
-              {metricViewName}
+              {metricsViewName}
               {exploreName}
             />
           {/if}
@@ -120,7 +120,7 @@
 </article>
 
 {#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !mockUserHasNoAccess}
-  <RowsViewerAccordion {metricViewName} {exploreName} />
+  <RowsViewerAccordion {metricsViewName} {exploreName} />
 {/if}
 
 <style lang="postcss">

@@ -22,11 +22,14 @@ import { Readable, derived } from "svelte/store";
 
 export function useComparisonStartEndTime(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   timeRange: string,
   comparisonRange: string | undefined,
 ) {
-  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+  const allTimeRangeQuery = useMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+  );
   return derived(allTimeRangeQuery, (allTimeRange) => {
     const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
     const maxTimeDate = new Date(maxTime ?? 0);

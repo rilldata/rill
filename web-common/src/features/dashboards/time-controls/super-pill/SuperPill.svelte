@@ -1,13 +1,4 @@
 <script lang="ts">
-  import * as Elements from "./components";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    CUSTOM_TIME_RANGE_ALIAS,
-    ISODurationString,
-    NamedRange,
-    RangeBuckets,
-    deriveInterval,
-  } from "../new-time-controls";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -18,13 +9,22 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { DateTime, Interval } from "luxon";
+  import { onMount } from "svelte";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { DateTime, Interval } from "luxon";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
-  import { onMount } from "svelte";
+  import {
+    ALL_TIME_RANGE_ALIAS,
+    CUSTOM_TIME_RANGE_ALIAS,
+    ISODurationString,
+    NamedRange,
+    RangeBuckets,
+    deriveInterval,
+  } from "../new-time-controls";
+  import * as Elements from "./components";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -42,11 +42,11 @@
 
   $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
 
-  $: metricViewName = $metricsViewName;
+  $: metricsViewName = $metricsViewName;
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  $: dashboardStore = useDashboardStore(metricsViewName);
   $: selectedRange =
     $dashboardStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
@@ -102,7 +102,7 @@
       });
     }
 
-    metricsExplorerStore.setTimeZone(metricViewName, timeZone);
+    metricsExplorerStore.setTimeZone(metricsViewName, timeZone);
     localUserPreferences.set({ timeZone });
   }
 
@@ -147,7 +147,7 @@
       !availableTimeZones.length &&
       $dashboardStore?.selectedTimezone !== "UTC"
     ) {
-      metricsExplorerStore.setTimeZone(metricViewName, "UTC");
+      metricsExplorerStore.setTimeZone(metricsViewName, "UTC");
       localUserPreferences.set({ timeZone: "UTC" });
     }
   });
@@ -182,7 +182,7 @@
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      metricsViewName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
@@ -207,7 +207,7 @@
 
     if (!activeTimeGrain) return;
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      metricsViewName,
       timeRange as TimeRange,
       activeTimeGrain,
       comparisonTimeRange,

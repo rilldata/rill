@@ -30,10 +30,10 @@ export const useMetricsView = <T = V1MetricsViewSpec>(
 ): Readable<QueryObserverResult<T | V1MetricsViewSpec, RpcStatus>> => {
   return derived(
     [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricViewName], set) => {
+    ([runtime, metricsViewName], set) => {
       return useResource(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         ResourceKind.MetricsView,
         {
           select: (data) =>
@@ -74,10 +74,10 @@ export const getFilterSearchList = (
       ctx.metricsViewName,
       ctx.runtime,
     ],
-    ([metricsExplorer, timeControls, metricViewName, runtime], set) => {
+    ([metricsExplorer, timeControls, metricsViewName, runtime], set) => {
       return createQueryServiceMetricsViewComparison(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           dimension: { name: dimension },
           measures: [{ name: metricsExplorer.leaderboardMeasureName }],

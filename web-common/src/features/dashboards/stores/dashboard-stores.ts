@@ -145,7 +145,7 @@ function syncDimensions(
   }
 }
 
-const metricViewReducers = {
+const metricsViewReducers = {
   init(
     name: string,
     metricsView: V1MetricsViewSpec,
@@ -515,9 +515,9 @@ const metricViewReducers = {
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
-  typeof metricViewReducers = {
+  typeof metricsViewReducers = {
   subscribe,
-  ...metricViewReducers,
+  ...metricsViewReducers,
 };
 
 export function useDashboardStore(

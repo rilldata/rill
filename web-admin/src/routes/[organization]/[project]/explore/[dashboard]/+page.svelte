@@ -55,7 +55,7 @@
   $: isDashboardErrored =
     $explore?.data?.metricsView?.metricsView?.state?.validSpec === null &&
     !!$explore?.data?.metricsView?.meta?.reconcileError;
-  $: metricViewName = $explore.data?.metricsView?.meta?.name?.name;
+  $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;
 
   // If no dashboard is found, show a 404 page
   $: if (isDashboardNotFound) {
@@ -83,22 +83,22 @@
     <DashboardBuilding />
   {:else if isDashboardErrored}
     <DashboardErrored organization={orgName} project={projectName} />
-  {:else if metricViewName}
-    {#key metricViewName}
-      <StateManagersProvider metricsViewName={metricViewName} {exploreName}>
+  {:else if metricsViewName}
+    {#key metricsViewName}
+      <StateManagersProvider {metricsViewName} {exploreName}>
         {#if $user.isSuccess && $user.data.user}
-          <DashboardBookmarksStateProvider {metricViewName} {exploreName}>
-            <DashboardURLStateProvider {metricViewName}>
+          <DashboardBookmarksStateProvider {metricsViewName} {exploreName}>
+            <DashboardURLStateProvider {metricsViewName}>
               <DashboardThemeProvider>
-                <Dashboard {metricViewName} {exploreName} />
+                <Dashboard {metricsViewName} {exploreName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardBookmarksStateProvider>
         {:else}
           <DashboardStateProvider {exploreName}>
-            <DashboardURLStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricsViewName}>
               <DashboardThemeProvider>
-                <Dashboard {metricViewName} {exploreName} />
+                <Dashboard {metricsViewName} {exploreName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardStateProvider>

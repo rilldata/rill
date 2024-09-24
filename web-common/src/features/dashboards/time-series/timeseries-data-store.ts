@@ -63,10 +63,10 @@ export function createMetricsViewTimeSeries(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
     ],
-    ([runtime, metricViewName, dashboardStore, timeControls], set) =>
+    ([runtime, metricsViewName, dashboardStore, timeControls], set) =>
       createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           measureNames: measures,
           where: sanitiseExpression(

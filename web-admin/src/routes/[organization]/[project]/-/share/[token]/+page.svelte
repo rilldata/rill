@@ -54,12 +54,12 @@
     >
       <DashboardStateProvider exploreName={resourceName}>
         <DashboardURLStateProvider
-          metricViewName={explore.metricsView.meta.name.name}
+          metricsViewName={explore.metricsView.meta.name.name}
         >
           <DashboardThemeProvider>
             <Dashboard
               exploreName={resourceName}
-              metricViewName={explore.metricsView.meta.name.name}
+              metricsViewName={explore.metricsView.meta.name.name}
             />
           </DashboardThemeProvider>
         </DashboardURLStateProvider>
