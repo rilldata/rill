@@ -1,9 +1,7 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
-  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { yamlSchema } from "codemirror-json-schema/yaml";
-  import { mapParseErrorsToLines } from "../../errors";
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { createPlaceholder } from "./create-placeholder";
   import metricsSchema from "./metrics-schema.json";
