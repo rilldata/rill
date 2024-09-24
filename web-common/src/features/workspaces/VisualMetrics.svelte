@@ -70,6 +70,9 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { useModels } from "../models/selectors";
   import { useSources } from "../sources/selectors";
+  import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
+  import Close from "@rilldata/web-common/components/icons/Close.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let fileArtifact: FileArtifact;
   export let switchView: () => void;
@@ -197,12 +200,19 @@
 
     items.splice(clampedIndex, 0, items.splice(initIndex, 1)[0]);
 
+    selected[type].delete(initIndex);
+    selected[type].add(clampedIndex);
+
+    selected = selected;
+
     parsedDocument.set(type, items);
 
     await saveContent(parsedDocument.toString());
+
+    eventBus.emit("notification", { message: "Item moved", type: "success" });
   }
 
-  function triggerDelete(index: number, type: "measures" | "dimensions") {
+  function triggerDelete(index?: number, type?: "measures" | "dimensions") {
     confirmation = {
       action: "delete",
       index,
@@ -210,19 +220,30 @@
     };
   }
 
-  async function deleteItem(index: number, type: "measures" | "dimensions") {
+  async function deleteItems(items: Partial<typeof selected>) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const measures = parsedDocument.get(type) as YAMLSeq;
 
-    const items = measures.items as Array<YAMLMap>;
+    Object.entries(items).forEach(([type, indices]) => {
+      const seq = parsedDocument.get(type) as YAMLSeq;
+      const items = seq.items as Array<YAMLMap>;
 
-    items.splice(index, 1);
+      parsedDocument.set(
+        type,
+        items.filter((_, i) => !indices.has(i)),
+      );
 
-    parsedDocument.set(type, items);
+      indices.forEach((i) => {
+        selected[type].delete(i);
+      });
+    });
 
     updateLocalContent(parsedDocument.toString(), true);
 
+    selected = selected;
+
     await saveLocalContent();
+
+    eventBus.emit("notification", { message: "Item deleted", type: "success" });
   }
 
   async function duplicateItem(item: number, type: "measures" | "dimensions") {
@@ -251,6 +272,11 @@
     parsedDocument.set(type, items);
 
     await saveContent(parsedDocument.toString());
+
+    eventBus.emit("notification", {
+      message: "Item duplicated",
+      type: "success",
+    });
   }
 
   $: item =
@@ -265,6 +291,13 @@
         ? new YAMLMeasure(item)
         : new YAMLDimension(item)
       : undefined;
+
+  let selected = {
+    measures: new Set<number>(),
+    dimensions: new Set<number>(),
+  };
+
+  $: totalSelected = selected.measures.size + selected.dimensions.size;
 </script>
 
 <div class="wrapper">
@@ -363,16 +396,63 @@
           </header>
           {#if !collapsed[type]}
             <MetricsTable
+              selected={selected[type]}
               {reorderList}
-              dimensions={type === "dimensions"}
+              {type}
               onDuplicate={duplicateItem}
               {items}
               onDelete={triggerDelete}
+              onCheckedChange={(checked, index) => {
+                if (index === undefined) {
+                  if (checked) {
+                    selected[type] = new Set(
+                      Array.from({ length: items.length }, (_, i) => i),
+                    );
+                  } else {
+                    selected[type] = new Set();
+                  }
+                } else {
+                  selected[type][checked ? "add" : "delete"](index);
+                  selected[type] = selected[type];
+                }
+              }}
             />
           {/if}
         </div>
       {/each}
     </div>
+
+    {#if totalSelected}
+      <div
+        class="bg-black rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-50 border border-gray-600 absolute bottom-10 left-1/2 -translate-x-1/2"
+      >
+        <div class="px-2 flex items-center">
+          {totalSelected}
+          {totalSelected > 1 ? "items" : "item"} selected:
+        </div>
+        <button
+          on:click={async () => {
+            triggerDelete();
+          }}
+          class="flex gap-x-2 text-inherit items-center px-2 border-l border-gray-600 hover:bg-gray-800 cursor-pointer"
+        >
+          <Trash size="16px" color="white" />
+          Delete
+        </button>
+
+        <button
+          on:click={() => {
+            selected = {
+              measures: new Set(),
+              dimensions: new Set(),
+            };
+          }}
+          class="flex gap-x-2 text-inherit items-center px-2 border-l border-gray-600 hover:bg-gray-800 cursor-pointer"
+        >
+          <Close size="14px" />
+        </button>
+      </div>
+    {/if}
   </div>
 
   {#if $editingIndex !== null && $editingType !== null && editingClone}
@@ -435,39 +515,48 @@
         </AlertDialog.Description>
       </AlertDialog.Header>
       <AlertDialog.Footer class="gap-y-2">
-        <Button
-          type="secondary"
-          large
-          gray={confirmation.action === "delete"}
-          on:click={() => {
-            confirmation = null;
-          }}
-        >
-          {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
-        </Button>
-        <Button
-          large
-          status={confirmation.action === "delete" ? "error" : "info"}
-          type="primary"
-          on:click={async () => {
-            if (
-              confirmation?.action === "delete" &&
-              confirmation?.index !== undefined &&
-              confirmation.type
-            ) {
-              await deleteItem(confirmation?.index, confirmation.type);
-            } else if (confirmation?.action === "switch") {
-              await updateProperty("model", confirmation.model);
-            }
-            confirmation = null;
-            editingIndex.set(null);
-            editingType.set(null);
-          }}
-        >
-          {#if confirmation.action === "delete"}Yes, delete{:else if confirmation.action === "switch"}Switch
-            model{:else}
-            Close{/if}
-        </Button>
+        <AlertDialog.Cancel asChild let:builder>
+          <Button
+            builders={[builder]}
+            type="secondary"
+            large
+            gray={confirmation.action === "delete"}
+            on:click={() => {
+              confirmation = null;
+            }}
+          >
+            {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
+          </Button>
+        </AlertDialog.Cancel>
+
+        <AlertDialog.Action asChild let:builder>
+          <Button
+            large
+            builders={[builder]}
+            status={confirmation.action === "delete" ? "error" : "info"}
+            type="primary"
+            on:click={async () => {
+              if (confirmation?.action === "delete") {
+                await deleteItems(
+                  confirmation?.index !== undefined && confirmation.type
+                    ? {
+                        [confirmation.type]: new Set([confirmation.index]),
+                      }
+                    : selected,
+                );
+              } else if (confirmation?.action === "switch") {
+                await updateProperty("model", confirmation.model);
+              }
+              confirmation = null;
+              editingIndex.set(null);
+              editingType.set(null);
+            }}
+          >
+            {#if confirmation.action === "delete"}Yes, delete{:else if confirmation.action === "switch"}Switch
+              model{:else}
+              Close{/if}
+          </Button>
+        </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>
   </AlertDialog.Root>
@@ -486,7 +575,7 @@
 
   .main-area {
     @apply flex flex-col gap-y-4 size-full p-4 bg-background border;
-    @apply flex-shrink overflow-hidden;
+    @apply flex-shrink overflow-hidden rounded-[2px] relative;
   }
 
   .section {

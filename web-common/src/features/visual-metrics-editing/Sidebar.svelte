@@ -17,6 +17,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import SimpleSqlExpression from "./SimpleSQLExpression.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let item: YAMLMap<string, string> | undefined;
   export let fileArtifact: FileArtifact;
@@ -200,9 +201,14 @@
     return optional || editingClone[fields[selected].key];
   });
 
-  $: unsavedChanges = Object.keys(editingClone).some(
-    (key) => editingClone[key] !== item?.get(key),
-  );
+  $: unsavedChanges = Object.keys(editingClone).some((key) => {
+    return (
+      (item?.has(key) && editingClone[key] !== item?.get(key)) ||
+      (!item?.has(key) && editingClone[key])
+    );
+  });
+
+  $: console.log({ editingClone, item: item?.toJSON() });
 
   async function saveChanges() {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
@@ -224,6 +230,8 @@
     await saveContent(parsedDocument.toString());
     editingIndex.set(null);
     editingType.set(null);
+
+    eventBus.emit("notification", { message: "Item saved", type: "success" });
   }
 
   function isDefined(value: string | undefined): value is string {

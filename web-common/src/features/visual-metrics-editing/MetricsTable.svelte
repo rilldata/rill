@@ -25,8 +25,9 @@
   const gutterWidth = 56;
   const ROW_HEIGHT = 40;
 
-  export let dimensions: boolean = false;
+  export let type: "measures" | "dimensions";
   export let items: Array<YAMLMap<string, string>>;
+  export let selected: Set<number>;
   export let reorderList: (
     initIndex: number,
     newIndex: number,
@@ -37,31 +38,25 @@
     type: "measures" | "dimensions",
   ) => void;
   export let onDelete: (index: number, type: "measures" | "dimensions") => void;
+  export let onCheckedChange: (checked: boolean, index?: number) => void;
+
+  let clientWidth: HTMLTableRowElement;
+  let tbody: HTMLTableSectionElement;
+  let scroll = 0;
+  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+  let wrapperRect = new DOMRectReadOnly(0, 0, 0, 0);
 
   onMount(() => {
     const cells = clientWidth.children;
     const initialNameWidth = cells[1].getBoundingClientRect().width;
     const initialLabelWidth = cells[2].getBoundingClientRect().width;
-    const initialFormatWidth = !dimensions
-      ? cells[4].getBoundingClientRect().width
-      : 0;
+    const initialFormatWidth =
+      type === "measures" ? cells[4].getBoundingClientRect().width : 0;
 
     nameWidth.set(initialNameWidth);
     labelWidth.set(initialLabelWidth);
     formatWidth.set(initialFormatWidth);
   });
-
-  let clientWidth: HTMLTableRowElement;
-
-  let tbody: HTMLTableSectionElement;
-  let selected = new Set();
-  let scroll = 0;
-  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  let wrapperRect = new DOMRectReadOnly(0, 0, 0, 0);
-
-  $: type = (dimensions ? "dimensions" : "measures") as
-    | "dimensions"
-    | "measures";
 
   $: tableWidth = contentRect.width;
   $: wrapperWidth = wrapperRect.width;
@@ -86,7 +81,7 @@
         style:min-width="{expressionWidth}px"
       />
 
-      {#if !dimensions}
+      {#if type === "measures"}
         <col
           style:width="{$formatWidth}px"
           style:min-width="{$formatWidth}px"
@@ -100,19 +95,12 @@
       <tr bind:this={clientWidth}>
         <th class="!pl-[22px]">
           <Checkbox
-            onChange={(checked) => {
-              if (checked) {
-                selected = new Set(
-                  Array.from({ length: items.length }, (_, i) => i),
-                );
-              } else {
-                selected = new Set();
-              }
-            }}
+            onChange={onCheckedChange}
+            checked={selected.size === items.length}
           />
         </th>
         {#each headers as header (header)}
-          {#if (dimensions && header !== "Format") || !dimensions}
+          {#if (type === "dimensions" && header !== "Format") || type === "measures"}
             <th>
               {header}
             </th>
@@ -133,7 +121,7 @@
           scrollLeft={scroll}
           length={items.length}
           onCheckedChange={(checked) => {
-            selected[checked ? "add" : "delete"](i);
+            onCheckedChange(checked, i);
           }}
           selected={selected.has(i)}
           {type}

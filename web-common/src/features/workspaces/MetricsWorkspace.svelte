@@ -19,7 +19,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import VisualMetrics from "./VisualMetrics.svelte";
-  import ViewSelector from "../canvas-dashboards/ViewSelector.svelte";
+  import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import {
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
@@ -100,7 +100,7 @@
     if (newRoute) await goto(newRoute);
   }
 
-  let selectedView: "code" | "viz" = "code";
+  let selectedView: "code" | "viz" = "viz";
 </script>
 
 <WorkspaceContainer inspector={isModelingSupported && selectedView === "code"}>

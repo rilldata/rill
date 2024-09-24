@@ -11,6 +11,7 @@
     {checked}
     {disabled}
     on:change={(event) => {
+      console.log({ event });
       onChange(event.currentTarget.checked);
     }}
   />

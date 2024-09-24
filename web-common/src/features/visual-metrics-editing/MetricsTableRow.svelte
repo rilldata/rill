@@ -14,10 +14,6 @@
     editingIndex,
     editingType,
   } from "../workspaces/VisualMetrics.svelte";
-  import {
-    defaultChipColors,
-    measureChipColors,
-  } from "@rilldata/web-common/components/chip/chip-types";
   import { YAMLMap } from "yaml";
   import { tick } from "svelte";
 
@@ -130,14 +126,11 @@
     <span>{item?.get("name") ?? "-"}</span>
   </td>
   <td on:click={setEditing} aria-label="Label">
-    <div class=" text-[12px] pr-4">
+    <div class="text-[12px] pr-4">
       <Chip
         slideDuration={0}
-        extraRounded={type === "dimensions"}
-        extraPadding={false}
-        {...type === "measures" ? measureChipColors : defaultChipColors}
+        type={type === "dimensions" ? "dimension" : "measure"}
         label={item.get("label") || item.get("name")}
-        outline
       >
         <div slot="body" class="font-bold">
           {item.get("label") || item.get("name")}
