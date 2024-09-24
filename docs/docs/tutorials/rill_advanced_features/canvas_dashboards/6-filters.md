@@ -33,7 +33,7 @@ select:
 
 We can now add the component to our dashboard. Selecting you'll see the distinct authors listed. However, selecting an author doesnt change the dashboards, why? This is because we haven't set the input in the component's YAML. 
 
-> insert screenshot of selector in the UI. 
+![img](/img/tutorials/301/selector.png)
 
 
 ### Defining the input from the Selector
@@ -63,12 +63,31 @@ data:
 
 Let's take a second to understand the SQL. We are checking that if the author_name argument exists, we wil append `AND author_name...` to the SQL query. As we have defined value as "", this author_name is not being used. 
 
-> insert screenshot
+![img](/img/tutorials/301/component-filter-on.png)
 
 However, you can see that if we add an actual author to this key-pair the chart changes.
 
->insert screenshot.
+![img](/img/tutorials/301/component-filter-off.png)
 
-Let's change it back to the original empty value as we do not want to default on the single author view. Now let's navigate back to the canvas dashboard and add the same to the other components. 
+Let's change it back to the original empty value as we do not want to default on the single author view. Now let's navigate back to the canvas dashboard and add the variables to be used.
+
+```yaml
+type: dashboard
+columns: 13
+gap: 2
+
+variables:
+  - name: author
+    type: string
+    value: ""
+
+items:
+  - component:
+      markdown:
+        content: "ClickHouse Repo Overview"
+...
+```
+
+Now we can see that setting the author select, the stacked chart changes. Let's add the same filters to the other components. 
 
 > insert screenshot of completed canvas dashboard
