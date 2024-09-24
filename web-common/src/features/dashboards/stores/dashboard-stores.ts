@@ -117,7 +117,7 @@ function syncDimensions(
   metricsExplorer: MetricsExplorerEntity,
 ) {
   // Having a map here improves the lookup for existing dimension name
-  const dimensionsSet = new Set(explore.measures ?? []);
+  const dimensionsSet = new Set(explore.dimensions ?? []);
   metricsExplorer.whereFilter =
     filterExpressions(metricsExplorer.whereFilter, (e) => {
       if (!e.cond?.exprs?.length) return true;
