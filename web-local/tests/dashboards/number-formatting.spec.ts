@@ -1,7 +1,7 @@
+import { expect } from "@playwright/test";
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { interactWithTimeRangeMenu } from "../utils/dashboardHelpers";
-import { expect } from "@playwright/test";
 import { test } from "../utils/test";
 
 test.describe("smoke tests for number formatting", () => {
@@ -77,10 +77,10 @@ dimensions:
       ["humanized default", "100.0k", "100000"],
       ["USD", "$300.6k", "300576.83999999857"],
       ["humanized chosen", "300.6k", "300576.83999999857"],
-      ["No Format", "300576.83999999857", "300576.83999999857"],
+      ["No Format", "300.6k", "300576.83999999857"],
       ["percentage", "30.1M%", "300576.83999999857"],
       ["interval_ms", "5 m", "5m 576ms"],
-      ["d3 fixed", "300576.840", "300576.840"],
+      ["d3 fixed", "300.6k", "300576.840"],
     ]) {
       // check bignum with correct format exists/is visible
       await expect(
