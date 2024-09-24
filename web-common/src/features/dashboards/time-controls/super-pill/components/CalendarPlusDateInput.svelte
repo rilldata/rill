@@ -60,7 +60,7 @@
 />
 
 <Calendar
-  interval={calendarInterval}
+  rangeSelection={calendarInterval}
   {selectingStart}
   {firstVisibleMonth}
   onSelectDay={onValidDateInput}

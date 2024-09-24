@@ -49,7 +49,7 @@ notify:
 
 :::info Don't forget to commit your changes!
 
-After making these changes, you should commit and [push these changes](/deploy/existing-project/github-101.md#pushing-changes) to your git repository.
+After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101.md#pushing-changes) to your git repository.
 
 :::
 
@@ -79,6 +79,6 @@ notify:
 
 :::info Don't forget to commit your changes!
 
-After making these changes, you should commit and [push these changes](/deploy/existing-project/github-101.md#pushing-changes) to your git repository.
+After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101.md#pushing-changes) to your git repository.
 
 :::

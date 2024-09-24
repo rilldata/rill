@@ -1,9 +1,8 @@
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { InfoIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import * as Select from "@rilldata/web-common/components/select";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
 
   const dispatch = createEventDispatcher();
 
@@ -35,16 +34,14 @@
         <span class="text-gray-500">(optional)</span>
       {/if}
       {#if tooltip}
-        <Tooltip distance={8}>
-          <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
-          <TooltipContent
-            slot="tooltip-content"
-            maxWidth="600px"
-            class="whitespace-pre-line"
-          >
+        <Tooltip.Root portal="body">
+          <Tooltip.Trigger>
+            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+          </Tooltip.Trigger>
+          <Tooltip.Content side="right">
             {tooltip}
-          </TooltipContent>
-        </Tooltip>
+          </Tooltip.Content>
+        </Tooltip.Root>
       {/if}
     </label>
   {/if}

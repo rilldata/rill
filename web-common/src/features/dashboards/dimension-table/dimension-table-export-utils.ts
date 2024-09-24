@@ -69,6 +69,10 @@ export function getDimensionTableAggregationRequestForTime(
   }));
 
   let apiSortName = dashboardState.leaderboardMeasureName;
+  if (!dashboardState.visibleMeasureKeys.has(apiSortName)) {
+    // if selected sort measure is not visible add it to list
+    measures.push({ name: apiSortName });
+  }
   if (comparisonTimeRange) {
     // insert beside the correct measure
     measures.splice(

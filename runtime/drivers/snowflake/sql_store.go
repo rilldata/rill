@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	"github.com/apache/arrow/go/v14/arrow"
 	"github.com/apache/arrow/go/v14/arrow/memory"
 	"github.com/apache/arrow/go/v14/parquet"
@@ -51,7 +52,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		parallelFetchLimit = c.configProperties.ParallelFetchLimit
 	}
 
-	db, err := sql.Open("snowflake", dsn)
+	db, err := otelsql.Open("snowflake", dsn)
 	if err != nil {
 		return nil, err
 	}

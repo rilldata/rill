@@ -334,7 +334,27 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{orgName}/billing/payments/portal-url:
+  /v1/organizations/{organization}/billing/issues:
+    get:
+      summary: ListOrganizationBillingIssues lists all the billing issues for the organization
+      operationId: AdminService_ListOrganizationBillingIssues
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationBillingIssuesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/billing/payments/portal-url:
     get:
       summary: GetPaymentsPortalURL returns the URL for the billing session to collect payment method
       operationId: AdminService_GetPaymentsPortalURL
@@ -348,7 +368,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: orgName
+        - name: organization
           in: path
           required: true
           type: string
@@ -358,7 +378,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{orgName}/billing/subscriptions:
+  /v1/organizations/{organization}/billing/subscriptions:
     get:
       summary: GetBillingSubscription lists the subscription for the organization
       operationId: AdminService_GetBillingSubscription
@@ -372,7 +392,26 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: orgName
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    delete:
+      summary: CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+      operationId: AdminService_CancelBillingSubscription
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CancelBillingSubscriptionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
           in: path
           required: true
           type: string
@@ -391,7 +430,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: orgName
+        - name: organization
           in: path
           required: true
           type: string
@@ -1484,6 +1523,9 @@ paths:
               state:
                 type: string
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+              title:
+                type: string
+                description: Optional public url title to store with the token.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
@@ -2981,6 +3023,38 @@ paths:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
       tags:
         - AdminService
+  /v1/superuser/organizations/{organization}/billing/issues/{type}:
+    delete:
+      summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+      operationId: AdminService_SudoDeleteOrganizationBillingIssue
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoDeleteOrganizationBillingIssueResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: path
+          required: true
+          type: string
+          enum:
+            - BILLING_ISSUE_TYPE_UNSPECIFIED
+            - BILLING_ISSUE_TYPE_ON_TRIAL
+            - BILLING_ISSUE_TYPE_TRIAL_ENDED
+            - BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
+            - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
+            - BILLING_ISSUE_TYPE_PAYMENT_FAILED
+            - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+      tags:
+        - AdminService
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -3466,11 +3540,116 @@ definitions:
         type: array
         items:
           type: string
+      webOpenPath:
+        type: string
+        description: Annotation for the subpath of <UI host>/org/project to open for the report.
       webOpenState:
         type: string
-        title: base64 state url of the dashboard when it was created
+        description: Annotation for the base64-encoded UI state to open for the report.
   v1ApproveProjectAccessResponse:
     type: object
+  v1BillingIssue:
+    type: object
+    properties:
+      organization:
+        type: string
+      type:
+        $ref: '#/definitions/v1BillingIssueType'
+      level:
+        $ref: '#/definitions/v1BillingIssueLevel'
+      metadata:
+        $ref: '#/definitions/v1BillingIssueMetadata'
+      eventTime:
+        type: string
+        format: date-time
+      createdOn:
+        type: string
+        format: date-time
+  v1BillingIssueLevel:
+    type: string
+    enum:
+      - BILLING_ISSUE_LEVEL_UNSPECIFIED
+      - BILLING_ISSUE_LEVEL_WARNING
+      - BILLING_ISSUE_LEVEL_ERROR
+    default: BILLING_ISSUE_LEVEL_UNSPECIFIED
+  v1BillingIssueMetadata:
+    type: object
+    properties:
+      onTrial:
+        $ref: '#/definitions/v1BillingIssueMetadataOnTrial'
+      trialEnded:
+        $ref: '#/definitions/v1BillingIssueMetadataTrialEnded'
+      noPaymentMethod:
+        $ref: '#/definitions/v1BillingIssueMetadataNoPaymentMethod'
+      noBillableAddress:
+        $ref: '#/definitions/v1BillingIssueMetadataNoBillableAddress'
+      paymentFailed:
+        $ref: '#/definitions/v1BillingIssueMetadataPaymentFailed'
+      subscriptionCancelled:
+        $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
+  v1BillingIssueMetadataNoBillableAddress:
+    type: object
+  v1BillingIssueMetadataNoPaymentMethod:
+    type: object
+  v1BillingIssueMetadataOnTrial:
+    type: object
+    properties:
+      endDate:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataPaymentFailed:
+    type: object
+    properties:
+      invoices:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1BillingIssueMetadataPaymentFailedMeta'
+  v1BillingIssueMetadataPaymentFailedMeta:
+    type: object
+    properties:
+      invoiceId:
+        type: string
+      invoiceNumber:
+        type: string
+      invoiceUrl:
+        type: string
+      amountDue:
+        type: string
+      currency:
+        type: string
+      dueDate:
+        type: string
+        format: date-time
+      failedOn:
+        type: string
+        format: date-time
+      gracePeriodEndDate:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataSubscriptionCancelled:
+    type: object
+    properties:
+      endDate:
+        type: string
+        format: date-time
+  v1BillingIssueMetadataTrialEnded:
+    type: object
+    properties:
+      gracePeriodEndDate:
+        type: string
+        format: date-time
+  v1BillingIssueType:
+    type: string
+    enum:
+      - BILLING_ISSUE_TYPE_UNSPECIFIED
+      - BILLING_ISSUE_TYPE_ON_TRIAL
+      - BILLING_ISSUE_TYPE_TRIAL_ENDED
+      - BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
+      - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
+      - BILLING_ISSUE_TYPE_PAYMENT_FAILED
+      - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+    default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
     properties:
@@ -3520,6 +3699,8 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1CancelBillingSubscriptionResponse:
+    type: object
   v1CompleteRequest:
     type: object
     properties:
@@ -3970,6 +4151,14 @@ definitions:
           $ref: '#/definitions/v1MagicAuthToken'
       nextPageToken:
         type: string
+  v1ListOrganizationBillingIssuesResponse:
+    type: object
+    properties:
+      issues:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1BillingIssue'
   v1ListOrganizationInvitesResponse:
     type: object
     properties:
@@ -4143,6 +4332,8 @@ definitions:
         items:
           type: string
       state:
+        type: string
+      title:
         type: string
   v1MemberUser:
     type: object
@@ -4435,8 +4626,6 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      openProjectSubpath:
-        type: string
       emailRecipients:
         type: array
         items:
@@ -4453,9 +4642,12 @@ definitions:
         type: array
         items:
           type: string
+      webOpenPath:
+        type: string
+        description: Annotation for the subpath of <UI host>/org/project to open for the report.
       webOpenState:
         type: string
-        title: base64 state url of the metrics_view when it was created
+        description: Annotation for the base64-encoded UI state to open for the report.
   v1RequestProjectAccessResponse:
     type: object
   v1RevokeCurrentAuthTokenResponse:
@@ -4580,6 +4772,8 @@ definitions:
       trialEndDate:
         type: string
         format: date-time
+  v1SudoDeleteOrganizationBillingIssueResponse:
+    type: object
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -4622,7 +4816,7 @@ definitions:
   v1SudoUpdateOrganizationBillingCustomerRequest:
     type: object
     properties:
-      orgName:
+      organization:
         type: string
       billingCustomerId:
         type: string
@@ -4651,7 +4845,7 @@ definitions:
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
-      orgName:
+      organization:
         type: string
       projects:
         type: integer

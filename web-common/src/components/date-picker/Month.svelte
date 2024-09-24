@@ -5,12 +5,13 @@
 
   export let startDay: DateTime<true>;
   export let startOfWeek = 0;
-  export let interval: Interval<true>;
+  export let interval: Interval;
   export let selectingStart: boolean;
   export let visibleMonths = 2;
   export let visibleIndex: number;
   export let potentialEnd: DateTime | undefined;
   export let potentialStart: DateTime | undefined;
+  export let singleDaySelection = false;
   export let onPan: (direction: 1 | -1) => void;
   export let onSelectDay: (date: DateTime<true>) => void;
 
@@ -18,7 +19,7 @@
 
   $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
 
-  $: inclusiveEnd = interval.end.minus({ millisecond: 0 });
+  $: inclusiveEnd = interval.end?.minus({ millisecond: 0 });
 
   $: days = Array.from({ length: weekCount * 7 }, (_, i) => {
     if (i < firstDay) {
@@ -47,6 +48,7 @@
 <div class="flex flex-col gap-2 w-full">
   <div class="flex justify-between px-2">
     <button
+      type="button"
       class:hide={visibleIndex !== 0}
       class="hover:opacity-50"
       on:click={() => onPan(-1)}
@@ -60,6 +62,7 @@
       <p>{startDay.year}</p>
     </div>
     <button
+      type="button"
       class="hover:opacity-50"
       class:hide={visibleIndex !== visibleMonths - 1}
       on:click={() => onPan(1)}
@@ -71,6 +74,7 @@
   <div
     role="presentation"
     class="grid grid-cols-7 gap-y-1 w-full"
+    class:single-day-selection={singleDaySelection}
     class:selecting-start={selectingStart}
     on:mouseleave={resetPotentialDates}
   >
@@ -78,24 +82,33 @@
       <div class="weekday">{weekday}</div>
     {/each}
     {#each days as date (date.toISO())}
-      {@const isEnd = areSameDay(inclusiveEnd, date)}
-      {@const isStart = areSameDay(interval.start, date)}
-      {@const afterEnd = date > inclusiveEnd}
-      {@const beforeStart = date < interval.start}
+      {@const isEnd = inclusiveEnd && areSameDay(inclusiveEnd, date)}
+      {@const isStart = interval.start && areSameDay(interval.start, date)}
+      {@const afterEnd = inclusiveEnd && date > inclusiveEnd}
+      {@const beforeStart = interval.start && date < interval.start}
       {@const inRange = !afterEnd && !beforeStart}
       {@const inPotentialRange =
-        (potentialEnd && date > interval.start && date < potentialEnd) ||
-        (potentialStart && date > potentialStart && date < inclusiveEnd)}
+        (potentialEnd &&
+          interval.start &&
+          date > interval.start &&
+          date < potentialEnd) ||
+        (potentialStart &&
+          inclusiveEnd &&
+          date > potentialStart &&
+          date < inclusiveEnd)}
       {@const outOfMonth = date.month !== startDay.month}
       {@const weekend = date.weekday === 6 || date.weekday === 7}
       <button
+        type="button"
         class="day font-medium"
         on:click={() => {
           onSelectDay(date);
           resetPotentialDates();
         }}
         on:mouseenter={() => {
-          if (selectingStart || date < interval.start) {
+          if (singleDaySelection) return;
+
+          if (selectingStart || (interval.start && date < interval.start)) {
             potentialStart = date;
           } else {
             potentialEnd = date;
@@ -173,7 +186,11 @@
     @apply border-l border-r-0;
   }
 
-  .next-day:not(.in-potential-range) {
+  .single-day-selection .day {
+    @apply rounded-md;
+  }
+
+  :not(.single-day-selection) > .next-day:not(.in-potential-range) {
     @apply border-dashed border-t border-b border-primary-200;
     @apply bg-gradient-to-r from-primary-100 to-transparent;
   }

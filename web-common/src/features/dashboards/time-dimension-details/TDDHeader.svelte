@@ -179,7 +179,7 @@
         <Column size="16px" /> Columns
       </div>
       <div class="flex items-center gap-x-2">
-        <TimeGrainSelector {metricViewName} pill />
+        <TimeGrainSelector metricsViewName={metricViewName} tdd />
         <SearchableFilterChip
           label={selectedMeasureLabel}
           on:item-clicked={switchMeasure}

@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils";
-  import type { PathOption, PathOptions } from "./Breadcrumbs.svelte";
+  import type { PathOption, PathOptions } from "./types";
 
   export let options: PathOptions;
   export let current: string;
@@ -46,7 +46,9 @@
         on:click={() => {
           if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
-        href={linkMaker(currentPath, depth, current, selected, "")}
+        href={isCurrentPage
+          ? "#top"
+          : linkMaker(currentPath, depth, current, selected, "")}
         class="text-gray-500 hover:text-gray-600"
         class:current={isCurrentPage}
       >

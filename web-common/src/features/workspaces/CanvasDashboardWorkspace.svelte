@@ -6,10 +6,10 @@
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import ComponentsEditor from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditor.svelte";
   import ComponentsEditorContainer from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditorContainer.svelte";
-  import AddComponentMenu from "@rilldata/web-common/features/canvas-dashboards/AddComponentMenu.svelte";
-  import CanvasDashboardPreview from "@rilldata/web-common/features/canvas-dashboards/CanvasDashboardPreview.svelte";
-  import type { Vector } from "@rilldata/web-common/features/canvas-dashboards/types";
-  import ViewSelector from "@rilldata/web-common/features/canvas-dashboards/ViewSelector.svelte";
+  import AddComponentMenu from "@rilldata/web-common/features/canvas/AddComponentMenu.svelte";
+  import CanvasDashboardPreview from "@rilldata/web-common/features/canvas/CanvasDashboardPreview.svelte";
+  import type { Vector } from "@rilldata/web-common/features/canvas/types";
+  import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
@@ -25,7 +25,7 @@
     WorkspaceHeader,
   } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
+  import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { setContext } from "svelte";
   import { slide } from "svelte/transition";
@@ -46,14 +46,14 @@
   let selectedIndex: number | null = null;
   let componentEditorPercentage = 0.4;
   let selectedComponentName: string | null = null;
-  let spec: V1DashboardSpec = {
+  let spec: V1CanvasSpec = {
     columns: 20,
     gap: 4,
     items: [],
   };
 
   $: canvasDashboardName = getNameFromFile(filePath);
-  $: setContext("rill::canvas-dashboard:name", canvasDashboardName);
+  $: setContext("rill::canvas:name", canvasDashboardName);
 
   $: ({ instanceId } = $runtime);
 
@@ -73,13 +73,13 @@
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
 
-  $: spec = structuredClone($resourceQuery.data?.dashboard?.spec ?? spec);
+  $: spec = structuredClone($resourceQuery.data?.canvas?.spec ?? spec);
 
   $: ({ items = [], columns = 20, gap = 4, variables = [] } = spec);
   $: if (
     items.filter(
       (item) =>
-        !item.definedInDashboard && item.component === selectedComponentName,
+        !item.definedInCanvas && item.component === selectedComponentName,
     ).length
   ) {
     selectedComponentFileArtifact = fileArtifacts.findFileArtifact(
@@ -105,7 +105,7 @@
       e.currentTarget,
       filePath,
       fileName,
-      fileArtifacts.getNamesForKind(ResourceKind.Dashboard),
+      fileArtifacts.getNamesForKind(ResourceKind.Canvas),
     );
     if (newRoute) await goto(newRoute);
   }

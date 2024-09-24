@@ -1,9 +1,10 @@
 <script lang="ts" context="module">
   export const navigationOpen = (() => {
-    const store = writable(true);
+    const { subscribe, update, set } = writable(true);
     return {
-      subscribe: store.subscribe,
-      toggle: () => store.update((open) => !open),
+      toggle: () => update((open) => !open),
+      set,
+      subscribe,
     };
   })();
 </script>
@@ -88,7 +89,7 @@
 <style lang="postcss">
   .sidebar {
     @apply flex flex-col flex-none relative overflow-hidden;
-    @apply h-screen border-r z-0;
+    @apply h-full border-r z-0;
     transition-property: width;
     will-change: width;
   }

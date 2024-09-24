@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas-dashboards/CanvasDashboardEmbed.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -8,7 +8,7 @@
 </script>
 
 <CanvasDashboardEmbed
-  dashboardName={data.dashboardName}
+  canvasName={data.dashboardName}
   {items}
   {columns}
   {gap}

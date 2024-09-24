@@ -136,7 +136,7 @@
           Unlock the power of BI-as-code with GitHub-backed collaboration,
           version control, and approval workflows.
           <a
-            href="https://docs.rilldata.com/deploy/existing-project/github-101"
+            href="https://docs.rilldata.com/deploy/deploy-dashboard/github-101"
             target="_blank"
             class="text-primary-600"
           >

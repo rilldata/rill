@@ -993,6 +993,14 @@ paths:
           in: path
           required: true
           type: string
+        - name: pending
+          in: query
+          required: false
+          type: boolean
+        - name: errored
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -2475,6 +2483,30 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/resources/explore:
+    get:
+      summary: GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
+      operationId: RuntimeService_GetExplore
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetExploreResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/trigger:
     post:
       summary: |-
@@ -2800,6 +2832,7 @@ definitions:
       range:
         type: string
         description: Used to override the range for the comparison with something other than the selected range.
+    description: 'Deprecated: Now defined in the Explore resource.'
   MetricsViewSpecAvailableTimeRange:
     type: object
     properties:
@@ -2811,6 +2844,7 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecAvailableComparisonOffset'
         description: Available comparison offsets for this time range.
+    description: 'Deprecated: Now defined in the Explore resource.'
   MetricsViewSpecComparisonMode:
     type: string
     enum:
@@ -2819,6 +2853,9 @@ definitions:
       - COMPARISON_MODE_TIME
       - COMPARISON_MODE_DIMENSION
     default: COMPARISON_MODE_UNSPECIFIED
+    description: |-
+      DEPRECATED FIELDS
+      Deprecated: Now defined in the Explore resource.
   MetricsViewSpecDimensionSelector:
     type: object
     properties:
@@ -3309,6 +3346,63 @@ definitions:
       - BUILTIN_MEASURE_COUNT
       - BUILTIN_MEASURE_COUNT_DISTINCT
     default: BUILTIN_MEASURE_UNSPECIFIED
+  v1Canvas:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1CanvasSpec'
+      state:
+        $ref: '#/definitions/v1CanvasState'
+  v1CanvasItem:
+    type: object
+    properties:
+      component:
+        type: string
+      definedInCanvas:
+        type: boolean
+      x:
+        type: integer
+        format: int64
+      "y":
+        type: integer
+        format: int64
+      width:
+        type: integer
+        format: int64
+      height:
+        type: integer
+        format: int64
+  v1CanvasSpec:
+    type: object
+    properties:
+      title:
+        type: string
+      columns:
+        type: integer
+        format: int64
+      gap:
+        type: integer
+        format: int64
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
+      items:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasItem'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+  v1CanvasState:
+    type: object
+    properties:
+      validSpec:
+        $ref: '#/definitions/v1CanvasSpec'
   v1CategoricalSummary:
     type: object
     properties:
@@ -3656,7 +3750,7 @@ definitions:
       show:
         type: string
         description: Templated string that should evaluate to a boolean.
-      definedInDashboard:
+      definedInCanvas:
         type: boolean
   v1ComponentState:
     type: object
@@ -3831,58 +3925,6 @@ definitions:
     title: Response message for RuntimeService.CreateInstance
   v1CreateTriggerResponse:
     type: object
-  v1Dashboard:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1DashboardSpec'
-      state:
-        $ref: '#/definitions/v1DashboardState'
-  v1DashboardItem:
-    type: object
-    properties:
-      component:
-        type: string
-      definedInDashboard:
-        type: boolean
-      x:
-        type: integer
-        format: int64
-      "y":
-        type: integer
-        format: int64
-      width:
-        type: integer
-        format: int64
-      height:
-        type: integer
-        format: int64
-  v1DashboardSpec:
-    type: object
-    properties:
-      title:
-        type: string
-      columns:
-        type: integer
-        format: int64
-      gap:
-        type: integer
-        format: int64
-      variables:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ComponentVariable'
-      items:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1DashboardItem'
-  v1DashboardState:
-    type: object
-    properties:
-      validSpec:
-        $ref: '#/definitions/v1DashboardSpec'
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -3912,6 +3954,154 @@ definitions:
       description:
         type: string
     description: Example contains metadata about an example project that is available for unpacking.
+  v1Explore:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ExploreSpec'
+      state:
+        $ref: '#/definitions/v1ExploreState'
+  v1ExploreComparisonMode:
+    type: string
+    enum:
+      - EXPLORE_COMPARISON_MODE_UNSPECIFIED
+      - EXPLORE_COMPARISON_MODE_NONE
+      - EXPLORE_COMPARISON_MODE_TIME
+      - EXPLORE_COMPARISON_MODE_DIMENSION
+    default: EXPLORE_COMPARISON_MODE_UNSPECIFIED
+  v1ExploreComparisonTimeRange:
+    type: object
+    properties:
+      offset:
+        type: string
+        description: ISO 8601 duration string to use as an offset from the base time range.
+      range:
+        type: string
+        description: |-
+          ISO 8601 duration string for the duration of the comparison time range.
+          If not specified, it should fallback to the range of the base time range.
+  v1ExplorePreset:
+    type: object
+    properties:
+      label:
+        type: string
+        title: Display name of the preset
+      dimensions:
+        type: array
+        items:
+          type: string
+        title: Dimensions to show
+      dimensionsExclude:
+        type: boolean
+        description: |-
+          If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+          Since it is processed during validation, this will always be false in `state.valid_spec`.
+      measures:
+        type: array
+        items:
+          type: string
+        title: Measures to show
+      measuresExclude:
+        type: boolean
+        description: |-
+          If true, `measures` will be inverted during validation to include all measures except the ones listed.
+          Since it is processed during validation, this will always be false in `state.valid_spec`.
+      timeRange:
+        type: string
+        description: |-
+          Time range for the explore.
+          It corresponds to the `range` property of the explore's `time_ranges`.
+          If not found in `time_ranges`, it should be added to the list.
+      comparisonMode:
+        $ref: '#/definitions/v1ExploreComparisonMode'
+        description: Comparison mode.
+      comparisonDimension:
+        type: string
+        description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+  v1ExploreSpec:
+    type: object
+    properties:
+      title:
+        type: string
+        title: User-facing title
+      description:
+        type: string
+        title: User-facing description
+      metricsView:
+        type: string
+        title: The metrics view the explore is based on
+      dimensions:
+        type: array
+        items:
+          type: string
+        description: Dimensions to show.
+      dimensionsExclude:
+        type: boolean
+        description: |-
+          If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
+          Since it is processed during validation, this will always be false in `state.valid_spec`.
+      measures:
+        type: array
+        items:
+          type: string
+        title: Measures available
+      measuresExclude:
+        type: boolean
+        description: |-
+          If true, `measures` will be inverted during validation to include all measures except the ones listed.
+          Since it is processed during validation, this will always be false in `state.valid_spec`.
+      theme:
+        type: string
+        title: Theme to use
+      timeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ExploreTimeRange'
+        description: |-
+          List of selectable time ranges with comparison time ranges.
+          If the list is empty, a default list should be shown.
+      timeZones:
+        type: array
+        items:
+          type: string
+        description: |-
+          List of selectable time zones.
+          If the list is empty, a default list should be shown.
+          The values should be valid IANA location identifiers.
+      presets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ExplorePreset'
+        description: |-
+          List of preconfigured UI states that can be toggled between.
+          If the list is not empty, the first item should be selected by default.
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+        description: |-
+          Security for the explore dashboard.
+          These are not currently parsed from YAML, but will be derived from the parent metrics view.
+  v1ExploreState:
+    type: object
+    properties:
+      validSpec:
+        $ref: '#/definitions/v1ExploreSpec'
+  v1ExploreTimeRange:
+    type: object
+    properties:
+      range:
+        type: string
+        title: ISO 8601 duration string for the time range
+      comparisonTimeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ExploreComparisonTimeRange'
+        title: Comparison time ranges available for this time range
   v1ExportFormat:
     type: string
     enum:
@@ -4002,6 +4192,13 @@ definitions:
         type: string
       resolverProperties:
         type: object
+  v1GetExploreResponse:
+    type: object
+    properties:
+      explore:
+        $ref: '#/definitions/v1Resource'
+      metricsView:
+        $ref: '#/definitions/v1Resource'
   v1GetFileResponse:
     type: object
     properties:
@@ -4691,13 +4888,18 @@ definitions:
         description: Name of the model the metrics view is based on. Either table or model should be set.
       title:
         type: string
-        title: User friendly label for the dashboard
+        title: User-facing title
       description:
         type: string
-        title: Description of the dashboard
+        title: User-facing description
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: |-
+          The smallest time grain that can be queried for.
+          This can be useful to set if the time_dimension is not available below a certain granularity.
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
@@ -4707,39 +4909,18 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecDimensionV2'
         title: Dimensions in the metrics view
-      defaultDimensions:
-        type: array
-        items:
-          type: string
-        title: List of selected dimensions by defaults
       measures:
         type: array
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasureV2'
         title: Measures in the metrics view
-      defaultMeasures:
-        type: array
-        items:
-          type: string
-        title: List of selected measures by defaults
-      smallestTimeGrain:
-        $ref: '#/definitions/v1TimeGrain'
-        title: Smallest time grain to show in the dashboard
-      defaultTimeRange:
-        type: string
-        description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-      availableTimeZones:
-        type: array
-        items:
-          type: string
-        title: Available time zones list preferred time zones using IANA location identifiers
       securityRules:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1SecurityRule'
-        title: Security for the dashboard
+        title: Security for the metrics view
       firstDayOfWeek:
         type: integer
         format: int64
@@ -4748,21 +4929,55 @@ definitions:
         type: integer
         format: int64
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
+      defaultDimensions:
+        type: array
+        items:
+          type: string
+        description: |-
+          List of selected dimensions by defaults.
+          Deprecated: Now defined in the Explore resource.
+      defaultMeasures:
+        type: array
+        items:
+          type: string
+        description: |-
+          List of selected measures by defaults.
+          Deprecated: Now defined in the Explore resource.
+      defaultTimeRange:
+        type: string
+        description: |-
+          Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+          Deprecated: Now defined in the Explore resource.
       defaultComparisonMode:
         $ref: '#/definitions/MetricsViewSpecComparisonMode'
-        description: Selected default comparison mode.
+        description: |-
+          Selected default comparison mode.
+          Deprecated: Now defined in the Explore resource.
       defaultComparisonDimension:
         type: string
-        title: If comparison mode is dimension then this determines which is the default dimension
+        description: |-
+          If comparison mode is dimension then this determines which is the default dimension.
+          Deprecated: Now defined in the Explore resource.
+      defaultTheme:
+        type: string
+        description: |-
+          Default theme to apply.
+          Deprecated: Now defined in the Explore resource.
       availableTimeRanges:
         type: array
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
-        description: List of available time ranges with comparison ranges that would replace the default list.
-      defaultTheme:
-        type: string
-        title: Default theme to apply
+        description: |-
+          List of available time ranges with comparison ranges that would replace the default list.
+          Deprecated: Now defined in the Explore resource.
+      availableTimeZones:
+        type: array
+        items:
+          type: string
+        description: |-
+          Available time zones list preferred time zones using IANA location identifiers.
+          Deprecated: Now defined in the Explore resource.
   v1MetricsViewState:
     type: object
     properties:
@@ -5512,6 +5727,8 @@ definitions:
         $ref: '#/definitions/v1ModelV2'
       metricsView:
         $ref: '#/definitions/v1MetricsViewV2'
+      explore:
+        $ref: '#/definitions/v1Explore'
       migration:
         $ref: '#/definitions/v1Migration'
       report:
@@ -5528,8 +5745,8 @@ definitions:
         $ref: '#/definitions/v1Theme'
       component:
         $ref: '#/definitions/v1Component'
-      dashboard:
-        $ref: '#/definitions/v1Dashboard'
+      canvas:
+        $ref: '#/definitions/v1Canvas'
       api:
         $ref: '#/definitions/v1API'
       connector:

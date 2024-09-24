@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
@@ -11,6 +12,9 @@ import (
 	"github.com/orbcorp/orb-go"
 	"github.com/orbcorp/orb-go/option"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
+	"go.uber.org/zap"
 )
 
 const (
@@ -21,13 +25,15 @@ const (
 var _ Biller = &Orb{}
 
 type Orb struct {
-	client *orb.Client
+	client        *orb.Client
+	logger        *zap.Logger
+	webhookSecret string
 }
 
-func NewOrb(orbKey string) Biller {
+func NewOrb(logger *zap.Logger, orbKey, webhookSecret string) Biller {
 	c := orb.NewClient(option.WithAPIKey(orbKey), option.WithRequestTimeout(requestTimeout))
 
-	return &Orb{client: c}
+	return &Orb{client: c, logger: logger, webhookSecret: webhookSecret}
 }
 
 func (o *Orb) Name() string {
@@ -115,13 +121,7 @@ func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organiz
 		return nil, err
 	}
 
-	return &Customer{
-		ID:                customer.ExternalCustomerID,
-		Email:             customer.Email,
-		Name:              customer.Name,
-		PaymentProviderID: customer.PaymentProviderID,
-		PortalURL:         customer.PortalURL,
-	}, nil
+	return getBillingCustomerFromOrbCustomer(customer), nil
 }
 
 func (o *Orb) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
@@ -136,13 +136,7 @@ func (o *Orb) FindCustomer(ctx context.Context, customerID string) (*Customer, e
 		return nil, err
 	}
 
-	return &Customer{
-		ID:                customer.ExternalCustomerID,
-		Email:             customer.Email,
-		Name:              customer.Name,
-		PaymentProviderID: customer.PaymentProviderID,
-		PortalURL:         customer.PortalURL,
-	}, nil
+	return getBillingCustomerFromOrbCustomer(customer), nil
 }
 
 func (o *Orb) UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error {
@@ -174,23 +168,39 @@ func (o *Orb) UpdateCustomerEmail(ctx context.Context, customerID, email string)
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
-	sub, err := o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
-		ExternalCustomerID: orb.String(customerID),
-		PlanID:             orb.String(plan.ID),
-	})
+	return o.createSubscription(ctx, customerID, plan, time.Time{})
+}
+
+func (o *Orb) CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
+	if startDate.After(time.Now()) {
+		return nil, errors.New("start date must be in the future")
+	}
+
+	return o.createSubscription(ctx, customerID, plan, startDate)
+}
+
+func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
+	var err error
+	var sub *orb.Subscription
+	if startDate.IsZero() {
+		sub, err = o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
+			ExternalCustomerID: orb.String(customerID),
+			PlanID:             orb.String(plan.ID),
+		})
+	} else {
+		sub, err = o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
+			ExternalCustomerID: orb.String(customerID),
+			PlanID:             orb.String(plan.ID),
+			StartDate:          orb.F(startDate),
+		})
+	}
 	if err != nil {
 		return nil, err
 	}
 
 	return &Subscription{
-		ID: sub.ID,
-		Customer: &Customer{
-			ID:                sub.Customer.ExternalCustomerID,
-			Email:             sub.Customer.Email,
-			Name:              sub.Customer.Name,
-			PaymentProviderID: sub.Customer.PaymentProviderID,
-			PortalURL:         sub.Customer.PortalURL,
-		},
+		ID:                           sub.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&sub.Customer),
 		Plan:                         plan,
 		StartDate:                    sub.StartDate,
 		EndDate:                      sub.EndDate,
@@ -223,7 +233,7 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	return subscriptions, nil
 }
 
-func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
+func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
 	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, orb.SubscriptionSchedulePlanChangeParams{
 		PlanID:       orb.String(plan.ID),
 		ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate),
@@ -232,14 +242,8 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 		return nil, err
 	}
 	return &Subscription{
-		ID: s.ID,
-		Customer: &Customer{
-			ID:                s.Customer.ExternalCustomerID,
-			Email:             s.Customer.Email,
-			Name:              s.Customer.Name,
-			PaymentProviderID: s.Customer.PaymentProviderID,
-			PortalURL:         s.Customer.PortalURL,
-		},
+		ID:                           s.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
 		Plan:                         plan,
 		StartDate:                    s.StartDate,
 		EndDate:                      s.EndDate,
@@ -332,6 +336,23 @@ func (o *Orb) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscrip
 	return ended, nil
 }
 
+func (o *Orb) GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error) {
+	invoice, err := o.client.Invoices.Fetch(ctx, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	return getBillingInvoiceFromOrbInvoice(invoice), nil
+}
+
+func (o *Orb) IsInvoiceValid(ctx context.Context, invoice *Invoice) bool {
+	return !strings.EqualFold(invoice.Status, "void")
+}
+
+func (o *Orb) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
+	return strings.EqualFold(invoice.Status, "paid")
+}
+
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	var orbUsage []orb.EventIngestParamsEvent
 	// sync max 500 events at a time
@@ -374,6 +395,43 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }
 
+func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
+	return UsageReportingGranularityHour
+}
+
+func (o *Orb) GetReportingWorkerCron() string {
+	// run every hour at around end of the hour
+	return "55 * * * *"
+}
+
+func (o *Orb) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
+	if o.webhookSecret == "" {
+		return nil
+	}
+	ow := &orbWebhook{orb: o, jobs: jc}
+	return ow.handleWebhook
+}
+
+func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
+	plans, err := o.client.Plans.List(ctx, orb.PlanListParams{
+		Limit:  orb.Int(requestMaxLimit), // TODO handle pagination, for now don't expect more than 500 plans
+		Status: orb.F(orb.PlanListParamsStatusActive),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var billingPlans []*Plan
+	for i := 0; i < len(plans.Data); i++ {
+		billingPlan, err := getBillingPlanFromOrbPlan(&plans.Data[i])
+		if err != nil {
+			return nil, err
+		}
+		billingPlans = append(billingPlans, billingPlan)
+	}
+	return billingPlans, nil
+}
+
 func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent) error {
 	re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
 	err := re.RunCtx(ctx, func(ctx context.Context) error {
@@ -396,35 +454,6 @@ func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent
 		return err
 	}
 	return nil
-}
-
-func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
-	return UsageReportingGranularityHour
-}
-
-func (o *Orb) GetReportingWorkerCron() string {
-	// run every hour at around end of the hour
-	return "55 * * * *"
-}
-
-func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
-	plans, err := o.client.Plans.List(ctx, orb.PlanListParams{
-		Limit:  orb.Int(requestMaxLimit), // TODO handle pagination, for now don't expect more than 500 plans
-		Status: orb.F(orb.PlanListParamsStatusActive),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var billingPlans []*Plan
-	for i := 0; i < len(plans.Data); i++ {
-		billingPlan, err := getBillingPlanFromOrbPlan(&plans.Data[i])
-		if err != nil {
-			return nil, err
-		}
-		billingPlans = append(billingPlans, billingPlan)
-	}
-	return billingPlans, nil
 }
 
 func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
@@ -468,14 +497,8 @@ func getBillingSubscriptionFromOrbSubscription(s *orb.Subscription) (*Subscripti
 		return nil, err
 	}
 	return &Subscription{
-		ID: s.ID,
-		Customer: &Customer{
-			ID:                s.Customer.ExternalCustomerID,
-			Email:             s.Customer.Email,
-			Name:              s.Customer.Name,
-			PaymentProviderID: s.Customer.PaymentProviderID,
-			PortalURL:         s.Customer.PortalURL,
-		},
+		ID:                           s.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
 		Plan:                         plan,
 		StartDate:                    s.StartDate,
 		EndDate:                      s.EndDate,
@@ -484,6 +507,31 @@ func getBillingSubscriptionFromOrbSubscription(s *orb.Subscription) (*Subscripti
 		TrialEndDate:                 s.TrialInfo.EndDate,
 		Metadata:                     s.Metadata,
 	}, nil
+}
+
+func getBillingCustomerFromOrbCustomer(c *orb.Customer) *Customer {
+	return &Customer{
+		ID:                 c.ExternalCustomerID,
+		Email:              c.Email,
+		Name:               c.Name,
+		PaymentProviderID:  c.PaymentProviderID,
+		PortalURL:          c.PortalURL,
+		HasBillableAddress: c.BillingAddress.PostalCode != "",
+	}
+}
+
+func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
+	return &Invoice{
+		ID:             i.ID,
+		Status:         string(i.Status),
+		CustomerID:     i.Customer.ExternalCustomerID,
+		Amount:         i.AmountDue,
+		Currency:       i.Currency,
+		DueDate:        i.DueDate,
+		CreatedAt:      i.CreatedAt,
+		SubscriptionID: i.Subscription.ID,
+		Metadata:       map[string]interface{}{"issued_at": i.IssuedAt, "voided_at": i.VoidedAt, "paid_at": i.PaidAt, "payment_failed_at": i.PaymentFailedAt},
+	}
 }
 
 // retryErrClassifier classifies 429 and 500 errors as retryable and all other errors as non retryable

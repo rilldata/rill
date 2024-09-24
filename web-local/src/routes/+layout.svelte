@@ -62,7 +62,9 @@
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <ResourceWatcher {host} {instanceId}>
-      <div class="body h-screen w-screen overflow-hidden absolute">
+      <div
+        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+      >
         <BannerCenter />
         <RepresentingUserBanner />
         <slot />
