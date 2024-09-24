@@ -1,20 +1,8 @@
 <script context="module" lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
-  import type { ChipColors } from "@rilldata/web-common/components/chip/chip-types";
-  import {
-    defaultChipColors,
-    measureChipColors,
-    timeChipColors,
-  } from "@rilldata/web-common/components/chip/chip-types";
   import { createEventDispatcher } from "svelte";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
-
-  const colors: Record<PivotChipType, ChipColors> = {
-    time: timeChipColors,
-    measure: measureChipColors,
-    dimension: defaultChipColors,
-  };
 </script>
 
 <script lang="ts">
@@ -28,18 +16,16 @@
 </script>
 
 <Chip
+  type={item.type}
+  label={item.title}
+  caret={false}
   {grab}
-  on:mousedown
-  on:click
-  outline
-  supressTooltip
   {active}
   {slideDuration}
   {removable}
-  {...colors[item.type]}
-  extraPadding={false}
-  extraRounded={item.type !== PivotChipType.Measure}
-  label={item.title}
+  supressTooltip
+  on:mousedown
+  on:click
   on:remove={() => {
     dispatch("remove", item);
   }}

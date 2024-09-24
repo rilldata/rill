@@ -103,14 +103,20 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 				return err
 			}
 
-			// Trigger a redeploy if config is no longer valid
+			// Trigger re-provision if config is no longer valid
 			if !v {
-				w.admin.Logger.Info("validate deployments: config no longer valid, triggering redeploy", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-				_, err = w.admin.RedeployProject(ctx, proj, depl)
+				w.admin.Logger.Info("validate deployments: config no longer valid, triggering re-provision", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+				err = w.admin.UpdateDeployment(ctx, depl, &admin.UpdateDeploymentOptions{
+					Version:         depl.RuntimeVersion,
+					Branch:          depl.Branch,
+					Variables:       proj.ProdVariables,
+					Annotations:     w.admin.NewDeploymentAnnotations(org, proj),
+					EvictCachedRepo: false,
+				})
 				if err != nil {
 					return err
 				}
-				w.admin.Logger.Info("validate deployments: redeployed", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), observability.ZapCtx(ctx))
+				w.admin.Logger.Info("validate deployments: re-provisioned", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), observability.ZapCtx(ctx))
 				continue
 			}
 
