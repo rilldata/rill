@@ -24,6 +24,7 @@
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -101,6 +102,8 @@
   }
 
   let selectedView: "code" | "viz" = "viz";
+
+  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
 
 <WorkspaceContainer inspector={isModelingSupported && selectedView === "code"}>
@@ -130,11 +133,12 @@
         bind:autoSave={$autoSave}
         {fileArtifact}
         {filePath}
-        {allErrors}
+        {errors}
         metricViewName={metricsViewName}
       />
     {:else}
       <VisualMetrics
+        {errors}
         {fileArtifact}
         switchView={() => {
           selectedView = "code";

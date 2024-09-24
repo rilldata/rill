@@ -73,11 +73,16 @@
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { slide } from "svelte/transition";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
 
   type ItemType = "measures" | "dimensions";
 
   export let fileArtifact: FileArtifact;
   export let switchView: () => void;
+  export let errors: LineStatus[];
 
   let searchValue = "";
   let confirmation: {
@@ -300,6 +305,11 @@
   };
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
+
+  /** display the main error (the first in this array) at the bottom */
+  $: mainError = errors?.at(0);
+
+  $: console.log({ errors });
 </script>
 
 <div class="wrapper">
@@ -430,6 +440,18 @@
         </div>
       {/each}
     </div>
+
+    {#if mainError}
+      <div
+        role="status"
+        transition:slide={{ duration: LIST_SLIDE_DURATION }}
+        class="editor-error ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5 max-h-72 overflow-auto"
+      >
+        <div class="flex gap-x-2 items-center">
+          <CancelCircle />{mainError.message}
+        </div>
+      </div>
+    {/if}
 
     {#if totalSelected}
       <div

@@ -13,14 +13,13 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
+  import { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
 
   export let filePath: string;
   export let metricViewName: string;
-  export let allErrors: V1ParseError[];
+  export let errors: LineStatus[];
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
-
-  $: ({ remoteContent } = fileArtifact);
 
   let editor: EditorView;
   const metricsJsonSchema = metricsSchema as JSONSchema7;
@@ -31,18 +30,14 @@
   $: placeholderElements = createPlaceholder(filePath, metricViewName);
   $: if (editor) placeholderElements.component.setEditorView(editor);
 
-  $: lineBasedRuntimeErrors = mapParseErrorsToLines(
-    allErrors,
-    $remoteContent ?? "",
-  );
-  /** display the main error (the first in this array) at the bottom */
-  $: mainError = lineBasedRuntimeErrors?.at(0);
-
   /** If the errors change, run the following transaction. */
-  $: if (editor) setLineStatuses(lineBasedRuntimeErrors, editor);
+  $: if (editor) setLineStatuses(errors, editor);
+
+  /** display the main error (the first in this array) at the bottom */
+  $: mainError = errors?.at(0);
 </script>
 
-<MetricsEditorContainer error={$remoteContent ? mainError : undefined}>
+<MetricsEditorContainer error={mainError}>
   <Editor
     bind:autoSave
     bind:editor
