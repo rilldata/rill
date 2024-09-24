@@ -309,6 +309,7 @@
         <Input
           sameWidth
           full
+          truncate
           value={model}
           options={[...modelNames, ...sourceNames]}
           label="Model or source referenced"
@@ -324,6 +325,7 @@
       <Input
         sameWidth
         full
+        truncate
         value={timeDimension}
         options={timeOptions}
         label="Time column"
@@ -336,6 +338,7 @@
       <Input
         sameWidth
         full
+        truncate
         value={smallestTimeGrain}
         options={Object.entries(TIME_GRAIN).map(([_, { label }]) => label)}
         label="Smallest time grain"

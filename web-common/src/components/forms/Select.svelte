@@ -20,6 +20,7 @@
   export let fontSize = 12;
   export let sameWidth = false;
   export let ringFocus = true;
+  export let truncate = false;
 
   $: selected = options.find((option) => option.value === value);
 </script>
@@ -60,13 +61,16 @@
       {id}
       bind:el={selectElement}
       class="flex px-3 gap-x-2 max-w-full {width &&
-        `w-[${width}px]`} {ringFocus && 'focus:ring-2 focus:ring-primary-100'} "
+        `w-[${width}px]`} {ringFocus &&
+        'focus:ring-2 focus:ring-primary-100'} {truncate
+        ? 'break-all overflow-hidden'
+        : ''}"
     >
       <Select.Value
         {placeholder}
         class="text-[{fontSize}px] {!selected
           ? 'text-gray-400'
-          : ''} w-full overflow-hidden break-all text-left"
+          : ''} w-full  text-left"
       />
     </Select.Trigger>
 

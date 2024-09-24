@@ -31,7 +31,7 @@
   export let onDelete: () => void;
   export let onCancel: (unsavedChanges: boolean) => void;
 
-  let columnNames = columns.map((column) => column.name).filter(isDefined);
+  let columnNames = columns.map(({ name }) => name).filter(isDefined);
 
   let properties: Record<
     string,

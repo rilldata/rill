@@ -21,6 +21,7 @@
   export let autocomplete = false;
   export let alwaysShowError = false;
   export let optional = false;
+  export let truncate = false;
   export let fields: string[] | undefined = [];
   export let options: string[] | undefined = [];
   export let onInput: (
@@ -182,6 +183,7 @@
       options={options.map((value) => ({ value, label: value })) ?? []}
       {onChange}
       fontSize={14}
+      {truncate}
       {placeholder}
     />
   {/if}
