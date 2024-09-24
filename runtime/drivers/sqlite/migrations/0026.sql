@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE instance_health (
+CREATE TABLE IF NOT EXISTS instance_health (
     instance_id TEXT PRIMARY KEY,
     health BLOB NOT NULL,
     created_on TIMESTAMP NOT NULL,

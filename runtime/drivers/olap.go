@@ -40,6 +40,8 @@ type OLAPStore interface {
 	RenameTable(ctx context.Context, name, newName string, view bool) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
+
+	MayBeScaledToZero(ctx context.Context) bool
 }
 
 // Statement wraps a query to execute against an OLAP driver.

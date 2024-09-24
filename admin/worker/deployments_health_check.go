@@ -179,7 +179,7 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 		for k, v := range annotations.ToMap() {
 			f = append(f, zap.String(k, v))
 		}
-		for d, err := range health.DashboardErrors {
+		for d, err := range health.MetricsViewErrors {
 			w.logger.Error("deployment health check: dashboard error", append(f, zap.String("dashboard", d), zap.String("error", err))...)
 		}
 		onlyUnhealthyDash := true
@@ -221,7 +221,7 @@ func runtimeUnhealthy(r *runtimev1.HealthResponse) bool {
 }
 
 func instanceUnhealthy(i *runtimev1.InstanceHealth) bool {
-	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != "" || len(i.DashboardErrors) != 0
+	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != "" || len(i.MetricsViewErrors) != 0
 }
 
 func addExpectedInstance(expectedInstances map[string][]string, d *database.Deployment) {
