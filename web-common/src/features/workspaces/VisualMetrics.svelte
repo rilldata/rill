@@ -348,17 +348,21 @@
 
     <span class="h-[1px] w-full bg-gray-200" />
 
-    <Input
-      width="320px"
-      textClass="text-sm"
-      placeholder="Search"
-      bind:value={searchValue}
-      onInput={(value) => {
-        searchValue = value;
-      }}
-    >
-      <Search slot="icon" size="16px" color="#374151" />
-    </Input>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="col-span-3 sm:col-span-2 lg:col-span-1">
+        <Input
+          full
+          textClass="text-sm"
+          placeholder="Search"
+          bind:value={searchValue}
+          onInput={(value) => {
+            searchValue = value;
+          }}
+        >
+          <Search slot="icon" size="16px" color="#374151" />
+        </Input>
+      </div>
+    </div>
 
     <div
       class="flex flex-col gap-y-2 h-fit w-full flex-shrink overflow-y-scroll"
