@@ -31,9 +31,9 @@
 
   $: modelName = resource?.meta?.name?.name as string;
 
-  /**
-   * Infinite Query
-   */
+  // ==========================
+  // Infinite Query
+  // ==========================
   $: baseParams = {
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
@@ -73,9 +73,9 @@
   });
   $: ({ error } = $query);
 
-  /**
-   * Table Options
-   */
+  // ==========================
+  // Table Options
+  // ==========================
   const isIncremental = resource.model?.spec?.incremental;
 
   const columns: ColumnDef<V1ModelSplit>[] = [
@@ -166,7 +166,7 @@
   const table = createSvelteTable(options);
   $: ({ getHeaderGroups } = $table);
 
-  // Update table when data changes
+  // Sync table data with query data
   let allRows: V1ModelSplit[] = [];
   $: {
     allRows =
@@ -181,9 +181,9 @@
   }
   $: rows = $table.getRowModel().rows;
 
-  /**
-   * Virtualizer
-   */
+  // ==========================
+  // Virtualizer
+  // ==========================
   const ROW_HEIGHT = 71;
   const OVERSCAN = 10;
 
