@@ -39,6 +39,7 @@ Rill will use DuckDB by default as an embedded OLAP engine but it is **not** cur
 
 :::
 
+
 ## Druid
 
 When Druid has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI. You can then create dashboards using these external Druid tables.
