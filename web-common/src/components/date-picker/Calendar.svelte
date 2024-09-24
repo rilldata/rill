@@ -5,6 +5,7 @@
 
   export let dateSelection: DateTime<true> | undefined = undefined;
   export let rangeSelection: Interval | undefined = undefined;
+  export let min: DateTime<true> | undefined = undefined;
   export let visibleMonths = 1;
   export let selectingStart = true;
   export let firstVisibleMonth: DateTime<true> =
@@ -30,6 +31,7 @@
 <div class="flex gap-x-3 p-2 w-full min-w-56">
   {#each { length: visibleMonths } as month, i (month)}
     <Month
+      {min}
       {singleDaySelection}
       interval={finalInterval}
       startDay={firstVisibleMonth
