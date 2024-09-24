@@ -156,7 +156,10 @@
       </div>
     </div>
 
-    <div class="mt-4" class:mb-4={!hasWhereFilter}>
+    <div
+      class="mt-4"
+      class:mb-4={!hasWhereFilter && !hasDimensionThresholdFilter}
+    >
       <div class="flex items-center gap-x-2">
         <Switch small id="has-expiration" bind:checked={setExpiration} />
         <Label class="text-xs" for="has-expiration">Set expiration</Label>
