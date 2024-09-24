@@ -294,7 +294,7 @@ func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) e
 	return nil
 }
 
-// CleanupBillingErrorSubCancellation removes subscription cancellation related billing error and cancel associated job
+// CleanupBillingErrorSubCancellation removes subscription cancellation related billing error
 func (s *Service) CleanupBillingErrorSubCancellation(ctx context.Context, orgID string) error {
 	bisc, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
