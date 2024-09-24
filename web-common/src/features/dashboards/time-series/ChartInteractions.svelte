@@ -1,5 +1,6 @@
 <script lang="ts">
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
+  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
@@ -9,9 +10,8 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { DateTime, Interval } from "luxon";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
-  import { Interval, DateTime } from "luxon";
-  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
 
   export let exploreName: string;
   export let showComparison = false;
@@ -134,7 +134,7 @@
 
   function undoZoom() {
     if (priorRange) {
-      metricsExplorerStore.setSelectedTimeRange(metricViewName, priorRange);
+      metricsExplorerStore.setSelectedTimeRange(exploreName, priorRange);
       clearPriorRange();
     }
   }

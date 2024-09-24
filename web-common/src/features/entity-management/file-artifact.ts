@@ -1,6 +1,5 @@
 import {
   extractFileExtension,
-  extractFileName,
   splitFolderAndName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
