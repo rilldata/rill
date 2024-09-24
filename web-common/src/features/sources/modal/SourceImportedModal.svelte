@@ -7,7 +7,7 @@
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
+  import { CreateQueryResult } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
@@ -16,18 +16,19 @@
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   const { ai } = featureFlags;
 
   export let sourcePath: string | null;
 
-  $: sourceName = extractFileName(sourcePath ?? "");
-
-  const queryClient = useQueryClient();
-
-  $: runtimeInstanceId = $runtime.instanceId;
   let fileArtifact: FileArtifact;
   let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
+
+  $: sourceName = extractFileName(sourcePath ?? "");
+
+  $: runtimeInstanceId = $runtime.instanceId;
+
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
     sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
@@ -67,13 +68,8 @@
   }
 </script>
 
-<AlertDialog.Root
-  open={sourcePath !== null}
-  onOpenChange={(open) => {
-    if (!open) close();
-  }}
->
-  <AlertDialog.Content on:close={close}>
+<AlertDialog.Root open={sourcePath !== null}>
+  <AlertDialog.Content>
     <AlertDialog.Title>
       <div class="flex gap-x-2.5 items-center">
         <CheckCircleNew className="fill-primary-500" size="24px" />
