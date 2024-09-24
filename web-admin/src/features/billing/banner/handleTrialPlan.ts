@@ -5,7 +5,8 @@ import {
 } from "@rilldata/web-admin/client";
 import { showUpgradeDialog } from "@rilldata/web-admin/features/billing/banner/bannerCTADialogs";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
-import { DateTime } from "luxon";
+import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { DateTime, type Duration } from "luxon";
 
 const WarningPeriodInDays = 5;
 const TrialGracePeriodInDays = 9;
@@ -43,28 +44,29 @@ export function handleTrialPlan(
     iconType: "alert",
     cta,
   };
-  const diff = today.diff(endDate);
-  if (trialIssue.type !== V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED) {
-    bannerMessage.message += `${getTrialMessageForDays(diff.days)} Upgrade to maintain access.`;
+  const diff = endDate.diff(today);
+  if (
+    diff.milliseconds > 0 &&
+    trialIssue.type !== V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED
+  ) {
+    bannerMessage.message += `${getTrialMessageForDays(diff)} Upgrade to maintain access.`;
     bannerMessage.type = diff.days > WarningPeriodInDays ? "info" : "warning";
-  } else if (-diff.days < TrialGracePeriodInDays) {
-    bannerMessage.message = `Your trial has expired. Upgrade within ${TrialGracePeriodInDays} days to maintain access.`;
-    bannerMessage.type = "warning";
   } else {
-    bannerMessage.message = `Your trial has expired and this org’s projects are now hibernating. Upgrade to wake projects and regain full access.`;
-    bannerMessage.type = "error";
+    const diffInDays = diff.shiftTo("days");
+    if (-diffInDays.days < TrialGracePeriodInDays) {
+      bannerMessage.message = `Your trial has expired. Upgrade within ${TrialGracePeriodInDays} days to maintain access.`;
+      bannerMessage.type = "warning";
+    } else {
+      bannerMessage.message = `Your trial has expired and this org’s projects are now hibernating. Upgrade to wake projects and regain full access.`;
+      bannerMessage.type = "error";
+    }
   }
 
   return bannerMessage;
 }
 
-export function getTrialMessageForDays(days: number) {
-  switch (days) {
-    case 0:
-      return "Your trial expires today.";
-    case 1:
-      return "Your trial expires tomorrow.";
-    default:
-      return `Your trial expires in ${days} days.`;
-  }
+export function getTrialMessageForDays(diff: Duration<true>) {
+  diff = shiftToLargest(diff);
+  const formattedDiff = diff.toHuman({ unitDisplay: "short" });
+  return `Your trial expires in ${formattedDiff}.`;
 }

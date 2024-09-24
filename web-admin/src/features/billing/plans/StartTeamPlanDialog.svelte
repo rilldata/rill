@@ -17,7 +17,7 @@
   export let open = false;
 
   const categorisedPlans = getCategorisedPlans();
-  $: teamPlan = $categorisedPlans.data.teamPlan;
+  $: teamPlan = $categorisedPlans.data?.teamPlan;
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   async function handleUpgradePlan() {

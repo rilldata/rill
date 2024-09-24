@@ -127,6 +127,16 @@ export function isoDurationToTimeRangeMeta(
   };
 }
 
+export function shiftToLargest(duration: Duration) {
+  let shiftedDuration = duration.shiftToAll();
+  const largestUnit = getLargestUnit(duration);
+  if (!largestUnit) return duration;
+  shiftedDuration = shiftedDuration.shiftTo(largestUnit);
+  return shiftedDuration.set({
+    [largestUnit]: Math.ceil(shiftedDuration[largestUnit] as number),
+  });
+}
+
 function getStartTimeTransformations(
   isoDuration: string,
 ): Array<RelativeTimeTransformation> {
@@ -170,6 +180,17 @@ function getSmallestUnit(duration: Duration) {
   for (const { period, unit } of PeriodAndUnits) {
     if (duration[unit]) {
       return period;
+    }
+  }
+
+  return undefined;
+}
+
+function getLargestUnit(duration: Duration) {
+  for (let i = PeriodAndUnits.length - 1; i > 0; i--) {
+    const { unit } = PeriodAndUnits[i];
+    if (duration[unit]) {
+      return unit;
     }
   }
 
