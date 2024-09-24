@@ -74,13 +74,15 @@
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
+  type ItemType = "measures" | "dimensions";
+
   export let fileArtifact: FileArtifact;
   export let switchView: () => void;
 
   let searchValue = "";
   let confirmation: {
     action: "cancel" | "delete" | "switch";
-    type?: "measures" | "dimensions";
+    type?: ItemType;
     model?: string;
     index?: number;
   } | null = null;
@@ -160,10 +162,10 @@
     >
   ).filter((i) => filter(i, searchValue));
 
-  $: itemGroups = new Map([
+  $: itemGroups = new Map<ItemType, YAMLMap<string, string>[]>([
     ["measures", yamlMeasures],
     ["dimensions", yamlDimensions],
-  ]) as Map<"measures" | "dimensions", Array<YAMLMap<string, string>>>;
+  ]);
 
   $: smallestTimeGrain = (parsedDocument.get("smallest_time_grain") ??
     "") as string;
@@ -189,7 +191,7 @@
   async function reorderList(
     initIndex: number,
     newIndex: number,
-    type: "measures" | "dimensions",
+    type: ItemType,
   ) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const measures = parsedDocument.get(type) as YAMLSeq;
@@ -212,7 +214,7 @@
     eventBus.emit("notification", { message: "Item moved", type: "success" });
   }
 
-  function triggerDelete(index?: number, type?: "measures" | "dimensions") {
+  function triggerDelete(index?: number, type?: ItemType) {
     confirmation = {
       action: "delete",
       index,
@@ -246,7 +248,7 @@
     eventBus.emit("notification", { message: "Item deleted", type: "success" });
   }
 
-  async function duplicateItem(item: number, type: "measures" | "dimensions") {
+  async function duplicateItem(item: number, type: ItemType) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const measures = parsedDocument.get(type) as YAMLSeq;
 
