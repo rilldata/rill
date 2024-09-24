@@ -31,7 +31,7 @@
   import { Pencil } from "lucide-svelte";
   import { IconButton } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
-  import { Interval, DateTime } from "luxon";
+  import { DateTime } from "luxon";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
