@@ -985,6 +985,7 @@ const (
 	BillingIssueTypeUnspecified           BillingIssueType = iota
 	BillingIssueTypeOnTrial                                = 1
 	BillingIssueTypeTrialEnded                             = 2
+	BillingIssueTypeTrialEndingSoon                        = 7
 	BillingIssueTypeNoPaymentMethod                        = 3
 	BillingIssueTypeNoBillableAddress                      = 4
 	BillingIssueTypePaymentFailed                          = 5

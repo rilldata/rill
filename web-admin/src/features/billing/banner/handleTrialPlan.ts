@@ -21,11 +21,7 @@ export function handleTrialPlan(
   subscription: V1Subscription,
   issues: V1BillingIssue[],
 ): BannerMessage {
-  const trialIssue = issues.find(
-    (i) =>
-      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_TRIAL ||
-      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED,
-  );
+  const trialIssue = issues[issues.length - 1];
 
   const today = DateTime.now();
   const endDate = DateTime.fromJSDate(new Date(subscription.trialEndDate));
@@ -50,11 +46,20 @@ export function handleTrialPlan(
     trialIssue.type !== V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED
   ) {
     bannerMessage.message += `${getTrialMessageForDays(diff)} Upgrade to maintain access.`;
-    bannerMessage.type = diff.days > WarningPeriodInDays ? "info" : "warning";
+    bannerMessage.type =
+      trialIssue.type ===
+      V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON
+        ? "warning"
+        : "info";
   } else {
-    const diffInDays = diff.shiftTo("days");
-    if (-diffInDays.days < TrialGracePeriodInDays) {
-      bannerMessage.message = `Your trial has expired. Upgrade within ${TrialGracePeriodInDays} days to maintain access.`;
+    const gracePeriodDate = DateTime.fromJSDate(
+      new Date(trialIssue.metadata?.trialEnded?.gracePeriodEndDate),
+    );
+    const gracePeriodDiff = gracePeriodDate.isValid
+      ? gracePeriodDate.diff(today)
+      : null;
+    if (gracePeriodDiff && gracePeriodDiff.milliseconds > 0) {
+      bannerMessage.message = `Your trial has expired. Upgrade within ${getTrialMessageForDays(gracePeriodDiff)} to maintain access.`;
       bannerMessage.type = "warning";
     } else {
       bannerMessage.message = `Your trial has expired and this org’s projects are now hibernating. Upgrade to wake projects and regain full access.`;
@@ -66,7 +71,7 @@ export function handleTrialPlan(
 }
 
 export function getTrialMessageForDays(diff: Duration<true>) {
-  diff = shiftToLargest(diff);
+  diff = shiftToLargest(diff, ["seconds", "minutes", "hours", "days"]);
   const formattedDiff = diff.toHuman({ unitDisplay: "short" });
   return `Your trial expires in ${formattedDiff}.`;
 }

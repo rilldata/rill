@@ -64,6 +64,20 @@ func (w *TrialEndingSoonWorker) trialEndingSoon(ctx context.Context) error {
 			return fmt.Errorf("failed to send trial ending soon email for org %q: %w", org.Name, err)
 		}
 
+		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID: org.ID,
+			Type:  database.BillingIssueTypeTrialEndingSoon,
+			Metadata: &database.BillingIssueMetadataOnTrial{
+				SubID:   m.SubID,
+				PlanID:  m.PlanID,
+				EndDate: m.EndDate,
+			},
+			EventTime: m.EndDate.AddDate(0, 0, 1),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to add billing error: %w", err)
+		}
+
 		// mark the billing issue as processed
 		err = w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, o.ID)
 		if err != nil {
@@ -89,7 +103,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 }
 
 func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
-	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeNotOverdueProcessed(ctx, database.BillingIssueTypeOnTrial)
+	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeNotOverdueProcessed(ctx, database.BillingIssueTypeTrialEndingSoon)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no orgs have this billing issue

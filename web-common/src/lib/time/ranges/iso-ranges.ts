@@ -15,7 +15,7 @@ import {
   TimeRangePreset,
   TimeTruncationType,
 } from "@rilldata/web-common/lib/time/types";
-import { Duration } from "luxon";
+import { Duration, type DurationUnit } from "luxon";
 
 /**
  * Converts an ISO duration to a time range.
@@ -127,9 +127,9 @@ export function isoDurationToTimeRangeMeta(
   };
 }
 
-export function shiftToLargest(duration: Duration) {
-  let shiftedDuration = duration.shiftToAll();
-  const largestUnit = getLargestUnit(duration);
+export function shiftToLargest(duration: Duration, units: DurationUnit[]) {
+  let shiftedDuration = duration.shiftTo(...units);
+  const largestUnit = getLargestUnit(shiftedDuration, units);
   if (!largestUnit) return duration;
   shiftedDuration = shiftedDuration.shiftTo(largestUnit);
   return shiftedDuration.set({
@@ -186,10 +186,10 @@ function getSmallestUnit(duration: Duration) {
   return undefined;
 }
 
-function getLargestUnit(duration: Duration) {
+function getLargestUnit(duration: Duration, units: DurationUnit[]) {
   for (let i = PeriodAndUnits.length - 1; i > 0; i--) {
     const { unit } = PeriodAndUnits[i];
-    if (duration[unit]) {
+    if (units.includes(unit) && duration[unit]) {
       return unit;
     }
   }
