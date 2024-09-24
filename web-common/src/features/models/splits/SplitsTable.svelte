@@ -228,6 +228,13 @@
           Math.max(0, getTotalSize() - virtualRows[virtualRows.length - 1].end),
         ]
       : [0, 0];
+
+  // Scroll to top when filter changes
+  $: {
+    if (virtualListEl && baseParams) {
+      virtualListEl.scrollTo({ top: 0 });
+    }
+  }
 </script>
 
 <div class="scroll-container" bind:this={virtualListEl}>
