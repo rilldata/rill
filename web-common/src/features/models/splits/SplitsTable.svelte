@@ -195,13 +195,20 @@
     estimateSize: () => ROW_HEIGHT,
     overscan: OVERSCAN,
   });
-  $: ({ getVirtualItems, getTotalSize, setOptions } = $virtualizer);
+  $: ({
+    getVirtualItems,
+    getTotalSize,
+    setOptions,
+    options: virtualizerOptions,
+  } = $virtualizer);
+  $: virtualRows = getVirtualItems();
 
+  // Logic for infinite scroll
   $: {
     setOptions({
       count: $query.hasNextPage ? allRows.length + 1 : allRows.length,
     });
-    const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
+    const [lastItem] = [...virtualRows].reverse();
     if (
       lastItem &&
       lastItem.index > allRows.length - 1 &&
@@ -211,6 +218,16 @@
       void $query.fetchNextPage();
     }
   }
+
+  // Positioning strategy from https://github.com/TanStack/virtual/issues/585#issuecomment-1716173260
+  // (Required for sticky header)
+  $: [paddingTop, paddingBottom] =
+    virtualRows.length > 0
+      ? [
+          Math.max(0, virtualRows[0].start - virtualizerOptions.scrollMargin),
+          Math.max(0, getTotalSize() - virtualRows[virtualRows.length - 1].end),
+        ]
+      : [0, 0];
 </script>
 
 <div class="scroll-container" bind:this={virtualListEl}>
@@ -249,11 +266,9 @@
             </td>
           </tr>
         {:else}
-          {#each getVirtualItems() as virtualRow, idx (virtualRow.index)}
-            <tr
-              style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
-                idx * virtualRow.size}px);"
-            >
+          <tr style:height="{paddingTop}px" />
+          {#each getVirtualItems() as virtualRow (virtualRow.index)}
+            <tr>
               {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
                 <td data-label={cell.column.columnDef.header}>
                   <svelte:component
@@ -266,6 +281,7 @@
               {/each}
             </tr>
           {/each}
+          <tr style:height="{paddingBottom}px" />
         {/if}
       </tbody>
     </table>
@@ -296,6 +312,7 @@
   thead tr th {
     @apply border-t border-gray-200;
     @apply text-left font-semibold text-gray-500;
+    @apply sticky top-0 z-10 bg-white;
   }
   thead tr th:first-child {
     @apply border-l rounded-tl-sm;
