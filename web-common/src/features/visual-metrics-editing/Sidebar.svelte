@@ -246,7 +246,7 @@
 />
 
 <div
-  class="h-full w-[320px] bg-background flex-none p-6 px-5 flex flex-col border select-none"
+  class="h-full w-[320px] bg-background flex-none p-6 px-5 flex flex-col border select-none rounded-[2px]"
 >
   <h1>{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
