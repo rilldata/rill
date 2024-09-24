@@ -238,7 +238,7 @@
 </script>
 
 <div class="scroll-container" bind:this={virtualListEl}>
-  <div class="table-wrapper" style="height: {getTotalSize()}px;">
+  <div class="table-wrapper">
     <table>
       <thead>
         {#each getHeaderGroups() as headerGroup (headerGroup.id)}
