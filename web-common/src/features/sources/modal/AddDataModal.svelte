@@ -170,7 +170,7 @@
       }
     }}
   >
-    <Dialog.Content>
+    <Dialog.Content noClose>
       <section class="mb-1">
         <Dialog.Title>
           {#if $duplicateSourceName !== null}
@@ -211,8 +211,8 @@
               formType={OLAP_CONNECTORS.includes(selectedConnector.name)
                 ? "connector"
                 : "source"}
-              on:close={resetModal}
-              on:back={back}
+              onClose={resetModal}
+              onBack={back}
             />
           {/if}
         {/if}
