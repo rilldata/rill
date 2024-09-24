@@ -16,7 +16,6 @@
   export let minDate: DateTime<true> | DateTime<false> | undefined;
   export let onPan: (direction: 1 | -1) => void;
   export let onSelectDay: (date: DateTime<true>) => void;
-  export let isDateSelectable: (date: DateTime<true>) => boolean;
 
   $: firstDay = startDay.startOf("month").weekday % 7;
 
