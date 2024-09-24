@@ -6,8 +6,8 @@ import {
   PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
-  useMetricsView,
   useMetricsViewTimeRange,
+  useMetricsViewValidSpec,
 } from "@rilldata/web-common/features/dashboards/selectors";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useStartEndTime } from "@rilldata/web-common/features/templates/kpi/selector";
@@ -54,7 +54,7 @@ export function getTableConfig(
   const { metrics_view, time_range, comparison_range } = tableProperties;
   return derived(
     [
-      useMetricsView(instanceId, tableProperties.metrics_view),
+      useMetricsViewValidSpec(instanceId, tableProperties.metrics_view),
       useStartEndTime(instanceId, metrics_view, time_range.toUpperCase()),
       useComparisonStartEndTime(
         instanceId,
@@ -109,7 +109,7 @@ export function hasValidTableSchema(
   tableProperties: TableProperties,
 ) {
   return derived(
-    [useMetricsView(instanceId, tableProperties.metrics_view)],
+    [useMetricsViewValidSpec(instanceId, tableProperties.metrics_view)],
     ([metricsView]) => {
       const measures = tableProperties.measures;
       const rowDimensions = tableProperties.row_dimensions || [];

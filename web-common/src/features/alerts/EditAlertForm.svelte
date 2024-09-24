@@ -7,13 +7,13 @@
     extractAlertNotification,
   } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
-    useMetricsView,
     useMetricsViewTimeRange,
+    useMetricsViewValidSpec,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     V1AlertSpec,
     V1MetricsViewAggregationRequest,
@@ -25,8 +25,8 @@
   import BaseAlertForm from "./BaseAlertForm.svelte";
   import { getSnoozeValueFromAlertSpec } from "./delivery-tab/snooze";
   import {
-    alertFormValidationSchema,
     AlertFormValues,
+    alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
   } from "./form-utils";
 
@@ -45,7 +45,10 @@
       alertSpec.queryArgsJson) as string,
   ) as V1MetricsViewAggregationRequest;
 
-  $: metricsViewSpec = useMetricsView($runtime?.instanceId, metricsViewName);
+  $: metricsViewSpec = useMetricsViewValidSpec(
+    $runtime?.instanceId,
+    metricsViewName,
+  );
   $: timeRange = useMetricsViewTimeRange(
     $runtime?.instanceId,
     metricsViewName,

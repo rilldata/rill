@@ -73,7 +73,7 @@ export function useValidVisualizations(instanceId: string) {
  * Gets the valid metrics view spec. Only to be used in displaying a dashboard.
  * Use {@link useDashboard} in the metrics view editor and other use cases.
  */
-export const useMetricsView = <T = V1MetricsViewSpec>(
+export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   instanceId: string,
   metricsViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
@@ -91,7 +91,11 @@ export const useModelHasTimeSeries = (
   instanceId: string,
   metricsViewName: string,
 ) =>
-  useMetricsView(instanceId, metricsViewName, (meta) => !!meta?.timeDimension);
+  useMetricsViewValidSpec(
+    instanceId,
+    metricsViewName,
+    (meta) => !!meta?.timeDimension,
+  );
 
 export function useMetricsViewTimeRange(
   instanceId: string,
@@ -103,7 +107,7 @@ export function useMetricsViewTimeRange(
   const { query: queryOptions } = options ?? {};
 
   return derived(
-    [useMetricsView(instanceId, metricsViewName)],
+    [useMetricsViewValidSpec(instanceId, metricsViewName)],
     ([metricsView], set) =>
       createQueryServiceMetricsViewTimeRange(
         instanceId,
@@ -124,7 +128,7 @@ export const useMetaMeasure = (
   metricsViewName: string,
   measureName: string,
 ) =>
-  useMetricsView(instanceId, metricsViewName, (meta) =>
+  useMetricsViewValidSpec(instanceId, metricsViewName, (meta) =>
     meta?.measures?.find((measure) => measure.name === measureName),
   );
 
@@ -133,7 +137,7 @@ export const useMetaDimension = (
   metricsViewName: string,
   dimensionName: string,
 ) =>
-  useMetricsView(instanceId, metricsViewName, (meta) => {
+  useMetricsViewValidSpec(instanceId, metricsViewName, (meta) => {
     const dim = meta?.dimensions?.find(
       (dimension) => dimension.name === dimensionName,
     );

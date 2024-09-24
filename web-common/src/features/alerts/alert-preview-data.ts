@@ -10,7 +10,7 @@ import {
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
@@ -38,7 +38,12 @@ export function getAlertPreviewData(
   formValues: AlertFormValues,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
-    [useMetricsView(get(runtime).instanceId, formValues.metricsViewName)],
+    [
+      useMetricsViewValidSpec(
+        get(runtime).instanceId,
+        formValues.metricsViewName,
+      ),
+    ],
     ([metricsViewResp], set) =>
       createQueryServiceMetricsViewAggregation(
         get(runtime).instanceId,
