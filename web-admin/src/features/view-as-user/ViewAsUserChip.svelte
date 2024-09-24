@@ -1,9 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { errorStore } from "../../features/errors/error-store";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "./viewAsUserStore";
@@ -12,32 +10,20 @@
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger>
+  <DropdownMenu.Trigger asChild let:builder>
     <Chip
       removable
+      {active}
+      builders={[builder]}
+      removeTooltipText="Clear view"
       on:remove={() => {
         viewAsUserStore.set(null);
         errorStore.reset();
       }}
-      {active}
     >
       <div slot="body">
-        <div class="flex gap-x-2">
-          <div>
-            Viewing as <span class="font-bold">{$viewAsUserStore.email}</span>
-          </div>
-          <div class="flex items-center">
-            <IconSpaceFixer pullRight>
-              <div class="transition-transform" class:-rotate-180={active}>
-                <CaretDownIcon size="14px" />
-              </div>
-            </IconSpaceFixer>
-          </div>
-        </div>
+        Viewing as <b>{$viewAsUserStore.email}</b>
       </div>
-      <svelte:fragment slot="remove-tooltip">
-        <slot name="remove-tooltip-content">Clear view</slot>
-      </svelte:fragment>
     </Chip>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content

@@ -6,7 +6,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import EditScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/EditScheduledReportDialog.svelte";
+  import CreateScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -174,9 +174,8 @@
 {/if}
 
 {#if $reportQuery.data}
-  <EditScheduledReportDialog
-    open={showEditReportDialog}
+  <CreateScheduledReportDialog
+    bind:open={showEditReportDialog}
     reportSpec={$reportQuery.data.resource.report.spec}
-    on:close={() => (showEditReportDialog = false)}
   />
 {/if}
