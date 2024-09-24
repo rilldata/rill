@@ -24,7 +24,7 @@
   $: selected = options.find((option) => option.value === value);
 </script>
 
-<div class="flex flex-col gap-y-2" class:w-full={full}>
+<div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>
   {#if label?.length}
     <label for={id} class="text-sm flex items-center gap-x-1">
       <span class="text-gray-800 font-medium">
@@ -59,13 +59,14 @@
     <Select.Trigger
       {id}
       bind:el={selectElement}
-      class="px-3 gap-x-2 {width && `w-[${width}px]`} {ringFocus
-        ? 'focus:ring-2 focus:ring-primary-100'
-        : ''}"
+      class="flex px-3 gap-x-2 max-w-full {width &&
+        `w-[${width}px]`} {ringFocus && 'focus:ring-2 focus:ring-primary-100'} "
     >
       <Select.Value
         {placeholder}
-        class="text-[{fontSize}px] {!selected ? 'text-gray-400' : ''}"
+        class="text-[{fontSize}px] {!selected
+          ? 'text-gray-400'
+          : ''} w-full overflow-hidden break-all text-left"
       />
     </Select.Trigger>
 
