@@ -79,3 +79,4 @@ rill-binary-sa.json
 sysroot/
 latest.txt
 /web-common/coverage
+package-lock.json

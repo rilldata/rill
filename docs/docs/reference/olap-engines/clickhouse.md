@@ -18,6 +18,12 @@ Rill supports connecting to an existing ClickHouse instance and using it as an O
 
 Rill supports connecting to ClickHouse v22.7 or newer versions.
 
+## ClickHouse Local vs ClickHouse Cloud
+
+:::
+UPDATE THIS
+:::
+
 ## Connection string (DSN)
 
 Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
