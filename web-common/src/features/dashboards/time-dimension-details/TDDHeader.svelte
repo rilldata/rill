@@ -172,7 +172,7 @@
         <Column size="16px" /> Columns
       </div>
       <div class="flex items-center gap-x-2">
-        <TimeGrainSelector {exploreName} pill />
+        <TimeGrainSelector {exploreName} tdd />
         <SearchableFilterChip
           label={selectedMeasureLabel}
           on:item-clicked={switchMeasure}

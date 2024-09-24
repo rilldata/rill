@@ -46,7 +46,9 @@
         on:click={() => {
           if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
-        href={linkMaker(currentPath, depth, current, selected, "")}
+        href={isCurrentPage
+          ? "#top"
+          : linkMaker(currentPath, depth, current, selected, "")}
         class="text-gray-500 hover:text-gray-600"
         class:current={isCurrentPage}
       >

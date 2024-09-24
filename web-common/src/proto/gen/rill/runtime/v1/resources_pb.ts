@@ -4177,6 +4177,11 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   items: CanvasItem[] = [];
 
+  /**
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
+   */
+  securityRules: SecurityRule[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4190,6 +4195,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
+    { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

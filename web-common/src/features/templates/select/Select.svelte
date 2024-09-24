@@ -36,7 +36,7 @@
     .slice(0, MAX_OPTIONS);
 </script>
 
-<div class="m-1 p-1">
+<div>
   <Select
     on:change={(e) =>
       canvasVariablesStore.updateVariable(
@@ -50,5 +50,6 @@
     label={selectProperties.label || ""}
     options={selectOptions}
     placeholder={selectProperties.placeholder || ""}
+    className="bg-white"
   />
 </div>

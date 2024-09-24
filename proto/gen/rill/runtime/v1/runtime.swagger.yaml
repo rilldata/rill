@@ -993,6 +993,14 @@ paths:
           in: path
           required: true
           type: string
+        - name: pending
+          in: query
+          required: false
+          type: boolean
+        - name: errored
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -3385,6 +3393,11 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CanvasItem'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
   v1CanvasState:
     type: object
     properties:

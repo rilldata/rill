@@ -5,13 +5,9 @@ This component needs to do the following:
 3. update comparisons on user interactions
 -->
 <script lang="ts">
-  import {
-    Button,
-    IconSpaceFixer,
-  } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -85,22 +81,14 @@ This component needs to do the following:
 >
   <Tooltip distance={8} suppress={active}>
     {#if chipStyle}
-      <Chip on:click={toggleFloatingElement} {label} {active} outline={true}>
-        <div slot="body" class="flex gap-x-2">
-          <div
-            class="font-bold text-ellipsis overflow-hidden whitespace-nowrap ml-2"
-          >
-            {label}
-          </div>
-
-          <div class="flex items-center">
-            <IconSpaceFixer pullRight>
-              <div class="transition-transform" class:-rotate-180={active}>
-                <CaretDownIcon size="14px" />
-              </div>
-            </IconSpaceFixer>
-          </div>
-        </div>
+      <Chip
+        on:click={toggleFloatingElement}
+        {label}
+        {active}
+        type="dimension"
+        caret
+      >
+        <span class="font-bold truncate" slot="body"> {label}</span>
       </Chip>
     {:else}
       <Button type="text" on:click={toggleFloatingElement}>
@@ -110,9 +98,6 @@ This component needs to do the following:
           <span class="font-normal">
             {showTimeComparison || selectedDimension ? "Broken down by" : ""}
             <span class="font-bold">{label}</span>
-          </span>
-          <span class="transition-transform" class:-rotate-180={active}>
-            <CaretDownIcon />
           </span>
         </div>
       </Button>
