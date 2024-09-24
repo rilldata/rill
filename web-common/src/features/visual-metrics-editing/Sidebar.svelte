@@ -208,8 +208,6 @@
     );
   });
 
-  $: console.log({ editingClone, item: item?.toJSON() });
-
   async function saveChanges() {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const items = (parsedDocument.get(type) as YAMLSeq).items as Array<YAMLMap>;
