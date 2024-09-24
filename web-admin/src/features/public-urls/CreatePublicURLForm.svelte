@@ -19,6 +19,7 @@
     convertDateToMinutes,
     getMetricsViewFields,
     getSanitizedDashboardStateParam,
+    hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
   import { Divider } from "@rilldata/web-common/components/menu";
@@ -122,6 +123,8 @@
   );
 
   $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
+  $: hasDimensionThresholdFilter =
+    hasDashboardDimensionThresholdFilter($dashboardStore);
 
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
@@ -216,7 +219,7 @@
       {/if}
     </div> -->
 
-    {#if hasWhereFilter}
+    {#if hasWhereFilter || hasDimensionThresholdFilter}
       <Divider marginTop={4} marginBottom={4} />
 
       <div class="flex flex-col gap-y-1">
