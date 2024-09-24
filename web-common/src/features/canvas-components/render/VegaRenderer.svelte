@@ -11,8 +11,12 @@
   } from "svelte-vega";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
-  import { onDestroy } from "svelte";
   import { getRillTheme } from "./vega-config";
+  import { createEventDispatcher, onDestroy } from "svelte";
+  import { getStateManagers } from "../../dashboards/state-managers/state-managers";
+  import { PanDirection } from "../../dashboards/time-dimension-details/types";
+  import LeftPanIcon from "@rilldata/web-common/components/icons/LeftPanIcon.svelte";
+  import RightPanIcon from "@rilldata/web-common/components/icons/RightPanIcon.svelte";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -27,6 +31,13 @@
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let jwt = get(runtime).jwt;
+
+  const dispatch = createEventDispatcher();
+  const {
+    selectors: {
+      charts: { canPanLeft, canPanRight, getNewPanRange },
+    },
+  } = getStateManagers();
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
@@ -92,6 +103,27 @@
       clearTimeout(tooltipTimer);
     }
   });
+
+  function panCharts(direction: PanDirection) {
+    const panRange = $getNewPanRange(direction);
+    if (!panRange) return;
+    const { start, end } = panRange;
+    dispatch("pan", { start, end });
+  }
+
+  let showControls = true;
+
+  function handleMouseEnter() {
+    showControls = true;
+  }
+
+  function handleMouseLeave() {
+    showControls = true;
+  }
+
+  $: midY = contentRect.height / 2;
+  $: translateXLeft = `translateX(-12px)`;
+  $: translateXRight = `translateX(20px)`;
 </script>
 
 <div
@@ -99,7 +131,12 @@
   class:bg-white={canvasDashboard}
   class:px-4={canvasDashboard}
   class:pb-2={canvasDashboard}
-  class="overflow-hidden size-full flex flex-col items-center justify-center"
+  class="vega-renderer no-scrollbars size-full flex flex-col items-center justify-center relative mr-6"
+  data-width={width}
+  data-height={height}
+  on:mouseenter={handleMouseEnter}
+  on:mouseleave={handleMouseLeave}
+  role="figure"
 >
   {#if error}
     <div
@@ -117,6 +154,30 @@
       bind:view
       on:onError={onError}
     />
+    {#if showControls}
+      <div class="vega-pan-controls">
+        {#if $canPanLeft}
+          <button
+            class="pan-button absolute left-0 -translate-y-1/2 w-8 h-8 pointer-events-auto cursor-pointer fill-slate-400 hover:fill-slate-300"
+            style="top: {midY}px; transform: ${translateXLeft};"
+            on:click={() => panCharts("left")}
+            aria-label="Pan left"
+          >
+            <LeftPanIcon />
+          </button>
+        {/if}
+        {#if $canPanRight}
+          <button
+            class="pan-button absolute right-0 -translate-y-1/2 w-8 h-8 pointer-events-auto cursor-pointer fill-slate-400 hover:fill-slate-300"
+            style="top: {midY}px; transform: {translateXRight};"
+            on:click={() => panCharts("right")}
+            aria-label="Pan right"
+          >
+            <RightPanIcon />
+          </button>
+        {/if}
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -149,5 +210,16 @@
       @apply text-left truncate font-semibold ui-copy-number;
       max-width: 250px;
     }
+  }
+
+  .no-scrollbars {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer and Edge */
+  }
+
+  .no-scrollbars::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+    background: transparent; /* Chrome/Safari/Webkit */
   }
 </style>

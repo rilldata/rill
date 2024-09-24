@@ -38,6 +38,7 @@
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
   export let isScrubbing: boolean;
+  export let updatePanRange: (start: Date, end: Date) => void;
 
   let viewVL: View;
   let vegaSpec: VegaSpec;
@@ -217,6 +218,7 @@
     {expressionFunctions}
     {tooltipFormatter}
     {isScrubbing}
+    on:pan={(e) => updatePanRange(e.detail.start, e.detail.end)}
   />
 {:else}
   <!-- JIC we add a new chart type without brush param -->

@@ -6,10 +6,9 @@
 
   import { createEventDispatcher, getContext } from "svelte";
   import type { Writable } from "svelte/store";
+  import { PanDirection } from "../time-dimension-details/types";
 
   export let hovering = true;
-
-  type PanDirection = "left" | "right";
 
   const dispatch = createEventDispatcher();
   const plotConfig: Writable<PlotConfig> = getContext(contexts.config);

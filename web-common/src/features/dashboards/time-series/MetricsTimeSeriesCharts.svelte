@@ -32,6 +32,8 @@
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     AvailableTimeGrain,
+    DashboardTimeControls,
+    TimeComparisonOption,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
@@ -297,6 +299,29 @@
       },
     );
   }
+
+  function updatePanRange(start: Date, end: Date) {
+    if (!interval) return;
+    const timeRange = {
+      name: TimeRangePreset.CUSTOM,
+      start: start,
+      end: end,
+    };
+
+    const comparisonTimeRange = showComparison
+      ? ({
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls) // FIXME wrong typecasting across application
+      : undefined;
+
+    metricsExplorerStore.selectTimeRange(
+      metricViewName,
+      timeRange,
+      interval,
+      comparisonTimeRange,
+      $metricsView.data ?? {},
+    );
+  }
 </script>
 
 <TimeSeriesChartContainer
@@ -367,7 +392,7 @@
   {#if renderedMeasures}
     <div
       class:pb-4={!isInTimeDimensionView}
-      class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
+      class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit no-scrollbars"
     >
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure (measure.name)}
@@ -425,6 +450,7 @@
               xMax={endValue}
               isTimeComparison={showComparison}
               isScrubbing={Boolean(isScrubbing)}
+              {updatePanRange}
               on:chart-hover={(e) => {
                 const { dimension, ts } = e.detail;
 
@@ -521,3 +547,16 @@
   }}
   on:replace={() => createPivot()}
 />
+
+<style lang="postcss">
+  .no-scrollbars {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer and Edge */
+  }
+
+  .no-scrollbars::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+    background: transparent; /* Chrome/Safari/Webkit */
+  }
+</style>
