@@ -42,7 +42,7 @@
     width: var(--height);
     height: var(--height);
 
-    @apply rounded-sm border border-gray-300;
+    @apply rounded-[2px] border border-gray-300;
     @apply bg-gray-50;
 
     display: grid;
@@ -62,13 +62,20 @@
     transform: scale(0);
     transform-origin: bottom left;
 
-    box-shadow: inset 1em 1em rgb(133, 126, 194);
+    box-shadow: inset 1em 1em rgb(255, 255, 255);
     /* Windows High Contrast Mode */
     background-color: CanvasText;
   }
 
   input[type="checkbox"]:checked::before {
     transform: scale(1);
+    background-color: rgb(35, 16, 207);
+  }
+
+  input[type="checkbox"]:checked {
+    transform: scale(1);
+    @apply bg-primary-400;
+    @apply border-primary-400;
   }
 
   input[type="checkbox"]:disabled {
