@@ -21,7 +21,7 @@
   import { YAMLMap } from "yaml";
   import { get, Writable, writable } from "svelte/store";
 
-  const headers = ["Name", "Label", "SQL Expression", "Format", "Description"];
+  const headers = ["Name", "Label", "SQL expression", "Format", "Description"];
   const gutterWidth = 56;
   const ROW_HEIGHT = 40;
 
@@ -168,6 +168,6 @@
   th {
     @apply text-left;
     @apply pl-4 text-slate-500 bg-background;
-    @apply border-b;
+    @apply border-b text-sm font-semibold;
   }
 </style>

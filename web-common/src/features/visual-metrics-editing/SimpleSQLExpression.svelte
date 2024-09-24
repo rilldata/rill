@@ -12,12 +12,11 @@
   export let name: string | undefined = undefined;
   export let editing: boolean;
 
-  $: ({ column, functionName, simple } = expression
-    ? isExistingExpressionSimple(expression)
-    : { column: "", functionName: "SUM", simple: true });
-
-  let label = "SQL Expression";
+  let label = "SQL expression";
   let id = "expression";
+  let { column, functionName, simple } = isExistingExpressionSimple(
+    expression ?? "",
+  );
 
   $: nameMatchesExpression = !name || name === extractName(expression);
 
@@ -37,9 +36,10 @@
     const functionName = match?.[1] ?? functionNames[0];
 
     const simple =
-      simpleRegex.test(expression) &&
-      columnNames.includes(column) &&
-      functionNames.includes(functionName);
+      !expression.length ||
+      (simpleRegex.test(expression) &&
+        columnNames.includes(column) &&
+        functionNames.includes(functionName));
 
     return { column, functionName, simple };
   }
@@ -53,6 +53,8 @@
       expression: `${functionName}(${column})`,
     };
   }
+
+  $: console.log({ functionName });
 </script>
 
 <div class="flex flex-col gap-y-1 h-fit">
@@ -89,13 +91,15 @@
       <Select
         ringFocus
         fontSize={14}
-        id="vme-SQL Expression"
+        id="vme-SQL expression"
         bind:value={functionName}
         options={functionNames.map((value) => ({ value, label: value })) ?? []}
         onChange={(newFunction) => {
           const props = createProperties(newFunction, column);
-          if (nameMatchesExpression && !editing) name = props.name;
-          expression = props.expression;
+          // console.log({ props });
+          if (props.name && nameMatchesExpression && !editing)
+            name = props.name;
+          if (props.expression) expression = props.expression;
         }}
       />
       of
@@ -109,14 +113,15 @@
         options={columnNames.map((value) => ({ value, label: value })) ?? []}
         onChange={(newColumn) => {
           const props = createProperties(functionName, newColumn);
-          if (nameMatchesExpression && !editing) name = props.name;
-          expression = props.expression;
+          if (props.name && nameMatchesExpression && !editing)
+            name = props.name;
+          if (props.expression) expression = props.expression;
         }}
       />
     {:else}
       <Input
         textClass="text-sm"
-        id="vme-SQL Expression"
+        id="vme-SQL expression"
         full
         bind:value={expression}
         multiline

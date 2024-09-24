@@ -52,7 +52,7 @@
   > = {
     measures: [
       {
-        label: "SQL Expression",
+        label: "SQL expression",
         fontFamily: `"Source Code Variable", monospace`,
         fields: [
           {
@@ -137,7 +137,7 @@
     ],
     dimensions: [
       {
-        label: "SQL Expression",
+        label: "SQL expression",
         fontFamily: `"Source Code Variable", monospace`,
         fields: [
           {

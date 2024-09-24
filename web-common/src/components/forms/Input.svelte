@@ -129,6 +129,11 @@
           tabindex="0"
           bind:textContent={value}
           aria-multiline="true"
+          on:keydown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+            }
+          }}
           bind:this={inputElement}
           on:blur={onElementBlur}
           on:focus={() => (focus = true)}

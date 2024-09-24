@@ -142,7 +142,7 @@
   <td
     class="source-code truncate"
     on:click={setEditing}
-    aria-label="SQL Expression"
+    aria-label="SQL expression"
     style:max-width="{expressionWidth}px"
   >
     <span>{item.get("expression") || item.get("column")}</span>
