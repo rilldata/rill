@@ -101,6 +101,8 @@ items:
 
 These are just two simple custom graphs that can be built using Vega Lite. Please refer to Vega Lite [documentation](https://vega.github.io/vega-lite/docs/) and [examples](https://vega.github.io/vega-lite/examples/) for further inspiration on how you can build your very own Canvas dashboard.
 
+The current canvas dashboard is nice but it lacks the ability to filter based on different dimenions. Let's add that.
+
 import DocsRating from '@site/src/components/DocsRating';
 
 ---
