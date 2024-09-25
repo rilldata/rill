@@ -123,7 +123,7 @@ export function useMetricsViewTimeRange(
   );
 }
 
-export const useMetaMeasure = (
+export const useMetricsViewSpecMeasure = (
   instanceId: string,
   metricsViewName: string,
   measureName: string,
@@ -131,22 +131,6 @@ export const useMetaMeasure = (
   useMetricsViewValidSpec(instanceId, metricsViewName, (meta) =>
     meta?.measures?.find((measure) => measure.name === measureName),
   );
-
-export const useMetaDimension = (
-  instanceId: string,
-  metricsViewName: string,
-  dimensionName: string,
-) =>
-  useMetricsViewValidSpec(instanceId, metricsViewName, (meta) => {
-    const dim = meta?.dimensions?.find(
-      (dimension) => dimension.name === dimensionName,
-    );
-    return {
-      ...dim,
-      // this is for backwards compatibility when we used `name` as `column`
-      column: dim.column ?? dim.name,
-    };
-  });
 
 /**
  * Returns a copy of a V1MetricsViewFilter that does not include
