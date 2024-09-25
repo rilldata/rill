@@ -5,7 +5,7 @@
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { useDashboard } from "../dashboards/selectors";
+  import { useMetricsView } from "../dashboards/selectors";
   import { makeTimeZoneOptions } from "./time-utils";
 
   export let formId: string;
@@ -15,9 +15,9 @@
   const { form, errors, handleSubmit } = formState;
 
   // Pull the time zone options from the dashboard's spec
-  $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
+  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
   $: availableTimeZones =
-    $dashboard.data?.metricsView?.spec?.availableTimeZones;
+    $metricsView.data?.metricsView?.spec?.availableTimeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
 </script>
 

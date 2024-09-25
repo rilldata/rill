@@ -9,7 +9,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { useDashboard } from "../selectors";
+  import { useMetricsView } from "../selectors";
   import exportTDD from "./export-tdd";
 
   export let includeScheduledReport: boolean;
@@ -20,7 +20,7 @@
   const ctx = getStateManagers();
   const { runtime, dashboardStore, metricsViewName, exploreName } = ctx;
   $: metricsViewProto = $dashboardStore.proto;
-  const metricsView = useDashboard($runtime.instanceId, $metricsViewName);
+  const metricsView = useMetricsView($runtime.instanceId, $metricsViewName);
 
   const exportDash = createQueryServiceExport();
   const handleExportTDD = async (format: V1ExportFormat) => {

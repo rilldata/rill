@@ -2,7 +2,6 @@
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
@@ -17,12 +16,13 @@
   import { featureFlags } from "../../feature-flags";
   import ViewAsButton from "../granular-access-policies/ViewAsButton.svelte";
   import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
+  import { useMetricsView } from "../selectors";
   import DeployDashboardCta from "./DeployDashboardCTA.svelte";
 
   export let exploreName: string;
 
-  $: dashboardQuery = useDashboard($runtime.instanceId, exploreName);
-  $: filePath = $dashboardQuery.data?.meta?.filePaths?.[0] ?? "";
+  $: metricsViewQuery = useMetricsView($runtime.instanceId, exploreName);
+  $: filePath = $metricsViewQuery.data?.meta?.filePaths?.[0] ?? "";
 
   $: dashboardPolicyCheck = useDashboardPolicyCheck(
     $runtime.instanceId,
@@ -32,7 +32,7 @@
   const { readOnly } = featureFlags;
 
   $: dashboardIsIdle =
-    $dashboardQuery.data?.meta?.reconcileStatus ===
+    $metricsViewQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   function fireTelemetry() {

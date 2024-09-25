@@ -7,7 +7,7 @@
     V1ExportFormat,
     createQueryServiceExport,
   } from "../../../runtime-client";
-  import { useDashboard } from "../selectors";
+  import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
   import exportPivot, { getPivotExportArgs } from "./pivot-export";
 
@@ -21,7 +21,7 @@
   $: metricsViewProto = $dashboardStore.proto;
   const exportDash = createQueryServiceExport();
 
-  $: metricsView = useDashboard($runtime.instanceId, $metricsViewName);
+  $: metricsView = useMetricsView($runtime.instanceId, $metricsViewName);
 
   async function handleExportPivot(format: V1ExportFormat) {
     await exportPivot({

@@ -22,7 +22,7 @@ import type {
 import { derived } from "svelte/store";
 import { ErrorType } from "../../runtime-client/http-client";
 
-export function useDashboard(
+export function useMetricsView(
   instanceId: string,
   metricsViewName: string,
   queryOptions?: CreateQueryOptions<
