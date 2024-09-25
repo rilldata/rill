@@ -7,7 +7,7 @@ import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
-import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
@@ -162,7 +162,7 @@ export function getPrettySelectedTimeRange(
       useMetricsViewTimeRange(instanceId, metricsViewName, {
         query: { queryClient },
       }),
-      useDashboardStore(metricsViewName),
+      useExploreStore(metricsViewName),
     ],
     ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {
       const timeRangeState = timeControlStateSelector([

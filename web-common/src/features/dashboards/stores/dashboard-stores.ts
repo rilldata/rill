@@ -520,9 +520,7 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   ...metricsViewReducers,
 };
 
-export function useDashboardStore(
-  name: string,
-): Readable<MetricsExplorerEntity> {
+export function useExploreStore(name: string): Readable<MetricsExplorerEntity> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });

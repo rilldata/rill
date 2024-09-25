@@ -1,25 +1,25 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import BaseBookmarkForm from "@rilldata/web-admin/features/bookmarks/BaseBookmarkForm.svelte";
-  import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
-  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import {
     createAdminServiceCreateBookmark,
     createAdminServiceUpdateBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
-  import { Button } from "@rilldata/web-common/components/button";
+  import BaseBookmarkForm from "@rilldata/web-admin/features/bookmarks/BaseBookmarkForm.svelte";
+  import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
+  import { Button } from "@rilldata/web-common/components/button";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let metricsViewName: string;
   export let exploreName: string;
@@ -53,7 +53,7 @@
             description: values.description,
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
-              $dashboardStore,
+              $exploreStore,
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
@@ -70,7 +70,7 @@
             resourceName: exploreName,
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
-              $dashboardStore,
+              $exploreStore,
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
@@ -97,7 +97,7 @@
   const { handleSubmit, handleReset } = formState;
 
   $: ({ params } = $page);
-  $: dashboardStore = useDashboardStore(exploreName);
+  $: exploreStore = useExploreStore(exploreName);
   $: projectId = useProjectId(params.organization, params.project);
 </script>
 

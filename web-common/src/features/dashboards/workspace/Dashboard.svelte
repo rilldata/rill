@@ -8,7 +8,7 @@
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
@@ -28,11 +28,11 @@
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: metricsExplorer = useDashboardStore(exploreName);
+  $: exploreStore = useExploreStore(exploreName);
 
-  $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
-  $: expandedMeasureName = $metricsExplorer?.tdd?.expandedMeasureName;
-  $: showPivot = $metricsExplorer?.pivot?.active;
+  $: selectedDimensionName = $exploreStore?.selectedDimensionName;
+  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
+  $: showPivot = $exploreStore?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricsViewName,

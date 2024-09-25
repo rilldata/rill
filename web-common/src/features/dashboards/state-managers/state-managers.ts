@@ -8,8 +8,8 @@ import {
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
-  useValidExplore,
   ValidExploreResponse,
+  useValidExplore,
 } from "@rilldata/web-common/features/explores/selectors";
 import {
   V1MetricsViewTimeRangeResponse,
@@ -25,7 +25,7 @@ import {
   MetricsExplorerStoreType,
   metricsExplorerStore,
   updateMetricsExplorerByName,
-  useDashboardStore,
+  useExploreStore,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
 import { createStateManagerActions, type StateManagerActions } from "./actions";
 import type { DashboardCallbackExecutor } from "./actions/types";
@@ -88,7 +88,7 @@ export function createStateManagers({
   const dashboardStore: Readable<MetricsExplorerEntity> = derived(
     [exploreNameStore],
     ([name], set) => {
-      const store = useDashboardStore(name);
+      const store = useExploreStore(name);
       return store.subscribe(set);
     },
   );

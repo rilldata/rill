@@ -13,7 +13,7 @@
     createQueryServiceMetricsViewAggregation,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "../../feature-flags";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import RowsViewer from "./RowsViewer.svelte";
@@ -39,9 +39,9 @@
 
   const stateManagers = getStateManagers();
 
-  $: dashboardStore = useDashboardStore(exploreName);
+  $: exploreStore = useExploreStore(exploreName);
   $: pivotDataStore = usePivotDataStore(stateManagers);
-  $: showPivot = $dashboardStore.pivot.active;
+  $: showPivot = $exploreStore.pivot.active;
   $: activeCellFilters = $pivotDataStore.activeCellFilters;
 
   let filters: V1Expression | undefined;
@@ -63,7 +63,7 @@
     if (maybeEnd) {
       timeRange.end = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
     }
-    filters = sanitiseExpression($dashboardStore.whereFilter, undefined);
+    filters = sanitiseExpression($exploreStore.whereFilter, undefined);
     label = DEFAULT_LABEL;
   }
 
@@ -87,7 +87,7 @@
             where: filters,
           },
         ],
-        enabled: $timeControlsStore.ready && !!$dashboardStore?.whereFilter,
+        enabled: $timeControlsStore.ready && !!$exploreStore?.whereFilter,
       },
     },
   );

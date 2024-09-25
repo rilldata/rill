@@ -10,7 +10,7 @@
   import { DateTime, Interval } from "luxon";
   import {
     metricsExplorerStore,
-    useDashboardStore,
+    useExploreStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import * as Elements from "../super-pill/components";
 
@@ -28,11 +28,9 @@
     validSpecStore,
   } = ctx;
 
-  $: metricsViewName = $metricsViewName;
+  $: exploreStore = useExploreStore($metricsViewName);
 
-  $: dashboardStore = useDashboardStore(metricsViewName);
-
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+  $: activeTimeZone = $exploreStore?.selectedTimezone;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(

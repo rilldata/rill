@@ -14,7 +14,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
-    useDashboardStore,
+    useExploreStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
@@ -75,28 +75,28 @@
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
 
-  $: dashboardStore = useDashboardStore(exploreName);
+  $: exploreStore = useExploreStore(exploreName);
 
   $: showHideMeasures = createShowHideMeasuresStore(
     exploreName,
     validSpecStore,
   );
 
-  $: expandedMeasureName = $dashboardStore?.tdd?.expandedMeasureName;
+  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
-  $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
+  $: comparisonDimension = $exploreStore?.selectedComparisonDimension;
   $: showComparison = Boolean(
     !comparisonDimension && $timeControlsStore.showTimeComparison,
   );
-  $: tddChartType = $dashboardStore?.tdd?.chartType;
+  $: tddChartType = $exploreStore?.tdd?.chartType;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
-  $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
+  $: isScrubbing = $exploreStore?.selectedScrubRange?.isScrubbing;
   $: isAllTime =
     $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
   $: isPercOfTotalAsContextColumn =
-    $dashboardStore?.leaderboardContextColumn ===
+    $exploreStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
@@ -147,12 +147,12 @@
   $: if ($timeControlsStore.ready) {
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
-      $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore.selectedTimezone,
+      $exploreStore?.selectedScrubRange?.start,
+      $exploreStore.selectedTimezone,
     );
     scrubEnd = adjustOffsetForZone(
-      $dashboardStore?.selectedScrubRange?.end,
-      $dashboardStore.selectedTimezone,
+      $exploreStore?.selectedScrubRange?.end,
+      $exploreStore.selectedTimezone,
     );
 
     const slicedData = isAllTime
@@ -200,11 +200,11 @@
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
       $timeControlsStore.selectedTimeRange?.end,
-      $dashboardStore?.selectedTimezone,
+      $exploreStore?.selectedTimezone,
       interval,
       $timeControlsStore.selectedTimeRange?.name,
       $validSpecStore.data?.explore?.presets?.[0]?.timeRange,
-      $dashboardStore?.tdd.chartType,
+      $exploreStore?.tdd.chartType,
     );
 
     if (adjustedChartValue?.start) {
@@ -249,7 +249,7 @@
 
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
-    const pivot = $dashboardStore?.pivot;
+    const pivot = $exploreStore?.pivot;
 
     if (
       pivot.rows.dimension.length ||
@@ -337,7 +337,7 @@
       <ChartInteractions {exploreName} {showComparison} timeGrain={interval} />
       {#if tddChartType === TDDChart.DEFAULT}
         <div class="translate-x-5">
-          {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
+          {#if $exploreStore?.selectedTimeRange && startValue && endValue}
             <SimpleDataGraphic
               height={26}
               overflowHidden={false}
@@ -430,7 +430,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $dashboardStore.selectedTimezone,
+                  $exploreStore.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -443,7 +443,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $dashboardStore.selectedTimezone,
+                  $exploreStore.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -473,7 +473,7 @@
               {exploreName}
               data={formattedData}
               {dimensionData}
-              zone={$dashboardStore.selectedTimezone}
+              zone={$exploreStore.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"
               timeGrain={interval}

@@ -13,7 +13,7 @@
   import { onMount } from "svelte";
   import {
     metricsExplorerStore,
-    useDashboardStore,
+    useExploreStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
   import {
@@ -42,13 +42,12 @@
 
   $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
 
-  $: metricsViewName = $metricsViewName;
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
-  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: exploreStore = useExploreStore($metricsViewName);
   $: selectedRange =
-    $dashboardStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
+    $exploreStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
   $: defaultTimeRange = exploreSpec.presets?.[0]?.timeRange;
 
@@ -59,7 +58,7 @@
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+  $: activeTimeZone = $exploreStore?.selectedTimezone;
 
   $: availableTimeZones = exploreSpec.timeZones ?? [];
 
@@ -102,7 +101,7 @@
       });
     }
 
-    metricsExplorerStore.setTimeZone(metricsViewName, timeZone);
+    metricsExplorerStore.setTimeZone($metricsViewName, timeZone);
     localUserPreferences.set({ timeZone });
   }
 
@@ -145,9 +144,9 @@
      */
     if (
       !availableTimeZones.length &&
-      $dashboardStore?.selectedTimezone !== "UTC"
+      $exploreStore?.selectedTimezone !== "UTC"
     ) {
-      metricsExplorerStore.setTimeZone(metricsViewName, "UTC");
+      metricsExplorerStore.setTimeZone($metricsViewName, "UTC");
       localUserPreferences.set({ timeZone: "UTC" });
     }
   });
@@ -161,7 +160,7 @@
       getValidComparisonOption(
         exploreSpec,
         range,
-        $dashboardStore.selectedComparisonTimeRange?.name as
+        $exploreStore.selectedComparisonTimeRange?.name as
           | TimeComparisonOption
           | undefined,
         allTimeRange,

@@ -2,7 +2,7 @@ import type { QueryObserverResult } from "@rilldata/svelte-query";
 import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 import {
   updateMetricsExplorerByName,
-  useDashboardStore,
+  useExploreStore,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
@@ -53,7 +53,7 @@ function createShowHideStore<Item>(
   const persistentStore = getPersistentDashboardStore();
 
   const derivedStore = derived(
-    [validSpecStore, useDashboardStore(exploreName)],
+    [validSpecStore, useExploreStore(exploreName)],
     ([validSpec, metricsExplorer]) => {
       if (
         !validSpec?.data?.metricsView ||
