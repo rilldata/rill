@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { useQueryClient } from "@rilldata/svelte-query";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -11,6 +10,7 @@
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
 
   const queryClient = useQueryClient();
