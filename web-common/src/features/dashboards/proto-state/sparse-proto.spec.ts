@@ -2,13 +2,11 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
-  AD_BIDS_INIT,
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_NAME,
   AD_BIDS_SCHEMA,
   AD_BIDS_TIME_RANGE_SUMMARY,
-  getPartialDashboard,
-  resetDashboardStore,
-} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
   AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
   AD_BIDS_APPLY_IMP_MEASURE_FILTER,
@@ -26,8 +24,12 @@ import {
   AD_BIDS_OPEN_DOM_BP_PIVOT,
   AD_BIDS_REMOVE_PUB_DIMENSION_FILTER,
   AD_BIDS_REMOVE_IMP_MEASURE_FILTER,
-} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-mutations";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  getPartialDashboard,
+  resetDashboardStore,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
@@ -93,7 +95,7 @@ describe("sparse proto", () => {
       it(`from ${title}`, () => {
         const dashboard = getDefaultMetricsExplorerEntity(
           AD_BIDS_NAME,
-          AD_BIDS_INIT,
+          AD_BIDS_METRICS_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
         const defaultProto = getProtoFromDashboardState(dashboard);
@@ -103,7 +105,7 @@ describe("sparse proto", () => {
         metricsExplorerStore.syncFromUrl(
           AD_BIDS_NAME,
           defaultProto,
-          AD_BIDS_INIT,
+          AD_BIDS_METRICS_INIT,
           AD_BIDS_SCHEMA,
         );
         assertDashboardEquals(AD_BIDS_NAME, dashboard);
@@ -123,7 +125,7 @@ describe("sparse proto", () => {
         metricsExplorerStore.syncFromUrl(
           AD_BIDS_NAME,
           partialProto,
-          AD_BIDS_INIT,
+          AD_BIDS_METRICS_INIT,
           AD_BIDS_SCHEMA,
         );
         assertDashboardEquals(AD_BIDS_NAME, {

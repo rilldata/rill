@@ -31,7 +31,6 @@
 
   const ctx = getStateManagers();
   const {
-    metricsViewName,
     exploreName,
     selectors: {
       timeRangeSelectors: { timeRangeSelectorState },
@@ -45,7 +44,7 @@
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
-  $: exploreStore = useExploreStore($metricsViewName);
+  $: exploreStore = useExploreStore($exploreName);
   $: selectedRange =
     $exploreStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
@@ -101,7 +100,7 @@
       });
     }
 
-    metricsExplorerStore.setTimeZone($metricsViewName, timeZone);
+    metricsExplorerStore.setTimeZone($exploreName, timeZone);
     localUserPreferences.set({ timeZone });
   }
 
@@ -146,7 +145,7 @@
       !availableTimeZones.length &&
       $exploreStore?.selectedTimezone !== "UTC"
     ) {
-      metricsExplorerStore.setTimeZone($metricsViewName, "UTC");
+      metricsExplorerStore.setTimeZone($exploreName, "UTC");
       localUserPreferences.set({ timeZone: "UTC" });
     }
   });
@@ -181,7 +180,7 @@
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
     metricsExplorerStore.selectTimeRange(
-      metricsViewName,
+      $exploreName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
@@ -206,7 +205,7 @@
 
     if (!activeTimeGrain) return;
     metricsExplorerStore.selectTimeRange(
-      metricsViewName,
+      $exploreName,
       timeRange as TimeRange,
       activeTimeGrain,
       comparisonTimeRange,

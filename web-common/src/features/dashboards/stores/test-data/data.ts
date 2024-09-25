@@ -1,12 +1,7 @@
-import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
-import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   getOffset,
@@ -21,22 +16,17 @@ import {
 import {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
-  RpcStatus,
   TypeCode,
-  V1Expression,
+  V1ExplorePreset,
+  V1ExploreSpec,
   V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1StructType,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/query-core";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { QueryClient } from "@tanstack/svelte-query";
-import { deepClone } from "@vitest/utils";
-import { get, writable } from "svelte/store";
-import { expect } from "vitest";
 
 export const AD_BIDS_NAME = "AdBids";
+export const AD_BIDS_EXPLORE_NAME = "AdBids_explore";
 export const AD_BIDS_SOURCE_NAME = "AdBids_Source";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
 
@@ -52,7 +42,7 @@ export const AD_BIDS_COUNTRY_DIMENSION = "country";
 export const AD_BIDS_PUBLISHER_IS_NULL_DOMAIN = "publisher_is_null";
 export const AD_BIDS_TIMESTAMP_DIMENSION = "timestamp";
 
-export const AD_BIDS_INIT_MEASURES = [
+export const AD_BIDS_INIT_MEASURES: MetricsViewSpecMeasureV2[] = [
   {
     name: AD_BIDS_IMPRESSIONS_MEASURE,
     expression: "count(*)",
@@ -62,7 +52,7 @@ export const AD_BIDS_INIT_MEASURES = [
     expression: "avg(bid_price)",
   },
 ];
-export const AD_BIDS_THREE_MEASURES = [
+export const AD_BIDS_THREE_MEASURES: MetricsViewSpecMeasureV2[] = [
   {
     name: AD_BIDS_IMPRESSIONS_MEASURE,
     expression: "count(*)",
@@ -76,7 +66,7 @@ export const AD_BIDS_THREE_MEASURES = [
     expression: "count_distinct(publisher)",
   },
 ];
-export const AD_BIDS_ADVANCED_MEASURES = [
+export const AD_BIDS_ADVANCED_MEASURES: MetricsViewSpecMeasureV2[] = [
   {
     name: AD_BIDS_IMPRESSIONS_MEASURE,
     expression: "count(*)",
@@ -106,7 +96,7 @@ export const AD_BIDS_ADVANCED_MEASURES = [
     },
   },
 ];
-export const AD_BIDS_INIT_DIMENSIONS = [
+export const AD_BIDS_INIT_DIMENSIONS: MetricsViewSpecDimensionV2[] = [
   {
     name: AD_BIDS_PUBLISHER_DIMENSION,
   },
@@ -114,7 +104,7 @@ export const AD_BIDS_INIT_DIMENSIONS = [
     name: AD_BIDS_DOMAIN_DIMENSION,
   },
 ];
-export const AD_BIDS_THREE_DIMENSIONS = [
+export const AD_BIDS_THREE_DIMENSIONS: MetricsViewSpecDimensionV2[] = [
   {
     name: AD_BIDS_PUBLISHER_DIMENSION,
   },
@@ -159,19 +149,19 @@ export const AD_BIDS_TIME_RANGE_SUMMARY: V1MetricsViewTimeRangeResponse = {
   },
 };
 
-export const AD_BIDS_INIT: V1MetricsViewSpec = {
-  title: "AdBids",
-  table: "AdBids_Source",
+export const AD_BIDS_METRICS_INIT: V1MetricsViewSpec = {
+  title: AD_BIDS_NAME,
+  table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
-export const AD_BIDS_INIT_WITH_TIME: V1MetricsViewSpec = {
-  ...AD_BIDS_INIT,
+export const AD_BIDS_METRICS_INIT_WITH_TIME: V1MetricsViewSpec = {
+  ...AD_BIDS_METRICS_INIT,
   timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
 };
-export const AD_BIDS_WITH_DELETED_MEASURE: V1MetricsViewSpec = {
-  title: "AdBids",
-  table: "AdBids_Source",
+export const AD_BIDS_METRICS_WITH_DELETED_MEASURE: V1MetricsViewSpec = {
+  title: AD_BIDS_NAME,
+  table: AD_BIDS_SOURCE_NAME,
   measures: [
     {
       name: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -180,15 +170,15 @@ export const AD_BIDS_WITH_DELETED_MEASURE: V1MetricsViewSpec = {
   ],
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
-export const AD_BIDS_WITH_THREE_MEASURES: V1MetricsViewSpec = {
-  title: "AdBids",
-  table: "AdBids_Source",
+export const AD_BIDS_METRICS_WITH_THREE_MEASURES: V1MetricsViewSpec = {
+  title: AD_BIDS_NAME,
+  table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_THREE_MEASURES,
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
-export const AD_BIDS_WITH_DELETED_DIMENSION: V1MetricsViewSpec = {
-  title: "AdBids",
-  table: "AdBids_Source",
+export const AD_BIDS_METRICS_WITH_DELETED_DIMENSION: V1MetricsViewSpec = {
+  title: AD_BIDS_NAME,
+  table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: [
     {
@@ -196,15 +186,15 @@ export const AD_BIDS_WITH_DELETED_DIMENSION: V1MetricsViewSpec = {
     },
   ],
 };
-export const AD_BIDS_WITH_THREE_DIMENSIONS: V1MetricsViewSpec = {
-  title: "AdBids",
-  table: "AdBids_Source",
+export const AD_BIDS_METRICS_WITH_THREE_DIMENSIONS: V1MetricsViewSpec = {
+  title: AD_BIDS_NAME,
+  table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_THREE_DIMENSIONS,
 };
-export const AD_BIDS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
-  title: "AdBids",
-  table: "AdBids_Source",
+export const AD_BIDS_METRICS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
+  title: AD_BIDS_NAME,
+  table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: [
     ...AD_BIDS_INIT_DIMENSIONS,
@@ -213,6 +203,37 @@ export const AD_BIDS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
       expression: "case when publisher is null then true else false end",
     },
   ],
+};
+
+export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {
+  title: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_NAME,
+  measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
+  dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
+};
+export const AD_BIDS_EXPLORE_WITH_DELETED_MEASURE: V1ExploreSpec = {
+  title: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_NAME,
+  measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+  dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
+};
+export const AD_BIDS_EXPLORE_WITH_THREE_MEASURES: V1ExploreSpec = {
+  title: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_NAME,
+  measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
+  dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
+};
+export const AD_BIDS_EXPLORE_WITH_DELETED_DIMENSION: V1ExploreSpec = {
+  title: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_NAME,
+  measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
+  dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+};
+export const AD_BIDS_EXPLORE_WITH_THREE_DIMENSIONS: V1ExploreSpec = {
+  title: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_NAME,
+  measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
+  dimensions: AD_BIDS_THREE_DIMENSIONS.map((d) => d.name!),
 };
 
 export const AD_BIDS_SCHEMA: V1StructType = {
@@ -256,138 +277,6 @@ export const AD_BIDS_SCHEMA: V1StructType = {
   ],
 };
 
-export function resetDashboardStore() {
-  metricsExplorerStore.remove(AD_BIDS_NAME);
-  metricsExplorerStore.remove(AD_BIDS_MIRROR_NAME);
-  initAdBidsInStore();
-  initAdBidsMirrorInStore();
-}
-
-export function initAdBidsInStore() {
-  metricsExplorerStore.init(
-    AD_BIDS_NAME,
-    AD_BIDS_INIT,
-    AD_BIDS_TIME_RANGE_SUMMARY,
-  );
-}
-export function initAdBidsMirrorInStore() {
-  metricsExplorerStore.init(
-    AD_BIDS_MIRROR_NAME,
-    {
-      measures: AD_BIDS_INIT_MEASURES,
-      dimensions: AD_BIDS_INIT_DIMENSIONS,
-    },
-    AD_BIDS_TIME_RANGE_SUMMARY,
-  );
-}
-
-export function createDashboardState(
-  name: string,
-  metrics: V1MetricsViewSpec,
-  whereFilter: V1Expression = createAndExpression([]),
-  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
-): MetricsExplorerEntity {
-  const explorer = getDefaultMetricsExplorerEntity(name, metrics, undefined);
-  explorer.whereFilter = whereFilter;
-  explorer.selectedTimeRange = timeRange;
-  return explorer;
-}
-
-export function createAdBidsMirrorInStore(metrics: V1MetricsViewSpec) {
-  const proto = get(metricsExplorerStore).entities[AD_BIDS_NAME].proto ?? "";
-  // actual url is not relevant here
-  metricsExplorerStore.syncFromUrl(
-    AD_BIDS_MIRROR_NAME,
-    proto,
-    metrics ?? { measures: [], dimensions: [] },
-    AD_BIDS_SCHEMA,
-  );
-}
-
-export function createMetricsMetaQueryMock(
-  shouldInit = true,
-): CreateQueryResult<V1MetricsViewSpec, RpcStatus> & {
-  setMeasures: (measures: Array<MetricsViewSpecMeasureV2>) => void;
-  setDimensions: (dimensions: Array<MetricsViewSpecDimensionV2>) => void;
-} {
-  const { update, subscribe } = writable<
-    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
-  >({
-    data: undefined,
-    isSuccess: false,
-    isRefetching: false,
-  } as any);
-
-  const mock = {
-    subscribe,
-    setMeasures: (measures) =>
-      update((value) => {
-        value.isSuccess = true;
-        value.data ??= {
-          measures: [],
-          dimensions: [],
-        };
-        value.data.measures = measures;
-        return value;
-      }),
-    setDimensions: (dimensions: Array<MetricsViewSpecDimensionV2>) =>
-      update((value) => {
-        value.isSuccess = true;
-        value.data ??= {
-          measures: [],
-          dimensions: [],
-        };
-        value.data.dimensions = dimensions;
-        return value;
-      }),
-  };
-
-  if (shouldInit) {
-    mock.setMeasures(AD_BIDS_INIT_MEASURES);
-    mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
-  }
-
-  return mock;
-}
-
-// Wrapper function to simplify assert call
-export function assertMetricsView(
-  name: string,
-  filters: V1Expression = createAndExpression([]),
-  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
-  selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE,
-) {
-  assertMetricsViewRaw(name, filters, timeRange, selectedMeasure);
-}
-// Raw assert function without any optional params.
-// This allows us to assert for `undefined`
-// TODO: find a better solution that this hack
-export function assertMetricsViewRaw(
-  name: string,
-  filters: V1Expression,
-  timeRange: DashboardTimeControls | null,
-  selectedMeasure: string,
-) {
-  const metricsView = get(metricsExplorerStore).entities[name];
-  expect(metricsView.whereFilter).toEqual(filters);
-  expect(metricsView.selectedTimeRange).toEqual(timeRange);
-  expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
-}
-
-export function assertVisiblePartsOfMetricsView(
-  name: string,
-  measures: Array<string> | undefined,
-  dimensions: Array<string> | undefined,
-) {
-  const metricsView = get(metricsExplorerStore).entities[name];
-  if (measures)
-    expect([...metricsView.visibleMeasureKeys].sort()).toEqual(measures.sort());
-  if (dimensions)
-    expect([...metricsView.visibleDimensionKeys].sort()).toEqual(
-      dimensions.sort(),
-    );
-}
-
 export function getOffsetByHour(time: Date) {
   return getOffset(
     getStartOfPeriod(time, Period.HOUR, getLocalIANA()),
@@ -395,34 +284,6 @@ export function getOffsetByHour(time: Date) {
     TimeOffsetType.ADD,
     getLocalIANA(),
   );
-}
-
-export function initStateManagers(
-  dashboardFetchMocks?: DashboardFetchMocks,
-  resp?: V1MetricsViewSpec,
-  name?: string,
-) {
-  initAdBidsInStore();
-  if (dashboardFetchMocks && resp)
-    dashboardFetchMocks.mockMetricsView(name ?? AD_BIDS_NAME, resp);
-
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-        refetchOnWindowFocus: false,
-        retry: false,
-        networkMode: "always",
-      },
-    },
-  });
-  const stateManagers = createStateManagers({
-    queryClient,
-    metricsViewName: name ?? AD_BIDS_NAME,
-  });
-
-  return { stateManagers, queryClient };
 }
 
 export const AD_BIDS_BASE_FILTER = createAndExpression([
@@ -464,15 +325,3 @@ export const CUSTOM_TEST_CONTROLS = {
   start: TestTimeConstants.LAST_18_HOURS,
   end: TestTimeConstants.LAST_12_HOURS,
 } as DashboardTimeControls;
-
-export function getPartialDashboard(
-  name: string,
-  keys: (keyof MetricsExplorerEntity)[],
-) {
-  const dashboard = get(metricsExplorerStore).entities[name];
-  const partialDashboard = {} as MetricsExplorerEntity;
-  keys.forEach(
-    (key) => ((partialDashboard as any)[key] = deepClone(dashboard[key])),
-  );
-  return partialDashboard;
-}

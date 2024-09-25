@@ -21,14 +21,14 @@
 
   const ctx = getStateManagers();
   const {
-    metricsViewName,
+    exploreName,
     selectors: {
       timeRangeSelectors: { timeComparisonOptionsState },
     },
     validSpecStore,
   } = ctx;
 
-  $: exploreStore = useExploreStore($metricsViewName);
+  $: exploreStore = useExploreStore($exploreName);
 
   $: activeTimeZone = $exploreStore?.selectedTimezone;
 
@@ -50,12 +50,12 @@
   ) {
     if (!showTimeComparison) {
       metricsExplorerStore.displayTimeComparison(
-        metricsViewName,
+        $exploreName,
         !showTimeComparison,
       );
     }
     metricsExplorerStore.setSelectedComparisonRange(
-      metricsViewName,
+      $exploreName,
       {
         name,
         start,
@@ -71,7 +71,7 @@
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
       metricsExplorerStore.displayTimeComparison(
-        metricsViewName,
+        $exploreName,
         !showTimeComparison,
       );
     }}

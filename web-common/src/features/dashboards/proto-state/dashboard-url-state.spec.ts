@@ -10,25 +10,27 @@ import {
   AD_BIDS_DEFAULT_URL_TIME_RANGE,
   AD_BIDS_EXCLUDE_FILTER,
   AD_BIDS_IMPRESSIONS_MEASURE,
-  AD_BIDS_INIT,
-  AD_BIDS_INIT_WITH_TIME,
+  AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_INIT_WITH_TIME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_SCHEMA,
   AD_BIDS_TIMESTAMP_DIMENSION,
-  AD_BIDS_WITH_DELETED_MEASURE,
-  assertMetricsView,
-  createDashboardState,
-  initStateManagers,
-  resetDashboardStore,
+  AD_BIDS_METRICS_WITH_DELETED_MEASURE,
   TestTimeConstants,
-} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import DashboardTestComponent from "@rilldata/web-common/features/dashboards/stores/DashboardTestComponent.svelte";
 import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  assertMetricsView,
+  createDashboardState,
+  initStateManagers,
+  resetDashboardStore,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -123,7 +125,7 @@ describe("useDashboardUrlSync", () => {
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
     dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, {
-      ...AD_BIDS_WITH_DELETED_MEASURE,
+      ...AD_BIDS_METRICS_WITH_DELETED_MEASURE,
       timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
     });
     await queryClient.refetchQueries({
@@ -144,7 +146,11 @@ describe("useDashboardUrlSync", () => {
 
   it("Init load from url", async () => {
     gotoDashboardState(
-      createDashboardState(AD_BIDS_NAME, AD_BIDS_INIT, AD_BIDS_EXCLUDE_FILTER),
+      createDashboardState(
+        AD_BIDS_NAME,
+        AD_BIDS_METRICS_INIT,
+        AD_BIDS_EXCLUDE_FILTER,
+      ),
     );
     const { teardown } = await initDashboardUrlState();
 
@@ -161,7 +167,7 @@ describe("useDashboardUrlSync", () => {
   async function initDashboardUrlState() {
     const { queryClient, stateManagers } = initStateManagers(
       dashboardFetchMocks,
-      AD_BIDS_INIT_WITH_TIME,
+      AD_BIDS_METRICS_INIT_WITH_TIME,
     );
     dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
       min: TestTimeConstants.LAST_DAY.toISOString(),

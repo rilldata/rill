@@ -18,10 +18,10 @@ import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_IMPRESSIONS_MEASURE,
-  AD_BIDS_INIT,
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
-} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
@@ -66,7 +66,7 @@ export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
     { name: TimeRangePreset.LAST_7_DAYS } as any,
     V1TimeGrain.TIME_GRAIN_DAY,
     undefined,
-    AD_BIDS_INIT,
+    AD_BIDS_METRICS_INIT,
   );
 export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
@@ -74,7 +74,7 @@ export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
     { name: TimeRangePreset.LAST_4_WEEKS } as any,
     V1TimeGrain.TIME_GRAIN_WEEK,
     undefined,
-    AD_BIDS_INIT,
+    AD_BIDS_METRICS_INIT,
   );
 
 export const AD_BIDS_OPEN_PUB_DIMENSION_TABLE: TestDashboardMutation = (mut) =>
