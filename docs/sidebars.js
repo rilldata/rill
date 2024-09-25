@@ -79,6 +79,14 @@ const sidebars = {
                 'tutorials/rill_advanced_features/canvas_dashboards/vega-lite2',
                 'tutorials/rill_advanced_features/canvas_dashboards/canvas-dashboards',
                 'tutorials/rill_advanced_features/canvas_dashboards/filters',
+                {
+                  type: 'category',
+                  label: 'More Examples',
+                  items: [
+                    'tutorials/rill_advanced_features/canvas_dashboards/more-dashboard-examples/vega-lite3',
+
+                  ]
+                },
               ]
             },
 
