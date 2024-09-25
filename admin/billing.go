@@ -261,7 +261,7 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID, subID, pl
 	return nil
 }
 
-// CleanupTrialBillingIssues removes trial related billing issues and cancel associated jobs
+// CleanupTrialBillingIssues removes trial related billing issues
 func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) error {
 	bite, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
 	if err != nil {
