@@ -9,7 +9,7 @@
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { yamlSchema } from "codemirror-json-schema/yaml";
   import { JSONSchema7 } from "json-schema";
-  import { mapParseErrorsToLines } from "../../errors";
+  import { mapParseErrorsToLines } from "../errors";
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { createPlaceholder } from "./create-placeholder";
   import metricsSchema from "./metrics-schema.json";

@@ -11,9 +11,9 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import PreviewButton from "@rilldata/web-common/features/explores/PreviewButton.svelte";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
-  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
-  import MetricsEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditor.svelte";
+  import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";

@@ -11,8 +11,8 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
-  import ExploreEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/ExploreEditor.svelte";
+  import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
+  import PreviewButton from "@rilldata/web-common/features/explores/PreviewButton.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -86,10 +86,9 @@
   <WorkspaceEditorContainer slot="body">
     <ExploreEditor
       bind:autoSave={$autoSave}
-      {fileArtifact}
-      {filePath}
-      {allErrors}
       {exploreName}
+      {fileArtifact}
+      {allErrors}
     />
   </WorkspaceEditorContainer>
 </WorkspaceContainer>

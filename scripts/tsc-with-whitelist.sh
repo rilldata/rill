@@ -98,7 +98,7 @@ web-common/src/features/metrics-views/errors.ts: error TS2322
 web-common/src/features/metrics-views/errors.ts: error TS2345
 web-common/src/features/metrics-views/metrics-internal-store.ts: error TS18048
 web-common/src/features/metrics-views/metrics-internal-store.ts: error TS2345
-web-common/src/features/metrics-views/workspace/editor/create-placeholder.ts: error TS2322
+web-common/src/features/metrics-views/editor/create-placeholder.ts: error TS2322
 web-common/src/features/models/selectors.ts: error TS18048
 web-common/src/features/models/selectors.ts: error TS2345
 web-common/src/features/models/utils/embedded.ts: error TS18048
