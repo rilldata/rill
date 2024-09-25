@@ -3,6 +3,7 @@ import {
   useDashboardDefaultProto,
   useDashboardUrlSync,
 } from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
@@ -18,6 +19,9 @@ import {
   AD_BIDS_TIMESTAMP_DIMENSION,
   AD_BIDS_METRICS_WITH_DELETED_MEASURE,
   TestTimeConstants,
+  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_NAME,
+  AD_BIDS_EXPLORE_WITH_DELETED_MEASURE,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import DashboardTestComponent from "@rilldata/web-common/features/dashboards/stores/DashboardTestComponent.svelte";
 import {
@@ -32,6 +36,7 @@ import {
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Page } from "@sveltejs/kit";
@@ -69,7 +74,7 @@ describe("useDashboardUrlSync", () => {
 
   beforeAll(() => {
     createPageMock();
-    initLocalUserPreferenceStore(AD_BIDS_NAME);
+    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
   });
 
   beforeEach(() => {
@@ -91,25 +96,29 @@ describe("useDashboardUrlSync", () => {
 
     toggleDimensionValueSelection(AD_BIDS_PUBLISHER_DIMENSION, "Google");
     await wait();
-    assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
+    assertUrlState(
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].proto!,
+    );
     const protoWithFilter =
-      get(metricsExplorerStore).entities[AD_BIDS_NAME].proto;
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].proto!;
     expect(pageMock.gotoSpy).toBeCalledTimes(1);
 
     pageMock.goto("/dashboard/AdBids");
-    expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto).toEqual(
-      get(defaultProtoStore).proto,
-    );
     expect(
-      get(metricsExplorerStore).entities[AD_BIDS_NAME].whereFilter,
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].proto,
+    ).toEqual(get(defaultProtoStore).proto);
+    expect(
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].whereFilter,
     ).toEqual(createAndExpression([]));
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     pageMock.updateState(protoWithFilter);
     await wait();
-    assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
+    assertUrlState(
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].proto!,
+    );
     expect(
-      get(metricsExplorerStore).entities[AD_BIDS_NAME].whereFilter,
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].whereFilter,
     ).toEqual(
       createAndExpression([
         createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
@@ -124,10 +133,14 @@ describe("useDashboardUrlSync", () => {
     const { teardown, queryClient } = await initDashboardUrlState();
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
-    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, {
-      ...AD_BIDS_METRICS_WITH_DELETED_MEASURE,
-      timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
-    });
+    dashboardFetchMocks.mockMetricsExplore(
+      AD_BIDS_EXPLORE_NAME,
+      {
+        ...AD_BIDS_METRICS_WITH_DELETED_MEASURE,
+        timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
+      },
+      AD_BIDS_EXPLORE_WITH_DELETED_MEASURE,
+    );
     await queryClient.refetchQueries({
       type: "active",
     });
@@ -138,7 +151,8 @@ describe("useDashboardUrlSync", () => {
     // This is not updated since the sync is called in a component
     // TODO: We should add tests for the sync component
     expect([
-      ...get(metricsExplorerStore).entities[AD_BIDS_NAME].visibleMeasureKeys,
+      ...get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME]
+        .visibleMeasureKeys,
     ]).toEqual([AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE]);
 
     teardown();
@@ -147,28 +161,33 @@ describe("useDashboardUrlSync", () => {
   it("Init load from url", async () => {
     gotoDashboardState(
       createDashboardState(
-        AD_BIDS_NAME,
+        AD_BIDS_EXPLORE_NAME,
         AD_BIDS_METRICS_INIT,
+        AD_BIDS_EXPLORE_INIT,
         AD_BIDS_EXCLUDE_FILTER,
       ),
     );
     const { teardown } = await initDashboardUrlState();
 
-    assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
+    assertUrlState(
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].proto!,
+    );
     assertMetricsView(
-      AD_BIDS_NAME,
+      AD_BIDS_EXPLORE_NAME,
       AD_BIDS_EXCLUDE_FILTER,
-      AD_BIDS_DEFAULT_URL_TIME_RANGE,
+      AD_BIDS_DEFAULT_URL_TIME_RANGE as DashboardTimeControls,
     );
 
     teardown();
   });
 
   async function initDashboardUrlState() {
-    const { queryClient, stateManagers } = initStateManagers(
-      dashboardFetchMocks,
+    dashboardFetchMocks.mockMetricsExplore(
+      AD_BIDS_EXPLORE_NAME,
       AD_BIDS_METRICS_INIT_WITH_TIME,
+      AD_BIDS_EXPLORE_INIT,
     );
+    const { queryClient, stateManagers } = initStateManagers();
     dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
       min: TestTimeConstants.LAST_DAY.toISOString(),
       max: TestTimeConstants.NOW.toISOString(),
@@ -233,7 +252,7 @@ function createPageMock() {
 
 function assertUrlState(expected: string) {
   const actual = decodeURIComponent(
-    get(pageMock).url.searchParams.get("state"),
+    get(pageMock).url.searchParams.get("state")!,
   );
   expect(actual).toEqual(expected);
 }

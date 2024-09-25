@@ -1,5 +1,4 @@
 import { QueryClient } from "@rilldata/svelte-query";
-import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -14,7 +13,6 @@ import {
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_SCHEMA,
-  AD_BIDS_SOURCE_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { ValidExploreResponse } from "@rilldata/web-common/features/explores/selectors";
@@ -126,17 +124,11 @@ export function assertVisiblePartsOfMetricsView(
     );
 }
 
-export function initStateManagers(
-  dashboardFetchMocks?: DashboardFetchMocks,
-  resp?: V1MetricsViewSpec,
-  metricsViewName?: string,
-) {
+export function initStateManagers(metricsViewName?: string) {
   metricsViewName ??= AD_BIDS_NAME;
   const exploreName = metricsViewName + "_explore";
 
   initAdBidsInStore();
-  if (dashboardFetchMocks && resp)
-    dashboardFetchMocks.mockMetricsView(exploreName, resp);
 
   const queryClient = new QueryClient({
     defaultOptions: {

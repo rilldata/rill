@@ -17,7 +17,6 @@ import {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   TypeCode,
-  V1ExplorePreset,
   V1ExploreSpec,
   V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
@@ -26,7 +25,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export const AD_BIDS_NAME = "AdBids";
-export const AD_BIDS_EXPLORE_NAME = "AdBids_explore";
+export const AD_BIDS_EXPLORE_NAME = AD_BIDS_NAME + "_explore";
 export const AD_BIDS_SOURCE_NAME = "AdBids_Source";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
 
@@ -170,28 +169,6 @@ export const AD_BIDS_METRICS_WITH_DELETED_MEASURE: V1MetricsViewSpec = {
   ],
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
-export const AD_BIDS_METRICS_WITH_THREE_MEASURES: V1MetricsViewSpec = {
-  title: AD_BIDS_NAME,
-  table: AD_BIDS_SOURCE_NAME,
-  measures: AD_BIDS_THREE_MEASURES,
-  dimensions: AD_BIDS_INIT_DIMENSIONS,
-};
-export const AD_BIDS_METRICS_WITH_DELETED_DIMENSION: V1MetricsViewSpec = {
-  title: AD_BIDS_NAME,
-  table: AD_BIDS_SOURCE_NAME,
-  measures: AD_BIDS_INIT_MEASURES,
-  dimensions: [
-    {
-      name: AD_BIDS_PUBLISHER_DIMENSION,
-    },
-  ],
-};
-export const AD_BIDS_METRICS_WITH_THREE_DIMENSIONS: V1MetricsViewSpec = {
-  title: AD_BIDS_NAME,
-  table: AD_BIDS_SOURCE_NAME,
-  measures: AD_BIDS_INIT_MEASURES,
-  dimensions: AD_BIDS_THREE_DIMENSIONS,
-};
 export const AD_BIDS_METRICS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
   title: AD_BIDS_NAME,
   table: AD_BIDS_SOURCE_NAME,
@@ -234,6 +211,15 @@ export const AD_BIDS_EXPLORE_WITH_THREE_DIMENSIONS: V1ExploreSpec = {
   metricsView: AD_BIDS_NAME,
   measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_THREE_DIMENSIONS.map((d) => d.name!),
+};
+export const AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION: V1ExploreSpec = {
+  title: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_NAME,
+  measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
+  dimensions: [
+    ...AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
+    AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
+  ],
 };
 
 export const AD_BIDS_SCHEMA: V1StructType = {

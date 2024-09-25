@@ -4,13 +4,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  ResourceKind,
-  useResource,
-} from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
   RpcStatus,
   V1MetricsViewComparisonResponse,
-  V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewComparison,
   createQueryServiceMetricsViewSchema,
@@ -23,35 +18,6 @@ import type {
 } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
-
-export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
-  ctx: StateManagers,
-  selector?: (meta: V1MetricsViewSpec) => T,
-): Readable<QueryObserverResult<T | V1MetricsViewSpec, RpcStatus>> => {
-  return derived(
-    [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricsViewName], set) => {
-      return useResource(
-        runtime.instanceId,
-        metricsViewName,
-        ResourceKind.MetricsView,
-        {
-          select: (data) =>
-            selector
-              ? selector(data.resource?.metricsView?.state?.validSpec)
-              : data.resource?.metricsView?.state?.validSpec,
-          queryClient: ctx.queryClient,
-        },
-      ).subscribe(set);
-    },
-  );
-};
-
-export const useModelHasTimeSeries = (ctx: StateManagers) =>
-  useMetricsViewValidSpec(
-    ctx,
-    (meta) => !!meta?.timeDimension,
-  ) as CreateQueryResult<boolean>;
 
 export const getFilterSearchList = (
   ctx: StateManagers,
@@ -107,8 +73,8 @@ export function createTimeRangeSummary(
   ctx: StateManagers,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   return derived(
-    [ctx.runtime, ctx.metricsViewName, useMetricsViewValidSpec(ctx)],
-    ([runtime, metricsViewName, metricsView], set) =>
+    [ctx.runtime, ctx.metricsViewName, ctx.validSpecStore],
+    ([runtime, metricsViewName, validSpec], set) =>
       createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
         metricsViewName,
@@ -116,7 +82,8 @@ export function createTimeRangeSummary(
         {
           query: {
             queryClient: ctx.queryClient,
-            enabled: !metricsView.error && !!metricsView.data?.timeDimension,
+            enabled:
+              !validSpec.error && !!validSpec.data?.metricsView?.timeDimension,
           },
         },
       ).subscribe(set),

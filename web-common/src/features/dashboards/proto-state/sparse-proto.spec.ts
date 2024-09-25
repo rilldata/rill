@@ -2,6 +2,8 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
+  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_INIT,
   AD_BIDS_NAME,
   AD_BIDS_SCHEMA,
@@ -83,7 +85,7 @@ const TestCasesOppositeMutations = [
 
 describe("sparse proto", () => {
   beforeAll(() => {
-    initLocalUserPreferenceStore(AD_BIDS_NAME);
+    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
   });
 
   beforeEach(() => {
@@ -94,21 +96,23 @@ describe("sparse proto", () => {
     for (const { title, mutations } of TestCases) {
       it(`from ${title}`, () => {
         const dashboard = getDefaultMetricsExplorerEntity(
-          AD_BIDS_NAME,
+          AD_BIDS_EXPLORE_NAME,
           AD_BIDS_METRICS_INIT,
+          AD_BIDS_EXPLORE_INIT,
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
         const defaultProto = getProtoFromDashboardState(dashboard);
 
-        applyMutationsToDashboard(AD_BIDS_NAME, mutations);
+        applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
         metricsExplorerStore.syncFromUrl(
-          AD_BIDS_NAME,
+          AD_BIDS_EXPLORE_NAME,
           defaultProto,
           AD_BIDS_METRICS_INIT,
+          AD_BIDS_EXPLORE_INIT,
           AD_BIDS_SCHEMA,
         );
-        assertDashboardEquals(AD_BIDS_NAME, dashboard);
+        assertDashboardEquals(AD_BIDS_EXPLORE_NAME, dashboard);
       });
     }
   });
@@ -116,20 +120,27 @@ describe("sparse proto", () => {
   describe("should reset partial dashboard store", () => {
     for (const { title, mutations, keys } of TestCases) {
       it(`to ${title}`, () => {
-        applyMutationsToDashboard(AD_BIDS_NAME, mutations);
-        const partialDashboard = getPartialDashboard(AD_BIDS_NAME, keys);
+        applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        const partialDashboard = getPartialDashboard(
+          AD_BIDS_EXPLORE_NAME,
+          keys,
+        );
         const partialProto = getProtoFromDashboardState(partialDashboard);
 
-        applyMutationsToDashboard(AD_BIDS_NAME, TestCasesOppositeMutations);
+        applyMutationsToDashboard(
+          AD_BIDS_EXPLORE_NAME,
+          TestCasesOppositeMutations,
+        );
 
         metricsExplorerStore.syncFromUrl(
-          AD_BIDS_NAME,
+          AD_BIDS_EXPLORE_NAME,
           partialProto,
           AD_BIDS_METRICS_INIT,
+          AD_BIDS_EXPLORE_INIT,
           AD_BIDS_SCHEMA,
         );
-        assertDashboardEquals(AD_BIDS_NAME, {
-          ...get(metricsExplorerStore).entities[AD_BIDS_NAME],
+        assertDashboardEquals(AD_BIDS_EXPLORE_NAME, {
+          ...get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           ...partialDashboard,
         });
       });

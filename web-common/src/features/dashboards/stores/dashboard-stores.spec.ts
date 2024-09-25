@@ -191,11 +191,7 @@ describe("dashboard-stores", () => {
   it("Should work when time range is not available", () => {
     const AD_BIDS_NO_TIMESTAMP_NAME = "AdBids_no_timestamp";
     const AD_BIDS_EXPLORE_NO_TIMESTAMP_NAME = "AdBids_no_timestamp_explore";
-    const { stateManagers } = initStateManagers(
-      undefined,
-      undefined,
-      AD_BIDS_NO_TIMESTAMP_NAME,
-    );
+    const { stateManagers } = initStateManagers(AD_BIDS_NO_TIMESTAMP_NAME);
     const {
       actions: {
         dimensionsFilter: { toggleDimensionValueSelection },
