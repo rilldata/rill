@@ -3,7 +3,6 @@ import {
   useDashboardDefaultProto,
   useDashboardUrlSync,
 } from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
-import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
@@ -79,7 +78,7 @@ describe("useDashboardUrlSync", () => {
 
   beforeEach(() => {
     resetDashboardStore();
-    pageMock.goto("/dashboard/AdBids");
+    pageMock.goto(`/explore/${AD_BIDS_EXPLORE_NAME}`);
     pageMock.gotoSpy.mockClear();
   });
 
@@ -222,8 +221,8 @@ type PageMock = Readable<Page> & {
 };
 function createPageMock() {
   const { update, subscribe } = writable<Page>({
-    url: new URL("http://localhost/dashboard/AdBids"),
-    params: { name: "AdBids" },
+    url: new URL("http://localhost/explore/AdBids_explore"),
+    params: { name: "AdBids_explore" },
   } as any);
 
   pageMock.subscribe = subscribe;
@@ -231,12 +230,12 @@ function createPageMock() {
     update((page) => {
       if (state) {
         page.url = new URL(
-          `http://localhost/dashboard/AdBids?state=${encodeURIComponent(
+          `http://localhost/explore/AdBids_explore?state=${encodeURIComponent(
             state,
           )}`,
         );
       } else {
-        page.url = new URL("http://localhost/dashboard/AdBids");
+        page.url = new URL("http://localhost/explore/AdBids_explore");
       }
       return page;
     });

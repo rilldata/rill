@@ -5,6 +5,7 @@ import {
   RpcStatus,
   V1ExploreSpec,
   V1GetExploreResponse,
+  V1GetResourceResponse,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
@@ -31,19 +32,35 @@ export type ValidExploreResponse = {
   explore: V1ExploreSpec | undefined;
   metricsView: V1MetricsViewSpec | undefined;
 };
-export function useValidExplore(instanceId: string, exploreName: string) {
+export function useValidExplore(
+  instanceId: string,
+  exploreName: string,
+  queryOptions?: CreateQueryOptions<
+    V1GetExploreResponse,
+    ErrorType<RpcStatus>,
+    ValidExploreResponse
+  >,
+) {
+  const defaultQueryOptions: CreateQueryOptions<
+    V1GetExploreResponse,
+    ErrorType<RpcStatus>,
+    ValidExploreResponse
+  > = {
+    select: (data) =>
+      <ValidExploreResponse>{
+        explore: data.explore?.explore?.state?.validSpec,
+        metricsView: data.metricsView?.metricsView?.state?.validSpec,
+      },
+    queryClient,
+    enabled: !!exploreName,
+  };
   return createRuntimeServiceGetExplore(
     instanceId,
     { name: exploreName },
     {
       query: {
-        select: (data) =>
-          <ValidExploreResponse>{
-            explore: data.explore?.explore?.state?.validSpec,
-            metricsView: data.metricsView?.metricsView?.state?.validSpec,
-          },
-        queryClient,
-        enabled: !!exploreName,
+        ...defaultQueryOptions,
+        ...queryOptions,
       },
     },
   );
