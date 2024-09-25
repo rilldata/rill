@@ -4,32 +4,25 @@ import {
   ResourceKind,
   UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
+import {
+  runtimeServicePutFile,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
-export async function handleEntityCreate(kind: ResourceKind) {
+export async function handleEntityCreate(
+  kind: ResourceKind,
+  baseResource?: V1Resource,
+) {
   if (!(kind in ResourceKindMap)) return;
 
-  // Get the path for the new file
-  const allNames =
-    kind === ResourceKind.Source || kind === ResourceKind.Model
-      ? // sources and models share the name
-        [
-          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-        ]
-      : fileArtifacts.getNamesForKind(kind);
-  const { folderName, baseFileName, extension, content } =
-    ResourceKindMap[kind];
-  const newName = getName(baseFileName, allNames);
-  const newPath = `${folderName}/${newName}${extension}`;
-
-  // Create the new file
+  const newPath = getPathForNewResourceFile(kind, baseResource);
   const instanceId = get(runtime).instanceId;
+
   await runtimeServicePutFile(instanceId, {
     path: newPath,
-    blob: content,
+    blob: generateBlobForNewResourceFile(kind, baseResource),
     create: true,
     createOnly: true,
   });
@@ -38,41 +31,121 @@ export async function handleEntityCreate(kind: ResourceKind) {
   return `/files/${newPath}`;
 }
 
+export function getPathForNewResourceFile(
+  newKind: ResourceKind,
+  baseResource?: V1Resource,
+) {
+  const allNames =
+    newKind === ResourceKind.Source || newKind === ResourceKind.Model
+      ? // sources and models share the name
+        [
+          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+        ]
+      : fileArtifacts.getNamesForKind(newKind);
+
+  const { folderName, extension } = ResourceKindMap[newKind];
+  const baseName = getBaseNameForNewResourceFile(newKind, baseResource);
+  const newName = getName(baseName, allNames);
+
+  return `${folderName}/${newName}${extension}`;
+}
+
 const ResourceKindMap: Record<
   UserFacingResourceKinds,
   {
     folderName: string;
-    baseFileName: string;
+    baseName: string;
     extension: string;
-    content: string;
   }
 > = {
   [ResourceKind.Source]: {
     folderName: "sources",
-    baseFileName: "source",
+    baseName: "source",
     extension: ".yaml",
-    content: "", // This is constructed in the `features/sources/modal` directory
   },
   [ResourceKind.Connector]: {
     folderName: "connectors",
-    baseFileName: "connector",
+    baseName: "connector",
     extension: ".yaml",
-    content: "", // This is constructed in the `features/connectors` directory
   },
   [ResourceKind.Model]: {
     folderName: "models",
-    baseFileName: "model",
+    baseName: "model",
     extension: ".sql",
-    content: `-- Model SQL
--- Reference documentation: https://docs.rilldata.com/reference/project-files/models
-
-SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
     folderName: "metrics",
-    baseFileName: "metrics_view",
+    baseName: "metrics_view",
     extension: ".yaml",
-    content: `# Metrics View YAML
+  },
+  [ResourceKind.Explore]: {
+    folderName: "explore-dashboards",
+    baseName: "explore",
+    extension: ".yaml",
+  },
+  [ResourceKind.API]: {
+    folderName: "apis",
+    baseName: "api",
+    extension: ".yaml",
+  },
+  [ResourceKind.Component]: {
+    folderName: "components",
+    baseName: "component",
+    extension: ".yaml",
+  },
+  [ResourceKind.Canvas]: {
+    folderName: "canvas-dashboards",
+    baseName: "canvas",
+    extension: ".yaml",
+  },
+  [ResourceKind.Theme]: {
+    folderName: "themes",
+    baseName: "theme",
+    extension: ".yaml",
+  },
+  [ResourceKind.Report]: {
+    folderName: "reports",
+    baseName: "report",
+    extension: ".yaml",
+  },
+  [ResourceKind.Alert]: {
+    folderName: "alerts",
+    baseName: "alert",
+    extension: ".yaml",
+  },
+};
+
+export function getBaseNameForNewResourceFile(
+  newKind: ResourceKind,
+  baseResource?: V1Resource,
+) {
+  switch (newKind) {
+    case ResourceKind.Explore:
+      return baseResource
+        ? `${baseResource.meta!.name!.name}_explore`
+        : ResourceKindMap[newKind].baseName;
+    default:
+      return ResourceKindMap[newKind].baseFileName;
+  }
+}
+
+export function generateBlobForNewResourceFile(
+  kind: ResourceKind,
+  baseResource?: V1Resource,
+) {
+  switch (kind) {
+    case ResourceKind.Connector:
+      return ""; // This is constructed in the `features/connectors` directory
+    case ResourceKind.Source:
+      return ""; // This is constructed in the `features/sources/modal` directory
+    case ResourceKind.Model:
+      return `-- Model SQL
+-- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+SELECT 'Hello, World!' AS Greeting`;
+    case ResourceKind.MetricsView:
+      return `# Metrics View YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
 
 version: 1
@@ -90,13 +163,26 @@ measures:
   - expression: "SUM(revenue)"
     label: "Total Revenue"
     description: "Total revenue generated"
-`,
-  },
-  [ResourceKind.Explore]: {
-    folderName: "explore-dashboards",
-    baseFileName: "explore",
-    extension: ".yaml",
-    content: `# Explore YAML
+`;
+    case ResourceKind.Explore:
+      if (baseResource) {
+        const metricsViewName = baseResource.meta!.name!.name;
+        const metricsViewTitle =
+          baseResource.metricsView?.state?.validSpec?.title;
+
+        return `# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+
+type: explore
+
+title: "${metricsViewTitle ? metricsViewTitle : metricsViewName} dashboard"
+metrics_view: ${metricsViewName}
+
+dimensions: '*'
+measures: '*'
+`;
+      }
+      return `# Explore YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/explores
 
 type: explore
@@ -106,13 +192,9 @@ metrics_view: example_metrics_view # Choose a metrics view to underpin the dashb
 
 dimensions: '*'
 measures: '*'
-`,
-  },
-  [ResourceKind.API]: {
-    folderName: "apis",
-    baseFileName: "api",
-    extension: ".yaml",
-    content: `# API YAML
+`;
+    case ResourceKind.API:
+      return `# API YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/apis
 # Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>
 
@@ -120,13 +202,9 @@ type: api
 
 metrics_sql: |
   select measure, dimension from metrics_view
-`,
-  },
-  [ResourceKind.Component]: {
-    folderName: "components",
-    baseFileName: "component",
-    extension: ".yaml",
-    content: `# Component YAML
+`;
+    case ResourceKind.Component:
+      return `# Component YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/components
     
 type: component
@@ -170,13 +248,9 @@ vega_lite: |
         "axis": { "title": "Revenue" }
       }
     }
-  }`,
-  },
-  [ResourceKind.Canvas]: {
-    folderName: "canvas-dashboards",
-    baseFileName: "canvas",
-    extension: ".yaml",
-    content: `type: canvas
+  }`;
+    case ResourceKind.Canvas:
+      return `type: canvas
 title: "Canvas Dashboard"
 columns: 24
 gap: 2
@@ -192,13 +266,9 @@ items:
     height: 3
     x: 2
     y: 1
-`,
-  },
-  [ResourceKind.Theme]: {
-    folderName: "themes",
-    baseFileName: "theme",
-    extension: ".yaml",
-    content: `# Theme YAML
+`;
+    case ResourceKind.Theme:
+      return `# Theme YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/themes
 
 type: theme
@@ -206,30 +276,24 @@ type: theme
 colors:
   primary: plum
   secondary: violet 
-`,
-  },
-  [ResourceKind.Report]: {
-    folderName: "reports",
-    baseFileName: "report",
-    extension: ".yaml",
-    content: `# Report YAML
-# Reference documentation: TODO
-
-type: report
-
-...
-`,
-  },
-  [ResourceKind.Alert]: {
-    folderName: "alerts",
-    baseFileName: "alert",
-    extension: ".yaml",
-    content: `# Alert YAML
+`;
+    case ResourceKind.Alert:
+      return `# Alert YAML
 # Reference documentation: TODO
 
 type: alert
 
 ...
-`,
-  },
-};
+`;
+    case ResourceKind.Report:
+      return `# Report YAML
+# Reference documentation: TODO
+
+type: report
+
+...
+`;
+    default:
+      throw new Error(`Unknown resource kind: ${kind}`);
+  }
+}
