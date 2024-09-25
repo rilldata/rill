@@ -23,6 +23,7 @@
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
+  import CreateExploreDashboardButton from "../metrics-views/CreateExploreDashboardButton.svelte";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -46,14 +47,15 @@
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: ({ data: resourceData, isFetching } = $resourceQuery);
-  $: isResourceLoading = resourceIsLoading(resourceData);
+  $: ({ data: resource, isFetching } = $resourceQuery);
+  $: isResourceLoading = resourceIsLoading(resource);
 
-  $: connector = resourceData?.metricsView?.state?.validSpec?.connector ?? "";
-  $: database = resourceData?.metricsView?.state?.validSpec?.database ?? "";
+  $: isOldMetricsView = !$remoteContent?.includes("version: 1");
+  $: connector = resource?.metricsView?.state?.validSpec?.connector ?? "";
+  $: database = resource?.metricsView?.state?.validSpec?.database ?? "";
   $: databaseSchema =
-    resourceData?.metricsView?.state?.validSpec?.databaseSchema ?? "";
-  $: table = resourceData?.metricsView?.state?.validSpec?.table ?? "";
+    resource?.metricsView?.state?.validSpec?.databaseSchema ?? "";
+  $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
@@ -108,12 +110,16 @@
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      <PreviewButton
-        dashboardName={metricsViewName}
-        disabled={previewDisabled}
-        status={previewStatus}
-      />
-      <DeployDashboardCta />
+      {#if isOldMetricsView}
+        <PreviewButton
+          dashboardName={metricsViewName}
+          disabled={previewDisabled}
+          status={previewStatus}
+        />
+        <DeployDashboardCta />
+      {:else}
+        <CreateExploreDashboardButton metricsViewResource={resource} />
+      {/if}
       <LocalAvatarButton />
     </div>
   </WorkspaceHeader>
