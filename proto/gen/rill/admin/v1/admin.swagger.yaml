@@ -3442,7 +3442,7 @@ paths:
       tags:
         - AdminService
 definitions:
-  GetReportMetaResponseurls:
+  GetReportMetaResponseUrls:
     type: object
     properties:
       openUrl:
@@ -4083,11 +4083,11 @@ definitions:
     type: object
     properties:
       internalUsersUrls:
-        $ref: '#/definitions/GetReportMetaResponseurls'
+        $ref: '#/definitions/GetReportMetaResponseUrls'
       externalUsersUrls:
         type: object
         additionalProperties:
-          $ref: '#/definitions/GetReportMetaResponseurls'
+          $ref: '#/definitions/GetReportMetaResponseUrls'
   v1GetUserResponse:
     type: object
     properties:

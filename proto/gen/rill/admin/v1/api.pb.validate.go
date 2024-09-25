@@ -36148,22 +36148,22 @@ var _ interface {
 	ErrorName() string
 } = ListGithubUserReposResponse_RepoValidationError{}
 
-// Validate checks the field values on GetReportMetaResponseUrls with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on GetReportMetaResponse_Urls with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetReportMetaResponseUrls) Validate() error {
+func (m *GetReportMetaResponse_Urls) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetReportMetaResponseUrls with the
+// ValidateAll checks the field values on GetReportMetaResponse_Urls with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetReportMetaResponseUrlsMultiError, or nil if none found.
-func (m *GetReportMetaResponseUrls) ValidateAll() error {
+// GetReportMetaResponse_UrlsMultiError, or nil if none found.
+func (m *GetReportMetaResponse_Urls) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetReportMetaResponseUrls) validate(all bool) error {
+func (m *GetReportMetaResponse_Urls) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -36177,19 +36177,19 @@ func (m *GetReportMetaResponseUrls) validate(all bool) error {
 	// no validation rules for EditUrl
 
 	if len(errors) > 0 {
-		return GetReportMetaResponseUrlsMultiError(errors)
+		return GetReportMetaResponse_UrlsMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetReportMetaResponseUrlsMultiError is an error wrapping multiple validation
-// errors returned by GetReportMetaResponseUrls.ValidateAll() if the
-// designated constraints aren't met.
-type GetReportMetaResponseUrlsMultiError []error
+// GetReportMetaResponse_UrlsMultiError is an error wrapping multiple
+// validation errors returned by GetReportMetaResponse_Urls.ValidateAll() if
+// the designated constraints aren't met.
+type GetReportMetaResponse_UrlsMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetReportMetaResponseUrlsMultiError) Error() string {
+func (m GetReportMetaResponse_UrlsMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -36198,11 +36198,11 @@ func (m GetReportMetaResponseUrlsMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetReportMetaResponseUrlsMultiError) AllErrors() []error { return m }
+func (m GetReportMetaResponse_UrlsMultiError) AllErrors() []error { return m }
 
-// GetReportMetaResponseUrlsValidationError is the validation error returned by
-// GetReportMetaResponseUrls.Validate if the designated constraints aren't met.
-type GetReportMetaResponseUrlsValidationError struct {
+// GetReportMetaResponse_UrlsValidationError is the validation error returned
+// by GetReportMetaResponse_Urls.Validate if the designated constraints aren't met.
+type GetReportMetaResponse_UrlsValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -36210,24 +36210,24 @@ type GetReportMetaResponseUrlsValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetReportMetaResponseUrlsValidationError) Field() string { return e.field }
+func (e GetReportMetaResponse_UrlsValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetReportMetaResponseUrlsValidationError) Reason() string { return e.reason }
+func (e GetReportMetaResponse_UrlsValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetReportMetaResponseUrlsValidationError) Cause() error { return e.cause }
+func (e GetReportMetaResponse_UrlsValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetReportMetaResponseUrlsValidationError) Key() bool { return e.key }
+func (e GetReportMetaResponse_UrlsValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetReportMetaResponseUrlsValidationError) ErrorName() string {
-	return "GetReportMetaResponseUrlsValidationError"
+func (e GetReportMetaResponse_UrlsValidationError) ErrorName() string {
+	return "GetReportMetaResponse_UrlsValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetReportMetaResponseUrlsValidationError) Error() string {
+func (e GetReportMetaResponse_UrlsValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -36239,14 +36239,14 @@ func (e GetReportMetaResponseUrlsValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetReportMetaResponseUrls.%s: %s%s",
+		"invalid %sGetReportMetaResponse_Urls.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetReportMetaResponseUrlsValidationError{}
+var _ error = GetReportMetaResponse_UrlsValidationError{}
 
 var _ interface {
 	Field() string
@@ -36254,4 +36254,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetReportMetaResponseUrlsValidationError{}
+} = GetReportMetaResponse_UrlsValidationError{}

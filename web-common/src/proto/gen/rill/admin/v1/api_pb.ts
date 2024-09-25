@@ -8941,14 +8941,14 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
  */
 export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   /**
-   * @generated from field: rill.admin.v1.GetReportMetaResponse.urls internal_users_urls = 1;
+   * @generated from field: rill.admin.v1.GetReportMetaResponse.Urls internal_users_urls = 1;
    */
-  internalUsersUrls?: GetReportMetaResponse_urls;
+  internalUsersUrls?: GetReportMetaResponse_Urls;
 
   /**
-   * @generated from field: map<string, rill.admin.v1.GetReportMetaResponse.urls> external_users_urls = 2;
+   * @generated from field: map<string, rill.admin.v1.GetReportMetaResponse.Urls> external_users_urls = 2;
    */
-  externalUsersUrls: { [key: string]: GetReportMetaResponse_urls } = {};
+  externalUsersUrls: { [key: string]: GetReportMetaResponse_Urls } = {};
 
   constructor(data?: PartialMessage<GetReportMetaResponse>) {
     super();
@@ -8958,8 +8958,8 @@ export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetReportMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "internal_users_urls", kind: "message", T: GetReportMetaResponse_urls },
-    { no: 2, name: "external_users_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetReportMetaResponse_urls} },
+    { no: 1, name: "internal_users_urls", kind: "message", T: GetReportMetaResponse_Urls },
+    { no: 2, name: "external_users_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetReportMetaResponse_Urls} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse {
@@ -8980,9 +8980,9 @@ export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
 }
 
 /**
- * @generated from message rill.admin.v1.GetReportMetaResponse.urls
+ * @generated from message rill.admin.v1.GetReportMetaResponse.Urls
  */
-export class GetReportMetaResponse_urls extends Message<GetReportMetaResponse_urls> {
+export class GetReportMetaResponse_Urls extends Message<GetReportMetaResponse_Urls> {
   /**
    * @generated from field: string open_url = 1;
    */
@@ -8998,33 +8998,33 @@ export class GetReportMetaResponse_urls extends Message<GetReportMetaResponse_ur
    */
   editUrl = "";
 
-  constructor(data?: PartialMessage<GetReportMetaResponse_urls>) {
+  constructor(data?: PartialMessage<GetReportMetaResponse_Urls>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetReportMetaResponse.urls";
+  static readonly typeName = "rill.admin.v1.GetReportMetaResponse.Urls";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_urls {
-    return new GetReportMetaResponse_urls().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_Urls {
+    return new GetReportMetaResponse_Urls().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetReportMetaResponse_urls {
-    return new GetReportMetaResponse_urls().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetReportMetaResponse_Urls {
+    return new GetReportMetaResponse_Urls().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetReportMetaResponse_urls {
-    return new GetReportMetaResponse_urls().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetReportMetaResponse_Urls {
+    return new GetReportMetaResponse_Urls().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetReportMetaResponse_urls | PlainMessage<GetReportMetaResponse_urls> | undefined, b: GetReportMetaResponse_urls | PlainMessage<GetReportMetaResponse_urls> | undefined): boolean {
-    return proto3.util.equals(GetReportMetaResponse_urls, a, b);
+  static equals(a: GetReportMetaResponse_Urls | PlainMessage<GetReportMetaResponse_Urls> | undefined, b: GetReportMetaResponse_Urls | PlainMessage<GetReportMetaResponse_Urls> | undefined): boolean {
+    return proto3.util.equals(GetReportMetaResponse_Urls, a, b);
   }
 }
 

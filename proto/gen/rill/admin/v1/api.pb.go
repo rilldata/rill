@@ -11432,8 +11432,8 @@ type GetReportMetaResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	InternalUsersUrls *GetReportMetaResponseUrls            `protobuf:"bytes,1,opt,name=internal_users_urls,json=internalUsersUrls,proto3" json:"internal_users_urls,omitempty"`
-	ExternalUsersUrls map[string]*GetReportMetaResponseUrls `protobuf:"bytes,2,rep,name=external_users_urls,json=externalUsersUrls,proto3" json:"external_users_urls,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	InternalUsersUrls *GetReportMetaResponse_Urls            `protobuf:"bytes,1,opt,name=internal_users_urls,json=internalUsersUrls,proto3" json:"internal_users_urls,omitempty"`
+	ExternalUsersUrls map[string]*GetReportMetaResponse_Urls `protobuf:"bytes,2,rep,name=external_users_urls,json=externalUsersUrls,proto3" json:"external_users_urls,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *GetReportMetaResponse) Reset() {
@@ -11468,14 +11468,14 @@ func (*GetReportMetaResponse) Descriptor() ([]byte, []int) {
 	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{198}
 }
 
-func (x *GetReportMetaResponse) GetInternalUsersUrls() *GetReportMetaResponseUrls {
+func (x *GetReportMetaResponse) GetInternalUsersUrls() *GetReportMetaResponse_Urls {
 	if x != nil {
 		return x.InternalUsersUrls
 	}
 	return nil
 }
 
-func (x *GetReportMetaResponse) GetExternalUsersUrls() map[string]*GetReportMetaResponseUrls {
+func (x *GetReportMetaResponse) GetExternalUsersUrls() map[string]*GetReportMetaResponse_Urls {
 	if x != nil {
 		return x.ExternalUsersUrls
 	}
@@ -17107,7 +17107,7 @@ func (x *ListGithubUserReposResponse_Repo) GetDefaultBranch() string {
 	return ""
 }
 
-type GetReportMetaResponseUrls struct {
+type GetReportMetaResponse_Urls struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -17117,8 +17117,8 @@ type GetReportMetaResponseUrls struct {
 	EditUrl   string `protobuf:"bytes,3,opt,name=edit_url,json=editUrl,proto3" json:"edit_url,omitempty"`
 }
 
-func (x *GetReportMetaResponseUrls) Reset() {
-	*x = GetReportMetaResponseUrls{}
+func (x *GetReportMetaResponse_Urls) Reset() {
+	*x = GetReportMetaResponse_Urls{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_rill_admin_v1_api_proto_msgTypes[290]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -17126,13 +17126,13 @@ func (x *GetReportMetaResponseUrls) Reset() {
 	}
 }
 
-func (x *GetReportMetaResponseUrls) String() string {
+func (x *GetReportMetaResponse_Urls) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetReportMetaResponseUrls) ProtoMessage() {}
+func (*GetReportMetaResponse_Urls) ProtoMessage() {}
 
-func (x *GetReportMetaResponseUrls) ProtoReflect() protoreflect.Message {
+func (x *GetReportMetaResponse_Urls) ProtoReflect() protoreflect.Message {
 	mi := &file_rill_admin_v1_api_proto_msgTypes[290]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -17144,26 +17144,26 @@ func (x *GetReportMetaResponseUrls) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetReportMetaResponseUrls.ProtoReflect.Descriptor instead.
-func (*GetReportMetaResponseUrls) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetReportMetaResponse_Urls.ProtoReflect.Descriptor instead.
+func (*GetReportMetaResponse_Urls) Descriptor() ([]byte, []int) {
 	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{198, 0}
 }
 
-func (x *GetReportMetaResponseUrls) GetOpenUrl() string {
+func (x *GetReportMetaResponse_Urls) GetOpenUrl() string {
 	if x != nil {
 		return x.OpenUrl
 	}
 	return ""
 }
 
-func (x *GetReportMetaResponseUrls) GetExportUrl() string {
+func (x *GetReportMetaResponse_Urls) GetExportUrl() string {
 	if x != nil {
 		return x.ExportUrl
 	}
 	return ""
 }
 
-func (x *GetReportMetaResponseUrls) GetEditUrl() string {
+func (x *GetReportMetaResponse_Urls) GetEditUrl() string {
 	if x != nil {
 		return x.EditUrl
 	}
@@ -18707,7 +18707,7 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x6c, 0x5f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x5f, 0x75, 0x72, 0x6c, 0x73, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x29, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e,
 	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4d, 0x65, 0x74, 0x61,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x75, 0x72, 0x6c, 0x73, 0x52, 0x11, 0x69,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x55, 0x72, 0x6c, 0x73, 0x52, 0x11, 0x69,
 	0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x55, 0x73, 0x65, 0x72, 0x73, 0x55, 0x72, 0x6c, 0x73,
 	0x12, 0x6b, 0x0a, 0x13, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x75, 0x73, 0x65,
 	0x72, 0x73, 0x5f, 0x75, 0x72, 0x6c, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3b, 0x2e,
@@ -18716,7 +18716,7 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x6e, 0x73, 0x65, 0x2e, 0x45, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x55, 0x73, 0x65, 0x72,
 	0x73, 0x55, 0x72, 0x6c, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x11, 0x65, 0x78, 0x74, 0x65,
 	0x72, 0x6e, 0x61, 0x6c, 0x55, 0x73, 0x65, 0x72, 0x73, 0x55, 0x72, 0x6c, 0x73, 0x1a, 0x5b, 0x0a,
-	0x04, 0x75, 0x72, 0x6c, 0x73, 0x12, 0x19, 0x0a, 0x08, 0x6f, 0x70, 0x65, 0x6e, 0x5f, 0x75, 0x72,
+	0x04, 0x55, 0x72, 0x6c, 0x73, 0x12, 0x19, 0x0a, 0x08, 0x6f, 0x70, 0x65, 0x6e, 0x5f, 0x75, 0x72,
 	0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6f, 0x70, 0x65, 0x6e, 0x55, 0x72, 0x6c,
 	0x12, 0x1d, 0x0a, 0x0a, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x75, 0x72, 0x6c, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x55, 0x72, 0x6c, 0x12,
@@ -18727,7 +18727,7 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x3f, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d,
 	0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4d,
-	0x65, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x75, 0x72, 0x6c, 0x73,
+	0x65, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x55, 0x72, 0x6c, 0x73,
 	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xe6, 0x02, 0x0a, 0x13,
 	0x47, 0x65, 0x74, 0x41, 0x6c, 0x65, 0x72, 0x74, 0x4d, 0x65, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75,
 	0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x69,
@@ -21271,7 +21271,7 @@ var file_rill_admin_v1_api_proto_goTypes = []any{
 	nil,                                      // 291: rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry
 	(*ListGithubUserReposResponse_Repo)(nil), // 292: rill.admin.v1.ListGithubUserReposResponse.Repo
 	nil,                                      // 293: rill.admin.v1.GetReportMetaRequest.AnnotationsEntry
-	(*GetReportMetaResponseUrls)(nil),        // 294: rill.admin.v1.GetReportMetaResponse.urls
+	(*GetReportMetaResponse_Urls)(nil),       // 294: rill.admin.v1.GetReportMetaResponse.Urls
 	nil,                                      // 295: rill.admin.v1.GetReportMetaResponse.ExternalUsersUrlsEntry
 	nil,                                      // 296: rill.admin.v1.GetAlertMetaRequest.AnnotationsEntry
 	nil,                                      // 297: rill.admin.v1.Project.AnnotationsEntry
@@ -21354,7 +21354,7 @@ var file_rill_admin_v1_api_proto_depIdxs = []int32{
 	301, // 69: rill.admin.v1.GetReportMetaRequest.spec:type_name -> rill.runtime.v1.ReportSpec
 	293, // 70: rill.admin.v1.GetReportMetaRequest.annotations:type_name -> rill.admin.v1.GetReportMetaRequest.AnnotationsEntry
 	298, // 71: rill.admin.v1.GetReportMetaRequest.execution_time:type_name -> google.protobuf.Timestamp
-	294, // 72: rill.admin.v1.GetReportMetaResponse.internal_users_urls:type_name -> rill.admin.v1.GetReportMetaResponse.urls
+	294, // 72: rill.admin.v1.GetReportMetaResponse.internal_users_urls:type_name -> rill.admin.v1.GetReportMetaResponse.Urls
 	295, // 73: rill.admin.v1.GetReportMetaResponse.external_users_urls:type_name -> rill.admin.v1.GetReportMetaResponse.ExternalUsersUrlsEntry
 	296, // 74: rill.admin.v1.GetAlertMetaRequest.annotations:type_name -> rill.admin.v1.GetAlertMetaRequest.AnnotationsEntry
 	299, // 75: rill.admin.v1.GetAlertMetaResponse.query_for_attributes:type_name -> google.protobuf.Struct
@@ -21428,7 +21428,7 @@ var file_rill_admin_v1_api_proto_depIdxs = []int32{
 	298, // 143: rill.admin.v1.BillingIssueMetadataPaymentFailedMeta.grace_period_end_date:type_name -> google.protobuf.Timestamp
 	298, // 144: rill.admin.v1.BillingIssueMetadataSubscriptionCancelled.end_date:type_name -> google.protobuf.Timestamp
 	0,   // 145: rill.admin.v1.GetGithubUserStatusResponse.OrganizationInstallationPermissionsEntry.value:type_name -> rill.admin.v1.GithubPermission
-	294, // 146: rill.admin.v1.GetReportMetaResponse.ExternalUsersUrlsEntry.value:type_name -> rill.admin.v1.GetReportMetaResponse.urls
+	294, // 146: rill.admin.v1.GetReportMetaResponse.ExternalUsersUrlsEntry.value:type_name -> rill.admin.v1.GetReportMetaResponse.Urls
 	4,   // 147: rill.admin.v1.AdminService.Ping:input_type -> rill.admin.v1.PingRequest
 	6,   // 148: rill.admin.v1.AdminService.ListOrganizations:input_type -> rill.admin.v1.ListOrganizationsRequest
 	8,   // 149: rill.admin.v1.AdminService.GetOrganization:input_type -> rill.admin.v1.GetOrganizationRequest
@@ -25047,7 +25047,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[290].Exporter = func(v any, i int) any {
-			switch v := v.(*GetReportMetaResponseUrls); i {
+			switch v := v.(*GetReportMetaResponse_Urls); i {
 			case 0:
 				return &v.state
 			case 1:

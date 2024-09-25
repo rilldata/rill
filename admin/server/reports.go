@@ -74,7 +74,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		}
 	}
 
-	externalUsersUrls := make(map[string]*adminv1.GetReportMetaResponseUrls, len(externalEmails))
+	externalUsersUrls := make(map[string]*adminv1.GetReportMetaResponse_Urls, len(externalEmails))
 	if len(externalEmails) > 0 {
 		// issue magic tokens for external emails
 		var ownerID *string
@@ -87,7 +87,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		}
 
 		for email, token := range emailTokens {
-			externalUsersUrls[email] = &adminv1.GetReportMetaResponseUrls{
+			externalUsersUrls[email] = &adminv1.GetReportMetaResponse_Urls{
 				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpenExternal(org.Name, proj.Name, req.Report, token, req.ExecutionTime.AsTime()),
 				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExportExternal(org.Name, proj.Name, req.Report, token),
 			}
@@ -101,7 +101,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		InternalUsersUrls: &adminv1.GetReportMetaResponseUrls{
+		InternalUsersUrls: &adminv1.GetReportMetaResponse_Urls{
 			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
 			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),

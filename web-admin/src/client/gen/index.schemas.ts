@@ -1000,11 +1000,11 @@ export interface V1GetUserResponse {
 }
 
 export type V1GetReportMetaResponseExternalUsersUrls = {
-  [key: string]: GetReportMetaResponseurls;
+  [key: string]: GetReportMetaResponseUrls;
 };
 
 export interface V1GetReportMetaResponse {
-  internalUsersUrls?: GetReportMetaResponseurls;
+  internalUsersUrls?: GetReportMetaResponseUrls;
   externalUsersUrls?: V1GetReportMetaResponseExternalUsersUrls;
 }
 
@@ -1488,7 +1488,7 @@ export interface ListGithubUserReposResponseRepo {
   defaultBranch?: string;
 }
 
-export interface GetReportMetaResponseurls {
+export interface GetReportMetaResponseUrls {
   openUrl?: string;
   exportUrl?: string;
   editUrl?: string;

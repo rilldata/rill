@@ -1833,13 +1833,13 @@ message GetReportMetaRequest {
 }
 
 message GetReportMetaResponse {
-  message urls {
+  message Urls {
     string open_url = 1;
     string export_url = 2;
     string edit_url = 3;
   }
-  urls internal_users_urls = 1;
-  map<string, urls> external_users_urls = 2;
+  Urls internal_users_urls = 1;
+  map<string, Urls> external_users_urls = 2;
 }
 
 message GetAlertMetaRequest {
