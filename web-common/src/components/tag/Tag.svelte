@@ -14,6 +14,7 @@
 <script lang="ts">
   export let color: Color = "gray";
   export let height = 21;
+  export let text: string;
 
   function getColorClass(color: string) {
     switch (color) {
@@ -48,6 +49,10 @@
   )}"
 >
   <span class="text-xs font-normal">
-    <slot />
+    {#if text}
+      {text}
+    {:else}
+      <slot />
+    {/if}
   </span>
 </div>

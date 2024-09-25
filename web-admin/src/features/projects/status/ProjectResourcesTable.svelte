@@ -1,116 +1,222 @@
 <script lang="ts">
-  import * as Table from "@rilldata/web-common/components/table-shadcn";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import {
-    Render,
-    Subscribe,
-    createRender,
-    createTable,
-  } from "svelte-headless-table";
-  import { readable } from "svelte/store";
+
+  import { writable } from "svelte/store";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
   import {
     getResourceKindTagColor,
     prettyReconcileStatus,
   } from "./display-utils";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import {
+    createSvelteTable,
+    flexRender,
+    getCoreRowModel,
+    getSortedRowModel,
+  } from "@tanstack/svelte-table";
+  import type {
+    ColumnDef,
+    OnChangeFn,
+    SortingState,
+    TableOptions,
+  } from "@tanstack/svelte-table";
 
   export let resources: V1Resource[];
 
-  const table = createTable(readable(resources));
+  let sorting: SortingState = [];
 
-  const columns = table.createColumns([
-    table.column({
-      accessor: (resource) => resource.meta.name.kind,
-      header: "Type",
-      cell: ({ value }) => {
-        const prettyKind = prettyResourceKind(value);
-        const color = getResourceKindTagColor(value);
-        return createRender(Tag, {
-          color,
-        }).slot(prettyKind);
+  function formatDate(value: string) {
+    return new Date(value).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
+  }
+
+  const setSorting: OnChangeFn<SortingState> = (updater) => {
+    if (updater instanceof Function) {
+      sorting = updater(sorting);
+    } else {
+      sorting = updater;
+    }
+
+    options.update((old) => ({
+      ...old,
+      state: {
+        ...old.state,
+        sorting,
       },
-    }),
-    table.column({
-      accessor: (resource) => resource.meta.name.name,
-      header: "Name",
-    }),
-    table.column({
-      accessor: (resource) => resource.meta.reconcileStatus,
-      header: "Execution status",
-      cell: ({ value }) => prettyReconcileStatus(value),
-    }),
-    table.column({
-      accessor: (resource) => resource.meta.reconcileError,
-      id: "error",
-      header: "Error",
-      cell: ({ value }) =>
-        createRender(ResourceErrorMessage, { message: value }),
-    }),
-    table.column({
-      accessor: (resource) => resource.meta.stateUpdatedOn,
-      header: "Last refresh",
-      cell: ({ value }) =>
-        new Date(value).toLocaleString(undefined, {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        }),
-    }),
-    table.column({
-      accessor: (resource) => resource.meta.reconcileOn,
-      header: "Next refresh",
-      cell: ({ value }) => {
-        if (!value) {
-          return "-";
-        }
-        return new Date(value).toLocaleString(undefined, {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
+    }));
+  };
+
+  const columns: ColumnDef<V1Resource, any>[] = [
+    {
+      accessorKey: "title",
+      header: "Type",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const prettyKind = prettyResourceKind(row.original.meta.name.kind);
+        const color = getResourceKindTagColor(row.original.meta.name.kind);
+        return flexRender(Tag, {
+          color,
+          text: prettyKind,
         });
       },
-    }),
-  ]);
+    },
+    {
+      accessorFn: (row) => row.meta.name.name,
+      header: "Name",
+    },
+    {
+      accessorFn: (row) => row.meta.reconcileStatus,
+      header: "Execution status",
+      cell: ({ row }) =>
+        prettyReconcileStatus(row.original.meta.reconcileStatus),
+    },
+    {
+      accessorFn: (row) => row.meta.reconcileError,
+      header: "Error",
+      cell: ({ row }) =>
+        flexRender(ResourceErrorMessage, {
+          message: row.original.meta.reconcileError,
+        }),
+    },
+    {
+      accessorFn: (row) => row.meta.stateUpdatedOn,
+      header: "Last refresh",
+      cell: (info) => {
+        if (!info.getValue()) return "-";
+        const date = formatDate(info.getValue() as string);
+        return date;
+      },
+    },
+    {
+      accessorFn: (row) => row.meta.reconcileOn,
+      header: "Next refresh",
+      cell: (info) => {
+        if (!info.getValue()) return "-";
+        const date = formatDate(info.getValue() as string);
+        return date;
+      },
+    },
+  ];
 
-  const { headerRows, pageRows, tableAttrs, tableBodyAttrs } =
-    table.createViewModel(columns);
+  const options = writable<TableOptions<V1Resource>>({
+    data: resources,
+    columns: columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  const table = createSvelteTable(options);
 </script>
 
-<div class="border rounded-md">
-  <Table.Root {...$tableAttrs}>
-    <Table.Header>
-      {#each $headerRows as headerRow (headerRow.id)}
-        <Subscribe rowAttrs={headerRow.attrs()}>
-          <Table.Row>
-            {#each headerRow.cells as cell (cell.id)}
-              <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()}>
-                <Table.Head {...attrs}>
-                  <Render of={cell.render()} />
-                </Table.Head>
-              </Subscribe>
-            {/each}
-          </Table.Row>
-        </Subscribe>
+<div class="list">
+  <table class="w-full">
+    <thead>
+      {#each $table.getHeaderGroups() as headerGroup}
+        <tr>
+          {#each headerGroup.headers as header}
+            <th
+              colSpan={header.colSpan}
+              class="px-4 py-2 text-left"
+              on:click={header.column.getToggleSortingHandler()}
+            >
+              {#if !header.isPlaceholder}
+                <div
+                  class:cursor-pointer={header.column.getCanSort()}
+                  class:select-none={header.column.getCanSort()}
+                  class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
+                >
+                  <svelte:component
+                    this={flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                  />
+                  {#if header.column.getIsSorted().toString() === "asc"}
+                    <span>
+                      <ArrowDown flip size="12px" />
+                    </span>
+                  {:else if header.column.getIsSorted().toString() === "desc"}
+                    <span>
+                      <ArrowDown size="12px" />
+                    </span>
+                  {/if}
+                </div>
+              {/if}
+            </th>
+          {/each}
+        </tr>
       {/each}
-    </Table.Header>
-    <Table.Body {...$tableBodyAttrs}>
-      {#each $pageRows as row (row.id)}
-        <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-          <Table.Row {...rowAttrs}>
-            {#each row.cells as cell (cell.id)}
-              <Subscribe attrs={cell.attrs()} let:attrs>
-                <Table.Cell {...attrs}>
-                  <Render of={cell.render()} />
-                </Table.Cell>
-              </Subscribe>
-            {/each}
-          </Table.Row>
-        </Subscribe>
+    </thead>
+    <tbody>
+      {#each $table.getRowModel().rows as row}
+        <tr>
+          {#each row.getVisibleCells() as cell}
+            <td
+              class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
+              data-label={cell.column.columnDef.header}
+            >
+              <svelte:component
+                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+              />
+            </td>
+          {/each}
+        </tr>
       {/each}
-    </Table.Body>
-  </Table.Root>
+    </tbody>
+  </table>
 </div>
+
+<style lang="postcss">
+  table {
+    @apply border-separate border-spacing-0;
+  }
+  table th,
+  table td {
+    @apply border-b border-gray-200;
+  }
+
+  thead tr th {
+    @apply border-t border-gray-200;
+  }
+  thead tr th:first-child {
+    @apply border-l rounded-tl-sm;
+  }
+  thead tr th:last-child {
+    @apply border-r rounded-tr-sm;
+  }
+  thead tr:last-child th {
+    @apply border-b;
+  }
+  tbody tr {
+    @apply border-t border-gray-200;
+  }
+  tbody tr:first-child {
+    @apply border-t-0;
+  }
+  tbody td {
+    @apply border-b border-gray-200;
+  }
+  tbody td:first-child {
+    @apply border-l;
+  }
+  tbody td:last-child {
+    @apply border-r;
+  }
+  tbody tr:last-child td:first-child {
+    @apply rounded-bl-sm;
+  }
+  tbody tr:last-child td:last-child {
+    @apply rounded-br-sm;
+  }
+</style>
