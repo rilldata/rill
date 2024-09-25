@@ -180,9 +180,10 @@
             </PopoverTrigger>
             <PopoverContent align="end" class="p-0">
               <Calendar
-                firstVisibleMonth={DateTime.now()}
+                selection={DateTime.fromISO($form.expiresAt)}
                 singleDaySelection
                 minDate={includingTomorrowDate}
+                firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
                 onSelectDay={(date) => {
                   $form.expiresAt = date.toISO();
                   popoverOpen = false;
