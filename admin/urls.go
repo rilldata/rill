@@ -320,6 +320,18 @@ func (u *URLs) ReportEdit(org, project, report string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report)
 }
 
+// ReportOpenExternal returns the URL for opening a report in the frontend for an external user.
+func (u *URLs) ReportOpenExternal(org, project, report, token string, executionTime time.Time) string {
+	reportURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "open", token)
+	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
+	return reportURL
+}
+
+// ReportExportExternal returns the URL for exporting a report in the frontend for an external user.
+func (u *URLs) ReportExportExternal(org, project, report, token string) string {
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export", token)
+}
+
 // AlertOpen returns the URL for opening an alert in the frontend.
 func (u *URLs) AlertOpen(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open")

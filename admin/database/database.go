@@ -170,7 +170,12 @@ type DB interface {
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
+	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindReportTokens(ctx context.Context, reportName string) ([]*ReportToken, error)
+	FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*ReportTokenWithSecret, error)
+	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -649,6 +654,27 @@ type InsertMagicAuthTokenOptions struct {
 	MetricsViewFields     []string
 	State                 string
 	Title                 string
+}
+
+type ReportToken struct {
+	ID               string
+	ReportName       string `db:"report_name"`
+	RecipientEmail   string `db:"recipient_email"`
+	MagicAuthTokenID string `db:"magic_auth_token_id"`
+}
+
+type ReportTokenWithSecret struct {
+	ID                   string
+	ReportName           string `db:"report_name"`
+	RecipientEmail       string `db:"recipient_email"`
+	MagicAuthTokenID     string `db:"magic_auth_token_id"`
+	MagicAuthTokenSecret []byte `db:"secret"`
+}
+
+type InsertReportTokenOptions struct {
+	ReportName       string
+	RecipientEmail   string
+	MagicAuthTokenID string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.

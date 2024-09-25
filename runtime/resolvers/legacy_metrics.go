@@ -55,7 +55,7 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 	}
 
 	// Build query proto
-	qpb, err := queries.ProtoFromJSON(props.QueryName, props.QueryArgsJSON, args.ExecutionTime)
+	qpb, err := queries.ProtoFromJSON(props.QueryName, props.QueryArgsJSON, args.ExecutionTime, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query: %w", err)
 	}

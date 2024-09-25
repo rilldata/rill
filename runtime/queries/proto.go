@@ -62,8 +62,8 @@ func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims) (runtime.Q
 	}
 }
 
-// ProtoFromJSON builds a proto query from a query name, JSON args, and optional execution time.
-func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runtimev1.Query, error) {
+// ProtoFromJSON builds a proto query from a query name, JSON args, and optional execution time. removeWhere is used for external reports where row filter is already added as additional security rule to the claims.
+func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time, removeWhere bool) (*runtimev1.Query, error) {
 	qry := &runtimev1.Query{}
 	switch qryName {
 	case "MetricsViewAggregation":
@@ -79,12 +79,18 @@ func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runt
 				req.ComparisonTimeRange = overrideTimeRange(req.ComparisonTimeRange, *executionTime)
 			}
 		}
+		if removeWhere {
+			req.Where = nil
+		}
 	case "MetricsViewToplist":
 		req := &runtimev1.MetricsViewToplistRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewToplistRequest{MetricsViewToplistRequest: req}
 		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+		}
+		if removeWhere {
+			req.Where = nil
 		}
 	case "MetricsViewRows":
 		req := &runtimev1.MetricsViewRowsRequest{}
@@ -93,12 +99,18 @@ func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runt
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
 		}
+		if removeWhere {
+			req.Where = nil
+		}
 	case "MetricsViewTimeSeries":
 		req := &runtimev1.MetricsViewTimeSeriesRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: req}
 		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+		}
+		if removeWhere {
+			req.Where = nil
 		}
 	case "MetricsViewComparison":
 		req := &runtimev1.MetricsViewComparisonRequest{}
@@ -112,6 +124,9 @@ func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runt
 			if req.ComparisonTimeRange != nil {
 				req.ComparisonTimeRange = overrideTimeRange(req.ComparisonTimeRange, *executionTime)
 			}
+		}
+		if removeWhere {
+			req.Where = nil
 		}
 	default:
 		return nil, fmt.Errorf("query %q not supported for reports", qryName)

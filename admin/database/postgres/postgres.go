@@ -1173,9 +1173,53 @@ func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error 
 	return checkDeleteRow("magic auth token", res, err)
 }
 
+func (c *connection) DeleteMagicAuthTokens(ctx context.Context, ids []string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
+	return checkDeleteRow("magic auth token", res, err)
+}
+
 func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
 	return parseErr("magic auth token", err)
+}
+
+func (c *connection) FindReportTokens(ctx context.Context, reportName string) ([]*database.ReportToken, error) {
+	var res []*database.ReportToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM report_tokens WHERE report_name=$1`, reportName)
+	if err != nil {
+		return nil, parseErr("report tokens", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*database.ReportTokenWithSecret, error) {
+	var res []*reportTokenWithSecretDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret, m.secret_encryption_key_id FROM report_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.report_name=$1`, reportName)
+	if err != nil {
+		return nil, parseErr("report tokens", err)
+	}
+
+	ret := make([]*database.ReportTokenWithSecret, len(res))
+	for i, dto := range res {
+		ret[i], err = c.reportTokenWithSecretFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ret, nil
+}
+
+func (c *connection) InsertReportToken(ctx context.Context, opts *database.InsertReportTokenOptions) (*database.ReportToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ReportToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO report_tokens (report_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3) RETURNING *`, opts.ReportName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("report token", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
@@ -2213,6 +2257,23 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	}
 
 	return dto.MagicAuthTokenWithUser, nil
+}
+
+type reportTokenWithSecretDTO struct {
+	*database.ReportTokenWithSecret
+	SecretEncryptionKeyID string `db:"secret_encryption_key_id"`
+}
+
+func (c *connection) reportTokenWithSecretFromDTO(dto *reportTokenWithSecretDTO) (*database.ReportTokenWithSecret, error) {
+	if dto.SecretEncryptionKeyID == "" {
+		return dto.ReportTokenWithSecret, nil
+	}
+	decrypted, err := c.decrypt(dto.ReportTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+	dto.ReportTokenWithSecret.MagicAuthTokenSecret = decrypted
+	return dto.ReportTokenWithSecret, nil
 }
 
 type organizationInviteDTO struct {

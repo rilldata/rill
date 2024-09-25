@@ -2893,6 +2893,8 @@ paths:
                 type: string
               report:
                 type: string
+              spec:
+                $ref: '#/definitions/v1ReportSpec'
               annotations:
                 type: object
                 additionalProperties:
@@ -3440,6 +3442,15 @@ paths:
       tags:
         - AdminService
 definitions:
+  GetReportMetaResponseurls:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -4071,12 +4082,12 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
+      internalUsersUrls:
+        $ref: '#/definitions/GetReportMetaResponseurls'
+      externalUsersUrls:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/GetReportMetaResponseurls'
   v1GetUserResponse:
     type: object
     properties:
@@ -4367,6 +4378,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1Notifier:
+    type: object
+    properties:
+      connector:
+        type: string
+      properties:
+        type: object
   v1Operation:
     type: string
     enum:
@@ -4648,6 +4666,46 @@ definitions:
       webOpenState:
         type: string
         description: Annotation for the base64-encoded UI state to open for the report.
+  v1ReportSpec:
+    type: object
+    properties:
+      trigger:
+        type: boolean
+      title:
+        type: string
+      refreshSchedule:
+        $ref: '#/definitions/v1Schedule'
+      timeoutSeconds:
+        type: integer
+        format: int64
+      queryName:
+        type: string
+      queryArgsJson:
+        type: string
+      exportLimit:
+        type: string
+        format: uint64
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+      notifiers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Notifier'
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+      watermarkInherit:
+        type: boolean
+        description: If true, will use the lowest watermark of its refs instead of the trigger time.
+      intervalsIsoDuration:
+        type: string
+      intervalsLimit:
+        type: integer
+        format: int32
+      intervalsCheckUnclosed:
+        type: boolean
   v1RequestProjectAccessResponse:
     type: object
   v1RevokeCurrentAuthTokenResponse:
@@ -4659,6 +4717,20 @@ definitions:
     type: object
   v1RevokeServiceAuthTokenResponse:
     type: object
+  v1Schedule:
+    type: object
+    properties:
+      refUpdate:
+        type: boolean
+      disable:
+        type: boolean
+      cron:
+        type: string
+      tickerSeconds:
+        type: integer
+        format: int64
+      timeZone:
+        type: string
   v1SearchProjectNamesResponse:
     type: object
     properties:

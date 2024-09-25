@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
+import "rill/runtime/v1/resources.proto";
 import "validate/validate.proto";
 
 service AdminService {
@@ -1826,14 +1827,19 @@ message GetReportMetaRequest {
   string project_id = 1;
   string branch = 2;
   string report = 3;
-  map<string, string> annotations = 4;
+  rill.runtime.v1.ReportSpec spec = 6;
+  map<string, string> annotations = 4 [deprecated = true];
   google.protobuf.Timestamp execution_time = 5;
 }
 
 message GetReportMetaResponse {
-  string open_url = 1;
-  string export_url = 2;
-  string edit_url = 3;
+  message urls {
+    string open_url = 1;
+    string export_url = 2;
+    string edit_url = 3;
+  }
+  urls internal_users_urls = 1;
+  map<string, urls> external_users_urls = 2;
 }
 
 message GetAlertMetaRequest {

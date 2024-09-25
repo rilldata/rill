@@ -394,12 +394,12 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
-	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t)
+	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t, false)
 	if err != nil {
 		return false, fmt.Errorf("failed to build export request: %w", err)
 	}
@@ -409,18 +409,24 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, fmt.Errorf("failed to bake query of type %T: %w", qry, err)
 	}
 
-	exportURL, err := url.Parse(meta.ExportURL)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse export URL %q: %w", meta.ExportURL, err)
+	// remove where args from query for external users as that is added as additional security rule in the magic token
+	var externalUsersBakedQry string
+	if len(meta.ExternalUsersURL) > 0 {
+		qry, err = queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t, true)
+		if err != nil {
+			return false, fmt.Errorf("failed to build export request: %w", err)
+		}
+
+		externalUsersBakedQry, err = server.BakeQuery(qry)
+		if err != nil {
+			return false, fmt.Errorf("failed to bake query of type %T: %w", qry, err)
+		}
 	}
 
-	exportURLQry := exportURL.Query()
-	exportURLQry.Set("format", rep.Spec.ExportFormat.String())
-	exportURLQry.Set("query", bakedQry)
-	if rep.Spec.ExportLimit > 0 {
-		exportURLQry.Set("limit", strconv.Itoa(int(rep.Spec.ExportLimit)))
+	internalUsersExportURL, err := createExportURL(meta.InternalUsersURL.ExportURL, rep.Spec.ExportFormat.String(), bakedQry, int(rep.Spec.ExportLimit))
+	if err != nil {
+		return false, err
 	}
-	exportURL.RawQuery = exportURLQry.Encode()
 
 	sent := false
 	for _, notifier := range rep.Spec.Notifiers {
@@ -428,15 +434,27 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
+				openURL := meta.InternalUsersURL.OpenURL
+				exportURL := internalUsersExportURL.String()
+				editURL := meta.InternalUsersURL.EditURL
+				if urls, ok := meta.ExternalUsersURL[recipient]; ok {
+					openURL = urls.OpenURL
+					editURL = urls.EditURL
+					u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), externalUsersBakedQry, int(rep.Spec.ExportLimit))
+					if err != nil {
+						return false, err
+					}
+					exportURL = u.String()
+				}
 				err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 					ToEmail:        recipient,
 					ToName:         "",
 					Title:          rep.Spec.Title,
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:       meta.OpenURL,
-					DownloadLink:   exportURL.String(),
-					EditLink:       meta.EditURL,
+					OpenLink:       openURL,
+					DownloadLink:   exportURL,
+					EditLink:       editURL,
 				})
 				sent = true
 				if err != nil {
@@ -458,9 +476,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					Title:          rep.Spec.Title,
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:       meta.OpenURL,
-					DownloadLink:   exportURL.String(),
-					EditLink:       meta.EditURL,
+					OpenLink:       meta.InternalUsersURL.OpenURL,
+					DownloadLink:   internalUsersExportURL.String(),
+					EditLink:       meta.InternalUsersURL.EditURL,
 				}
 				start := time.Now()
 				defer func() {
@@ -488,6 +506,23 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return false, nil
+}
+
+func createExportURL(inURL, format, bakedQry string, exportLimit int) (*url.URL, error) {
+	exportURL, err := url.Parse(inURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse export URL %q: %w", inURL, err)
+	}
+
+	exportURLQry := exportURL.Query()
+	exportURLQry.Set("format", format)
+	exportURLQry.Set("query", bakedQry)
+	if exportLimit > 0 {
+		exportURLQry.Set("limit", strconv.Itoa(exportLimit))
+	}
+	exportURL.RawQuery = exportURLQry.Encode()
+
+	return exportURL, nil
 }
 
 func formatExportFormat(f runtimev1.ExportFormat) string {

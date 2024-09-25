@@ -40,6 +40,7 @@ export type AdminServiceGetReportMetaBodyAnnotations = {
 export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
+  spec?: V1ReportSpec;
   annotations?: AdminServiceGetReportMetaBodyAnnotations;
   executionTime?: string;
 };
@@ -590,6 +591,14 @@ export interface V1SearchProjectNamesResponse {
   nextPageToken?: string;
 }
 
+export interface V1Schedule {
+  refUpdate?: boolean;
+  disable?: boolean;
+  cron?: string;
+  tickerSeconds?: number;
+  timeZone?: string;
+}
+
 export interface V1RevokeServiceAuthTokenResponse {
   [key: string]: any;
 }
@@ -604,6 +613,26 @@ export interface V1RevokeCurrentAuthTokenResponse {
 
 export interface V1RequestProjectAccessResponse {
   [key: string]: any;
+}
+
+export type V1ReportSpecAnnotations = { [key: string]: string };
+
+export interface V1ReportSpec {
+  trigger?: boolean;
+  title?: string;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
+  exportLimit?: string;
+  exportFormat?: V1ExportFormat;
+  notifiers?: V1Notifier[];
+  annotations?: V1ReportSpecAnnotations;
+  /** If true, will use the lowest watermark of its refs instead of the trigger time. */
+  watermarkInherit?: boolean;
+  intervalsIsoDuration?: string;
+  intervalsLimit?: number;
+  intervalsCheckUnclosed?: boolean;
 }
 
 export interface V1ReportOptions {
@@ -795,6 +824,13 @@ export const V1Operation = {
   OPERATION_NLIKE: "OPERATION_NLIKE",
 } as const;
 
+export type V1NotifierProperties = { [key: string]: any };
+
+export interface V1Notifier {
+  connector?: string;
+  properties?: V1NotifierProperties;
+}
+
 export interface V1MemberUsergroup {
   groupId?: string;
   groupName?: string;
@@ -963,10 +999,13 @@ export interface V1GetUserResponse {
   user?: V1User;
 }
 
+export type V1GetReportMetaResponseExternalUsersUrls = {
+  [key: string]: GetReportMetaResponseurls;
+};
+
 export interface V1GetReportMetaResponse {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
+  internalUsersUrls?: GetReportMetaResponseurls;
+  externalUsersUrls?: V1GetReportMetaResponseExternalUsersUrls;
 }
 
 export interface V1GetRepoMetaResponse {
@@ -1447,4 +1486,10 @@ export interface ListGithubUserReposResponseRepo {
   description?: string;
   url?: string;
   defaultBranch?: string;
+}
+
+export interface GetReportMetaResponseurls {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
 }

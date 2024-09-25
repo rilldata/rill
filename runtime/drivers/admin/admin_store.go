@@ -5,26 +5,39 @@ import (
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName string, annotations map[string]string, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName string, reportSpec *runtimev1.ReportSpec, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
 		ProjectId:     h.config.ProjectID,
 		Branch:        h.config.Branch,
 		Report:        reportName,
-		Annotations:   annotations,
+		Spec:          reportSpec,
 		ExecutionTime: timestamppb.New(executionTime),
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	externalUsersURL := make(map[string]drivers.ReportURLs, len(res.ExternalUsersUrls))
+	for k, v := range res.ExternalUsersUrls {
+		externalUsersURL[k] = drivers.ReportURLs{
+			OpenURL:   v.OpenUrl,
+			ExportURL: v.ExportUrl,
+			EditURL:   v.EditUrl,
+		}
+	}
+
 	return &drivers.ReportMetadata{
-		OpenURL:   res.OpenUrl,
-		ExportURL: res.ExportUrl,
-		EditURL:   res.EditUrl,
+		InternalUsersURL: drivers.ReportURLs{
+			OpenURL:   res.InternalUsersUrls.OpenUrl,
+			ExportURL: res.InternalUsersUrls.ExportUrl,
+			EditURL:   res.InternalUsersUrls.EditUrl,
+		},
+		ExternalUsersURL: externalUsersURL,
 	}, nil
 }
 
