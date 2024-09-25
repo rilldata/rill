@@ -24,11 +24,11 @@
   import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
-  import DashboardMenuItems from "../dashboards/DashboardMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
+  import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
@@ -143,7 +143,7 @@
             />
             <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.MetricsView}
-            <DashboardMenuItems
+            <MetricsViewMenuItems
               {filePath}
               on:generate-chart={({ detail }) => onGenerateChart(detail)}
             />
