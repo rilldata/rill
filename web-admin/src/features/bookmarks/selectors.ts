@@ -75,9 +75,9 @@ export function getBookmarks(
               resp.bookmarks?.forEach((bookmarkResource) => {
                 const bookmark = parseBookmarkEntry(
                   bookmarkResource,
-                  validSpec.data.metricsView,
-                  validSpec.data.explore,
-                  schemaResp.data?.schema,
+                  validSpec.data?.metricsView ?? {},
+                  validSpec.data?.explore ?? {},
+                  schemaResp.data?.schema ?? {},
                 );
                 if (bookmarkResource.default) {
                   bookmarks.home = bookmark;
@@ -166,8 +166,8 @@ export function getPrettySelectedTimeRange(
     ],
     ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {
       const timeRangeState = timeControlStateSelector([
-        validSpec.data.metricsView,
-        validSpec.data.explore,
+        validSpec.data?.metricsView ?? {},
+        validSpec.data?.explore ?? {},
         timeRangeSummary,
         metricsExplorerEntity,
       ]);
