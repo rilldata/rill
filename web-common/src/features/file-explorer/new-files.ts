@@ -8,12 +8,10 @@ import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
-const folderName = (resourceName) =>
-  resourceName === "canvas" ? "canvases" : `${resourceName}s`;
-
 export async function handleEntityCreate(kind: ResourceKind) {
   if (!(kind in ResourceKindMap)) return;
-  const instanceId = get(runtime).instanceId;
+
+  // Get the path for the new file
   const allNames =
     kind === ResourceKind.Source || kind === ResourceKind.Model
       ? // sources and models share the name
@@ -22,56 +20,66 @@ export async function handleEntityCreate(kind: ResourceKind) {
           ...fileArtifacts.getNamesForKind(ResourceKind.Model),
         ]
       : fileArtifacts.getNamesForKind(kind);
-  const { name, extension, baseContent } = ResourceKindMap[kind];
-  const newName = getName(name, allNames);
-  const newPath = `${folderName(name)}/${newName}${extension}`;
+  const { folderName, baseFileName, extension, content } =
+    ResourceKindMap[kind];
+  const newName = getName(baseFileName, allNames);
+  const newPath = `${folderName}/${newName}${extension}`;
 
+  // Create the new file
+  const instanceId = get(runtime).instanceId;
   await runtimeServicePutFile(instanceId, {
     path: newPath,
-    blob: baseContent,
+    blob: content,
     create: true,
     createOnly: true,
   });
+
+  // Return the path to the new file, so we can navigate the user to it
   return `/files/${newPath}`;
 }
 
 const ResourceKindMap: Record<
   UserFacingResourceKinds,
   {
-    name: string;
+    folderName: string;
+    baseFileName: string;
     extension: string;
-    baseContent: string;
+    content: string;
   }
 > = {
   [ResourceKind.Source]: {
-    name: "source",
+    folderName: "sources",
+    baseFileName: "source",
     extension: ".yaml",
-    baseContent: "", // This is constructed in the `features/sources/modal` directory
+    content: "", // This is constructed in the `features/sources/modal` directory
   },
   [ResourceKind.Connector]: {
-    name: "connector",
+    folderName: "connectors",
+    baseFileName: "connector",
     extension: ".yaml",
-    baseContent: "", // This is constructed in the `features/connectors` directory
+    content: "", // This is constructed in the `features/connectors` directory
   },
   [ResourceKind.Model]: {
-    name: "model",
+    folderName: "models",
+    baseFileName: "model",
     extension: ".sql",
-    baseContent: `-- Model SQL
+    content: `-- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
 SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
-    name: "dashboard",
+    folderName: "metrics",
+    baseFileName: "metrics_view",
     extension: ".yaml",
-    baseContent: `# Dashboard YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+    content: `# Metrics View YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
 
+version: 1
 type: metrics_view
 
-title: "Dashboard Title"
-table: example_table # Choose a table to underpin your dashboard
-timeseries: timestamp_column # Select an actual timestamp column (if any) from your table
+table: example_table # Choose a table to underpin your metrics
+timeseries: timestamp_column # Choose a timestamp column (if any) from your table
 
 dimensions:
   - column: category
@@ -85,14 +93,26 @@ measures:
 `,
   },
   [ResourceKind.Explore]: {
-    name: "explore",
+    folderName: "explore-dashboards",
+    baseFileName: "explore",
     extension: ".yaml",
-    baseContent: "", // TODO
+    content: `# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+
+type: explore
+
+title: "My metrics dashboard"
+metrics_view: example_metrics_view # Choose a metrics view to underpin the dashboard
+
+dimensions: '*'
+measures: '*'
+`,
   },
   [ResourceKind.API]: {
-    name: "api",
+    folderName: "apis",
+    baseFileName: "api",
     extension: ".yaml",
-    baseContent: `# API YAML
+    content: `# API YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/apis
 # Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>
 
@@ -103,9 +123,10 @@ metrics_sql: |
 `,
   },
   [ResourceKind.Component]: {
-    name: "component",
+    folderName: "components",
+    baseFileName: "component",
     extension: ".yaml",
-    baseContent: `# Component YAML
+    content: `# Component YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/components
     
 type: component
@@ -152,9 +173,10 @@ vega_lite: |
   }`,
   },
   [ResourceKind.Canvas]: {
-    name: "canvas",
+    folderName: "canvas-dashboards",
+    baseFileName: "canvas",
     extension: ".yaml",
-    baseContent: `type: canvas
+    content: `type: canvas
 title: "Canvas Dashboard"
 columns: 24
 gap: 2
@@ -173,9 +195,10 @@ items:
 `,
   },
   [ResourceKind.Theme]: {
-    name: "theme",
+    folderName: "themes",
+    baseFileName: "theme",
     extension: ".yaml",
-    baseContent: `# Theme YAML
+    content: `# Theme YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/themes
 
 type: theme
@@ -186,9 +209,10 @@ colors:
 `,
   },
   [ResourceKind.Report]: {
-    name: "report",
+    folderName: "reports",
+    baseFileName: "report",
     extension: ".yaml",
-    baseContent: `# Report YAML
+    content: `# Report YAML
 # Reference documentation: TODO
 
 type: report
@@ -197,9 +221,10 @@ type: report
 `,
   },
   [ResourceKind.Alert]: {
-    name: "alert",
+    folderName: "alerts",
+    baseFileName: "alert",
     extension: ".yaml",
-    baseContent: `# Alert YAML
+    content: `# Alert YAML
 # Reference documentation: TODO
 
 type: alert
