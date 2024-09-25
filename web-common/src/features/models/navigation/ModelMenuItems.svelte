@@ -10,7 +10,7 @@
   import { createEventDispatcher } from "svelte";
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
 
   export let filePath: string;
 
@@ -35,13 +35,13 @@
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
-  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     connector as string,
     "",
     "",
     tableName,
-    "dashboards",
+    "metrics",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -49,11 +49,11 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createDashboardFromTable}
+  on:click={createMetricsViewFromTable}
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard
+    Generate metrics
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />

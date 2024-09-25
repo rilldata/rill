@@ -26,7 +26,7 @@
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { createModelFromTable } from "../../connectors/olap/createModel";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
@@ -60,13 +60,13 @@
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     sinkConnector as string,
     "",
     "",
     tableName,
-    "dashboards",
+    "metrics",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -135,11 +135,11 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createDashboardFromTable}
+  on:click={createMetricsViewFromTable}
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard
+    Generate metrics
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />

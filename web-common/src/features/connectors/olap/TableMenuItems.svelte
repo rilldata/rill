@@ -14,7 +14,7 @@
   import { WandIcon } from "lucide-svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "./createModel";
   import { useIsModelingSupportedForOlapDriver } from "./selectors";
 
@@ -30,13 +30,13 @@
     $runtime.instanceId,
     connector,
   );
-  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     connector,
     database,
     databaseSchema,
     table,
-    "dashboards",
+    "metrics",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -72,10 +72,10 @@
   </NavigationMenuItem>
 {/if}
 
-<NavigationMenuItem on:click={createDashboardFromTable}>
+<NavigationMenuItem on:click={createMetricsViewFromTable}>
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard
+    Generate metrics
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />
