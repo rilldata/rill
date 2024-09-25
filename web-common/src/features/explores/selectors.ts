@@ -5,7 +5,6 @@ import {
   RpcStatus,
   V1ExploreSpec,
   V1GetExploreResponse,
-  V1GetResourceResponse,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
