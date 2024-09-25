@@ -1,7 +1,7 @@
 <script lang="ts">
   import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
   import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
-  import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type Row } from "@tanstack/svelte-table";
@@ -115,11 +115,7 @@
       on:click-row={handleClickRow}
     >
       <Toolbar slot="toolbar" />
-      <ResourceHeader
-        kind="dashboard"
-        icon={MetricsExplorerIcon}
-        slot="header"
-      />
+      <ResourceHeader kind="dashboard" icon={ExploreIcon} slot="header" />
       <ResourceTableEmpty kind="dashboard" slot="empty" />
     </Table>
   {/if}
