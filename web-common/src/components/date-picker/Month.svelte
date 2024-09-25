@@ -6,14 +6,14 @@
 
   export let startDay: DateTime<true>;
   export let startOfWeek = 0;
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let selectingStart: boolean;
   export let visibleMonths = 2;
   export let visibleIndex: number;
   export let potentialEnd: DateTime | undefined;
   export let potentialStart: DateTime | undefined;
   export let singleDaySelection = false;
-  export let min: DateTime<true> | undefined;
+  export let minDate: DateTime<true> | DateTime<false> | undefined;
   export let onPan: (direction: 1 | -1) => void;
   export let onSelectDay: (date: DateTime<true>) => void;
 
@@ -21,7 +21,7 @@
 
   $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
 
-  $: inclusiveEnd = interval.end.minus({ millisecond: 0 });
+  $: inclusiveEnd = interval?.end.minus({ millisecond: 0 });
 
   $: days = Array.from({ length: weekCount * 7 }, (_, i) => {
     if (i < firstDay) {
@@ -84,14 +84,14 @@
         {date}
         {selectingStart}
         {inclusiveEnd}
-        {potentialEnd}
-        {potentialStart}
+        bind:potentialEnd
+        bind:potentialStart
         {singleDaySelection}
         {onSelectDay}
         {resetPotentialDates}
-        start={interval.start}
+        start={interval?.start}
         outOfMonth={date.month !== startDay.month}
-        disabled={Boolean(min && date < min)}
+        disabled={Boolean(minDate && date < minDate)}
       />
     {/each}
   </div>
