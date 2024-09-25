@@ -2,8 +2,8 @@
   import { DateTime } from "luxon";
 
   export let date: DateTime<true>;
-  export let inclusiveEnd: DateTime<true>;
-  export let start: DateTime<true>;
+  export let inclusiveEnd: DateTime<true> | undefined;
+  export let start: DateTime<true> | undefined;
   export let outOfMonth: boolean;
   export let disabled: boolean;
   export let selectingStart: boolean;
@@ -15,14 +15,17 @@
 
   $: isEnd = areSameDay(inclusiveEnd, date);
   $: isStart = areSameDay(start, date);
-  $: afterEnd = date > inclusiveEnd;
-  $: beforeStart = date < start;
+  $: afterEnd = inclusiveEnd && date > inclusiveEnd;
+  $: beforeStart = start && date < start;
   $: inPotentialRange = Boolean(
-    (potentialEnd && date > start && date < potentialEnd) ||
-      (potentialStart && date > potentialStart && date < inclusiveEnd),
+    (start && potentialEnd && date > start && date < potentialEnd) ||
+      (inclusiveEnd &&
+        potentialStart &&
+        date > potentialStart &&
+        date < inclusiveEnd),
   );
   $: isNextDay = areSameDay(potentialStart?.plus({ day: 1 }), date);
-  $: inRange = !afterEnd && !beforeStart;
+  $: inRange = start && inclusiveEnd && !afterEnd && !beforeStart;
 
   function areSameDay(
     a: DateTime | undefined | null,
