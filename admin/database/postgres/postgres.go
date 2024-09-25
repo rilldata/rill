@@ -1985,9 +1985,9 @@ func (c *connection) FindBillingIssueByType(ctx context.Context, errorType datab
 	return billingErrors, nil
 }
 
-func (c *connection) FindBillingIssueByTypeNotOverdueProcessed(ctx context.Context, errorType database.BillingIssueType) ([]*database.BillingIssue, error) {
+func (c *connection) FindBillingIssueByTypeAndOverdueProcessed(ctx context.Context, errorType database.BillingIssueType, overdueProcessed bool) ([]*database.BillingIssue, error) {
 	var res []*billingIssueDTO
-	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1 AND overdue_processed = false`, errorType)
+	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1 AND overdue_processed = $2`, errorType, overdueProcessed)
 	if err != nil {
 		return nil, parseErr("billing issues", err)
 	}
@@ -1997,15 +1997,6 @@ func (c *connection) FindBillingIssueByTypeNotOverdueProcessed(ctx context.Conte
 		billingErrors = append(billingErrors, dto.AsModel())
 	}
 	return billingErrors, nil
-}
-
-func (c *connection) FindBillingIssueByTypeNotOverdueProcessedForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
-	res := &billingIssueDTO{}
-	err := c.db.GetContext(ctx, res, `SELECT * FROM billing_issues WHERE org_id = $1 AND type = $2 AND overdue_processed = false`, orgID, errorType)
-	if err != nil {
-		return nil, parseErr("billing issue", err)
-	}
-	return res.AsModel(), nil
 }
 
 func (c *connection) UpsertBillingIssue(ctx context.Context, opts *database.UpsertBillingIssueOptions) (*database.BillingIssue, error) {
