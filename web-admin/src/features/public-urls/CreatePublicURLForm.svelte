@@ -182,7 +182,7 @@
               <Calendar
                 firstVisibleMonth={DateTime.now()}
                 singleDaySelection
-                min={includingTomorrowDate}
+                minDate={includingTomorrowDate}
                 onSelectDay={(date) => {
                   $form.expiresAt = date.toISO();
                   popoverOpen = false;
