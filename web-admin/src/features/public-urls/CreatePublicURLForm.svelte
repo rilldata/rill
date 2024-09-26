@@ -39,6 +39,7 @@
 
   const {
     dashboardStore,
+    metricsViewName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
