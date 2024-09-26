@@ -88,6 +88,6 @@ items:
 ...
 ```
 
-Now we can see that setting the author select, the stacked chart changes. Let's add the same filters to the other components. 
+Now upon selection of the author dropdown, we can see the stacked bar chart change. You can make the same changes to the Highest Contributor chart, as well. See below for a sample of a completed canvas dashboard.
 
 ![img](/img/tutorials/301/canvas-dashboard-filters.png)

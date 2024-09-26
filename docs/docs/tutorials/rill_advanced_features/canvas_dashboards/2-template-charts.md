@@ -115,7 +115,7 @@ type: component
 type: component
 
 kpi:
-  metric_view: dashboard_1
+  metrics_view: dashboard_1
   time_range: P1W
   measure: net_line_changes #if name parameter is defined on measure
   comparison_range: P1W
@@ -154,7 +154,7 @@ type: component
 table:
   measures:
     - net_line_changes
-  metric_view: "dashboard_1"
+  metrics_view: "dashboard_1"
   time_range: "P3M"
   #comparison_range: "P3M"
 

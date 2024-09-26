@@ -42,7 +42,7 @@ Finally, using some of the Rill template KPI charts, we can finish off the Canva
 <details>
   <summary>If you had any issues building the Canvas dashboard, please refer to the YAML below.</summary>
 ```yaml
-type: dashboard
+type: canvas
 columns: 13
 gap: 2
 
