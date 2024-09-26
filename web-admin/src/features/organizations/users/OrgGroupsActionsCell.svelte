@@ -2,11 +2,18 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { Trash2Icon, UserCogIcon, UserMinusIcon } from "lucide-svelte";
+  import {
+    Trash2Icon,
+    UserCogIcon,
+    UserMinusIcon,
+    TextCursorInputIcon,
+  } from "lucide-svelte";
   import DeleteUserGroupConfirmDialog from "./DeleteUserGroupConfirmDialog.svelte";
+  import RenameUserGroupDialog from "./RenameUserGroupDialog.svelte";
 
   export let name: string;
   export let role: string | undefined = undefined;
+  export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
@@ -14,6 +21,7 @@
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
+  let isRenameDialogOpen = false;
 
   function handleAssignRole(role: string) {
     onAddRole(name, role);
@@ -129,6 +137,15 @@
     {/if}
     <DropdownMenu.Item
       class="font-normal flex items-center"
+      on:click={() => {
+        isRenameDialogOpen = true;
+      }}
+    >
+      <TextCursorInputIcon size="12px" />
+      <span class="ml-2">Rename</span>
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex items-center"
       type="destructive"
       on:click={() => {
         isDeleteConfirmOpen = true;
@@ -142,6 +159,12 @@
 
 <DeleteUserGroupConfirmDialog
   bind:open={isDeleteConfirmOpen}
-  {name}
+  groupName={name}
   {onDelete}
+/>
+
+<RenameUserGroupDialog
+  bind:open={isRenameDialogOpen}
+  groupName={name}
+  {onRename}
 />

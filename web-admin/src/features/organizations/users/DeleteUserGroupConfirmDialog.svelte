@@ -11,12 +11,12 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
 
   export let open = false;
-  export let name: string;
-  export let onDelete: (name: string) => void;
+  export let groupName: string;
+  export let onDelete: (groupName: string) => void;
 
   async function handleDelete() {
     try {
-      onDelete(name);
+      onDelete(groupName);
       open = false;
     } catch (error) {
       console.error("Failed to delete user group:", error);
