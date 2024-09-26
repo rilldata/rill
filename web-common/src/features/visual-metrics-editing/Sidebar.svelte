@@ -244,12 +244,12 @@
 />
 
 <div
-  class="h-full w-[320px] bg-background flex-none p-6 px-5 flex flex-col border select-none rounded-[2px]"
+  class="h-full w-[320px] bg-background flex-none flex flex-col border select-none rounded-[2px]"
 >
-  <h1>{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
+  <h1 class="pt-6 px-5">{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
   <div
-    class="flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible px-1"
+    class="px-5 flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible px-1"
   >
     {#each properties[type] as { fields, selected, label, optional, fontFamily } (label)}
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
@@ -301,11 +301,11 @@
     {/each}
 
     <span />
-
-    <!-- <h2>Preview</h2> -->
   </div>
 
-  <div class="flex flex-col gap-y-3 mt-auto">
+  <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
+    <!-- <h2>Preview</h2> -->
+
     <p>
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">
@@ -339,10 +339,10 @@
 
 <style lang="postcss">
   h1 {
-    @apply text-lg font-medium mb-4;
+    @apply text-lg font-semibold mb-4;
   }
 
-  h2 {
+  /* h2 {
     @apply text-sm font-medium;
-  }
+  } */
 </style>
