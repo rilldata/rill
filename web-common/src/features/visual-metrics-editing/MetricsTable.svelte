@@ -20,6 +20,7 @@
   import { insertIndex, table } from "./MetricsTableRow.svelte";
   import { YAMLMap } from "yaml";
   import { get, Writable, writable } from "svelte/store";
+  import { editingItem } from "../workspaces/VisualMetrics.svelte";
 
   const headers = ["Name", "Label", "SQL expression", "Format", "Description"];
   const gutterWidth = 56;
@@ -39,6 +40,11 @@
   ) => void;
   export let onDelete: (index: number, type: "measures" | "dimensions") => void;
   export let onCheckedChange: (checked: boolean, index?: number) => void;
+  export let onEdit: (
+    index: number,
+    type: "measures" | "dimensions",
+    field?: string,
+  ) => void;
 
   let clientWidth: HTMLTableRowElement;
   let tbody: HTMLTableSectionElement;
@@ -123,6 +129,8 @@
           onCheckedChange={(checked) => {
             onCheckedChange(checked, i);
           }}
+          editing={$editingItem?.type === type && $editingItem?.index === i}
+          {onEdit}
           selected={selected.has(i)}
           {type}
           {onDelete}

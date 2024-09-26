@@ -53,8 +53,6 @@
       expression: `${functionName}(${column})`,
     };
   }
-
-  $: console.log({ functionName });
 </script>
 
 <div class="flex flex-col gap-y-1 h-fit">
@@ -96,7 +94,7 @@
         options={functionNames.map((value) => ({ value, label: value })) ?? []}
         onChange={(newFunction) => {
           const props = createProperties(newFunction, column);
-          // console.log({ props });
+
           if (props.name && nameMatchesExpression && !editing)
             name = props.name;
           if (props.expression) expression = props.expression;

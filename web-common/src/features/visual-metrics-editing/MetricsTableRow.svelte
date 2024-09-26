@@ -10,12 +10,8 @@
   import EditControls from "./EditControls.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import Checkbox from "./Checkbox.svelte";
-  import {
-    editingIndex,
-    editingType,
-  } from "../workspaces/VisualMetrics.svelte";
+
   import { YAMLMap } from "yaml";
-  import { tick } from "svelte";
 
   export let rowHeight: number;
   export let item: YAMLMap<string, string>;
@@ -37,6 +33,12 @@
   export let tableWidth: number;
   export let type: "measures" | "dimensions";
   export let expressionWidth: number;
+  export let onEdit: (
+    index: number,
+    type: "measures" | "dimensions",
+    field?: string,
+  ) => void;
+  export let editing: boolean;
 
   let row: HTMLTableRowElement;
   let initialY = 0;
@@ -80,21 +82,14 @@
     insertIndex.set(null);
   }
 
-  async function setEditing(
-    e?: MouseEvent & {
+  function onCellClick(
+    e: MouseEvent & {
       currentTarget: EventTarget & HTMLTableCellElement;
     },
   ) {
-    const field = e?.currentTarget?.getAttribute("aria-label");
-
-    editingIndex.set(i);
-    editingType.set(type);
-
-    await tick();
-    document.getElementById(`vme-${field}`)?.focus();
+    const field = e?.currentTarget?.getAttribute("aria-label") ?? undefined;
+    onEdit(i, type, field);
   }
-
-  $: editing = $editingIndex === i && $editingType === type;
 </script>
 
 <tr
@@ -122,10 +117,10 @@
     </div>
   </td>
 
-  <td class="source-code truncate" on:click={setEditing} aria-label="Name">
+  <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
     <span>{item?.get("name") ?? "-"}</span>
   </td>
-  <td on:click={setEditing} aria-label="Label">
+  <td on:click={onCellClick} aria-label="Label">
     <div class="text-[12px] pr-4">
       <Chip
         slideDuration={0}
@@ -141,7 +136,7 @@
 
   <td
     class="source-code truncate"
-    on:click={setEditing}
+    on:click={onCellClick}
     aria-label="SQL expression"
     style:max-width="{expressionWidth}px"
   >
@@ -149,12 +144,12 @@
   </td>
 
   {#if type === "measures"}
-    <td on:click={setEditing} aria-label="Format">
+    <td on:click={onCellClick} aria-label="Format">
       <span>{item.get("format_preset") || item?.get("format_d3") || "-"}</span>
     </td>
   {/if}
 
-  <td class="" on:click={setEditing} aria-label="Description">
+  <td class="" on:click={onCellClick} aria-label="Description">
     <span>{item?.get("description") || "-"}</span>
   </td>
 
@@ -164,7 +159,9 @@
       right={Math.max(0, tableWidth - scrollLeft)}
       first={i === 0}
       last={i === length - 1}
-      onEdit={setEditing}
+      onEdit={() => {
+        onEdit(i, type);
+      }}
       onMoveToBottom={() => {
         reorderList(i, length - 1, type);
       }}

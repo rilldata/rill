@@ -1,7 +1,11 @@
 <script lang="ts" context="module">
-  export const editingIndex = writable<number | null>(null);
-  export const editingType = writable<"measures" | "dimensions" | null>(null);
-  export const editingField = writable<string | null>(null);
+  type EditingItem = {
+    index: number;
+    type: "measures" | "dimensions";
+    field?: string;
+  };
+
+  export const editingItem = writable<EditingItem | null>(null);
 
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
@@ -77,6 +81,7 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import { tick } from "svelte";
 
   type ItemType = "measures" | "dimensions";
 
@@ -85,15 +90,21 @@
   export let errors: LineStatus[];
 
   let searchValue = "";
+  let unsavedChanges = false;
   let confirmation: {
-    action: "cancel" | "delete" | "switch";
+    action: "cancel" | "delete" | "switch" | "switch-edit";
     type?: ItemType;
     model?: string;
     index?: number;
+    field?: string;
   } | null = null;
   let collapsed = {
     measures: false,
     dimensions: false,
+  };
+  let selected = {
+    measures: new Set<number>(),
+    dimensions: new Set<number>(),
   };
 
   $: ({ instanceId } = $runtime);
@@ -149,10 +160,6 @@
     .map(({ name }) => name)
     .filter(isDefined);
 
-  function isDefined<T>(x: T | undefined): x is T {
-    return x !== undefined;
-  }
-
   $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
   $: yamlMeasures = (
@@ -175,6 +182,41 @@
   $: smallestTimeGrain = (parsedDocument.get("smallest_time_grain") ??
     "") as string;
 
+  $: item =
+    ($editingItem && itemGroups.get($editingItem.type)?.[$editingItem.index]) ||
+    undefined;
+
+  $: editingClone =
+    $editingItem && item
+      ? $editingItem.type === "measures"
+        ? new YAMLMeasure(item)
+        : new YAMLDimension(item)
+      : undefined;
+
+  $: totalSelected = selected.measures.size + selected.dimensions.size;
+
+  /** display the main error (the first in this array) at the bottom */
+  $: mainError = errors?.at(0);
+
+  async function setEditing(index: number, type: ItemType, field?: string) {
+    if (unsavedChanges) {
+      confirmation = {
+        action: "cancel",
+        index,
+        type,
+        field,
+      };
+      return;
+    }
+
+    editingItem.set({ index, type, field });
+
+    if (field) {
+      await tick();
+      document.getElementById(`vme-${field}`)?.focus();
+    }
+  }
+
   function filter(item: YAMLMap<string, string>, searchValue: string) {
     return (
       item?.get("name")?.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -191,6 +233,10 @@
     parsedDocument.set(property, value);
 
     await saveContent(parsedDocument.toString());
+  }
+
+  function isDefined<T>(x: T | undefined): x is T {
+    return x !== undefined;
   }
 
   async function reorderList(
@@ -285,31 +331,6 @@
       type: "success",
     });
   }
-
-  $: item =
-    ($editingType !== null &&
-      $editingIndex !== null &&
-      itemGroups.get($editingType)?.[$editingIndex]) ||
-    undefined;
-
-  $: editingClone =
-    $editingIndex !== null
-      ? $editingType === "measures"
-        ? new YAMLMeasure(item)
-        : new YAMLDimension(item)
-      : undefined;
-
-  let selected = {
-    measures: new Set<number>(),
-    dimensions: new Set<number>(),
-  };
-
-  $: totalSelected = selected.measures.size + selected.dimensions.size;
-
-  /** display the main error (the first in this array) at the bottom */
-  $: mainError = errors?.at(0);
-
-  $: console.log({ errors });
 </script>
 
 <div class="wrapper">
@@ -406,8 +427,10 @@
               gray
               noStroke
               on:click={() => {
-                editingIndex.set(-1);
-                editingType.set(type);
+                editingItem.set({
+                  index: -1,
+                  type,
+                });
               }}
             >
               <PlusIcon size="16px" />
@@ -421,6 +444,7 @@
               onDuplicate={duplicateItem}
               {items}
               onDelete={triggerDelete}
+              onEdit={setEditing}
               onCheckedChange={(checked, index) => {
                 if (index === undefined) {
                   if (checked) {
@@ -462,7 +486,7 @@
           {totalSelected > 1 ? "items" : "item"} selected:
         </div>
         <button
-          on:click={async () => {
+          on:click={() => {
             triggerDelete();
           }}
           class="flex gap-x-2 text-inherit items-center px-2 border-l border-gray-600 hover:bg-gray-800 cursor-pointer"
@@ -486,34 +510,34 @@
     {/if}
   </div>
 
-  {#if $editingIndex !== null && $editingType !== null && editingClone}
+  {#if $editingItem && editingClone}
+    {@const { index, type } = $editingItem}
     {#key editingClone}
       <Sidebar
         {item}
         {editingClone}
         {columns}
         onDelete={() => {
-          if ($editingType) triggerDelete($editingIndex, $editingType);
+          const { type, index } = $editingItem;
+          triggerDelete(index, type);
         }}
         onCancel={(unsavedChanges) => {
           if (unsavedChanges) {
             confirmation = {
               action: "cancel",
-              index: $editingIndex,
-              type: $editingType,
+              index,
+              type,
             };
           } else {
-            editingField.set(null);
-            editingIndex.set(null);
-            editingType.set(null);
+            editingItem.set(null);
           }
         }}
-        index={$editingIndex}
-        type={$editingType}
-        field={$editingField}
-        editing={$editingIndex !== -1}
+        {index}
+        {type}
+        editing={index !== -1}
         {fileArtifact}
         {switchView}
+        bind:unsavedChanges
       />
     {/key}
   {/if}
@@ -575,17 +599,37 @@
                       }
                     : selected,
                 );
+
+                editingItem.set(null);
               } else if (confirmation?.action === "switch") {
                 await updateProperty("model", confirmation.model);
+                editingItem.set(null);
+              } else if (confirmation?.action === "cancel") {
+                if (
+                  confirmation?.field &&
+                  confirmation?.index !== undefined &&
+                  confirmation?.type
+                ) {
+                  unsavedChanges = false;
+                  await setEditing(
+                    confirmation.index,
+                    confirmation.type,
+                    confirmation.field,
+                  );
+                }
               }
               confirmation = null;
-              editingIndex.set(null);
-              editingType.set(null);
             }}
           >
-            {#if confirmation.action === "delete"}Yes, delete{:else if confirmation.action === "switch"}Switch
-              model{:else}
-              Close{/if}
+            {#if confirmation.action === "delete"}
+              Yes, delete
+            {:else if confirmation.action === "switch"}
+              Switch model
+            {:else if confirmation.action === "cancel" && confirmation.field}
+              Switch items
+            {:else}
+              Close
+            {/if}
           </Button>
         </AlertDialog.Action>
       </AlertDialog.Footer>

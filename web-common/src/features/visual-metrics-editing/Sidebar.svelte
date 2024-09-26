@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
-    editingIndex,
-    editingType,
+    editingItem,
     YAMLDimension,
     YAMLMeasure,
   } from "../workspaces/VisualMetrics.svelte";
@@ -24,12 +23,12 @@
   export let index: number;
   export let type: "measures" | "dimensions";
   export let columns: V1ProfileColumn[];
-  export let field: string | null | undefined;
   export let editing: boolean;
   export let editingClone: YAMLMeasure | YAMLDimension;
   export let switchView: () => void;
   export let onDelete: () => void;
   export let onCancel: (unsavedChanges: boolean) => void;
+  export let unsavedChanges: boolean;
 
   let columnNames = columns.map(({ name }) => name).filter(isDefined);
 
@@ -226,8 +225,7 @@
     }
 
     await saveContent(parsedDocument.toString());
-    editingIndex.set(null);
-    editingType.set(null);
+    editingItem.set(null);
 
     eventBus.emit("notification", { message: "Item saved", type: "success" });
   }
@@ -279,7 +277,6 @@
         <Input
           id={`vme-${label}`}
           textClass="text-sm"
-          claimFocusOnMount={field === label}
           bind:value={editingClone[key]}
           {label}
           {hint}

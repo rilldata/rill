@@ -67,8 +67,6 @@
     focus = false;
     onBlur(e);
   }
-
-  $: console.log({ value });
 </script>
 
 <div class="flex flex-col gap-y-1" class:w-full={full} style:width>
