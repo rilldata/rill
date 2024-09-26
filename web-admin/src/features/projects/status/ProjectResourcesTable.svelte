@@ -119,7 +119,7 @@
   const table = createSvelteTable(options);
 </script>
 
-<div class="list">
+<div class="overflow-x-auto">
   <table class="w-full">
     <thead>
       {#each $table.getHeaderGroups() as headerGroup}
@@ -127,7 +127,6 @@
           {#each headerGroup.headers as header}
             <th
               colSpan={header.colSpan}
-              class="px-4 py-2 text-left"
               on:click={header.column.getToggleSortingHandler()}
             >
               {#if !header.isPlaceholder}
@@ -163,7 +162,7 @@
         <tr>
           {#each row.getVisibleCells() as cell}
             <td
-              class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
+              class={`px-4 py-2 truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
               data-label={cell.column.columnDef.header}
             >
               <svelte:component
@@ -188,6 +187,7 @@
 
   thead tr th {
     @apply border-t border-gray-200;
+    @apply px-4 py-2 text-left;
   }
   thead tr th:first-child {
     @apply border-l rounded-tl-sm;
