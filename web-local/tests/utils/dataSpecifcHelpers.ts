@@ -4,7 +4,7 @@ import {
   waitForProfiling,
   wrapRetryAssertion,
 } from "./commonHelpers";
-import { assertLeaderboards } from "./dashboardHelpers";
+import { assertLeaderboards } from "web-local/tests/utils/metricsViewHelpers";
 import { createModel } from "./modelHelpers";
 import { uploadFile, waitForSource } from "./sourceHelpers";
 

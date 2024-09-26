@@ -1,6 +1,6 @@
-import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
+import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { interactWithTimeRangeMenu } from "../utils/dashboardHelpers";
+import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { expect } from "@playwright/test";
 import { test } from "../utils/test";
 

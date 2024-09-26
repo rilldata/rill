@@ -1,12 +1,16 @@
 import { expect } from "@playwright/test";
+import {
+  createExploreFromModel,
+  createExploreFromSource,
+} from "web-local/tests/utils/exploreHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   assertLeaderboards,
-  createDashboardFromModel,
-  createDashboardFromSource,
+  createMetricsViewFromModel,
+  createMetricsViewFromSource,
   interactWithTimeRangeMenu,
-} from "../utils/dashboardHelpers";
+} from "web-local/tests/utils/metricsViewHelpers";
 import {
   assertAdBidsDashboard,
   createAdBidsModel,
@@ -15,26 +19,38 @@ import { createSource } from "../utils/sourceHelpers";
 import { test } from "../utils/test";
 import { waitForFileNavEntry } from "../utils/waitHelpers";
 
-test.describe("dashboard", () => {
-  test("Autogenerate dashboard from source", async ({ page }) => {
+test.describe("explores", () => {
+  test("Autogenerate explore from source", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
-    await createDashboardFromSource(page, "/sources/AdBids.yaml");
-    await waitForFileNavEntry(page, `/dashboards/AdBids_dashboard.yaml`, true);
+    await createExploreFromSource(
+      page,
+      "/sources/AdBids.yaml",
+      "/metrics/AdBids_metrics.yaml",
+    );
+    await waitForFileNavEntry(
+      page,
+      "/explore-dashboards/AdBids_metrics_explore.yaml",
+      true,
+    );
     await page.getByRole("button", { name: "Preview" }).click();
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
   });
 
-  test("Autogenerate dashboard from model", async ({ page }) => {
+  test("Autogenerate explore from model", async ({ page }) => {
     await createAdBidsModel(page);
     await Promise.all([
       waitForFileNavEntry(
         page,
-        `/dashboards/AdBids_model_dashboard.yaml`,
+        "/explore-dashboards/AdBids_model_metrics_explore.yaml",
         true,
       ),
-      createDashboardFromModel(page, "/models/AdBids_model.sql"),
+      createExploreFromModel(
+        page,
+        "/models/AdBids_model.sql",
+        "/metrics/AdBids_model_metrics.yaml",
+      ),
     ]);
 
     await page.getByRole("button", { name: "Preview" }).click();
@@ -69,7 +85,7 @@ test.describe("dashboard", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "/models/AdBids_model.sql");
+    await createMetricsViewFromModel(page, "/models/AdBids_model.sql");
     await page.getByRole("button", { name: "Preview" }).click();
 
     // Check the total records are 100k

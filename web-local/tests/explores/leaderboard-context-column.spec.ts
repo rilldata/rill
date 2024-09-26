@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { clickMenuButton } from "../utils/commonHelpers";
-import { interactWithTimeRangeMenu } from "../utils/dashboardHelpers";
+import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { test } from "../utils/test";
 import { useDashboardFlowTestSetup } from "./dashboard-flow-test-setup";
 

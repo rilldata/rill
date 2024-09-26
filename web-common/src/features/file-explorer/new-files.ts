@@ -126,7 +126,7 @@ export function getBaseNameForNewResourceFile(
         ? `${baseResource.meta!.name!.name}_explore`
         : ResourceKindMap[newKind].baseName;
     default:
-      return ResourceKindMap[newKind].baseFileName;
+      return ResourceKindMap[newKind].baseName;
   }
 }
 

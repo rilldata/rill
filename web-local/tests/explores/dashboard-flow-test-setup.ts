@@ -1,4 +1,4 @@
-import { createDashboardFromModel } from "web-local/tests/utils/dashboardHelpers";
+import { createMetricsViewFromModel } from "web-local/tests/utils/metricsViewHelpers";
 import { createAdBidsModel } from "web-local/tests/utils/dataSpecifcHelpers";
 import { test } from "../utils/test";
 import { waitForFileNavEntry } from "../utils/waitHelpers";
@@ -14,7 +14,7 @@ export function useDashboardFlowTestSetup() {
         `/dashboards/AdBids_model_dashboard.yaml`,
         true,
       ),
-      createDashboardFromModel(page, "/models/AdBids_model.sql"),
+      createMetricsViewFromModel(page, "/models/AdBids_model.sql"),
     ]);
   });
 }
