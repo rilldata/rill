@@ -4,10 +4,14 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import OrgGroupsActionsCell from "./OrgGroupsActionsCell.svelte";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
-  import { formatDate } from "@rilldata/web-common/components/table/utils";
+  import {
+    formatDate,
+    capitalize,
+  } from "@rilldata/web-common/components/table/utils";
 
   export let data: V1MemberUsergroup[];
   export let onDelete: (deletedGroupName: string) => void;
+  export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
 
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
@@ -20,7 +24,7 @@
       header: "Role",
       cell: ({ row }) => {
         if (!row.original.roleName) return "-";
-        return row.original.roleName;
+        return capitalize(row.original.roleName);
       },
     },
     {
@@ -46,7 +50,9 @@
       cell: ({ row }) =>
         flexRender(OrgGroupsActionsCell, {
           name: row.original.groupName,
+          role: row.original.roleName,
           onDelete: onDelete,
+          onAddRole: onAddRole,
           onSetRole: onSetRole,
         }),
     },

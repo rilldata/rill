@@ -6,13 +6,19 @@
   import DeleteUserGroupConfirmDialog from "./DeleteUserGroupConfirmDialog.svelte";
 
   export let name: string;
+  export let role: string | undefined = undefined;
   export let onDelete: (deletedGroupName: string) => void;
+  export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
 
-  function handleSetRole(role: string) {
+  function handleAssignRole(role: string) {
+    onAddRole(name, role);
+  }
+
+  function handleUpdateRole(role: string) {
     onSetRole(name, role);
   }
 </script>
@@ -24,38 +30,74 @@
     </IconButton>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
-    <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger class="font-normal flex items-center">
-        <UserCogIcon size="12px" />
-        <span class="ml-2">Set a role</span>
-      </DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent>
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={() => {
-            handleSetRole("admin");
-          }}
-        >
-          <span>Admin</span>
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={() => {
-            handleSetRole("viewer");
-          }}
-        >
-          <span>Viewer</span>
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={() => {
-            handleSetRole("collaborator");
-          }}
-        >
-          <span>Collaborator</span>
-        </DropdownMenu.Item>
-      </DropdownMenu.SubContent>
-    </DropdownMenu.Sub>
+    {#if role}
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger class="font-normal flex items-center">
+          <UserCogIcon size="12px" />
+          <span class="ml-2">Update role</span>
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              handleUpdateRole("admin");
+            }}
+          >
+            <span>Admin</span>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              handleUpdateRole("viewer");
+            }}
+          >
+            <span>Viewer</span>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              handleUpdateRole("collaborator");
+            }}
+          >
+            <span>Collaborator</span>
+          </DropdownMenu.Item>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+    {:else}
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger class="font-normal flex items-center">
+          <UserCogIcon size="12px" />
+          <span class="ml-2">Assign a role</span>
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              handleAssignRole("admin");
+            }}
+          >
+            <span>Admin</span>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              handleAssignRole("viewer");
+            }}
+          >
+            <span>Viewer</span>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              handleAssignRole("collaborator");
+            }}
+          >
+            <span>Collaborator</span>
+          </DropdownMenu.Item>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+    {/if}
+
     <DropdownMenu.Item
       class="font-normal flex items-center"
       type="destructive"

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceAddOrganizationMemberUsergroup,
     createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
@@ -33,6 +34,7 @@
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
   const deleteUserGroup = createAdminServiceDeleteUsergroup();
+  const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
   const setUserGroupRole =
     createAdminServiceSetOrganizationMemberUsergroupRole();
 
@@ -40,7 +42,7 @@
     userGroupName = e.target.value;
   }
 
-  async function handleCreateUserGroup() {
+  async function handleCreate() {
     try {
       await $createUserGroup.mutateAsync({
         organization: organization,
@@ -85,8 +87,29 @@
     }
   }
 
-  // NOTE: org group member must have been added first
-  // otherwise, we get `Error: org group member not found (NotFound)`
+  async function handleAddRole(groupName: string, role: string) {
+    try {
+      await $addUserGroupRole.mutateAsync({
+        organization: organization,
+        usergroup: groupName,
+        data: {
+          role: role,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group role added" });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error adding role to user group",
+        type: "error",
+      });
+    }
+  }
+
   async function handleSetRole(groupName: string, role: string) {
     try {
       await $setUserGroupRole.mutateAsync({
@@ -101,10 +124,10 @@
         getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
       );
 
-      eventBus.emit("notification", { message: "User group role set" });
+      eventBus.emit("notification", { message: "User group role updated" });
     } catch (error) {
       eventBus.emit("notification", {
-        message: "Error setting user group role",
+        message: "Error updating user group role",
         type: "error",
       });
     }
@@ -126,6 +149,7 @@
       <OrgGroupsTable
         data={$organizationMemberUserGroups.data.members}
         onDelete={handleDelete}
+        onAddRole={handleAddRole}
         onSetRole={handleSetRole}
       />
       <Button type="primary" large on:click={() => (open = true)}
@@ -157,9 +181,7 @@
           placeholder="User group name"
           on:input={onUserGroupNameInput}
         />
-        <Button type="primary" large on:click={handleCreateUserGroup}
-          >Create</Button
-        >
+        <Button type="primary" large on:click={handleCreate}>Create</Button>
       </div>
     </DialogFooter>
   </DialogContent>
