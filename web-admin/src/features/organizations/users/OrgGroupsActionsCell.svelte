@@ -92,8 +92,8 @@
             class="font-normal flex items-center"
             on:click={() => {
               role !== undefined
-                ? handleUpdateRole("admin")
-                : handleAssignRole("admin");
+                ? handleAssignRole("admin")
+                : handleUpdateRole("admin");
             }}
           >
             <span>Admin</span>
@@ -105,8 +105,8 @@
             class="font-normal flex items-center"
             on:click={() => {
               role !== undefined
-                ? handleUpdateRole("viewer")
-                : handleAssignRole("viewer");
+                ? handleAssignRole("viewer")
+                : handleUpdateRole("viewer");
             }}
           >
             <span>Viewer</span>
@@ -118,8 +118,8 @@
             class="font-normal flex items-center"
             on:click={() => {
               role !== undefined
-                ? handleUpdateRole("collaborator")
-                : handleAssignRole("collaborator");
+                ? handleAssignRole("collaborator")
+                : handleUpdateRole("collaborator");
             }}
           >
             <span>Collaborator</span>
