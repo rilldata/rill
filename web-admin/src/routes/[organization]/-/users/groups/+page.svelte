@@ -5,6 +5,7 @@
     createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
+    createAdminServiceRemoveOrganizationMemberUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
@@ -37,6 +38,8 @@
   const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
   const setUserGroupRole =
     createAdminServiceSetOrganizationMemberUsergroupRole();
+  const revokeUserGroupRole =
+    createAdminServiceRemoveOrganizationMemberUsergroup();
 
   function onUserGroupNameInput(e: any) {
     userGroupName = e.target.value;
@@ -132,6 +135,26 @@
       });
     }
   }
+
+  async function handleRevokeRole(groupName: string) {
+    try {
+      await $revokeUserGroupRole.mutateAsync({
+        organization: organization,
+        usergroup: groupName,
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group role revoked" });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error revoking user group role",
+        type: "error",
+      });
+    }
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -151,6 +174,7 @@
         onDelete={handleDelete}
         onAddRole={handleAddRole}
         onSetRole={handleSetRole}
+        onRevokeRole={handleRevokeRole}
       />
       <Button type="primary" large on:click={() => (open = true)}
         ><Plus size="16px" />

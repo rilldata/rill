@@ -13,6 +13,7 @@
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
+  export let onRevokeRole: (groupName: string) => void;
 
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
@@ -54,6 +55,7 @@
           onDelete: onDelete,
           onAddRole: onAddRole,
           onSetRole: onSetRole,
+          onRevokeRole: onRevokeRole,
         }),
     },
   ];
