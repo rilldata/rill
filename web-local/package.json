@@ -3,7 +3,7 @@
   "version": "0.15.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3001",
+    "dev": "vite dev",
     "build": "vite build",
     "install-and-build": "npm install && npm run build",
     "check": "svelte-check --tsconfig ./tsconfig.json",

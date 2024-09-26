@@ -82,12 +82,13 @@
 
       <Select.Root
         bind:open={active}
+        selected={{ value: activeLeaderboardMeasure.name, label: "" }}
         items={measures.map((measure) => ({
           value: measure.name ?? "",
           label: measure.label ?? measure.name,
         }))}
         onSelectedChange={(newSelection) => {
-          if (!newSelection) return;
+          if (!newSelection?.value) return;
           setLeaderboardMeasureName(newSelection.value);
         }}
       >
@@ -105,21 +106,23 @@
         <Select.Content
           sameWidth={false}
           align="start"
-          class="max-h-80 overflow-y-auto"
+          class="max-h-80 overflow-y-auto min-w-44"
         >
           {#each measures as measure (measure.name)}
             <Select.Item
               value={measure.name}
               label={measure.label ?? measure.name}
-              class="text-[12px] flex flex-col items-start"
+              class="text-[12px]"
             >
-              <div class:font-bold={$leaderboardMeasureName === measure.name}>
-                {measure.label ?? measure.name}
-              </div>
+              <div class="flex flex-col">
+                <div class:font-bold={$leaderboardMeasureName === measure.name}>
+                  {measure.label ?? measure.name}
+                </div>
 
-              <p class="ui-copy-muted" style:font-size="11px">
-                {measure.description}
-              </p>
+                <p class="ui-copy-muted" style:font-size="11px">
+                  {measure.description}
+                </p>
+              </div>
             </Select.Item>
           {/each}
         </Select.Content>

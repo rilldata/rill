@@ -34,6 +34,7 @@
   export let loading = false;
   export let target: string | undefined = undefined;
   export let fit = false;
+  export let noWrap = false;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
 
@@ -63,6 +64,7 @@
   class:compact
   class:rounded
   class:!w-fit={fit}
+  class:whitespace-nowrap={noWrap}
   class:danger={status === "error"}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}

@@ -9,9 +9,9 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import WorkspaceInspector from "@rilldata/web-common/features/models/inspector/WorkspaceInspector.svelte";
   import ModelEditor from "@rilldata/web-common/features/models/workspace/ModelEditor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
-  import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -47,13 +47,14 @@
   $: allErrors = $allErrorsStore;
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: resource = $resourceQuery.data?.model;
-  $: connector = (resource as V1ModelV2)?.spec?.outputConnector as string;
+  $: resource = $resourceQuery.data;
+  $: model = $resourceQuery.data?.model;
+  $: connector = (model as V1ModelV2)?.spec?.outputConnector as string;
   const database = ""; // models use the default database
   const databaseSchema = ""; // models use the default databaseSchema
-  $: tableName = (resource as V1ModelV2)?.state?.resultTable as string;
+  $: tableName = (model as V1ModelV2)?.state?.resultTable as string;
 
-  $: refreshedOn = resource?.state?.refreshedOn;
+  $: refreshedOn = model?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
   async function save() {
@@ -118,6 +119,7 @@
 
       <div class="flex gap-x-2 items-center">
         <ModelWorkspaceCtAs
+          {resource}
           {collapse}
           modelHasError={$hasErrors}
           modelName={assetName}
@@ -146,7 +148,7 @@
           {#if allErrors.length > 0}
             <div
               transition:slide={{ duration: 200 }}
-              class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
+              class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] bg-gray-100 flex flex-col gap-2"
             >
               {#each allErrors as error (error.message)}
                 <div>{error.message}</div>
@@ -167,9 +169,8 @@
         {tableName}
         hasErrors={$hasErrors}
         hasUnsavedChanges={$hasUnsavedChanges}
-        model={resource}
+        {resource}
         isEmpty={!$remoteContent?.length}
-        sourceIsReconciling={resourceIsReconciling}
       />
     {/if}
   </svelte:fragment>
