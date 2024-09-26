@@ -34,6 +34,16 @@
     });
   }
 
+  $: safeData = Array.isArray(data) ? data : [];
+  $: {
+    if (safeData) {
+      options.update((old) => ({
+        ...old,
+        data: safeData,
+      }));
+    }
+  }
+
   const setSorting: OnChangeFn<SortingState> = (updater) => {
     if (updater instanceof Function) {
       sorting = updater(sorting);
