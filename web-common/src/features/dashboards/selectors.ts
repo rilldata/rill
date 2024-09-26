@@ -39,10 +39,10 @@ export function useMetricsView(
   );
 }
 
-export function useValidDashboards(instanceId: string) {
+export function useValidExplores(instanceId: string) {
   // This is used in cloud as well so do not use "useClientFilteredResources"
-  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
-    data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
+  return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
+    data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
   );
 }
 

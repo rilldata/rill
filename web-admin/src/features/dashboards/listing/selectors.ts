@@ -1,5 +1,5 @@
 import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
+import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
@@ -13,7 +13,7 @@ export function useDashboardsLastUpdated(
 ) {
   return derived(
     [
-      useValidDashboards(instanceId),
+      useValidExplores(instanceId),
       createAdminServiceGetProject(organization, project),
     ],
     ([dashboardsResp, projResp]) => {
