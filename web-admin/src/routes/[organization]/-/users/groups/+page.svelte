@@ -4,6 +4,7 @@
     createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
+    createAdminServiceSetOrganizationMemberUsergroupRole,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -15,7 +16,6 @@
   import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -33,6 +33,8 @@
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
   const deleteUserGroup = createAdminServiceDeleteUsergroup();
+  const setUserGroupRole =
+    createAdminServiceSetOrganizationMemberUsergroupRole();
 
   function onUserGroupNameInput(e: any) {
     userGroupName = e.target.value;
@@ -82,6 +84,31 @@
       });
     }
   }
+
+  // NOTE: org group member must have been added first
+  // otherwise, we get `Error: org group member not found (NotFound)`
+  async function handleSetRole(groupName: string, role: string) {
+    try {
+      await $setUserGroupRole.mutateAsync({
+        organization: organization,
+        usergroup: groupName,
+        data: {
+          role: role,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group role set" });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error setting user group role",
+        type: "error",
+      });
+    }
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -95,15 +122,16 @@
       Error loading organization members: {$organizationMemberUserGroups.error}
     </div>
   {:else if $organizationMemberUserGroups.isSuccess}
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-4">
+      <OrgGroupsTable
+        data={$organizationMemberUserGroups.data.members}
+        onDelete={handleDelete}
+        onSetRole={handleSetRole}
+      />
       <Button type="primary" large on:click={() => (open = true)}
         ><Plus size="16px" />
         <span>Add user group</span></Button
       >
-      <OrgGroupsTable
-        data={$organizationMemberUserGroups.data.members}
-        onDelete={handleDelete}
-      />
     </div>
   {/if}
 </div>
@@ -130,7 +158,7 @@
           on:input={onUserGroupNameInput}
         />
         <Button type="primary" large on:click={handleCreateUserGroup}
-          >Invite</Button
+          >Create</Button
         >
       </div>
     </DialogFooter>

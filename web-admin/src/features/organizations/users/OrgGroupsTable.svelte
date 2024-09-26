@@ -2,12 +2,13 @@
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
-  import OrgGroupsAction from "./OrgGroupsAction.svelte";
+  import OrgGroupsActionsCell from "./OrgGroupsActionsCell.svelte";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import { formatDate } from "@rilldata/web-common/components/table/utils";
 
   export let data: V1MemberUsergroup[];
   export let onDelete: (deletedGroupName: string) => void;
+  export let onSetRole: (groupName: string, role: string) => void;
 
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
@@ -43,9 +44,10 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(OrgGroupsAction, {
+        flexRender(OrgGroupsActionsCell, {
           name: row.original.groupName,
           onDelete: onDelete,
+          onSetRole: onSetRole,
         }),
     },
   ];
