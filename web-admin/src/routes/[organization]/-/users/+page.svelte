@@ -21,9 +21,6 @@
       Error loading organization members: {$organizationMemberUsers.error}
     </div>
   {:else if $organizationMemberUsers.isSuccess}
-    <!-- <div class="flex flex-col gap-6"> -->
-    <!-- <Button type="primary" large>Add User</Button> -->
     <OrgUsersTable data={$organizationMemberUsers.data.members} />
-    <!-- </div> -->
   {/if}
 </div>

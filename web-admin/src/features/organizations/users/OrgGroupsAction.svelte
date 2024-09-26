@@ -6,12 +6,8 @@
   import { Trash2Icon, CopyIcon } from "lucide-svelte";
   import DeleteUserGroupConfirmDialog from "./DeleteUserGroupConfirmDialog.svelte";
 
-  export let id: string;
-  export let onDelete: (deletedTokenId: string) => void;
-
-  function handleCopy() {
-    copyToClipboard(url, "Public URL copied to clipboard");
-  }
+  export let name: string;
+  export let onDelete: (deletedGroupName: string) => void;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
@@ -37,4 +33,8 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<DeleteUserGroupConfirmDialog bind:open={isDeleteConfirmOpen} {id} {onDelete} />
+<DeleteUserGroupConfirmDialog
+  bind:open={isDeleteConfirmOpen}
+  {name}
+  {onDelete}
+/>

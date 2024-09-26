@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
@@ -9,20 +10,64 @@
   import OrgGroupsTable from "@rilldata/web-admin/features/organizations/users/OrgGroupsTable.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { Plus } from "lucide-svelte";
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  } from "@rilldata/web-common/components/dialog-v2";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+
+  let userGroupName = "";
+  let open = false;
 
   $: organization = $page.params.organization;
-
   $: organizationMemberUserGroups =
     createAdminServiceListOrganizationMemberUsergroups(organization);
 
   const queryClient = useQueryClient();
+  const createUserGroup = createAdminServiceCreateUsergroup();
   const deleteUserGroup = createAdminServiceDeleteUsergroup();
 
-  async function handleDelete(deletedUserGroupId: string) {
+  function onUserGroupNameInput(e: any) {
+    userGroupName = e.target.value;
+  }
+
+  async function handleCreateUserGroup() {
+    try {
+      await $createUserGroup.mutateAsync({
+        organization: organization,
+        data: {
+          name: userGroupName,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      userGroupName = "";
+      open = false;
+
+      eventBus.emit("notification", { message: "User group created" });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error creating user group",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleDelete(deletedUserGroupName: string) {
     try {
       await $deleteUserGroup.mutateAsync({
         organization: organization,
-        usergroup: deletedUserGroupId,
+        usergroup: deletedUserGroupName,
       });
 
       await queryClient.invalidateQueries(
@@ -50,9 +95,44 @@
       Error loading organization members: {$organizationMemberUserGroups.error}
     </div>
   {:else if $organizationMemberUserGroups.isSuccess}
-    <OrgGroupsTable
-      data={$organizationMemberUserGroups.data.members}
-      onDelete={handleDelete}
-    />
+    <div class="flex flex-col gap-6">
+      <Button type="primary" large on:click={() => (open = true)}
+        ><Plus size="16px" />
+        <span>Add user group</span></Button
+      >
+      <OrgGroupsTable
+        data={$organizationMemberUserGroups.data.members}
+        onDelete={handleDelete}
+      />
+    </div>
   {/if}
 </div>
+
+<Dialog
+  bind:open
+  onOutsideClick={(e) => {
+    e.preventDefault();
+    open = false;
+  }}
+>
+  <DialogTrigger asChild>
+    <div class="hidden"></div>
+  </DialogTrigger>
+  <DialogContent class="translate-y-[-200px]">
+    <DialogHeader>
+      <DialogTitle>Add user group</DialogTitle>
+    </DialogHeader>
+    <DialogFooter class="mt-4">
+      <div class="flex flex-col gap-2 w-full">
+        <Input
+          bind:value={userGroupName}
+          placeholder="User group name"
+          on:input={onUserGroupNameInput}
+        />
+        <Button type="primary" large on:click={handleCreateUserGroup}
+          >Invite</Button
+        >
+      </div>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
