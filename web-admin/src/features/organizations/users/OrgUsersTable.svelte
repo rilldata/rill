@@ -2,13 +2,12 @@
   import type { V1MemberUser } from "@rilldata/web-admin/client";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
-  import { formatDate } from "@rilldata/web-common/components/table/utils";
+  import {
+    formatDate,
+    capitalize,
+  } from "@rilldata/web-common/components/table/utils";
 
   export let data: V1MemberUser[];
-
-  function capitalize(str: string) {
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-  }
 
   const columns: ColumnDef<V1MemberUser, any>[] = [
     {
