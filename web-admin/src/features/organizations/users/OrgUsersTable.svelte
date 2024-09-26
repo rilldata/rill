@@ -32,6 +32,10 @@
     });
   }
 
+  function capitalize(str: string) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
   const setSorting: OnChangeFn<SortingState> = (updater) => {
     if (updater instanceof Function) {
       sorting = updater(sorting);
@@ -56,6 +60,10 @@
     {
       accessorKey: "roleName",
       header: "Role",
+      cell: ({ row }) => {
+        if (!row.original.roleName) return "-";
+        return capitalize(row.original.roleName);
+      },
     },
     {
       accessorKey: "userEmail",
