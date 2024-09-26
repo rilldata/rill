@@ -621,7 +621,11 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	return err
 }
 
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+func (c *connection) CanScaleToZero() bool {
+	return false
+}
+
+func (c *connection) ScaledToZero(ctx context.Context) bool {
 	return false
 }
 

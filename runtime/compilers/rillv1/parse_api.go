@@ -102,6 +102,9 @@ type DataYAML struct {
 	Args           map[string]any `yaml:"args"`
 	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus map[string]any `yaml:"resource_status"`
+
+	// If skip_idle_olap is set to true then no OLAP query will be triggered if the underlying OLAP is in idle state(scaled to zero).
+	SkipIdleOLAP bool `yaml:"skip_idle_olap"`
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -112,6 +115,7 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 	var resolver string
 	var refs []ResourceName
 	resolverProps := make(map[string]any)
+	resolverProps["skip_idle_olap"] = raw.SkipIdleOLAP
 
 	// Handle basic SQL resolver
 	if raw.SQL != "" {

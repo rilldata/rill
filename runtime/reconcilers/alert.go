@@ -167,14 +167,15 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Evaluate the trigger time of the alert. If triggered by schedule, we use the "clean" scheduled time.
 	// Note: Correction for watermarks and intervals is done in checkAlert.
 	var triggerTime time.Time
-	if scheduleTrigger && !adhocTrigger && !specHashTrigger && !refsTrigger {
+	onlyScheduledTrigger := scheduleTrigger && !adhocTrigger && !specHashTrigger && !refsTrigger
+	if onlyScheduledTrigger {
 		triggerTime = a.State.NextRunOn.AsTime()
 	} else {
 		triggerTime = time.Now()
 	}
 
 	// Run alert queries and send notifications
-	executeErr := r.executeAll(ctx, self, a, triggerTime, adhocTrigger)
+	executeErr := r.executeAll(ctx, self, a, triggerTime, adhocTrigger, onlyScheduledTrigger)
 
 	// If we were cancelled, exit without updating any other trigger-related state.
 	// NOTE: We don't set Retrigger here because we'll leave re-scheduling to whatever cancelled the reconciler.
@@ -376,7 +377,20 @@ func (r *AlertReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 
 // executeAll runs queries and (maybe) sends notifications for the alert. It also adds entries to a.State.ExecutionHistory.
 // By default, an alert is checked once for the current watermark, but if a.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
-func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger bool) error {
+func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger, onlyScheduledTrigger bool) error {
+	// Skip if OLAP is in idle state and alerts are configured to skip
+	if onlyScheduledTrigger {
+		err := r.validateOLAPState(ctx, self)
+		if err != nil {
+			skipErr := &skipError{}
+			if !errors.As(err, skipErr) {
+				return err
+			}
+			r.C.Logger.Info("Skipped alert check", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason))
+			return nil
+		}
+	}
+
 	// Enforce timeout
 	timeout := alertCheckDefaultTimeout
 	if a.Spec.TimeoutSeconds > 0 {
@@ -824,6 +838,42 @@ func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []
 	}
 
 	return t, !t.IsZero(), nil
+}
+
+func (r *AlertReconciler) validateOLAPState(ctx context.Context, self *runtimev1.Resource) error {
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return err
+	}
+
+	if !cfg.AlertsSkipCheckOnIdleOLAP {
+		return nil
+	}
+
+	var mvSpec *runtimev1.MetricsViewSpec
+	for _, ref := range self.Meta.Refs {
+		if ref.Kind != runtime.ResourceKindMetricsView {
+			continue
+		}
+		mv, err := r.C.Get(ctx, ref, false)
+		if err != nil {
+			return err
+		}
+		mvSpec = mv.GetMetricsView().State.ValidSpec
+	}
+	if mvSpec == nil {
+		return nil
+	}
+
+	olap, release, err := r.C.AcquireOLAP(ctx, mvSpec.Connector)
+	if err != nil {
+		return err
+	}
+	defer release()
+	if olap.ScaledToZero(ctx) {
+		return skipError{reason: "OLAP is scaled to zero and `rill.alerts.skip_check_on_idle_olap` is set to true"}
+	}
+	return nil
 }
 
 // calculateAlertExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
