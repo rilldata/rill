@@ -2,7 +2,7 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { Trash2Icon, UserCogIcon } from "lucide-svelte";
+  import { Trash2Icon, UserCogIcon, UserMinusIcon } from "lucide-svelte";
   import DeleteUserGroupConfirmDialog from "./DeleteUserGroupConfirmDialog.svelte";
 
   export let name: string;
@@ -10,6 +10,7 @@
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
+  export let onRevokeRole: (groupName: string) => void;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
@@ -20,6 +21,10 @@
 
   function handleUpdateRole(role: string) {
     onSetRole(name, role);
+  }
+
+  function handleRevokeRole() {
+    onRevokeRole(name);
   }
 </script>
 
@@ -66,6 +71,13 @@
           </DropdownMenu.CheckboxItem>
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={handleRevokeRole}
+      >
+        <UserMinusIcon size="12px" />
+        <span class="ml-2">Revoke role</span>
+      </DropdownMenu.Item>
     {:else}
       <DropdownMenu.Sub>
         <DropdownMenu.SubTrigger class="font-normal flex items-center">
@@ -115,7 +127,6 @@
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
     {/if}
-
     <DropdownMenu.Item
       class="font-normal flex items-center"
       type="destructive"
