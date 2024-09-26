@@ -3,6 +3,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     V1Resource,
@@ -10,10 +11,9 @@
   } from "@rilldata/web-common/runtime-client";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtime } from "../../../../runtime-client/runtime-store";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { Reference } from "../utils/get-table-references";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
-  import type { Reference } from "../../utils/get-table-references";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let referencedThings: [V1Resource, Reference][];
   export let modelHasError: boolean;
