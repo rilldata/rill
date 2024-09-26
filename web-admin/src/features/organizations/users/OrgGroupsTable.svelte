@@ -115,7 +115,7 @@
   const table = createSvelteTable(options);
 </script>
 
-<div class="list overflow-x-auto">
+<div class="overflow-x-auto">
   <table class="w-full">
     <thead>
       {#each $table.getHeaderGroups() as headerGroup}
