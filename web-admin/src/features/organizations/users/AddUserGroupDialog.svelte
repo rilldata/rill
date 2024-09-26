@@ -15,24 +15,24 @@
 
   export let open = false;
   export let groupName: string;
-  export let onRename: (groupName: string, newName: string) => void;
+  export let onCreate: (newName: string) => void;
 
-  let newName: string;
+  let apiError: string;
 
-  const formId = "rename-user-group-form";
+  const formId = "add-user-group-form";
 
   const initialValues = {
-    newName: groupName,
+    newName: "",
   };
 
   const schema = yup(
     object({
       newName: string()
-        .required("New user group name is required")
-        .min(3, "New user group name must be at least 3 characters")
+        .required("User group name is required")
+        .min(3, "User group name must be at least 3 characters")
         .matches(
           /^[a-z0-9]+(-[a-z0-9]+)*$/,
-          "New user group name must be lowercase and can contain letters, numbers, and hyphens (slug)",
+          "User group name must be lowercase and can contain letters, numbers, and hyphens (slug)",
         ),
     }),
   );
@@ -47,7 +47,7 @@
         const values = form.data;
 
         try {
-          await onRename(groupName, values.newName);
+          await onCreate(values.newName);
           open = false;
         } catch (error) {
           console.error(error);
@@ -56,9 +56,11 @@
     },
   );
 
-  function onNewNameInput(e: any) {
-    newName = e.target.value;
+  function onUserGroupNameInput(e: any) {
+    groupName = e.target.value;
   }
+
+  $: console.log($errors);
 </script>
 
 <Dialog
@@ -66,6 +68,12 @@
   onOutsideClick={(e) => {
     e.preventDefault();
     open = false;
+    groupName = "";
+  }}
+  onOpenChange={(open) => {
+    if (!open) {
+      groupName = "";
+    }
   }}
 >
   <DialogTrigger asChild>
@@ -73,7 +81,7 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
-      <DialogTitle>Rename user group</DialogTitle>
+      <DialogTitle>Add user group</DialogTitle>
     </DialogHeader>
     <DialogFooter class="mt-4">
       <form
@@ -85,19 +93,19 @@
         <div class="flex flex-col gap-2 w-full">
           <Input
             bind:value={$form.newName}
-            placeholder="New user group name"
+            placeholder="User group name"
             errors={$errors.newName}
-            on:input={onNewNameInput}
+            on:input={onUserGroupNameInput}
             alwaysShowError
           />
           <Button
             type="primary"
             large
-            disabled={$submitting || $form.newName.trim() === groupName}
+            disabled={$submitting || $form.newName.trim() === ""}
             form={formId}
             submitForm
           >
-            Rename
+            Create
           </Button>
         </div>
       </form>

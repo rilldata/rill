@@ -15,16 +15,16 @@
       header: "User",
     },
     {
+      accessorKey: "userEmail",
+      header: "Email",
+    },
+    {
       accessorKey: "roleName",
       header: "Role",
       cell: ({ row }) => {
         if (!row.original.roleName) return "-";
         return capitalize(row.original.roleName);
       },
-    },
-    {
-      accessorKey: "userEmail",
-      header: "Email",
     },
     {
       accessorKey: "createdOn",

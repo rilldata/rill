@@ -16,18 +16,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Plus } from "lucide-svelte";
-  import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import AddUserGroupDialog from "@rilldata/web-admin/features/organizations/users/AddUserGroupDialog.svelte";
 
   let userGroupName = "";
-  let open = false;
+  let isAddUserGroupDialogOpen = false;
 
   $: organization = $page.params.organization;
   $: organizationMemberUserGroups =
@@ -43,16 +35,12 @@
   const revokeUserGroupRole =
     createAdminServiceRemoveOrganizationMemberUsergroup();
 
-  function onUserGroupNameInput(e: any) {
-    userGroupName = e.target.value;
-  }
-
-  async function handleCreate() {
+  async function handleCreate(newName: string) {
     try {
       await $createUserGroup.mutateAsync({
         organization: organization,
         data: {
-          name: userGroupName,
+          name: newName,
         },
       });
 
@@ -61,7 +49,7 @@
       );
 
       userGroupName = "";
-      open = false;
+      isAddUserGroupDialogOpen = false;
 
       eventBus.emit("notification", { message: "User group created" });
     } catch (error) {
@@ -202,37 +190,20 @@
         onSetRole={handleSetRole}
         onRevokeRole={handleRevokeRole}
       />
-      <Button type="primary" large on:click={() => (open = true)}
-        ><Plus size="16px" />
-        <span>Add user group</span></Button
+      <Button
+        type="primary"
+        large
+        on:click={() => (isAddUserGroupDialogOpen = true)}
       >
+        <Plus size="16px" />
+        <span>Add user group</span>
+      </Button>
     </div>
   {/if}
 </div>
 
-<Dialog
-  bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-  }}
->
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
-  </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
-    <DialogHeader>
-      <DialogTitle>Add user group</DialogTitle>
-    </DialogHeader>
-    <DialogFooter class="mt-4">
-      <div class="flex flex-col gap-2 w-full">
-        <Input
-          bind:value={userGroupName}
-          placeholder="User group name"
-          on:input={onUserGroupNameInput}
-        />
-        <Button type="primary" large on:click={handleCreate}>Create</Button>
-      </div>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<AddUserGroupDialog
+  bind:open={isAddUserGroupDialogOpen}
+  groupName={userGroupName}
+  onCreate={handleCreate}
+/>
