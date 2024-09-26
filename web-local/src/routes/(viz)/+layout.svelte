@@ -64,9 +64,9 @@
     <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
       PREVIEW
     </span>
-    {#if route.id?.includes("dashboard") && metricsViewName}
-      <StateManagersProvider {metricsViewName} exploreName={metricsViewName}>
-        <DashboardCtAs exploreName={metricsViewName} />
+    {#if route.id?.includes("explore") && metricsViewName}
+      <StateManagersProvider {metricsViewName} exploreName={dashboardName}>
+        <DashboardCtAs {metricsViewName} />
       </StateManagersProvider>
     {/if}
   </header>
