@@ -25,6 +25,9 @@
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import { featureFlags } from "../feature-flags";
+
+  const { visualEditing } = featureFlags;
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -101,7 +104,8 @@
     if (newRoute) await goto(newRoute);
   }
 
-  let selectedView: "code" | "viz" = "viz";
+  let selectedView: "viz" | "code" = "code";
+  $: selectedView = $visualEditing ? "viz" : "code";
 
   $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
@@ -123,7 +127,9 @@
 
       <DeployDashboardCta />
       <LocalAvatarButton />
-      <ViewSelector split={false} bind:selectedView />
+      {#if $visualEditing}
+        <ViewSelector split={false} bind:selectedView />
+      {/if}
     </div>
   </WorkspaceHeader>
 
