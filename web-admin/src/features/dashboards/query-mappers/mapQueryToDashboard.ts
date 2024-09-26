@@ -9,7 +9,7 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewTimeRange,
@@ -84,7 +84,7 @@ export function mapQueryToDashboard(
 
   return derived(
     [
-      useValidExplore(instanceId, exploreName),
+      useExploreValidSpec(instanceId, exploreName),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
         get(runtime).instanceId,

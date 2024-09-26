@@ -4,7 +4,7 @@ import {
   AD_BIDS_INIT_MEASURES,
   AD_BIDS_NAME,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { ValidExploreResponse } from "@rilldata/web-common/features/explores/selectors";
+import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -63,12 +63,12 @@ export function createMetricsMetaQueryMock(
 export function createValidSpecQueryMock(
   metricsView = AD_BIDS_NAME,
   shouldInit = true,
-): CreateQueryResult<ValidExploreResponse, RpcStatus> & {
+): CreateQueryResult<ExploreValidSpecResponse, RpcStatus> & {
   setMeasures: (measures: Array<MetricsViewSpecMeasureV2>) => void;
   setDimensions: (dimensions: Array<MetricsViewSpecDimensionV2>) => void;
 } {
   const { update, subscribe } = writable<
-    QueryObserverResult<ValidExploreResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   >({
     data: undefined,
     isSuccess: false,

@@ -4,9 +4,18 @@ import {
 } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
+  getPersistentDashboardStore,
+  initPersistentDashboardStore,
+} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_COUNTRY_DIMENSION,
   AD_BIDS_DOMAIN_DIMENSION,
+  AD_BIDS_EXPLORE_NAME,
+  AD_BIDS_EXPLORE_WITH_DELETED_DIMENSION,
+  AD_BIDS_EXPLORE_WITH_DELETED_MEASURE,
+  AD_BIDS_EXPLORE_WITH_THREE_DIMENSIONS,
+  AD_BIDS_EXPLORE_WITH_THREE_MEASURES,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_INIT_DIMENSIONS,
   AD_BIDS_INIT_MEASURES,
@@ -16,16 +25,7 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_THREE_DIMENSIONS,
   AD_BIDS_THREE_MEASURES,
-  AD_BIDS_EXPLORE_WITH_DELETED_MEASURE,
-  AD_BIDS_EXPLORE_WITH_THREE_MEASURES,
-  AD_BIDS_EXPLORE_WITH_DELETED_DIMENSION,
-  AD_BIDS_EXPLORE_WITH_THREE_DIMENSIONS,
-  AD_BIDS_EXPLORE_NAME,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import {
-  getPersistentDashboardStore,
-  initPersistentDashboardStore,
-} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
   assertVisiblePartsOfMetricsView,
   createAdBidsMirrorInStore,
@@ -33,7 +33,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { createValidSpecQueryMock } from "@rilldata/web-common/features/dashboards/stores/test-data/query-mocks";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import { ValidExploreResponse } from "@rilldata/web-common/features/explores/selectors";
+import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -380,7 +380,7 @@ describe("Show/Hide Selectors", () => {
 });
 
 function assertVisiblePartsWithMirroring(
-  validSpec: ValidExploreResponse,
+  validSpec: ExploreValidSpecResponse,
   measures: Array<string> | undefined,
   dimensions: Array<string> | undefined,
 ) {

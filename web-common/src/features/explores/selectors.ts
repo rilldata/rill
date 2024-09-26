@@ -27,26 +27,26 @@ export function useExplore(
   );
 }
 
-export type ValidExploreResponse = {
+export type ExploreValidSpecResponse = {
   explore: V1ExploreSpec | undefined;
   metricsView: V1MetricsViewSpec | undefined;
 };
-export function useValidExplore(
+export function useExploreValidSpec(
   instanceId: string,
   exploreName: string,
   queryOptions?: CreateQueryOptions<
     V1GetExploreResponse,
     ErrorType<RpcStatus>,
-    ValidExploreResponse
+    ExploreValidSpecResponse
   >,
 ) {
   const defaultQueryOptions: CreateQueryOptions<
     V1GetExploreResponse,
     ErrorType<RpcStatus>,
-    ValidExploreResponse
+    ExploreValidSpecResponse
   > = {
     select: (data) =>
-      <ValidExploreResponse>{
+      <ExploreValidSpecResponse>{
         explore: data.explore?.explore?.state?.validSpec,
         metricsView: data.metricsView?.metricsView?.state?.validSpec,
       },

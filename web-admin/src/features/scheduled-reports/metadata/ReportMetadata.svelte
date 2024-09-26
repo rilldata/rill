@@ -5,7 +5,7 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import CreateScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -36,7 +36,7 @@
 
   // Get dashboard
   $: dashboardName = useReportDashboardName($runtime.instanceId, report);
-  $: dashboard = useValidExplore($runtime.instanceId, $dashboardName.data);
+  $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
   $: dashboardTitle = $dashboard.data?.explore?.title || $dashboardName.data;
 
   // Get human-readable frequency

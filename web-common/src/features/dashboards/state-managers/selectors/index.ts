@@ -1,6 +1,6 @@
 import { chartSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
 import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
-import { ValidExploreResponse } from "@rilldata/web-common/features/explores/selectors";
+import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type {
   RpcStatus,
   V1MetricsViewTimeRangeResponse,
@@ -25,7 +25,7 @@ import type { ReadablesObj, SelectorFnsObj } from "./types";
 export type DashboardDataReadables = {
   dashboardStore: Readable<MetricsExplorerEntity>;
   validSpecStore: Readable<
-    QueryObserverResult<ValidExploreResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   >;
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>

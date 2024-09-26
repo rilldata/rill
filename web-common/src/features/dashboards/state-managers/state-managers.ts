@@ -8,8 +8,8 @@ import {
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
-  ValidExploreResponse,
-  useValidExplore,
+  ExploreValidSpecResponse,
+  useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
 import {
   V1MetricsViewTimeRangeResponse,
@@ -44,7 +44,7 @@ export type StateManagers = {
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
   validSpecStore: Readable<
-    QueryObserverResult<ValidExploreResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   >;
   queryClient: QueryClient;
   updateDashboard: DashboardCallbackExecutor;
@@ -94,9 +94,11 @@ export function createStateManagers({
   );
 
   const validSpecStore: Readable<
-    QueryObserverResult<ValidExploreResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   > = derived([runtime, exploreNameStore], ([r, exploreName], set) =>
-    useValidExplore(r.instanceId, exploreName, { queryClient }).subscribe(set),
+    useExploreValidSpec(r.instanceId, exploreName, { queryClient }).subscribe(
+      set,
+    ),
   );
 
   const timeRangeSummaryStore: Readable<

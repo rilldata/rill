@@ -15,7 +15,7 @@ import {
   AD_BIDS_SCHEMA,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { ValidExploreResponse } from "@rilldata/web-common/features/explores/selectors";
+import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   V1ExploreSpec,
@@ -72,7 +72,7 @@ export function createDashboardState(
 export function createAdBidsMirrorInStore({
   metricsView,
   explore,
-}: ValidExploreResponse) {
+}: ExploreValidSpecResponse) {
   const proto =
     get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].proto ?? "";
   // actual url is not relevant here

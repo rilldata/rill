@@ -8,7 +8,7 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
@@ -28,7 +28,7 @@
     ...(data.explore.meta?.filePaths ?? []),
     ...(data.metricsView.meta?.filePaths ?? []),
   ];
-  $: explore = useValidExplore(instanceId, exploreName);
+  $: explore = useExploreValidSpec(instanceId, exploreName);
   $: measures = $explore.data?.explore?.measures ?? [];
   $: projectParserQuery = useProjectParser(queryClient, instanceId, {
     enabled: $selectedMockUserStore?.admin,

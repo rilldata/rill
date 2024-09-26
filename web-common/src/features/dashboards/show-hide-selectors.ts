@@ -6,7 +6,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { ValidExploreResponse } from "@rilldata/web-common/features/explores/selectors";
+import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -30,7 +30,7 @@ export type ShowHideSelectorStore = Readable<ShowHideSelectorState> &
 function createShowHideStore<Item>(
   exploreName: string,
   validSpecStore: Readable<
-    QueryObserverResult<ValidExploreResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   >,
   type: "dimensions" | "measures",
   labelSelector: (i: Item) => string,
@@ -138,7 +138,7 @@ function createShowHideStore<Item>(
 export function createShowHideMeasuresStore(
   exploreName: string,
   validSpecStore: Readable<
-    QueryObserverResult<ValidExploreResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   >,
 ) {
   return createShowHideStore<MetricsViewSpecMeasureV2>(
@@ -157,7 +157,7 @@ export function createShowHideMeasuresStore(
 export function createShowHideDimensionsStore(
   exploreName: string,
   validSpecStore: Readable<
-    QueryObserverResult<ValidExploreResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   >,
 ) {
   return createShowHideStore<MetricsViewSpecDimensionV2>(

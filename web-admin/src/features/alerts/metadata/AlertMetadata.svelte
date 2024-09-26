@@ -22,7 +22,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
     type V1MetricsViewAggregationRequest,
@@ -39,7 +39,7 @@
 
   // Get dashboard
   $: dashboardName = useAlertDashboardName($runtime.instanceId, alert);
-  $: dashboard = useValidExplore($runtime.instanceId, $dashboardName.data);
+  $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
   $: metricsViewName = $dashboard.data?.explore?.metricsView;
   $: dashboardTitle = $dashboard.data?.explore?.title || $dashboardName.data;
   $: dashboardDoesNotExist = $dashboard.error?.response?.status === 404;

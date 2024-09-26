@@ -6,7 +6,7 @@ The main feature-set component for dashboard filters
   import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
   import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-  import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     V1Expression,
@@ -25,7 +25,7 @@ The main feature-set component for dashboard filters
   export let timeRange: V1TimeRange | undefined;
   export let comparisonTimeRange: V1TimeRange | undefined = undefined;
 
-  $: validExploreSpecs = useValidExplore($runtime.instanceId, exploreName);
+  $: validExploreSpecs = useExploreValidSpec($runtime.instanceId, exploreName);
 
   // Get dimension filters
   $: dimensions = allDimensions({

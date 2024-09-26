@@ -10,7 +10,7 @@ import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboard
 import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { useValidExplore } from "@rilldata/web-common/features/explores/selectors";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
@@ -45,7 +45,7 @@ export function getBookmarks(
   return derived(
     [
       useProjectId(orgName, projectName),
-      useValidExplore(instanceId, exploreName),
+      useExploreValidSpec(instanceId, exploreName),
       createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
       createAdminServiceGetCurrentUser(),
     ],
@@ -158,7 +158,7 @@ export function getPrettySelectedTimeRange(
 ): Readable<string> {
   return derived(
     [
-      useValidExplore(instanceId, exploreName),
+      useExploreValidSpec(instanceId, exploreName),
       useMetricsViewTimeRange(instanceId, metricsViewName, {
         query: { queryClient },
       }),
