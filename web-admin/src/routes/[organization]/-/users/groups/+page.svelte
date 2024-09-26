@@ -6,6 +6,7 @@
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
     createAdminServiceRemoveOrganizationMemberUsergroup,
+    createAdminServiceRenameUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
@@ -34,6 +35,7 @@
 
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
+  const renameUserGroup = createAdminServiceRenameUsergroup();
   const deleteUserGroup = createAdminServiceDeleteUsergroup();
   const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
   const setUserGroupRole =
@@ -65,6 +67,29 @@
     } catch (error) {
       eventBus.emit("notification", {
         message: "Error creating user group",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleRename(groupName: string, newName: string) {
+    try {
+      await $renameUserGroup.mutateAsync({
+        organization: organization,
+        usergroup: groupName,
+        data: {
+          name: newName,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group renamed" });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error renaming user group",
         type: "error",
       });
     }
@@ -171,6 +196,7 @@
     <div class="flex flex-col gap-4">
       <OrgGroupsTable
         data={$organizationMemberUserGroups.data.members}
+        onRename={handleRename}
         onDelete={handleDelete}
         onAddRole={handleAddRole}
         onSetRole={handleSetRole}

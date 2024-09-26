@@ -10,6 +10,7 @@
   } from "@rilldata/web-common/components/table/utils";
 
   export let data: V1MemberUsergroup[];
+  export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
@@ -52,6 +53,7 @@
         flexRender(OrgGroupsActionsCell, {
           name: row.original.groupName,
           role: row.original.roleName,
+          onRename: onRename,
           onDelete: onDelete,
           onAddRole: onAddRole,
           onSetRole: onSetRole,
