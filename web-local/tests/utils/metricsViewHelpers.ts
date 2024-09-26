@@ -4,7 +4,7 @@ import { clickMenuButton, openFileNavEntryContextMenu } from "./commonHelpers";
 
 export async function createMetricsViewFromSource(
   page: Page,
-  sourcePath: string,
+  sourcePath = "/sources/AdBids.yaml",
 ) {
   await openFileNavEntryContextMenu(page, sourcePath);
   await clickMenuButton(page, "Generate metrics");
@@ -12,7 +12,7 @@ export async function createMetricsViewFromSource(
 
 export async function createMetricsViewFromModel(
   page: Page,
-  modelPath: string,
+  modelPath = "/models/AdBids_model.sql",
 ) {
   await openFileNavEntryContextMenu(page, modelPath);
   await clickMenuButton(page, "Generate metrics");

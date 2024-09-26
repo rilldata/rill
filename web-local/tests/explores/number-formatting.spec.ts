@@ -21,8 +21,6 @@ test.describe("smoke tests for number formatting", () => {
     const formatterFlowDashboard = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 title: "AdBids_model_dashboard"
 model: "AdBids_model"
-default_time_range: ""
-smallest_time_grain: ""
 timeseries: "timestamp"
 measures:
 - label: humanized default

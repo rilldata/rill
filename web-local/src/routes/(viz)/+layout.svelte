@@ -66,7 +66,7 @@
     </span>
     {#if route.id?.includes("explore") && metricsViewName}
       <StateManagersProvider {metricsViewName} exploreName={dashboardName}>
-        <DashboardCtAs {metricsViewName} exploreName={dashboardName} />
+        <DashboardCtAs exploreName={dashboardName} />
       </StateManagersProvider>
     {/if}
   </header>
