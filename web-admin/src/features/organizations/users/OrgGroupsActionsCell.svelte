@@ -37,30 +37,33 @@
           <span class="ml-2">Update role</span>
         </DropdownMenu.SubTrigger>
         <DropdownMenu.SubContent>
-          <DropdownMenu.Item
+          <DropdownMenu.CheckboxItem
             class="font-normal flex items-center"
+            checked={role === "admin"}
             on:click={() => {
               handleUpdateRole("admin");
             }}
           >
             <span>Admin</span>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
+          </DropdownMenu.CheckboxItem>
+          <DropdownMenu.CheckboxItem
             class="font-normal flex items-center"
+            checked={role === "viewer"}
             on:click={() => {
               handleUpdateRole("viewer");
             }}
           >
             <span>Viewer</span>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
+          </DropdownMenu.CheckboxItem>
+          <DropdownMenu.CheckboxItem
             class="font-normal flex items-center"
+            checked={role === "collaborator"}
             on:click={() => {
               handleUpdateRole("collaborator");
             }}
           >
             <span>Collaborator</span>
-          </DropdownMenu.Item>
+          </DropdownMenu.CheckboxItem>
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
     {:else}
@@ -70,30 +73,45 @@
           <span class="ml-2">Assign a role</span>
         </DropdownMenu.SubTrigger>
         <DropdownMenu.SubContent>
-          <DropdownMenu.Item
+          <svelte:component
+            this={role !== undefined
+              ? DropdownMenu.Item
+              : DropdownMenu.CheckboxItem}
             class="font-normal flex items-center"
             on:click={() => {
-              handleAssignRole("admin");
+              role !== undefined
+                ? handleUpdateRole("admin")
+                : handleAssignRole("admin");
             }}
           >
             <span>Admin</span>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
+          </svelte:component>
+          <svelte:component
+            this={role !== undefined
+              ? DropdownMenu.Item
+              : DropdownMenu.CheckboxItem}
             class="font-normal flex items-center"
             on:click={() => {
-              handleAssignRole("viewer");
+              role !== undefined
+                ? handleUpdateRole("viewer")
+                : handleAssignRole("viewer");
             }}
           >
             <span>Viewer</span>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
+          </svelte:component>
+          <svelte:component
+            this={role !== undefined
+              ? DropdownMenu.Item
+              : DropdownMenu.CheckboxItem}
             class="font-normal flex items-center"
             on:click={() => {
-              handleAssignRole("collaborator");
+              role !== undefined
+                ? handleUpdateRole("collaborator")
+                : handleAssignRole("collaborator");
             }}
           >
             <span>Collaborator</span>
-          </DropdownMenu.Item>
+          </svelte:component>
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
     {/if}
