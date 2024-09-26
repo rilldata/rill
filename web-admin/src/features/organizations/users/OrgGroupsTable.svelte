@@ -17,8 +17,10 @@
     SortingState,
     TableOptions,
   } from "@tanstack/svelte-table";
+  import OrgGroupsAction from "./OrgGroupsAction.svelte";
 
   export let data: V1MemberUsergroup[];
+  export let onDelete: (deletedGroupId: string) => void;
 
   let sorting: SortingState = [];
 
@@ -76,6 +78,16 @@
         if (!row.original.updatedOn) return "-";
         return formatDate(row.original.updatedOn);
       },
+    },
+    {
+      accessorKey: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row }) =>
+        flexRender(OrgGroupsAction, {
+          id: row.original.groupId,
+          onDelete: onDelete,
+        }),
     },
   ];
 

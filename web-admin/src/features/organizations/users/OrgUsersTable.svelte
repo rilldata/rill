@@ -85,6 +85,7 @@
         return formatDate(row.original.updatedOn);
       },
     },
+    // TODO: add actions column
   ];
 
   const options = writable<TableOptions<V1MemberUser>>({
