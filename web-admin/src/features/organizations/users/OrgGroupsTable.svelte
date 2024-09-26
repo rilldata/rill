@@ -20,7 +20,7 @@
   import OrgGroupsAction from "./OrgGroupsAction.svelte";
 
   export let data: V1MemberUsergroup[];
-  export let onDelete: (deletedGroupId: string) => void;
+  export let onDelete: (deletedGroupName: string) => void;
 
   let sorting: SortingState = [];
 
@@ -85,7 +85,7 @@
       enableSorting: false,
       cell: ({ row }) =>
         flexRender(OrgGroupsAction, {
-          id: row.original.groupId,
+          name: row.original.groupName,
           onDelete: onDelete,
         }),
     },
@@ -105,7 +105,7 @@
   const table = createSvelteTable(options);
 </script>
 
-<div class="list">
+<div class="list overflow-x-auto">
   <table class="w-full">
     <thead>
       {#each $table.getHeaderGroups() as headerGroup}
@@ -120,7 +120,7 @@
                 <div
                   class:cursor-pointer={header.column.getCanSort()}
                   class:select-none={header.column.getCanSort()}
-                  class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
+                  class="font-semibold text-gray-500 flex flex-row items-center gap-x-1 truncate"
                 >
                   <svelte:component
                     this={flexRender(
@@ -149,7 +149,7 @@
         <tr>
           {#each row.getVisibleCells() as cell}
             <td
-              class={`px-4 py-2 ${cell.column.id === "actions" ? "w-1" : ""}`}
+              class={`px-4 py-2 truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
               data-label={cell.column.columnDef.header}
             >
               <svelte:component
