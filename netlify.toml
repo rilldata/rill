@@ -7,7 +7,7 @@
       script-src 'self' https: 'unsafe-inline' 'unsafe-eval' *.usepylon.com *.posthog.com *.pusher.com; \
       style-src https: 'unsafe-inline'; \
       img-src https: data: blob:; \
-      frame-src 'self' https://www.youtube.com/ blob: data:; \
+      frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com blob: data:; \
       frame-ancestors *; \
       object-src 'none'; \
       connect-src https: *.usepylon.com *.posthog.com wss://*.pusher.com; \
