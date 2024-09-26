@@ -20,7 +20,7 @@
     />
   {:else if $organizationMemberUsers.isError}
     <div class="text-red-500">
-      Error loading public URLs: {$organizationMemberUsers.error}
+      Error loading organization members: {$organizationMemberUsers.error}
     </div>
   {:else if $organizationMemberUsers.isSuccess}
     <OrgUsersTable data={$organizationMemberUsers.data.members} />

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
 
   import { writable } from "svelte/store";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
@@ -18,7 +18,7 @@
     TableOptions,
   } from "@tanstack/svelte-table";
 
-  export let data: V1MemberUser[];
+  export let data: V1MemberUsergroup[];
 
   let sorting: SortingState = [];
 
@@ -48,18 +48,18 @@
     }));
   };
 
-  const columns: ColumnDef<V1MemberUser, any>[] = [
+  const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
-      accessorKey: "userName",
-      header: "User",
+      accessorKey: "groupName",
+      header: "Name",
     },
     {
       accessorKey: "roleName",
       header: "Role",
-    },
-    {
-      accessorKey: "userEmail",
-      header: "Email",
+      cell: ({ row }) => {
+        if (!row.original.roleName) return "-";
+        return row.original.roleName;
+      },
     },
     {
       accessorKey: "createdOn",
@@ -79,7 +79,7 @@
     },
   ];
 
-  const options = writable<TableOptions<V1MemberUser>>({
+  const options = writable<TableOptions<V1MemberUsergroup>>({
     data: data,
     columns: columns,
     state: {
