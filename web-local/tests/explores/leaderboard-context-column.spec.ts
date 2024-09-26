@@ -1,5 +1,10 @@
 import { expect } from "@playwright/test";
+import {
+  AD_BIDS_EXPLORE_PATH,
+  AD_BIDS_METRICS_PATH,
+} from "web-local/tests/utils/dataSpecifcHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
+import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { clickMenuButton } from "../utils/commonHelpers";
 import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { test } from "../utils/test";
@@ -10,6 +15,8 @@ test.describe("leaderboard context column", () => {
 
   test("Leaderboard context column", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
+
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
     // reset metrics, and add a metric with `valid_percent_of_total: true`
     const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
@@ -41,6 +48,7 @@ test.describe("leaderboard context column", () => {
       description: ""
       `;
     await watcher.updateAndWaitForDashboard(metricsWithValidPercentOfTotal);
+    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
 
     async function clickMenuItem(itemName: string, wait = true) {
       await clickMenuButton(page, itemName, "option");

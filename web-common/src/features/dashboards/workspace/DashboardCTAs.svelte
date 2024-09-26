@@ -43,7 +43,7 @@
   <GlobalDimensionSearch />
   {#if !$readOnly}
     <Button href={`/files${filePath}`} type="secondary">
-      Edit Metrics <MetricsIcon size="16px" />
+      Edit Explore <MetricsIcon size="16px" />
     </Button>
     <DeployDashboardCta />
     <LocalAvatarButton />

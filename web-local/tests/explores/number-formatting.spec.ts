@@ -1,7 +1,12 @@
 import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
+import {
+  AD_BIDS_EXPLORE_PATH,
+  AD_BIDS_METRICS_PATH,
+} from "web-local/tests/utils/dataSpecifcHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { expect } from "@playwright/test";
+import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../utils/test";
 
 test.describe("smoke tests for number formatting", () => {
@@ -9,6 +14,8 @@ test.describe("smoke tests for number formatting", () => {
 
   test("smoke tests for number formatting", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
+
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
     // This is a metrics spec with all available formatting options
     const formatterFlowDashboard = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
@@ -65,6 +72,7 @@ dimensions:
 
     // update the code editor with the new spec
     await watcher.updateAndWaitForDashboard(formatterFlowDashboard);
+    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
 
     const previewButton = page.getByRole("button", { name: "Preview" });
 

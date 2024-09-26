@@ -7,8 +7,8 @@ import { waitForFileNavEntry } from "web-local/tests/utils/waitHelpers";
 
 export async function createExploreFromSource(
   page: Page,
-  sourcePath: string,
-  metricsViewPath: string,
+  sourcePath = "/sources/AdBids.yaml",
+  metricsViewPath = "/metrics/AdBids_metrics.yaml",
 ) {
   await openFileNavEntryContextMenu(page, sourcePath);
   await clickMenuButton(page, "Generate metrics");
@@ -18,11 +18,15 @@ export async function createExploreFromSource(
 
 export async function createExploreFromModel(
   page: Page,
-  modelPath: string,
-  metricsViewPath: string,
+  modelPath = "/models/AdBids_model.sql",
+  metricsViewPath = "/metrics/AdBids_model_metrics.yaml",
+  explorePath = "/explore-dashboards/AdBids_model_metrics_explore.yaml",
 ) {
   await openFileNavEntryContextMenu(page, modelPath);
   await clickMenuButton(page, "Generate metrics");
   await waitForFileNavEntry(page, metricsViewPath, true);
-  await page.getByText("Create Explore dashboard").click();
+  await Promise.all([
+    waitForFileNavEntry(page, explorePath, true),
+    page.getByText("Create Explore dashboard").click(),
+  ]);
 }

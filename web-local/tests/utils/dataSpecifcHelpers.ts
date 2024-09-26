@@ -8,6 +8,10 @@ import { assertLeaderboards } from "web-local/tests/utils/metricsViewHelpers";
 import { createModel } from "./modelHelpers";
 import { uploadFile, waitForSource } from "./sourceHelpers";
 
+export const AD_BIDS_METRICS_PATH = "/metrics/AdBids_model_metrics.yaml";
+export const AD_BIDS_EXPLORE_PATH =
+  "/explore-dashboards/AdBids_model_metrics_explore.yaml";
+
 export async function createAdBidsModel(page: Page) {
   await Promise.all([
     waitForSource(page, "/sources/AdBids.yaml", [
