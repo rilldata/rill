@@ -1,13 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
+  import { CreateQueryResult } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
@@ -21,13 +22,13 @@
 
   export let sourcePath: string | null;
 
-  $: sourceName = extractFileName(sourcePath ?? "");
-
-  const queryClient = useQueryClient();
-
-  $: runtimeInstanceId = $runtime.instanceId;
   let fileArtifact: FileArtifact;
   let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
+
+  $: sourceName = extractFileName(sourcePath ?? "");
+
+  $: runtimeInstanceId = $runtime.instanceId;
+
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
     sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
@@ -67,33 +68,42 @@
   }
 </script>
 
-<Dialog on:close={close} open={!!sourcePath}>
-  <div class="flex flex-auto gap-x-2.5" slot="title">
-    <div class="w-6 m-auto ml-0 mr-0">
-      <CheckCircleNew className="fill-primary-500" size="24px" />
-    </div>
-    <div>Source imported successfully</div>
-  </div>
-  <div class="flex flex-auto gap-x-2.5" slot="body">
-    <div class="w-6" />
-    <div class="text-slate-500">
-      <span class="font-mono text-slate-800 break-all">{sourceName}</span> has been
-      ingested. What would you like to do next?
-    </div>
-  </div>
-  <div class="flex flex-row-reverse gap-x-2 mt-4" slot="footer">
-    <Button
-      disabled={createMetricsViewFromTable === null}
-      on:click={generateMetrics}
-      type="primary"
-    >
-      Generate metrics
+<AlertDialog.Root open={sourcePath !== null}>
+  <AlertDialog.Content>
+    <AlertDialog.Title>
+      <div class="flex gap-x-2.5 items-center">
+        <CheckCircleNew className="fill-primary-500" size="24px" />
+        Source imported successfully
+      </div>
+    </AlertDialog.Title>
 
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </Button>
-    <Button on:click={goToSource} type="secondary">View this source</Button>
-  </div>
-</Dialog>
+    <AlertDialog.Description>
+      <span class="font-mono text-slate-800 break-all ml-9">HEE HAW</span> has been
+      ingested. What would you like to do next?
+    </AlertDialog.Description>
+
+    <AlertDialog.Footer>
+      <AlertDialog.Action asChild let:builder>
+        <AlertDialog.Cancel asChild let:builder>
+          <Button builders={[builder]} on:click={goToSource} type="secondary">
+            View this source
+          </Button>
+        </AlertDialog.Cancel>
+
+        <Button
+          builders={[builder]}
+          disabled={createMetricsViewFromTable === null}
+          on:click={generateMetrics}
+          type="primary"
+        >
+          Generate metrics
+
+          {#if $ai}
+            with AI
+            <WandIcon class="w-3 h-3" />
+          {/if}
+        </Button>
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>

@@ -105,7 +105,7 @@ web-common/src/features/models/utils/embedded.ts: error TS18048
 web-common/src/features/models/utils/get-table-references/index.ts: error TS18048
 web-common/src/features/models/utils/get-table-references/index.ts: error TS2322
 web-common/src/features/models/utils/get-table-references/index.ts: error TS2532
-web-common/src/features/models/workspace/inspector/utils.ts: error TS18048
+web-common/src/features/models/inspector/utils.ts: error TS18048
 web-common/src/features/project/selectors.ts: error TS2345
 web-common/src/features/project/shorthand-title/index.spec.ts: error TS2345
 web-common/src/features/sources/createModel.ts: error TS2345

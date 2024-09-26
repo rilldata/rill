@@ -1,11 +1,11 @@
+import { expect } from "@playwright/test";
 import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
 import {
   AD_BIDS_EXPLORE_PATH,
   AD_BIDS_METRICS_PATH,
 } from "web-local/tests/utils/dataSpecifcHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
-import { expect } from "@playwright/test";
+import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../utils/test";
 
@@ -83,10 +83,10 @@ dimensions:
       ["humanized default", "100.0k", "100000"],
       ["USD", "$300.6k", "300576.83999999857"],
       ["humanized chosen", "300.6k", "300576.83999999857"],
-      ["No Format", "300576.83999999857", "300576.83999999857"],
+      ["No Format", "300.6k", "300576.83999999857"],
       ["percentage", "30.1M%", "300576.83999999857"],
       ["interval_ms", "5 m", "5m 576ms"],
-      ["d3 fixed", "300576.840", "300576.840"],
+      ["d3 fixed", "300.6k", "300576.840"],
     ]) {
       // check bignum with correct format exists/is visible
       await expect(

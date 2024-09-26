@@ -1,9 +1,9 @@
 <script lang="ts">
   import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
-  import InspectorHeaderGrid from "@rilldata/web-common/features/sources/inspector/InspectorHeaderGrid.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import InspectorHeaderGrid from "@rilldata/web-common/layout/inspector/InspectorHeaderGrid.svelte";
   import { formatInteger } from "@rilldata/web-common/lib/formatters";
   import {
     createQueryServiceTableCardinality,

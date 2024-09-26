@@ -4,6 +4,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getConnectorServiceOLAPListTablesQueryKey,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
+  getRuntimeServiceGetModelSplitsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1Resource,
@@ -178,6 +179,16 @@ export class WatchResourcesClient {
 
             // The following invalidations are only needed if the Source/Model has an active table
             if (!connectorName || !tableName) return;
+
+            // Invalidate the model splits query
+            if ((res.name.kind as ResourceKind) === ResourceKind.Model) {
+              void queryClient.invalidateQueries(
+                getRuntimeServiceGetModelSplitsQueryKey(
+                  this.instanceId,
+                  res.name.name,
+                ),
+              );
+            }
 
             // Invalidate profiling queries
             const failed = !!res.resource.meta?.reconcileError;
