@@ -15,7 +15,7 @@ export default function LoomVideo({ loomId }) {
         background: '#000',
       }}
     >
-      <iframe
+      <iframe credentialless="true"
         src={url}
         style={{
           position: 'absolute',
