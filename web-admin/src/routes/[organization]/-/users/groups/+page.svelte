@@ -7,6 +7,7 @@
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
     createAdminServiceListOrganizationMemberUsers,
+    createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveOrganizationMemberUsergroup,
     createAdminServiceRenameUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
@@ -40,9 +41,18 @@
     createAdminServiceRemoveOrganizationMemberUsergroup();
   const addUserGroupMember = createAdminServiceAddUsergroupMemberUser();
 
+  // $: console.log(
+  //   "$listOrganizationMemberUsers.data?.members: ",
+  //   $listOrganizationMemberUsers.data?.members,
+  // );
+
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    "test",
+  );
   $: console.log(
-    "$listOrganizationMemberUsers.data?.members: ",
-    $listOrganizationMemberUsers.data?.members,
+    "$listUsergroupMemberUsers.data?.members: ",
+    $listUsergroupMemberUsers.data?.members,
   );
 
   async function handleCreate(newName: string) {

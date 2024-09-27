@@ -43,7 +43,7 @@
     onAddUser(name, email);
   }
 
-  $: console.log("users: ", users);
+  // $: console.log("users: ", users);
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -145,28 +145,24 @@
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
     {/if}
-    {#if users && users.length > 0}
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger class="font-normal flex items-center">
-          <UserPlusIcon size="12px" />
-          <span class="ml-2">Add users</span>
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          {#each users as user}
-            <!-- TODO: can we get the users that are already in the group? -->
-            <!-- So we can use checkbox item here -->
-            <DropdownMenu.Item
-              class="font-normal flex items-center"
-              on:click={() => {
-                handleAddUsers(user.userEmail);
-              }}
-            >
-              <span>{user.userEmail}</span>
-            </DropdownMenu.Item>
-          {/each}
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-    {/if}
+    <!-- <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger class="font-normal flex items-center">
+        <UserPlusIcon size="12px" />
+        <span class="ml-2">Add users</span>
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent>
+        {#each users as user}
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              handleAddUsers(user.userEmail);
+            }}
+          >
+            <span>{user.userEmail}</span>
+          </DropdownMenu.Item>
+        {/each}
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub> -->
     <DropdownMenu.Item
       class="font-normal flex items-center"
       on:click={() => {
