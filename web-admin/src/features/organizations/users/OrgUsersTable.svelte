@@ -11,6 +11,7 @@
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
 
   export let data: V1MemberUser[];
+  export let currentUserEmail: string;
   export let onRemove: (email: string) => void;
   export let onSetRole: (email: string, role: string) => void;
 
@@ -23,6 +24,8 @@
         flexRender(OrgUsersTableUserCompositeCell, {
           name: row.original.userName,
           email: row.original.userEmail,
+          currentUserEmail: currentUserEmail,
+          isCurrentUser: row.original.userEmail === currentUserEmail,
         }),
     },
     {
@@ -57,6 +60,7 @@
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
           role: row.original.roleName,
+          isCurrentUser: row.original.userEmail === currentUserEmail,
           onRemove: onRemove,
           onSetRole: onSetRole,
         }),
