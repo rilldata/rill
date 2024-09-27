@@ -31,7 +31,6 @@
     "@connectrpc/connect": "^1.4.0",
     "@connectrpc/connect-web": "^1.4.0",
     "@replit/codemirror-indentation-markers": "^6.5.1",
-    "@rgossiaux/svelte-headlessui": "^2.0.0",
     "@rilldata/svelte-query": "^4.29.20-0.0.3",
     "@storybook/addon-actions": "7.6.13",
     "@storybook/addon-essentials": "^7.6.13",
