@@ -4,6 +4,8 @@ sidebar_label: User Groups
 sidebar_position: 22
 ---
 
+import ComingSoon from '@site/src/components/ComingSoon';
+
 ## Managing User groups 
 
 In Rill Cloud, access to projects can be granted via user groups via the CLI. 

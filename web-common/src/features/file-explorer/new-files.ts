@@ -165,6 +165,7 @@ items:
         content: "First Component"
         css:
           font-size: "40px"
+          background-color: "#fff"
     width: 4
     height: 3
     x: 2

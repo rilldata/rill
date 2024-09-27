@@ -18,6 +18,7 @@ export function useMockUsers(instanceId: string) {
           const yamlObj = parseDocument(data.blob, {
             logLevel: "error",
           })?.toJS();
+          console.log({ yamlObj });
           const mockUsers =
             yamlObj?.mock_users?.filter((user: MockUser) => user?.email) || [];
           return mockUsers as Array<MockUser>;

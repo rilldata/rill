@@ -1,8 +1,4 @@
 <script lang="ts">
-  import {
-    defaultChipColors,
-    excludeChipColors,
-  } from "@rilldata/web-common/components/chip/chip-types";
   import RemovableListChip from "../../../../components/chip/removable-list-chip/RemovableListChip.svelte";
   import { getFilterSearchList } from "../../selectors/index";
   import { getStateManagers } from "../../state-managers/state-managers";
@@ -40,10 +36,6 @@
       topListData.map((datum) => datum.dimensionValue as any) ?? [];
   }
 
-  function getColorForChip(isInclude: boolean) {
-    return isInclude ? defaultChipColors : excludeChipColors;
-  }
-
   function setOpen() {
     isOpen = true;
   }
@@ -55,7 +47,7 @@
 
 <RemovableListChip
   allValues={allValues[name]}
-  colors={getColorForChip(isInclude)}
+  type="dimension"
   excludeMode={!isInclude}
   label="View filter"
   name={isInclude ? label : `Exclude ${label}`}
