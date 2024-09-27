@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
@@ -80,7 +80,7 @@
   </NavigationMenuItem>
 {/if}
 <NavigationMenuItem on:click={editMetrics}>
-  <MetricsIcon slot="icon" />
+  <MetricsViewIcon slot="icon" />
   Edit metrics
 </NavigationMenuItem>
 {#if $customDashboards}

@@ -24,6 +24,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
+  import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { createModelFromTable } from "../../connectors/olap/createModel";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -137,7 +138,7 @@
   disabled={disableCreateDashboard}
   on:click={createMetricsViewFromTable}
 >
-  <Explore slot="icon" />
+  <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
     Generate metrics
     {#if $ai}
