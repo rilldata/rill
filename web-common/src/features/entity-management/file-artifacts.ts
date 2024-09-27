@@ -19,10 +19,11 @@ export class FileArtifacts {
     const resources = await fetchResources(queryClient, instanceId);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
-        case ResourceKind.Source:
         case ResourceKind.Connector:
+        case ResourceKind.Source:
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
+        case ResourceKind.Explore:
         case ResourceKind.Component:
         case ResourceKind.Canvas:
           // set query data for GetResource to avoid refetching data we already have
