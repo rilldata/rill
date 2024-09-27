@@ -162,7 +162,7 @@ export async function waitForValidResource(
       try {
         const resp = (await response.json()) as V1GetResourceResponse;
         return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
-      } catch (err) {
+      } catch {
         return false;
       }
     } else if (listResourceRequest) {
