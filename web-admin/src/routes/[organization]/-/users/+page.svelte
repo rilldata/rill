@@ -4,6 +4,7 @@
     createAdminServiceListOrganizationMemberUsers,
     createAdminServiceAddOrganizationMemberUser,
     getAdminServiceListOrganizationMemberUsersQueryKey,
+    createAdminServiceRemoveOrganizationMemberUser,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -19,12 +20,14 @@
   let isAddUserDialogOpen = false;
 
   $: organization = $page.params.organization;
-  $: organizationMemberUsers =
+  $: listOrganizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
 
   const queryClient = useQueryClient();
   const addOrganizationMemberUser =
     createAdminServiceAddOrganizationMemberUser();
+  const removeOrganizationMemberUser =
+    createAdminServiceRemoveOrganizationMemberUser();
 
   async function handleCreate(
     newEmail: string,
@@ -58,21 +61,52 @@
       });
     }
   }
+
+  async function handleRemove(email: string) {
+    try {
+      await $removeOrganizationMemberUser.mutateAsync({
+        organization: organization,
+        email: email,
+        // TODO: what is the default value for keepProjectRoles?
+        // params: {
+        //   keepProjectRoles: false,
+        // },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      eventBus.emit("notification", {
+        message: "User removed from organization",
+      });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error removing user from organization",
+        type: "error",
+      });
+    }
+  }
+
+  $: console.log($listOrganizationMemberUsers.data);
 </script>
 
 <div class="flex flex-col w-full">
-  {#if $organizationMemberUsers.isLoading}
+  {#if $listOrganizationMemberUsers.isLoading}
     <DelayedSpinner
-      isLoading={$organizationMemberUsers.isLoading}
+      isLoading={$listOrganizationMemberUsers.isLoading}
       size="1rem"
     />
-  {:else if $organizationMemberUsers.isError}
+  {:else if $listOrganizationMemberUsers.isError}
     <div class="text-red-500">
-      Error loading organization members: {$organizationMemberUsers.error}
+      Error loading organization members: {$listOrganizationMemberUsers.error}
     </div>
-  {:else if $organizationMemberUsers.isSuccess}
+  {:else if $listOrganizationMemberUsers.isSuccess}
     <div class="flex flex-col gap-4">
-      <OrgUsersTable data={$organizationMemberUsers.data.members} />
+      <OrgUsersTable
+        data={$listOrganizationMemberUsers.data.members}
+        onRemove={handleRemove}
+      />
       <Button
         type="primary"
         large

@@ -8,12 +8,14 @@
     capitalize,
   } from "@rilldata/web-common/components/table/utils";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
+  import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
 
   export let data: V1MemberUser[];
+  export let onRemove: (email: string) => void;
 
   const columns: ColumnDef<V1MemberUser, any>[] = [
     {
-      accessorKey: "actions",
+      accessorKey: "user",
       header: "User",
       enableSorting: false,
       cell: ({ row }) =>
@@ -45,6 +47,16 @@
         if (!row.original.updatedOn) return "-";
         return formatDate(row.original.updatedOn);
       },
+    },
+    {
+      accessorKey: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row }) =>
+        flexRender(OrgUsersTableActionsCell, {
+          email: row.original.userEmail,
+          onRemove: onRemove,
+        }),
     },
   ];
 </script>
