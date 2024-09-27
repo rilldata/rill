@@ -54,10 +54,6 @@
     },
   );
 
-  function onUserGroupNameInput(e: any) {
-    groupName = e.target.value;
-  }
-
   $: console.log($errors);
 </script>
 
@@ -93,7 +89,6 @@
             bind:value={$form.newName}
             placeholder="User group name"
             errors={$errors.newName}
-            on:input={onUserGroupNameInput}
             alwaysShowError
           />
           <Button
