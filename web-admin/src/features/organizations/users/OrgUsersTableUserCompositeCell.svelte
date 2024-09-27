@@ -4,6 +4,7 @@
   export let name: string;
   export let email: string;
   export let isCurrentUser: boolean;
+  export let pendingAcceptance: boolean;
 </script>
 
 <div class="flex items-center gap-2">
@@ -13,6 +14,7 @@
       {name}
       <span class="text-gray-500 font-normal">
         {isCurrentUser ? "(You)" : ""}
+        {pendingAcceptance ? "(Pending Acceptance)" : ""}
       </span>
     </span>
     <span class="text-xs text-gray-500">{email}</span>

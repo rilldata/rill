@@ -7,6 +7,8 @@
     createAdminServiceRemoveOrganizationMemberUser,
     createAdminServiceSetOrganizationMemberUserRole,
     createAdminServiceGetCurrentUser,
+    createAdminServiceListOrganizationInvites,
+    getAdminServiceListOrganizationInvitesQueryKey,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -24,6 +26,19 @@
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
+  $: listOrganizationInvites =
+    createAdminServiceListOrganizationInvites(organization);
+
+  $: usersWithPendingInvites = [
+    ...($listOrganizationMemberUsers.data?.members ?? []),
+    ...($listOrganizationInvites.data?.invites?.map((invite) => ({
+      ...invite,
+      userEmail: invite.email,
+      roleName: invite.role,
+    })) ?? []),
+  ];
+
+  $: console.log(usersWithPendingInvites);
 
   const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
@@ -51,6 +66,10 @@
 
       await queryClient.invalidateQueries(
         getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationInvitesQueryKey(organization),
       );
 
       userEmail = "";
@@ -82,6 +101,10 @@
         getAdminServiceListOrganizationMemberUsersQueryKey(organization),
       );
 
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationInvitesQueryKey(organization),
+      );
+
       eventBus.emit("notification", {
         message: "User removed from organization",
       });
@@ -107,6 +130,10 @@
         getAdminServiceListOrganizationMemberUsersQueryKey(organization),
       );
 
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationInvitesQueryKey(organization),
+      );
+
       eventBus.emit("notification", {
         message: "User role updated",
       });
@@ -117,8 +144,6 @@
       });
     }
   }
-
-  $: console.log($listOrganizationMemberUsers.data);
 </script>
 
 <div class="flex flex-col w-full">
@@ -134,7 +159,7 @@
   {:else if $listOrganizationMemberUsers.isSuccess}
     <div class="flex flex-col gap-4">
       <OrgUsersTable
-        data={$listOrganizationMemberUsers.data.members}
+        data={usersWithPendingInvites}
         currentUserEmail={$currentUser.data?.user.email}
         onRemove={handleRemove}
         onSetRole={handleSetRole}
