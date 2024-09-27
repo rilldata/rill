@@ -5,8 +5,8 @@ import {
   AD_BIDS_METRICS_PATH,
 } from "web-local/tests/utils/dataSpecifcHelpers";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
-import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
-import { test } from "../utils/test";
+import { updateCodeEditor, wrapRetryAssertion } from "./utils/commonHelpers";
+import { test } from "./utils/test";
 
 test.describe("Metrics editor", () => {
   useDashboardFlowTestSetup();
@@ -73,13 +73,14 @@ test.describe("Metrics editor", () => {
     ).toBeVisible();
 
     // go back to the metrics page.
-    await page.getByRole("button", { name: "Edit Explore" }).click();
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Metrics View" }).click();
 
     // Create a metrics view from a table (rather than a model)
     await updateCodeEditor(
       page,
-      `type: metrics_view
+      `version: 1
+type: metrics_view
 title: "AdBids table"
 table: "AdBids"
 timeseries: "timestamp"

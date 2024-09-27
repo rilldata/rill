@@ -3,12 +3,12 @@ import {
   createExploreFromModel,
   createExploreFromSource,
 } from "web-local/tests/utils/exploreHelpers";
-import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   assertLeaderboards,
   interactWithTimeRangeMenu,
 } from "web-local/tests/utils/metricsViewHelpers";
+import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
+import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   AD_BIDS_EXPLORE_PATH,
   AD_BIDS_METRICS_PATH,
@@ -215,8 +215,9 @@ test.describe("explores", () => {
     //    Check that the data is updated for last 6 hours
     //    Change time range back to all time
 
-    // Open Edit Explore
-    await page.getByRole("button", { name: "Edit Explore" }).click();
+    // Edit Explore
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
 
     // Get the dashboard name field and change it
 
@@ -244,14 +245,15 @@ measures: '*'
     // Assert that no time dimension specified
     // await expect(page.getByText("No time dimension specified")).toBeVisible();
 
-    // Open Edit Explore
-    await page.getByRole("button", { name: "Edit Explore" }).click();
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    // Edit Explore
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Metrics View" }).click();
 
     // Add timestamp column back
 
     const addBackTimestampColumnDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    version: 1
     type: metrics_view
     title: "AdBids_model_dashboard"
     model: "AdBids_model"
@@ -276,7 +278,10 @@ measures: '*'
 
         `;
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
-    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
+    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    await page
+      .getByRole("menuitem", { name: "Adbids dashboard renamed" })
+      .click();
 
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
@@ -284,45 +289,16 @@ measures: '*'
     // Assert that time dimension is now week
     await expect(timeGrainSelector).toHaveText("by Week");
 
-    // Open Edit Explore
-    await page.getByRole("button", { name: "Edit Explore" }).click();
+    // Edit Explore
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
 
-    // this is not a thing anymore
-    //     const deleteOnlyMeasureDoc = `
-    // type: explore
-    //
-    // title: "Adbids dashboard renamed"
-    // metrics_view: AdBids_model_metrics
-    //
-    // dimensions: '*'
-    // measures: []
-    //         `;
-    //     await updateCodeEditor(page, deleteOnlyMeasureDoc);
-    //     // Check warning message appears, Preview is disabled
-    //     await expect(
-    //       page.getByText("must define at least one measure"),
-    //     ).toBeVisible();
-    //
-    //     await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
-
-    // add back the measure to explore
-    await updateCodeEditor(
-      page,
-      `
-type: explore
-
-title: "Adbids dashboard renamed"
-metrics_view: AdBids_model_metrics
-
-dimensions: '*'
-measures: '*'
-    `,
-    );
     await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
-    // Add back the total rows measure for
+    // Write an incomplete measure
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    version: 1
     type: metrics_view
     title: "AdBids_model_dashboard"
     model: "AdBids_model"
@@ -348,8 +324,10 @@ measures: '*'
     await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
     await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
+    // Complete the measure
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+version: 1
 type: metrics_view
 title: "AdBids_model_dashboard_rename"
 model: "AdBids_model"

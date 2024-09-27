@@ -27,7 +27,8 @@ test.describe("time controls settings from explore preset", () => {
       page.getByText("Total records 26.7k -4.7k -15%"),
     ).toBeVisible();
     await expect(page.getByText("Facebook 7.0k 2.8k 67%")).toBeVisible();
-    await page.getByRole("button", { name: "Edit Explore" }).click();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
 
     // Set a time range that is one of the period to date preset
     await watcher.updateAndWaitForExplore(
@@ -55,7 +56,8 @@ test.describe("time controls settings from explore preset", () => {
     // Data has changed
     await expect(page.getByText("Total records 7.9k -15 ~0%")).toBeVisible();
     await expect(page.getByText("Facebook 2.0k -51 -2%")).toBeVisible();
-    await page.getByRole("button", { name: "Edit Explore" }).click();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
 
     // Set a time range that is not one of the supported presets
     await watcher.updateAndWaitForExplore(
@@ -89,8 +91,8 @@ test.describe("time controls settings from explore preset", () => {
     // Comparison is selected
     await expect(page.getByRole("switch", { name: "Comparing" })).toBeChecked();
     // Go back to metrics editor
-    await page.getByRole("button", { name: "Edit Explore" }).click();
-
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
     // Set comparison to dimension
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(`time_range: "P4W"
@@ -108,8 +110,8 @@ test.describe("time controls settings from explore preset", () => {
         .getByLabel("Toggle breakdown for publisher dimension"),
     ).toBeVisible();
     // Go back to metrics editor
-    await page.getByRole("button", { name: "Edit Explore" }).click();
-
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
     // Set comparison to none
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(`time_range: "P4W"

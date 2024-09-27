@@ -3,10 +3,10 @@ import {
   AD_BIDS_EXPLORE_PATH,
   AD_BIDS_METRICS_PATH,
 } from "web-local/tests/utils/dataSpecifcHelpers";
+import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { clickMenuButton } from "../utils/commonHelpers";
-import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { test } from "../utils/test";
 import { useDashboardFlowTestSetup } from "./dashboard-flow-test-setup";
 
@@ -21,6 +21,7 @@ test.describe("leaderboard context column", () => {
     // reset metrics, and add a metric with `valid_percent_of_total: true`
     const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+  version: 1
   type: metrics_view
   title: "AdBids_model_dashboard"
   model: "AdBids_model"
