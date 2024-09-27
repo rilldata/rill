@@ -2,7 +2,7 @@
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
-  import OrgGroupsActionsCell from "./OrgGroupsActionsCell.svelte";
+  import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import {
     formatDate,
@@ -50,7 +50,7 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(OrgGroupsActionsCell, {
+        flexRender(OrgGroupsTableActionsCell, {
           name: row.original.groupName,
           role: row.original.roleName,
           onRename: onRename,
