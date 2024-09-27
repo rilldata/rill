@@ -22,7 +22,7 @@
   let isAddUserGroupDialogOpen = false;
 
   $: organization = $page.params.organization;
-  $: organizationMemberUserGroups =
+  $: listOrganizationMemberUsergroups =
     createAdminServiceListOrganizationMemberUsergroups(organization);
 
   const queryClient = useQueryClient();
@@ -171,19 +171,19 @@
 </script>
 
 <div class="flex flex-col w-full">
-  {#if $organizationMemberUserGroups.isLoading}
+  {#if $listOrganizationMemberUsergroups.isLoading}
     <DelayedSpinner
-      isLoading={$organizationMemberUserGroups.isLoading}
+      isLoading={$listOrganizationMemberUsergroups.isLoading}
       size="1rem"
     />
-  {:else if $organizationMemberUserGroups.isError}
+  {:else if $listOrganizationMemberUsergroups.isError}
     <div class="text-red-500">
-      Error loading organization members: {$organizationMemberUserGroups.error}
+      Error loading organization members: {$listOrganizationMemberUsergroups.error}
     </div>
-  {:else if $organizationMemberUserGroups.isSuccess}
+  {:else if $listOrganizationMemberUsergroups.isSuccess}
     <div class="flex flex-col gap-4">
       <OrgGroupsTable
-        data={$organizationMemberUserGroups.data.members}
+        data={$listOrganizationMemberUsergroups.data.members}
         onRename={handleRename}
         onDelete={handleDelete}
         onAddRole={handleAddRole}

@@ -4,11 +4,13 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { Trash2Icon, UserCogIcon } from "lucide-svelte";
   import RemoveUserFromOrgConfirmDialog from "./RemoveUserFromOrgConfirmDialog.svelte";
+  import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
 
   export let email: string;
   export let role: string;
   export let pendingAcceptance: boolean;
   export let isCurrentUser: boolean;
+  export let userGroups: V1MemberUsergroup[];
   export let onRemove: (email: string) => void;
   export let onSetRole: (email: string, role: string) => void;
   export let onAddUsergroupMemberUser: (
@@ -76,22 +78,23 @@
             </DropdownMenu.CheckboxItem>
           </DropdownMenu.SubContent>
         </DropdownMenu.Sub>
-        {#if !pendingAcceptance}
+        {#if !pendingAcceptance && userGroups.length > 0}
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger class="font-normal flex items-center">
               <UserCogIcon size="12px" />
               <span class="ml-2">Add to user group</span>
             </DropdownMenu.SubTrigger>
-            <!-- TODO: use user groups here -->
             <DropdownMenu.SubContent>
-              <DropdownMenu.Item
-                class="font-normal flex items-center"
-                on:click={() => {
-                  handleAddUsergroupMemberUser("test");
-                }}
-              >
-                <span>User group 1</span>
-              </DropdownMenu.Item>
+              {#each userGroups as usergroup}
+                <DropdownMenu.Item
+                  class="font-normal flex items-center"
+                  on:click={() => {
+                    handleAddUsergroupMemberUser(usergroup.groupName);
+                  }}
+                >
+                  <span>{usergroup.groupName}</span>
+                </DropdownMenu.Item>
+              {/each}
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
         {/if}

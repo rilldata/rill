@@ -1,5 +1,9 @@
 <script lang="ts">
-  import type { V1MemberUser, V1UserInvite } from "@rilldata/web-admin/client";
+  import type {
+    V1MemberUser,
+    V1UserInvite,
+    V1MemberUsergroup,
+  } from "@rilldata/web-admin/client";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import { flexRender } from "@tanstack/svelte-table";
@@ -16,6 +20,7 @@
 
   export let data: OrgUser[];
   export let currentUserEmail: string;
+  export let userGroups: V1MemberUsergroup[];
   export let onRemove: (email: string) => void;
   export let onSetRole: (email: string, role: string) => void;
   export let onAddUsergroupMemberUser: (
@@ -70,6 +75,7 @@
           role: row.original.roleName,
           pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          userGroups: userGroups,
           onRemove: onRemove,
           onSetRole: onSetRole,
           onAddUsergroupMemberUser: onAddUsergroupMemberUser,

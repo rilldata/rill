@@ -10,6 +10,7 @@
     createAdminServiceListOrganizationInvites,
     getAdminServiceListOrganizationInvitesQueryKey,
     createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -27,8 +28,15 @@
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
+  $: listOrganizationMemberUsergroups =
+    createAdminServiceListOrganizationMemberUsergroups(organization);
   $: listOrganizationInvites =
     createAdminServiceListOrganizationInvites(organization);
+
+  $: console.log(
+    "listOrganizationMemberUsergroups",
+    $listOrganizationMemberUsergroups.data?.members,
+  );
 
   $: usersWithPendingInvites = [
     ...($listOrganizationMemberUsers.data?.members ?? []),
@@ -150,7 +158,6 @@
     usergroup: string,
   ) {
     try {
-      console.log("adding user to usergroup", organization, email, usergroup);
       await $addUsergroupMemberUser.mutateAsync({
         organization: organization,
         usergroup: usergroup,
@@ -188,6 +195,7 @@
     <div class="flex flex-col gap-4">
       <OrgUsersTable
         data={usersWithPendingInvites}
+        userGroups={$listOrganizationMemberUsergroups.data?.members}
         currentUserEmail={$currentUser.data?.user.email}
         onRemove={handleRemove}
         onSetRole={handleSetRole}
