@@ -479,7 +479,7 @@ export function canEnablePivotComparison(
   comparisonStart: string | Date | undefined,
 ) {
   // Disable if more than 5 measures
-  if (pivotState.columns.measure.length >= 5) {
+  if (pivotState.columns.measure.length > 10) {
     return false;
   }
   // Disable if time comparison is not present
