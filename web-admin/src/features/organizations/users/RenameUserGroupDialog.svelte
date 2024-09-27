@@ -53,10 +53,6 @@
       },
     },
   );
-
-  function onNewNameInput(e: any) {
-    newName = e.target.value;
-  }
 </script>
 
 <Dialog
@@ -85,7 +81,6 @@
             bind:value={$form.newName}
             placeholder="New user group name"
             errors={$errors.newName}
-            on:input={onNewNameInput}
             alwaysShowError
           />
           <Button
