@@ -172,7 +172,7 @@ export async function waitForValidResource(
           resp.resources?.find((r) => r.meta?.name === name)?.meta
             ?.reconcileStatus === "RECONCILE_STATUS_IDLE"
         );
-      } catch (err) {
+      } catch {
         return false;
       }
     }

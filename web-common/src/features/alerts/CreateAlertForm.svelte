@@ -152,7 +152,7 @@
             text: "Go to alerts",
           },
         });
-      } catch (e) {
+      } catch {
         // showing error below
       }
     },

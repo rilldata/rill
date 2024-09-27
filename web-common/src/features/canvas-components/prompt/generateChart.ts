@@ -153,7 +153,7 @@ function tryParseChart(
   if (!chartSpec?.resolver && chartContent) {
     try {
       chartSpec = parseChartYaml(chartContent);
-    } catch (err) {
+    } catch {
       throw new Error(
         "Failed to parse yaml. Please fix it before trying to generate chart spec.",
       );

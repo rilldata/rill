@@ -106,7 +106,7 @@ export function useCreateDashboardFromTableUIAction(
           await runtimeServiceGetFile(instanceId, { path: newFilePath });
           // success, AI is done
           break;
-        } catch (err) {
+        } catch {
           // 404 error, AI is not done
         }
       }
@@ -198,7 +198,7 @@ export async function createDashboardFromTableInMetricsEditor(
           // success, AI is done
           break;
         }
-      } catch (err) {
+      } catch {
         // 404 error, AI is not done
       }
     }

@@ -55,6 +55,7 @@ export default [
       "@typescript-eslint/await-thenable": "warn",
       "@typescript-eslint/no-implied-eval": "warn",
       "@typescript-eslint/no-base-to-string": "warn",
+      "@typescript-eslint/no-unused-expressions": "off",
     },
   },
   {

@@ -29,7 +29,7 @@
       value: $form["measure"],
       label: measure?.label?.length
         ? measure.label
-        : measure?.expression ?? $form["measure"],
+        : (measure?.expression ?? $form["measure"]),
     },
   ];
   $: selectedMeasure = $metricsView.data?.measures?.find(

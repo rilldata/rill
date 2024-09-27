@@ -66,7 +66,7 @@
 
       const blob = await response.blob();
       return URL.createObjectURL(blob);
-    } catch (error) {
+    } catch {
       throw new Error("Failed to fetch image from server");
     }
   };

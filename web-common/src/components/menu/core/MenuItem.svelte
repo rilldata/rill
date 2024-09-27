@@ -153,11 +153,11 @@
         {textColor}
         {bgColor}
     "
-  style:grid-template-columns="{icon ? "max-content" : ""} auto {$$slots[
-    "right"
+  style:grid-template-columns="{icon ? 'max-content' : ''} auto {$$slots[
+    'right'
   ]
-    ? "max-content"
-    : ""}"
+    ? 'max-content'
+    : ''}"
   class:recently-clicked={justClicked}
   class:selected
   class:cursor-not-allowed={disabled}

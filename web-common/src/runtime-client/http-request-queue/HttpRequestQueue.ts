@@ -32,7 +32,7 @@ try {
   ) {
     QueryQueueSize = 200;
   }
-} catch (err) {
+} catch {
   // no-op
 }
 

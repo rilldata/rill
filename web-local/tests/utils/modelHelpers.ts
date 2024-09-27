@@ -23,7 +23,7 @@ export async function modelHasError(page: Page, hasError: boolean, error = "") {
     await errorLocator.waitFor({
       timeout: 100,
     });
-  } catch (err) {
+  } catch {
     // assertions not needed
   }
 

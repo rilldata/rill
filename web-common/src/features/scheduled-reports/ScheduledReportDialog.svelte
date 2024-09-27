@@ -122,7 +122,7 @@
               },
           type: "success",
         });
-      } catch (e) {
+      } catch {
         // showing error below
       }
     },
@@ -150,7 +150,7 @@
         : getTimeIn24FormatFromDateTime(getNextQuarterHour()),
       timeZone: reportSpec?.refreshSchedule?.timeZone ?? getLocalIANA(),
       exportFormat: reportSpec
-        ? reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED
+        ? (reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED)
         : V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: reportSpec
         ? reportSpec.exportLimit === "0"
