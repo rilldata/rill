@@ -1,4 +1,4 @@
-import { get, Writable, writable } from "svelte/store";
+import { writable } from "svelte/store";
 import type { YAMLMap } from "yaml";
 import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
 
@@ -61,7 +61,7 @@ export class YAMLMeasure {
   constructor(item?: YAMLMap<string, string>) {
     this.expression = item?.get("expression") ?? "";
     this.name = item?.get("name") ?? "";
-    this.label = item?.get("label") ?? "";
+    this.label = item?.get("label") ?? item?.get("name") ?? "";
     this.description = item?.get("description") ?? "";
     this.valid_percent_of_total =
       item?.get("valid_percent_of_total") === undefined
@@ -72,18 +72,5 @@ export class YAMLMeasure {
       (item?.get("format_preset") as unknown as FormatPreset) ?? "";
   }
 }
-
-export class MaxStore {
-  private store: Writable<number> = writable(0);
-
-  set(value: number) {
-    this.store.set(Math.max(value, get(this.store)));
-  }
-
-  subscribe = this.store.subscribe;
-}
-export const nameWidth = new MaxStore();
-export const labelWidth = new MaxStore();
-export const formatWidth = new MaxStore();
 
 export const ROW_HEIGHT = 40;

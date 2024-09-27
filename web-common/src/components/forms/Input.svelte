@@ -225,7 +225,7 @@
   }
 
   .multiline-input {
-    @apply overflow-auto break-words py-[5px];
+    @apply overflow-auto break-words py-[5px] cursor-text;
   }
 
   input {

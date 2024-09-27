@@ -329,8 +329,37 @@
       type: "success",
     });
   }
+
+  $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
+    (acc, { name, label }) => {
+      acc.name = Math.max(acc.name, name.length);
+      acc.label = Math.max(acc.label, label.length);
+      return acc;
+    },
+    { name: 0, label: 0 },
+  );
+
+  $: measureNamesAndLabels = itemGroups.measures.reduce(
+    (acc, { name, label }) => {
+      acc.name = Math.max(acc.name, name.length);
+      acc.label = Math.max(acc.label, label.length);
+      return acc;
+    },
+    { name: 0, label: 0 },
+  );
+
+  $: longestName = Math.max(
+    dimensionNamesAndLabels.name,
+    measureNamesAndLabels.name,
+  );
+  $: longestLabel = Math.max(
+    dimensionNamesAndLabels.label,
+    measureNamesAndLabels.label,
+  );
 </script>
 
+{longestName}
+{longestLabel}
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4">
@@ -480,6 +509,7 @@
               {type}
               {items}
               {searchValue}
+              longest={{ name: longestName, label: longestLabel }}
               editingIndex={$editingIndex !== null &&
               $editingItem?.type === type
                 ? $editingIndex

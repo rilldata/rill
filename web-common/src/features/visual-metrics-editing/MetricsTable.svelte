@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import Checkbox from "./Checkbox.svelte";
   import MetricsTableRow from "./MetricsTableRow.svelte";
-  import { nameWidth, labelWidth, formatWidth, ROW_HEIGHT } from "./lib";
+  import { ROW_HEIGHT } from "./lib";
   import { editingItem, YAMLDimension, YAMLMeasure } from "./lib";
 
   const headers = ["Name", "Label", "SQL expression", "Format", "Description"];
@@ -13,6 +12,7 @@
   export let selected: Set<number>;
   export let editingIndex: number | null;
   export let searchValue: string;
+  export let longest: { name: number; label: number };
   export let reorderList: (
     initIndex: number[],
     newIndex: number,
@@ -33,7 +33,6 @@
   let clientWidth: HTMLTableRowElement;
   let tbody: HTMLTableSectionElement;
   let scroll = 0;
-  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   let wrapperRect = new DOMRectReadOnly(0, 0, 0, 0);
 
   let cursorDragStart = 0;
@@ -42,21 +41,8 @@
   let dragMovement = 0;
   let insertIndex: number = -1;
 
-  onMount(() => {
-    const cells = clientWidth.children;
-    const initialNameWidth = cells[1].getBoundingClientRect().width;
-    const initialLabelWidth = cells[2].getBoundingClientRect().width;
-    const initialFormatWidth =
-      type === "measures" ? cells[4].getBoundingClientRect().width : 0;
-
-    nameWidth.set(initialNameWidth);
-    labelWidth.set(initialLabelWidth);
-    formatWidth.set(initialFormatWidth);
-  });
-
-  $: tableWidth = contentRect.width;
   $: wrapperWidth = wrapperRect.width;
-  $: expressionWidth = Math.max(220, wrapperRect.width * 0.2);
+  $: expressionWidth = Math.max(180, wrapperRect.width * 0.25);
 
   $: filteredIndices = items
     .map((_, i) => i)
@@ -114,10 +100,22 @@
         item?.column?.toLowerCase().includes(searchValue.toLowerCase()))
     );
   }
+
+  $: nameColumn = longest.name * 8.5 + 32;
+  $: labelColumn = longest.label * 7 + 50;
+
+  $: formatWidth = type === "measures" ? 140 : 0;
+
+  $: partialWidth =
+    gutterWidth + nameColumn + expressionWidth + labelColumn + formatWidth;
+
+  $: descriptionWidth = Math.max(220, wrapperWidth - partialWidth);
+
+  $: tableWidth = partialWidth + descriptionWidth;
 </script>
 
 <div
-  class="wrapper relative overflow-hidden"
+  class="wrapper"
   style:max-height="{Math.max(80, ((filteredIndices?.length ?? 0) + 1) * 40) +
     1}px"
   on:scroll={(e) => {
@@ -125,30 +123,28 @@
   }}
   bind:contentRect={wrapperRect}
 >
-  <table
-    bind:contentRect
-    style:max-height="{Math.max(
-      80,
-      ((filteredIndices?.length ?? 0) + 1) * 40,
-    )}px"
-  >
+  <table style:width="{tableWidth}px">
     <colgroup>
-      <col style:width="{gutterWidth}px" style:min-width="{gutterWidth}px" />
-      <col style:width="{$nameWidth}px" style:min-width="{$nameWidth}px" />
-      <col style:width="{$labelWidth}px" style:min-width="{$labelWidth}px" />
+      <col
+        style:width="{gutterWidth}px"
+        style:min-width="{gutterWidth}px"
+        style:max-width="{gutterWidth}px"
+      />
+      <col style:width="{nameColumn}px" style:min-width="{nameColumn}px" />
+      <col style:width="{labelColumn}px" style:min-width="{labelColumn}px" />
       <col
         style:width="{expressionWidth}px"
         style:min-width="{expressionWidth}px"
       />
 
       {#if type === "measures"}
-        <col
-          style:width="{$formatWidth}px"
-          style:min-width="{$formatWidth}px"
-        />
+        <col style:width="{formatWidth}px" style:min-width="{formatWidth}px" />
       {/if}
 
-      <col />
+      <col
+        style:min-width="{descriptionWidth}px"
+        style:width="{descriptionWidth}px"
+      />
     </colgroup>
 
     <thead class="sticky top-0 z-10">
@@ -236,13 +232,15 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply overflow-x-auto overflow-y-hidden w-full max-w-full relative;
+    @apply overflow-x-auto overflow-y-hidden relative;
     @apply border rounded-[2px];
+    @apply w-full;
   }
 
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-full;
     @apply font-normal select-none relative h-fit;
+    @apply table-fixed;
   }
 
   tbody {
@@ -257,6 +255,7 @@
     @apply text-left;
     @apply pl-4 text-slate-500 bg-background;
     @apply border-b text-sm font-semibold;
+    @apply truncate;
   }
   .row-insert-marker {
     @apply w-full h-[3px] bg-primary-300 absolute z-50;

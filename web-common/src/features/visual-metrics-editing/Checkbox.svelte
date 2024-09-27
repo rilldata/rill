@@ -3,6 +3,7 @@
   export let disabled = false;
   export let onChange: (checked: boolean) => void;
   export let size: number = 16;
+  export let className: string = "";
 
   $: fullyChecked = checked === 1 || checked === true;
 </script>
@@ -10,6 +11,7 @@
 <button
   on:click={() => onChange(!fullyChecked)}
   {disabled}
+  class={className}
   class:checked={fullyChecked}
   style:width="{size}px"
   style:height="{size}px"
