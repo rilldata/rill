@@ -1,6 +1,3 @@
-<script lang="ts" context="module">
-</script>
-
 <script lang="ts">
   import { createQueryServiceTableColumns } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -11,7 +8,6 @@
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
-
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
