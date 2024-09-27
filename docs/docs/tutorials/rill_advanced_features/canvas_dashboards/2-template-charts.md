@@ -28,14 +28,39 @@ data:
   metrics_sql: |
     select 
       measure_2,
-      date_trunc('day', author_date) as date 
+      date_trunc('day', author_date) as date,     
     from dashboard_1
-    where author_date > '2024-07-14 00:00:00 Z'
+    where author_date > '2024-07-14'
 
 bar_chart:
   x: date
   y: measure_2
   
+
+  ```
+  </TabItem>
+
+<TabItem value="Stacked Bar" label="Stacked Bar Charts">
+
+```yaml
+# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+type: component
+
+data:
+  metrics_sql: |
+    select 
+      author_name,
+      measure_2,
+      date_trunc('day', author_date) as date,     
+    from dashboard_1
+    where author_date > '2024-07-14'
+
+stacked_bar_chart:
+  x: date
+  y: measure_2
+  color: author_name
 
   ```
   </TabItem>
@@ -53,9 +78,9 @@ data:
     metrics_sql: |
       select 
         measure_0,
-        date_trunc('day', author_date) as date 
+        date
       from dashboard_1
-      where author_date > '2024-07-14 00:00:00 Z'
+      where author_date > '2024-07-14'
 
 line_chart:
   x: date
@@ -65,14 +90,24 @@ line_chart:
   </TabItem>
   <TabItem value="Pie" label="Pie Charts">
 
-  ```yaml
+ ```yaml
 # Chart YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/charts
 
 type: component
 
+data:
+  metrics_sql: |
+    select 
+      added_lines,
+      deleted_lines,
+      date
+    from dashboard_1
+    where author_date = '2024-07-14'
 
-    ```
+pie_chart:
+
+  ```
   </TabItem>
 
       <TabItem value="Area" label="Area Charts">

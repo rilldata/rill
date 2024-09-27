@@ -48,6 +48,7 @@ WITH commit_file_stats AS (
 )
 SELECT
     author_date,
+    cast(author_date as date) as date,
     author_name,
     directory_path,
     filename,
@@ -69,7 +70,7 @@ GROUP BY
     --directory_path, filename, author_name, author_date
     ALL
 ORDER BY
-    directory_path DESC 
+    author_date DESC 
 ```
 </details>
 :::
@@ -88,10 +89,11 @@ data:
       author_name,
       sum(net_line_changes) as net_lines
     from advanced_commits___model
-    where author_date > '2024-07-21 00:00:00 Z'
+    where author_date > '2024-07-21 00:00:00'
+    {{ if .args.author }} AND author_name = '{{ .args.author }}' {{ end }}
+
     group by author_name
     order by net_lines desc
-    limit 5 net_lines desc
     limit 5
 ```
 </details>

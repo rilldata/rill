@@ -185,8 +185,8 @@ const sidebars = {
             'tutorials/other/create-map-component',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
             'tutorials/other/Rill Cloud/visual-metric-editor-rc',
+            'tutorials/other/yaml-vs-ui',
             'tutorials/other/trial-check',
-            'tutorials/other/biascode-vs-UI',
             'tutorials/other/avg_avg',
 
           ]
