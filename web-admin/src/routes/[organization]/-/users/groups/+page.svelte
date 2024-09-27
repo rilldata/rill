@@ -196,7 +196,7 @@
         on:click={() => (isAddUserGroupDialogOpen = true)}
       >
         <Plus size="16px" />
-        <span>Add user group</span>
+        <span>Create group</span>
       </Button>
     </div>
   {/if}
