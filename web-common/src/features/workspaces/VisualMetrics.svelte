@@ -432,7 +432,7 @@
     </div>
 
     <div
-      class="flex flex-col gap-y-2 h-fit w-full flex-shrink overflow-y-scroll"
+      class="flex flex-col gap-y-4 h-fit w-full flex-shrink overflow-y-scroll"
     >
       {#each types as type (type)}
         {@const items = itemGroups[type]}

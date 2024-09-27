@@ -117,14 +117,21 @@
 </script>
 
 <div
-  class="wrapper relative"
-  style:max-height="{Math.max(80, ((items?.length ?? 0) + 1) * 40) + 1}px"
+  class="wrapper relative overflow-hidden"
+  style:max-height="{Math.max(80, ((filteredIndices?.length ?? 0) + 1) * 40) +
+    1}px"
   on:scroll={(e) => {
     scroll = e.currentTarget.scrollLeft;
   }}
   bind:contentRect={wrapperRect}
 >
-  <table bind:contentRect>
+  <table
+    bind:contentRect
+    style:max-height="{Math.max(
+      80,
+      ((filteredIndices?.length ?? 0) + 1) * 40,
+    )}px"
+  >
     <colgroup>
       <col style:width="{gutterWidth}px" style:min-width="{gutterWidth}px" />
       <col style:width="{$nameWidth}px" style:min-width="{$nameWidth}px" />
@@ -230,7 +237,7 @@
 <style lang="postcss">
   .wrapper {
     @apply overflow-x-auto overflow-y-hidden w-full max-w-full relative;
-    @apply border rounded-[2px] min-h-fit h-fit;
+    @apply border rounded-[2px];
   }
 
   table {
