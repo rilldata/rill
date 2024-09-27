@@ -6,6 +6,7 @@
     getAdminServiceListOrganizationMemberUsersQueryKey,
     createAdminServiceRemoveOrganizationMemberUser,
     createAdminServiceSetOrganizationMemberUserRole,
+    createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -25,6 +26,7 @@
     createAdminServiceListOrganizationMemberUsers(organization);
 
   const queryClient = useQueryClient();
+  const currentUser = createAdminServiceGetCurrentUser();
   const addOrganizationMemberUser =
     createAdminServiceAddOrganizationMemberUser();
   const removeOrganizationMemberUser =
@@ -133,6 +135,7 @@
     <div class="flex flex-col gap-4">
       <OrgUsersTable
         data={$listOrganizationMemberUsers.data.members}
+        currentUserEmail={$currentUser.data?.user.email}
         onRemove={handleRemove}
         onSetRole={handleSetRole}
       />

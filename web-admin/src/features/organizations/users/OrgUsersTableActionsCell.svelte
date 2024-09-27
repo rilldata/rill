@@ -7,6 +7,7 @@
 
   export let email: string;
   export let role: string;
+  export let isCurrentUser: boolean;
   export let onRemove: (email: string) => void;
   export let onSetRole: (email: string, role: string) => void;
 
@@ -22,62 +23,65 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open={isDropdownOpen}>
-  <DropdownMenu.Trigger class="flex-none">
-    <IconButton rounded active={isDropdownOpen}>
-      <ThreeDot size="16px" />
-    </IconButton>
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start">
-    {#if role}
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger class="font-normal flex items-center">
-          <UserCogIcon size="12px" />
-          <span class="ml-2">Change role</span>
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          <DropdownMenu.CheckboxItem
-            class="font-normal flex items-center"
-            checked={role === "admin"}
-            on:click={() => {
-              handleUpdateRole("admin");
-            }}
-          >
-            <span>Admin</span>
-          </DropdownMenu.CheckboxItem>
-          <DropdownMenu.CheckboxItem
-            class="font-normal flex items-center"
-            checked={role === "viewer"}
-            on:click={() => {
-              handleUpdateRole("viewer");
-            }}
-          >
-            <span>Viewer</span>
-          </DropdownMenu.CheckboxItem>
-          <DropdownMenu.CheckboxItem
-            class="font-normal flex items-center"
-            checked={role === "collaborator"}
-            on:click={() => {
-              handleUpdateRole("collaborator");
-            }}
-          >
-            <span>Collaborator</span>
-          </DropdownMenu.CheckboxItem>
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-    {/if}
-    <DropdownMenu.Item
-      class="font-normal flex items-center"
-      type="destructive"
-      on:click={() => {
-        isRemoveConfirmOpen = true;
-      }}
-    >
-      <Trash2Icon size="12px" />
-      <span class="ml-2">Remove</span>
-    </DropdownMenu.Item>
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+{#if !isCurrentUser}
+  <DropdownMenu.Root bind:open={isDropdownOpen}>
+    <DropdownMenu.Trigger class="flex-none">
+      <IconButton rounded active={isDropdownOpen}>
+        <ThreeDot size="16px" />
+      </IconButton>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start">
+      {#if role}
+        <DropdownMenu.Sub>
+          <DropdownMenu.SubTrigger class="font-normal flex items-center">
+            <UserCogIcon size="12px" />
+            <span class="ml-2">Change role</span>
+          </DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent>
+            <DropdownMenu.CheckboxItem
+              class="font-normal flex items-center"
+              checked={role === "admin"}
+              on:click={() => {
+                handleUpdateRole("admin");
+              }}
+            >
+              <span>Admin</span>
+            </DropdownMenu.CheckboxItem>
+            <DropdownMenu.CheckboxItem
+              class="font-normal flex items-center"
+              checked={role === "viewer"}
+              on:click={() => {
+                handleUpdateRole("viewer");
+              }}
+            >
+              <span>Viewer</span>
+            </DropdownMenu.CheckboxItem>
+            <DropdownMenu.CheckboxItem
+              class="font-normal flex items-center"
+              checked={role === "collaborator"}
+              on:click={() => {
+                handleUpdateRole("collaborator");
+              }}
+            >
+              <span>Collaborator</span>
+            </DropdownMenu.CheckboxItem>
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
+      {/if}
+
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        type="destructive"
+        on:click={() => {
+          isRemoveConfirmOpen = true;
+        }}
+      >
+        <Trash2Icon size="12px" />
+        <span class="ml-2">Remove</span>
+      </DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+{/if}
 
 <RemoveUserFromOrgConfirmDialog
   bind:open={isRemoveConfirmOpen}
