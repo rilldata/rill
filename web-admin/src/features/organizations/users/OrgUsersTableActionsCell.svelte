@@ -2,17 +2,23 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { Trash2Icon } from "lucide-svelte";
+  import { Trash2Icon, UserCogIcon } from "lucide-svelte";
   import RemoveUserFromOrgConfirmDialog from "./RemoveUserFromOrgConfirmDialog.svelte";
 
   export let email: string;
+  export let role: string;
   export let onRemove: (email: string) => void;
+  export let onSetRole: (email: string, role: string) => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
 
   function handleRemove() {
     onRemove(email);
+  }
+
+  function handleUpdateRole(role: string) {
+    onSetRole(email, role);
   }
 </script>
 
@@ -23,6 +29,43 @@
     </IconButton>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
+    {#if role}
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger class="font-normal flex items-center">
+          <UserCogIcon size="12px" />
+          <span class="ml-2">Change role</span>
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          <DropdownMenu.CheckboxItem
+            class="font-normal flex items-center"
+            checked={role === "admin"}
+            on:click={() => {
+              handleUpdateRole("admin");
+            }}
+          >
+            <span>Admin</span>
+          </DropdownMenu.CheckboxItem>
+          <DropdownMenu.CheckboxItem
+            class="font-normal flex items-center"
+            checked={role === "viewer"}
+            on:click={() => {
+              handleUpdateRole("viewer");
+            }}
+          >
+            <span>Viewer</span>
+          </DropdownMenu.CheckboxItem>
+          <DropdownMenu.CheckboxItem
+            class="font-normal flex items-center"
+            checked={role === "collaborator"}
+            on:click={() => {
+              handleUpdateRole("collaborator");
+            }}
+          >
+            <span>Collaborator</span>
+          </DropdownMenu.CheckboxItem>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+    {/if}
     <DropdownMenu.Item
       class="font-normal flex items-center"
       type="destructive"

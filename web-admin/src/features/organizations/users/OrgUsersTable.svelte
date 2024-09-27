@@ -12,6 +12,7 @@
 
   export let data: V1MemberUser[];
   export let onRemove: (email: string) => void;
+  export let onSetRole: (email: string, role: string) => void;
 
   const columns: ColumnDef<V1MemberUser, any>[] = [
     {
@@ -55,7 +56,9 @@
       cell: ({ row }) =>
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
+          role: row.original.roleName,
           onRemove: onRemove,
+          onSetRole: onSetRole,
         }),
     },
   ];
