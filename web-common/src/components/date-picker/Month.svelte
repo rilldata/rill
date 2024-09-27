@@ -21,7 +21,7 @@
 
   $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
 
-  $: inclusiveEnd = interval?.end.minus({ millisecond: 0 });
+  $: inclusiveEnd = interval?.end?.minus({ millisecond: 0 });
 
   $: days = Array.from({ length: weekCount * 7 }, (_, i) => {
     if (i < firstDay) {
