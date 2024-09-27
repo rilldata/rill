@@ -3,7 +3,6 @@
   import { page } from "$app/stores";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
-
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
@@ -11,7 +10,7 @@
     useDirectoryNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { defaults, superForm } from "sveltekit-superforms";
+  import { defaults, superForm, setError } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -50,6 +49,7 @@
   } = superForm(defaults(initialValues, yup(validationSchema)), {
     SPA: true,
     validators: yup(validationSchema),
+    validationMethod: "onsubmit",
     async onUpdate({ form }) {
       if (!form.valid) return;
 
@@ -69,7 +69,7 @@
         )
       ) {
         error = `An existing folder with name ${values.newName} already exists`;
-        return;
+        return setError(form, "newName", error);
       }
 
       if (
@@ -77,7 +77,8 @@
         isDuplicateName(values?.newName, assetName, $allNamesQuery?.data ?? [])
       ) {
         error = `Name ${values.newName} is already in use`;
-        return;
+
+        return setError(form, "newName", error);
       }
       try {
         const newPath = (folder ? `${folder}/` : "") + values.newName;
@@ -129,8 +130,8 @@
   <Dialog.Content>
     <Dialog.Title>Rename</Dialog.Title>
 
-    {#if error}
-      <SubmissionError message={error} />
+    {#if $errors.newName?.[0]}
+      <SubmissionError message={$errors.newName?.[0]} />
     {/if}
     <form
       id="rename-asset-form"
@@ -139,16 +140,13 @@
       on:submit|preventDefault={submit}
       use:enhance
     >
-      <div class="py-2">
-        <Input
-          bind:value={$superform.newName}
-          claimFocusOnMount
-          alwaysShowError
-          errors={$errors.newName?.[0]}
-          id={isDir ? "folder-name" : "file-name"}
-          label={isDir ? "Folder name" : "File name"}
-        />
-      </div>
+      <Input
+        bind:value={$superform.newName}
+        claimFocusOnMount
+        alwaysShowError
+        id={isDir ? "folder-name" : "file-name"}
+        label={isDir ? "Folder name" : "File name"}
+      />
     </form>
     <Dialog.Footer class="gap-x-2">
       <Button large type="text" on:click={closeModal}>Cancel</Button>
