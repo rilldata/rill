@@ -97,7 +97,7 @@
   .chip {
     @apply flex flex-none gap-x-1;
     @apply items-center justify-center;
-    @apply px-2 py-[3px] border;
+    @apply px-2 py-[3px] border w-fit;
   }
 
   .dimension {

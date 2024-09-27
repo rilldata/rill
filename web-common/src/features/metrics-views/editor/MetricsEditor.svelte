@@ -1,26 +1,23 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
+  import { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { yamlSchema } from "codemirror-json-schema/yaml";
   import { JSONSchema7 } from "json-schema";
-  import { mapParseErrorsToLines } from "../errors";
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { createPlaceholder } from "./create-placeholder";
   import metricsSchema from "./metrics-schema.json";
 
   export let filePath: string;
   export let metricsViewName: string;
-  export let allErrors: V1ParseError[];
+  export let errors: LineStatus[];
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
-
-  $: ({ remoteContent } = fileArtifact);
 
   let editor: EditorView;
   const metricsJsonSchema = metricsSchema as JSONSchema7;
@@ -31,18 +28,14 @@
   $: placeholderElements = createPlaceholder(filePath, metricsViewName);
   $: if (editor) placeholderElements.component.setEditorView(editor);
 
-  $: lineBasedRuntimeErrors = mapParseErrorsToLines(
-    allErrors,
-    $remoteContent ?? "",
-  );
-  /** display the main error (the first in this array) at the bottom */
-  $: mainError = lineBasedRuntimeErrors?.at(0);
-
   /** If the errors change, run the following transaction. */
-  $: if (editor) setLineStatuses(lineBasedRuntimeErrors, editor);
+  $: if (editor) setLineStatuses(errors, editor);
+
+  /** display the main error (the first in this array) at the bottom */
+  $: mainError = errors?.at(0);
 </script>
 
-<MetricsEditorContainer error={$remoteContent ? mainError : undefined}>
+<MetricsEditorContainer error={mainError}>
   <Editor
     bind:autoSave
     bind:editor
@@ -57,6 +50,7 @@
       }
     }}
     {fileArtifact}
+    forceLocalUpdates
     extensions={[
       metricsPlusSQL,
       placeholderElements.extension,

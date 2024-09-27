@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
+  import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -16,14 +17,19 @@
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import WorkspaceEditorContainer from "../../layout/workspace/WorkspaceEditorContainer.svelte";
   import {
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
+  import { featureFlags } from "../feature-flags";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import VisualMetrics from "./VisualMetrics.svelte";
+
+  const { visualEditing } = featureFlags;
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -39,6 +45,8 @@
     remoteContent,
     fileName,
   } = fileArtifact);
+
+  $: workspace = workspaces.get(filePath);
 
   $: metricsViewName = getNameFromFile(filePath);
 
@@ -99,13 +107,17 @@
     );
     if (newRoute) await goto(newRoute);
   }
+
+  $: selectedView = workspace.view;
+
+  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
 
-<WorkspaceContainer inspector={isModelingSupported}>
+<WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
   <WorkspaceHeader
     hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
-    showInspectorToggle={isModelingSupported}
+    showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
     titleInput={fileName}
   >
@@ -121,18 +133,31 @@
         <GoToDashboardButton {resource} />
       {/if}
       <LocalAvatarButton />
+      {#if $visualEditing}
+        <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
+      {/if}
     </div>
   </WorkspaceHeader>
 
-  <WorkspaceEditorContainer slot="body">
-    <MetricsEditor
-      bind:autoSave={$autoSave}
-      {fileArtifact}
-      {filePath}
-      {allErrors}
-      {metricsViewName}
-    />
-  </WorkspaceEditorContainer>
+  <svelte:fragment slot="body">
+    {#if $selectedView === "code"}
+      <MetricsEditor
+        bind:autoSave={$autoSave}
+        {fileArtifact}
+        {filePath}
+        {errors}
+        {metricsViewName}
+      />
+    {:else}
+      <VisualMetrics
+        {errors}
+        {fileArtifact}
+        switchView={() => {
+          $selectedView = "code";
+        }}
+      />
+    {/if}
+  </svelte:fragment>
 
   <MetricsInspector
     {filePath}

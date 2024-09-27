@@ -78,8 +78,8 @@
     </AlertDialog.Title>
 
     <AlertDialog.Description>
-      <span class="font-mono text-slate-800 break-all ml-9">HEE HAW</span> has been
-      ingested. What would you like to do next?
+      <span class="font-mono text-slate-800 break-all ml-9">{sourceName}</span> has
+      been ingested. What would you like to do next?
     </AlertDialog.Description>
 
     <AlertDialog.Footer>

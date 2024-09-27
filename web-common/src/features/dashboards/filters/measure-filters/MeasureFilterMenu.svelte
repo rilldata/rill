@@ -122,7 +122,7 @@
       bind:value={$form["value1"]}
       errors={$errors["value1"]}
       id="value1"
-      onChange={handleSubmit}
+      onBlur={handleSubmit}
       placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
     />
     {#if isBetweenExpression}
@@ -131,7 +131,7 @@
         errors={$errors["value2"]}
         id="value2"
         placeholder="Higher Value"
-        onChange={handleSubmit}
+        onBlur={handleSubmit}
       />
     {/if}
   </form>
