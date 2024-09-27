@@ -128,7 +128,7 @@
       <DeployDashboardCta />
       <LocalAvatarButton />
       {#if $visualEditing}
-        <ViewSelector split={false} bind:selectedView />
+        <ViewSelector allowSplit={false} bind:selectedView />
       {/if}
     </div>
   </WorkspaceHeader>

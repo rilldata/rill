@@ -63,7 +63,10 @@ export class YAMLMeasure {
     this.name = item?.get("name") ?? "";
     this.label = item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
-    this.valid_percent_of_total = Boolean(item?.get("valid_percent_of_total"));
+    this.valid_percent_of_total =
+      item?.get("valid_percent_of_total") === undefined
+        ? true
+        : Boolean(item?.get("valid_percent_of_total"));
     this.format_d3 = item?.get("format_d3") ?? "";
     this.format_preset =
       (item?.get("format_preset") as unknown as FormatPreset) ?? "";

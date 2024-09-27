@@ -12,14 +12,14 @@
   ];
 
   export let selectedView: "code" | "split" | "viz" = "split";
-  export let split = true;
+  export let allowSplit = true;
 
   let tooltip: { view: string; top: number; left: number } | null = null;
 </script>
 
 <div class="radio" role="radiogroup">
   {#each viewOptions as { view, icon: Icon } (view)}
-    {#if (view === "split" && split) || view !== "split"}
+    {#if (view === "split" && allowSplit) || view !== "split"}
       <input
         tabindex="0"
         type="radio"

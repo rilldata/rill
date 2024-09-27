@@ -162,8 +162,16 @@
     unsavedChanges = false;
   }
 
-  async function updateProperty(property: string, value: unknown) {
+  async function updateProperty(
+    property: string,
+    value: unknown,
+    removeProperty?: string,
+  ) {
     parsedDocument.set(property, value);
+
+    if (removeProperty) {
+      parsedDocument.delete(removeProperty);
+    }
 
     await saveContent(parsedDocument.toString());
   }
@@ -609,7 +617,7 @@
 
                 resetEditing();
               } else if (confirmation?.action === "switch") {
-                await updateProperty("model", confirmation.model);
+                await updateProperty("model", confirmation.model, "table");
                 resetEditing();
               } else if (confirmation?.action === "cancel") {
                 if (

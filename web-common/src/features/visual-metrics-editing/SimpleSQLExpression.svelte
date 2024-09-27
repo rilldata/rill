@@ -17,7 +17,7 @@
 
   let viewingSimple = parseExpression(expression).simple;
 
-  $: ({ parsedColumn, parsedFunction, simple } = parseExpression(expression));
+  $: ({ parsedColumn, parsedFunction } = parseExpression(expression));
 
   $: finalColumns = parsedFunction === "COUNT" ? columns : numericColumns;
 
@@ -29,14 +29,14 @@
     }
     const match = expression.match(simpleRegex);
     const column = match?.[2] ?? "";
-    const functionName = match?.[1] ?? functionNames[0];
+    const functionName = match?.[1].toLocaleUpperCase() ?? functionNames[0];
     return createProperties(functionName, column).name;
   }
 
   function parseExpression(expression: string) {
     const match = expression.match(simpleRegex);
     const parsedColumn = match?.[2];
-    const parsedFunction = match?.[1] ?? functionNames[0];
+    const parsedFunction = match?.[1].toLocaleUpperCase() ?? functionNames[0];
     const simple =
       !expression.length ||
       (simpleRegex.test(expression) &&

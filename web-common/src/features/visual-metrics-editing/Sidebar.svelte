@@ -205,10 +205,12 @@
 
   $: ({ remoteContent, localContent, saveContent } = fileArtifact);
 
-  $: readyToGo = properties[type].every(
-    ({ fields, optional, selected }) =>
-      optional || editingClone[fields[selected].key],
-  );
+  $: requiredPropertiesUnfilled = properties[type]
+    .filter(({ optional, fields, selected }) => {
+      const value = editingClone[fields[selected].key];
+      return !optional && (value === undefined || value === "");
+    })
+    .map(({ label }) => label);
 
   $: unsavedChanges = Object.keys(editingClone).some(
     (key) => editingClone[key] !== item?.[key],
@@ -328,14 +330,19 @@
         >
           Cancel
         </Button>
+        <Tooltip location="top" distance={8}>
+          <Button
+            type="primary"
+            on:click={saveChanges}
+            disabled={requiredPropertiesUnfilled.length > 0 || !unsavedChanges}
+          >
+            {editing ? "Save changes" : "Add " + type.slice(0, -1)}
+          </Button>
 
-        <Button
-          type="primary"
-          on:click={saveChanges}
-          disabled={!readyToGo || !unsavedChanges}
-        >
-          {editing ? "Save changes" : "Add " + type.slice(0, -1)}
-        </Button>
+          <TooltipContent slot="tooltip-content">
+            Required: {requiredPropertiesUnfilled.join(", ")}
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   </div>
