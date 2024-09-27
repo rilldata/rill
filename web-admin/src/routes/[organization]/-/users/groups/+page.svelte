@@ -2,9 +2,11 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceAddOrganizationMemberUsergroup,
+    createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
+    createAdminServiceListOrganizationMemberUsers,
     createAdminServiceRemoveOrganizationMemberUsergroup,
     createAdminServiceRenameUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
@@ -16,14 +18,16 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Plus } from "lucide-svelte";
-  import AddUserGroupDialog from "@rilldata/web-admin/features/organizations/users/AddUserGroupDialog.svelte";
+  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
 
   let userGroupName = "";
-  let isAddUserGroupDialogOpen = false;
+  let isCreateUserGroupDialogOpen = false;
 
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsergroups =
     createAdminServiceListOrganizationMemberUsergroups(organization);
+  $: listOrganizationMemberUsers =
+    createAdminServiceListOrganizationMemberUsers(organization);
 
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
@@ -34,6 +38,12 @@
     createAdminServiceSetOrganizationMemberUsergroupRole();
   const revokeUserGroupRole =
     createAdminServiceRemoveOrganizationMemberUsergroup();
+  const addUserGroupMember = createAdminServiceAddUsergroupMemberUser();
+
+  $: console.log(
+    "$listOrganizationMemberUsers.data?.members: ",
+    $listOrganizationMemberUsers.data?.members,
+  );
 
   async function handleCreate(newName: string) {
     try {
@@ -49,7 +59,7 @@
       );
 
       userGroupName = "";
-      isAddUserGroupDialogOpen = false;
+      isCreateUserGroupDialogOpen = false;
 
       eventBus.emit("notification", { message: "User group created" });
     } catch (error) {
@@ -168,6 +178,28 @@
       });
     }
   }
+
+  async function handleAddUser(groupName: string, email: string) {
+    try {
+      await $addUserGroupMember.mutateAsync({
+        organization: organization,
+        usergroup: groupName,
+        email: email,
+        data: {},
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User added to user group" });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error adding user to user group",
+        type: "error",
+      });
+    }
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -178,22 +210,24 @@
     />
   {:else if $listOrganizationMemberUsergroups.isError}
     <div class="text-red-500">
-      Error loading organization members: {$listOrganizationMemberUsergroups.error}
+      Error loading organization user groups: {$listOrganizationMemberUsergroups.error}
     </div>
   {:else if $listOrganizationMemberUsergroups.isSuccess}
     <div class="flex flex-col gap-4">
       <OrgGroupsTable
         data={$listOrganizationMemberUsergroups.data.members}
+        users={$listOrganizationMemberUsers.data?.members ?? []}
         onRename={handleRename}
         onDelete={handleDelete}
         onAddRole={handleAddRole}
         onSetRole={handleSetRole}
         onRevokeRole={handleRevokeRole}
+        onAddUser={handleAddUser}
       />
       <Button
         type="primary"
         large
-        on:click={() => (isAddUserGroupDialogOpen = true)}
+        on:click={() => (isCreateUserGroupDialogOpen = true)}
       >
         <Plus size="16px" />
         <span>Create group</span>
@@ -202,8 +236,8 @@
   {/if}
 </div>
 
-<AddUserGroupDialog
-  bind:open={isAddUserGroupDialogOpen}
+<CreateUserGroupDialog
+  bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
   onCreate={handleCreate}
 />

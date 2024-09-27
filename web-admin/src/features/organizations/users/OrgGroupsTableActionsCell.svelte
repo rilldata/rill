@@ -6,18 +6,22 @@
     Trash2Icon,
     UserCogIcon,
     UserMinusIcon,
+    UserPlusIcon,
     TextCursorInputIcon,
   } from "lucide-svelte";
   import DeleteUserGroupConfirmDialog from "./DeleteUserGroupConfirmDialog.svelte";
   import RenameUserGroupDialog from "./RenameUserGroupDialog.svelte";
+  import type { V1MemberUser } from "@rilldata/web-admin/client";
 
   export let name: string;
   export let role: string | undefined = undefined;
+  export let users: V1MemberUser[];
   export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
   export let onRevokeRole: (groupName: string) => void;
+  export let onAddUser: (groupName: string, email: string) => void;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
@@ -34,6 +38,12 @@
   function handleRevokeRole() {
     onRevokeRole(name);
   }
+
+  function handleAddUsers(email: string) {
+    onAddUser(name, email);
+  }
+
+  $: console.log("users: ", users);
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -132,6 +142,28 @@
           >
             <span>Collaborator</span>
           </svelte:component>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+    {/if}
+    {#if users && users.length > 0}
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger class="font-normal flex items-center">
+          <UserPlusIcon size="12px" />
+          <span class="ml-2">Add users</span>
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          {#each users as user}
+            <!-- TODO: can we get the users that are already in the group? -->
+            <!-- So we can use checkbox item here -->
+            <DropdownMenu.Item
+              class="font-normal flex items-center"
+              on:click={() => {
+                handleAddUsers(user.userEmail);
+              }}
+            >
+              <span>{user.userEmail}</span>
+            </DropdownMenu.Item>
+          {/each}
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
     {/if}

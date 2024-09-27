@@ -33,11 +33,6 @@
   $: listOrganizationInvites =
     createAdminServiceListOrganizationInvites(organization);
 
-  $: console.log(
-    "listOrganizationMemberUsergroups",
-    $listOrganizationMemberUsergroups.data?.members,
-  );
-
   $: usersWithPendingInvites = [
     ...($listOrganizationMemberUsers.data?.members ?? []),
     ...($listOrganizationInvites.data?.invites?.map((invite) => ({
