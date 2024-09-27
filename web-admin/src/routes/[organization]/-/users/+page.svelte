@@ -1,13 +1,63 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { createAdminServiceListOrganizationMemberUsers } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceListOrganizationMemberUsers,
+    createAdminServiceAddOrganizationMemberUser,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { Plus } from "lucide-svelte";
+  import AddUserDialog from "@rilldata/web-admin/features/organizations/users/AddUserDialog.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+
+  let userEmail = "";
+  let userRole = "";
+  let isSuperUser = false;
+  let isAddUserDialogOpen = false;
 
   $: organization = $page.params.organization;
-
   $: organizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
+
+  const queryClient = useQueryClient();
+  const addOrganizationMemberUser =
+    createAdminServiceAddOrganizationMemberUser();
+
+  async function handleCreate(
+    newEmail: string,
+    newRole: string,
+    isSuperUser: boolean = false,
+  ) {
+    try {
+      await $addOrganizationMemberUser.mutateAsync({
+        organization: organization,
+        data: {
+          email: newEmail,
+          role: newRole,
+          superuserForceAccess: isSuperUser,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      userEmail = "";
+      userRole = "";
+      isSuperUser = false;
+      isAddUserDialogOpen = false;
+
+      eventBus.emit("notification", { message: "User added to organization" });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error adding user to organization",
+        type: "error",
+      });
+    }
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -21,6 +71,24 @@
       Error loading organization members: {$organizationMemberUsers.error}
     </div>
   {:else if $organizationMemberUsers.isSuccess}
-    <OrgUsersTable data={$organizationMemberUsers.data.members} />
+    <div class="flex flex-col gap-4">
+      <OrgUsersTable data={$organizationMemberUsers.data.members} />
+      <Button
+        type="primary"
+        large
+        on:click={() => (isAddUserDialogOpen = true)}
+      >
+        <Plus size="16px" />
+        <span>Add user</span>
+      </Button>
+    </div>
   {/if}
 </div>
+
+<AddUserDialog
+  bind:open={isAddUserDialogOpen}
+  email={userEmail}
+  role={userRole}
+  {isSuperUser}
+  onCreate={handleCreate}
+/>

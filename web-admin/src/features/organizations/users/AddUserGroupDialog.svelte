@@ -53,8 +53,6 @@
       },
     },
   );
-
-  $: console.log($errors);
 </script>
 
 <Dialog
@@ -77,7 +75,7 @@
     <DialogHeader>
       <DialogTitle>Add user group</DialogTitle>
     </DialogHeader>
-    <DialogFooter class="mt-4">
+    <DialogFooter class="mt-2">
       <form
         id={formId}
         class="w-full"
