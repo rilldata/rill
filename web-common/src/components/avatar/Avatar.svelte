@@ -2,7 +2,7 @@
   import { Avatar } from "bits-ui";
 
   export let loadingStatus: Avatar.Props["loadingStatus"] = undefined;
-  export let src: string | null;
+  export let src: string | null = null;
   export let alt: string;
   export let size: string = "h-12 w-12";
 </script>
