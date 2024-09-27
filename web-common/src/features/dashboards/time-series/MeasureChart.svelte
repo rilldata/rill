@@ -92,13 +92,13 @@
 
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
-  $: mouseOverCords = $xScale(mouseoverValue?.x);
+  $: mouseOverCords = mouseoverValue?.x && $xScale(mouseoverValue?.x);
 
   let isOverStart = false;
   let isOverEnd = false;
   let isInsideScrub = false;
 
-  $: if (mouseOverCords && scrubStartCords && scrubEndCords) {
+  $: if (mouseOverCords !== undefined && scrubStartCords && scrubEndCords) {
     const min = Math.min(scrubStartCords, scrubEndCords);
     const max = Math.max(scrubStartCords, scrubEndCords);
 
