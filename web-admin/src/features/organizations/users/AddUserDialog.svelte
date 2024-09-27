@@ -122,7 +122,9 @@
         <Button
           type="primary"
           large
-          disabled={$submitting || $form.newEmail.trim() === ""}
+          disabled={$submitting ||
+            $form.newEmail.trim() === "" ||
+            $form.newRole === ""}
           form={formId}
           submitForm
           class="w-full mt-4"
