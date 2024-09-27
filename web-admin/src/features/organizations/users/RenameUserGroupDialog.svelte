@@ -69,31 +69,36 @@
     <DialogHeader>
       <DialogTitle>Rename user group</DialogTitle>
     </DialogHeader>
-    <DialogFooter class="mt-2">
-      <form
-        id={formId}
-        class="w-full"
-        on:submit|preventDefault={submit}
-        use:enhance
+    <form
+      id={formId}
+      class="w-full"
+      on:submit|preventDefault={submit}
+      use:enhance
+    >
+      <div class="flex flex-col gap-2 w-full">
+        <Input
+          bind:value={$form.newName}
+          placeholder="New user group name"
+          errors={$errors.newName}
+          alwaysShowError
+        />
+      </div>
+    </form>
+    <DialogFooter>
+      <Button
+        type="plain"
+        on:click={() => {
+          open = false;
+        }}>Cancel</Button
       >
-        <div class="flex flex-col gap-2 w-full">
-          <Input
-            bind:value={$form.newName}
-            placeholder="New user group name"
-            errors={$errors.newName}
-            alwaysShowError
-          />
-          <Button
-            type="primary"
-            large
-            disabled={$submitting || $form.newName.trim() === groupName}
-            form={formId}
-            submitForm
-          >
-            Rename
-          </Button>
-        </div>
-      </form>
+      <Button
+        type="primary"
+        disabled={$submitting || $form.newName.trim() === groupName}
+        form={formId}
+        submitForm
+      >
+        Rename
+      </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>

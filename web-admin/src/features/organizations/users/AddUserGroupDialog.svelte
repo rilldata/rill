@@ -73,35 +73,40 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
-      <DialogTitle>Add user group</DialogTitle>
+      <DialogTitle>Create a group</DialogTitle>
     </DialogHeader>
-    <DialogFooter class="mt-2">
-      <form
-        id={formId}
-        class="w-full"
-        on:submit|preventDefault={submit}
-        use:enhance
+    <form
+      id={formId}
+      class="w-full"
+      on:submit|preventDefault={submit}
+      use:enhance
+    >
+      <div class="flex flex-col gap-2 w-full">
+        <Input
+          bind:value={$form.newName}
+          id="user-group-name"
+          label="Group name"
+          placeholder="Untitled"
+          errors={$errors.newName}
+          alwaysShowError
+        />
+      </div>
+    </form>
+    <DialogFooter>
+      <Button
+        type="plain"
+        on:click={() => {
+          open = false;
+        }}>Cancel</Button
       >
-        <div class="flex flex-col gap-2 w-full">
-          <Input
-            bind:value={$form.newName}
-            id="user-group-name"
-            label="User group name"
-            placeholder="User group name"
-            errors={$errors.newName}
-            alwaysShowError
-          />
-          <Button
-            type="primary"
-            large
-            disabled={$submitting || $form.newName.trim() === ""}
-            form={formId}
-            submitForm
-          >
-            Add
-          </Button>
-        </div>
-      </form>
+      <Button
+        type="primary"
+        disabled={$submitting || $form.newName.trim() === ""}
+        form={formId}
+        submitForm
+      >
+        Create
+      </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>

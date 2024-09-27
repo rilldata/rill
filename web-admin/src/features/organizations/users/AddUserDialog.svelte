@@ -94,44 +94,48 @@
     <DialogHeader>
       <DialogTitle>Add user</DialogTitle>
     </DialogHeader>
-    <DialogFooter class="mt-2">
-      <form
-        id={formId}
-        class="w-full"
-        on:submit|preventDefault={submit}
-        use:enhance
+    <form
+      id={formId}
+      class="w-full"
+      on:submit|preventDefault={submit}
+      use:enhance
+    >
+      <div class="flex flex-col gap-3 w-full">
+        <Input
+          bind:value={$form.newEmail}
+          id="newEmail"
+          label="Email"
+          placeholder="Email"
+          errors={$errors.newEmail}
+          alwaysShowError
+        />
+        <Select
+          bind:value={$form.newRole}
+          id="newRole"
+          label="Role"
+          placeholder="Role"
+          options={roleOptions}
+        />
+        <!-- TODO: add checkbox for superuser -->
+      </div>
+    </form>
+    <DialogFooter>
+      <Button
+        type="plain"
+        on:click={() => {
+          open = false;
+        }}>Cancel</Button
       >
-        <div class="flex flex-col gap-3 w-full">
-          <Input
-            bind:value={$form.newEmail}
-            id="newEmail"
-            label="Email"
-            placeholder="Email"
-            errors={$errors.newEmail}
-            alwaysShowError
-          />
-          <Select
-            bind:value={$form.newRole}
-            id="newRole"
-            label="Role"
-            placeholder="Role"
-            options={roleOptions}
-          />
-          <!-- TODO: add checkbox for superuser -->
-        </div>
-        <Button
-          type="primary"
-          large
-          disabled={$submitting ||
-            $form.newEmail.trim() === "" ||
-            $form.newRole === ""}
-          form={formId}
-          submitForm
-          class="w-full mt-4"
-        >
-          Add
-        </Button>
-      </form>
+      <Button
+        type="primary"
+        disabled={$submitting ||
+          $form.newEmail.trim() === "" ||
+          $form.newRole === ""}
+        form={formId}
+        submitForm
+      >
+        Add
+      </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
