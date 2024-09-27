@@ -9,6 +9,7 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationInvites,
     getAdminServiceListOrganizationInvitesQueryKey,
+    createAdminServiceAddUsergroupMemberUser,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -38,8 +39,6 @@
     })) ?? []),
   ];
 
-  $: console.log(usersWithPendingInvites);
-
   const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
   const addOrganizationMemberUser =
@@ -48,6 +47,7 @@
     createAdminServiceRemoveOrganizationMemberUser();
   const setOrganizationMemberUserRole =
     createAdminServiceSetOrganizationMemberUserRole();
+  const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
 
   async function handleCreate(
     newEmail: string,
@@ -144,6 +144,34 @@
       });
     }
   }
+
+  async function handleAddUsergroupMemberUser(
+    email: string,
+    usergroup: string,
+  ) {
+    try {
+      console.log("adding user to usergroup", organization, email, usergroup);
+      await $addUsergroupMemberUser.mutateAsync({
+        organization: organization,
+        usergroup: usergroup,
+        email: email,
+        data: {},
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      eventBus.emit("notification", {
+        message: "User added to user group",
+      });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error adding user to user group",
+        type: "error",
+      });
+    }
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -163,6 +191,7 @@
         currentUserEmail={$currentUser.data?.user.email}
         onRemove={handleRemove}
         onSetRole={handleSetRole}
+        onAddUsergroupMemberUser={handleAddUsergroupMemberUser}
       />
       <Button
         type="primary"
