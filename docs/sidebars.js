@@ -182,6 +182,11 @@ const sidebars = {
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
             'tutorials/other/add-column-dimension',
+            'tutorials/other/create-map-component',
+            'tutorials/other/Rill Cloud/share-dashboard-publicly',
+            'tutorials/other/Rill Cloud/visual-metric-editor-rc',
+            'tutorials/other/trial-check',
+            'tutorials/other/biascode-vs-UI',
             'tutorials/other/avg_avg',
 
           ]

@@ -1,6 +1,6 @@
 ---
 title: "How do I add a new dimension to my dashboard?"
-sidebar_label: "How to: Add Dimension to Dashboard"
+sidebar_label: "Add/Modify Dimension to Dashboard via YAML"
 sidebar_position: 10
 hide_table_of_contents: false
 tags:
