@@ -358,8 +358,6 @@
   );
 </script>
 
-{longestName}
-{longestLabel}
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4">
