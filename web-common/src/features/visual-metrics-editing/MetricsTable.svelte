@@ -12,6 +12,7 @@
   export let items: Array<YAMLDimension | YAMLMeasure>;
   export let selected: Set<number>;
   export let editingIndex: number | null;
+  export let searchValue: string;
   export let reorderList: (
     initIndex: number[],
     newIndex: number,
@@ -57,6 +58,10 @@
   $: wrapperWidth = wrapperRect.width;
   $: expressionWidth = Math.max(220, wrapperRect.width * 0.2);
 
+  $: filteredIndices = items
+    .map((_, i) => i)
+    .filter((i) => filter(items[i], searchValue));
+
   function handleDragStart(e: MouseEvent, i: number) {
     if (e.button !== 0) return;
 
@@ -98,6 +103,16 @@
     dragging = [];
     dragMovement = 0;
     insertIndex = -1;
+  }
+
+  function filter(item: YAMLDimension | YAMLMeasure, searchValue: string) {
+    return (
+      item?.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item?.label?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item?.expression?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      (item instanceof YAMLDimension &&
+        item?.column?.toLowerCase().includes(searchValue.toLowerCase()))
+    );
   }
 </script>
 
@@ -147,31 +162,32 @@
       </tr>
     </thead>
     <tbody bind:this={tbody} class="relative overflow-hidden">
-      {#each items as item, i (i)}
+      {#each filteredIndices as index (index)}
         <MetricsTableRow
+          disableDrag={filteredIndices.length !== items.length}
           sidebarOpen={!!$editingItem}
-          {i}
-          {item}
+          i={index}
+          item={items[index]}
           {type}
           {expressionWidth}
-          selected={selected.has(i)}
+          selected={selected.has(index)}
           dragging={!!cursorDragStart}
           tableWidth={tableWidth - wrapperWidth}
           scrollLeft={scroll}
           length={items.length}
-          editing={editingIndex === i}
+          editing={editingIndex === index}
           {onEdit}
           {onDuplicate}
           {onDelete}
-          handleDragStart={(event) => handleDragStart(event, i)}
+          handleDragStart={(event) => handleDragStart(event, index)}
           onCheckedChange={(checked) => {
-            onCheckedChange(checked, i);
+            onCheckedChange(checked, index);
           }}
           onMoveTo={(top) => {
             const moving = Array.from(selected);
 
-            if (!selected.has(i)) {
-              moving.push(i);
+            if (!selected.has(index)) {
+              moving.push(index);
             }
             reorderList(moving, top ? 0 : items.length, type);
           }}

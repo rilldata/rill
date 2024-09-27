@@ -34,8 +34,6 @@
         option.label.toLowerCase().includes(searchText.toLowerCase()),
       )
     : options;
-
-  $: console.log({ selected });
 </script>
 
 <div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>

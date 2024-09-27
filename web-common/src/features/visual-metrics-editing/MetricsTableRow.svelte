@@ -19,6 +19,7 @@
   export let translate = 0;
   export let ghost = false;
   export let sidebarOpen = false;
+  export let disableDrag = false;
   export let handleDragStart: (e: MouseEvent) => void = () => {};
   export let onEdit: (
     index: number,
@@ -72,8 +73,8 @@
     <div class="gap-x-0.5 flex items-center pl-1">
       <button
         class:opacity-0={!hovered}
-        disabled={!hovered}
-        class="text-gray-500"
+        disabled={!hovered || disableDrag}
+        class="text-gray-500 disabled:cursor-not-allowed"
         on:mousedown={handleDragStart}
       >
         <DragHandle size="16px" />
@@ -84,7 +85,7 @@
   </td>
 
   <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
-    <span>{name ?? "-"}</span>
+    <span>{name || "-"}</span>
   </td>
   <td on:click={onCellClick} aria-label="Label">
     <div class="text-[12px] pr-4">

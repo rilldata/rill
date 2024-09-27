@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { createQueryServiceTableColumns } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceTableColumns,
+    V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -38,8 +41,8 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let fileArtifact: FileArtifact;
-  export let switchView: () => void;
   export let errors: LineStatus[];
+  export let switchView: () => void;
 
   let searchValue = "";
   let unsavedChanges = false;
@@ -55,52 +58,63 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: ({
-    remoteContent,
-    localContent,
-    saveContent,
-    updateLocalContent,
-    saveLocalContent,
-    getResource,
-  } = fileArtifact);
+  $: totalSelected = selected.measures.size + selected.dimensions.size;
 
+  $: ({ remoteContent, localContent, saveContent, getResource } = fileArtifact);
+
+  // YAML Parsing
+  $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+
+  $: raw = {
+    measures: parsedDocument.get("measures"),
+    dimensions: parsedDocument.get("dimensions"),
+  };
+
+  $: rawSmallestTimeGrain = parsedDocument.get("smallest_time_grain");
+  $: rawTimeDimension = parsedDocument.get("timeseries");
+  $: rawDatabaseSchema = parsedDocument.get("database_schema");
+  $: rawModel = parsedDocument.get("model");
+  $: rawTable = parsedDocument.get("table");
+
+  $: timeDimension = stringGuard(rawTimeDimension);
+  $: databaseSchema = stringGuard(rawDatabaseSchema);
+  $: model = stringGuard(rawModel) || stringGuard(rawTable);
+
+  $: itemGroups = {
+    measures:
+      raw.measures instanceof YAMLSeq
+        ? raw.measures.items.map((item) => new YAMLMeasure(item))
+        : [],
+    dimensions:
+      raw.dimensions instanceof YAMLSeq
+        ? raw.dimensions.items.map(
+            (item, i) => new YAMLDimension(item, dimensions[i]),
+          )
+        : [],
+  };
+
+  $: smallestTimeGrain =
+    rawSmallestTimeGrain && typeof rawSmallestTimeGrain === "string"
+      ? rawSmallestTimeGrain
+      : undefined;
+
+  // Queries
   $: modelsQuery = useModels(instanceId);
   $: sourcesQuery = useSources(instanceId);
   $: metricsViewQuery = getResource(queryClient, instanceId);
-
-  $: modelNames =
-    $modelsQuery.data?.map((resource) => {
-      const value = resource.meta?.name?.name ?? "";
-      return {
-        value,
-        label: value,
-      };
-    }) ?? [];
-  $: sourceNames =
-    $sourcesQuery.data?.map((resource) => {
-      const value = resource.meta?.name?.name ?? "";
-      return {
-        value,
-        label: value,
-      };
-    }) ?? [];
-
-  $: timeDimension = (parsedDocument.get("timeseries") ?? "") as string;
-
-  $: databaseSchema = (parsedDocument.get("database_schema") ?? "") as string;
-  $: model = (parsedDocument.get("model") ??
-    parsedDocument.get("table") ??
-    "") as string;
-
   $: resourceQuery = useResource(instanceId, model, ResourceKind.Model);
-  $: modelResource = $resourceQuery?.data?.model;
-  $: connector = modelResource?.spec?.outputConnector;
+
+  $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
+  $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
+  $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
+  $: connector = $resourceQuery?.data?.model?.spec?.outputConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(instanceId, model, {
     connector,
     database: "", // models use the default database
     databaseSchema,
   });
+
   $: ({ data: columnsResponse } = $columnsQuery);
 
   $: columns = columnsResponse?.profileColumns ?? [
@@ -111,42 +125,12 @@
     .filter(({ type }) => type === "TIMESTAMP")
     .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
 
-  $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-
-  $: yamlMeasures = (
-    (parsedDocument.get("measures") as YAMLSeq).items as Array<
-      YAMLMap<string, string>
-    >
-  )
-    .map((item) => new YAMLMeasure(item))
-    .filter((item) => filter(item, searchValue));
-
-  $: yamlDimensions = (
-    (parsedDocument.get("dimensions") as YAMLSeq).items as Array<
-      YAMLMap<string, string>
-    >
-  )
-    .map((item, i) => new YAMLDimension(item, dimensions[i]))
-    .filter((item) => filter(item, searchValue));
-
-  let itemGroups: {
-    measures: YAMLMeasure[];
-    dimensions: YAMLDimension[];
-  };
-  $: itemGroups = {
-    measures: yamlMeasures,
-    dimensions: yamlDimensions,
-  };
-
-  $: smallestTimeGrain = (parsedDocument.get("smallest_time_grain") ??
-    "") as string;
-
-  $: totalSelected = selected.measures.size + selected.dimensions.size;
-
   /** display the main error (the first in this array) at the bottom */
   $: mainError = errors?.at(0);
 
-  $: dimensions = $metricsViewQuery.data?.metricsView?.spec?.dimensions ?? [];
+  function stringGuard(value: unknown | undefined): string {
+    return value && typeof value === "string" ? value : "";
+  }
 
   async function setEditing(index: number, type: ItemType, field?: string) {
     if (unsavedChanges) {
@@ -172,20 +156,24 @@
     }
   }
 
-  function filter(item: YAMLDimension | YAMLMeasure, searchValue: string) {
-    return (
-      item?.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item?.label?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item?.expression?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      (item instanceof YAMLDimension &&
-        item?.column?.toLowerCase().includes(searchValue.toLowerCase()))
-    );
+  function resetEditing() {
+    editingItem.set(null);
+    editingIndex.set(null);
+    unsavedChanges = false;
   }
 
   async function updateProperty(property: string, value: unknown) {
     parsedDocument.set(property, value);
 
     await saveContent(parsedDocument.toString());
+  }
+
+  function resourceToOption(resource: V1Resource) {
+    const value = resource.meta?.name?.name ?? "";
+    return {
+      value,
+      label: value,
+    };
   }
 
   async function reorderList(
@@ -196,8 +184,11 @@
     initIndexes.sort((a, b) => a - b);
     const editingItemIndex = initIndexes.indexOf($editingIndex ?? -1);
 
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const sequence = parsedDocument.get(type) as YAMLSeq;
+    const sequence = raw[type];
+
+    if (!(sequence instanceof YAMLSeq)) {
+      return;
+    }
 
     let items = sequence.items as Array<YAMLMap | null>;
 
@@ -228,14 +219,10 @@
       selected[type] = new Set(newIndexes);
     }
 
-    parsedDocument.set(
+    await updateProperty(
       type,
       items.filter((i) => i !== null),
     );
-
-    updateLocalContent(parsedDocument.toString(), true);
-
-    await saveLocalContent();
 
     eventBus.emit("notification", { message: "Item moved", type: "success" });
   }
@@ -255,12 +242,15 @@
   }
 
   async function deleteItems(items: Partial<typeof selected>) {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     let deletedEditingItem = false;
 
     Object.entries(items).forEach(([type, indices]) => {
-      const seq = parsedDocument.get(type) as YAMLSeq;
-      const items = seq.items as Array<YAMLMap>;
+      const sequence = raw[type];
+
+      if (!(sequence instanceof YAMLSeq)) {
+        return;
+      }
+      const items = sequence.items as Array<YAMLMap>;
 
       if ($editingIndex !== null) {
         deletedEditingItem =
@@ -277,32 +267,42 @@
       });
     });
 
-    updateLocalContent(parsedDocument.toString(), true);
-
     selected = selected;
 
-    await saveLocalContent();
+    await saveContent(parsedDocument.toString());
 
     if (deletedEditingItem) {
-      editingItem.set(null);
-      editingIndex.set(null);
+      resetEditing();
     }
 
     eventBus.emit("notification", { message: "Item deleted", type: "success" });
   }
 
   async function duplicateItem(index: number, type: ItemType) {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const measures = parsedDocument.get(type) as YAMLSeq;
+    const sequence = raw[type];
 
-    const items = measures.items as Array<YAMLMap>;
+    if (!(sequence instanceof YAMLSeq)) {
+      return;
+    }
+
+    const items = sequence.items as Array<YAMLMap>;
 
     const originalItem = items[index];
-    const originalName = originalItem.get("name") as string;
+    const name = stringGuard(originalItem.get("name"));
+    const split = name.split("_copy");
+    const potentialNumber = split[1] ? split[1].split("_")[1] : undefined;
+    const number: number | undefined = isNaN(Number(potentialNumber))
+      ? undefined
+      : Number(potentialNumber);
+
+    const canUseOriginalName =
+      split.length <= 2 && (!split[1] || number !== undefined);
+
+    const originalName = canUseOriginalName ? split[0] : name;
     const newItem = originalItem.clone() as YAMLMap;
 
-    const itemNames = items.map((i) => i.get("name"));
-    let count = 0;
+    const itemNames = items.map((i) => stringGuard(i.get("name")));
+    let count = number ?? 0;
     let newName = `${originalName}_copy`;
     newItem.set("name", newName);
 
@@ -314,11 +314,7 @@
 
     items.splice(index + 1, 0, newItem);
 
-    parsedDocument.set(type, items);
-
-    updateLocalContent(parsedDocument.toString(), true);
-
-    await saveLocalContent();
+    await updateProperty(type, items);
 
     eventBus.emit("notification", {
       message: "Item duplicated",
@@ -372,7 +368,6 @@
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {
-          console.log(value);
           await updateProperty("smallest_time_grain", value);
         }}
       />
@@ -474,14 +469,15 @@
           {#if !collapsed[type]}
             <MetricsTable
               selected={selected[type]}
-              {reorderList}
               {type}
-              onDuplicate={duplicateItem}
               {items}
+              {searchValue}
               editingIndex={$editingIndex !== null &&
               $editingItem?.type === type
                 ? $editingIndex
                 : null}
+              {reorderList}
+              onDuplicate={duplicateItem}
               onDelete={triggerDelete}
               onEdit={setEditing}
               onCheckedChange={(checked, index) => {
@@ -534,11 +530,12 @@
               type,
             };
           } else {
-            editingItem.set(null);
+            resetEditing();
           }
         }}
         {index}
         {type}
+        {resetEditing}
         editing={index !== -1}
         {fileArtifact}
         {switchView}
@@ -554,7 +551,11 @@
       <AlertDialog.Header>
         <AlertDialog.Title>
           {#if confirmation.action === "delete"}
-            <h2>Delete this {confirmation.type?.slice(0, -1)}?</h2>
+            <h2>
+              Delete {confirmation.index === undefined
+                ? "selected items"
+                : "this " + confirmation.type?.slice(0, -1)}?
+            </h2>
           {:else if confirmation.action === "cancel"}
             <h2>Cancel changes to {confirmation.type?.slice(0, -1)}?</h2>
           {:else if confirmation.action === "switch"}
@@ -566,8 +567,9 @@
             You haven't saved changes to this {confirmation.type?.slice(0, -1)} yet,
             so closing this window will lose your work.
           {:else if confirmation.action === "delete"}
-            You will permanently remove this {confirmation.type?.slice(0, -1)} from
-            all associated dashboards.
+            You will permanently remove {confirmation.index === undefined
+              ? "the selected items"
+              : "this " + confirmation.type?.slice(0, -1)} from all associated dashboards.
           {:else if confirmation.action === "switch"}
             Switching to a different model may break your measures and
             dimensions unless the new model has similar data.
@@ -605,10 +607,10 @@
                     : selected,
                 );
 
-                editingItem.set(null);
+                resetEditing();
               } else if (confirmation?.action === "switch") {
                 await updateProperty("model", confirmation.model);
-                editingItem.set(null);
+                resetEditing();
               } else if (confirmation?.action === "cancel") {
                 if (
                   confirmation?.field &&
@@ -622,8 +624,7 @@
                     confirmation.field,
                   );
                 } else {
-                  unsavedChanges = false;
-                  editingItem.set(null);
+                  resetEditing();
                 }
               }
               confirmation = null;

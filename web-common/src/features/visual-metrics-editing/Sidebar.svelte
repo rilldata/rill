@@ -25,6 +25,7 @@
   export let switchView: () => void;
   export let onDelete: () => void;
   export let onCancel: (unsavedChanges: boolean) => void;
+  export let resetEditing: () => void;
 
   let editingClone = structuredClone(item);
 
@@ -33,10 +34,6 @@
     label: name ?? "",
     type,
   }));
-
-  $: numericColumns = columnOptions.filter(
-    ({ type }) => type && NUMERICS.has(type),
-  );
 
   let properties: Record<
     string,
@@ -202,6 +199,10 @@
     ],
   };
 
+  $: numericColumns = columnOptions.filter(
+    ({ type }) => type && NUMERICS.has(type),
+  );
+
   $: ({ remoteContent, localContent, saveContent } = fileArtifact);
 
   $: readyToGo = properties[type].every(
@@ -232,9 +233,7 @@
     }
 
     await saveContent(parsedDocument.toString());
-    editingItem.set(null);
-
-    unsavedChanges = false;
+    resetEditing();
 
     eventBus.emit("notification", { message: "Item saved", type: "success" });
   }
@@ -281,19 +280,19 @@
         />
       {:else}
         <Input
-          id={`vme-${label}`}
+          id="vme-{label}"
           textClass="text-sm"
-          enableSearch={key === "column"}
-          bind:value={editingClone[key]}
           {label}
           {hint}
+          {options}
           {optional}
+          {fontFamily}
           {placeholder}
           multiline={key === "description"}
+          enableSearch={key === "column"}
           bind:selected
-          {fontFamily}
+          bind:value={editingClone[key]}
           fields={fields.map(({ label }) => label)}
-          {options}
           onChange={(e) => {
             if (!editing && key === "column" && type === "dimensions") {
               editingClone.name = e;
@@ -329,6 +328,7 @@
         >
           Cancel
         </Button>
+
         <Button
           type="primary"
           on:click={saveChanges}
