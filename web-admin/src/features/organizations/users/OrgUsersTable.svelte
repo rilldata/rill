@@ -2,21 +2,25 @@
   import type { V1MemberUser } from "@rilldata/web-admin/client";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
+  import { flexRender } from "@tanstack/svelte-table";
   import {
     formatDate,
     capitalize,
   } from "@rilldata/web-common/components/table/utils";
+  import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
 
   export let data: V1MemberUser[];
 
   const columns: ColumnDef<V1MemberUser, any>[] = [
     {
-      accessorKey: "userName",
+      accessorKey: "actions",
       header: "User",
-    },
-    {
-      accessorKey: "userEmail",
-      header: "Email",
+      enableSorting: false,
+      cell: ({ row }) =>
+        flexRender(OrgUsersTableUserCompositeCell, {
+          name: row.original.userName,
+          email: row.original.userEmail,
+        }),
     },
     {
       accessorKey: "roleName",
