@@ -6,6 +6,7 @@ import (
 	sqldriver "database/sql/driver"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/marcboeker/go-duckdb"
@@ -81,49 +82,10 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 
 	// check if user specified the column types
 	if outputProps.Columns == "" {
-		// no columns were specified, infer using an in-memory duckdb
-
-		// open a in-memory duckdb
-		connector, err := duckdb.NewConnector("", func(execer sqldriver.ExecerContext) error {
-			return nil
-		})
+		outputProps.Columns, err = e.inferColumns(ctx, opts, inputProps.Format, localPaths)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create duckdb connector: %w", err)
+			return nil, fmt.Errorf("failed to infer columns: %w", err)
 		}
-		defer connector.Close()
-
-		db := sql.OpenDB(connector)
-		defer db.Close()
-
-		src, err := sourceReader(localPaths, inputProps.Format)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create source reader: %w", err)
-		}
-
-		// identify the columns and types
-		rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT column_name, column_type FROM (DESCRIBE SELECT * FROM %s)", src))
-		if err != nil {
-			return nil, fmt.Errorf("failed to describe table: %w", err)
-		}
-		defer rows.Close()
-
-		var columns strings.Builder
-		columns.WriteString("(")
-		var name, typ string
-		for rows.Next() {
-			if err := rows.Scan(&name, &typ); err != nil {
-				return nil, fmt.Errorf("failed to scan row: %w", err)
-			}
-			if columns.Len() > 1 {
-				columns.WriteString(", ")
-			}
-			columns.WriteString(fmt.Sprintf("%s %s", name, typeFromDuckDBType(typ)))
-		}
-		if rows.Err() != nil {
-			return nil, fmt.Errorf("failed to iterate rows: %w", rows.Err())
-		}
-		columns.WriteString(")")
-		outputProps.Columns = columns.String()
 	}
 
 	usedModelName := false
@@ -190,6 +152,55 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		Properties: resultPropsMap,
 		Table:      tableName,
 	}, nil
+}
+
+func (e *localFileToSelfExecutor) inferColumns(ctx context.Context, opts *drivers.ModelExecuteOptions, format string, localPaths []string) (string, error) {
+	// no columns were specified, infer using  duckdb
+	tempDir, err := os.MkdirTemp(opts.TempDir, "duckdb")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tempDir)
+	connector, err := duckdb.NewConnector(filepath.Join(tempDir, "temp.db?threads=1&max_memory=256MB"), func(execer sqldriver.ExecerContext) error {
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create duckdb connector: %w", err)
+	}
+	defer connector.Close()
+
+	db := sql.OpenDB(connector)
+	defer db.Close()
+
+	src, err := sourceReader(localPaths, format)
+	if err != nil {
+		return "", fmt.Errorf("failed to create source reader: %w", err)
+	}
+
+	// identify the columns and types
+	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT column_name, column_type FROM (DESCRIBE SELECT * FROM %s)", src))
+	if err != nil {
+		return "", fmt.Errorf("failed to describe table: %w", err)
+	}
+	defer rows.Close()
+
+	var columns strings.Builder
+	columns.WriteString("(")
+	var name, typ string
+	for rows.Next() {
+		if err := rows.Scan(&name, &typ); err != nil {
+			return "", fmt.Errorf("failed to scan row: %w", err)
+		}
+		if columns.Len() > 1 {
+			columns.WriteString(", ")
+		}
+		columns.WriteString(fmt.Sprintf("%s %s", name, typeFromDuckDBType(typ)))
+	}
+	if rows.Err() != nil {
+		return "", fmt.Errorf("failed to iterate rows: %w", rows.Err())
+	}
+	columns.WriteString(")")
+	return columns.String(), nil
 }
 
 func sourceReader(paths []string, format string) (string, error) {

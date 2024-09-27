@@ -1107,6 +1107,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			IncrementalRun:       incrementalRun,
 			SplitRun:             split != nil,
 			PreviousResult:       prevResult,
+			TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
 		})
 		if err != nil {
 			return nil, err
@@ -1136,6 +1137,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		IncrementalRun:       incrementalRun,
 		SplitRun:             split != nil,
 		PreviousResult:       prevResult,
+		TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
 	})
 	if err != nil {
 		return nil, err
