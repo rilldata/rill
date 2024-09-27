@@ -17,8 +17,6 @@
   export let groupName: string;
   export let onCreate: (newName: string) => void;
 
-  let apiError: string;
-
   const formId = "add-user-group-form";
 
   const initialValues = {
