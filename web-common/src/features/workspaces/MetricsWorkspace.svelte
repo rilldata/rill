@@ -106,7 +106,6 @@
     if (newRoute) await goto(newRoute);
   }
 
-  // let selectedView: "viz" | "code" = "code";
   $: selectedView = workspace.view;
 
   $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
