@@ -26,6 +26,7 @@
   } from "../connectors/olap/selectors";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import { featureFlags } from "../feature-flags";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
   const { visualEditing } = featureFlags;
 
@@ -41,9 +42,10 @@
     autoSave,
     path: filePath,
     remoteContent,
-
     fileName,
   } = fileArtifact);
+
+  $: workspace = workspaces.get(filePath);
 
   $: metricsViewName = getNameFromFile(filePath);
 
@@ -104,17 +106,17 @@
     if (newRoute) await goto(newRoute);
   }
 
-  let selectedView: "viz" | "code" = "code";
-  $: selectedView = $visualEditing ? "viz" : "code";
+  // let selectedView: "viz" | "code" = "code";
+  $: selectedView = workspace.view;
 
   $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
 
-<WorkspaceContainer inspector={isModelingSupported && selectedView === "code"}>
+<WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
   <WorkspaceHeader
     hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
-    showInspectorToggle={selectedView === "code" && isModelingSupported}
+    showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
     titleInput={fileName}
   >
@@ -128,13 +130,13 @@
       <DeployDashboardCta />
       <LocalAvatarButton />
       {#if $visualEditing}
-        <ViewSelector allowSplit={false} bind:selectedView />
+        <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
       {/if}
     </div>
   </WorkspaceHeader>
 
   <svelte:fragment slot="body">
-    {#if selectedView === "code"}
+    {#if $selectedView === "code"}
       <MetricsEditor
         bind:autoSave={$autoSave}
         {fileArtifact}
@@ -147,7 +149,7 @@
         {errors}
         {fileArtifact}
         switchView={() => {
-          selectedView = "code";
+          $selectedView = "code";
         }}
       />
     {/if}
