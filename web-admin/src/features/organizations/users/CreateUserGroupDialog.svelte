@@ -90,6 +90,7 @@
           errors={$errors.newName}
           alwaysShowError
         />
+        <!-- TODO: add users to user group -->
       </div>
     </form>
     <DialogFooter>
