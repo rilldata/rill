@@ -85,6 +85,8 @@
         <div class="flex flex-col gap-2 w-full">
           <Input
             bind:value={$form.newName}
+            id="user-group-name"
+            label="User group name"
             placeholder="User group name"
             errors={$errors.newName}
             alwaysShowError

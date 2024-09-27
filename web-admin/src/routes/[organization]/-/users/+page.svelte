@@ -5,6 +5,7 @@
     createAdminServiceAddOrganizationMemberUser,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     createAdminServiceRemoveOrganizationMemberUser,
+    createAdminServiceSetOrganizationMemberUserRole,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -28,6 +29,8 @@
     createAdminServiceAddOrganizationMemberUser();
   const removeOrganizationMemberUser =
     createAdminServiceRemoveOrganizationMemberUser();
+  const setOrganizationMemberUserRole =
+    createAdminServiceSetOrganizationMemberUserRole();
 
   async function handleCreate(
     newEmail: string,
@@ -88,6 +91,31 @@
     }
   }
 
+  async function handleSetRole(email: string, role: string) {
+    try {
+      await $setOrganizationMemberUserRole.mutateAsync({
+        organization: organization,
+        email: email,
+        data: {
+          role: role,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      eventBus.emit("notification", {
+        message: "User role updated",
+      });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error updating user role",
+        type: "error",
+      });
+    }
+  }
+
   $: console.log($listOrganizationMemberUsers.data);
 </script>
 
@@ -106,6 +134,7 @@
       <OrgUsersTable
         data={$listOrganizationMemberUsers.data.members}
         onRemove={handleRemove}
+        onSetRole={handleSetRole}
       />
       <Button
         type="primary"
