@@ -33,7 +33,7 @@
 
   <span class="ml-auto flex flex-none h-3.5 w-3.5 items-center justify-center">
     <SelectPrimitive.ItemIndicator>
-      <Check class="h-3 w-3" />
+      <Check class="size-3.5 " />
     </SelectPrimitive.ItemIndicator>
   </span>
 </SelectPrimitive.Item>
