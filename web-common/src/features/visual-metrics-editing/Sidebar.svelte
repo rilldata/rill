@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { editingItem, YAMLDimension, YAMLMeasure, MenuOption } from "./lib";
+  import { YAMLDimension, YAMLMeasure, MenuOption } from "./lib";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
