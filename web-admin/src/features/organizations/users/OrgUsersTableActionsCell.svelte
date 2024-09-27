@@ -82,7 +82,7 @@
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger class="font-normal flex items-center">
               <UserCogIcon size="12px" />
-              <span class="ml-2">Add to user group</span>
+              <span class="ml-2">Add to group</span>
             </DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent>
               {#each userGroups as usergroup}

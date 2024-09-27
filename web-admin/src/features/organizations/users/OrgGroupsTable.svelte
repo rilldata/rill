@@ -1,5 +1,8 @@
 <script lang="ts">
-  import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
+  import type {
+    V1MemberUsergroup,
+    V1MemberUser,
+  } from "@rilldata/web-admin/client";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
@@ -10,11 +13,13 @@
   } from "@rilldata/web-common/components/table/utils";
 
   export let data: V1MemberUsergroup[];
+  export let users: V1MemberUser[];
   export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
   export let onRevokeRole: (groupName: string) => void;
+  export let onAddUser: (groupName: string, email: string) => void;
 
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
@@ -53,11 +58,13 @@
         flexRender(OrgGroupsTableActionsCell, {
           name: row.original.groupName,
           role: row.original.roleName,
+          users: users,
           onRename: onRename,
           onDelete: onDelete,
           onAddRole: onAddRole,
           onSetRole: onSetRole,
           onRevokeRole: onRevokeRole,
+          onAddUser: onAddUser,
         }),
     },
   ];
