@@ -7,7 +7,7 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog-v2";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";

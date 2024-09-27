@@ -8,7 +8,7 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let open = false;
   export let email: string;
