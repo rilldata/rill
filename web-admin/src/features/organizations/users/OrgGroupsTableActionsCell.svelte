@@ -47,7 +47,7 @@
       <DropdownMenu.Sub>
         <DropdownMenu.SubTrigger class="font-normal flex items-center">
           <UserCogIcon size="12px" />
-          <span class="ml-2">Update role</span>
+          <span class="ml-2">Change role</span>
         </DropdownMenu.SubTrigger>
         <DropdownMenu.SubContent>
           <DropdownMenu.CheckboxItem
