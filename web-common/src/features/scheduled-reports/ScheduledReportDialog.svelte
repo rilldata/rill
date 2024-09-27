@@ -5,6 +5,7 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceEditReport,
   } from "@rilldata/web-admin/client";
+  import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../components/button";
@@ -30,8 +31,6 @@
   } from "./time-utils";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-
-  import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { ResourceKind } from "../entity-management/resource-selectors";
 
   export let open: boolean;
@@ -42,8 +41,10 @@
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: metricsViewName =
-    getDashboardNameFromReport(reportSpec) ?? queryArgs.metricsViewName;
+  $: if (!exploreName) {
+    exploreName =
+      getDashboardNameFromReport(reportSpec) ?? queryArgs.metricsViewName;
+  }
 
   $: ({ organization, project, report: reportName } = $page.params);
 
@@ -178,7 +179,7 @@
     <BaseScheduledReportForm
       formId="scheduled-report-form"
       {formState}
-      {metricsViewName}
+      exploreName={exploreName ?? ""}
     />
 
     <div class="flex items-center gap-x-2 mt-5">

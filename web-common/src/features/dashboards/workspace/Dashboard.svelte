@@ -1,11 +1,9 @@
 <script lang="ts">
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
-  import {
-    useMetricsView,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -41,10 +39,10 @@
 
   $: isRillDeveloper = $readOnly === false;
 
-  // Check if the mock user (if selected) has access to the dashboard
-  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
+  // Check if the mock user (if selected) has access to the explore
+  $: explore = useExploreValidSpec($runtime.instanceId, exploreName);
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && $metricsView.error?.response?.status === 404;
+    $selectedMockUserStore && $explore.error?.response?.status === 404;
 </script>
 
 <article
@@ -73,7 +71,7 @@
   {#if mockUserHasNoAccess}
     <!-- Additional safeguard for mock users without dashboard access. -->
     <ErrorPage
-      statusCode={$metricsView.error?.response?.status}
+      statusCode={$explore.error?.response?.status}
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
     />
