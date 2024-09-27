@@ -10,12 +10,16 @@
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
 
-  export let data: V1MemberUser[] | V1UserInvite[];
+  interface OrgUser extends V1MemberUser, V1UserInvite {
+    invitedBy?: string;
+  }
+
+  export let data: OrgUser[];
   export let currentUserEmail: string;
   export let onRemove: (email: string) => void;
   export let onSetRole: (email: string, role: string) => void;
 
-  const columns: ColumnDef<V1MemberUser | V1UserInvite, any>[] = [
+  const columns: ColumnDef<OrgUser, any>[] = [
     {
       accessorKey: "user",
       header: "User",
