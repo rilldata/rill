@@ -124,6 +124,7 @@
       closeModal();
     }
   }}
+  portal="#rill-portal"
 >
   <Dialog.Content>
     <Dialog.Title>Rename</Dialog.Title>
