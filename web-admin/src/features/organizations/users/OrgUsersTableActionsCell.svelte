@@ -7,9 +7,14 @@
 
   export let email: string;
   export let role: string;
+  export let pendingAcceptance: boolean;
   export let isCurrentUser: boolean;
   export let onRemove: (email: string) => void;
   export let onSetRole: (email: string, role: string) => void;
+  export let onAddUsergroupMemberUser: (
+    email: string,
+    usergroup: string,
+  ) => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
@@ -20,6 +25,10 @@
 
   function handleUpdateRole(role: string) {
     onSetRole(email, role);
+  }
+
+  function handleAddUsergroupMemberUser(usergroup: string) {
+    onAddUsergroupMemberUser(email, usergroup);
   }
 </script>
 
@@ -67,6 +76,25 @@
             </DropdownMenu.CheckboxItem>
           </DropdownMenu.SubContent>
         </DropdownMenu.Sub>
+        {#if !pendingAcceptance}
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger class="font-normal flex items-center">
+              <UserCogIcon size="12px" />
+              <span class="ml-2">Add to user group</span>
+            </DropdownMenu.SubTrigger>
+            <!-- TODO: use user groups here -->
+            <DropdownMenu.SubContent>
+              <DropdownMenu.Item
+                class="font-normal flex items-center"
+                on:click={() => {
+                  handleAddUsergroupMemberUser("test");
+                }}
+              >
+                <span>User group 1</span>
+              </DropdownMenu.Item>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+        {/if}
       {/if}
 
       <DropdownMenu.Item

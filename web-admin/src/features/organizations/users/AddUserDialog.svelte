@@ -129,7 +129,7 @@
           submitForm
           class="w-full mt-4"
         >
-          Create
+          Add
         </Button>
       </form>
     </DialogFooter>
