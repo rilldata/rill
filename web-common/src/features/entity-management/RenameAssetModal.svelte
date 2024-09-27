@@ -3,7 +3,8 @@
   import { page } from "$app/stores";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
-  import { Dialog } from "@rilldata/web-common/components/modal/index";
+
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
     useAllFileNames,
@@ -21,6 +22,7 @@
     VALID_NAME_PATTERN,
     isDuplicateName,
   } from "./name-utils";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let closeModal: () => void;
   export let filePath: string;
@@ -115,16 +117,17 @@
   );
 </script>
 
-<Dialog
-  compact
-  on:cancel={closeModal}
-  on:click-outside={closeModal}
-  on:primary-action={submit}
-  showCancel
-  size="sm"
+<Dialog.Root
+  open
+  onOpenChange={(open) => {
+    if (!open) {
+      closeModal();
+    }
+  }}
 >
-  <svelte:fragment slot="title">Rename</svelte:fragment>
-  <div slot="body">
+  <Dialog.Content>
+    <Dialog.Title>Rename</Dialog.Title>
+
     {#if error}
       <SubmissionError message={error} />
     {/if}
@@ -140,6 +143,7 @@
         />
       </div>
     </form>
-  </div>
-  <svelte:fragment slot="primary-action-body">Change Name</svelte:fragment>
-</Dialog>
+
+    <Button large type="primary" on:click={submit}>Change Name</Button>
+  </Dialog.Content>
+</Dialog.Root>
