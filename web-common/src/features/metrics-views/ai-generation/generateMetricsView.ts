@@ -12,8 +12,8 @@ import {
   type MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
 import {
-  RuntimeServiceGenerateMetricsViewFileBody,
-  V1GenerateMetricsViewFileResponse,
+  type RuntimeServiceGenerateMetricsViewFileBody,
+  type V1GenerateMetricsViewFileResponse,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
 } from "../../../runtime-client";

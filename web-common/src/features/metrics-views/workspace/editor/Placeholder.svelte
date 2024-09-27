@@ -5,7 +5,7 @@
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModels } from "@rilldata/web-common/features/models/selectors";
   import {
-    V1Resource,
+    type V1Resource,
     runtimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

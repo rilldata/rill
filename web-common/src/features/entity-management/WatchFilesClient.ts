@@ -6,7 +6,7 @@ import {
   getRuntimeServiceIssueDevJWTQueryKey,
   getRuntimeServiceListFilesQueryKey,
   V1FileEvent,
-  V1WatchFilesResponse,
+  type V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";

@@ -5,13 +5,13 @@
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { createPlaceholder } from "./create-placeholder";
   import metricsSchema from "./metrics-schema.json";
-  import { JSONSchema7 } from "json-schema";
+  import type { JSONSchema7 } from "json-schema";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
-  import { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
 
   export let filePath: string;
   export let metricViewName: string;

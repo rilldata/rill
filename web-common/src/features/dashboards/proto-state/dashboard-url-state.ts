@@ -10,7 +10,7 @@ import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/d
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
 import type { V1StructType } from "@rilldata/web-common/runtime-client";
-import { Readable, derived, get } from "svelte/store";
+import { type Readable, derived, get } from "svelte/store";
 
 export type DashboardUrlState = {
   isReady: boolean;

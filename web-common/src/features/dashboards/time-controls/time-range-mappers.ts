@@ -5,9 +5,9 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsViewSpec,
+  type V1MetricsViewSpec,
   V1TimeGrain,
-  V1TimeRange,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend

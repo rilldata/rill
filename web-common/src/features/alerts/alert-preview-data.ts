@@ -1,6 +1,6 @@
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 import {
-  AlertFormValues,
+  type AlertFormValues,
   getAlertQueryArgsFromFormValues,
 } from "@rilldata/web-common/features/alerts/form-utils";
 import { getComparisonProperties } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
@@ -14,7 +14,7 @@ import { useMetricsView } from "@rilldata/web-common/features/dashboards/selecto
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
-  StructTypeField,
+  type StructTypeField,
   TypeCode,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,

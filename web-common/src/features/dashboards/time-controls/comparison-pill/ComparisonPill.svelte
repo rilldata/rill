@@ -3,9 +3,9 @@
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
-    TimeRange,
+    type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import {
     metricsExplorerStore,

@@ -1,6 +1,6 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");

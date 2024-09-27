@@ -25,13 +25,13 @@ import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
-  TimeRange,
+  type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  RpcStatus,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
+  type RpcStatus,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";

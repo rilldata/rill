@@ -13,9 +13,9 @@
   import {
     V1ExportFormat,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReportSpec,
+    type V1ReportSpec,
     getRuntimeServiceGetResourceQueryKey,
-    V1ReportSpecAnnotations,
+    type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";

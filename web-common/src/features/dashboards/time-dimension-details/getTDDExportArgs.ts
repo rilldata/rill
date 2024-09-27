@@ -4,9 +4,9 @@ import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-st
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  TimeControlState,
+  type TimeControlState,
   useTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
@@ -14,12 +14,12 @@ import {
   mapTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import {
-  V1MetricsViewAggregationMeasure,
-  V1MetricsViewAggregationRequest,
-  V1MetricsViewSpec,
+  type V1MetricsViewAggregationMeasure,
+  type V1MetricsViewAggregationRequest,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
 
 export function getTDDExportArgs(
   ctx: StateManagers,

@@ -1,4 +1,4 @@
-import { V1ReportSpec } from "@rilldata/web-common/runtime-client";
+import type { V1ReportSpec } from "@rilldata/web-common/runtime-client";
 
 export function getDashboardNameFromReport(
   reportSpec: V1ReportSpec | undefined,

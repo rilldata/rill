@@ -9,7 +9,7 @@
   import type { Readable } from "svelte/store";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
-  import { PlotConfig, lineFactory } from "../utils";
+  import { type PlotConfig, lineFactory } from "../utils";
 
   const markID = guidGenerator();
 

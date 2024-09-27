@@ -12,7 +12,7 @@ import type {
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { Readable, derived, get } from "svelte/store";
+import { type Readable, derived, get } from "svelte/store";
 
 export type ShowHideSelectorState = {
   selectableItems: Array<SearchableFilterSelectableItem>;

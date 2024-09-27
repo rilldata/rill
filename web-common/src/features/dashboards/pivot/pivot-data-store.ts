@@ -13,7 +13,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
-import { Readable, derived, readable } from "svelte/store";
+import { type Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
   addExpandedDataToPivot,
@@ -52,7 +52,7 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
-  PivotFilter,
+  type PivotFilter,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,

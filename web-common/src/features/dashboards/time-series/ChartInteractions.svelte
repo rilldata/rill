@@ -5,7 +5,7 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";

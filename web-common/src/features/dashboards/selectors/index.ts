@@ -8,10 +8,10 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  RpcStatus,
-  V1MetricsViewComparisonResponse,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
+  type RpcStatus,
+  type V1MetricsViewComparisonResponse,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewComparison,
   createQueryServiceMetricsViewSchema,
   createQueryServiceMetricsViewTimeRange,
@@ -21,7 +21,7 @@ import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { Readable, derived } from "svelte/store";
+import { type Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 
 export const useMetricsView = <T = V1MetricsViewSpec>(

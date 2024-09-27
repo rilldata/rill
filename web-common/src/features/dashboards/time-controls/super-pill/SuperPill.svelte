@@ -3,9 +3,9 @@
   import {
     ALL_TIME_RANGE_ALIAS,
     CUSTOM_TIME_RANGE_ALIAS,
-    ISODurationString,
-    NamedRange,
-    RangeBuckets,
+    type ISODurationString,
+    type NamedRange,
+    type RangeBuckets,
     deriveInterval,
   } from "../new-time-controls";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
@@ -13,9 +13,9 @@
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
-    TimeRange,
+    type TimeRange,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";

@@ -2,7 +2,7 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
   ResourceKind,
-  UserFacingResourceKinds,
+  type UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

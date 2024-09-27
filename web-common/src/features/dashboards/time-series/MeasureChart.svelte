@@ -29,7 +29,7 @@
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
     TimeRangePreset,
     TimeRoundingStrategy,

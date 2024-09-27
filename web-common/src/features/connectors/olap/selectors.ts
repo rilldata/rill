@@ -1,8 +1,8 @@
-import { CreateQueryResult } from "@tanstack/svelte-query";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import { TableInfo } from "../../../proto/gen/rill/runtime/v1/connectors_pb";
 import {
-  V1TableInfo,
+  type V1TableInfo,
   createConnectorServiceOLAPListTables,
   createRuntimeServiceAnalyzeConnectors,
   createRuntimeServiceGetInstance,

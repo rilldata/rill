@@ -7,7 +7,7 @@
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import {
-    PivotChipData,
+    type PivotChipData,
     PivotChipType,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
@@ -24,17 +24,17 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
   import {
-    TimeSeriesDatum,
+    type TimeSeriesDatum,
     useTimeSeriesDataStore,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
-    AvailableTimeGrain,
+    type AvailableTimeGrain,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
-  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";

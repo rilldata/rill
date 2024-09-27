@@ -1,5 +1,5 @@
 import {
-  V1ListFilesResponse,
+  type V1ListFilesResponse,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceGetInstance,
   runtimeServiceListFiles,

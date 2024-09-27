@@ -7,7 +7,7 @@
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { CreateQueryResult } from "@tanstack/svelte-query";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";

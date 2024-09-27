@@ -3,12 +3,12 @@ import {
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
   mapMeasureFilterToExpr,
-  MeasureFilterEntry,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { mergeDimensionAndMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   V1Expression,
   V1MetricsViewAggregationRequest,

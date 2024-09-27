@@ -7,7 +7,7 @@ import {
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
-import { Readable, derived } from "svelte/store";
+import { type Readable, derived } from "svelte/store";
 
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
@@ -23,10 +23,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
-  V1Expression,
-  V1MetricsViewAggregationResponse,
+  type V1Expression,
+  type V1MetricsViewAggregationResponse,
   V1TimeGrain,
-  V1TimeSeriesValue,
+  type V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";

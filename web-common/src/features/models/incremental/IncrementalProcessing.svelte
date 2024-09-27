@@ -1,6 +1,6 @@
 <script lang="ts">
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
-  import { V1Resource } from "../../../runtime-client";
+  import type { V1Resource } from "../../../runtime-client";
   import IncrementalStateTable from "./IncrementalStateTable.svelte";
 
   export let resource: V1Resource;

@@ -15,17 +15,17 @@ import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { Period } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsViewAggregationResponse,
-  V1MetricsViewAggregationResponseDataItem,
-  V1MetricsViewTimeSeriesResponse,
+  type V1MetricsViewAggregationResponse,
+  type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewTimeSeriesResponse,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
-import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { Writable, derived, writable, type Readable } from "svelte/store";
+import { type Writable, derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
-  DimensionDataItem,
+  type DimensionDataItem,
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
 

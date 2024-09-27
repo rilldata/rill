@@ -1,6 +1,6 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import {
-  MeasureFilterEntry,
+  type MeasureFilterEntry,
   mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";

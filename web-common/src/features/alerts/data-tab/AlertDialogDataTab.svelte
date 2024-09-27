@@ -1,6 +1,6 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
-  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";

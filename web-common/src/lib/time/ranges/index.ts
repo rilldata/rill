@@ -31,9 +31,9 @@ import {
   RangePresetType,
   TimeComparisonOption,
   TimeOffsetType,
-  TimeRange,
-  TimeRangeMeta,
-  TimeRangeOption,
+  type TimeRange,
+  type TimeRangeMeta,
+  type TimeRangeOption,
   TimeRangePreset,
 } from "../types";
 

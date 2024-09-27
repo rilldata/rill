@@ -2,7 +2,7 @@
   import { Progress } from "@rilldata/web-common/components/progress";
   import GlobalDimensionSearchResult from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearchResult.svelte";
   import {
-    DimensionSearchResult,
+    type DimensionSearchResult,
     useDimensionSearchResults,
   } from "@rilldata/web-common/features/dashboards/dimension-search/useDimensionSearchResults";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";

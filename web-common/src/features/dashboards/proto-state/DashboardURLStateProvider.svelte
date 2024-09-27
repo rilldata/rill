@@ -4,7 +4,7 @@
   import { onDestroy } from "svelte";
   import { get, type Unsubscriber } from "svelte/store";
   import ErrorPage from "../../../components/ErrorPage.svelte";
-  import { HTTPError } from "../../../runtime-client/fetchWrapper";
+  import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { getStateManagers } from "../state-managers/state-managers";
 
   export let metricViewName: string;
