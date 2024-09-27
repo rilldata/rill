@@ -125,7 +125,7 @@ test.describe("time controls settings from explore preset", () => {
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(
         `time_range: "P4W"
-  comparison_mode: dimension
+  comparison_mode: time
 `,
         `time_ranges:
 - PT6H

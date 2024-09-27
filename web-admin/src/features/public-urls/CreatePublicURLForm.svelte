@@ -39,7 +39,7 @@
 
   const {
     dashboardStore,
-    metricsViewName,
+    exploreName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
@@ -231,7 +231,7 @@
         </p>
         <div class="flex flex-row gap-1 mt-2">
           <FilterChipsReadOnly
-            metricsViewName={$metricsViewName}
+            exploreName={$exploreName}
             filters={$dashboardStore.whereFilter}
             dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
             timeRange={undefined}

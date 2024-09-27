@@ -13,7 +13,6 @@ export class ResourceWatcher {
       if (!matches || matches.length < 4) return;
       const [, status, type, name] = matches;
       this.statuses.set(`${type}__${name}`, status);
-      console.log(`[${status}] ${type}/${name}`);
     });
   }
 

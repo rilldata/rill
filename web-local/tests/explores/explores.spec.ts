@@ -287,22 +287,23 @@ measures: '*'
     // Open Edit Explore
     await page.getByRole("button", { name: "Edit Explore" }).click();
 
-    const deleteOnlyMeasureDoc = `
-type: explore
-
-title: "Adbids dashboard renamed"
-metrics_view: AdBids_model_metrics
-
-dimensions: '*'
-measures: []
-        `;
-    await updateCodeEditor(page, deleteOnlyMeasureDoc);
-    // Check warning message appears, Preview is disabled
-    await expect(
-      page.getByText("must define at least one measure"),
-    ).toBeVisible();
-
-    await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
+    // this is not a thing anymore
+    //     const deleteOnlyMeasureDoc = `
+    // type: explore
+    //
+    // title: "Adbids dashboard renamed"
+    // metrics_view: AdBids_model_metrics
+    //
+    // dimensions: '*'
+    // measures: []
+    //         `;
+    //     await updateCodeEditor(page, deleteOnlyMeasureDoc);
+    //     // Check warning message appears, Preview is disabled
+    //     await expect(
+    //       page.getByText("must define at least one measure"),
+    //     ).toBeVisible();
+    //
+    //     await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
 
     // add back the measure to explore
     await updateCodeEditor(
