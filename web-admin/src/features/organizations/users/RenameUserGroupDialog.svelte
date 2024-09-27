@@ -69,7 +69,7 @@
     <DialogHeader>
       <DialogTitle>Rename user group</DialogTitle>
     </DialogHeader>
-    <DialogFooter class="mt-4">
+    <DialogFooter class="mt-2">
       <form
         id={formId}
         class="w-full"
