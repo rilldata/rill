@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
-
   import { writable } from "svelte/store";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import {
