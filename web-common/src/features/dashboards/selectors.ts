@@ -147,7 +147,7 @@ export const getFiltersForOtherDimensions = (
   );
 };
 
-export const useGetDashboardsForModel = (
+export const useGetMetricsViewsForModel = (
   instanceId: string,
   modelName: string,
 ) => {
@@ -155,5 +155,16 @@ export const useGetDashboardsForModel = (
     instanceId,
     ResourceKind.MetricsView,
     (res) => res.metricsView?.spec?.table === modelName,
+  );
+};
+
+export const useGetExploresForMetricsView = (
+  instanceId: string,
+  metricsViewName: string,
+) => {
+  return useClientFilteredResources(
+    instanceId,
+    ResourceKind.Explore,
+    (res) => res.explore?.spec?.metricsView === metricsViewName,
   );
 };

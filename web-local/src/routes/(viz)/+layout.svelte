@@ -9,7 +9,7 @@
     useValidExplores,
   } from "@rilldata/web-common/features/dashboards/selectors.js";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
+  import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -66,7 +66,7 @@
     </span>
     {#if route.id?.includes("explore") && metricsViewName}
       <StateManagersProvider {metricsViewName} exploreName={dashboardName}>
-        <DashboardCtAs exploreName={dashboardName} />
+        <ExplorePreviewCTAs exploreName={dashboardName} />
       </StateManagersProvider>
     {/if}
   </header>

@@ -46,5 +46,5 @@
     }
   }}
 >
-  Create Explore dashboard
+  Create explore
 </Button>

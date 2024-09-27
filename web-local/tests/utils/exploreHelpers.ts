@@ -13,7 +13,7 @@ export async function createExploreFromSource(
   await openFileNavEntryContextMenu(page, sourcePath);
   await clickMenuButton(page, "Generate metrics");
   await waitForFileNavEntry(page, metricsViewPath, true);
-  await page.getByText("Create Explore dashboard").click();
+  await page.getByText("Create explore").click();
 }
 
 export async function createExploreFromModel(
@@ -27,6 +27,6 @@ export async function createExploreFromModel(
   await waitForFileNavEntry(page, metricsViewPath, true);
   await Promise.all([
     waitForFileNavEntry(page, explorePath, true),
-    page.getByText("Create Explore dashboard").click(),
+    page.getByText("Create explore").click(),
   ]);
 }

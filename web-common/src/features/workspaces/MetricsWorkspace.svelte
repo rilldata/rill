@@ -23,7 +23,7 @@
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
-  import CreateExploreDashboardButton from "../metrics-views/CreateExploreDashboardButton.svelte";
+  import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -118,7 +118,7 @@
         />
         <DeployDashboardCta />
       {:else}
-        <CreateExploreDashboardButton metricsViewResource={resource} />
+        <GoToDashboardButton {resource} />
       {/if}
       <LocalAvatarButton />
     </div>
