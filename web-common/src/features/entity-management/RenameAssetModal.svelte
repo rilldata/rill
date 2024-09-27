@@ -131,7 +131,13 @@
     {#if error}
       <SubmissionError message={error} />
     {/if}
-    <form autocomplete="off" on:submit|preventDefault={submit} use:enhance>
+    <form
+      id="rename-asset-form"
+      class="flex flex-col gap-y-4"
+      autocomplete="off"
+      on:submit|preventDefault={submit}
+      use:enhance
+    >
       <div class="py-2">
         <Input
           bind:value={$superform.newName}
@@ -143,7 +149,11 @@
         />
       </div>
     </form>
-
-    <Button large type="primary" on:click={submit}>Change Name</Button>
+    <Dialog.Footer class="gap-x-2">
+      <Button large type="text" on:click={closeModal}>Cancel</Button>
+      <Button large type="primary" submitForm form="rename-asset-form">
+        Change Name
+      </Button>
+    </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
