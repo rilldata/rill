@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import type { V1MemberUser, V1UserInvite } from "@rilldata/web-admin/client";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import { flexRender } from "@tanstack/svelte-table";
@@ -10,21 +10,21 @@
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
 
-  export let data: V1MemberUser[];
+  export let data: V1MemberUser[] | V1UserInvite[];
   export let currentUserEmail: string;
   export let onRemove: (email: string) => void;
   export let onSetRole: (email: string, role: string) => void;
 
-  const columns: ColumnDef<V1MemberUser, any>[] = [
+  const columns: ColumnDef<V1MemberUser | V1UserInvite, any>[] = [
     {
       accessorKey: "user",
       header: "User",
       enableSorting: false,
       cell: ({ row }) =>
         flexRender(OrgUsersTableUserCompositeCell, {
-          name: row.original.userName,
+          name: row.original.userName ?? row.original.email,
           email: row.original.userEmail,
-          currentUserEmail: currentUserEmail,
+          pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
         }),
     },
