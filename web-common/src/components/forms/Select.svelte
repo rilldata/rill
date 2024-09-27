@@ -3,26 +3,39 @@
   import { createEventDispatcher } from "svelte";
   import * as Select from "@rilldata/web-common/components/select";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
+  import Search from "../search/Search.svelte";
 
   const dispatch = createEventDispatcher();
 
   export let value: string = "";
   export let id: string;
   export let label: string = "";
-  export let options: { value: string; label: string }[];
+  export let options: { value: string; label: string; type?: string }[];
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
   export let width: number | null = null;
   export let selectElement: HTMLButtonElement | undefined = undefined;
   export let full = false;
-  export let onChange: (value: string) => void = () => {};
+
   export let fontSize = 12;
   export let sameWidth = false;
   export let ringFocus = true;
   export let truncate = false;
+  export let enableSearch = false;
+  export let onChange: (value: string) => void = () => {};
+
+  let searchText = "";
 
   $: selected = options.find((option) => option.value === value);
+  $: filteredOptions = enableSearch
+    ? options.filter((option) =>
+        option.label.toLowerCase().includes(searchText.toLowerCase()),
+      )
+    : options;
+
+  $: console.log({ selected });
 </script>
 
 <div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>
@@ -55,6 +68,11 @@
       dispatch("change", newSelection.value);
       onChange(newSelection.value);
     }}
+    onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        searchText = "";
+      }
+    }}
     items={options}
   >
     <Select.Trigger
@@ -75,14 +93,20 @@
     </Select.Trigger>
 
     <Select.Content {sameWidth} align="start" class="max-h-80 overflow-y-auto">
-      {#each options as option (option.value)}
-        <Select.Item
-          value={option.value}
-          label={option.label}
-          class="text-[{fontSize}px] "
-        >
-          {option?.label ?? option.value}
+      {#if enableSearch}
+        <div class="px-2 py-1.5">
+          <Search bind:value={searchText} showBorderOnFocus={false} />
+        </div>
+      {/if}
+      {#each filteredOptions as { type, value, label } (value)}
+        <Select.Item {value} {label} class="text-[{fontSize}px] gap-x-2">
+          {#if type}
+            <DataTypeIcon {type} />
+          {/if}
+          {label ?? value}
         </Select.Item>
+      {:else}
+        <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
       {/each}
     </Select.Content>
   </Select.Root>

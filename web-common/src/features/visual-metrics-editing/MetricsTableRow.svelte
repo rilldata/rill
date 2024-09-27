@@ -1,86 +1,49 @@
-<script context="module" lang="ts">
-  import { writable } from "svelte/store";
-
-  export const insertIndex = writable<number | null>(null);
-  export const table = writable<"dimensions" | "measures" | null>(null);
-</script>
-
 <script lang="ts">
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import EditControls from "./EditControls.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import Checkbox from "./Checkbox.svelte";
+  import { YAMLDimension, YAMLMeasure, ROW_HEIGHT } from "./lib";
 
-  import { YAMLMap } from "yaml";
-
-  export let rowHeight: number;
-  export let item: YAMLMap<string, string>;
+  export let item: YAMLDimension | YAMLMeasure;
   export let i: number;
   export let selected: boolean;
-  export let length: number;
-  export let reorderList: (
-    initIndex: number,
-    newIndex: number,
-    type: "measures" | "dimensions",
-  ) => void;
-  export let onCheckedChange: (checked: boolean) => void;
-  export let onDelete: (index: number, type: "measures" | "dimensions") => void;
-  export let onDuplicate: (
-    index: number,
-    type: "measures" | "dimensions",
-  ) => void;
-  export let scrollLeft: number;
+  export let length = Infinity;
   export let tableWidth: number;
   export let type: "measures" | "dimensions";
+  export let editing = false;
   export let expressionWidth: number;
+  export let scrollLeft = 0;
+  export let rowHeight = ROW_HEIGHT;
+  export let dragging = true;
+  export let translate = 0;
+  export let ghost = false;
+  export let sidebarOpen = false;
+  export let handleDragStart: (e: MouseEvent) => void = () => {};
   export let onEdit: (
     index: number,
     type: "measures" | "dimensions",
     field?: string,
-  ) => void;
-  export let editing: boolean;
+  ) => void = () => {};
+  export let onCheckedChange: (checked: boolean) => void = () => {};
+  export let onDelete: (
+    index: number,
+    type: "measures" | "dimensions",
+  ) => void = () => {};
+  export let onDuplicate: (
+    index: number,
+    type: "measures" | "dimensions",
+  ) => void = () => {};
+  export let onMoveTo: (top: boolean) => void = () => {};
 
   let row: HTMLTableRowElement;
-  let initialY = 0;
-  let clone: HTMLTableRowElement;
   let hovered = false;
 
-  function handleDragStart(e: MouseEvent) {
-    if (e.button !== 0) return;
-    table.set(type);
-    initialY = e.clientY;
+  $: ({ name, label, expression, description } = item);
 
-    clone = row.cloneNode(true) as HTMLTableRowElement;
+  $: id = name ?? label ?? "";
 
-    clone.style.opacity = "0.6";
-    clone.style.width = "100%";
-    clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
-    row.parentElement?.appendChild(clone);
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-  }
-
-  function handleMouseMove(e: MouseEvent) {
-    const movement = e.clientY - initialY;
-    const rowDelta = Math.floor(movement / 40);
-
-    insertIndex.set(Math.max(-1, i + rowDelta));
-    clone.style.transform = `translateY(${e.clientY - initialY - (length - i) * 40}px)`;
-  }
-
-  function handleMouseUp() {
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
-
-    if ($insertIndex !== i && $insertIndex !== null) {
-      reorderList(i, $insertIndex < i ? $insertIndex + 1 : $insertIndex, type);
-    }
-
-    clone.remove();
-    table.set(null);
-    insertIndex.set(null);
-  }
+  $: finalSelected = selected && !sidebarOpen;
 
   function onCellClick(
     e: MouseEvent & {
@@ -93,42 +56,45 @@
 </script>
 
 <tr
-  id={item.get("name") || item.get("label")}
-  style:transform="translateY(0px)"
+  {id}
+  style:transform="translateY({translate}px)"
   class="relative text-sm"
   style:height="{rowHeight}px"
   class:editing
+  class:dragging
+  class:ghost
+  class:selected={finalSelected}
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
   bind:this={row}
-  class:insert={$table === type && $insertIndex === i}
 >
   <td class="!pl-0 sticky">
     <div class="gap-x-0.5 flex items-center pl-1">
       <button
-        on:mousedown={handleDragStart}
         class:opacity-0={!hovered}
         disabled={!hovered}
         class="text-gray-500"
+        on:mousedown={handleDragStart}
       >
         <DragHandle size="16px" />
       </button>
+
       <Checkbox onChange={onCheckedChange} checked={selected} />
     </div>
   </td>
 
   <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
-    <span>{item?.get("name") ?? "-"}</span>
+    <span>{name ?? "-"}</span>
   </td>
   <td on:click={onCellClick} aria-label="Label">
     <div class="text-[12px] pr-4">
       <Chip
         slideDuration={0}
         type={type === "dimensions" ? "dimension" : "measure"}
-        label={item.get("label") || item.get("name")}
+        label={label || name}
       >
         <div slot="body" class="font-bold">
-          {item.get("label") || item.get("name")}
+          {label || name}
         </div>
       </Chip>
     </div>
@@ -140,52 +106,75 @@
     aria-label="SQL expression"
     style:max-width="{expressionWidth}px"
   >
-    <span>{item.get("expression") || item.get("column")}</span>
+    <span>{expression || (item instanceof YAMLDimension && item?.column)}</span>
   </td>
 
-  {#if type === "measures"}
+  {#if item instanceof YAMLMeasure}
     <td on:click={onCellClick} aria-label="Format">
-      <span>{item.get("format_preset") || item?.get("format_d3") || "-"}</span>
+      <span>{item?.format_preset || item?.format_d3 || "-"}</span>
     </td>
   {/if}
 
-  <td class="" on:click={onCellClick} aria-label="Description">
-    <span>{item?.get("description") || "-"}</span>
+  <td
+    style:max-width="{expressionWidth}px"
+    on:click={onCellClick}
+    aria-label="Description"
+  >
+    <span>{description || "-"}</span>
   </td>
 
-  {#if hovered}
-    <EditControls
-      {editing}
-      right={Math.max(0, tableWidth - scrollLeft)}
-      first={i === 0}
-      last={i === length - 1}
-      onEdit={() => {
-        onEdit(i, type);
-      }}
-      onMoveToBottom={() => {
-        reorderList(i, length - 1, type);
-      }}
-      onMoveToTop={() => {
-        reorderList(i, 0, type);
-      }}
-      onDuplicate={() => {
-        onDuplicate(i, type);
-      }}
-      onDelete={() => {
-        onDelete(i, type);
-      }}
-    />
+  {#if hovered && !ghost}
+    <div
+      class="editing-controls"
+      style:right="{Math.max(0, tableWidth - scrollLeft)}px"
+      class:editing
+      class:selected={finalSelected}
+    >
+      <EditControls
+        selected={finalSelected}
+        first={i === 0}
+        last={i === length - 1}
+        onEdit={() => {
+          onEdit(i, type);
+        }}
+        {onMoveTo}
+        onDuplicate={() => {
+          onDuplicate(i, type);
+        }}
+        onDelete={() => {
+          onDelete(i, type);
+        }}
+      />
+    </div>
   {/if}
 </tr>
 
 <style lang="postcss">
+  .editing-controls {
+    height: 39px;
+    width: 192px;
+    @apply bg-gray-50;
+    @apply gap-x-2.5 px-4 py-2 flex items-center justify-center absolute top-0  z-50;
+  }
+
+  .editing-controls.selected {
+    @apply bg-primary-50;
+  }
+
   tr {
     @apply bg-background;
-    /* @apply -z-10; */
+  }
+
+  .dragging {
+    @apply pointer-events-none;
   }
 
   tr:hover:not(.editing) {
     @apply bg-gray-50;
+  }
+
+  tr:hover.selected {
+    @apply bg-primary-50;
   }
 
   td:hover:not(.editing) {
@@ -196,13 +185,13 @@
     @apply bg-gray-100;
   }
 
+  .selected {
+    @apply bg-primary-50/50;
+  }
+
   td:not(.dragging) {
     @apply pl-4 truncate border-b;
   }
-
-  /* .insert td {
-    @apply border-primary-300 border-b-2;
-  } */
 
   .source-code {
     font-family: "Source Code Variable", monospace;
@@ -210,5 +199,9 @@
 
   span {
     @apply pr-4;
+  }
+
+  .ghost {
+    @apply opacity-50 pointer-events-none;
   }
 </style>

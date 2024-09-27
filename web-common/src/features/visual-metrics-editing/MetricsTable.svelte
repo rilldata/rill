@@ -1,36 +1,19 @@
-<script context="module" lang="ts">
-  class MaxStore {
-    private store: Writable<number> = writable(0);
-
-    set(value: number) {
-      this.store.set(Math.max(value, get(this.store)));
-    }
-
-    subscribe = this.store.subscribe;
-  }
-  const nameWidth = new MaxStore();
-  const labelWidth = new MaxStore();
-  const formatWidth = new MaxStore();
-</script>
-
 <script lang="ts">
   import { onMount } from "svelte";
   import Checkbox from "./Checkbox.svelte";
   import MetricsTableRow from "./MetricsTableRow.svelte";
-  import { insertIndex, table } from "./MetricsTableRow.svelte";
-  import { YAMLMap } from "yaml";
-  import { get, Writable, writable } from "svelte/store";
-  import { editingItem } from "../workspaces/VisualMetrics.svelte";
+  import { nameWidth, labelWidth, formatWidth, ROW_HEIGHT } from "./lib";
+  import { editingItem, YAMLDimension, YAMLMeasure } from "./lib";
 
   const headers = ["Name", "Label", "SQL expression", "Format", "Description"];
   const gutterWidth = 56;
-  const ROW_HEIGHT = 40;
 
   export let type: "measures" | "dimensions";
-  export let items: Array<YAMLMap<string, string>>;
+  export let items: Array<YAMLDimension | YAMLMeasure>;
   export let selected: Set<number>;
+  export let editingIndex: number | null;
   export let reorderList: (
-    initIndex: number,
+    initIndex: number[],
     newIndex: number,
     type: "measures" | "dimensions",
   ) => void;
@@ -52,6 +35,12 @@
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   let wrapperRect = new DOMRectReadOnly(0, 0, 0, 0);
 
+  let cursorDragStart = 0;
+  let initiatingDragIndex = -1;
+  let dragging: number[] = [];
+  let dragMovement = 0;
+  let insertIndex: number = -1;
+
   onMount(() => {
     const cells = clientWidth.children;
     const initialNameWidth = cells[1].getBoundingClientRect().width;
@@ -67,15 +56,58 @@
   $: tableWidth = contentRect.width;
   $: wrapperWidth = wrapperRect.width;
   $: expressionWidth = Math.max(220, wrapperRect.width * 0.2);
+
+  function handleDragStart(e: MouseEvent, i: number) {
+    if (e.button !== 0) return;
+
+    cursorDragStart = e.clientY;
+    initiatingDragIndex = i;
+    insertIndex = initiatingDragIndex + 1;
+
+    dragging = Array.from(selected);
+
+    if (!selected.has(i)) {
+      dragging.push(i);
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    dragMovement = e.clientY - cursorDragStart;
+    const rowDelta = Math.floor(dragMovement / 40);
+
+    insertIndex = Math.max(0, initiatingDragIndex + 1 + rowDelta);
+  }
+
+  function handleMouseUp() {
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+
+    if (insertIndex !== initiatingDragIndex && insertIndex !== null) {
+      reorderList(dragging, insertIndex, type);
+    }
+
+    resetDrag();
+  }
+
+  function resetDrag() {
+    cursorDragStart = 0;
+    initiatingDragIndex = -1;
+    dragging = [];
+    dragMovement = 0;
+    insertIndex = -1;
+  }
 </script>
 
 <div
   class="wrapper relative"
+  style:max-height="{Math.max(80, ((items?.length ?? 0) + 1) * 40) + 1}px"
   on:scroll={(e) => {
     scroll = e.currentTarget.scrollLeft;
   }}
   bind:contentRect={wrapperRect}
-  style:max-height="{Math.max(80, ((items?.length ?? 0) + 1) * 40)}px"
 >
   <table bind:contentRect>
     <colgroup>
@@ -102,7 +134,7 @@
         <th class="!pl-[22px]">
           <Checkbox
             onChange={onCheckedChange}
-            checked={selected.size === items.length}
+            checked={selected.size / items.length}
           />
         </th>
         {#each headers as header (header)}
@@ -117,23 +149,32 @@
     <tbody bind:this={tbody} class="relative overflow-hidden">
       {#each items as item, i (i)}
         <MetricsTableRow
-          rowHeight={ROW_HEIGHT}
-          {expressionWidth}
-          {item}
-          {reorderList}
-          {onDuplicate}
-          tableWidth={tableWidth - wrapperWidth}
+          sidebarOpen={!!$editingItem}
           {i}
+          {item}
+          {type}
+          {expressionWidth}
+          selected={selected.has(i)}
+          dragging={!!cursorDragStart}
+          tableWidth={tableWidth - wrapperWidth}
           scrollLeft={scroll}
           length={items.length}
+          editing={editingIndex === i}
+          {onEdit}
+          {onDuplicate}
+          {onDelete}
+          handleDragStart={(event) => handleDragStart(event, i)}
           onCheckedChange={(checked) => {
             onCheckedChange(checked, i);
           }}
-          editing={$editingItem?.type === type && $editingItem?.index === i}
-          {onEdit}
-          selected={selected.has(i)}
-          {type}
-          {onDelete}
+          onMoveTo={(top) => {
+            const moving = Array.from(selected);
+
+            if (!selected.has(i)) {
+              moving.push(i);
+            }
+            reorderList(moving, top ? 0 : items.length, type);
+          }}
         />
       {:else}
         <tr style:height="40px" class="relative">
@@ -144,12 +185,28 @@
           </div>
         </tr>
       {/each}
+
+      {#each dragging as i, dragIndex (i)}
+        {@const item = items[i]}
+        <MetricsTableRow
+          ghost
+          {item}
+          {type}
+          {i}
+          translate={dragMovement + (items.length - i + dragIndex) * -40}
+          {expressionWidth}
+          tableWidth={tableWidth - wrapperWidth}
+          selected={selected.has(i)}
+        />
+      {/each}
     </tbody>
   </table>
-  {#if $insertIndex !== null && $table === type}
+  {#if insertIndex !== -1}
+    {@const last = insertIndex === items.length}
     <span
-      style:top="{($insertIndex + 1) * ROW_HEIGHT + ROW_HEIGHT}px"
-      class="w-full h-[3px] bg-primary-300 absolute top-[40px] -translate-y-1/2 z-50"
+      style:top="{insertIndex * ROW_HEIGHT + ROW_HEIGHT - (last ? 1 : 0)}px"
+      class:last
+      class="row-insert-marker"
     />
   {/if}
 </div>
@@ -177,5 +234,13 @@
     @apply text-left;
     @apply pl-4 text-slate-500 bg-background;
     @apply border-b text-sm font-semibold;
+  }
+  .row-insert-marker {
+    @apply w-full h-[3px] bg-primary-300 absolute z-50;
+    @apply -translate-y-1/2;
+  }
+
+  .last {
+    @apply -translate-y-full;
   }
 </style>

@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    editingItem,
-    YAMLDimension,
-    YAMLMeasure,
-  } from "../workspaces/VisualMetrics.svelte";
+  import { editingItem, YAMLDimension, YAMLMeasure, MenuOption } from "./lib";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
@@ -17,20 +13,30 @@
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import SimpleSqlExpression from "./SimpleSQLExpression.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { NUMERICS } from "@rilldata/web-common/lib/duckdb-data-types";
 
-  export let item: YAMLMap<string, string> | undefined;
+  export let item: YAMLMeasure | YAMLDimension;
   export let fileArtifact: FileArtifact;
   export let index: number;
   export let type: "measures" | "dimensions";
   export let columns: V1ProfileColumn[];
   export let editing: boolean;
-  export let editingClone: YAMLMeasure | YAMLDimension;
+  export let unsavedChanges: boolean;
   export let switchView: () => void;
   export let onDelete: () => void;
   export let onCancel: (unsavedChanges: boolean) => void;
-  export let unsavedChanges: boolean;
 
-  let columnNames = columns.map(({ name }) => name).filter(isDefined);
+  let editingClone = structuredClone(item);
+
+  let columnOptions: MenuOption[] = columns.map(({ name, type }) => ({
+    value: name ?? "",
+    label: name ?? "",
+    type,
+  }));
+
+  $: numericColumns = columnOptions.filter(
+    ({ type }) => type && NUMERICS.has(type),
+  );
 
   let properties: Record<
     string,
@@ -43,7 +49,7 @@
         key: string;
         hint?: string;
         label: string;
-        options?: string[];
+        options?: MenuOption[];
         placeholder?: string;
         boolean?: true;
       }>;
@@ -57,7 +63,7 @@
           {
             key: "expression",
             label: "Simple",
-            options: columnNames,
+            options: columnOptions,
             placeholder: "Column from model",
           },
           {
@@ -98,7 +104,10 @@
           {
             label: "Simple",
             key: "format_preset",
-            options: Object.values(FormatPreset),
+            options: Object.values(FormatPreset).map((value) => ({
+              value,
+              label: value,
+            })),
             placeholder: "Select a format",
           },
           {
@@ -141,7 +150,7 @@
         fields: [
           {
             placeholder: "Column from model",
-            options: columnNames,
+            options: columnOptions,
             key: "column",
             label: "Simple",
           },
@@ -163,7 +172,6 @@
           },
         ],
         selected: 0,
-        optional: true,
       },
       {
         label: "Label",
@@ -196,16 +204,14 @@
 
   $: ({ remoteContent, localContent, saveContent } = fileArtifact);
 
-  $: readyToGo = properties[type].every(({ fields, optional, selected }) => {
-    return optional || editingClone[fields[selected].key];
-  });
+  $: readyToGo = properties[type].every(
+    ({ fields, optional, selected }) =>
+      optional || editingClone[fields[selected].key],
+  );
 
-  $: unsavedChanges = Object.keys(editingClone).some((key) => {
-    return (
-      (item?.has(key) && editingClone[key] !== item?.get(key)) ||
-      (!item?.has(key) && editingClone[key])
-    );
-  });
+  $: unsavedChanges = Object.keys(editingClone).some(
+    (key) => editingClone[key] !== item?.[key],
+  );
 
   async function saveChanges() {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
@@ -215,7 +221,8 @@
 
     properties[type].forEach(({ selected, fields }) => {
       const { key } = fields[selected];
-      if (editingClone[key]) newItem.set(key, editingClone[key]);
+      if (editingClone[key] || editingClone[key] === false)
+        newItem.set(key, editingClone[key]);
     });
 
     if (editing) {
@@ -227,11 +234,9 @@
     await saveContent(parsedDocument.toString());
     editingItem.set(null);
 
-    eventBus.emit("notification", { message: "Item saved", type: "success" });
-  }
+    unsavedChanges = false;
 
-  function isDefined(value: string | undefined): value is string {
-    return value !== undefined;
+    eventBus.emit("notification", { message: "Item saved", type: "success" });
   }
 </script>
 
@@ -247,7 +252,7 @@
   <h1 class="pt-6 px-5">{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
   <div
-    class="px-5 flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible px-1"
+    class="px-5 flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible"
   >
     {#each properties[type] as { fields, selected, label, optional, fontFamily } (label)}
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
@@ -269,7 +274,8 @@
       {:else if key === "expression" && type === "measures"}
         <SimpleSqlExpression
           {editing}
-          {columnNames}
+          columns={columnOptions}
+          {numericColumns}
           bind:expression={editingClone.expression}
           bind:name={editingClone.name}
         />
@@ -277,6 +283,7 @@
         <Input
           id={`vme-${label}`}
           textClass="text-sm"
+          enableSearch={key === "column"}
           bind:value={editingClone[key]}
           {label}
           {hint}

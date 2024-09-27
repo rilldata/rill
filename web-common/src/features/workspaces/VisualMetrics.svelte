@@ -1,55 +1,4 @@
 <script lang="ts" context="module">
-  type EditingItem = {
-    index: number;
-    type: "measures" | "dimensions";
-    field?: string;
-  };
-
-  export const editingItem = writable<EditingItem | null>(null);
-
-  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-
-  export class YAMLDimension {
-    column: string | undefined;
-    expression: string | undefined;
-    name: string | undefined;
-    label: string | undefined;
-    description: string | undefined;
-    unnest: boolean | undefined;
-
-    constructor(item?: YAMLMap<string, string>) {
-      this.column = item?.get("column");
-      this.expression = item?.get("expression");
-      this.name = item?.get("name");
-      this.label = item?.get("label");
-      this.description = item?.get("description");
-      this.unnest = item?.get("unnest") as unknown as boolean;
-    }
-  }
-
-  export class YAMLMeasure {
-    expression: string | undefined;
-    name: string | undefined;
-    label: string | undefined;
-    description: string | undefined;
-    valid_percent_of_total: boolean | undefined;
-    format_d3: string | undefined;
-    format_preset: FormatPreset | undefined;
-
-    constructor(item?: YAMLMap<string, string>) {
-      this.expression = item?.get("expression");
-      this.name = item?.get("name");
-      this.label = item?.get("label");
-      this.description = item?.get("description");
-      this.valid_percent_of_total = item?.get(
-        "valid_percent_of_total",
-      ) as unknown as boolean;
-      this.format_d3 = item?.get("format_d3");
-      this.format_preset = item?.get(
-        "format_preset",
-      ) as unknown as FormatPreset;
-    }
-  }
 </script>
 
 <script lang="ts">
@@ -62,7 +11,7 @@
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
-  import { writable } from "svelte/store";
+
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
@@ -82,8 +31,15 @@
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import { tick } from "svelte";
-
-  type ItemType = "measures" | "dimensions";
+  import type { ItemType, Confirmation } from "../visual-metrics-editing/lib";
+  import {
+    YAMLMeasure,
+    YAMLDimension,
+    editingIndex,
+    editingItem,
+    types,
+  } from "../visual-metrics-editing/lib";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let fileArtifact: FileArtifact;
   export let switchView: () => void;
@@ -91,13 +47,7 @@
 
   let searchValue = "";
   let unsavedChanges = false;
-  let confirmation: {
-    action: "cancel" | "delete" | "switch" | "switch-edit";
-    type?: ItemType;
-    model?: string;
-    index?: number;
-    field?: string;
-  } | null = null;
+  let confirmation: Confirmation | null = null;
   let collapsed = {
     measures: false,
     dimensions: false,
@@ -115,23 +65,29 @@
     saveContent,
     updateLocalContent,
     saveLocalContent,
+    getResource,
   } = fileArtifact);
 
   $: modelsQuery = useModels(instanceId);
   $: sourcesQuery = useSources(instanceId);
+  $: metricsViewQuery = getResource(queryClient, instanceId);
 
   $: modelNames =
-    $modelsQuery.data
-      ?.map((resource) => {
-        return resource.meta?.name?.name;
-      })
-      .filter(isDefined) ?? [];
+    $modelsQuery.data?.map((resource) => {
+      const value = resource.meta?.name?.name ?? "";
+      return {
+        value,
+        label: value,
+      };
+    }) ?? [];
   $: sourceNames =
-    $sourcesQuery.data
-      ?.map((resource) => {
-        return resource.meta?.name?.name;
-      })
-      .filter(isDefined) ?? [];
+    $sourcesQuery.data?.map((resource) => {
+      const value = resource.meta?.name?.name ?? "";
+      return {
+        value,
+        label: value,
+      };
+    }) ?? [];
 
   $: timeDimension = (parsedDocument.get("timeseries") ?? "") as string;
 
@@ -157,8 +113,7 @@
 
   $: timeOptions = columns
     .filter(({ type }) => type === "TIMESTAMP")
-    .map(({ name }) => name)
-    .filter(isDefined);
+    .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
 
   $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
@@ -166,37 +121,36 @@
     (parsedDocument.get("measures") as YAMLSeq).items as Array<
       YAMLMap<string, string>
     >
-  ).filter((i) => filter(i, searchValue));
+  )
+    .map((item) => new YAMLMeasure(item))
+    .filter((item) => filter(item, searchValue));
 
   $: yamlDimensions = (
     (parsedDocument.get("dimensions") as YAMLSeq).items as Array<
       YAMLMap<string, string>
     >
-  ).filter((i) => filter(i, searchValue));
+  )
+    .map((item, i) => new YAMLDimension(item, dimensions[i]))
+    .filter((item) => filter(item, searchValue));
 
-  $: itemGroups = new Map<ItemType, YAMLMap<string, string>[]>([
-    ["measures", yamlMeasures],
-    ["dimensions", yamlDimensions],
-  ]);
+  let itemGroups: {
+    measures: YAMLMeasure[];
+    dimensions: YAMLDimension[];
+  };
+  $: itemGroups = {
+    measures: yamlMeasures,
+    dimensions: yamlDimensions,
+  };
 
   $: smallestTimeGrain = (parsedDocument.get("smallest_time_grain") ??
     "") as string;
-
-  $: item =
-    ($editingItem && itemGroups.get($editingItem.type)?.[$editingItem.index]) ||
-    undefined;
-
-  $: editingClone =
-    $editingItem && item
-      ? $editingItem.type === "measures"
-        ? new YAMLMeasure(item)
-        : new YAMLDimension(item)
-      : undefined;
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
 
   /** display the main error (the first in this array) at the bottom */
   $: mainError = errors?.at(0);
+
+  $: dimensions = $metricsViewQuery.data?.metricsView?.spec?.dimensions ?? [];
 
   async function setEditing(index: number, type: ItemType, field?: string) {
     if (unsavedChanges) {
@@ -209,7 +163,12 @@
       return;
     }
 
-    editingItem.set({ index, type, field });
+    const item = itemGroups[type][index];
+
+    if (item) {
+      editingItem.set({ item, type });
+      editingIndex.set(index);
+    }
 
     if (field) {
       await tick();
@@ -217,15 +176,13 @@
     }
   }
 
-  function filter(item: YAMLMap<string, string>, searchValue: string) {
+  function filter(item: YAMLDimension | YAMLMeasure, searchValue: string) {
     return (
-      item?.get("name")?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item?.get("label")?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item
-        ?.get("expression")
-        ?.toLowerCase()
-        .includes(searchValue.toLowerCase()) ||
-      item?.get("column")?.toLowerCase().includes(searchValue.toLowerCase())
+      item?.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item?.label?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item?.expression?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      (item instanceof YAMLDimension &&
+        item?.column?.toLowerCase().includes(searchValue.toLowerCase()))
     );
   }
 
@@ -235,50 +192,84 @@
     await saveContent(parsedDocument.toString());
   }
 
-  function isDefined<T>(x: T | undefined): x is T {
-    return x !== undefined;
-  }
-
   async function reorderList(
-    initIndex: number,
+    initIndexes: number[],
     newIndex: number,
     type: ItemType,
   ) {
+    initIndexes.sort((a, b) => a - b);
+    const editingItemIndex = initIndexes.indexOf($editingIndex ?? -1);
+
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const measures = parsedDocument.get(type) as YAMLSeq;
+    const sequence = parsedDocument.get(type) as YAMLSeq;
 
-    const items = measures.items as Array<YAMLMap>;
+    let items = sequence.items as Array<YAMLMap | null>;
 
-    const clampedIndex = clamp(0, newIndex, items.length - 1);
+    const clampedIndex = clamp(0, newIndex, items.length);
 
-    items.splice(clampedIndex, 0, items.splice(initIndex, 1)[0]);
+    const movedItems: Array<YAMLMap | null> = [];
 
-    selected[type].delete(initIndex);
-    selected[type].add(clampedIndex);
+    initIndexes.forEach((index) => {
+      movedItems.push(items[index]);
+      items[index] = null;
+    });
 
-    selected = selected;
+    items.splice(clampedIndex, 0, ...movedItems);
 
-    parsedDocument.set(type, items);
+    const countBeforeClamped = initIndexes.filter(
+      (i) => i < clampedIndex,
+    ).length;
 
-    await saveContent(parsedDocument.toString());
+    const newIndexes = initIndexes.map((_, dragPosition) => {
+      return clampedIndex + dragPosition - countBeforeClamped;
+    });
+
+    if (editingItemIndex !== -1) {
+      editingIndex.set(newIndexes[editingItemIndex]);
+    }
+
+    if (selected[type].size) {
+      selected[type] = new Set(newIndexes);
+    }
+
+    parsedDocument.set(
+      type,
+      items.filter((i) => i !== null),
+    );
+
+    updateLocalContent(parsedDocument.toString(), true);
+
+    await saveLocalContent();
 
     eventBus.emit("notification", { message: "Item moved", type: "success" });
   }
 
   function triggerDelete(index?: number, type?: ItemType) {
-    confirmation = {
-      action: "delete",
-      index,
-      type,
-    };
+    if (totalSelected) {
+      confirmation = {
+        action: "delete",
+      };
+    } else {
+      confirmation = {
+        action: "delete",
+        index,
+        type,
+      };
+    }
   }
 
   async function deleteItems(items: Partial<typeof selected>) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    let deletedEditingItem = false;
 
     Object.entries(items).forEach(([type, indices]) => {
       const seq = parsedDocument.get(type) as YAMLSeq;
       const items = seq.items as Array<YAMLMap>;
+
+      if ($editingIndex !== null) {
+        deletedEditingItem =
+          indices.has($editingIndex) && type === $editingItem?.type;
+      }
 
       parsedDocument.set(
         type,
@@ -296,17 +287,22 @@
 
     await saveLocalContent();
 
+    if (deletedEditingItem) {
+      editingItem.set(null);
+      editingIndex.set(null);
+    }
+
     eventBus.emit("notification", { message: "Item deleted", type: "success" });
   }
 
-  async function duplicateItem(item: number, type: ItemType) {
+  async function duplicateItem(index: number, type: ItemType) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const measures = parsedDocument.get(type) as YAMLSeq;
 
     const items = measures.items as Array<YAMLMap>;
 
-    const originalItem = items[item];
-    const originalName = originalItem.get("name");
+    const originalItem = items[index];
+    const originalName = originalItem.get("name") as string;
     const newItem = originalItem.clone() as YAMLMap;
 
     const itemNames = items.map((i) => i.get("name"));
@@ -320,11 +316,13 @@
       newItem.set("name", newName);
     }
 
-    items.splice(item + 1, 0, newItem);
+    items.splice(index + 1, 0, newItem);
 
     parsedDocument.set(type, items);
 
-    await saveContent(parsedDocument.toString());
+    updateLocalContent(parsedDocument.toString(), true);
+
+    await saveLocalContent();
 
     eventBus.emit("notification", {
       message: "Item duplicated",
@@ -361,7 +359,7 @@
         options={timeOptions}
         label="Time column"
         hint="Column from model that will be used as primary time dimension in dashboards"
-        onInput={async (value) => {
+        onChange={async (value) => {
           await updateProperty("timeseries", value);
         }}
       />
@@ -371,10 +369,14 @@
         full
         truncate
         value={smallestTimeGrain}
-        options={Object.entries(TIME_GRAIN).map(([_, { label }]) => label)}
+        options={Object.entries(TIME_GRAIN).map(([_, { label }]) => ({
+          value: label,
+          label,
+        }))}
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
-        onInput={async (value) => {
+        onChange={async (value) => {
+          console.log(value);
           await updateProperty("smallest_time_grain", value);
         }}
       />
@@ -382,7 +384,7 @@
 
     <span class="h-[1px] w-full bg-gray-200" />
 
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-3 gap-4 relative">
       <div class="col-span-3 sm:col-span-2 lg:col-span-1">
         <Input
           full
@@ -396,12 +398,45 @@
           <Search slot="icon" size="16px" color="#374151" />
         </Input>
       </div>
+
+      {#if totalSelected}
+        <div
+          class="bg-white rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
+        >
+          <div class="px-2 flex items-center">
+            {totalSelected}
+            {totalSelected > 1 ? "items" : "item"} selected:
+          </div>
+          <button
+            on:click={() => {
+              triggerDelete();
+            }}
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
+          >
+            <Trash size="16px" />
+            Delete
+          </button>
+
+          <button
+            on:click={() => {
+              selected = {
+                measures: new Set(),
+                dimensions: new Set(),
+              };
+            }}
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
+          >
+            <Close size="14px" />
+          </button>
+        </div>
+      {/if}
     </div>
 
     <div
       class="flex flex-col gap-y-2 h-fit w-full flex-shrink overflow-y-scroll"
     >
-      {#each itemGroups as [type, items] (type)}
+      {#each types as type (type)}
+        {@const items = itemGroups[type]}
         <div class="section">
           <header class="flex gap-x-1 items-center">
             <Button
@@ -427,9 +462,13 @@
               gray
               noStroke
               on:click={() => {
+                editingIndex.set(-1);
                 editingItem.set({
-                  index: -1,
                   type,
+                  item:
+                    type === "measures"
+                      ? new YAMLMeasure()
+                      : new YAMLDimension(),
                 });
               }}
             >
@@ -443,6 +482,10 @@
               {type}
               onDuplicate={duplicateItem}
               {items}
+              editingIndex={$editingIndex !== null &&
+              $editingItem?.type === type
+                ? $editingIndex
+                : null}
               onDelete={triggerDelete}
               onEdit={setEditing}
               onCheckedChange={(checked, index) => {
@@ -469,56 +512,22 @@
       <div
         role="status"
         transition:slide={{ duration: LIST_SLIDE_DURATION }}
-        class="editor-error ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5 max-h-72 overflow-auto"
+        class=" flex items-center gap-x-2 ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5 max-h-40 overflow-auto"
       >
-        <div class="flex gap-x-2 items-center">
-          <CancelCircle />{mainError.message}
-        </div>
-      </div>
-    {/if}
-
-    {#if totalSelected}
-      <div
-        class="bg-black rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-50 border border-gray-600 absolute bottom-10 left-1/2 -translate-x-1/2"
-      >
-        <div class="px-2 flex items-center">
-          {totalSelected}
-          {totalSelected > 1 ? "items" : "item"} selected:
-        </div>
-        <button
-          on:click={() => {
-            triggerDelete();
-          }}
-          class="flex gap-x-2 text-inherit items-center px-2 border-l border-gray-600 hover:bg-gray-800 cursor-pointer"
-        >
-          <Trash size="16px" color="white" />
-          Delete
-        </button>
-
-        <button
-          on:click={() => {
-            selected = {
-              measures: new Set(),
-              dimensions: new Set(),
-            };
-          }}
-          class="flex gap-x-2 text-inherit items-center px-2 border-l border-gray-600 hover:bg-gray-800 cursor-pointer"
-        >
-          <Close size="14px" />
-        </button>
+        <CancelCircle />
+        {mainError.message}
       </div>
     {/if}
   </div>
 
-  {#if $editingItem && editingClone}
-    {@const { index, type } = $editingItem}
-    {#key editingClone}
+  {#if $editingItem && $editingIndex !== null}
+    {@const { item, type } = $editingItem}
+    {@const index = $editingIndex}
+    {#key $editingItem}
       <Sidebar
         {item}
-        {editingClone}
         {columns}
         onDelete={() => {
-          const { type, index } = $editingItem;
           triggerDelete(index, type);
         }}
         onCancel={(unsavedChanges) => {
@@ -616,6 +625,9 @@
                     confirmation.type,
                     confirmation.field,
                   );
+                } else {
+                  unsavedChanges = false;
+                  editingItem.set(null);
                 }
               }
               confirmation = null;

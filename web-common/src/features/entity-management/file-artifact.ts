@@ -212,6 +212,9 @@ export class FileArtifact {
         blob,
       }).catch(console.error);
 
+      // Optimistically update the remote content
+      this.remoteContent.set(blob);
+
       this.updateLocalContent(null);
     } catch (e) {
       console.error(e);

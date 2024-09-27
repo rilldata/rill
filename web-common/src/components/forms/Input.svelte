@@ -23,7 +23,9 @@
   export let optional = false;
   export let truncate = false;
   export let fields: string[] | undefined = [];
-  export let options: string[] | undefined = [];
+  export let options:
+    | { value: string; label: string; type?: string }[]
+    | undefined = [];
   export let onInput: (
     newValue: string,
     e: Event & {
@@ -43,6 +45,7 @@
   export let sameWidth = false;
   export let width = "100%";
   export let textClass = "text-xs";
+  export let enableSearch = false;
 
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
@@ -173,12 +176,13 @@
     </div>
   {:else if options.length}
     <Select
+      {enableSearch}
       ringFocus
       {sameWidth}
       {id}
       bind:selectElement
       bind:value
-      options={options.map((value) => ({ value, label: value })) ?? []}
+      options={options ?? []}
       {onChange}
       fontSize={14}
       {truncate}

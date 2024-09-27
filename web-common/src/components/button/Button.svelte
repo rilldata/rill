@@ -232,7 +232,7 @@
   }
 
   .subtle:disabled {
-    @apply text-slate-400 bg-slate-50;
+    @apply text-slate-400 bg-transparent;
   }
 
   /* LINK STYLES */
