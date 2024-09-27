@@ -88,6 +88,7 @@ export class DashboardFetchMocks {
       ready: true,
       ok: true,
       json: () => this.responses.get(key),
+      headers: new Map([["content-type", "application/json"]]),
     };
   }
 }

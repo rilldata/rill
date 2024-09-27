@@ -114,8 +114,10 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	// special handling to mark model as updated when local file changes
 	if inputConnector == "local_file" {
+		c, ok := inputProps["invalidate_on_change"].(bool)
+		invalidateModelOnUpdate := ok && c
 		path, ok := inputProps["path"].(string)
-		if ok {
+		if ok && invalidateModelOnUpdate {
 			entries, err := p.Repo.ListRecursive(ctx, path, true)
 			if err == nil && len(entries) > 0 {
 				var localPaths []string
@@ -137,15 +139,13 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 					}
 				}
 
-				if c, ok := inputProps["invalidate_on_change"].(bool); ok && c {
-					// Calculate hash of local files
-					hash, err := fileHash(localPaths)
-					if err != nil {
-						return err
-					}
-					// Add hash to input properties so that the model spec is considered updated when the local file changes
-					inputProps["local_files_hash"] = hash
+				// Calculate hash of local files
+				hash, err := fileHash(localPaths)
+				if err != nil {
+					return err
 				}
+				// Add hash to input properties so that the model spec is considered updated when the local file changes
+				inputProps["local_files_hash"] = hash
 			}
 		}
 	}

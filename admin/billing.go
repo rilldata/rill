@@ -243,6 +243,11 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID, subID, pl
 		return fmt.Errorf("failed to upsert billing error: %w", err)
 	}
 
+	if subID == "" || planID == "" {
+		s.Logger.Named("billing").Warn("no subscription or plan ID provided, skipping trial billing issues", zap.String("org_id", orgID))
+		return nil
+	}
+
 	// raise on-trial billing warning
 	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 		OrgID: orgID,

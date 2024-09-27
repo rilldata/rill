@@ -4,6 +4,11 @@ description: Power Rill dashboards using ClickHouse
 sidebar_label: ClickHouse
 sidebar_position: 3
 ---
+import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
+
+
+<LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' />
+
 
 ## Overview
 
@@ -17,6 +22,14 @@ Rill supports connecting to an existing ClickHouse instance and using it as an O
 ## Supported versions
 
 Rill supports connecting to ClickHouse v22.7 or newer versions.
+
+## ClickHouse Local vs ClickHouse Cloud
+
+
+import ComingSoon from '@site/src/components/ComingSoon';
+
+<ComingSoon />
+
 
 ## Connection string (DSN)
 

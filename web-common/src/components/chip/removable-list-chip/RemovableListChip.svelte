@@ -19,7 +19,7 @@ are details left to the consumer of the component; this component should remain 
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
-  import { ChipColors, defaultChipColors } from "../chip-types";
+
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
@@ -30,11 +30,11 @@ are details left to the consumer of the component; this component should remain 
   export let selectedValues: string[];
   export let allValues: string[] | null;
   export let enableSearch = true;
-
+  export let type: "measure" | "dimension" | "time";
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
   export let excludeMode: boolean;
-  export let colors: ChipColors = defaultChipColors;
+
   export let label: string | undefined = undefined;
 
   let active = !selectedValues.length;
@@ -68,30 +68,25 @@ are details left to the consumer of the component; this component should remain 
     suppress={active}
   >
     <Chip
-      {...colors}
+      {type}
       {active}
       {label}
+      exclude={excludeMode}
       on:click={() => {
         toggleFloatingElement();
         dispatch("click");
       }}
+      caret
       on:remove={() => dispatch("remove")}
-      outline
       removable
+      removeTooltipText={`remove ${selectedValues.length} value${
+        selectedValues.length !== 1 ? "s" : ""
+      } for ${name}`}
     >
-      <!-- remove button tooltip -->
-      <svelte:fragment slot="remove-tooltip">
-        <slot name="remove-tooltip-content">
-          remove {selectedValues.length}
-          value{#if selectedValues.length !== 1}s{/if} for {name}</slot
-        >
-      </svelte:fragment>
-      <!-- body -->
       <RemovableListBody
-        {active}
+        slot="body"
         label={name}
         show={1}
-        slot="body"
         values={selectedValues}
       />
     </Chip>
@@ -102,9 +97,8 @@ are details left to the consumer of the component; this component should remain 
           <svelte:fragment slot="description">{typeLabel || ""}</svelte:fragment
           >
         </TooltipTitle>
-        {#if $$slots["body-tooltip-content"]}
-          <slot name="body-tooltip-content">click to edit the values</slot>
-        {/if}
+
+        <slot name="body-tooltip-content">click to edit the values</slot>
       </TooltipContent>
     </div>
   </Tooltip>
