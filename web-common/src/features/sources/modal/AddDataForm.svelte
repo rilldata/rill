@@ -125,7 +125,7 @@
               hint={property.hint}
               errors={$errors[toYupFriendlyKey(property.key)]}
               bind:value={$form[toYupFriendlyKey(property.key)]}
-              onInput={onStringInputChange}
+              onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
