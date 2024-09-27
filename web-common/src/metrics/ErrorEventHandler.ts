@@ -39,7 +39,7 @@ export class ErrorEventHandler {
     } else {
       this.fireHTTPErrorBoundaryEvent(
         query.queryKey[0] as string,
-        error.response?.status + "" ?? error.status,
+        error.response?.status?.toString() ?? error.status,
         (error.response?.data as RpcStatus)?.message ?? error.message,
         screenName,
         get(page).url.toString(),
@@ -47,7 +47,7 @@ export class ErrorEventHandler {
     }
   }
 
-  public addJavascriptErrorListeners() {
+  public async addJavascriptErrorListeners() {
     const errorHandler = (errorEvt: ErrorEvent) => {
       this.fireJavascriptErrorBoundaryEvent(
         errorEvt.error?.stack ?? "",

@@ -42,6 +42,7 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
@@ -77,7 +78,7 @@
   $: numberKind = numberKindForMeasure(measure);
 
   const tweenProps = { duration: 400, easing: cubicOut };
-  const xScale = getContext(contexts.scale("x"));
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
   let hovered: boolean = false;
   let scrub;
