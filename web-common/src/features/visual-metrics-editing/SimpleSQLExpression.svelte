@@ -87,7 +87,6 @@
     {/each}
   </div>
 
-  {simple}
   <div class="flex gap-x-1.5 items-center">
     {#if viewingSimple}
       <Select
