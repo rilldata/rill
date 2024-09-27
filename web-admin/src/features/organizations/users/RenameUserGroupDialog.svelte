@@ -17,8 +17,6 @@
   export let groupName: string;
   export let onRename: (groupName: string, newName: string) => void;
 
-  let newName: string;
-
   const formId = "rename-user-group-form";
 
   const initialValues = {
