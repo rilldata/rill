@@ -21,7 +21,7 @@
     "@tanstack/svelte-query": "npm:@rilldata/svelte-query@4.29.20-0.0.3",
     "@tanstack/svelte-table": "^8.11.8",
     "autoprefixer": "^10.4.20",
-    "axios": "^0.27.2",
+    "axios": "^1.7.7",
     "cronstrue": "^2.41.0",
     "orval": "^7.1.1",
     "postcss": "^8.4.47",
