@@ -19,7 +19,7 @@
   export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
   export let onRevokeRole: (groupName: string) => void;
-  export let onAddUser: (groupName: string, email: string) => void;
+  export let onRemoveUser: (groupName: string, email: string) => void;
 
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
@@ -64,7 +64,7 @@
           onAddRole: onAddRole,
           onSetRole: onSetRole,
           onRevokeRole: onRevokeRole,
-          onAddUser: onAddUser,
+          onRemoveUser: onRemoveUser,
         }),
     },
   ];

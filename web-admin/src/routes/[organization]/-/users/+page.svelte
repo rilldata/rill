@@ -11,6 +11,7 @@
     getAdminServiceListOrganizationInvitesQueryKey,
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceListOrganizationMemberUsergroups,
+    getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -162,6 +163,13 @@
 
       await queryClient.invalidateQueries(
         getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          usergroup,
+        ),
       );
 
       eventBus.emit("notification", {
