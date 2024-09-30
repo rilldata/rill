@@ -172,6 +172,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
+		ConnectionCacheErrorTTL:      time.Minute,
 	}
 	rt, err := runtime.New(ctx, rtOpts, logger, opts.Activity, email.New(sender))
 	if err != nil {

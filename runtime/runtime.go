@@ -29,7 +29,7 @@ type Options struct {
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
 	DataDir                      string
-	ConnectionCacheErrorTimeout  time.Duration
+	ConnectionCacheErrorTTL      time.Duration
 }
 
 type Runtime struct {
