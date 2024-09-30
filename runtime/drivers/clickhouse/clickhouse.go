@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net/http"
+	"sync/atomic"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/XSAM/otelsql"
@@ -105,9 +107,17 @@ type configProperties struct {
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort int `mapstructure:"embed_port"`
 	// DataDir is the path to directory where db files will be created.
-	DataDir        string `mapstructure:"data_dir"`
-	TempDir        string `mapstructure:"temp_dir"`
-	CanScaleToZero bool   `mapstructure:"can_scale_to_zero"`
+	DataDir string `mapstructure:"data_dir"`
+	TempDir string `mapstructure:"temp_dir"`
+
+	// CanScaleToZero is used to determine if the OLAP instance can be scaled to zero.
+	// In absence of configs required to make requests to the cloud API or in case of API errors service status will be set to this flag.
+	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
+	// CloudAPIKeyID, CloudAPIKeySecret, OrganizationID, ServiceID are used to make requests to the cloud API
+	APIKeyID       string `mapstructure:"api_key_id"`
+	APIKeySecret   string `mapstructure:"api_key_secret"`
+	OrganizationID string `mapstructure:"organization_id"`
+	ServiceID      string `mapstructure:"service_id"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -244,6 +254,13 @@ type connection struct {
 	opts *clickhouse.Options
 	// embed is embedded clickhouse server for local run
 	embed *embedClickHouse
+
+	// cloudAPI is http client used to make requests to the cloud API
+	cloudAPI http.Client
+	// scaledToZero is the cached service status.
+	scaledToZero atomic.Bool
+	// statusCheckedAt is the unix timestamp in seconds when the service status was last checked and cached. Cached status is valid for 10 minutes.
+	statusCheckedAt atomic.Int64
 }
 
 // Ping implements drivers.Handle.

@@ -78,7 +78,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	if err != nil {
 		res.OLAP = err.Error()
 	} else {
-		mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
+		mayBeScaledToZero := olap.CanScaleToZero()
 		canScaleToZero = canScaleToZero || mayBeScaledToZero
 		if cachedHealth != nil && mayBeScaledToZero {
 			res.OLAP = cachedHealth.OLAP
@@ -110,7 +110,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 			release()
 			continue
 		}
-		mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
+		mayBeScaledToZero := olap.CanScaleToZero()
 		canScaleToZero = canScaleToZero || mayBeScaledToZero
 		release()
 

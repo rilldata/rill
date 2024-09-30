@@ -41,7 +41,12 @@ type OLAPStore interface {
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
 
-	MayBeScaledToZero(ctx context.Context) bool
+	// CanScaleToZero returns true if the OLAP store can be scaled to zero.
+	// Note :: This is not the current status but the capability of the OLAP store.
+	CanScaleToZero() bool
+	// ScaledToZero returns true if the OLAP store is scaled to zero.
+	// This is the actual status of the OLAP store.
+	ScaledToZero(ctx context.Context) bool
 }
 
 // Statement wraps a query to execute against an OLAP driver.
