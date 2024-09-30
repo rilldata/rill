@@ -34,14 +34,14 @@
   }
 </script>
 
-{#if !isCurrentUser}
-  <DropdownMenu.Root bind:open={isDropdownOpen}>
-    <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={isDropdownOpen}>
-        <ThreeDot size="16px" />
-      </IconButton>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
+<DropdownMenu.Root bind:open={isDropdownOpen}>
+  <DropdownMenu.Trigger class="flex-none">
+    <IconButton rounded active={isDropdownOpen}>
+      <ThreeDot size="16px" />
+    </IconButton>
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start">
+    {#if !isCurrentUser}
       {#if role}
         <DropdownMenu.Sub>
           <DropdownMenu.SubTrigger class="font-normal flex items-center">
@@ -78,28 +78,30 @@
             </DropdownMenu.CheckboxItem>
           </DropdownMenu.SubContent>
         </DropdownMenu.Sub>
-        {#if !pendingAcceptance && userGroups.length > 0}
-          <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger class="font-normal flex items-center">
-              <UserCogIcon size="12px" />
-              <span class="ml-2">Add to group</span>
-            </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent>
-              {#each userGroups as usergroup}
-                <DropdownMenu.Item
-                  class="font-normal flex items-center"
-                  on:click={() => {
-                    handleAddUsergroupMemberUser(usergroup.groupName);
-                  }}
-                >
-                  <span>{usergroup.groupName}</span>
-                </DropdownMenu.Item>
-              {/each}
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-        {/if}
       {/if}
+    {/if}
+    {#if !pendingAcceptance && userGroups.length > 0}
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger class="font-normal flex items-center">
+          <UserCogIcon size="12px" />
+          <span class="ml-2">Add to group</span>
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          {#each userGroups as usergroup}
+            <DropdownMenu.Item
+              class="font-normal flex items-center"
+              on:click={() => {
+                handleAddUsergroupMemberUser(usergroup.groupName);
+              }}
+            >
+              <span>{usergroup.groupName}</span>
+            </DropdownMenu.Item>
+          {/each}
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+    {/if}
 
+    {#if !isCurrentUser}
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
@@ -110,9 +112,9 @@
         <Trash2Icon size="12px" />
         <span class="ml-2">Remove</span>
       </DropdownMenu.Item>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{/if}
+    {/if}
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
 
 <RemoveUserFromOrgConfirmDialog
   bind:open={isRemoveConfirmOpen}
