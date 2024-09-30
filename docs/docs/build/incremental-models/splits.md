@@ -1,7 +1,7 @@
 ---
 title: Splits, a special state
 description: C
-sidebar_label: Create Splits
+sidebar_label: Splits
 sidebar_position: 05
 ---
 
