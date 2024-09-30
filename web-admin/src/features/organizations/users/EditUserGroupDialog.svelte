@@ -81,7 +81,7 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
-      <DialogTitle>Edit user group</DialogTitle>
+      <DialogTitle>Edit group</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
