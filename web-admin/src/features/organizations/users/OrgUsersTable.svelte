@@ -13,6 +13,7 @@
   } from "@rilldata/web-common/components/table/utils";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
+  import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
 
   interface OrgUser extends V1MemberUser, V1UserInvite {
     invitedBy?: string;
@@ -41,13 +42,18 @@
           isCurrentUser: row.original.userEmail === currentUserEmail,
         }),
     },
+
     {
       accessorKey: "roleName",
       header: "Role",
-      cell: ({ row }) => {
-        if (!row.original.roleName) return "-";
-        return capitalize(row.original.roleName);
-      },
+      enableSorting: false,
+      cell: ({ row }) =>
+        flexRender(OrgUsersTableRoleCell, {
+          email: row.original.userEmail,
+          role: row.original.roleName,
+          isCurrentUser: row.original.userEmail === currentUserEmail,
+          onSetRole: onSetRole,
+        }),
     },
     {
       accessorKey: "createdOn",
@@ -72,12 +78,10 @@
       cell: ({ row }) =>
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
-          role: row.original.roleName,
           pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
           userGroups: userGroups,
           onRemove: onRemove,
-          onSetRole: onSetRole,
           onAddUsergroupMemberUser: onAddUsergroupMemberUser,
         }),
     },

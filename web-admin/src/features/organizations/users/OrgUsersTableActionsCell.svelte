@@ -7,12 +7,10 @@
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
 
   export let email: string;
-  export let role: string;
   export let pendingAcceptance: boolean;
   export let isCurrentUser: boolean;
   export let userGroups: V1MemberUsergroup[];
   export let onRemove: (email: string) => void;
-  export let onSetRole: (email: string, role: string) => void;
   export let onAddUsergroupMemberUser: (
     email: string,
     usergroup: string,
@@ -23,10 +21,6 @@
 
   function handleRemove() {
     onRemove(email);
-  }
-
-  function handleUpdateRole(role: string) {
-    onSetRole(email, role);
   }
 
   function handleAddUsergroupMemberUser(usergroup: string) {
@@ -41,45 +35,6 @@
     </IconButton>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
-    {#if !isCurrentUser}
-      {#if role}
-        <DropdownMenu.Sub>
-          <DropdownMenu.SubTrigger class="font-normal flex items-center">
-            <UserCogIcon size="12px" />
-            <span class="ml-2">Change role</span>
-          </DropdownMenu.SubTrigger>
-          <DropdownMenu.SubContent>
-            <DropdownMenu.CheckboxItem
-              class="font-normal flex items-center"
-              checked={role === "admin"}
-              on:click={() => {
-                handleUpdateRole("admin");
-              }}
-            >
-              <span>Admin</span>
-            </DropdownMenu.CheckboxItem>
-            <DropdownMenu.CheckboxItem
-              class="font-normal flex items-center"
-              checked={role === "viewer"}
-              on:click={() => {
-                handleUpdateRole("viewer");
-              }}
-            >
-              <span>Viewer</span>
-            </DropdownMenu.CheckboxItem>
-            <DropdownMenu.CheckboxItem
-              class="font-normal flex items-center"
-              checked={role === "collaborator"}
-              on:click={() => {
-                handleUpdateRole("collaborator");
-              }}
-            >
-              <span>Collaborator</span>
-            </DropdownMenu.CheckboxItem>
-          </DropdownMenu.SubContent>
-        </DropdownMenu.Sub>
-      {/if}
-    {/if}
     {#if !pendingAcceptance && userGroups.length > 0}
       <DropdownMenu.Sub>
         <DropdownMenu.SubTrigger class="font-normal flex items-center">
