@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { capitalize } from "@rilldata/web-common/components/table/utils";
-  import { UserMinusIcon } from "lucide-svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let name: string;
   export let role: string | undefined = undefined;
@@ -28,7 +28,7 @@
 {#if name !== "all-users"}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger class="flex-none">
-      {role ? `Org ${capitalize(role)}` : "-"}
+      {role ? `Org ${role}` : "-"}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.CheckboxItem
@@ -76,14 +76,16 @@
           class="font-normal flex items-center"
           on:click={handleRevokeRole}
         >
-          <UserMinusIcon size="12px" />
-          <span class="ml-2">Revoke</span>
+          <span class="ml-6">Remove</span>
         </DropdownMenu.Item>
       {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}
-  <!-- TODO: add tooltip for all-users -->
-  <!-- "cannot add role for all-users group" -->
-  <span>-</span>
+  <Tooltip location="top" alignment="start" distance={8}>
+    <span class="cursor-help">-</span>
+    <TooltipContent maxWidth="400px" slot="tooltip-content">
+      Cannot add role for all-users group
+    </TooltipContent>
+  </Tooltip>
 {/if}
