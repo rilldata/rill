@@ -30,11 +30,11 @@ export class ErrorEventHandler {
     if (!error.response) {
       this.fireHTTPErrorBoundaryEvent(
         query.queryKey[0] as string,
-        error.status ?? "",
+        error.status?.toString() ?? "",
         error.message ?? "unknown error",
         screenName,
         get(page).url.toString(),
-      );
+      )?.catch(console.error);
       return;
     } else {
       this.fireHTTPErrorBoundaryEvent(
@@ -43,18 +43,18 @@ export class ErrorEventHandler {
         (error.response?.data as RpcStatus)?.message ?? error.message,
         screenName,
         get(page).url.toString(),
-      );
+      )?.catch(console.error);
     }
   }
 
-  public async addJavascriptErrorListeners() {
+  public addJavascriptErrorListeners() {
     const errorHandler = (errorEvt: ErrorEvent) => {
       this.fireJavascriptErrorBoundaryEvent(
         errorEvt.error?.stack ?? "",
         errorEvt.message,
         this.screenNameGetter(),
         get(page).url.toString(),
-      );
+      )?.catch(console.error);
     };
     const unhandledRejectionHandler = (
       rejectionEvent: PromiseRejectionEvent,
@@ -74,7 +74,7 @@ export class ErrorEventHandler {
         message,
         this.screenNameGetter(),
         get(page).url.toString(),
-      );
+      )?.catch(console.error);
     };
 
     window.addEventListener("error", errorHandler);
