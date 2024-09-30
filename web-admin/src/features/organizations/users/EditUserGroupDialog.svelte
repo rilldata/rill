@@ -17,6 +17,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
 
   export let open = false;
   export let groupName: string;
@@ -111,14 +112,23 @@
             </TooltipContent>
           </Tooltip>
         </div>
-        <!-- TODO: polish -->
         <div class="flex flex-col gap-2">
           {#each $listUsergroupMemberUsers.data?.members as member}
             <div class="flex flex-row justify-between gap-2 items-center">
-              <span>{member.userEmail}</span>
+              <div class="flex items-center gap-2">
+                <Avatar size="h-7 w-7" alt={member.userName} />
+                <div class="flex flex-col text-left">
+                  <span class="text-sm font-medium text-gray-900">
+                    {member.userName}
+                    <span class="text-gray-500 font-normal">
+                      {member.userEmail === "You" ? "(You)" : ""}
+                    </span>
+                  </span>
+                  <span class="text-xs text-gray-500">{member.userEmail}</span>
+                </div>
+              </div>
               <Button
                 type="plain"
-                small
                 on:click={() => {
                   onRemoveUser(groupName, member.userEmail);
                 }}

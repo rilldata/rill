@@ -86,6 +86,8 @@
           <UserCogIcon size="12px" />
           <span class="ml-2">Add to group</span>
         </DropdownMenu.SubTrigger>
+        <!-- TODO: if user is already in group, disable the option -->
+        <!-- Otherwise, "user is already a member of the usergroup" -->
         <DropdownMenu.SubContent>
           {#each userGroups as usergroup}
             <DropdownMenu.Item
