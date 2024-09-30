@@ -13,6 +13,7 @@
 
   export let name: string;
   export let role: string | undefined = undefined;
+  export let currentUserEmail: string;
   export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
@@ -167,6 +168,7 @@
 <EditUserGroupDialog
   bind:open={isEditDialogOpen}
   groupName={name}
+  {currentUserEmail}
   {onRename}
   {onRemoveUser}
 />

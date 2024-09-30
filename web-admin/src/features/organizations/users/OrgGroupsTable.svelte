@@ -14,6 +14,7 @@
 
   export let data: V1MemberUsergroup[];
   export let users: V1MemberUser[];
+  export let currentUserEmail: string;
   export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
@@ -59,6 +60,7 @@
           name: row.original.groupName,
           role: row.original.roleName,
           users: users,
+          currentUserEmail: currentUserEmail,
           onRename: onRename,
           onDelete: onDelete,
           onAddRole: onAddRole,

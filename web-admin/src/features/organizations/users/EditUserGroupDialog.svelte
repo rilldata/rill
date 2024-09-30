@@ -21,6 +21,7 @@
 
   export let open = false;
   export let groupName: string;
+  export let currentUserEmail: string;
   export let onRename: (groupName: string, newName: string) => void;
   export let onRemoveUser: (groupName: string, email: string) => void;
 
@@ -121,7 +122,7 @@
                   <span class="text-sm font-medium text-gray-900">
                     {member.userName}
                     <span class="text-gray-500 font-normal">
-                      {member.userEmail === "You" ? "(You)" : ""}
+                      {member.userEmail === currentUserEmail ? "(You)" : ""}
                     </span>
                   </span>
                   <span class="text-xs text-gray-500">{member.userEmail}</span>

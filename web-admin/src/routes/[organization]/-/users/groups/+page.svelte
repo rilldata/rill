@@ -4,6 +4,7 @@
     createAdminServiceAddOrganizationMemberUsergroup,
     createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
+    createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
     createAdminServiceListOrganizationMemberUsers,
     createAdminServiceRemoveOrganizationMemberUsergroup,
@@ -31,6 +32,7 @@
     createAdminServiceListOrganizationMemberUsers(organization);
 
   const queryClient = useQueryClient();
+  const currentUser = createAdminServiceGetCurrentUser();
   const createUserGroup = createAdminServiceCreateUsergroup();
   const renameUserGroup = createAdminServiceRenameUsergroup();
   const deleteUserGroup = createAdminServiceDeleteUsergroup();
@@ -217,6 +219,7 @@
       <OrgGroupsTable
         data={$listOrganizationMemberUsergroups.data.members}
         users={$listOrganizationMemberUsers.data?.members ?? []}
+        currentUserEmail={$currentUser.data?.user.email}
         onRename={handleRename}
         onDelete={handleDelete}
         onAddRole={handleAddRole}
