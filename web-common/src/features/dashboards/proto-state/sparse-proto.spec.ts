@@ -17,7 +17,7 @@ import {
   AD_BIDS_OPEN_IMP_TDD,
   AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
   applyMutationsToDashboard,
-  TestDashboardMutation,
+  type TestDashboardMutation,
   AD_BIDS_APPLY_DOM_DIMENSION_FILTER,
   AD_BIDS_APPLY_BP_MEASURE_FILTER,
   AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
@@ -27,7 +27,7 @@ import {
   AD_BIDS_REMOVE_PUB_DIMENSION_FILTER,
   AD_BIDS_REMOVE_IMP_MEASURE_FILTER,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-mutations";
-import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";

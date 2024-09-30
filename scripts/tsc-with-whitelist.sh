@@ -142,6 +142,7 @@ web-common/src/runtime-client/invalidation.ts: error TS18048
 web-common/src/runtime-client/invalidation.ts: error TS2345
 web-common/src/runtime-client/watch-request-client.ts: error TS2322
 web-common/vite.config.ts: error TS2339
+web-common/src/features/dashboards/url-state/filters/expression.cjs: error TS1286
 "
 
 # Run TypeScript compiler and find all distinct error per file

@@ -13,18 +13,18 @@ import {
   getStartOfPeriod,
 } from "@rilldata/web-common/lib/time/transforms";
 import {
-  DashboardTimeControls,
+  type DashboardTimeControls,
   Period,
   TimeOffsetType,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
-  RpcStatus,
+  type MetricsViewSpecDimensionV2,
+  type MetricsViewSpecMeasureV2,
+  type RpcStatus,
   TypeCode,
-  V1Expression,
-  V1MetricsViewSpec,
+  type V1Expression,
+  type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1StructType,
   V1TimeGrain,

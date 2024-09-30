@@ -14,9 +14,9 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
-import { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsViewSpec,
+  type V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";

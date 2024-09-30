@@ -8,8 +8,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
 import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
 import {
-  TimeControlState,
-  TimeControlStore,
+  type TimeControlState,
+  type TimeControlStore,
   createTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {

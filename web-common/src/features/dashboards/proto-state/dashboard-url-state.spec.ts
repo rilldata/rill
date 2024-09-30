@@ -34,14 +34,14 @@ import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Page } from "@sveltejs/kit";
 import { render } from "@testing-library/svelte";
-import { get, Readable, writable } from "svelte/store";
+import { get, type Readable, writable } from "svelte/store";
 import {
   beforeAll,
   beforeEach,
   describe,
   expect,
   it,
-  SpyInstance,
+  type MockInstance,
   vi,
 } from "vitest";
 
@@ -193,7 +193,7 @@ describe("useDashboardUrlSync", () => {
 type PageMock = Readable<Page> & {
   updateState: (state: string) => void;
   goto: (path: string) => void;
-  gotoSpy: SpyInstance;
+  gotoSpy: MockInstance;
 };
 function createPageMock() {
   const { update, subscribe } = writable<Page>({

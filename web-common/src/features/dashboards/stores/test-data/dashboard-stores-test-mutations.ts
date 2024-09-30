@@ -12,7 +12,7 @@ import {
   removeMeasureFilter,
   setMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
-import { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
+import type { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_BID_PRICE_MEASURE,

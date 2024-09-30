@@ -41,10 +41,10 @@ export function startRuntimeForEachTest() {
     childProcess.on("close", () => {
       rillShutdown = true;
     });
-    childProcess.stdout?.on("data", (chunk: Buffer) => {
+    childProcess.stdout?.on("data", (chunk: Uint8Array) => {
       process.stdout?.write(chunk);
     });
-    childProcess.stderr?.on("data", (chunk: Buffer) => {
+    childProcess.stderr?.on("data", (chunk: Uint8Array) => {
       process.stdout?.write(chunk);
     });
 
