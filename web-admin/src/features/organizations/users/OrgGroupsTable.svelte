@@ -1,19 +1,13 @@
 <script lang="ts">
-  import type {
-    V1MemberUsergroup,
-    V1MemberUser,
-  } from "@rilldata/web-admin/client";
+  import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
+  import OrgGroupsTableRoleCell from "./OrgGroupsTableRoleCell.svelte";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
-  import {
-    formatDate,
-    capitalize,
-  } from "@rilldata/web-common/components/table/utils";
+  import { formatDate } from "@rilldata/web-common/components/table/utils";
 
   export let data: V1MemberUsergroup[];
-  export let users: V1MemberUser[];
   export let currentUserEmail: string;
   export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
@@ -30,11 +24,17 @@
     {
       accessorKey: "roleName",
       header: "Role",
-      cell: ({ row }) => {
-        if (!row.original.roleName) return "-";
-        return capitalize(row.original.roleName);
-      },
+      enableSorting: false,
+      cell: ({ row }) =>
+        flexRender(OrgGroupsTableRoleCell, {
+          name: row.original.groupName,
+          role: row.original.roleName,
+          onAddRole: onAddRole,
+          onSetRole: onSetRole,
+          onRevokeRole: onRevokeRole,
+        }),
     },
+    // TODO: use relative datetime
     {
       accessorKey: "createdOn",
       header: "Created On",
@@ -43,6 +43,7 @@
         return formatDate(row.original.createdOn);
       },
     },
+    // TODO: use relative datetime
     {
       accessorKey: "updatedOn",
       header: "Updated On",
@@ -58,14 +59,9 @@
       cell: ({ row }) =>
         flexRender(OrgGroupsTableActionsCell, {
           name: row.original.groupName,
-          role: row.original.roleName,
-          users: users,
           currentUserEmail: currentUserEmail,
           onRename: onRename,
           onDelete: onDelete,
-          onAddRole: onAddRole,
-          onSetRole: onSetRole,
-          onRevokeRole: onRevokeRole,
           onRemoveUser: onRemoveUser,
         }),
     },

@@ -6,7 +6,6 @@
     createAdminServiceDeleteUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
-    createAdminServiceListOrganizationMemberUsers,
     createAdminServiceRemoveOrganizationMemberUsergroup,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceRenameUsergroup,
@@ -28,8 +27,8 @@
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsergroups =
     createAdminServiceListOrganizationMemberUsergroups(organization);
-  $: listOrganizationMemberUsers =
-    createAdminServiceListOrganizationMemberUsers(organization);
+  // $: listOrganizationMemberUsers =
+  //   createAdminServiceListOrganizationMemberUsers(organization);
 
   const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
@@ -218,7 +217,6 @@
     <div class="flex flex-col gap-4">
       <OrgGroupsTable
         data={$listOrganizationMemberUsergroups.data.members}
-        users={$listOrganizationMemberUsers.data?.members ?? []}
         currentUserEmail={$currentUser.data?.user.email}
         onRename={handleRename}
         onDelete={handleDelete}
