@@ -2245,8 +2245,6 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 	switch b.Type {
 	case database.BillingIssueTypeOnTrial:
 		metadata = &database.BillingIssueMetadataOnTrial{}
-	case database.BillingIssueTypeTrialEndingSoon:
-		metadata = &database.BillingIssueMetadataOnTrial{}
 	case database.BillingIssueTypeTrialEnded:
 		metadata = &database.BillingIssueMetadataTrialEnded{}
 	case database.BillingIssueTypeNoPaymentMethod:
@@ -2277,7 +2275,7 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 	if b.Type == database.BillingIssueTypeUnspecified {
 		return database.BillingIssueLevelUnspecified
 	}
-	if b.Type == database.BillingIssueTypeOnTrial || b.Type == database.BillingIssueTypeTrialEndingSoon {
+	if b.Type == database.BillingIssueTypeOnTrial {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError

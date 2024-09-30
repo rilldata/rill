@@ -6548,7 +6548,6 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
   type:
     | "BILLING_ISSUE_TYPE_UNSPECIFIED"
     | "BILLING_ISSUE_TYPE_ON_TRIAL"
-    | "BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON"
     | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
     | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
     | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
@@ -6581,7 +6580,6 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       type:
         | "BILLING_ISSUE_TYPE_UNSPECIFIED"
         | "BILLING_ISSUE_TYPE_ON_TRIAL"
-        | "BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON"
         | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
@@ -6600,7 +6598,6 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       type:
         | "BILLING_ISSUE_TYPE_UNSPECIFIED"
         | "BILLING_ISSUE_TYPE_ON_TRIAL"
-        | "BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON"
         | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
@@ -6621,7 +6618,6 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
       type:
         | "BILLING_ISSUE_TYPE_UNSPECIFIED"
         | "BILLING_ISSUE_TYPE_ON_TRIAL"
-        | "BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON"
         | "BILLING_ISSUE_TYPE_TRIAL_ENDED"
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"

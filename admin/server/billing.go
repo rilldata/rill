@@ -499,10 +499,6 @@ func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType
 	switch t {
 	case database.BillingIssueTypeOnTrial:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_ON_TRIAL
-	case database.BillingIssueTypeTrialEndingSoon:
-		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON
-	case database.BillingIssueTypeTrialEnded:
-		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_ENDED
 	case database.BillingIssueTypeNoPaymentMethod:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
 	case database.BillingIssueTypeNoBillableAddress:

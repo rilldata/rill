@@ -81,11 +81,6 @@ export enum BillingIssueType {
   ON_TRIAL = 1,
 
   /**
-   * @generated from enum value: BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON = 7;
-   */
-  TRIAL_ENDING_SOON = 7,
-
-  /**
    * @generated from enum value: BILLING_ISSUE_TYPE_TRIAL_ENDED = 2;
    */
   TRIAL_ENDED = 2,
@@ -114,7 +109,6 @@ export enum BillingIssueType {
 proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
   { no: 0, name: "BILLING_ISSUE_TYPE_UNSPECIFIED" },
   { no: 1, name: "BILLING_ISSUE_TYPE_ON_TRIAL" },
-  { no: 7, name: "BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON" },
   { no: 2, name: "BILLING_ISSUE_TYPE_TRIAL_ENDED" },
   { no: 3, name: "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD" },
   { no: 4, name: "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS" },
