@@ -40,7 +40,7 @@ Under the + Add dropdown, select More to find the chart and custom dashboard com
 
 ![img](/img/tutorials/301/add-custom-dashboard.png)
 
-Once you select either of these, a dedicated folder `components` and `canvasdashboards` will be created.
+Once you select either of these, a dedicated folder `components` and `canvas-dashboards` will be created.
 
 import DocsRating from '@site/src/components/DocsRating';
 
