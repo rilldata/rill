@@ -699,6 +699,10 @@ export interface V1StructType {
   fields?: StructTypeField[];
 }
 
+export interface V1StringListValue {
+  values?: string[];
+}
+
 export interface V1SourceState {
   connector?: string;
   table?: string;
@@ -816,26 +820,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
-}
-
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -849,13 +833,6 @@ If it resolves to false, the other fields are not set. */
   schema?: V1StructType;
   data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -886,6 +863,13 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -902,6 +886,26 @@ export interface V1RefreshTriggerState {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
@@ -1239,6 +1243,11 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewSort {
+  name?: string;
+  ascending?: boolean;
+}
+
 export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1333,11 +1342,6 @@ export interface V1MetricsViewState {
   /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
 It's set to true if the metrics view is based on an externally managed table. */
   streaming?: boolean;
-}
-
-export interface V1MetricsViewSort {
-  name?: string;
-  ascending?: boolean;
 }
 
 export interface V1MetricsViewSearchResponse {
@@ -1765,6 +1769,22 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+/**
+ * FieldSelector describes logic for selecting a list of fields.
+It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
+ */
+export interface V1FieldSelector {
+  /** Invert the result such that all fields *except* the selected fields are returned. */
+  invert?: boolean;
+  /** Select all fields. */
+  all?: boolean;
+  fields?: V1StringListValue;
+  /** Select fields by a regular expression. */
+  regex?: string;
+  /** Select fields by a DuckDB SQL SELECT expression. For example "* EXCLUDE (city)". */
+  duckdbExpression?: string;
+}
+
 export interface V1Expression {
   ident?: string;
   val?: unknown;
@@ -1817,14 +1837,12 @@ export const V1ExploreComparisonMode = {
 
 export interface V1ExplorePreset {
   label?: string;
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
   dimensions?: string[];
-  /** If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-Since it is processed during validation, this will always be false in `state.valid_spec`. */
-  dimensionsExclude?: boolean;
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
-  /** If true, `measures` will be inverted during validation to include all measures except the ones listed.
-Since it is processed during validation, this will always be false in `state.valid_spec`. */
-  measuresExclude?: boolean;
+  measuresSelector?: V1FieldSelector;
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */
@@ -1838,15 +1856,12 @@ export interface V1ExploreSpec {
   title?: string;
   description?: string;
   metricsView?: string;
-  /** Dimensions to show. */
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
   dimensions?: string[];
-  /** If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-Since it is processed during validation, this will always be false in `state.valid_spec`. */
-  dimensionsExclude?: boolean;
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
-  /** If true, `measures` will be inverted during validation to include all measures except the ones listed.
-Since it is processed during validation, this will always be false in `state.valid_spec`. */
-  measuresExclude?: boolean;
+  measuresSelector?: V1FieldSelector;
   theme?: string;
   /** List of selectable time ranges with comparison time ranges.
 If the list is empty, a default list should be shown. */
