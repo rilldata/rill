@@ -5,6 +5,7 @@ export type PathOption = {
   depth?: number;
   href?: string;
   section?: string;
+  pill?: string;
 };
 
 export type PathOptions = Map<Param, PathOption>;

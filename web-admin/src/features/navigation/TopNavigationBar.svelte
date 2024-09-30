@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import Banner from "@rilldata/web-admin/features/billing/banner/BillingBannerHandler.svelte";
+  import BillingBannerHandler from "@rilldata/web-admin/features/billing/banner/BillingBannerHandler.svelte";
+  import { getPlanForOrg } from "@rilldata/web-admin/features/billing/selectors";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
@@ -91,9 +92,13 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
+  $: plan = getPlanForOrg(organization, !onPublicURLPage);
   $: organizationPaths = organizations.reduce(
     (map, { name, displayName }) =>
-      map.set(name.toLowerCase(), { label: displayName || name }),
+      map.set(name.toLowerCase(), {
+        label: displayName || name,
+        pill: $plan?.displayName ?? "",
+      }),
     new Map<string, PathOption>(),
   );
 
@@ -161,7 +166,7 @@
 </script>
 
 {#if organization}
-  <Banner {organization} />
+  <BillingBannerHandler {organization} />
 {/if}
 <div
   class="flex items-center w-full pr-4 pl-2 py-1"

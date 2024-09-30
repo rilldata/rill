@@ -4,11 +4,19 @@ import {
 } from "@rilldata/web-admin/client";
 import { derived } from "svelte/store";
 
-export function getPlanForOrg(org: string) {
+export function getPlanForOrg(org: string, enabled = true) {
   return derived(
     [
-      createAdminServiceGetBillingSubscription(org),
-      createAdminServiceListPublicBillingPlans(),
+      createAdminServiceGetBillingSubscription(org, {
+        query: {
+          enabled: enabled && !!org,
+        },
+      }),
+      createAdminServiceListPublicBillingPlans({
+        query: {
+          enabled: enabled && !!org,
+        },
+      }),
     ],
     ([subscriptionResp, plansResp]) => {
       if (!subscriptionResp.data?.subscription || !plansResp.data?.plans) {
