@@ -8,7 +8,7 @@
 </script>
 
 <div class="flex items-center gap-2">
-  <Avatar size="h-7 w-7" alt={name} />
+  <Avatar size="h-7 w-7" alt={pendingAcceptance ? null : name} />
   <div class="flex flex-col text-left">
     <span class="text-sm font-medium text-gray-900">
       {name}
