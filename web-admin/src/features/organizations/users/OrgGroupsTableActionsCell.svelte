@@ -9,7 +9,6 @@
     Pencil,
   } from "lucide-svelte";
   import DeleteUserGroupConfirmDialog from "./DeleteUserGroupConfirmDialog.svelte";
-  import RenameUserGroupDialog from "./RenameUserGroupDialog.svelte";
   import EditUserGroupDialog from "./EditUserGroupDialog.svelte";
 
   export let name: string;
@@ -23,7 +22,6 @@
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
-  let isRenameDialogOpen = false;
   let isEditDialogOpen = false;
 
   function handleAssignRole(role: string) {
@@ -147,15 +145,6 @@
       <Pencil size="12px" />
       <span class="ml-2">Edit</span>
     </DropdownMenu.Item>
-    <!-- <DropdownMenu.Item
-      class="font-normal flex items-center"
-      on:click={() => {
-        isRenameDialogOpen = true;
-      }}
-    >
-      <TextCursorInputIcon size="12px" />
-      <span class="ml-2">Rename</span>
-    </DropdownMenu.Item> -->
     <DropdownMenu.Item
       class="font-normal flex items-center"
       type="destructive"
@@ -173,12 +162,6 @@
   bind:open={isDeleteConfirmOpen}
   groupName={name}
   {onDelete}
-/>
-
-<RenameUserGroupDialog
-  bind:open={isRenameDialogOpen}
-  groupName={name}
-  {onRename}
 />
 
 <EditUserGroupDialog
