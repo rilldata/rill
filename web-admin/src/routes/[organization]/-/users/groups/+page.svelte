@@ -2,7 +2,6 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceAddOrganizationMemberUsergroup,
-    createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
