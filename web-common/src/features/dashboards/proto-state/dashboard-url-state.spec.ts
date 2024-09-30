@@ -22,7 +22,7 @@ import {
   initStateManagers,
   resetDashboardStore,
   TestTimeConstants,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
 import DashboardTestComponent from "@rilldata/web-common/features/dashboards/stores/DashboardTestComponent.svelte";
 import {
   createAndExpression,
@@ -198,6 +198,7 @@ type PageMock = Readable<Page> & {
 function createPageMock() {
   const { update, subscribe } = writable<Page>({
     url: new URL("http://localhost/dashboard/AdBids"),
+    params: { name: "AdBids" },
   } as any);
 
   pageMock.subscribe = subscribe;

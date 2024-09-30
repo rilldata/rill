@@ -5,6 +5,11 @@
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
+  import {
+    PivotChipData,
+    PivotChipType,
+  } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -26,8 +31,8 @@
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
-    TimeRangePreset,
     AvailableTimeGrain,
+    TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -38,13 +43,11 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
-  import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
-  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
-  import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import {
-    PivotChipData,
-    PivotChipType,
-  } from "@rilldata/web-common/features/dashboards/pivot/types";
+    adjustTimeInterval,
+    getOrderedStartEnd,
+    updateChartInteractionStore,
+  } from "./utils";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -102,7 +105,7 @@
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
-  $: isAlternateChart = tddChartType != TDDChart.DEFAULT;
+  $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasureV2[];
@@ -160,18 +163,33 @@
     const slicedData = isAllTime
       ? formattedData?.slice(1)
       : formattedData?.slice(1, -1);
+
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
+      let startDirection, endDirection;
+
+      if (
+        tddChartType === TDDChart.GROUPED_BAR ||
+        tddChartType === TDDChart.STACKED_BAR
+      ) {
+        startDirection = "left";
+        endDirection = "right";
+      } else {
+        startDirection = "center";
+        endDirection = "center";
+      }
+
       const { position: startPos } = bisectData(
         start,
-        "center",
+        startDirection,
         "ts_position",
         slicedData,
       );
+
       const { position: endPos } = bisectData(
         end,
-        "center",
+        endDirection,
         "ts_position",
         slicedData,
       );
@@ -231,8 +249,6 @@
     $timeSeriesDataStore?.error,
     "timeseries",
   );
-
-  $: minTimeGrain = $timeControlsStore.minTimeGrain;
 
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
 
@@ -309,9 +325,7 @@
         selectedItems={$showHideMeasures.selectedItems}
         tooltipText="Choose measures to display"
       />
-      {#if minTimeGrain}
-        <TimeGrainSelector {metricViewName} />
-      {/if}
+
       <button
         class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
         on:click={() => {
@@ -323,14 +337,14 @@
     {/if}
   </div>
 
-  {#if tddChartType == TDDChart.DEFAULT || !expandedMeasureName}
-    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
-      <div class="relative w-full">
-        <ChartInteractions
-          {metricViewName}
-          {showComparison}
-          timeGrain={interval}
-        />
+  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
+    <div class="relative w-full">
+      <ChartInteractions
+        {metricViewName}
+        {showComparison}
+        timeGrain={interval}
+      />
+      {#if tddChartType === TDDChart.DEFAULT}
         <div class="translate-x-5">
           {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
             <SimpleDataGraphic
@@ -346,11 +360,10 @@
             </SimpleDataGraphic>
           {/if}
         </div>
-      </div>
+      {/if}
     </div>
-  {/if}
+  </div>
 
-  <!-- bignumbers and line charts -->
   {#if renderedMeasures}
     <div
       class:pb-4={!isInTimeDimensionView}
@@ -368,7 +381,7 @@
           ? $isMeasureValidPercentOfTotal(measure.name)
           : false}
 
-        <div class="flex flex-row gap-x-7">
+        <div class="flex flex-row gap-x-4">
           <MeasureBigNumber
             {measure}
             value={bigNum}
@@ -411,14 +424,51 @@
               xMin={startValue}
               xMax={endValue}
               isTimeComparison={showComparison}
+              isScrubbing={Boolean(isScrubbing)}
               on:chart-hover={(e) => {
                 const { dimension, ts } = e.detail;
+
                 updateChartInteractionStore(
                   ts,
                   dimension,
                   isAllTime,
                   formattedData,
                 );
+              }}
+              on:chart-brush={(e) => {
+                const { interval } = e.detail;
+                const { start, end } = adjustTimeInterval(
+                  interval,
+                  $dashboardStore.selectedTimezone,
+                );
+
+                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                  start,
+                  end,
+                  isScrubbing: true,
+                });
+              }}
+              on:chart-brush-end={(e) => {
+                const { interval } = e.detail;
+                const { start, end } = adjustTimeInterval(
+                  interval,
+                  $dashboardStore.selectedTimezone,
+                );
+
+                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                  start,
+                  end,
+                  isScrubbing: false,
+                });
+              }}
+              on:chart-brush-clear={(e) => {
+                const { start, end } = e.detail;
+
+                metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+                  start,
+                  end,
+                  isScrubbing: false,
+                });
               }}
             />
           {:else if formattedData && interval}
@@ -464,10 +514,11 @@
     </div>
   {/if}
 </TimeSeriesChartContainer>
+
 <ReplacePivotDialog
   open={showReplacePivotModal}
-  on:close={() => {
+  onCancel={() => {
     showReplacePivotModal = false;
   }}
-  on:replace={() => createPivot()}
+  onReplace={createPivot}
 />

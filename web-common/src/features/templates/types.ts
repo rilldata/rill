@@ -1,5 +1,6 @@
 interface DataProperties {
-  metric_view: string;
+  metrics_view: string;
+  filter?: string;
 }
 
 export interface ChartProperties {
@@ -51,6 +52,28 @@ export interface MarkdownTemplateT {
   markdown: MarkdownProperties;
 }
 
+export interface SelectProperties {
+  valueField: string;
+  labelField?: string;
+  label?: string;
+  tooltip?: string;
+  placeholder?: string;
+}
+
+export interface SelectPropertiesT {
+  select: SelectProperties;
+}
+
+export interface SwitchProperties {
+  label: string;
+  value: string;
+  tooltip?: string;
+}
+
+export interface SwitchPropertiesT {
+  switch: SwitchProperties;
+}
+
 export interface ImageProperties {
   url: string;
   css?: { [key: string]: any };
@@ -67,4 +90,6 @@ export type TemplateSpec =
   | KPITemplateT
   | TableTemplateT
   | MarkdownTemplateT
-  | ImageTemplateT;
+  | ImageTemplateT
+  | SelectPropertiesT
+  | SwitchPropertiesT;

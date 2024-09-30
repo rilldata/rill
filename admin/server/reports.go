@@ -36,10 +36,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
@@ -57,9 +54,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
-		ExportUrl: s.urls.reportExport(org.Name, proj.Name, req.Report),
-		EditUrl:   s.urls.reportEdit(org.Name, proj.Name, req.Report),
+		OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
+		ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
+		EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 	}, nil
 }
 
@@ -71,10 +68,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -116,7 +110,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Errorf(codes.Internal, "failed to insert virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be created")
@@ -138,10 +132,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -189,7 +180,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
@@ -209,10 +200,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -295,7 +283,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
@@ -315,10 +303,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -356,7 +341,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be deleted")
@@ -376,10 +361,7 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -451,7 +433,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
-	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
+	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
 }
@@ -494,7 +476,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
-	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
+	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
 }
@@ -551,7 +533,6 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.QueryArgsJson = spec.QueryArgsJson
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
-	opts.OpenProjectSubpath = annotations.WebOpenProjectSubpath
 	for _, notifier := range spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
@@ -568,6 +549,8 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
 		}
 	}
+	opts.WebOpenPath = annotations.WebOpenPath
+	opts.WebOpenState = annotations.WebOpenState
 	return opts, nil
 }
 
@@ -606,11 +589,11 @@ type reportYAML struct {
 }
 
 type reportAnnotations struct {
-	AdminOwnerUserID      string `yaml:"admin_owner_user_id"`
-	AdminManaged          bool   `yaml:"admin_managed"`
-	AdminNonce            string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
-	WebOpenProjectSubpath string `yaml:"web_open_project_subpath"`
-	WebOpenState          string `yaml:"web_open_state"`
+	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
+	AdminManaged     bool   `yaml:"admin_managed"`
+	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
+	WebOpenPath      string `yaml:"web_open_path"`
+	WebOpenState     string `yaml:"web_open_state"`
 }
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {
@@ -622,7 +605,8 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
-	res.WebOpenProjectSubpath = annotations["web_open_project_subpath"]
+	res.WebOpenPath = annotations["web_open_path"]
+	res.WebOpenState = annotations["web_open_state"]
 
 	return res
 }

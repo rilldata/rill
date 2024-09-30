@@ -1,14 +1,16 @@
 <script lang="ts" context="module">
   export const navigationOpen = (() => {
-    const store = writable(true);
+    const { subscribe, update, set } = writable(true);
     return {
-      subscribe: store.subscribe,
-      toggle: () => store.update((open) => !open),
+      toggle: () => update((open) => !open),
+      set,
+      subscribe,
     };
   })();
 </script>
 
 <script lang="ts">
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
   import { writable } from "svelte/store";
   import ConnectorExplorer from "../../features/connectors/ConnectorExplorer.svelte";
@@ -18,7 +20,6 @@
   import { DEFAULT_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 
   let width = DEFAULT_NAV_WIDTH;
   let previousWidth: number;
@@ -70,7 +71,7 @@
         <FileExplorer hasUnsaved={unsavedFileCount > 0} />
         <div class="grow" />
         {#if navWrapperHeight}
-          <ConnectorExplorer startingHeight={navWrapperHeight / 2} />
+          <ConnectorExplorer containerHeight={navWrapperHeight} />
         {/if}
       </div>
     </div>
@@ -88,7 +89,7 @@
 <style lang="postcss">
   .sidebar {
     @apply flex flex-col flex-none relative overflow-hidden;
-    @apply h-screen border-r z-0;
+    @apply h-full border-r z-0;
     transition-property: width;
     will-change: width;
   }

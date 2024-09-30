@@ -60,10 +60,13 @@
         "comparison_range": {
           "type": "string"
         },
+        "filter": {
+          "type": "string"
+        },
         "measure": {
           "type": "string"
         },
-        "metric_view": {
+        "metrics_view": {
           "type": "string"
         },
         "time_range": {
@@ -72,7 +75,7 @@
       },
       "required": [
         "measure",
-        "metric_view",
+        "metrics_view",
         "time_range"
       ],
       "type": "object"
@@ -116,6 +119,73 @@
       ],
       "type": "object"
     },
+    "SelectProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "labelField": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "tooltip": {
+          "type": "string"
+        },
+        "valueField": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "valueField"
+      ],
+      "type": "object"
+    },
+    "SelectPropertiesT": {
+      "additionalProperties": false,
+      "properties": {
+        "select": {
+          "$ref": "#/definitions/SelectProperties"
+        }
+      },
+      "required": [
+        "select"
+      ],
+      "type": "object"
+    },
+    "SwitchProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "tooltip": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "type": "object"
+    },
+    "SwitchPropertiesT": {
+      "additionalProperties": false,
+      "properties": {
+        "switch": {
+          "$ref": "#/definitions/SwitchProperties"
+        }
+      },
+      "required": [
+        "switch"
+      ],
+      "type": "object"
+    },
     "TableProperties": {
       "additionalProperties": false,
       "properties": {
@@ -128,13 +198,16 @@
         "comparison_range": {
           "type": "string"
         },
+        "filter": {
+          "type": "string"
+        },
         "measures": {
           "items": {
             "type": "string"
           },
           "type": "array"
         },
-        "metric_view": {
+        "metrics_view": {
           "type": "string"
         },
         "row_dimensions": {
@@ -149,7 +222,7 @@
       },
       "required": [
         "measures",
-        "metric_view",
+        "metrics_view",
         "time_range"
       ],
       "type": "object"
@@ -215,6 +288,12 @@
         },
         {
           "$ref": "#/definitions/ImageTemplateT"
+        },
+        {
+          "$ref": "#/definitions/SelectPropertiesT"
+        },
+        {
+          "$ref": "#/definitions/SwitchPropertiesT"
         }
       ]
     }

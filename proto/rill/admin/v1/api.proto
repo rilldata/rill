@@ -24,6 +24,13 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{name}"};
   }
 
+  // GetOrganizationNameForDomain finds the org name for a custom domain.
+  // If the application detects it is running on a non-default domain, it can use this to find the org to present.
+  // It can be called without being authenticated.
+  rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
+    option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
+  }
+
   // CreateOrganization creates a new organization
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
     option (google.api.http) = {
@@ -107,12 +114,20 @@ service AdminService {
     };
   }
 
+  // RedeployProject creates a new production deployment for a project.
+  // If the project currently has another production deployment, the old deployment will be deprovisioned.
+  // This RPC can be used to redeploy a project that has been hibernated.
+  rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {
+    option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/redeploy"};
+  }
+
   // HibernateProject hibernates a project by tearing down its deployments.
   rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
     option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
   }
 
-  // TriggerReconcile triggers reconcile for the project's prod deployment
+  // TriggerReconcile triggers reconcile for the project's prod deployment.
+  // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/reconcile",
@@ -120,7 +135,8 @@ service AdminService {
     };
   }
 
-  // TriggerRefreshSources refresh the source for production deployment
+  // TriggerRefreshSources refresh the source for production deployment.
+  // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerRefreshSources(TriggerRefreshSourcesRequest) returns (TriggerRefreshSourcesResponse) {
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/refresh",
@@ -128,7 +144,8 @@ service AdminService {
     };
   }
 
-  // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+  // TriggerRedeploy is similar to RedeployProject.
+  // DEPRECATED: Use RedeployProject instead.
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
       post: "/v1/projects/-/redeploy",
@@ -354,6 +371,15 @@ service AdminService {
     };
   }
 
+  // Converts a project connected to github to a rill managed project.
+  // Uploads the current project to assets.
+  rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
+      body: "*"
+    };
+  }
+
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -450,6 +476,17 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+  // It only updates the custom domain in the database, which is used to ensure correct redirects.
+  // The DNS records and ingress TLS must be configured separately.
+  rpc SudoUpdateOrganizationCustomDomain(SudoUpdateOrganizationCustomDomainRequest) returns (SudoUpdateOrganizationCustomDomainResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/custom-domain",
+      body: "*"
+    };
+  }
+
+
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
     option (google.api.http) = {
@@ -463,6 +500,13 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/superuser/deployments/manager-token",
       body: "*"
+    };
+  }
+
+  // SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+  rpc SudoDeleteOrganizationBillingIssue(SudoDeleteOrganizationBillingIssueRequest) returns (SudoDeleteOrganizationBillingIssueResponse) {
+    option (google.api.http) = {
+      delete: "/v1/superuser/organizations/{organization}/billing/issues/{type}",
     };
   }
 
@@ -706,20 +750,27 @@ service AdminService {
 
   // GetBillingSubscription lists the subscription for the organization
   rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/subscriptions"};
+    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/subscriptions"};
   }
 
   // UpdateBillingSubscription updates the billing plan for the organization
   rpc UpdateBillingSubscription(UpdateBillingSubscriptionRequest) returns (UpdateBillingSubscriptionResponse) {
     option (google.api.http) = {
-      patch: "/v1/organizations/{org_name}/billing/subscriptions",
+      patch: "/v1/organizations/{organization}/billing/subscriptions",
       body: "*"
+    };
+  }
+
+  // CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+  rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      delete: "/v1/organizations/{organization}/billing/subscriptions",
     };
   }
 
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/payments/portal-url"};
+    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/payments/portal-url"};
   }
 
   // ListPublicBillingPlans lists all public billing plans
@@ -751,6 +802,11 @@ service AdminService {
       body: "*"
     };
   }
+
+  // ListOrganizationBillingIssues lists all the billing issues for the organization
+  rpc ListOrganizationBillingIssues(ListOrganizationBillingIssuesRequest) returns (ListOrganizationBillingIssuesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/issues"};
+  }
 }
 
 message PingRequest {}
@@ -779,6 +835,14 @@ message GetOrganizationResponse {
   OrganizationPermissions permissions = 2;
 }
 
+message GetOrganizationNameForDomainRequest {
+  string domain = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetOrganizationNameForDomainResponse {
+  string name = 1;
+}
+
 message CreateOrganizationRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
@@ -798,6 +862,8 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
+  optional string display_name = 5;
+  optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
 message UpdateOrganizationResponse {
@@ -819,6 +885,7 @@ message GetProjectRequest {
   string organization_name = 1;
   string name = 2;
   uint32 access_token_ttl_seconds = 3;
+  bool issue_superuser_token = 4;
 }
 
 message GetProjectResponse {
@@ -1042,6 +1109,13 @@ message CreateAssetResponse {
   map<string, string> signing_headers = 3;
 }
 
+message RedeployProjectRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message RedeployProjectResponse {}
+
 message HibernateProjectRequest {
   string organization = 1;
   string project = 2;
@@ -1098,6 +1172,7 @@ message AddOrganizationMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
   string role = 3;
+  bool superuser_force_access = 4;
 }
 
 message AddOrganizationMemberUserResponse {
@@ -1160,13 +1235,13 @@ message SudoGetResourceResponse {
 }
 
 message SudoUpdateOrganizationQuotasRequest {
-  string org_name = 1;
-  optional uint32 projects = 2;
-  optional uint32 deployments = 3;
-  optional uint32 slots_total = 4;
-  optional uint32 slots_per_deployment = 5;
-  optional uint32 outstanding_invites = 6;
-  optional uint64 storage_limit_bytes_per_deployment = 7;
+  string organization = 1;
+  optional int32 projects = 2;
+  optional int32 deployments = 3;
+  optional int32 slots_total = 4;
+  optional int32 slots_per_deployment = 5;
+  optional int32 outstanding_invites = 6;
+  optional int64 storage_limit_bytes_per_deployment = 7;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -1174,7 +1249,7 @@ message SudoUpdateOrganizationQuotasResponse {
 }
 
 message SudoUpdateOrganizationBillingCustomerRequest {
-  string org_name = 1;
+  string organization = 1;
   string billing_customer_id = 2;
 }
 
@@ -1183,9 +1258,18 @@ message SudoUpdateOrganizationBillingCustomerResponse {
   repeated Subscription subscriptions = 2;
 }
 
+message SudoUpdateOrganizationCustomDomainRequest {
+  string name = 1;
+  string custom_domain = 2;
+}
+
+message SudoUpdateOrganizationCustomDomainResponse {
+  Organization organization = 1;
+}
+
 message SudoUpdateUserQuotasRequest {
   string email = 1;
-  optional uint32 singleuser_orgs = 2;
+  optional int32 singleuser_orgs = 2;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1209,6 +1293,13 @@ message SudoIssueRuntimeManagerTokenRequest {
 message SudoIssueRuntimeManagerTokenResponse {
   string token = 1;
 }
+
+message SudoDeleteOrganizationBillingIssueRequest {
+  string organization = 1;
+  BillingIssueType type = 2;
+}
+
+message SudoDeleteOrganizationBillingIssueResponse {}
 
 message ListProjectMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -1548,6 +1639,8 @@ message IssueMagicAuthTokenRequest {
   repeated string metrics_view_fields = 6;
   // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
   string state = 7;
+  // Optional public url title to store with the token.
+  string title = 8;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1625,6 +1718,13 @@ message ConnectProjectToGithubRequest {
 }
 
 message ConnectProjectToGithubResponse {}
+
+message UploadProjectAssetsRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message UploadProjectAssetsResponse {}
 
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
@@ -1866,20 +1966,25 @@ message GetAlertYAMLResponse {
 }
 
 message GetBillingSubscriptionRequest {
-  string org_name = 1;
+  string organization = 1;
 }
 
 message GetBillingSubscriptionResponse {
   Organization organization = 1;
   Subscription subscription = 2;
   string billing_portal_url = 3;
-  bool has_payment_method = 4;
 }
 
 message UpdateBillingSubscriptionRequest {
-  string org_name = 1;
+  string organization = 1;
   string plan_name = 2;
 }
+
+message CancelBillingSubscriptionRequest {
+  string organization = 1;
+}
+
+message CancelBillingSubscriptionResponse {}
 
 message UpdateBillingSubscriptionResponse {
   Organization organization = 1;
@@ -1887,7 +1992,7 @@ message UpdateBillingSubscriptionResponse {
 }
 
 message GetPaymentsPortalURLRequest {
-  string org_name = 1;
+  string organization = 1;
   string return_url = 2;
 }
 
@@ -1940,6 +2045,14 @@ message DenyProjectAccessRequest {
 
 message DenyProjectAccessResponse {}
 
+message ListOrganizationBillingIssuesRequest {
+  string organization = 1;
+}
+
+message ListOrganizationBillingIssuesResponse {
+  repeated BillingIssue issues = 1;
+}
+
 message User {
   string id = 1;
   string email = 2;
@@ -1962,10 +2075,13 @@ message Service {
 message Organization {
   string id = 1;
   string name = 2; // Globally unique
+  string display_name = 11;
   string description = 3;
+  string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
+  string billing_email = 9;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -1983,16 +2099,16 @@ message Subscription {
 }
 
 message UserQuotas {
-  uint32 singleuser_orgs = 1;
+  int32 singleuser_orgs = 1;
 }
 
 message OrganizationQuotas {
-  uint32 projects = 1;
-  uint32 deployments = 2;
-  uint32 slots_total = 3;
-  uint32 slots_per_deployment = 4;
-  uint32 outstanding_invites = 5;
-  uint64 storage_limit_bytes_per_deployment = 6;
+  int32 projects = 1;
+  int32 deployments = 2;
+  int32 slots_total = 3;
+  int32 slots_per_deployment = 4;
+  int32 outstanding_invites = 5;
+  int64 storage_limit_bytes_per_deployment = 6;
 }
 
 message Project {
@@ -2012,7 +2128,7 @@ message Project {
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
-  string frontend_url = 16;
+  string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
   map<string, string> annotations = 20;
   string prod_version = 21;
@@ -2115,6 +2231,8 @@ message ServiceToken {
 message MagicAuthToken {
   string id = 1;
   string project_id = 2;
+  string url = 13;
+  string token = 14;
   google.protobuf.Timestamp created_on = 3;
   google.protobuf.Timestamp expires_on = 4;
   google.protobuf.Timestamp used_on = 5;
@@ -2125,6 +2243,7 @@ message MagicAuthToken {
   rill.runtime.v1.Expression metrics_view_filter = 10;
   repeated string metrics_view_fields = 11;
   string state = 12;
+  string title = 15;
 }
 
 message VirtualFile {
@@ -2143,13 +2262,12 @@ message ReportOptions {
   string query_args_json = 4;
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
-  string open_project_subpath = 7;
   repeated string email_recipients = 8;
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
   repeated string slack_webhooks = 12;
-  // base64 state url of the metrics_view when it was created
-  string web_open_state = 14;
+  string web_open_path = 15; // Annotation for the subpath of <UI host>/org/project to open for the report.
+  string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
 }
 
 message AlertOptions {
@@ -2168,8 +2286,8 @@ message AlertOptions {
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;
-  // base64 state url of the dashboard when it was created
-  string web_open_state = 12;
+  string web_open_path = 15; // Annotation for the subpath of <UI host>/org/project to open for the report.
+  string web_open_state = 12; // Annotation for the base64-encoded UI state to open for the report.
 }
 
 message BillingPlan {
@@ -2206,4 +2324,71 @@ message MemberUsergroup {
   string role_name = 3;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
+}
+
+enum BillingIssueType {
+  BILLING_ISSUE_TYPE_UNSPECIFIED = 0;
+  BILLING_ISSUE_TYPE_ON_TRIAL = 1;
+  BILLING_ISSUE_TYPE_TRIAL_ENDED = 2;
+  BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD = 3;
+  BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS = 4;
+  BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
+  BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
+}
+
+enum BillingIssueLevel {
+  BILLING_ISSUE_LEVEL_UNSPECIFIED = 0;
+  BILLING_ISSUE_LEVEL_WARNING = 1;
+  BILLING_ISSUE_LEVEL_ERROR = 2;
+}
+
+message BillingIssue {
+  string organization = 1;
+  BillingIssueType type = 2;
+  BillingIssueLevel level = 3;
+  BillingIssueMetadata metadata = 4;
+  google.protobuf.Timestamp event_time = 5;
+  google.protobuf.Timestamp created_on = 6;
+}
+
+message BillingIssueMetadata {
+  oneof metadata {
+    BillingIssueMetadataOnTrial on_trial = 1;
+    BillingIssueMetadataTrialEnded trial_ended = 2;
+    BillingIssueMetadataNoPaymentMethod no_payment_method = 3;
+    BillingIssueMetadataNoBillableAddress no_billable_address = 4;
+    BillingIssueMetadataPaymentFailed payment_failed = 5;
+    BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
+  }
+}
+
+message BillingIssueMetadataOnTrial {
+  google.protobuf.Timestamp end_date = 1;
+}
+
+message BillingIssueMetadataTrialEnded {
+  google.protobuf.Timestamp grace_period_end_date = 1;
+}
+
+message BillingIssueMetadataNoPaymentMethod {}
+
+message BillingIssueMetadataNoBillableAddress {}
+
+message BillingIssueMetadataPaymentFailed {
+  repeated BillingIssueMetadataPaymentFailedMeta invoices = 1;
+}
+
+message BillingIssueMetadataPaymentFailedMeta {
+  string invoice_id = 1;
+  string invoice_number = 2;
+  string invoice_url = 3;
+  string amount_due = 4;
+  string currency = 5;
+  google.protobuf.Timestamp due_date = 6;
+  google.protobuf.Timestamp failed_on = 7;
+  google.protobuf.Timestamp grace_period_end_date = 8;
+}
+
+message BillingIssueMetadataSubscriptionCancelled {
+  google.protobuf.Timestamp end_date = 1;
 }

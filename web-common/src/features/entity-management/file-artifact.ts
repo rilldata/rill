@@ -35,7 +35,28 @@ import {
 import { fileArtifacts } from "./file-artifacts";
 import { inferResourceKind } from "./infer-resource-kind";
 
-const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
+const UNSUPPORTED_EXTENSIONS = [
+  // Data formats
+  ".db",
+  ".db.wal",
+  ".parquet",
+  ".xls",
+  ".xlsx",
+
+  // Image formats
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".svg",
+
+  // Document formats
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".ppt",
+  ".pptx",
+];
 
 export class FileArtifact {
   readonly path: string;
@@ -169,11 +190,13 @@ export class FileArtifact {
   };
 
   saveLocalContent = async () => {
-    const local = get(this.localContent);
-    if (local === null) return;
-
     const blob = get(this.localContent);
+    if (blob === null) return;
 
+    await this.saveContent(blob);
+  };
+
+  saveContent = async (blob: string) => {
     const instanceId = get(runtime).instanceId;
     const key = getRuntimeServiceGetFileQueryKey(instanceId, {
       path: this.path,
@@ -186,8 +209,11 @@ export class FileArtifact {
     try {
       await runtimeServicePutFile(instanceId, {
         path: this.path,
-        blob: local,
+        blob,
       }).catch(console.error);
+
+      // Optimistically update the remote content
+      this.remoteContent.set(blob);
 
       this.updateLocalContent(null);
     } catch (e) {
@@ -217,10 +243,6 @@ export class FileArtifact {
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
-  softDeleteResource() {
-    this.reconciling.set(false);
-  }
-
   hardDeleteResource() {
     // To avoid a workspace flicker, first infer the *intended* resource kind
     this.inferredResourceKind.set(
@@ -238,8 +260,9 @@ export class FileArtifact {
         instanceId,
         name?.name as string,
         name?.kind as ResourceKind,
-        undefined,
-        queryClient,
+        {
+          queryClient,
+        },
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
   };
@@ -301,7 +324,7 @@ export class FileArtifact {
   }
 
   private updateResourceNameIfChanged(resource: V1Resource) {
-    const isSubResource = !!resource.component?.spec?.definedInDashboard;
+    const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;
     const curName = get(this.resourceName);
     if (

@@ -5,12 +5,18 @@ export function isOrganizationPage(page: Page): boolean {
   return page.route.id === "/[organization]";
 }
 
+export function withinOrganization(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]");
+}
+
 export function isProjectPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]" ||
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
     page.route.id === "/[organization]/[project]/-/status" ||
+    page.route.id === "/[organization]/[project]/-/settings" ||
+    page.route.id === "/[organization]/[project]/-/settings/public-urls" ||
     !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
 }
@@ -26,7 +32,8 @@ export function isMetricsExplorerPage(page: Page): boolean {
   );
 }
 
-export function isCustomDashboardPage(page: Page): boolean {
+export function isCanvasDashboardPage(page: Page): boolean {
+  // TODO: Change the route to canvas
   return page.route.id === "/[organization]/[project]/-/dashboards/[dashboard]";
 }
 
@@ -34,7 +41,7 @@ export function isCustomDashboardPage(page: Page): boolean {
  * Returns true if the page is any kind of dashboard page (either a Metrics Explorer or a Custom Dashboard).
  */
 export function isAnyDashboardPage(page: Page): boolean {
-  return isMetricsExplorerPage(page) || isCustomDashboardPage(page);
+  return isMetricsExplorerPage(page) || isCanvasDashboardPage(page);
 }
 
 export function isReportPage(page: Page): boolean {
@@ -52,7 +59,7 @@ export function isReportExportPage(page: Page): boolean {
   );
 }
 
-export function isMagicLinkPage(page: Page): boolean {
+export function isPublicURLPage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/share/[token]";
 }
 
@@ -74,6 +81,8 @@ export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
       return MetricsEventScreenName.Project;
     case isMetricsExplorerPage(page):
       return MetricsEventScreenName.Dashboard;
+    case isCanvasDashboardPage(page):
+      return MetricsEventScreenName.Canvas;
     case isReportPage(page):
       return MetricsEventScreenName.Report;
     case isAlertPage(page):

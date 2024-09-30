@@ -25,10 +25,15 @@
   function onValidDateInput(date: DateTime) {
     let newInterval: Interval;
 
-    if (selectingStart) {
+    const selectedEndDateBeforeStart =
+      calendarInterval?.start && date < calendarInterval.start;
+
+    if (selectingStart || selectedEndDateBeforeStart) {
       newInterval = calendarInterval.set({ start: date });
+      selectingStart = false;
     } else {
       newInterval = calendarInterval.set({ end: date });
+      selectingStart = true;
     }
 
     if (newInterval.isValid) {
@@ -39,10 +44,10 @@
         calendarInterval = singleDay;
       }
     }
+
     if (calendarInterval.isValid) {
       firstVisibleMonth = calendarInterval.start;
     }
-    selectingStart = !selectingStart;
   }
 </script>
 
@@ -54,12 +59,14 @@
   }}
 />
 
-<Calendar
-  interval={calendarInterval}
-  {selectingStart}
-  {firstVisibleMonth}
-  onSelectDay={onValidDateInput}
-/>
+{#if calendarInterval.isValid}
+  <Calendar
+    selection={calendarInterval}
+    {selectingStart}
+    {firstVisibleMonth}
+    onSelectDay={onValidDateInput}
+  />
+{/if}
 
 <DropdownMenu.Separator />
 <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">

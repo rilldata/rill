@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
 
 const (
@@ -30,22 +32,31 @@ type Biller interface {
 	CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error)
 	FindCustomer(ctx context.Context, customerID string) (*Customer, error)
 	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
+	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
 
-	// CreateSubscription creates a subscription for the given organization.
-	// The subscription starts immediately.
+	// CreateSubscription creates a subscription for the given organization. Subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
+	// CreateSubscriptionInFuture creates a subscription for the given organization with a start date in the future.
+	CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error)
 	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error
 	GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
-	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error)
+	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error)
 	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
 	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
 	FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error)
 
+	GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error)
+	IsInvoiceValid(ctx context.Context, invoice *Invoice) bool
+	IsInvoicePaid(ctx context.Context, invoice *Invoice) bool
+
 	ReportUsage(ctx context.Context, usage []*Usage) error
 
 	GetReportingGranularity() UsageReportingGranularity
 	GetReportingWorkerCron() string
+
+	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers. jobs is used to enqueue jobs for processing the webhook events.
+	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler
 }
 
 type Plan struct {
@@ -95,11 +106,12 @@ type Subscription struct {
 }
 
 type Customer struct {
-	ID                string
-	Email             string
-	Name              string
-	PaymentProviderID string
-	PortalURL         string
+	ID                 string
+	Email              string
+	Name               string
+	PaymentProviderID  string
+	PortalURL          string
+	HasBillableAddress bool
 }
 
 type Usage struct {
@@ -109,6 +121,18 @@ type Usage struct {
 	ReportingGrain UsageReportingGranularity
 	StartTime      time.Time // Start time of the usage period
 	EndTime        time.Time // End time of the usage period
+	Metadata       map[string]interface{}
+}
+
+type Invoice struct {
+	ID             string
+	Status         string
+	CustomerID     string
+	Amount         string
+	Currency       string
+	DueDate        time.Time
+	CreatedAt      time.Time
+	SubscriptionID string
 	Metadata       map[string]interface{}
 }
 
@@ -126,8 +150,22 @@ const (
 	SubscriptionCancellationOptionImmediate
 )
 
+type SubscriptionChangeOption int
+
+const (
+	SubscriptionChangeOptionEndOfSubscriptionTerm SubscriptionChangeOption = iota
+	SubscriptionChangeOptionImmediate
+)
+
 type PaymentProvider string
 
 const (
 	PaymentProviderStripe PaymentProvider = "stripe"
 )
+
+func Email(organization *database.Organization) string {
+	if organization.BillingEmail != "" {
+		return organization.BillingEmail
+	}
+	return SupportEmail
+}

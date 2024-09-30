@@ -2,10 +2,10 @@ package snowflake
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/url"
 
+	"github.com/XSAM/otelsql"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -41,7 +41,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	if err != nil {
 		return nil, err
 	}
-	resProps := &drivers.ObjectStoreModelResultProperties{Path: outputLocation, Format: drivers.FileFormatParquet}
+	resProps := &drivers.ObjectStoreModelResultProperties{Path: outputLocation, Format: string(drivers.FileFormatParquet)}
 	res := make(map[string]any)
 	err = mapstructure.Decode(resProps, &res)
 	if err != nil {
@@ -73,7 +73,7 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 		return "", fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--var connector.snowflake.dsn=...' to 'rill start'")
 	}
 
-	db, err := sql.Open("snowflake", dsn)
+	db, err := otelsql.Open("snowflake", dsn)
 	if err != nil {
 		return "", err
 	}

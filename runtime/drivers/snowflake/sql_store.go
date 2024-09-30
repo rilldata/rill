@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	"github.com/apache/arrow/go/v14/arrow"
 	"github.com/apache/arrow/go/v14/arrow/memory"
 	"github.com/apache/arrow/go/v14/parquet"
@@ -31,7 +32,7 @@ const rowGroupBufferSize = int64(datasize.MB) * 512
 // Fetches query result in arrow batches.
 // As an alternative (or in case of memory issues) consider utilizing Snowflake "COPY INTO <location>" feature,
 // see https://docs.snowflake.com/en/sql-reference/sql/copy-into-location
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -51,7 +52,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		parallelFetchLimit = c.configProperties.ParallelFetchLimit
 	}
 
-	db, err := sql.Open("snowflake", dsn)
+	db, err := otelsql.Open("snowflake", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +96,6 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		conn:               conn,
 		rows:               rows,
 		batches:            batches,
-		limitInBytes:       opt.TotalLimitInBytes,
 		parallelFetchLimit: parallelFetchLimit,
 		logger:             c.logger,
 		tempDir:            tempDir,
@@ -103,15 +103,13 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 }
 
 type fileIterator struct {
-	ctx          context.Context
-	db           *sql.DB
-	conn         *sql.Conn
-	rows         sqld.Rows
-	batches      []*sf.ArrowBatch
-	progress     drivers.Progress
-	limitInBytes int64
-	logger       *zap.Logger
-	tempDir      string
+	ctx     context.Context
+	db      *sql.DB
+	conn    *sql.Conn
+	rows    sqld.Rows
+	batches []*sf.ArrowBatch
+	logger  *zap.Logger
+	tempDir string
 	// Computed while iterating
 	totalRecords int64
 	downloaded   bool
@@ -223,12 +221,6 @@ func (f *fileIterator) Next() ([]string, error) {
 				if err := writer.WriteBuffered(rec); err != nil {
 					return err
 				}
-				fileInfo, err := os.Stat(fw.Name())
-				if err == nil { // ignore error
-					if fileInfo.Size() > f.limitInBytes {
-						return drivers.ErrStorageLimitExceeded
-					}
-				}
 			}
 			batchesLeft--
 			f.totalRecords += int64(b.GetRowCount())
@@ -247,7 +239,6 @@ func (f *fileIterator) Next() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.progress.Observe(1, drivers.ProgressUnitFile)
 	f.logger.Debug("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }

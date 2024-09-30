@@ -2,8 +2,11 @@ package billing
 
 import (
 	"context"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
 
 var _ Biller = &noop{}
@@ -50,7 +53,15 @@ func (n noop) UpdateCustomerPaymentID(ctx context.Context, customerID string, pr
 	return nil
 }
 
+func (n noop) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {
+	return nil
+}
+
 func (n noop) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
+	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
+}
+
+func (n noop) CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
@@ -62,7 +73,7 @@ func (n noop) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	return []*Subscription{{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}}, nil
 }
 
-func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
+func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
@@ -72,6 +83,18 @@ func (n noop) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 
 func (n noop) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error) {
 	return []*Subscription{}, nil
+}
+
+func (n noop) GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error) {
+	return nil, nil
+}
+
+func (n noop) IsInvoiceValid(ctx context.Context, invoice *Invoice) bool {
+	return true
+}
+
+func (n noop) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
+	return true
 }
 
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
@@ -84,4 +107,8 @@ func (n noop) GetReportingGranularity() UsageReportingGranularity {
 
 func (n noop) GetReportingWorkerCron() string {
 	return ""
+}
+
+func (n noop) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
+	return nil
 }

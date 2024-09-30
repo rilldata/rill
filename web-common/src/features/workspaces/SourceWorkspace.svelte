@@ -9,16 +9,15 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import WorkspaceInspector from "@rilldata/web-common/features/models/inspector/WorkspaceInspector.svelte";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
-  import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "@rilldata/web-common/features/sources/refreshSource";
   import { useIsLocalFileConnector } from "@rilldata/web-common/features/sources/selectors";
   import SourceCTAs from "@rilldata/web-common/features/sources/workspace/SourceCTAs.svelte";
-  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -58,22 +57,17 @@
   $: allErrors = $allErrorsStore;
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: resource = $resourceQuery.data?.source;
-  $: connector = (resource as V1SourceV2)?.spec?.sinkConnector as string;
+  $: resource = $resourceQuery.data;
+  $: source = $resourceQuery.data?.source;
+  $: connector = (source as V1SourceV2)?.spec?.sinkConnector as string;
   const database = ""; // Sources are ingested into the default database
   const databaseSchema = ""; // Sources are ingested into the default database schema
-  $: tableName = (resource as V1SourceV2)?.state?.table as string;
-  $: refreshedOn = resource?.state?.refreshedOn;
+  $: tableName = (source as V1SourceV2)?.state?.table as string;
+  $: refreshedOn = source?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
   $: isLocalFileConnector = !!$isLocalFileConnectorQuery?.data;
-
-  $: if (resourceIsReconciling) {
-    overlay.set({ title: `Importing ${filePath}` });
-  } else {
-    overlay.set(null);
-  }
 
   async function replaceSource() {
     await replaceSourceWithUploadedFile(instanceId, filePath);
@@ -209,7 +203,7 @@
         {tableName}
         hasErrors={$hasErrors}
         hasUnsavedChanges={$hasUnsavedChanges}
-        source={resource}
+        {resource}
         isEmpty={!$remoteContent?.length}
         sourceIsReconciling={resourceIsReconciling}
       />

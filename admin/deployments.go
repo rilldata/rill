@@ -82,10 +82,9 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		Type: "duckdb",
 		// duckdb DSN will automatically be computed based on these parameters
 		Config: map[string]string{
-			"cpu":                    strconv.Itoa(alloc.CPU),
-			"memory_limit_gb":        strconv.Itoa(alloc.MemoryGB),
-			"storage_limit_bytes":    strconv.FormatInt(alloc.StorageBytes, 10),
-			"external_table_storage": strconv.FormatBool(true),
+			"cpu":                 strconv.Itoa(alloc.CPU),
+			"memory_limit_gb":     strconv.Itoa(alloc.MemoryGB),
+			"storage_limit_bytes": strconv.FormatInt(alloc.StorageBytes, 10),
 		},
 	})
 
@@ -121,6 +120,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		RuntimeAudience:   alloc.Audience,
 		RuntimeVersion:    runtimeVersion,
 		Status:            database.DeploymentStatusPending,
+		StatusMessage:     "",
 	})
 	if err != nil {
 		return nil, err
@@ -205,39 +205,41 @@ type UpdateDeploymentOptions struct {
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *UpdateDeploymentOptions) error {
-	// Update the provisioned runtime if the version has changed
-	if opts.Version != "" && opts.Version != depl.RuntimeVersion {
-		// Get provisioner from the set
-		p, ok := s.ProvisionerSet[depl.Provisioner]
-		if !ok {
-			return fmt.Errorf("provisioner: %q is not in the provisioner set", depl.Provisioner)
-		}
+	// Get provisioner from the set
+	p, ok := s.ProvisionerSet[depl.Provisioner]
+	if !ok {
+		return fmt.Errorf("provisioner: %q is not in the provisioner set", depl.Provisioner)
+	}
 
-		// Update the runtime
-		err := p.Update(ctx, depl.ProvisionID, opts.Version)
-		if err != nil {
-			s.Logger.Error("provisioner: failed to update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-			return err
-		}
+	// Update the runtime
+	_, err := p.Provision(ctx, &provisioner.ProvisionOptions{
+		ProvisionID:    depl.ProvisionID,
+		Slots:          depl.Slots,
+		RuntimeVersion: opts.Version,
+		Annotations:    opts.Annotations.ToMap(),
+	})
+	if err != nil {
+		s.Logger.Error("provisioner: failed to update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		return err
+	}
 
-		// Wait for the runtime to be ready after update
-		err = p.AwaitReady(ctx, depl.ProvisionID)
-		if err != nil {
-			s.Logger.Error("provisioner: failed awaiting runtime to be ready after update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-			// Mark deployment error
-			_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
-			return multierr.Combine(err, err2)
-		}
+	// Wait for the runtime to be ready after update
+	err = p.AwaitReady(ctx, depl.ProvisionID)
+	if err != nil {
+		s.Logger.Error("provisioner: failed awaiting runtime to be ready after update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		// Mark deployment error
+		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		return multierr.Combine(err, err2)
+	}
 
-		// Update the deployment runtime version
-		_, err = s.DB.UpdateDeploymentRuntimeVersion(ctx, depl.ID, opts.Version)
-		if err != nil {
-			// NOTE: If the update was triggered by a scheduled job like 'upgrade_latest_version_projects',
-			// then this error will cause the update to be retried on the next job invocation and it should eventually become consistent.
+	// Update the deployment runtime version
+	_, err = s.DB.UpdateDeploymentRuntimeVersion(ctx, depl.ID, opts.Version)
+	if err != nil {
+		// NOTE: If the update was triggered by a scheduled job like 'validate_deployments',
+		// then this error will cause the update to be retried on the next job invocation and it should eventually become consistent.
 
-			// TODO: Handle inconsistent state when a manually triggered update failed, where we can't rely on job retries.
-			return err
-		}
+		// TODO: Handle inconsistent state when a manually triggered update failed, where we can't rely on job retries.
+		return err
 	}
 
 	rt, err := s.OpenRuntimeClient(depl)
@@ -436,7 +438,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 		AudienceURL:       aud,
 		Subject:           "admin-service",
 		TTL:               time.Hour,
-		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
+		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.EditTrigger, auth.ReadObjects},
 	})
 	if err != nil {
 		return "", err
@@ -451,6 +453,8 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		orgName:         org.Name,
 		projID:          proj.ID,
 		projName:        proj.Name,
+		projProdSlots:   fmt.Sprint(proj.ProdSlots),
+		projProvisioner: proj.Provisioner,
 		projAnnotations: proj.Annotations,
 	}
 }
@@ -460,6 +464,8 @@ type DeploymentAnnotations struct {
 	orgName         string
 	projID          string
 	projName        string
+	projProdSlots   string
+	projProvisioner string
 	projAnnotations map[string]string
 }
 
@@ -472,5 +478,7 @@ func (da *DeploymentAnnotations) ToMap() map[string]string {
 	res["organization_name"] = da.orgName
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
+	res["project_prod_slots"] = da.projProdSlots
+	res["project_provisioner"] = da.projProvisioner
 	return res
 }

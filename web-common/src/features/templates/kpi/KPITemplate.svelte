@@ -24,15 +24,19 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  $: kpiProperties = rendererProperties as KPIProperties;
-
   const queryClient = useQueryClient();
+  let containerWidth: number;
 
   $: instanceId = $runtime?.instanceId;
-  $: metricViewName = kpiProperties.metric_view;
-  $: measureName = kpiProperties.measure;
-  $: timeRange = kpiProperties.time_range;
-  $: comparisonTimeRange = kpiProperties?.comparison_range;
+  $: kpiProperties = rendererProperties as KPIProperties;
+
+  $: ({
+    metrics_view: metricViewName,
+    filter: whereSql,
+    measure: measureName,
+    time_range: timeRange,
+    comparison_range: comparisonTimeRange,
+  } = kpiProperties);
 
   $: measure = useMetaMeasure(instanceId, metricViewName, measureName);
 
@@ -40,15 +44,17 @@
     instanceId,
     metricViewName,
     measureName,
-    timeRange,
+    timeRange.toUpperCase(),
+    whereSql,
   );
 
   $: comparisonValue = useKPIComparisonTotal(
     instanceId,
     metricViewName,
     measureName,
-    comparisonTimeRange,
-    timeRange,
+    comparisonTimeRange?.toUpperCase(),
+    timeRange.toUpperCase(),
+    whereSql,
     queryClient,
   );
 
@@ -56,7 +62,8 @@
     instanceId,
     metricViewName,
     measureName,
-    timeRange,
+    timeRange.toUpperCase(),
+    whereSql,
     queryClient,
   );
 
@@ -71,7 +78,10 @@
   $: [xMin, xMax] = extent(sparkData, (d) => d["ts"]);
 </script>
 
-<div class="flex flex-row bg-white">
+<div
+  bind:clientWidth={containerWidth}
+  class="flex flex-row h-full w-full items-center bg-white"
+>
   {#if $measure.data && $measureValue.data}
     <MeasureBigNumber
       measure={$measure.data}
@@ -90,7 +100,7 @@
     {#if sparkData.length}
       <SimpleDataGraphic
         height={comparisonTimeRange ? 70 : 65}
-        width={200}
+        width={containerWidth - 160}
         overflowHidden={false}
         top={10}
         bottom={0}
@@ -113,7 +123,7 @@
 
     {#if comparisonTimeRange}
       <div class="comparison-value">
-        vs last {humaniseISODuration(comparisonTimeRange, false)}
+        vs last {humaniseISODuration(comparisonTimeRange.toUpperCase(), false)}
       </div>
     {/if}
   </div>

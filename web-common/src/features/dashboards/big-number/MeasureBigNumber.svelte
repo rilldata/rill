@@ -2,6 +2,7 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
@@ -17,7 +18,6 @@
     crossfade,
     fly,
   } from "svelte/transition";
-  import Spinner from "../../entity-management/Spinner.svelte";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
   export let measure: MetricsViewSpecMeasureV2;
@@ -37,7 +37,11 @@
 
   const dispatch = createEventDispatcher();
 
-  $: measureValueFormatter = createMeasureValueFormatter<null>(measure);
+  $: measureValueFormatter = createMeasureValueFormatter<null>(
+    measure,
+    false,
+    true,
+  );
 
   // this is used to show the full value in tooltips when the user hovers
   // over the number. If not present, we'll use the string "no data"
@@ -76,14 +80,16 @@
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
 
-    copyToClipboard(number, `copied dimension value "${number}" to clipboard`);
+    copyToClipboard(number, `copied measure value "${number}" to clipboard`);
   }
 
   let suppressTooltip = false;
 
   const handleExpandMeasure = () => {
-    isMeasureExpanded = !isMeasureExpanded;
-    dispatch("expand-measure");
+    if (!isMeasureExpanded) {
+      isMeasureExpanded = true;
+      dispatch("expand-measure");
+    }
   };
 </script>
 
@@ -201,7 +207,10 @@
           in:receive={{ key: "spinner" }}
           out:send={{ key: "spinner" }}
         >
-          <Spinner status={EntityStatus.Running} />
+          <DelayedSpinner
+            isLoading={status === EntityStatus.Running}
+            size="24px"
+          />
         </div>
       {:else if value === null}
         <span class="ui-copy-disabled-faint italic text-sm">no data</span>

@@ -23,7 +23,9 @@ func TestLegacyAlert(t *testing.T) {
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
-		"/dashboards/mv1.yaml": `
+		"/metrics/mv1.yaml": `
+version: 1
+type: metrics_view
 title: mv1
 model: bar
 timeseries: __time
@@ -182,7 +184,9 @@ func TestAlert(t *testing.T) {
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
-		"/dashboards/mv1.yaml": `
+		"/metrics/mv1.yaml": `
+version: 1
+type: metrics_view
 title: mv1
 model: bar
 timeseries: __time
@@ -465,7 +469,9 @@ func TestAlertDataYAMLMetricsSQL(t *testing.T) {
 		"/models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
-		"/dashboards/mv1.yaml": `
+		"/metrics/mv1.yaml": `
+version: 1
+type: metrics_view
 title: mv1
 model: bar
 timeseries: __time
@@ -569,11 +575,11 @@ SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 	require.Contains(t, emails[0].Body, "measure_0")
 }
 
-func newMetricsView(name, table, timeDim string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
+func newMetricsView(name, model, timeDim string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsViewV2{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
-			Table:         table,
+			Model:         model,
 			Title:         name,
 			TimeDimension: timeDim,
 			Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
@@ -582,7 +588,8 @@ func newMetricsView(name, table, timeDim string, measures, dimensions []string) 
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
 				Connector:     "duckdb",
-				Table:         table,
+				Table:         model,
+				Model:         model,
 				Title:         name,
 				TimeDimension: timeDim,
 				Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
@@ -615,9 +622,9 @@ func newMetricsView(name, table, timeDim string, measures, dimensions []string) 
 	metricsRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: table}},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: model}},
 			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{fmt.Sprintf("/dashboards/%s.yaml", name)},
+			FilePaths: []string{fmt.Sprintf("/metrics/%s.yaml", name)},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
 			MetricsView: metrics,

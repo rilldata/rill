@@ -7,24 +7,33 @@ import (
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/billingportal/session"
 	"github.com/stripe/stripe-go/v79/customer"
+	"go.uber.org/zap"
 )
 
 var _ Provider = &Stripe{}
 
-type Stripe struct{}
+type Stripe struct {
+	logger        *zap.Logger
+	webhookSecret string
+}
 
-func NewStripe(stripeKey string) *Stripe {
+func NewStripe(logger *zap.Logger, stripeKey, stripeWebhookSecret string) *Stripe {
 	stripe.Key = stripeKey
-	return &Stripe{}
+	return &Stripe{
+		logger:        logger,
+		webhookSecret: stripeWebhookSecret,
+	}
 }
 
 func (s *Stripe) CreateCustomer(ctx context.Context, organization *database.Organization) (*Customer, error) {
 	// Create a new customer
 	params := &stripe.CustomerParams{
-		Email: stripe.String(billing.SupportEmail), // TODO capture email for the org or use admin's email
+		Email: stripe.String(billing.Email(organization)),
 		Name:  stripe.String(organization.ID),
 	}
 
@@ -55,18 +64,18 @@ func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer
 	})
 
 	return &Customer{
-		ID:                 c.ID,
-		Name:               c.Name,
-		Email:              c.Email,
-		ValidPaymentMethod: i.Next(), // very basic check if the customer has a payment method // TODO improve this
+		ID:               c.ID,
+		Name:             c.Name,
+		Email:            c.Email,
+		HasPaymentMethod: i.Next(),
 	}, nil
 }
 
 func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error) {
-	// TODO once we capture billing email then we can use that to list customers
 	searchStart := organization.CreatedOn.Add(-5 * time.Minute) // search 5 minutes before the org creation time
 	searchEnd := organization.CreatedOn.Add(5 * time.Minute)    // search 5 minutes after the org creation time
 	params := &stripe.CustomerListParams{
+		Email: stripe.String(billing.Email(organization)),
 		CreatedRange: &stripe.RangeQueryParams{
 			GreaterThanOrEqual: searchStart.Unix(),
 			LesserThanOrEqual:  searchEnd.Unix(),
@@ -80,16 +89,26 @@ func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.
 			it := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
 				Customer: stripe.String(c.ID),
 			})
+
 			return &Customer{
-				ID:                 c.ID,
-				Name:               c.Name,
-				Email:              c.Email,
-				ValidPaymentMethod: it.Next(), // very basic check if the customer has a payment method // TODO improve this
+				ID:               c.ID,
+				Name:             c.Name,
+				Email:            c.Email,
+				HasPaymentMethod: it.Next(),
 			}, nil
 		}
 	}
 
 	return nil, billing.ErrNotFound
+}
+
+func (s *Stripe) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {
+	params := &stripe.CustomerParams{
+		Email: stripe.String(email),
+	}
+
+	_, err := customer.Update(customerID, params)
+	return err
 }
 
 func (s *Stripe) DeleteCustomer(ctx context.Context, customerID string) error {
@@ -108,4 +127,12 @@ func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL 
 	}
 
 	return sess.URL, nil
+}
+
+func (s *Stripe) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
+	if s.webhookSecret == "" {
+		return nil
+	}
+	sw := &stripeWebhook{stripe: s, jobs: jc}
+	return sw.handleWebhook
 }

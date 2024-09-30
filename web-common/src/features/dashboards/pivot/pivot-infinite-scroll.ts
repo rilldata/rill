@@ -11,8 +11,18 @@ import {
   sortAcessors,
 } from "./pivot-utils";
 
+/**
+ * We need to make sure that when we update these limits, we also update the
+ * limit of the query in `pivot-data-store.ts`
+ */
 export const NUM_COLUMNS_PER_PAGE = 50;
 export const NUM_ROWS_PER_PAGE = 50;
+
+function getColumnsPerPage(config: PivotDataStoreConfig) {
+  return config.enableComparison
+    ? NUM_COLUMNS_PER_PAGE * 3
+    : NUM_COLUMNS_PER_PAGE;
+}
 
 function getSortedColumnKeys(
   config: PivotDataStoreConfig,
@@ -41,7 +51,7 @@ export function sliceColumnAxesDataForDef(
   if (!colDimensionNames.length) return colDimensionAxes;
 
   const totalColumnsToBeDisplayed =
-    NUM_COLUMNS_PER_PAGE * colDimensionPageNumber;
+    getColumnsPerPage(config) * colDimensionPageNumber;
 
   const maxIndexVisible: Record<string, number> = {};
 
@@ -90,17 +100,19 @@ export function getColumnFiltersForPage(
 ) {
   const { measureNames, colDimensionNames } = config;
   const colDimensionPageNumber = config.pivot.columnPage;
+  const totalColumnsToBeDisplayed = getColumnsPerPage(config);
 
   if (!colDimensionNames.length || measureNames.length == 0)
     return { filters: [], timeFilters: [] };
 
-  const pageStartIndex = NUM_COLUMNS_PER_PAGE * (colDimensionPageNumber - 1);
+  const pageStartIndex =
+    totalColumnsToBeDisplayed * (colDimensionPageNumber - 1);
 
   const sortedColumnKeys = getSortedColumnKeys(config, totalsRow);
 
   const columnKeysForPage = sortedColumnKeys.slice(
     pageStartIndex,
-    pageStartIndex + NUM_COLUMNS_PER_PAGE,
+    pageStartIndex + totalColumnsToBeDisplayed,
   );
 
   const minIndexVisible: Record<string, number> = {};

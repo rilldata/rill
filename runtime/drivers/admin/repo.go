@@ -14,10 +14,14 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var listFileslimit = 2000
+func (h *Handle) Root(ctx context.Context) (string, error) {
+	err := h.rlockEnsureCloned(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer h.repoMu.RUnlock()
 
-func (h *Handle) Root() string {
-	return h.projPath
+	return h.projPath, nil
 }
 
 func (h *Handle) CommitHash(ctx context.Context) (string, error) {
@@ -58,7 +62,7 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) 
 	defer h.repoMu.RUnlock()
 
 	fsRoot := os.DirFS(h.projPath)
-	glob = path.Clean(path.Join("./", glob))
+	glob = path.Clean(path.Join(".", glob))
 
 	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
@@ -67,12 +71,12 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) 
 		}
 
 		// Exit if we reached the limit
-		if len(entries) == listFileslimit {
-			return fmt.Errorf("glob exceeded limit of %d matched files", listFileslimit)
+		if len(entries) == drivers.RepoListLimit {
+			return drivers.ErrRepoListLimitExceeded
 		}
 
 		// Track file (p is already relative to the FS root)
-		p = filepath.Join("/", p)
+		p = path.Join("/", p)
 		// Do not send files for ignored paths
 		if drivers.IsIgnored(p, h.ignorePaths) {
 			return nil

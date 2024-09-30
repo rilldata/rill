@@ -548,6 +548,11 @@ func (c *connection) reopenDB() error {
 		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
 	}
 
+	// Add init SQL if provided
+	if c.config.InitSQL != "" {
+		bootQueries = append(bootQueries, c.config.InitSQL)
+	}
+
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
 	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
 	connector, err := duckdb.NewConnector(c.config.DSN, func(execer driver.ExecerContext) error {
@@ -840,7 +845,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 	for {
 		select {
 		case <-statTicker.C:
-			estimatedDBSize, _ := c.EstimateSize()
+			estimatedDBSize := c.estimateSize(false)
 			c.activity.RecordMetric(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
 			// NOTE :: running CALL pragma_database_size() while duckdb is ingesting data is causing the WAL file to explode.

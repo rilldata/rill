@@ -6,6 +6,7 @@ import {
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
+  ComparisonPercentOfTotal,
   mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
@@ -151,7 +152,8 @@ function exprHasComparison(expr: V1Expression) {
   forEachIdentifier(expr, (e, ident) => {
     if (
       ident.endsWith(ComparisonDeltaAbsoluteSuffix) ||
-      ident.endsWith(ComparisonDeltaRelativeSuffix)
+      ident.endsWith(ComparisonDeltaRelativeSuffix) ||
+      ident.endsWith(ComparisonPercentOfTotal)
     ) {
       hasComparison = true;
     }

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"strings"
 	"time"
@@ -29,10 +28,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
@@ -93,10 +89,7 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "project not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if proj.ProdBranch != req.Branch {

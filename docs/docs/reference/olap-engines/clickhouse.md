@@ -4,12 +4,17 @@ description: Power Rill dashboards using ClickHouse
 sidebar_label: ClickHouse
 sidebar_position: 3
 ---
+import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
+
+
+<LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' />
+
 
 ## Overview
 
 [ClickHouse](https://clickhouse.com/docs/en/intro) is an open-source, column-oriented OLAP database management system known for its ability to perform real-time analytical queries on large-scale datasets. Its architecture is optimized for high performance, leveraging columnar storage and advanced compression techniques to speed up data reads and significantly reduce storage costs. ClickHouse's efficiency in query execution, scalability, and ability to handle even petabytes of data makes it an excellent choice for real-time analytic use cases. 
 
-Rill supports connecting to an existing ClickHouse instance and using it as an OLAP engine to power Rill dashboards built against [external tables](build/olap/olap.md#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing ClickHouse instance and using it as an OLAP engine to power Rill dashboards built against [external tables](../../concepts/OLAP#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 
 ![Rill on ClickHouse](/img/reference/olap-engines/clickhouse/clickhouse.gif)
@@ -17,6 +22,14 @@ Rill supports connecting to an existing ClickHouse instance and using it as an O
 ## Supported versions
 
 Rill supports connecting to ClickHouse v22.7 or newer versions.
+
+## ClickHouse Local vs ClickHouse Cloud
+
+
+import ComingSoon from '@site/src/components/ComingSoon';
+
+<ComingSoon />
+
 
 ## Connection string (DSN)
 

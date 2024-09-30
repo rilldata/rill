@@ -24,7 +24,7 @@ export class FileArtifacts {
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
         case ResourceKind.Component:
-        case ResourceKind.Dashboard:
+        case ResourceKind.Canvas:
           // set query data for GetResource to avoid refetching data we already have
           queryClient.setQueryData(
             getRuntimeServiceGetResourceQueryKey(instanceId, {
@@ -70,15 +70,6 @@ export class FileArtifacts {
   updateLastUpdated(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
       this.getFileArtifact(filePath)?.updateLastUpdated(resource);
-    });
-  }
-
-  /**
-   * This is called when a resource is deleted either because file was deleted or it errored out.
-   */
-  softDeleteResource(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.softDeleteResource();
     });
   }
 

@@ -29,13 +29,13 @@
     class:cursor-auto={disabled}
     class:rounded
     class="{marginClasses} grid place-items-center
-{active ? 'bg-gray-200 dark:bg-gray-800' : ''}
+{active ? 'bg-gray-100 dark:bg-gray-800' : ''}
 {disabled ? 'text-gray-400' : 'text-gray-800'}
 {disableHover || disabled
       ? ''
       : bgDark
         ? 'hover:bg-gray-600'
-        : 'hover:bg-gray-100'}"
+        : 'hover:bg-gray-50'}"
     style:width="{compact ? 20 : 24}px"
     style:height="{compact ? 20 : 24}px"
     style:font-size="18px"

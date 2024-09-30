@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CreateShareableURLForm from "@rilldata/web-admin/features/public-urls/CreateShareableURLForm.svelte";
+  import CreatePublicURLForm from "@rilldata/web-admin/features/public-urls/CreatePublicURLForm.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import {
@@ -16,11 +16,15 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let createMagicAuthTokens: boolean;
+
+  let isOpen = false;
 </script>
 
-<Popover>
+<Popover bind:open={isOpen}>
   <PopoverTrigger asChild let:builder>
-    <Button type="secondary" builders={[builder]}>Share</Button>
+    <Button type="secondary" builders={[builder]} selected={isOpen}
+      >Share</Button
+    >
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[402px] p-0">
     <Tabs>
@@ -45,7 +49,7 @@
         </div>
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
-        <CreateShareableURLForm />
+        <CreatePublicURLForm />
       </TabsContent>
     </Tabs>
   </PopoverContent>

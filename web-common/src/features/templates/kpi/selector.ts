@@ -14,6 +14,7 @@ export function useKPITotals(
   metricViewName: string,
   measure: string,
   timeRange: string,
+  whereSql: string | undefined,
 ) {
   return createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -21,6 +22,7 @@ export function useKPITotals(
     {
       measures: [{ name: measure }],
       timeRange: { isoDuration: timeRange },
+      whereSql,
     },
     {
       query: {
@@ -38,9 +40,14 @@ export function useKPIComparisonTotal(
   measure: string,
   comparisonRange: string | undefined,
   timeRange: string,
+  whereSql: string | undefined,
   queryClient: QueryClient,
 ): CreateQueryResult<number | undefined> {
-  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+  const allTimeRangeQuery = useMetricsViewTimeRange(
+    instanceId,
+    metricViewName,
+    { query: { queryClient } },
+  );
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
     const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
@@ -66,6 +73,7 @@ export function useKPIComparisonTotal(
           start: comparisonStartTime.toISOString(),
           end: comparisonEndTime.toISOString(),
         },
+        whereSql,
       },
       {
         query: {
@@ -110,9 +118,14 @@ export function useKPISparkline(
   metricViewName: string,
   measure: string,
   timeRange: string,
+  whereSql: string | undefined,
   queryClient: QueryClient,
 ): CreateQueryResult<Array<Record<string, unknown>>> {
-  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+  const allTimeRangeQuery = useMetricsViewTimeRange(
+    instanceId,
+    metricViewName,
+    { query: { queryClient } },
+  );
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
     const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
@@ -130,6 +143,7 @@ export function useKPISparkline(
         timeStart: startTime.toISOString(),
         timeEnd: endTime.toISOString(),
         timeGranularity: defaultGrain,
+        whereSql,
       },
       {
         query: {

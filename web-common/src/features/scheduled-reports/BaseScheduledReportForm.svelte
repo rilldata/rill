@@ -42,6 +42,7 @@
       label="Frequency"
       options={["Daily", "Weekdays", "Weekly"].map((frequency) => ({
         value: frequency,
+        label: frequency,
       }))}
     />
     {#if $form["frequency"] === "Weekly"}
@@ -59,6 +60,7 @@
           "Sunday",
         ].map((day) => ({
           value: day,
+          label: day,
         }))}
       />
     {/if}

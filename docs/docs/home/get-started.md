@@ -3,66 +3,44 @@ title: Quickstart & Examples
 sidebar_label: Quickstart & Examples
 sidebar_position: 10
 ---
+import Video from '@site/src/components/Video';
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-Rill's BI-as-code approach allows you to build and manage dashboards in a codeful way locally + integrate your analytics into other Git processes.
-This tutorial is a step by step guide that will help you install Rill, ingest sources, model data and deploy a dashboard online.
+## Quickstart
 
-:::tip Example projects
-If you're looking for a place to get started, check out one of our [example projects](#installing-examples) which cover a variety of sources and use cases. 
-:::
-
-
-## Install Rill
-
-Install `rill` on Mac or Linux ([WSL](https://learn.microsoft.com/en-us/windows/wsl/install) for Windows users) using the installation script:
-
-```
-curl https://rill.sh | sh
-```
-
-:::tip sharing dashboards in Rill cloud? clone your git repo first
-If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](/home/install) in your cloned location locally to make deployment easier. 
-
-More details on deploying Rill via Git in our [Deploy section](../deploy/existing-project/existing-project.md).
-:::
-
-## Create your project
-
-Start a new Rill project:
+Run the following from the CLI to start Rill. Select a project from the UI or add your own data.
 
 ```
 rill start my-rill-project
 ```
 
-The Rill web app runs locally at `http://localhost:9009` and will create code files in the `my-rill-project` directory.
+---
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/GMsUyj_Bv3Q?autoplay=1&mute=1&rel=0&si=CMltjZI4S5oAAAtg"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", // Apply to iframe as well for rounded effect
+    }}
+  ></iframe>
+</div>
 
-## Load and transform data
 
-On the welcome screen, initialize an example project or load up Rill with your own data (use local files, cloud storage and/or database connections)
-
-Use the app to transform your data (data models) and quickly generate visualizations (dashboards).
-
-## Deploy your dashboard
-
-Once complete, you can deploy any Rill project with a dashboard to an authenticated hosted endpoint:
-
-1. Create a new Github repository on [https://github.com/new](https://github.com/new) and push your `my-rill-project` directory to it
-2. Setup continuous deployment from Github to Rill Cloud:
-    ```
-    cd my-rill-project
-    rill deploy
-    ```
-
-## Share your dashboard
-
-Projects on Rill Cloud are private by default. To invite others to explore your project, run:
-```
-rill user add
-```
-
-## Example Projects
+## Example Projects Repository
 
 We have created several example projects that highlight common use cases for Rill. 
 
@@ -81,7 +59,7 @@ Current projects include:
 - [GitHub Analytics](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics): analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files
 - [Programmatic Ads/OpenRTB](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads): bidstream data for programmtic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance
 - [311 Operations](https://github.com/rilldata/rill-examples/tree/main/rill-311-ops): a live datastream of 311 call centers from various locations in the US for example operational analytics 
-
+- [Final Tutorial Project](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial): A finalized version of the tutorial project with many working examples, a good place to reference any newer features, updated regularly.
 
 ## Installing Examples
 

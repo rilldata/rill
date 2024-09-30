@@ -39,12 +39,12 @@ type CatalogStore interface {
 	DeleteResource(ctx context.Context, v int64, k, n string) error
 	DeleteResources(ctx context.Context) error
 
-	FindModelSplits(ctx context.Context, modelID string, afterIndex int, afterKey string, limit int) ([]ModelSplit, error)
+	FindModelSplits(ctx context.Context, opts *FindModelSplitsOptions) ([]ModelSplit, error)
 	FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]ModelSplit, error)
-	FindModelSplitsByPending(ctx context.Context, modelID string, limit int) ([]ModelSplit, error)
 	CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error)
 	InsertModelSplit(ctx context.Context, modelID string, split ModelSplit) error
 	UpdateModelSplit(ctx context.Context, modelID string, split ModelSplit) error
+	UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error
 	UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error
 	DeleteModelSplits(ctx context.Context, modelID string) error
 }
@@ -76,4 +76,14 @@ type ModelSplit struct {
 	Error string
 	// Elapsed is the duration of the last execution of the split.
 	Elapsed time.Duration
+}
+
+// FindModelSplitsOptions is used to filter model splits.
+type FindModelSplitsOptions struct {
+	ModelID      string
+	Limit        int
+	WherePending bool
+	WhereErrored bool
+	AfterIndex   int
+	AfterKey     string
 }

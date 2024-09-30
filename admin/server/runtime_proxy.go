@@ -68,16 +68,21 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			attr = map[string]any{"admin": true}
 		}
 
+		instancePermissions := []runtimeauth.Permission{
+			runtimeauth.ReadObjects,
+			runtimeauth.ReadMetrics,
+			runtimeauth.ReadAPI,
+		}
+		if permissions.ManageProject {
+			instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
+		}
+
 		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{
 			AudienceURL: depl.RuntimeAudience,
 			Subject:     claims.OwnerID(),
 			TTL:         runtimeAccessTokenDefaultTTL,
 			InstancePermissions: map[string][]runtimeauth.Permission{
-				depl.RuntimeInstanceID: {
-					runtimeauth.ReadObjects,
-					runtimeauth.ReadMetrics,
-					runtimeauth.ReadAPI,
-				},
+				depl.RuntimeInstanceID: instancePermissions,
 			},
 			Attributes: attr,
 		})

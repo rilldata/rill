@@ -4,7 +4,7 @@ title: rill usergroup list
 ---
 ## rill usergroup list
 
-List user groups
+List groups
 
 ```
 rill usergroup list [flags]

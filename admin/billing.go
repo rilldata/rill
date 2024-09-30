@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
@@ -11,6 +12,7 @@ import (
 )
 
 func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
+	// TODO This can be moved to a background job and repair org billing job can be removed in the next version. We need repair job to fix existing orgs but afterwards background job wil ensure that all orgs are in sync with billing system
 	// create payment customer
 	pc, err := s.PaymentProvider.CreateCustomer(ctx, org)
 	if err != nil {
@@ -39,9 +41,16 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	}
 	s.Logger.Info("created subscription", zap.String("org", org.Name), zap.String("subscription_id", sub.ID))
 
+	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, sub.ID, plan.ID, org.CreatedOn, sub.StartDate, sub.TrialEndDate)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
 		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
@@ -50,6 +59,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -78,6 +88,12 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			}
 			s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 			subs = append(subs, sub)
+
+			// raise initial billing issues
+			err = s.RaiseNewOrgBillingIssues(ctx, org.ID, sub.ID, plan.ID, org.CreatedOn, sub.StartDate, sub.TrialEndDate)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 		if len(subs) > 1 {
 			s.Logger.Warn("multiple subscriptions found for the customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Int("num_subscriptions", len(subs)))
@@ -149,6 +165,33 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		}
 		s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 		subs = append(subs, sub)
+
+		err = s.RaiseNewOrgBillingIssues(ctx, org.ID, sub.ID, plan.ID, org.CreatedOn, sub.StartDate, sub.TrialEndDate)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// raise no payment method billing issue
+		_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingIssueTypeNoPaymentMethod,
+			Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
+			EventTime: org.CreatedOn,
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
+		}
+
+		// raise no billable address billing issue
+		_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingIssueTypeNoBillableAddress,
+			Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
+			EventTime: org.CreatedOn,
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to upsert billing error: %w", err)
+		}
 	} else if len(subs) > 1 {
 		s.Logger.Warn("multiple subscriptions found for the customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Int("num_subscriptions", len(subs)))
 	}
@@ -157,15 +200,18 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
-		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		CustomDomain:                        org.CustomDomain,
+		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -173,9 +219,163 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 	return org, subs, nil
 }
 
+// RaiseNewOrgBillingIssues raises billing issues for a new organization
+func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID, subID, planID string, creationTime, trialStartDate, trialEndDate time.Time) error {
+	// raise no payment method billing issue
+	_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID:     orgID,
+		Type:      database.BillingIssueTypeNoPaymentMethod,
+		Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
+		EventTime: creationTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upsert billing error: %w", err)
+	}
+
+	// raise no billable address billing issue
+	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID:     orgID,
+		Type:      database.BillingIssueTypeNoBillableAddress,
+		Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
+		EventTime: creationTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upsert billing error: %w", err)
+	}
+
+	if subID == "" || planID == "" {
+		s.Logger.Named("billing").Warn("no subscription or plan ID provided, skipping trial billing issues", zap.String("org_id", orgID))
+		return nil
+	}
+
+	// raise on-trial billing warning
+	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+		OrgID: orgID,
+		Type:  database.BillingIssueTypeOnTrial,
+		Metadata: &database.BillingIssueMetadataOnTrial{
+			SubID:   subID,
+			PlanID:  planID,
+			EndDate: trialEndDate,
+		},
+		EventTime: trialStartDate,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upsert billing warning: %w", err)
+	}
+
+	return nil
+}
+
+// CleanupTrialBillingIssues removes trial related billing issues
+func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) error {
+	bite, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing issue: %w", err)
+		}
+	}
+
+	if bite != nil {
+		err = s.DB.DeleteBillingIssue(ctx, bite.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing issue: %w", err)
+		}
+	}
+
+	biot, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeOnTrial)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing issue: %w", err)
+		}
+	}
+
+	if biot != nil {
+		err = s.DB.DeleteBillingIssue(ctx, biot.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing issue: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// CleanupBillingErrorSubCancellation removes subscription cancellation related billing error
+func (s *Service) CleanupBillingErrorSubCancellation(ctx context.Context, orgID string) error {
+	bisc, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return fmt.Errorf("failed to find billing errors: %w", err)
+		}
+	}
+
+	if bisc != nil {
+		err = s.DB.DeleteBillingIssue(ctx, bisc.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) CheckBillingErrors(ctx context.Context, orgID string) error {
+	be, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
+
+	if be != nil {
+		return fmt.Errorf("trial has ended")
+	}
+
+	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypePaymentFailed)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
+
+	if be != nil { // should we allow any grace period here?
+		return fmt.Errorf("invoice payment failed")
+	}
+
+	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
+
+	if be != nil && be.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate.AddDate(0, 0, 1).After(time.Now()) {
+		return fmt.Errorf("subscription cancelled")
+	}
+
+	return nil
+}
+
 func valOrDefault[T any](ptr *T, def T) T {
 	if ptr != nil {
 		return *ptr
+	}
+	return def
+}
+
+func biggerOfInt(ptr *int, def int) int {
+	if ptr != nil {
+		if *ptr < 0 || *ptr > def {
+			return *ptr
+		}
+	}
+	return def
+}
+
+func biggerOfInt64(ptr *int64, def int64) int64 {
+	if ptr != nil {
+		if *ptr < 0 || *ptr > def {
+			return *ptr
+		}
 	}
 	return def
 }

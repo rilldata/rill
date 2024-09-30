@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -111,7 +112,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	if c.config.SettingsOverride != "" {
 		stmt.Query += "\n SETTINGS " + c.config.SettingsOverride
 	} else {
-		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC'"
+		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1"
 		if c.config.EnableCache {
 			stmt.Query += ", use_query_cache = 1"
 		}
@@ -208,82 +209,86 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
-	if view {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
-			Priority: 100,
-		})
-	}
-
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
 		return fmt.Errorf("failed to parse output properties: %w", err)
 	}
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+
+	if outputProps.Typ == "VIEW" {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(name), onClusterClause, sql),
+			Priority: 100,
+		})
+	} else if outputProps.Typ == "DICTIONARY" {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.EngineFull),
+			Priority: 100,
+		})
+	}
 
 	var create strings.Builder
 	create.WriteString("CREATE OR REPLACE TABLE ")
-	create.WriteString(safeSQLName(name))
-
-	// see if there is any column override
-	if outputProps.Columns != "" {
-		create.WriteString(outputProps.Columns)
-	}
-
-	// engine with default
-	create.WriteString(" ENGINE = ")
-	var engine string
-	if outputProps.Engine != "" {
-		engine = outputProps.Engine
+	if c.config.Cluster != "" {
+		// need to create a local table on the cluster first
+		fmt.Fprintf(&create, "%s %s", safelocalTableName(name), onClusterClause)
 	} else {
-		engine = "MergeTree"
-	}
-	create.WriteString(engine)
-
-	// order_by
-	if outputProps.OrderBy != "" {
-		create.WriteString(" ORDER BY ")
-		create.WriteString(outputProps.OrderBy)
-	} else if engine == "MergeTree" {
-		// need ORDER BY for MergeTree
-		// it is optional for other engines
-		create.WriteString(" ORDER BY tuple() ")
+		create.WriteString(safeSQLName(name))
 	}
 
-	// partition_by
-	if outputProps.PartitionBy != "" {
-		create.WriteString(" PARTITION BY ")
-		create.WriteString(outputProps.PartitionBy)
+	if outputProps.Columns == "" {
+		// infer columns
+		v := tempName("view")
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
+		if err != nil {
+			return err
+		}
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+			defer cancel()
+			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW %s %s", v, onClusterClause)})
+		}()
+		// create table with same schema as view
+		fmt.Fprintf(&create, " AS %s ", v)
+	} else {
+		fmt.Fprintf(&create, " %s ", outputProps.Columns)
+	}
+	create.WriteString(outputProps.tblConfig())
+
+	// create table
+	// on replicated databases `create table t as select * from ...` is prohibited
+	// so we need to create a table first and then insert data into it
+	err := c.Exec(ctx, &drivers.Statement{Query: create.String(), Priority: 100})
+	if err != nil {
+		return err
 	}
 
-	// primary_key
-	if outputProps.PrimaryKey != "" {
-		create.WriteString(" PRIMARY KEY ")
-		create.WriteString(outputProps.PrimaryKey)
+	if c.config.Cluster != "" {
+		// create the distributed table
+		var distributed strings.Builder
+		fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
+		fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, currentDatabase(), %s", safeSQLName(c.config.Cluster), safelocalTableName(name))
+		if outputProps.DistributedShardingKey != "" {
+			fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
+		} else {
+			fmt.Fprintf(&distributed, ", rand()")
+		}
+		distributed.WriteString(")")
+		if outputProps.DistributedSettings != "" {
+			fmt.Fprintf(&distributed, " SETTINGS %s", outputProps.DistributedSettings)
+		}
+		err = c.Exec(ctx, &drivers.Statement{Query: distributed.String(), Priority: 100})
+		if err != nil {
+			return err
+		}
 	}
 
-	// sample_by
-	if outputProps.SampleBy != "" {
-		create.WriteString(" SAMPLE BY ")
-		create.WriteString(outputProps.SampleBy)
-	}
-
-	// ttl
-	if outputProps.TTL != "" {
-		create.WriteString(" TTL ")
-		create.WriteString(outputProps.TTL)
-	}
-
-	// settings
-	if outputProps.Settings != "" {
-		create.WriteString(" SETTINGS ")
-		create.WriteString(outputProps.Settings)
-	}
-
-	// write sql query
-	create.WriteString(" AS ")
-	create.WriteString(sql)
+	// insert into table
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    create.String(),
+		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 		Priority: 100,
 	})
 }
@@ -306,47 +311,139 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 // DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
-	var typ string
-	if view {
-		typ = "VIEW"
-	} else {
-		typ = "TABLE"
+func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
+	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
+	if err != nil {
+		return err
 	}
-	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP %s %s", typ, safeSQLName(name)),
-		Priority: 100,
-	})
-}
-
-// RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
-	if !view {
-		var exists bool
-		err := c.db.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
-		if err != nil {
-			return err
-		}
-		if !exists {
-			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("RENAME TABLE %s TO %s", safeSQLName(name), safeSQLName(newName)),
-				Priority: 100,
-			})
-		}
-		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("EXCHANGE TABLES %s AND %s", safeSQLName(name), safeSQLName(newName)),
+	var onClusterClause string
+	if onCluster {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+	switch typ {
+	case "VIEW", "DICTIONARY":
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP %s %s %s", typ, safeSQLName(name), onClusterClause),
+			Priority: 100,
+		})
+	case "TABLE":
+		// drop the main table
+		err := c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
 		if err != nil {
 			return err
 		}
-		// drop the old table
-		return c.DropTable(context.Background(), name, view)
+		// then drop the local table in case of cluster
+		if onCluster && !strings.HasSuffix(name, "_local") {
+			return c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safelocalTableName(name), onClusterClause),
+				Priority: 100,
+			})
+		}
+		return nil
+	default:
+		return fmt.Errorf("clickhouse: unknown entity type %q", typ)
+	}
+}
+
+// RenameTable implements drivers.OLAPStore.
+func (c *connection) RenameTable(ctx context.Context, oldName, newName string, view bool) error {
+	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", oldName)
+	if err != nil {
+		return err
+	}
+	var onClusterClause string
+	if onCluster {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	}
 
-	// clickhouse does not support renaming views so we capture the OLD view DDL and use it to create new view
+	switch typ {
+	case "VIEW":
+		return c.renameView(ctx, oldName, newName, onClusterClause)
+	case "DICTIONARY":
+		return c.renameTable(ctx, oldName, newName, onClusterClause)
+	case "TABLE":
+		if !onCluster {
+			return c.renameTable(ctx, oldName, newName, onClusterClause)
+		}
+		// capture the full engine of the old distributed table
+		var engineFull string
+		res, err := c.Execute(ctx, &drivers.Statement{
+			Query:    "SELECT engine_full FROM system.tables WHERE database = currentDatabase() AND name = ?",
+			Args:     []any{oldName},
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+
+		for res.Next() {
+			if err := res.Scan(&engineFull); err != nil {
+				res.Close()
+				return err
+			}
+		}
+		res.Close()
+		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
+
+		// build the column type clause
+		var columnClause strings.Builder
+		res, err = c.Execute(ctx, &drivers.Statement{
+			Query:    "SELECT name, type FROM system.columns WHERE database = currentDatabase() AND table = ?",
+			Args:     []any{oldName},
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+
+		var col, typ string
+		for res.Next() {
+			if err := res.Scan(&col, &typ); err != nil {
+				res.Close()
+				return err
+			}
+			if columnClause.Len() > 0 {
+				columnClause.WriteString(", ")
+			}
+			columnClause.WriteString(safeSQLName(col))
+			columnClause.WriteString(" ")
+			columnClause.WriteString(typ)
+		}
+		res.Close()
+
+		// rename the local table
+		err = c.renameTable(ctx, localTableName(oldName), localTableName(newName), onClusterClause)
+		if err != nil {
+			return err
+		}
+
+		// recreate the distributed table
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s (%s) Engine = %s", safeSQLName(newName), onClusterClause, columnClause.String(), engineFull),
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+
+		// drop the old table
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(oldName), onClusterClause),
+			Priority: 100,
+		})
+	default:
+		return fmt.Errorf("clickhouse: unknown entity type %q", typ)
+	}
+}
+
+func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster string) error {
+	// clickhouse does not support renaming views so we capture the OLD view's select statement and use it to create new view
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(name)),
+		Query:    "SELECT as_select FROM system.tables WHERE database = currentDatabase() AND name = ?",
+		Args:     []any{oldName},
 		Priority: 100,
 	})
 	if err != nil {
@@ -363,9 +460,8 @@ func (c *connection) RenameTable(ctx context.Context, name, newName string, view
 	res.Close()
 
 	// create new view
-	sql = strings.Replace(sql, name, safeSQLName(newName), 1)
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:    sql,
+		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(newName), onCluster, sql),
 		Priority: 100,
 	})
 	if err != nil {
@@ -373,14 +469,37 @@ func (c *connection) RenameTable(ctx context.Context, name, newName string, view
 	}
 
 	// drop old view
-	err = c.Exec(context.Background(), &drivers.Statement{
-		Query:    fmt.Sprintf("DROP VIEW %s", safeSQLName(name)),
+	err = c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("DROP VIEW %s %s", safeSQLName(oldName), onCluster),
 		Priority: 100,
 	})
 	if err != nil {
-		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", name), zap.Error(err))
+		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", oldName), zap.Error(err))
 	}
 	return nil
+}
+
+func (c *connection) renameTable(ctx context.Context, oldName, newName, onCluster string) error {
+	var exists bool
+	err := c.db.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("RENAME TABLE %s TO %s %s", safeSQLName(oldName), safeSQLName(newName), onCluster),
+			Priority: 100,
+		})
+	}
+	err = c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("EXCHANGE TABLES %s AND %s %s", safeSQLName(oldName), safeSQLName(newName), onCluster),
+		Priority: 100,
+	})
+	if err != nil {
+		return err
+	}
+	// drop the old table
+	return c.DropTable(context.Background(), oldName, false)
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
@@ -495,7 +614,6 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 // databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
 // Refer the list of types here: https://clickhouse.com/docs/en/sql-reference/data-types
-// NOTE: Doesn't handle aggregation function types, nested data structures, tuples, geo types, special data types.
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	dbt = strings.ToUpper(dbt)
 
@@ -567,6 +685,20 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_STRING
 	case "OTHER":
 		t.Code = runtimev1.Type_CODE_JSON
+	case "NOTHING":
+		t.Code = runtimev1.Type_CODE_STRING
+	case "POINT":
+		return databaseTypeToPB("Array(Float64)", nullable)
+	case "RING":
+		return databaseTypeToPB("Array(Point)", nullable)
+	case "LINESTRING":
+		return databaseTypeToPB("Array(Point)", nullable)
+	case "MULTILINESTRING":
+		return databaseTypeToPB("Array(LineString)", nullable)
+	case "POLYGON":
+		return databaseTypeToPB("Array(Ring)", nullable)
+	case "MULTIPOLYGON":
+		return databaseTypeToPB("Array(Polygon)", nullable)
 	default:
 		match = false
 	}
@@ -630,6 +762,39 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "ENUM", "ENUM8", "ENUM16":
 		// Representing enums as strings
 		t.Code = runtimev1.Type_CODE_STRING
+	case "TUPLE":
+		t.Code = runtimev1.Type_CODE_STRUCT
+		t.StructType = &runtimev1.StructType{}
+		fields := splitCommasUnlessQuotedOrNestedInParens(args)
+		if len(fields) == 0 {
+			return nil, errUnsupportedType
+		}
+		_, _, isNamed := splitStructFieldStr(fields[0])
+		for i, fieldStr := range fields {
+			if isNamed {
+				name, typ, ok := splitStructFieldStr(fieldStr)
+				if !ok {
+					return nil, errUnsupportedType
+				}
+				fieldType, err := databaseTypeToPB(typ, false)
+				if err != nil {
+					return nil, err
+				}
+				t.StructType.Fields = append(t.StructType.Fields, &runtimev1.StructType_Field{
+					Name: name,
+					Type: fieldType,
+				})
+			} else {
+				fieldType, err := databaseTypeToPB(fieldStr, true)
+				if err != nil {
+					return nil, err
+				}
+				t.StructType.Fields = append(t.StructType.Fields, &runtimev1.StructType_Field{
+					Name: fmt.Sprintf("%d", i),
+					Type: fieldType,
+				})
+			}
+		}
 	default:
 		return nil, errUnsupportedType
 	}
@@ -653,4 +818,122 @@ func splitBaseAndArgs(s string) (string, string, bool) {
 	return base, rest, true
 }
 
+// Splits a comma-separated list, but ignores commas inside strings or nested in parentheses.
+// (NOTE: DuckDB escapes strings by replacing `"` with `""`. Example: hello "world" -> "hello ""world""".)
+//
+// Examples:
+//
+//	`10,20` -> [`10`, `20`]
+//	`VARCHAR, INT` -> [`VARCHAR`, `INT`]
+//	`"foo "",""" INT, "bar" STRUCT("a" INT, "b" INT)` -> [`"foo "",""" INT`, `"bar" STRUCT("a" INT, "b" INT)`]
+func splitCommasUnlessQuotedOrNestedInParens(s string) []string {
+	// Result slice
+	splits := []string{}
+	// Starting idx of current split
+	fromIdx := 0
+	// True if quote level is unmatched (this is sufficient for escaped quotes since they will immediately flip again)
+	quoted := false
+	// Nesting level
+	nestCount := 0
+
+	// Consume input character-by-character
+	for idx, char := range s {
+		// Toggle quoted
+		if char == '"' {
+			quoted = !quoted
+			continue
+		}
+		// If quoted, don't parse for nesting or commas
+		if quoted {
+			continue
+		}
+		// Increase nesting on opening paren
+		if char == '(' {
+			nestCount++
+			continue
+		}
+		// Decrease nesting on closing paren
+		if char == ')' {
+			nestCount--
+			continue
+		}
+		// If nested, don't parse for commas
+		if nestCount != 0 {
+			continue
+		}
+		// If not nested and there's a comma, add split to result
+		if char == ',' {
+			splits = append(splits, s[fromIdx:idx])
+			fromIdx = idx + 1
+			continue
+		}
+		// If not nested, and there's a space at the start of the split, skip it
+		if fromIdx == idx && char == ' ' {
+			fromIdx++
+			continue
+		}
+	}
+
+	// Add last split to result and return
+	splits = append(splits, s[fromIdx:])
+	return splits
+}
+
+// splitStructFieldStr splits a single struct name/type pair.
+// It expects fieldStr to have the format `name TYPE` or `"name" TYPE`.
+// If the name string is quoted and contains escaped quotes `""`, they'll be replaced by `"`.
+// For example: splitStructFieldStr(`"hello "" world" VARCHAR`) -> (`hello " world`, `VARCHAR`, true).
+func splitStructFieldStr(fieldStr string) (string, string, bool) {
+	// If the string DOES NOT start with a `"`, we can just split on the first space.
+	if fieldStr == "" || fieldStr[0] != '"' {
+		return strings.Cut(fieldStr, " ")
+	}
+
+	// Find end of quoted string (skipping `""` since they're escaped quotes)
+	idx := 1
+	found := false
+	for !found && idx < len(fieldStr) {
+		// Continue if not a quote
+		if fieldStr[idx] != '"' {
+			idx++
+			continue
+		}
+
+		// Skip two ahead if it's two quotes in a row (i.e. an escaped quote)
+		if len(fieldStr) > idx+1 && fieldStr[idx+1] == '"' {
+			idx += 2
+			continue
+		}
+
+		// It's the last quote of the string. We're done.
+		idx++
+		found = true
+	}
+
+	// If not found, format was unexpected
+	if !found {
+		return "", "", false
+	}
+
+	// Remove surrounding `"` and replace escaped quotes `""` with `"`
+	nameStr := strings.ReplaceAll(fieldStr[1:idx-1], `""`, `"`)
+
+	// The rest of the string is the type, minus the initial space
+	typeStr := strings.TrimLeft(fieldStr[idx:], " ")
+
+	return nameStr, typeStr, true
+}
+
 var errUnsupportedType = errors.New("encountered unsupported clickhouse type")
+
+func tempName(prefix string) string {
+	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
+func safelocalTableName(name string) string {
+	return safeSQLName(name + "_local")
+}
+
+func localTableName(name string) string {
+	return name + "_local"
+}

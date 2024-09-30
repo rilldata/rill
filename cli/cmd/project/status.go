@@ -2,7 +2,6 @@ package project
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -111,7 +110,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("\nResources\n\n")
 			ch.PrintData(table)
 
-			if parser.State != nil && len(parser.State.ParseErrors) != 0 {
+			if parser != nil && parser.State != nil && len(parser.State.ParseErrors) != 0 {
 				var table []*parseErrorTableRow
 				for _, e := range parser.State.ParseErrors {
 					table = append(table, newParseErrorTableRow(e))
@@ -145,31 +144,10 @@ func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 	}
 
 	return &resourceTableRow{
-		Type:   formatResourceKind(r.Meta.Name.Kind),
+		Type:   runtime.PrettifyResourceKind(r.Meta.Name.Kind),
 		Name:   r.Meta.Name.Name,
-		Status: formatReconcileStatus(r.Meta.ReconcileStatus),
+		Status: runtime.PrettifyReconcileStatus(r.Meta.ReconcileStatus),
 		Error:  truncErr,
-	}
-}
-
-func formatResourceKind(k string) string {
-	k = strings.TrimPrefix(k, "rill.runtime.v1.")
-	k = strings.TrimSuffix(k, "V2")
-	return k
-}
-
-func formatReconcileStatus(s runtimev1.ReconcileStatus) string {
-	switch s {
-	case runtimev1.ReconcileStatus_RECONCILE_STATUS_UNSPECIFIED:
-		return "Unknown"
-	case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-		return "Idle"
-	case runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING:
-		return "Pending"
-	case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
-		return "Running"
-	default:
-		panic(fmt.Errorf("unknown reconcile status: %s", s.String()))
 	}
 }
 

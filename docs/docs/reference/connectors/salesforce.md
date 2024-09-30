@@ -51,7 +51,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 ## Cloud deployment
 
-Once a project having a Salesforce source has been deployed using `rill deploy`, Rill requires you to explicitly provide the credentials using the following command:
+Once a project having a Salesforce source has been deployed, Rill requires you to explicitly provide the credentials using the following command:
 
 ```
 rill env configure

@@ -38,9 +38,7 @@
   onMount(async () => {
     if (includeScheduledReport) {
       CreateScheduledReportDialog = (
-        await import(
-          "../../scheduled-reports/CreateScheduledReportDialog.svelte"
-        )
+        await import("../../scheduled-reports/ScheduledReportDialog.svelte")
       ).default;
     }
   });
@@ -51,7 +49,7 @@
 <DropdownMenu.Root bind:open={active}>
   <DropdownMenu.Trigger asChild let:builder>
     <button
-      class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
+      class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700 pointer-events-auto"
       aria-label="Export pivot"
       {...getAttrs([builder])}
       on:click|preventDefault
@@ -93,10 +91,8 @@
 {#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog}
   <svelte:component
     this={CreateScheduledReportDialog}
-    queryName="MetricsViewAggregation"
     queryArgs={$scheduledReportsQueryArgs}
     {metricsViewProto}
-    open={showScheduledReportDialog}
-    on:close={() => (showScheduledReportDialog = false)}
+    bind:open={showScheduledReportDialog}
   />
 {/if}

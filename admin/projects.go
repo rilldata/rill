@@ -5,18 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // TODO: The functions in this file are not truly fault tolerant. They should be refactored to run as idempotent, retryable background tasks.
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
+	// check if org has any blocking billing errors and return error if it does
+	err := s.CheckBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
 	if (opts.ArchiveAssetID == nil) == isGitInfoEmpty {
 		return nil, fmt.Errorf("either github info or archive_asset_id must be set")
@@ -169,7 +178,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			}
 		}
 
-		return s.TriggerRedeploy(ctx, proj, oldDepl)
+		return s.RedeployProject(ctx, proj, oldDepl)
 	}
 
 	s.Logger.Info("update project: updating deployments", observability.ZapCtx(ctx))
@@ -246,46 +255,8 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 	return nil
 }
 
-// HibernateProject hibernates a project by tearing down its prod deployment.
-func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
-	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, depl := range depls {
-		err = s.TeardownDeployment(ctx, depl)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	proj, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name:                 proj.Name,
-		Description:          proj.Description,
-		Public:               proj.Public,
-		Provisioner:          proj.Provisioner,
-		ArchiveAssetID:       proj.ArchiveAssetID,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		ProdVersion:          proj.ProdVersion,
-		ProdBranch:           proj.ProdBranch,
-		Subpath:              proj.Subpath,
-		ProdVariables:        proj.ProdVariables,
-		ProdDeploymentID:     nil,
-		ProdSlots:            proj.ProdSlots,
-		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		Annotations:          proj.Annotations,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return proj, nil
-}
-
-// TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
-func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
+// RedeployProject de-provisions and re-provisions a project's prod deployment.
+func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
 	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, err
@@ -341,8 +312,46 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 	return proj, nil
 }
 
-// TriggerReconcile triggers a reconcile for a deployment.
-func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deployment) (err error) {
+// HibernateProject hibernates a project by tearing down its prod deployment.
+func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
+	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, depl := range depls {
+		err = s.TeardownDeployment(ctx, depl)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	proj, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		Provisioner:          proj.Provisioner,
+		ArchiveAssetID:       proj.ArchiveAssetID,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          proj.ProdVersion,
+		ProdBranch:           proj.ProdBranch,
+		Subpath:              proj.Subpath,
+		ProdVariables:        proj.ProdVariables,
+		ProdDeploymentID:     nil,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Annotations:          proj.Annotations,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return proj, nil
+}
+
+// TriggerParser triggers the deployment's project parser to do a new pull and parse.
+func (s *Service) TriggerParser(ctx context.Context, depl *database.Deployment) (err error) {
 	s.Logger.Info("reconcile: triggering pull", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 	defer func() {
 		if err != nil {
@@ -360,41 +369,74 @@ func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deploymen
 
 	_, err = rt.CreateTrigger(ctx, &runtimev1.CreateTriggerRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		Trigger: &runtimev1.CreateTriggerRequest_PullTriggerSpec{
-			PullTriggerSpec: &runtimev1.PullTriggerSpec{},
-		},
+		Parser:     true,
 	})
 	return err
 }
 
-// TriggerRefreshSource triggers refresh of a deployment's sources. If the sources slice is nil, it will refresh all sources.
-func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) (err error) {
-	s.Logger.Info("reconcile: triggering refresh", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-	defer func() {
-		if err != nil {
-			s.Logger.Error("reconcile: trigger refresh failed", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
-		} else {
-			s.Logger.Info("reconcile: trigger refresh completed", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-		}
-	}()
-
-	names := make([]*runtimev1.ResourceName, 0, len(sources))
-	for _, source := range sources {
-		// NOTE: When keeping Kind empty, the RefreshTrigger will match both sources and models
-		names = append(names, &runtimev1.ResourceName{Name: source})
-	}
-
+// TriggerParserAndAwaitResource triggers the parser and polls the runtime until the given resource's spec version has been updated (or ctx is canceled).
+func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *database.Deployment, name, kind string) error {
 	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 
+	resourceReq := &runtimev1.GetResourceRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		Name: &runtimev1.ResourceName{
+			Kind: kind,
+			Name: name,
+		},
+	}
+
+	// Get old spec version
+	var oldSpecVersion *int64
+	r, err := rt.GetResource(ctx, resourceReq)
+	if err == nil {
+		oldSpecVersion = &r.Resource.Meta.SpecVersion
+	}
+
+	// Trigger parser
 	_, err = rt.CreateTrigger(ctx, &runtimev1.CreateTriggerRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		Trigger: &runtimev1.CreateTriggerRequest_RefreshTriggerSpec{
-			RefreshTriggerSpec: &runtimev1.RefreshTriggerSpec{OnlyNames: names},
-		},
+		Parser:     true,
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Poll every 1 seconds until the resource is found or the ctx is cancelled or times out
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+		}
+
+		r, err := rt.GetResource(ctx, resourceReq)
+		if err != nil {
+			if s, ok := status.FromError(err); !ok || s.Code() != codes.NotFound {
+				return fmt.Errorf("failed to poll for resource: %w", err)
+			}
+			if oldSpecVersion != nil {
+				// Success - previously the resource was found, now we cannot find it anymore
+				return nil
+			}
+			// Continue polling
+			continue
+		}
+		if oldSpecVersion == nil {
+			// Success - previously the resource was not found, now we found one
+			return nil
+		}
+		if *oldSpecVersion != r.Resource.Meta.SpecVersion {
+			// Success - the spec version has changed
+			return nil
+		}
+	}
 }

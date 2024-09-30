@@ -42,5 +42,8 @@
       "last 1 safari version"
     ]
   },
-  "main": "babel.config.js"
+  "main": "babel.config.js",
+  "dependencies": {
+    "sidebar": "^1.0.2"
+  }
 }

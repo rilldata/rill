@@ -1,6 +1,7 @@
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ConnectorDriverPropertyType,
+  V1SourceV2,
   type V1ConnectorDriver,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
@@ -184,4 +185,28 @@ export function maybeRewriteToDuckDb(
   }
 
   return [connectorCopy, formValues];
+}
+
+export function getFileExtension(source: V1SourceV2): string {
+  const path = source?.spec?.properties?.path?.toLowerCase();
+  if (path?.includes(".csv")) return "CSV";
+  if (path?.includes(".parquet")) return "Parquet";
+  if (path?.includes(".json")) return "JSON";
+  if (path?.includes(".ndjson")) return "JSON";
+  return "";
+}
+
+export function formatConnectorType(source: V1SourceV2) {
+  switch (source?.spec?.sourceConnector) {
+    case "s3":
+      return "S3";
+    case "gcs":
+      return "GCS";
+    case "https":
+      return "http(s)";
+    case "local_file":
+      return "Local file";
+    default:
+      return source?.state?.connector ?? "";
+  }
 }

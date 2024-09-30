@@ -8,6 +8,9 @@ import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
+const folderName = (resourceName) =>
+  resourceName === "canvas" ? "canvases" : `${resourceName}s`;
+
 export async function handleEntityCreate(kind: ResourceKind) {
   if (!(kind in ResourceKindMap)) return;
   const instanceId = get(runtime).instanceId;
@@ -21,7 +24,7 @@ export async function handleEntityCreate(kind: ResourceKind) {
       : fileArtifacts.getNamesForKind(kind);
   const { name, extension, baseContent } = ResourceKindMap[kind];
   const newName = getName(name, allNames);
-  const newPath = `${name + "s"}/${newName}${extension}`;
+  const newPath = `${folderName(name)}/${newName}${extension}`;
 
   await runtimeServicePutFile(instanceId, {
     path: newPath,
@@ -81,6 +84,11 @@ measures:
     description: "Total revenue generated"
 `,
   },
+  [ResourceKind.Explore]: {
+    name: "explore",
+    extension: ".yaml",
+    baseContent: "", // TODO
+  },
   [ResourceKind.API]: {
     name: "api",
     extension: ".yaml",
@@ -95,10 +103,10 @@ metrics_sql: |
 `,
   },
   [ResourceKind.Component]: {
-    name: "chart",
+    name: "component",
     extension: ".yaml",
-    baseContent: `# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+    baseContent: `# Component YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/components
     
 type: component
 
@@ -143,11 +151,12 @@ vega_lite: |
     }
   }`,
   },
-  [ResourceKind.Dashboard]: {
-    name: "custom-dashboard",
+  [ResourceKind.Canvas]: {
+    name: "canvas",
     extension: ".yaml",
-    baseContent: `type: dashboard
-columns: 10
+    baseContent: `type: canvas
+title: "Canvas Dashboard"
+columns: 24
 gap: 2
 
 items:
@@ -156,6 +165,7 @@ items:
         content: "First Component"
         css:
           font-size: "40px"
+          background-color: "#fff"
     width: 4
     height: 3
     x: 2
