@@ -427,6 +427,23 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 	})
 }
 
+type TrialStarted struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialStarted(opts *TrialStarted) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your trial for %s has started", opts.OrgName),
+		Title:   fmt.Sprintf("Your trial for %s has started", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Welcome, Your trial for %q has started and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+	})
+}
+
 type TrialEndingSoon struct {
 	ToEmail      string
 	ToName       string

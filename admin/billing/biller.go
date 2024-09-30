@@ -38,13 +38,11 @@ type Biller interface {
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
 	// CreateSubscriptionInFuture creates a subscription for the given organization with a start date in the future.
 	CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error)
-	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error
+	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) (time.Time, error)
+	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
+	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error)
 	GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
 	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error)
-	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
-	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
-	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
-	FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error)
 
 	GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error)
 	IsInvoiceValid(ctx context.Context, invoice *Invoice) bool

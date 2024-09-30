@@ -28,7 +28,7 @@ type PlanChangeByAPIWorker struct {
 	logger *zap.Logger
 }
 
-// Work This worker handle plan changes when upgrading plan or when we manually assign a new trial plan through admin APIs, does not handle changes done directly in the billing system
+// Work This worker handle plan changes when upgrading plan or when we manually assign a new trial plan through admin API, does not handle changes done directly in the billing system
 func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanChangeByAPIArgs]) error {
 	org, err := w.admin.DB.FindOrganization(ctx, job.Args.OrgID)
 	if err != nil {
@@ -59,20 +59,22 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 		return nil
 	}
 
-	// delete any trial related billing errors and warnings, irrespective of the new plan.
+	// delete any trial related billing issues, irrespective of the new plan.
 	err = w.admin.CleanupTrialBillingIssues(ctx, org.ID)
 	if err != nil {
+		w.logger.Error("failed to cleanup trial billing issues", zap.String("org_id", org.ID), zap.Error(err))
 		return fmt.Errorf("failed to cleanup trial billing errors and warnings: %w", err)
 	}
 
-	// delete any subscription cancellation billing error
-	err = w.admin.CleanupBillingErrorSubCancellation(ctx, org.ID)
+	// delete any subscription related billing issues
+	err = w.admin.CleanupSubscriptionBillingIssues(ctx, org.ID)
 	if err != nil {
+		w.logger.Error("failed to cleanup subscription billing issues", zap.String("org_id", org.ID), zap.Error(err))
 		return fmt.Errorf("failed to cleanup subscription cancellation errors: %w", err)
 	}
 
 	// if the new plan is still a trial plan, raise on-trial billing issue. Can happen if manually assigned new trial plan for example to extend trial period for a customer
-	if sub[0].TrialEndDate.After(time.Now().AddDate(0, 0, 1)) {
+	if sub[0].TrialEndDate.After(time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1)) {
 		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeOnTrial,
@@ -86,26 +88,6 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 		if err != nil {
 			return fmt.Errorf("failed to upsert billing warning: %w", err)
 		}
-	}
-
-	// update quotas
-	_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		CustomDomain:                        org.CustomDomain,
-		QuotaProjects:                       valOrDefault(sub[0].Plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(sub[0].Plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(sub[0].Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(sub[0].Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(sub[0].Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub[0].Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-	})
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -154,26 +136,23 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 			return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
 		}
 
-		if len(sub) == 0 {
-			return fmt.Errorf("no active subscription found for the org %q", org.Name)
+		if len(sub) > 0 {
+			w.logger.Warn("active subscriptions found for the org even after sub cancellation, skipping hibernation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+			return fmt.Errorf("active subscriptions found for the org %q", org.Name)
 		}
 
-		if len(sub) > 1 {
-			return fmt.Errorf("multiple active subscriptions found for the org %q", org.Name)
-		}
-
-		// update quotas to the default plan and hibernate all projects
+		// update quotas to 0 and hibernate all projects
 		_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 			Name:                                org.Name,
 			DisplayName:                         org.DisplayName,
 			Description:                         org.Description,
 			CustomDomain:                        org.CustomDomain,
-			QuotaProjects:                       valOrDefault(sub[0].Plan.Quotas.NumProjects, org.QuotaProjects),
-			QuotaDeployments:                    valOrDefault(sub[0].Plan.Quotas.NumDeployments, org.QuotaDeployments),
-			QuotaSlotsTotal:                     valOrDefault(sub[0].Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-			QuotaSlotsPerDeployment:             valOrDefault(sub[0].Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-			QuotaOutstandingInvites:             valOrDefault(sub[0].Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-			QuotaStorageLimitBytesPerDeployment: valOrDefault(sub[0].Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+			QuotaProjects:                       0,
+			QuotaDeployments:                    0,
+			QuotaSlotsTotal:                     0,
+			QuotaSlotsPerDeployment:             0,
+			QuotaOutstandingInvites:             0,
+			QuotaStorageLimitBytesPerDeployment: 0,
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
@@ -223,11 +202,4 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 	}
 
 	return nil
-}
-
-func valOrDefault[T any](ptr *T, def T) T {
-	if ptr != nil {
-		return *ptr
-	}
-	return def
 }

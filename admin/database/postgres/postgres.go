@@ -1895,6 +1895,15 @@ func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]stri
 	return res, nil
 }
 
+func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = '' OR payment_customer_id = ''`)
+	if err != nil {
+		return nil, parseErr("billing orgs without billing or payment info", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
@@ -1919,15 +1928,6 @@ func (c *connection) FindBillingUsageReportedOn(ctx context.Context) (time.Time,
 func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_reporting_time SET usage_reported_on=$1`, usageReportedOn)
 	return checkUpdateRow("billing usage", res, err)
-}
-
-func (c *connection) FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*database.Organization, error) {
-	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
-	if err != nil {
-		return nil, parseErr("billing orgs without billing id", err)
-	}
-	return res, nil
 }
 
 func (c *connection) FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*database.Organization, error) {
@@ -2255,6 +2255,8 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataPaymentFailed{}
 	case database.BillingIssueTypeSubscriptionCancelled:
 		metadata = &database.BillingIssueMetadataSubscriptionCancelled{}
+	case database.BillingIssueTypeNeverSubscribed:
+		metadata = &database.BillingIssueMetadataNeverSubscribed{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {

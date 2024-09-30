@@ -269,10 +269,6 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceUpdateBillingSubscriptionBody = {
-  planName?: string;
-};
-
 export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -312,6 +308,10 @@ export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
 
 export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
   role?: string;
+};
+
+export type AdminServiceUpdateBillingSubscriptionBodyBody = {
+  planName?: string;
 };
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
@@ -623,6 +623,11 @@ export interface V1ReportOptions {
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
+}
+
+export interface V1RenewBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1RenameUsergroupResponse {
@@ -1301,6 +1306,7 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_PAYMENT_FAILED: "BILLING_ISSUE_TYPE_PAYMENT_FAILED",
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
 } as const;
 
 export interface V1BillingIssueMetadataTrialEnded {
@@ -1338,6 +1344,10 @@ export interface V1BillingIssueMetadataNoBillableAddress {
   [key: string]: any;
 }
 
+export interface V1BillingIssueMetadataNeverSubscribed {
+  [key: string]: any;
+}
+
 export interface V1BillingIssueMetadata {
   onTrial?: V1BillingIssueMetadataOnTrial;
   trialEnded?: V1BillingIssueMetadataTrialEnded;
@@ -1345,6 +1355,7 @@ export interface V1BillingIssueMetadata {
   noBillableAddress?: V1BillingIssueMetadataNoBillableAddress;
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
+  neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
 }
 
 export type V1BillingIssueLevel =

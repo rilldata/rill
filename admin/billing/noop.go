@@ -65,8 +65,8 @@ func (n noop) CreateSubscriptionInFuture(ctx context.Context, customerID string,
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
-func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error {
-	return nil
+func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
+	return time.Time{}, nil
 }
 
 func (n noop) GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
@@ -77,12 +77,8 @@ func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
-func (n noop) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error {
-	return nil
-}
-
-func (n noop) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error) {
-	return []*Subscription{}, nil
+func (n noop) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
+	return time.Time{}, nil
 }
 
 func (n noop) GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error) {

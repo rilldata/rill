@@ -84,77 +84,109 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	org, subs, err := s.admin.RepairOrgBilling(ctx, org)
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
+	}
+
+	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	for _, sub := range subs {
-		if sub.Plan.ID == plan.ID {
-			return nil, status.Errorf(codes.FailedPrecondition, "organization already subscribed to the plan %s", plan.Name)
-		}
-	}
-
-	// plan change needed
-	// check for a payment method and a valid billing address
-	var validationErrs []string
-	pc, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if !pc.HasPaymentMethod {
-		validationErrs = append(validationErrs, "no payment method found")
-	}
-
-	bc, err := s.admin.Biller.FindCustomer(ctx, org.BillingCustomerID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if !bc.HasBillableAddress {
-		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
-	}
-
-	be, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypePaymentFailed)
+	bisc, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
-	if be != nil {
-		validationErrs = append(validationErrs, "a previous payment is due, please pay the outstanding amount")
+
+	if bisc != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "plan cannot be changed on existing subscription as it was cancelled, please renew the subscription")
 	}
 
-	if len(validationErrs) > 0 && !claims.Superuser(ctx) {
-		return nil, status.Errorf(codes.FailedPrecondition, "please fix following by visiting billing portal: %s", strings.Join(validationErrs, ", "))
+	for _, sub := range subs {
+		if sub.Plan.ID != plan.ID {
+			continue
+		}
+		// To make the call idempotent
+		org, err = s.updateQuotasAndSchedulePlanChangeByAPIJob(ctx, org, sub)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		var subscriptions []*adminv1.Subscription
+		for _, s := range subs {
+			subscriptions = append(subscriptions, subscriptionToDTO(s))
+		}
+
+		return &adminv1.UpdateBillingSubscriptionResponse{
+			Organization:  organizationToDTO(org),
+			Subscriptions: subscriptions,
+		}, nil
+	}
+
+	// if its a trial plan, start trial only if its a new org
+	if plan.Default {
+		bi, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Errorf(codes.FailedPrecondition, "only new organizations can subscribe to the trial plan %s", plan.Name)
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if bi != nil {
+			// start trial
+			updatedOrg, sub, err := s.admin.StartTrial(ctx, org)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			return &adminv1.UpdateBillingSubscriptionResponse{
+				Organization:  organizationToDTO(updatedOrg),
+				Subscriptions: []*adminv1.Subscription{subscriptionToDTO(sub)},
+			}, nil
+		}
+	}
+
+	superuser := claims.Superuser(ctx)
+	// check for validation errors
+	err = s.planChangeValidationChecks(ctx, org, superuser)
+	if err != nil {
+		return nil, err
 	}
 
 	if planDowngrade(plan, org) {
-		if claims.Superuser(ctx) {
+		if superuser {
 			s.logger.Named("billing").Warn("plan downgraded", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
 		} else {
 			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
 		}
 	}
 
-	// TODO move below to background job
-	if len(subs) == 1 {
+	var newSub *billing.Subscription
+	if len(subs) == 0 {
+		// create new subscription
+		newSub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	} else if len(subs) == 1 {
 		// schedule plan change
-		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionImmediate)
+		newSub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+		//newSub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionImmediate)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	} else {
 		// multiple subscriptions, cancel them first immediately and assign new plan should not happen unless externally assigned multiple subscriptions to the same org in the billing system.
-		// RepairOrgBilling does not fix multiple subscription issue, we are not sure which subscription to cancel and which to keep. However, in case of plan change we can safely cancel all older subscriptions and create a new one with new plan.
+		// RepairOrganizationBilling does not fix multiple subscription issue, we are not sure which subscription to cancel and which to keep. However, in case of plan change we can safely cancel all older subscriptions and create a new one with new plan.
 		for _, sub := range subs {
-			err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
+			_, err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
 
 		// create new subscription
-		_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+		newSub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -162,27 +194,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	s.logger.Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan_id", subs[0].Plan.ID), zap.String("current_plan_name", subs[0].Plan.Name), zap.String("new_plan_id", plan.ID), zap.String("new_plan_name", plan.Name))
 
-	// schedule plan change by API job
-	_, err = s.admin.Jobs.PlanChangeByAPI(ctx, org.ID, subs[0].ID, plan.ID, subs[0].CurrentBillingCycleStartDate)
-	if err != nil {
-		return nil, err
-	}
-
-	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		CustomDomain:                        org.CustomDomain,
-		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-	})
+	org, err = s.updateQuotasAndSchedulePlanChangeByAPIJob(ctx, org, newSub)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -217,71 +229,136 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.PermissionDenied, "not allowed to cancel org subscription")
 	}
 
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	endDate, err := s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if len(subs) == 0 {
-		return nil, status.Error(codes.FailedPrecondition, "no subscription found for the organization")
-	}
-
-	plan, err := s.admin.Biller.GetDefaultPlan(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	subEndDate := subs[0].CurrentBillingCycleEndDate
-	if plan.ID != subs[0].Plan.ID {
-		// schedule plan change to default plan at end of the current subscription term
-		if len(subs) == 1 {
-			_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionEndOfSubscriptionTerm)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		} else {
-			// multiple subscriptions, cancel them first immediately and assign default plan to start at the end of the current subscription term
-			latestEndDate := time.Time{}
-			for _, sub := range subs {
-				if sub.CurrentBillingCycleEndDate.After(latestEndDate) {
-					latestEndDate = sub.CurrentBillingCycleEndDate
-				}
-				err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
-				if err != nil {
-					return nil, status.Error(codes.Internal, err.Error())
-				}
-			}
-
-			// create new subscription with default plan to start at the end of the current subscription term
-			_, err = s.admin.Biller.CreateSubscriptionInFuture(ctx, org.BillingCustomerID, plan, latestEndDate.AddDate(0, 0, 1))
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-
-			subEndDate = latestEndDate
+	if !endDate.IsZero() {
+		// raise a billing issue of the subscription cancellation
+		_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID: org.ID,
+			Type:  database.BillingIssueTypeSubscriptionCancelled,
+			Metadata: database.BillingIssueMetadataSubscriptionCancelled{
+				EndDate: endDate,
+			},
+			EventTime: time.Now(),
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 
-	// raise a billing issue of the subscription cancellation
-	_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
-		OrgID: org.ID,
-		Type:  database.BillingIssueTypeSubscriptionCancelled,
-		Metadata: database.BillingIssueMetadataSubscriptionCancelled{
-			EndDate: subEndDate,
-		},
-		EventTime: time.Now(),
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	// clean up any trial related billing errors and warnings if present
+	// clean up any trial related billing issues if present
 	err = s.admin.CleanupTrialBillingIssues(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.CancelBillingSubscriptionResponse{}, nil
+}
+
+func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.RenewBillingSubscriptionRequest) (*adminv1.RenewBillingSubscriptionResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
+
+	if req.Organization == "" || req.PlanName == "" {
+		return nil, status.Error(codes.InvalidArgument, "organization and plan name are required")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to renew org subscription")
+	}
+
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
+	}
+
+	_, err = s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Errorf(codes.FailedPrecondition, "subscription not cancelled for the organization %s", org.Name)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if len(subs) > 1 {
+		return nil, status.Errorf(codes.FailedPrecondition, "multiple subscriptions found for the organization %s", org.Name)
+	}
+
+	subEndDate := time.Time{}
+	if len(subs) == 1 {
+		subEndDate = subs[0].EndDate
+	}
+
+	if subEndDate.Before(time.Now()) {
+		return nil, status.Errorf(codes.FailedPrecondition, "subscription already expired but still getting listed for the organization %s", org.Name)
+	}
+
+	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if plan.Default {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to trial plan %s", plan.Name)
+	}
+
+	// check for validation errors
+	err = s.planChangeValidationChecks(ctx, org, claims.Superuser(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	var newSub *billing.Subscription
+	if subEndDate.IsZero() {
+		newSub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		//newSub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+		newSub, err = s.admin.Biller.CreateSubscriptionInFuture(ctx, org.BillingCustomerID, plan, subEndDate)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	// update quotas at a future date ??
+	//org, err := s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+	//	Name:                                org.Name,
+	//	DisplayName:                         org.DisplayName,
+	//	Description:                         org.Description,
+	//	CustomDomain:                        org.CustomDomain,
+	//	QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
+	//	QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
+	//	QuotaSlotsTotal:                     valOrDefault(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+	//	QuotaSlotsPerDeployment:             valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+	//	QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+	//	QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+	//	BillingCustomerID:                   org.BillingCustomerID,
+	//	PaymentCustomerID:                   org.PaymentCustomerID,
+	//	BillingEmail:                        org.BillingEmail,
+	//})
+	//if err != nil {
+	//	return nil, status.Error(codes.Internal, err.Error())
+	//}
+
+	return &adminv1.RenewBillingSubscriptionResponse{
+		Organization:  organizationToDTO(org),
+		Subscriptions: []*adminv1.Subscription{subscriptionToDTO(newSub)},
+	}, nil
 }
 
 func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {
@@ -299,10 +376,7 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 	}
 
 	if org.PaymentCustomerID == "" {
-		_, _, err = s.admin.RepairOrgBilling(ctx, org)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+		return nil, status.Error(codes.FailedPrecondition, "payment customer not initialized yet for the organization")
 	}
 
 	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
@@ -455,6 +529,71 @@ func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *ad
 	return &adminv1.SudoDeleteOrganizationBillingIssueResponse{}, nil
 }
 
+func (s *Server) updateQuotasAndSchedulePlanChangeByAPIJob(ctx context.Context, org *database.Organization, sub *billing.Subscription) (*database.Organization, error) {
+	org, err := s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
+		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
+		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     valOrDefault(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// schedule plan change by API job
+	_, err = s.admin.Jobs.PlanChangeByAPI(ctx, org.ID, sub.ID, sub.Plan.ID, sub.CurrentBillingCycleStartDate)
+	if err != nil {
+		return nil, err
+	}
+
+	return org, nil
+}
+
+func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.Organization, superuser bool) error {
+	// not a trial plan, check for a payment method and a valid billing address
+	var validationErrs []string
+	pc, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	if !pc.HasPaymentMethod {
+		validationErrs = append(validationErrs, "no payment method found")
+	}
+
+	bc, err := s.admin.Biller.FindCustomer(ctx, org.BillingCustomerID)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	if !bc.HasBillableAddress {
+		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
+	}
+
+	be, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypePaymentFailed)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return status.Error(codes.Internal, err.Error())
+		}
+	}
+	if be != nil {
+		validationErrs = append(validationErrs, "a previous payment is due, please pay the outstanding amount")
+	}
+
+	if len(validationErrs) > 0 && !superuser {
+		return status.Errorf(codes.FailedPrecondition, "please fix following by visiting billing portal: %s", strings.Join(validationErrs, ", "))
+	}
+
+	return nil
+}
+
 func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 	return &adminv1.Subscription{
 		Id:                           sub.ID,
@@ -502,6 +641,8 @@ func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_PAYMENT_FAILED
 	case database.BillingIssueTypeSubscriptionCancelled:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+	case database.BillingIssueTypeNeverSubscribed:
+		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
 	default:
 		return adminv1.BillingIssueType_BILLING_ISSUE_TYPE_UNSPECIFIED
 	}
@@ -532,6 +673,8 @@ func dtoBillingIssueTypeToDB(t adminv1.BillingIssueType) (database.BillingIssueT
 		return database.BillingIssueTypePaymentFailed, nil
 	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
 		return database.BillingIssueTypeSubscriptionCancelled, nil
+	case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED:
+		return database.BillingIssueTypeNeverSubscribed, nil
 	default:
 		return database.BillingIssueTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
 	}
@@ -591,6 +734,12 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_SubscriptionCancelled{
 				SubscriptionCancelled: &adminv1.BillingIssueMetadataSubscriptionCancelled{},
+			},
+		}
+	case database.BillingIssueTypeNeverSubscribed:
+		return &adminv1.BillingIssueMetadata{
+			Metadata: &adminv1.BillingIssueMetadata_NeverSubscribed{
+				NeverSubscribed: &adminv1.BillingIssueMetadataNeverSubscribed{},
 			},
 		}
 	default:

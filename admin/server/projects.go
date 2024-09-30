@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -351,6 +352,12 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
+	// check if org has any blocking billing errors
+	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Check projects quota
 	count, err := s.admin.DB.CountProjectsForOrganization(ctx, org.ID)
 	if err != nil {
@@ -439,6 +446,19 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
 		opts.ArchiveAssetID = &req.ArchiveAssetId
+	}
+
+	// if there is no subscription for the org, submit a job to start a trial
+	bi, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if bi != nil {
+		_, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID)
+		if err != nil {
+			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
+			// continue creating the project
+		}
 	}
 
 	// Create the project
@@ -1450,8 +1470,8 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// check if org has blocking billing errors and return error if it does
-	err = s.admin.CheckBillingErrors(ctx, org.ID)
+	// check if org has blocking billing errors
+	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -1519,8 +1539,8 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// check if org has blocking billing errors and return error if it does
-	err = s.admin.CheckBillingErrors(ctx, org.ID)
+	// check if org has blocking billing errors
+	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

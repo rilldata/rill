@@ -256,12 +256,12 @@ type DB interface {
 	DeleteAssets(ctx context.Context, ids []string) error
 
 	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
+	FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error)
+
 	// CountBillingProjectsForOrganization counts the projects which are not hibernated and created before the given time
 	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
-
-	FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*Organization, error)
 
 	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
 	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
@@ -989,6 +989,7 @@ const (
 	BillingIssueTypeNoBillableAddress                      = 4
 	BillingIssueTypePaymentFailed                          = 5
 	BillingIssueTypeSubscriptionCancelled                  = 6
+	BillingIssueTypeNeverSubscribed                        = 7
 )
 
 type BillingIssueLevel int
@@ -1045,6 +1046,8 @@ type BillingIssueMetadataPaymentFailedMeta struct {
 type BillingIssueMetadataSubscriptionCancelled struct {
 	EndDate time.Time `json:"end_date"`
 }
+
+type BillingIssueMetadataNeverSubscribed struct{}
 
 type UpsertBillingIssueOptions struct {
 	OrgID     string           `validate:"required"`

@@ -236,6 +236,17 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		return nil, err
 	}
 
+	// raise never subscribed billing issue
+	_, err = s.DB.UpsertBillingIssue(txCtx, &database.UpsertBillingIssueOptions{
+		OrgID:     org.ID,
+		Type:      database.BillingIssueTypeNeverSubscribed,
+		Metadata:  database.BillingIssueMetadataNeverSubscribed{},
+		EventTime: org.CreatedOn,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
@@ -243,14 +254,14 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
-	// create customer and subscription in the billing system, if it fails just log the error but don't fail the request
-	updatedOrg, _, err := s.InitOrganizationBilling(ctx, org)
+	// Submit job to init org billing // TODO modify river client to allow job submission as part of transaction
+	_, err = s.Jobs.InitOrgBilling(ctx, org.ID)
 	if err != nil {
-		s.Logger.Error("failed to init org billing", zap.String("org_id", org.ID), zap.String("org_name", orgName), zap.Error(err))
+		s.Logger.Named("billing").Error("failed to submit job to init org billing", zap.String("org_id", org.ID), zap.String("org_name", orgName), zap.Error(err))
 		return org, nil
 	}
 
-	return updatedOrg, nil
+	return org, nil
 }
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {

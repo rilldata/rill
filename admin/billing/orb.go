@@ -172,7 +172,7 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 }
 
 func (o *Orb) CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
-	if startDate.After(time.Now()) {
+	if startDate.Before(time.Now()) {
 		return nil, errors.New("start date must be in the future")
 	}
 
@@ -234,9 +234,17 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 }
 
 func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
+	var changeOptionParams orb.SubscriptionSchedulePlanChangeParamsChangeOption
+	switch changeOption {
+	case SubscriptionChangeOptionImmediate:
+		changeOptionParams = orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate
+	case SubscriptionChangeOptionEndOfSubscriptionTerm:
+		changeOptionParams = orb.SubscriptionSchedulePlanChangeParamsChangeOptionEndOfSubscriptionTerm
+	}
+
 	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, orb.SubscriptionSchedulePlanChangeParams{
 		PlanID:       orb.String(plan.ID),
-		ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate),
+		ChangeOption: orb.F(changeOptionParams),
 	})
 	if err != nil {
 		return nil, err
@@ -254,7 +262,7 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	}, nil
 }
 
-func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error {
+func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
 	var cancelParams orb.SubscriptionCancelParams
 	switch cancelOption {
 	case SubscriptionCancellationOptionEndOfSubscriptionTerm:
@@ -267,14 +275,14 @@ func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, can
 		}
 	}
 
-	_, err := o.client.Subscriptions.Cancel(ctx, subscriptionID, cancelParams)
+	sub, err := o.client.Subscriptions.Cancel(ctx, subscriptionID, cancelParams)
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
-	return nil
+	return sub.EndDate, nil
 }
 
-func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error {
+func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
 	var cancelParams orb.SubscriptionCancelParams
 	switch cancelOption {
 	case SubscriptionCancellationOptionEndOfSubscriptionTerm:
@@ -289,51 +297,19 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 
 	subs, err := o.GetSubscriptionsForCustomer(ctx, customerID)
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
+	cancelDate := time.Time{}
 	for _, s := range subs {
-		_, err := o.client.Subscriptions.Cancel(ctx, s.ID, cancelParams)
+		sub, err := o.client.Subscriptions.Cancel(ctx, s.ID, cancelParams)
 		if err != nil {
-			return err
+			return time.Time{}, err
+		}
+		if sub.EndDate.After(cancelDate) {
+			cancelDate = sub.EndDate
 		}
 	}
-	return nil
-}
-
-func (o *Orb) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error) {
-	plan, err := o.GetDefaultPlan(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if plan.TrialPeriodDays == 0 {
-		return nil, nil
-	}
-
-	var ended []*Subscription
-	// look back 2 days before and after the trial period
-	lookBackStart := time.Now().Add(-time.Duration(plan.TrialPeriodDays+2) * 24 * time.Hour)
-	lookBackEnd := time.Now().Add(-time.Duration(plan.TrialPeriodDays-2) * 24 * time.Hour)
-	subs := o.client.Subscriptions.ListAutoPaging(ctx, orb.SubscriptionListParams{
-		CreatedAtGt: orb.F(lookBackStart),
-		CreatedAtLt: orb.F(lookBackEnd),
-		Status:      orb.F(orb.SubscriptionListParamsStatusActive),
-	})
-	// Automatically fetches more pages as needed.
-	for subs.Next() {
-		sub := subs.Current()
-		if sub.Plan.ID == plan.ID && sub.TrialInfo.EndDate.Before(time.Now()) {
-			s, err := getBillingSubscriptionFromOrbSubscription(&sub)
-			if err != nil {
-				return nil, err
-			}
-			ended = append(ended, s)
-		}
-	}
-	if err := subs.Err(); err != nil {
-		return nil, err
-	}
-	return ended, nil
+	return cancelDate, nil
 }
 
 func (o *Orb) GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error) {

@@ -88,11 +88,14 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 
 	// subscription related workers
-	river.AddWorker(workers, &PlanChangeByAPIWorker{admin: adm})
+	river.AddWorker(workers, &PlanChangeByAPIWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &SubscriptionCancellationCheckWorker{admin: adm, logger: billingLogger})
 
 	// org related workers
-	river.AddWorker(workers, &PurgeOrgWorker{admin: adm})
+	river.AddWorker(workers, &InitOrgBillingWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &RepairOrgBillingWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &StartTrialWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &PurgeOrgWorker{admin: adm, logger: billingLogger})
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
@@ -111,12 +114,12 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 
 	riverClient, err := river.NewClient(riverpgxv5.New(dbPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
-			river.QueueDefault: {MaxWorkers: 100},
+			river.QueueDefault: {MaxWorkers: 10},
 		},
 		Workers:      workers,
 		PeriodicJobs: periodicJobs,
 		Logger:       logger,
-		JobTimeout:   time.Hour,
+		JobTimeout:   30 * time.Minute,
 		MaxAttempts:  3, // default retry policy with backoff of attempt^4 seconds
 		ErrorHandler: &ErrorHandler{logger: adm.Logger},
 	})
@@ -306,6 +309,72 @@ func (c *Client) PlanChangeByAPI(ctx context.Context, orgID, subID, planID strin
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("PlanChangeByAPI job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("start_date", subStartDate))
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) InitOrgBilling(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, InitOrgBillingArgs{
+		OrgID: orgID,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("InitOrgBilling job skipped as duplicate", zap.String("org_id", orgID))
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) RepairOrgBilling(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, RepairOrgBillingArgs{
+		OrgID: orgID,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("RepairOrgBilling job skipped as duplicate", zap.String("org_id", orgID))
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) StartOrgTrial(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, StartTrialArgs{
+		OrgID: orgID,
+	}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("StartTrial job skipped as duplicate", zap.String("org_id", orgID))
 	}
 
 	return &jobs.InsertResult{

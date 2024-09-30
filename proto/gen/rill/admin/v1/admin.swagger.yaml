@@ -444,6 +444,34 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/billing/subscriptions/renew:
+    post:
+      summary: RenewBillingSubscription renews the billing plan for the organization once cancelled
+      operationId: AdminService_RenewBillingSubscription
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenewBillingSubscriptionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              planName:
+                type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -3053,6 +3081,7 @@ paths:
             - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+            - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
       tags:
         - AdminService
   /v1/superuser/projects/annotations:
@@ -3587,6 +3616,10 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataPaymentFailed'
       subscriptionCancelled:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
+      neverSubscribed:
+        $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+  v1BillingIssueMetadataNeverSubscribed:
+    type: object
   v1BillingIssueMetadataNoBillableAddress:
     type: object
   v1BillingIssueMetadataNoPaymentMethod:
@@ -3649,6 +3682,7 @@ definitions:
       - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+      - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -4606,6 +4640,16 @@ definitions:
     type: object
   v1RenameUsergroupResponse:
     type: object
+  v1RenewBillingSubscriptionResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscriptions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Subscription'
   v1ReportOptions:
     type: object
     properties:

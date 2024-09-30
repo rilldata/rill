@@ -768,6 +768,14 @@ service AdminService {
     };
   }
 
+  // RenewBillingSubscription renews the billing plan for the organization once cancelled
+  rpc RenewBillingSubscription(RenewBillingSubscriptionRequest) returns (RenewBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/billing/subscriptions/renew",
+      body: "*"
+    };
+  }
+
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/billing/payments/portal-url"};
@@ -1984,9 +1992,19 @@ message CancelBillingSubscriptionRequest {
   string organization = 1;
 }
 
+message RenewBillingSubscriptionRequest {
+  string organization = 1;
+  string plan_name = 2;
+}
+
 message CancelBillingSubscriptionResponse {}
 
 message UpdateBillingSubscriptionResponse {
+  Organization organization = 1;
+  repeated Subscription subscriptions = 2;
+}
+
+message RenewBillingSubscriptionResponse {
   Organization organization = 1;
   repeated Subscription subscriptions = 2;
 }
@@ -2334,6 +2352,7 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS = 4;
   BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
 }
 
 enum BillingIssueLevel {
@@ -2359,6 +2378,7 @@ message BillingIssueMetadata {
     BillingIssueMetadataNoBillableAddress no_billable_address = 4;
     BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
+    BillingIssueMetadataNeverSubscribed never_subscribed = 7;
   }
 }
 
@@ -2392,3 +2412,5 @@ message BillingIssueMetadataPaymentFailedMeta {
 message BillingIssueMetadataSubscriptionCancelled {
   google.protobuf.Timestamp end_date = 1;
 }
+
+message BillingIssueMetadataNeverSubscribed {}
