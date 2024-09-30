@@ -101,7 +101,7 @@ export async function renameFileUsingMenu(
 
   // wait for rename modal to open
   await page
-    .locator("#rill-portal h1", {
+    .locator("#rill-portal h2", {
       hasText: "Rename",
     })
     .waitFor();

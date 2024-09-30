@@ -3,39 +3,60 @@
   import { DateTime } from "luxon";
   import { Interval } from "luxon";
 
-  export let dateSelection: DateTime<true> | undefined = undefined;
-  export let rangeSelection: Interval | undefined = undefined;
+  type MaybeDate = DateTime<true> | DateTime<false> | undefined;
+
+  export let selection: MaybeDate | Interval<true> = undefined;
+  export let minDate: MaybeDate = undefined;
   export let visibleMonths = 1;
   export let selectingStart = true;
-  export let firstVisibleMonth: DateTime<true> =
-    rangeSelection?.start ?? dateSelection ?? DateTime.now();
-  export let singleDaySelection = dateSelection !== undefined;
+  export let firstVisibleMonth: MaybeDate = isValidDateTime(selection)
+    ? selection
+    : isValidInterval(selection)
+      ? selection.start
+      : DateTime.now();
+  export let singleDaySelection = isValidDateTime(selection);
   export let onSelectDay: (date: DateTime<true>) => void;
 
-  let potentialEnd: DateTime | undefined;
-  let potentialStart: DateTime | undefined;
+  let potentialEnd: DateTime<true> | undefined;
+  let potentialStart: DateTime<true> | undefined;
 
-  $: finalInterval = dateSelection
+  $: finalInterval = isValidDateTime(selection)
     ? (Interval.fromDateTimes(
-        dateSelection,
-        dateSelection.endOf("day"),
+        selection,
+        selection.endOf("day"),
       ) as Interval<true>)
-    : rangeSelection ?? Interval.invalid("No selection");
+    : isValidInterval(selection)
+      ? selection
+      : undefined;
+
+  $: firstMonth = isValidDateTime(firstVisibleMonth)
+    ? firstVisibleMonth
+    : DateTime.now();
 
   function onPan(direction: -1 | 1) {
-    firstVisibleMonth = firstVisibleMonth.plus({ month: direction });
+    firstMonth = firstMonth.plus({ month: direction });
+  }
+
+  function isValidDateTime(
+    value: MaybeDate | Interval<true>,
+  ): value is DateTime<true> {
+    return Boolean(value && value instanceof DateTime && value?.isValid);
+  }
+
+  function isValidInterval(
+    value: MaybeDate | Interval<true>,
+  ): value is Interval<true> {
+    return Boolean(value && value instanceof Interval && value?.isValid);
   }
 </script>
 
 <div class="flex gap-x-3 p-2 w-full min-w-56">
   {#each { length: visibleMonths } as month, i (month)}
     <Month
+      {minDate}
       {singleDaySelection}
       interval={finalInterval}
-      startDay={firstVisibleMonth
-        .plus({ month: i })
-        .set({ day: 1 })
-        .startOf("day")}
+      startDay={firstMonth.plus({ month: i }).set({ day: 1 }).startOf("day")}
       {selectingStart}
       {visibleMonths}
       visibleIndex={i}
