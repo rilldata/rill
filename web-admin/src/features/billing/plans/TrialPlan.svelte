@@ -47,4 +47,4 @@
   </Button>
 </SettingsContainer>
 
-<StartTeamPlanDialog bind:open {organization} />
+<StartTeamPlanDialog bind:open {organization} type="base" />

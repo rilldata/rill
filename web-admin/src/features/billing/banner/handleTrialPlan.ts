@@ -8,8 +8,7 @@ import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
 
-const WarningPeriodInDays = 5;
-const TrialGracePeriodInDays = 9;
+const WarningPeriodInDays = 7;
 
 const cta: BannerMessage["cta"] = {
   text: "Upgrade ->",
@@ -45,12 +44,10 @@ export function handleTrialPlan(
     diff.milliseconds > 0 &&
     trialIssue.type !== V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED
   ) {
+    const daysDiff = diff.shiftTo("days");
     bannerMessage.message += `${getTrialMessageForDays(diff)} Upgrade to maintain access.`;
     bannerMessage.type =
-      trialIssue.type ===
-      V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDING_SOON
-        ? "warning"
-        : "info";
+      daysDiff.days < WarningPeriodInDays ? "warning" : "info";
   } else {
     const gracePeriodDate = DateTime.fromJSDate(
       new Date(trialIssue.metadata?.trialEnded?.gracePeriodEndDate),

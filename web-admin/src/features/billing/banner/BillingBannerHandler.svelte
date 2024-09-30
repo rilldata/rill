@@ -4,7 +4,10 @@
     createAdminServiceListOrganizationBillingIssues,
     createAdminServiceListPublicBillingPlans,
   } from "@rilldata/web-admin/client";
-  import { showUpgradeDialog } from "@rilldata/web-admin/features/billing/banner/bannerCTADialogs";
+  import {
+    showUpgradeDialog,
+    upgradeDialogType,
+  } from "@rilldata/web-admin/features/billing/banner/bannerCTADialogs";
   import { handleBillingIssues } from "@rilldata/web-admin/features/billing/banner/handleBillingIssues";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
 
@@ -26,4 +29,8 @@
   }
 </script>
 
-<StartTeamPlanDialog bind:open={$showUpgradeDialog} {organization} />
+<StartTeamPlanDialog
+  bind:open={$showUpgradeDialog}
+  type={$upgradeDialogType}
+  {organization}
+/>
