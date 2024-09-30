@@ -44,6 +44,7 @@ const config = {
           editUrl:
             "https://github.com/rilldata/rill/blob/main/docs/",
         },
+  
         blog: {
           routeBasePath: 'notes',
           blogTitle: 'Release Notes',
@@ -103,15 +104,23 @@ const config = {
           },
           {
             type: "docSidebar",
+            sidebarId: "tutorialsSidebar",
+            position: "left",
+            label: "Tutorials",
+          },
+          {
+            type: "docSidebar",
             sidebarId: "refSidebar",
             position: "left",
             label: "Reference",
           },
+         
           {
             label: "Release Notes",
             to: "notes",
             position: "left",
           },
+
           {
             to: "contact",
             position: "left",
@@ -120,12 +129,12 @@ const config = {
           {
             href: "https://github.com/rilldata/rill",
             label: "GitHub",
-            position: "left",
+            position: "right",
           },
           {
             href: "https://www.rilldata.com/blog",
             label: "Blog",
-            position: "left",
+            position: "right",
           },
           {
             type: "search",

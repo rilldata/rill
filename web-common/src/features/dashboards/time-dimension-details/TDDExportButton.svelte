@@ -40,9 +40,7 @@
   onMount(async () => {
     if (includeScheduledReport) {
       CreateScheduledReportDialog = (
-        await import(
-          "../../scheduled-reports/CreateScheduledReportDialog.svelte"
-        )
+        await import("../../scheduled-reports/ScheduledReportDialog.svelte")
       ).default;
     }
   });
@@ -120,10 +118,8 @@
 {#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog}
   <svelte:component
     this={CreateScheduledReportDialog}
-    queryName="MetricsViewAggregation"
     queryArgs={$scheduledReportsQueryArgs}
     {metricsViewProto}
-    open={showScheduledReportDialog}
-    on:close={() => (showScheduledReportDialog = false)}
+    bind:open={showScheduledReportDialog}
   />
 {/if}

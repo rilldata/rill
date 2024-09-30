@@ -11,45 +11,48 @@
     { view: "viz", icon: Viz },
   ];
 
-  export let selectedView = "split";
+  export let selectedView: "code" | "split" | "viz" = "split";
+  export let allowSplit = true;
 
   let tooltip: { view: string; top: number; left: number } | null = null;
 </script>
 
 <div class="radio" role="radiogroup">
-  {#each viewOptions as { view, icon: Icon }}
-    <input
-      tabindex="0"
-      type="radio"
-      id={view}
-      name="view"
-      class="sr-only"
-      value={view}
-      checked={view === selectedView}
-      bind:group={selectedView}
-      on:click={() => {
-        tooltip = null;
-      }}
-    />
+  {#each viewOptions as { view, icon: Icon } (view)}
+    {#if (view === "split" && allowSplit) || view !== "split"}
+      <input
+        tabindex="0"
+        type="radio"
+        id={view}
+        name="view"
+        class="sr-only"
+        value={view}
+        checked={view === selectedView}
+        bind:group={selectedView}
+        on:click={() => {
+          tooltip = null;
+        }}
+      />
 
-    <label
-      aria-label={view}
-      for={view}
-      on:pointerleave={() => {
-        tooltip = null;
-      }}
-      on:pointerenter={(e) => {
-        const { top, left, width, height } =
-          e.currentTarget.getBoundingClientRect();
-        tooltip = {
-          view,
-          top: top + height + 8,
-          left: left + width / 2,
-        };
-      }}
-    >
-      <Icon size="15px" class="fill-primary-600" />
-    </label>
+      <label
+        aria-label={view}
+        for={view}
+        on:pointerleave={() => {
+          tooltip = null;
+        }}
+        on:pointerenter={(e) => {
+          const { top, left, width, height } =
+            e.currentTarget.getBoundingClientRect();
+          tooltip = {
+            view,
+            top: top + height + 8,
+            left: left + width / 2,
+          };
+        }}
+      >
+        <Icon size="15px" class="fill-primary-600" />
+      </label>
+    {/if}
   {/each}
 </div>
 

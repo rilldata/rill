@@ -18,11 +18,17 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import WorkspaceEditorContainer from "../../layout/workspace/WorkspaceEditorContainer.svelte";
+  import VisualMetrics from "./VisualMetrics.svelte";
+  import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import {
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import { featureFlags } from "../feature-flags";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+
+  const { visualEditing } = featureFlags;
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -39,9 +45,11 @@
     fileName,
   } = fileArtifact);
 
-  $: metricViewName = getNameFromFile(filePath);
+  $: workspace = workspaces.get(filePath);
 
-  $: initLocalUserPreferenceStore(metricViewName);
+  $: metricsViewName = getNameFromFile(filePath);
+
+  $: initLocalUserPreferenceStore(metricsViewName);
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
@@ -97,36 +105,54 @@
     );
     if (newRoute) await goto(newRoute);
   }
+
+  $: selectedView = workspace.view;
+
+  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
 
-<WorkspaceContainer inspector={isModelingSupported}>
+<WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
   <WorkspaceHeader
     hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
-    showInspectorToggle={isModelingSupported}
+    showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
       <PreviewButton
-        dashboardName={metricViewName}
-        disabled={previewDisabled}
+        dashboardName={metricsViewName}
         status={previewStatus}
+        disabled={previewDisabled}
       />
+
       <DeployDashboardCta />
       <LocalAvatarButton />
+      {#if $visualEditing}
+        <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
+      {/if}
     </div>
   </WorkspaceHeader>
 
-  <WorkspaceEditorContainer slot="body">
-    <MetricsEditor
-      bind:autoSave={$autoSave}
-      {fileArtifact}
-      {filePath}
-      {allErrors}
-      {metricViewName}
-    />
-  </WorkspaceEditorContainer>
+  <svelte:fragment slot="body">
+    {#if $selectedView === "code"}
+      <MetricsEditor
+        bind:autoSave={$autoSave}
+        {fileArtifact}
+        {filePath}
+        {errors}
+        metricViewName={metricsViewName}
+      />
+    {:else}
+      <VisualMetrics
+        {errors}
+        {fileArtifact}
+        switchView={() => {
+          $selectedView = "code";
+        }}
+      />
+    {/if}
+  </svelte:fragment>
 
   <MetricsInspector
     {filePath}

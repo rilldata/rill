@@ -1,30 +1,62 @@
 <script lang="ts">
+  import Month from "./Month.svelte";
   import { DateTime } from "luxon";
   import { Interval } from "luxon";
-  import Month from "./Month.svelte";
 
-  export let interval: Interval;
+  type MaybeDate = DateTime<true> | DateTime<false> | undefined;
+
+  export let selection: MaybeDate | Interval<true> = undefined;
+  export let minDate: MaybeDate = undefined;
   export let visibleMonths = 1;
   export let selectingStart = true;
-  export let firstVisibleMonth = interval.start ?? DateTime.now();
+  export let firstVisibleMonth: MaybeDate = isValidDateTime(selection)
+    ? selection
+    : isValidInterval(selection)
+      ? selection.start
+      : DateTime.now();
+  export let singleDaySelection = isValidDateTime(selection);
   export let onSelectDay: (date: DateTime<true>) => void;
 
-  let potentialEnd: DateTime | undefined;
-  let potentialStart: DateTime | undefined;
+  let potentialEnd: DateTime<true> | undefined;
+  let potentialStart: DateTime<true> | undefined;
+
+  $: finalInterval = isValidDateTime(selection)
+    ? (Interval.fromDateTimes(
+        selection,
+        selection.endOf("day"),
+      ) as Interval<true>)
+    : isValidInterval(selection)
+      ? selection
+      : undefined;
+
+  $: firstMonth = isValidDateTime(firstVisibleMonth)
+    ? firstVisibleMonth
+    : DateTime.now();
 
   function onPan(direction: -1 | 1) {
-    firstVisibleMonth = firstVisibleMonth.plus({ month: direction });
+    firstMonth = firstMonth.plus({ month: direction });
+  }
+
+  function isValidDateTime(
+    value: MaybeDate | Interval<true>,
+  ): value is DateTime<true> {
+    return Boolean(value && value instanceof DateTime && value?.isValid);
+  }
+
+  function isValidInterval(
+    value: MaybeDate | Interval<true>,
+  ): value is Interval<true> {
+    return Boolean(value && value instanceof Interval && value?.isValid);
   }
 </script>
 
-<div class="flex gap-x-3 p-2 w-full">
+<div class="flex gap-x-3 p-2 w-full min-w-56">
   {#each { length: visibleMonths } as month, i (month)}
     <Month
-      {interval}
-      startDay={firstVisibleMonth
-        .plus({ month: i })
-        .set({ day: 1 })
-        .startOf("day")}
+      {minDate}
+      {singleDaySelection}
+      interval={finalInterval}
+      startDay={firstMonth.plus({ month: i }).set({ day: 1 }).startOf("day")}
       {selectingStart}
       {visibleMonths}
       visibleIndex={i}
