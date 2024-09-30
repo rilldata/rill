@@ -39,7 +39,9 @@
     on:pointerleave
     on:pointermove
   >
-    <span class="absolute left-2 flex h-3 w-3 items-center justify-center">
+    <span
+      class="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center"
+    >
       <DropdownMenuPrimitive.CheckboxIndicator>
         <svelte:component
           this={showXForSelected ? X : Check}
