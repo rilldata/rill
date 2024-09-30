@@ -12,10 +12,22 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
+  import { page } from "$app/stores";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
 
   export let open = false;
   export let groupName: string;
   export let onRename: (groupName: string, newName: string) => void;
+  export let onRemoveUser: (groupName: string, email: string) => void;
+
+  $: organization = $page.params.organization;
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    groupName,
+  );
 
   const formId = "rename-user-group-form";
 
@@ -67,7 +79,7 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
-      <DialogTitle>Rename user group</DialogTitle>
+      <DialogTitle>Edit user group</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
@@ -79,13 +91,50 @@
         <Input
           bind:value={$form.newName}
           id="newName"
-          label="User group name"
+          label="Group name"
           placeholder="New user group name"
           errors={$errors.newName}
           alwaysShowError
         />
       </div>
     </form>
+    {#if $listUsergroupMemberUsers.data?.members.length > 0}
+      <div class="flex flex-col gap-2 w-full">
+        <div class="flex flex-row items-center gap-x-1">
+          <div class="text-xs font-semibold uppercase text-gray-500">Users</div>
+          <Tooltip location="right" alignment="middle" distance={8}>
+            <div class="text-gray-500">
+              <InfoCircle size="12px" />
+            </div>
+            <TooltipContent maxWidth="400px" slot="tooltip-content">
+              Users in this group will inherit the group's permissions.
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        <!-- TODO: polish -->
+        <div class="flex flex-col gap-2">
+          {#each $listUsergroupMemberUsers.data?.members as member}
+            <div class="flex flex-row justify-between gap-2 items-center">
+              <span>{member.userEmail}</span>
+              <Button
+                type="plain"
+                small
+                on:click={() => {
+                  onRemoveUser(groupName, member.userEmail);
+                }}
+              >
+                Remove
+              </Button>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {:else}
+      <div class="flex flex-col gap-2 w-full">
+        <div class="text-xs font-semibold uppercase text-gray-500">Users</div>
+        <div class="text-gray-500">No users in this group</div>
+      </div>
+    {/if}
     <DialogFooter>
       <Button
         type="plain"
@@ -99,7 +148,7 @@
         form={formId}
         submitForm
       >
-        Rename
+        Edit
       </Button>
     </DialogFooter>
   </DialogContent>

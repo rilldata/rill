@@ -6,26 +6,25 @@
     Trash2Icon,
     UserCogIcon,
     UserMinusIcon,
-    UserPlusIcon,
-    TextCursorInputIcon,
+    Pencil,
   } from "lucide-svelte";
   import DeleteUserGroupConfirmDialog from "./DeleteUserGroupConfirmDialog.svelte";
   import RenameUserGroupDialog from "./RenameUserGroupDialog.svelte";
-  import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import EditUserGroupDialog from "./EditUserGroupDialog.svelte";
 
   export let name: string;
   export let role: string | undefined = undefined;
-  export let users: V1MemberUser[];
   export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
   export let onAddRole: (groupName: string, role: string) => void;
   export let onSetRole: (groupName: string, role: string) => void;
   export let onRevokeRole: (groupName: string) => void;
-  export let onAddUser: (groupName: string, email: string) => void;
+  export let onRemoveUser: (groupName: string, email: string) => void;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
   let isRenameDialogOpen = false;
+  let isEditDialogOpen = false;
 
   function handleAssignRole(role: string) {
     onAddRole(name, role);
@@ -38,12 +37,6 @@
   function handleRevokeRole() {
     onRevokeRole(name);
   }
-
-  function handleAddUsers(email: string) {
-    onAddUser(name, email);
-  }
-
-  // $: console.log("users: ", users);
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -145,25 +138,16 @@
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
     {/if}
-    <!-- <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger class="font-normal flex items-center">
-        <UserPlusIcon size="12px" />
-        <span class="ml-2">Add users</span>
-      </DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent>
-        {#each users as user}
-          <DropdownMenu.Item
-            class="font-normal flex items-center"
-            on:click={() => {
-              handleAddUsers(user.userEmail);
-            }}
-          >
-            <span>{user.userEmail}</span>
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.SubContent>
-    </DropdownMenu.Sub> -->
     <DropdownMenu.Item
+      class="font-normal flex items-center"
+      on:click={() => {
+        isEditDialogOpen = true;
+      }}
+    >
+      <Pencil size="12px" />
+      <span class="ml-2">Edit</span>
+    </DropdownMenu.Item>
+    <!-- <DropdownMenu.Item
       class="font-normal flex items-center"
       on:click={() => {
         isRenameDialogOpen = true;
@@ -171,7 +155,7 @@
     >
       <TextCursorInputIcon size="12px" />
       <span class="ml-2">Rename</span>
-    </DropdownMenu.Item>
+    </DropdownMenu.Item> -->
     <DropdownMenu.Item
       class="font-normal flex items-center"
       type="destructive"
@@ -195,4 +179,11 @@
   bind:open={isRenameDialogOpen}
   groupName={name}
   {onRename}
+/>
+
+<EditUserGroupDialog
+  bind:open={isEditDialogOpen}
+  groupName={name}
+  {onRename}
+  {onRemoveUser}
 />
