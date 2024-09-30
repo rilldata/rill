@@ -7,10 +7,7 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import { flexRender } from "@tanstack/svelte-table";
-  import {
-    formatDate,
-    capitalize,
-  } from "@rilldata/web-common/components/table/utils";
+  import { formatDate } from "@rilldata/web-common/components/table/utils";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
   import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
