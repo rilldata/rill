@@ -179,9 +179,16 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 		for k, v := range annotations.ToMap() {
 			f = append(f, zap.String(k, v))
 		}
-		for d, err := range health.MetricsViewErrors {
-			w.logger.Error("deployment health check: dashboard error", append(f, zap.String("dashboard", d), zap.String("error", err))...)
+
+		// log metrics view errors
+		logger := w.logger.WithLazy(f...)
+		if health.ParseErrorCount > 0 || health.ReconcileErrorCount > 0 {
+			logger.Error("deployment health check: project has parse/reconcile errors", zap.Int32("parse_errors", health.ParseErrorCount), zap.Int32("reconcile_errors", health.ReconcileErrorCount))
 		}
+		for d, err := range health.MetricsViewErrors {
+			logger.Error("deployment health check: dashboard error", zap.String("dashboard", d), zap.String("error", err))
+		}
+
 		onlyUnhealthyDash := true
 		if health.OlapError != "" {
 			onlyUnhealthyDash = false

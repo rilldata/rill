@@ -9,8 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-type DashboardHealthQuery func(ctx context.Context, instanceID, name string) (Query, error)
-
 type Health struct {
 	HangingConn     error
 	Registry        error
@@ -19,8 +17,10 @@ type Health struct {
 
 type InstanceHealth struct {
 	// always recomputed
-	Controller string
-	Repo       string
+	Controller        string
+	Repo              string
+	ParseErrCount     int
+	ReconcileErrCount int
 
 	// cached
 	OLAP         string
@@ -63,6 +63,12 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		return res, nil
 	}
 
+	parser, err := ctrl.Get(ctx, GlobalProjectParserName, false)
+	if err != nil {
+		return nil, err
+	}
+	res.ParseErrCount = len(parser.GetProjectParser().State.ParseErrors)
+
 	cachedHealth, _ := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version)
 	// set to true if any of the olap engines can be scaled to zero
 	var canScaleToZero bool
@@ -93,6 +99,9 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	res.MetricsViews = make(map[string]metricsViewHealth, len(resources))
 	for _, mv := range resources {
 		if mv.GetMetricsView().State.ValidSpec == nil {
+			if mv.Meta.ReconcileError != "" {
+				res.ReconcileErrCount++
+			}
 			continue
 		}
 		olap, release, err := r.OLAP(ctx, instanceID, mv.GetMetricsView().State.ValidSpec.Connector)
@@ -202,9 +211,11 @@ func (h *InstanceHealth) To() *runtimev1.InstanceHealth {
 		return nil
 	}
 	r := &runtimev1.InstanceHealth{
-		ControllerError: h.Controller,
-		RepoError:       h.Repo,
-		OlapError:       h.OLAP,
+		ControllerError:     h.Controller,
+		RepoError:           h.Repo,
+		OlapError:           h.OLAP,
+		ParseErrorCount:     int32(h.ParseErrCount),
+		ReconcileErrorCount: int32(h.ReconcileErrCount),
 	}
 	r.MetricsViewErrors = make(map[string]string, len(h.MetricsViews))
 	for k, v := range h.MetricsViews {

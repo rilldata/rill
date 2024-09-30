@@ -4330,6 +4330,12 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      parseErrorCount:
+        type: integer
+        format: int32
+      reconcileErrorCount:
+        type: integer
+        format: int32
   v1InstanceHealthResponse:
     type: object
     properties:

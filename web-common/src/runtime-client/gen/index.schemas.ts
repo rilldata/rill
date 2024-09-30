@@ -1622,6 +1622,8 @@ export interface V1InstanceHealth {
   olapError?: string;
   repoError?: string;
   metricsViewErrors?: V1InstanceHealthMetricsViewErrors;
+  parseErrorCount?: number;
+  reconcileErrorCount?: number;
 }
 
 export interface V1InstanceHealthResponse {
