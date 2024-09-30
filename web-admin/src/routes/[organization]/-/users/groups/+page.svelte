@@ -7,11 +7,12 @@
     createAdminServiceDeleteUsergroup,
     createAdminServiceListOrganizationMemberUsergroups,
     createAdminServiceListOrganizationMemberUsers,
-    createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveOrganizationMemberUsergroup,
+    createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceRenameUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+    getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgGroupsTable from "@rilldata/web-admin/features/organizations/users/OrgGroupsTable.svelte";
@@ -39,21 +40,7 @@
     createAdminServiceSetOrganizationMemberUsergroupRole();
   const revokeUserGroupRole =
     createAdminServiceRemoveOrganizationMemberUsergroup();
-  const addUserGroupMember = createAdminServiceAddUsergroupMemberUser();
-
-  // $: console.log(
-  //   "$listOrganizationMemberUsers.data?.members: ",
-  //   $listOrganizationMemberUsers.data?.members,
-  // );
-
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-    organization,
-    "test",
-  );
-  $: console.log(
-    "$listUsergroupMemberUsers.data?.members: ",
-    $listUsergroupMemberUsers.data?.members,
-  );
+  const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
 
   async function handleCreate(newName: string) {
     try {
@@ -189,23 +176,27 @@
     }
   }
 
-  async function handleAddUser(groupName: string, email: string) {
+  async function handleRemoveUser(groupName: string, email: string) {
     try {
-      await $addUserGroupMember.mutateAsync({
+      await $removeUserGroupMember.mutateAsync({
         organization: organization,
         usergroup: groupName,
         email: email,
-        data: {},
       });
 
       await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          groupName,
+        ),
       );
 
-      eventBus.emit("notification", { message: "User added to user group" });
+      eventBus.emit("notification", {
+        message: "User removed from user group",
+      });
     } catch (error) {
       eventBus.emit("notification", {
-        message: "Error adding user to user group",
+        message: "Error removing user from user group",
         type: "error",
       });
     }
@@ -232,7 +223,7 @@
         onAddRole={handleAddRole}
         onSetRole={handleSetRole}
         onRevokeRole={handleRevokeRole}
-        onAddUser={handleAddUser}
+        onRemoveUser={handleRemoveUser}
       />
       <Button
         type="primary"
