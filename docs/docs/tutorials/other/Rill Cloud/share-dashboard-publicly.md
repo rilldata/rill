@@ -10,14 +10,60 @@ There might be occasions that sharing a dashboard to a 'non-user' is required in
 
 
 ### Accessing your Dashboard in Rill Cloud
+Once you have deployed your project to Rill Cloud, you should be able to access the project via the following URL:
+
+[Go to Rill Cloud](https://ui.rilldata.com/)
+
+You can select your project from the list and select your dashboard.
+
+![img](/img/tutorials/201/rill-cloud-projects.png)
+
+### Adding Filters and Creating the Public URL
+
+When sharing to your end-user, it is likely that you will want to specific a specific amount of filters. Once set, the end-user cannot view or modify the set filters so they will only be allowed to view a set portion of the dasboard that you define. 
 
 
-### Adding some Filters onto your dashboard
+Once your dashboard is ready, you can create the public URL via the `Share` button.
 
 
-### Creating a Public URL
+<img src = '/img/tutorials/205/public-url.gif' class='rounded-gif' />
+<br />
 
+
+### Managing Public URLS in Rill Cloud
+
+**via UI** 
+
+import ComingSoon from '@site/src/components/ComingSoon';
+
+
+<ComingSoon />
+
+<div class='contents_to_overlay'>
+Settings UI Should be out soon to add this
+</div>
+
+
+**via CLI**
+
+Checking the public URL can be done by running the following:
+
+```bash
+rill public-url list --project <your_project>
+  ID                                     DASHBOARD     FILTER                                CREATED BY              CREATED ON            LAST USED ON          EXPIRES ON  
+ -------------------------------------- ------------- ------------------------------------- ----------------------- --------------------- --------------------- ------------ 
+  3564c499-c8bd-4c1c-bab8-c33a218a5009   dashboard_1   (author_name IN ["Robert Schulze"])   roy.endo@rilldata.com   2024-09-30 09:34:41   2024-09-30 09:34:41               
+  cab99113-d5a8-468d-981e-213e41c7d1bf   dashboard_1                                         roy.endo@rilldata.com   2024-09-30 09:29:26   2024-09-30 09:34:32               
+
+NOTE: For security reasons, the actual URLs can't be displayed after creation.
+```
+As you can see, you can receive information on who created, what filters, when it expires, etc.
 
 ### Example Public URL
 
-Add link to my-rill-tutorial, an unexpiring public link
+Feel free to take a look at the created public URLs and note the difference between a dashboard with a filter and without.
+
+![Public URL without filter](https://ui.rilldata.com/rill_learn/my-rill-tutorial/-/share/rill_mgc_h2zgRaakdAAj1wW8szKB4sgEexaVyuKDbBwOlr0vlSG6HKjLz4mbTG?state=CgYKBFAxNEQYBSIJCgdyaWxsLVBQKgltZWFzdXJlXzA4AEgBWAFgBGoDVVRDeAKAAQGYAf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwGiAQQaAggIsAEA8AEB%2BAECgAIBigIHZGVmYXVsdJACAQ%3D%3D)
+
+
+![Public URL with Filter](https://ui.rilldata.com/rill_learn/my-rill-tutorial/-/share/rill_mgc_234NinqSqfB12PVZ7xofjW9rah3cVWl7K5C3gxy4QnZP2mLkPDLqGr)

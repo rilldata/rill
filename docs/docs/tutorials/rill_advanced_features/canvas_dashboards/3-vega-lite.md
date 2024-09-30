@@ -141,8 +141,8 @@ With everything completed, you should have a YAML file with the following conten
 ![img](/img/tutorials/301/top-contributors.png)
 
 ```yaml
-# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+# Component YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/components
     
 type: component
 

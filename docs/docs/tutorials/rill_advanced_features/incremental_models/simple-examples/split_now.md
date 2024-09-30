@@ -5,7 +5,7 @@ sidebar_label: "Basic Split Models"
 sidebar_position: 2
 ---
 
-As mentioned, we can define a split by adding the `splits:` key with some defining parameters. Let's look at the following example.
+As mentioned, we can define a split by adding the `splits:` key with some defining parameters. Splits are a special case of incremental model states. Let's look at the following example.
 
 ```yaml
 type: model

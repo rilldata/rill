@@ -15,7 +15,7 @@ A few things to note, since this component will be used as an `input` into other
 
 ```yaml
 # Component YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+# Reference documentation: https://docs.rilldata.com/reference/project-files/components
     
 type: component
 
