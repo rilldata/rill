@@ -92,8 +92,6 @@
       <div class="flex flex-col gap-2 w-full">
         <Input
           bind:value={$form.newName}
-          id="newName"
-          label="Group name"
           placeholder="New user group name"
           errors={$errors.newName}
           alwaysShowError
@@ -159,7 +157,7 @@
         form={formId}
         submitForm
       >
-        Edit
+        Save
       </Button>
     </DialogFooter>
   </DialogContent>
