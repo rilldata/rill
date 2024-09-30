@@ -228,7 +228,7 @@ func runtimeUnhealthy(r *runtimev1.HealthResponse) bool {
 }
 
 func instanceUnhealthy(i *runtimev1.InstanceHealth) bool {
-	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != "" || len(i.MetricsViewErrors) != 0
+	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != "" || len(i.MetricsViewErrors) != 0 || i.ParseErrorCount > 0 || i.ReconcileErrorCount > 0
 }
 
 func addExpectedInstance(expectedInstances map[string][]string, d *database.Deployment) {
