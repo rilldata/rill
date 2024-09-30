@@ -14,9 +14,10 @@
       {name}
       <span class="text-gray-500 font-normal">
         {isCurrentUser ? "(You)" : ""}
-        {pendingAcceptance ? "(Pending Acceptance)" : ""}
       </span>
     </span>
-    <span class="text-xs text-gray-500">{email}</span>
+    <span class="text-xs text-gray-500"
+      >{pendingAcceptance ? "Pending invitation" : email}</span
+    >
   </div>
 </div>
