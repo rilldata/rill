@@ -32,14 +32,18 @@ Based on the access policy, we expect that the API does not work as the user doe
 
 Dashboard API: (metrics_view_api)
 ```bash
+curl https://admin.rilldata.com/v1/orgs/Rill_Learn/projects/my-rill-tutorial/runtime/api/metrics_view_api \  ...
+
 {"error":"action not allowed"}
 ```
 
 Underlying SQL table: (SQL_api)
 ```bash
+curl https://admin.rilldata.com/v1/orgs/Rill_Learn/projects/my-rill-tutorial/runtime/api/SQL_api \ ...
+
 [{"author_name":"avogar","net_line_changes":16331},{"author_name":"Sema Checherinda","net_line_changes":8118},{"author_name":"Blargian","net_line_changes":5629},{"author_name":"Max K","net_line_changes":1904},{"author_name":"robot-clickhouse","net_line_changes":1899},{"author_name":"Raúl Marín","net_line_changes":1434},{"author_name":"János Benjamin Antal","net_line_changes":1168},{"author_name":"yariks5s","net_line_changes":1078},{"author_name":"Nikita Taranov","net_line_changes":1035},{"author_name":"Antonio Andelic","net_line_changes":1032}]%  
 ```
 
 
 ### Developing APIs 
-For further information about our custom APIs, I recommened referring to the following [documentation](https://docs.rilldata.com/integrate/custom-api) and [references](https://docs.rilldata.com/reference/project-files/apis).
+For further information about our custom APIs, please refer to the following [documentation](https://docs.rilldata.com/integrate/custom-api) and [references](https://docs.rilldata.com/reference/project-files/apis).
