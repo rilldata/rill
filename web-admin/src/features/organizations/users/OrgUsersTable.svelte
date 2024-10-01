@@ -17,13 +17,8 @@
 
   export let data: OrgUser[];
   export let currentUserEmail: string;
-  export let userGroups: V1MemberUsergroup[];
   export let onRemove: (email: string) => void;
   export let onSetRole: (email: string, role: string) => void;
-  export let onAddUsergroupMemberUser: (
-    email: string,
-    usergroup: string,
-  ) => void;
 
   const columns: ColumnDef<OrgUser, any>[] = [
     {
@@ -86,11 +81,8 @@
       cell: ({ row }) =>
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
-          pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
-          userGroups: userGroups,
           onRemove: onRemove,
-          onAddUsergroupMemberUser: onAddUsergroupMemberUser,
         }),
       meta: {
         widthPercent: 0,

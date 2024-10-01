@@ -26,6 +26,8 @@
     usergroup: string,
   ) => void;
 
+  // TODO: if user is already in group, disable the option
+  // Otherwise, "user is already a member of the usergroup"
   $: console.log("yes we can search users now: ", searchUsersList);
 
   $: organization = $page.params.organization;
