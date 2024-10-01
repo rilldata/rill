@@ -45,7 +45,7 @@
     })) ?? []),
   ];
 
-  // TODO: fuzzy search
+  // FIXME: fuzzy
   $: filteredUsers = usersWithPendingInvites.filter((user) =>
     user.userEmail.toLowerCase().includes(searchText.toLowerCase()),
   );
@@ -161,6 +161,7 @@
     usergroup: string,
   ) {
     try {
+      console.log("fired: ", usergroup, email);
       await $addUsergroupMemberUser.mutateAsync({
         organization: organization,
         usergroup: usergroup,
