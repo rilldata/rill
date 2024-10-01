@@ -6,6 +6,7 @@
     createAdminServiceDeleteUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
+    createAdminServiceListOrganizationMemberUsers,
     createAdminServiceRemoveOrganizationMemberUsergroup,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceRenameUsergroup,
@@ -29,8 +30,8 @@
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsergroups =
     createAdminServiceListOrganizationMemberUsergroups(organization);
-  // $: listOrganizationMemberUsers =
-  //   createAdminServiceListOrganizationMemberUsers(organization);
+  $: listOrganizationMemberUsers =
+    createAdminServiceListOrganizationMemberUsers(organization);
 
   const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
@@ -255,5 +256,6 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
+  searchUsersList={$listOrganizationMemberUsers.data?.members}
   onCreate={handleCreate}
 />
