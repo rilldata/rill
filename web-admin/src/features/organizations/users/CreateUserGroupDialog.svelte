@@ -85,7 +85,7 @@
         <Input
           bind:value={$form.newName}
           id="user-group-name"
-          label="Group name"
+          label="Group label"
           placeholder="Untitled"
           errors={$errors.newName}
           alwaysShowError
