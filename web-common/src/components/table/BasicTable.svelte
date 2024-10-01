@@ -13,7 +13,6 @@
     SortingState,
     TableOptions,
   } from "@tanstack/svelte-table";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
