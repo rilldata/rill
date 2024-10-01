@@ -4,7 +4,7 @@
   import { extent } from "d3-array";
 
   import MeasureBigNumber from "@rilldata/web-common/features/dashboards/big-number/MeasureBigNumber.svelte";
-  import { useMetaMeasure } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetricsViewSpecMeasure } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
@@ -31,18 +31,22 @@
   $: kpiProperties = rendererProperties as KPIProperties;
 
   $: ({
-    metrics_view: metricViewName,
+    metrics_view: metricsViewName,
     filter: whereSql,
     measure: measureName,
     time_range: timeRange,
     comparison_range: comparisonTimeRange,
   } = kpiProperties);
 
-  $: measure = useMetaMeasure(instanceId, metricViewName, measureName);
+  $: measure = useMetricsViewSpecMeasure(
+    instanceId,
+    metricsViewName,
+    measureName,
+  );
 
   $: measureValue = useKPITotals(
     instanceId,
-    metricViewName,
+    metricsViewName,
     measureName,
     timeRange.toUpperCase(),
     whereSql,
@@ -50,7 +54,7 @@
 
   $: comparisonValue = useKPIComparisonTotal(
     instanceId,
-    metricViewName,
+    metricsViewName,
     measureName,
     comparisonTimeRange?.toUpperCase(),
     timeRange.toUpperCase(),
@@ -60,7 +64,7 @@
 
   $: sparkline = useKPISparkline(
     instanceId,
-    metricViewName,
+    metricsViewName,
     measureName,
     timeRange.toUpperCase(),
     whereSql,

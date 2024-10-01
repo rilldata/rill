@@ -6,17 +6,16 @@ import {
 import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import {
-  useMetricsView,
-  useMetricsViewTimeRange,
-} from "@rilldata/web-common/features/dashboards/selectors";
-import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
+  type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
@@ -41,27 +40,29 @@ export function getBookmarks(
   orgName: string,
   projectName: string,
   metricsViewName: string,
+  exploreName: string,
 ): CreateQueryResult<Bookmarks> {
   return derived(
     [
       useProjectId(orgName, projectName),
-      useMetricsView(instanceId, metricsViewName),
+      useExploreValidSpec(instanceId, exploreName),
       createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
       createAdminServiceGetCurrentUser(),
     ],
-    ([projectId, metricsViewResp, schemaResp, userResp], set) =>
+    ([projectId, validSpec, schemaResp, userResp], set) =>
       createAdminServiceListBookmarks(
         {
           projectId: projectId.data,
-          resourceKind: ResourceKind.MetricsView,
-          resourceName: metricsViewName,
+          resourceKind: ResourceKind.Explore,
+          resourceName: exploreName,
         },
         {
           query: {
             enabled:
               !!projectId?.data &&
               !!metricsViewName &&
-              !metricsViewResp.isFetching &&
+              !!exploreName &&
+              !validSpec.isFetching &&
               !schemaResp.isFetching &&
               userResp.isSuccess &&
               !!userResp.data.user,
@@ -74,8 +75,9 @@ export function getBookmarks(
               resp.bookmarks?.forEach((bookmarkResource) => {
                 const bookmark = parseBookmarkEntry(
                   bookmarkResource,
-                  metricsViewResp.data as V1MetricsViewSpec,
-                  schemaResp.data?.schema as V1StructType,
+                  validSpec.data?.metricsView ?? {},
+                  validSpec.data?.explore ?? {},
+                  schemaResp.data?.schema ?? {},
                 );
                 if (bookmarkResource.default) {
                   bookmarks.home = bookmark;
@@ -116,6 +118,7 @@ export function getHomeBookmarkData(
   orgName: string,
   projectName: string,
   metricsViewName: string,
+  exploreName: string,
 ): CompoundQueryResult<string> {
   return derived(
     getBookmarks(
@@ -124,6 +127,7 @@ export function getHomeBookmarkData(
       orgName,
       projectName,
       metricsViewName,
+      exploreName,
     ),
     (bookmarks) => {
       if (bookmarks.isFetching || !bookmarks.data) {
@@ -150,18 +154,20 @@ export function getPrettySelectedTimeRange(
   queryClient: QueryClient,
   instanceId: string,
   metricsViewName: string,
+  exploreName: string,
 ): Readable<string> {
   return derived(
     [
-      useMetricsView(instanceId, metricsViewName),
+      useExploreValidSpec(instanceId, exploreName),
       useMetricsViewTimeRange(instanceId, metricsViewName, {
         query: { queryClient },
       }),
-      useDashboardStore(metricsViewName),
+      useExploreStore(metricsViewName),
     ],
-    ([metricViewSpec, timeRangeSummary, metricsExplorerEntity]) => {
+    ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {
       const timeRangeState = timeControlStateSelector([
-        metricViewSpec,
+        validSpec.data?.metricsView ?? {},
+        validSpec.data?.explore ?? {},
         timeRangeSummary,
         metricsExplorerEntity,
       ]);
@@ -179,11 +185,13 @@ export function getPrettySelectedTimeRange(
 function parseBookmarkEntry(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
   schema: V1StructType,
 ): BookmarkEntry {
   const metricsEntity = getDashboardStateFromUrl(
     bookmarkResource.data ?? "",
     metricsViewSpec,
+    exploreSpec,
     schema,
   );
   return {

@@ -7,7 +7,6 @@
     V1ExportFormat,
     createQueryServiceExport,
   } from "../../../runtime-client";
-  import { useDashboard } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
   import exportPivot, { getPivotExportArgs } from "./pivot-export";
 
@@ -17,18 +16,16 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const { runtime, metricsViewName, dashboardStore } = ctx;
+  const { exploreName, dashboardStore, validSpecStore } = ctx;
   $: metricsViewProto = $dashboardStore.proto;
   const exportDash = createQueryServiceExport();
-
-  $: metricsView = useDashboard($runtime.instanceId, $metricsViewName);
 
   async function handleExportPivot(format: V1ExportFormat) {
     await exportPivot({
       ctx,
       query: exportDash,
       format,
-      timeDimension: $metricsView.data?.metricsView?.spec?.timeDimension,
+      timeDimension: $validSpecStore.data?.metricsView?.timeDimension,
     });
   }
 
@@ -93,6 +90,7 @@
     this={CreateScheduledReportDialog}
     queryArgs={$scheduledReportsQueryArgs}
     {metricsViewProto}
+    exploreName={$exploreName}
     bind:open={showScheduledReportDialog}
   />
 {/if}

@@ -3,6 +3,10 @@
   import { page } from "$app/stores";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
+  import {
+    getExploreName,
+    getExplorePageUrl,
+  } from "@rilldata/web-admin/features/dashboards/query-mappers/utils.js";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -17,6 +21,9 @@
   $: executionTime = $page.url.searchParams.get("execution_time");
 
   $: alert = useAlert($runtime.instanceId, alertId);
+  $: exploreName = getExploreName(
+    $alert.data?.resource?.alert?.spec?.annotations?.web_open_path,
+  );
 
   let dashboardStateForAlert: ReturnType<typeof mapQueryToDashboard>;
   $: queryName =
@@ -28,6 +35,7 @@
     $alert.data?.resource?.alert?.spec?.queryArgsJson ??
     "";
   $: dashboardStateForAlert = mapQueryToDashboard(
+    exploreName,
     queryName,
     queryArgsJson,
     executionTime,
@@ -39,8 +47,14 @@
   }
 
   $: if ($dashboardStateForAlert.data) {
-    goto(
-      `/${organization}/${project}/${$dashboardStateForAlert.data.metricsView}?state=${encodeURIComponent($dashboardStateForAlert.data.state)}`,
+    void goto(
+      getExplorePageUrl(
+        $page.url,
+        organization,
+        project,
+        $dashboardStateForAlert.data.exploreName,
+        $dashboardStateForAlert.data.state,
+      ),
     );
   }
 </script>
