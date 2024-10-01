@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import AddDataModal from "@rilldata/web-common/features/sources/modal/AddDataModal.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
@@ -22,7 +23,7 @@
 
 <main
   role="application"
-  class="index-body relative size-full flex overflow-hidden"
+  class="index-body relative size-full flex flex-col overflow-hidden"
   on:drag|preventDefault|stopPropagation
   on:drop|preventDefault|stopPropagation
   on:dragenter|preventDefault|stopPropagation
@@ -32,11 +33,24 @@
   }}
 >
   {#if pathname !== "/welcome"}
-    <Navigation />
+    <header>
+      <a href="/">
+        <Rill />
+      </a>
+
+      <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
+        Developer
+      </span>
+    </header>
   {/if}
-  <section class="size-full overflow-hidden">
-    <slot />
-  </section>
+  <div class="flex size-full overflow-hidden">
+    {#if pathname !== "/welcome"}
+      <Navigation />
+    {/if}
+    <section class="size-full overflow-hidden">
+      <slot />
+    </section>
+  </div>
 </main>
 
 {#if showDropOverlay}
@@ -61,3 +75,11 @@
 
 <AddDataModal />
 <SourceImportedModal sourcePath={$sourceImportedPath} />
+
+<style lang="postcss">
+  header {
+    @apply w-full bg-background box-border;
+    @apply flex gap-x-2 items-center px-4 border-b flex-none;
+    height: var(--header-height);
+  }
+</style>

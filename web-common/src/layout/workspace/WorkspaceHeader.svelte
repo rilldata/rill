@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { IconButton } from "@rilldata/web-common/components/button";
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { workspaces } from "./workspace-stores";
@@ -8,6 +7,7 @@
   import { scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let titleInput: string;
   export let editable = true;
@@ -26,6 +26,48 @@
 </script>
 
 <header class="slide" bind:clientWidth={width}>
+  <div class="flex justify-end items-center mr-4 gap-x-2 flex-none w-full">
+    <slot name="workspace-controls" {width} />
+
+    <div class="pl-4 flex-none">
+      <slot name="cta" {width} />
+    </div>
+
+    {#if showTableToggle}
+      <Button
+        type="secondary"
+        square
+        selected={true}
+        on:click={workspaceLayout.table.toggle}
+      >
+        <HideBottomPane size="18px" />
+
+        <svelte:fragment slot="tooltip-content">
+          <SlidingWords active={$tableVisible} reverse>
+            results preview
+          </SlidingWords>
+        </svelte:fragment>
+      </Button>
+    {/if}
+
+    {#if showInspectorToggle}
+      <Button
+        type="secondary"
+        square
+        selected={true}
+        on:click={workspaceLayout.inspector.toggle}
+      >
+        <HideRightSidebar size="18px" />
+
+        <svelte:fragment slot="tooltip-content">
+          <SlidingWords active={$visible} direction="horizontal" reverse>
+            inspector
+          </SlidingWords>
+        </svelte:fragment>
+      </Button>
+    {/if}
+  </div>
+
   <div class="wrapper slide" class:pl-4={!$navigationOpen}>
     <label aria-hidden for="model-title-input" bind:clientWidth={titleWidth}>
       {value}
@@ -60,52 +102,19 @@
       />
     {/if}
   </div>
-
-  <div class="flex items-center mr-4 flex-none">
-    <slot name="workspace-controls" {width} />
-
-    {#if showTableToggle}
-      <IconButton on:click={workspaceLayout.table.toggle}>
-        <span class="text-gray-500">
-          <HideBottomPane size="18px" />
-        </span>
-        <svelte:fragment slot="tooltip-content">
-          <SlidingWords active={$tableVisible} reverse>
-            results preview
-          </SlidingWords>
-        </svelte:fragment>
-      </IconButton>
-    {/if}
-
-    {#if showInspectorToggle}
-      <IconButton on:click={workspaceLayout.inspector.toggle}>
-        <span class="text-gray-500">
-          <HideRightSidebar size="18px" />
-        </span>
-        <svelte:fragment slot="tooltip-content">
-          <SlidingWords active={$visible} direction="horizontal" reverse>
-            inspector
-          </SlidingWords>
-        </svelte:fragment>
-      </IconButton>
-    {/if}
-
-    <div class="pl-4 flex-none">
-      <slot name="cta" {width} />
-    </div>
-  </div>
 </header>
 
 <style lang="postcss">
   input:focus,
   input:not(:disabled):hover {
-    @apply border-2 border-gray-400 outline-none;
+    @apply border-primary-500 outline-none;
+    @apply ring-2 ring-primary-100 bg-background;
   }
 
   input,
   label {
-    @apply whitespace-pre rounded border-2 border-transparent;
-    @apply truncate;
+    @apply whitespace-pre rounded-[2px] border border-transparent;
+    @apply truncate font-semibold text-xl bg-gray-100;
   }
 
   input {
@@ -118,15 +127,16 @@
   }
 
   header {
+    @apply bg-gray-100;
     @apply justify-between;
-    @apply flex items-center pl-4 py-2 border-b overflow-hidden;
-    height: var(--header-height);
+    @apply flex flex-col items-center pl-4 pt-2 overflow-hidden;
+    @apply h-20;
   }
 
   .wrapper {
     @apply overflow-hidden max-w-full gap-x-2;
     @apply size-full relative flex items-center;
-    @apply font-bold pr-2 self-start;
+    @apply font-bold pr-2 self-start pl-1;
     font-size: 16px;
   }
 </style>

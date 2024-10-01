@@ -172,7 +172,10 @@
     </svelte:fragment>
   </WorkspaceHeader>
 
-  <div slot="body" class="editor-pane size-full overflow-hidden flex flex-col">
+  <div
+    slot="body"
+    class="editor-pane size-full overflow-hidden flex flex-col gap-y-2"
+  >
     <WorkspaceEditorContainer>
       {#key assetName}
         <SourceEditor {fileArtifact} {allErrors} />

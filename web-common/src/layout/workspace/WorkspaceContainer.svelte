@@ -18,7 +18,7 @@
     </header>
   {/if}
 
-  <div class="h-full {bgClass} w-full flex overflow-hidden">
+  <div class="h-full {bgClass} w-full flex overflow-hidden p-2 gap-x-2">
     <div class="w-full h-full overflow-hidden">
       <slot name="body" />
     </div>

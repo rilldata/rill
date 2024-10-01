@@ -68,6 +68,9 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
+      rounded: {
+        xs: "2px",
+      },
       colors: {
         border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input) / <alpha-value>)",

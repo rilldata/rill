@@ -182,7 +182,7 @@
     const column = String(e.currentTarget.dataset.column);
     const index = Number(e.currentTarget.dataset.index);
     const value =
-      description ?? isHeader
+      (description ?? isHeader)
         ? column
         : (rows[index]?.[column] as string | number | null);
     const type = columns.find((c) => c.name === column)?.type ?? "string";
@@ -399,7 +399,6 @@
 
   .table-wrapper {
     @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-white;
-    @apply border-b;
   }
 
   .has-selection tbody {

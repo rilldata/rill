@@ -12,7 +12,7 @@
 </script>
 
 <div
-  class="p-5 w-full relative flex flex-none flex-col gap-2"
+  class="w-full relative flex flex-none flex-col gap-2"
   style:height="{$tableHeight}px"
   style:max-height="75%"
 >
@@ -30,6 +30,6 @@
 <style lang="postcss">
   .table-wrapper {
     transition: filter 200ms;
-    @apply relative rounded w-full overflow-hidden border-gray-200 border-2 h-full;
+    @apply relative rounded-[2px] w-full overflow-hidden border h-full;
   }
 </style>
