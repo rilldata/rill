@@ -8,11 +8,7 @@
   export let size: string = "h-12 w-12";
 
   function getInitials(name: string) {
-    return name
-      .split(" ")
-      .map((n) => n.charAt(0))
-      .join("")
-      .toUpperCase();
+    return name.charAt(0).toUpperCase();
   }
 </script>
 
