@@ -83,4 +83,4 @@
   ];
 </script>
 
-<BasicTable {data} {columns} />
+<BasicTable {data} {columns} emptyText="No groups found" />

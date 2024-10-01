@@ -20,9 +20,11 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Plus } from "lucide-svelte";
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
+  import { Search } from "@rilldata/web-common/components/search";
 
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
+  let searchText = "";
 
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsergroups =
@@ -41,6 +43,10 @@
   const revokeUserGroupRole =
     createAdminServiceRemoveOrganizationMemberUsergroup();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
+
+  $: filteredGroups = $listOrganizationMemberUsergroups.data?.members.filter(
+    (group) => group.groupName.toLowerCase().includes(searchText.toLowerCase()),
+  );
 
   async function handleCreate(newName: string) {
     try {
@@ -215,16 +221,19 @@
     </div>
   {:else if $listOrganizationMemberUsergroups.isSuccess}
     <div class="flex flex-col gap-4">
-      <Button
-        type="primary"
-        large
-        on:click={() => (isCreateUserGroupDialogOpen = true)}
-      >
-        <Plus size="16px" />
-        <span>Create group</span>
-      </Button>
+      <div class="flex flex-row gap-x-4">
+        <Search placeholder="Search" bind:value={searchText} large />
+        <Button
+          type="primary"
+          large
+          on:click={() => (isCreateUserGroupDialogOpen = true)}
+        >
+          <Plus size="16px" />
+          <span>Create group</span>
+        </Button>
+      </div>
       <OrgGroupsTable
-        data={$listOrganizationMemberUsergroups.data.members}
+        data={filteredGroups}
         currentUserEmail={$currentUser.data?.user.email}
         onRename={handleRename}
         onDelete={handleDelete}
