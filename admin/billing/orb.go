@@ -172,7 +172,7 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 }
 
 func (o *Orb) CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
-	if startDate.After(time.Now()) {
+	if startDate.Before(time.Now()) {
 		return nil, errors.New("start date must be in the future")
 	}
 
