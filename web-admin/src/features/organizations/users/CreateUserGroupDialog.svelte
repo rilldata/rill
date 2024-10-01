@@ -15,11 +15,16 @@
   import { page } from "$app/stores";
   import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
   import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
 
   export let open = false;
   export let groupName: string;
   export let searchUsersList: V1MemberUser[];
   export let onCreate: (name: string) => void;
+  export let onAddUsergroupMemberUser: (
+    email: string,
+    usergroup: string,
+  ) => void;
 
   $: console.log("yes we can search users now: ", searchUsersList);
 
@@ -67,6 +72,12 @@
       },
     },
   );
+
+  // TODO: rework this to a list view
+  $: coercedUsersToOptions = searchUsersList.map((user) => ({
+    value: user.userEmail,
+    label: user.userEmail,
+  }));
 </script>
 
 <Dialog
@@ -105,17 +116,20 @@
           alwaysShowError
         />
 
-        <!-- TODO: Add users -->
-        <!-- Enter to add user to user group -->
-        <!-- onAddUsergroupMemberUser(email, usergroup);  -->
-        <!-- const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser(); -->
+        <!-- TODO: revisit; what happens when users are added but groupName is empty? -->
         <!-- NOTE: Client side search current users until we have a different endpoint to search users server-side -->
-        <Input
-          bind:value={searchText}
-          placeholder="Search for users"
+        <Combobox
+          bind:inputValue={searchText}
+          options={coercedUsersToOptions}
           id="create-user-group-users"
           label="Users"
-          alwaysShowError
+          name="searchUsers"
+          placeholder="Search for users"
+          onSelectedChange={(value) => {
+            if (value) {
+              onAddUsergroupMemberUser(value.value, groupName);
+            }
+          }}
         />
 
         <!-- TODO: List users, remove -->

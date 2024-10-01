@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceAddOrganizationMemberUsergroup,
+    createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
     createAdminServiceGetCurrentUser,
@@ -12,6 +13,7 @@
     createAdminServiceRenameUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -44,7 +46,9 @@
   const revokeUserGroupRole =
     createAdminServiceRemoveOrganizationMemberUsergroup();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
+  const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
 
+  // FIXME: fuzzy
   $: filteredGroups = $listOrganizationMemberUsergroups.data?.members.filter(
     (group) => group.groupName.toLowerCase().includes(searchText.toLowerCase()),
   );
@@ -208,6 +212,40 @@
       });
     }
   }
+
+  async function handleAddUsergroupMemberUser(
+    email: string,
+    usergroup: string,
+  ) {
+    try {
+      await $addUsergroupMemberUser.mutateAsync({
+        organization: organization,
+        usergroup: usergroup,
+        email: email,
+        data: {},
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          usergroup,
+        ),
+      );
+
+      eventBus.emit("notification", {
+        message: "User added to user group",
+      });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: "Error adding user to user group",
+        type: "error",
+      });
+    }
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -256,6 +294,7 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
-  searchUsersList={$listOrganizationMemberUsers.data?.members}
+  searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
   onCreate={handleCreate}
+  onAddUsergroupMemberUser={handleAddUsergroupMemberUser}
 />
