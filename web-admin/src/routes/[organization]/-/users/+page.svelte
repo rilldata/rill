@@ -9,9 +9,6 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationInvites,
     getAdminServiceListOrganizationInvitesQueryKey,
-    createAdminServiceAddUsergroupMemberUser,
-    createAdminServiceListOrganizationMemberUsergroups,
-    getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -31,8 +28,6 @@
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
-  $: listOrganizationMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(organization);
   $: listOrganizationInvites =
     createAdminServiceListOrganizationInvites(organization);
 
@@ -58,7 +53,6 @@
     createAdminServiceRemoveOrganizationMemberUser();
   const setOrganizationMemberUserRole =
     createAdminServiceSetOrganizationMemberUserRole();
-  const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
 
   async function handleCreate(
     newEmail: string,
@@ -155,41 +149,6 @@
       });
     }
   }
-
-  async function handleAddUsergroupMemberUser(
-    email: string,
-    usergroup: string,
-  ) {
-    try {
-      console.log("fired: ", usergroup, email);
-      await $addUsergroupMemberUser.mutateAsync({
-        organization: organization,
-        usergroup: usergroup,
-        email: email,
-        data: {},
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      );
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          usergroup,
-        ),
-      );
-
-      eventBus.emit("notification", {
-        message: "User added to user group",
-      });
-    } catch (error) {
-      eventBus.emit("notification", {
-        message: "Error adding user to user group",
-        type: "error",
-      });
-    }
-  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -223,11 +182,9 @@
       </div>
       <OrgUsersTable
         data={filteredUsers}
-        userGroups={$listOrganizationMemberUsergroups.data?.members}
         currentUserEmail={$currentUser.data?.user.email}
         onRemove={handleRemove}
         onSetRole={handleSetRole}
-        onAddUsergroupMemberUser={handleAddUsergroupMemberUser}
       />
     </div>
   {/if}
