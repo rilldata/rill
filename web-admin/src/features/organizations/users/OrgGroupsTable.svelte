@@ -5,7 +5,6 @@
   import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
   import OrgGroupsTableRoleCell from "./OrgGroupsTableRoleCell.svelte";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
-  import { formatDate } from "@rilldata/web-common/components/table/utils";
 
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
