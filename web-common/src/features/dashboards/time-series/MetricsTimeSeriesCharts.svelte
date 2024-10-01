@@ -89,9 +89,7 @@
   $: expandedMeasureName = $dashboardStore?.tdd?.expandedMeasureName;
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
-  $: showComparison = Boolean(
-    !comparisonDimension && $timeControlsStore.showTimeComparison,
-  );
+  $: showComparison = Boolean($timeControlsStore.showTimeComparison);
   $: tddChartType = $dashboardStore?.tdd?.chartType;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??

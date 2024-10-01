@@ -62,7 +62,7 @@
       isDiffValid
         ? `(${diffLabel})`
         : "",
-    pointColorClass: "fill-primary-700",
+    pointColor: "var(--color-primary-700)",
     valueStyleClass: "font-semibold",
     valueColorClass: "fill-gray-600",
     labelColorClass:
@@ -82,7 +82,7 @@
           label: "prev.",
           key: "comparison",
           valueStyleClass: "font-normal",
-          pointColorClass: "fill-gray-400",
+          pointColor: "var(--color-primary-300)",
           valueColorClass: "fill-gray-500",
           labelColorClass: "fill-gray-500",
         }

@@ -10,7 +10,6 @@
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
-    TimeComparisonLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
@@ -88,10 +87,10 @@
       {@const isHighlighted = d?.value === dimensionValue}
       <g
         class="transition-opacity"
-        class:opacity-20={isDimValueHiglighted && !isHighlighted}
+        class:opacity-0={isDimValueHiglighted && !isHighlighted}
       >
         <ChunkedLine
-          isComparingDimension
+          lineWidth={isHighlighted ? 2 : 1.5}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey
@@ -103,6 +102,22 @@
           {yAccessor}
         />
       </g>
+      {#if isHighlighted && showComparison}
+        <g class="transition-opacity">
+          <ChunkedLine
+            lineColor={d?.color}
+            lineOpacity={0.5}
+            delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+            duration={hasSubrangeSelected ||
+            $timeRangeKey !== $previousTimeRangeKey
+              ? 0
+              : 200}
+            data={d?.data || []}
+            {xAccessor}
+            yAccessor="comparison.{yAccessor}"
+          />
+        </g>
+      {/if}
     {/each}
   {:else}
     {#if showComparison}
@@ -112,7 +127,8 @@
         class:opacity-40={!isHovering}
       >
         <ChunkedLine
-          lineColor={TimeComparisonLineColor}
+          lineOpacity={0.5}
+          lineColor={mainLineColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey

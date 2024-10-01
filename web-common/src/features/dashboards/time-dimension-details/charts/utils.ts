@@ -37,7 +37,25 @@ export function getVegaLiteSpecForTDD(
   ];
 
   let nominalFields: ChartField[] = [];
-  if (isDimensional) {
+  if (
+    isDimensional &&
+    isTimeComparison &&
+    chartType !== TDDChart.STACKED_AREA
+  ) {
+    nominalFields = [
+      {
+        name: "dimension",
+        label: dimensionName || "dimension",
+        values: comparedValues,
+      },
+    ];
+
+    measureFields.push({
+      name: `comparison.${expandedMeasureName}`,
+      label: `comparison.${measureLabel}`,
+      formatterFunction: "measureFormatter",
+    });
+  } else if (isDimensional) {
     nominalFields = [
       {
         name: "dimension",
