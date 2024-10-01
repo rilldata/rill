@@ -128,18 +128,14 @@
                   <span class="text-xs text-gray-500">{member.userEmail}</span>
                 </div>
               </div>
-
-              <!-- all-users — "cannot remove member from all-users group" -->
-              {#if groupName !== "all-users"}
-                <Button
-                  type="plain"
-                  on:click={() => {
-                    onRemoveUser(groupName, member.userEmail);
-                  }}
-                >
-                  Remove
-                </Button>
-              {/if}
+              <Button
+                type="plain"
+                on:click={() => {
+                  onRemoveUser(groupName, member.userEmail);
+                }}
+              >
+                Remove
+              </Button>
             </div>
           {/each}
         </div>
