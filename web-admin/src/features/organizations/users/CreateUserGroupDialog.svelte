@@ -12,20 +12,34 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import { page } from "$app/stores";
+  import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
+  import type { V1MemberUser } from "@rilldata/web-admin/client";
 
   export let open = false;
   export let groupName: string;
-  export let onCreate: (newName: string) => void;
+  export let searchUsersList: V1MemberUser[];
+  export let onCreate: (name: string) => void;
 
-  const formId = "add-user-group-form";
+  $: console.log("yes we can search users now: ", searchUsersList);
+
+  $: organization = $page.params.organization;
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    groupName,
+  );
+
+  const formId = "create-user-group-form";
 
   const initialValues = {
-    newName: "",
+    name: "",
   };
+
+  let searchText = "";
 
   const schema = yup(
     object({
-      newName: string()
+      name: string()
         .required("User group name is required")
         .min(3, "User group name must be at least 3 characters")
         .matches(
@@ -45,7 +59,7 @@
         const values = form.data;
 
         try {
-          await onCreate(values.newName);
+          await onCreate(values.name);
           open = false;
         } catch (error) {
           console.error(error);
@@ -81,16 +95,35 @@
       on:submit|preventDefault={submit}
       use:enhance
     >
-      <div class="flex flex-col gap-2 w-full">
+      <div class="flex flex-col gap-4 w-full">
         <Input
-          bind:value={$form.newName}
-          id="user-group-name"
+          bind:value={$form.name}
+          id="create-user-group-name"
           label="Group label"
           placeholder="Untitled"
-          errors={$errors.newName}
+          errors={$errors.name}
           alwaysShowError
         />
-        <!-- TODO: add users to user group -->
+
+        <!-- TODO: Add users -->
+        <!-- Enter to add user to user group -->
+        <!-- onAddUsergroupMemberUser(email, usergroup);  -->
+        <!-- const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser(); -->
+        <!-- NOTE: Client side search current users until we have a different endpoint to search users server-side -->
+        <Input
+          bind:value={searchText}
+          placeholder="Search for users"
+          id="create-user-group-users"
+          label="Users"
+          alwaysShowError
+        />
+
+        <!-- TODO: List users, remove -->
+        {#if $listUsergroupMemberUsers.data?.members.length > 0}
+          <div class="text-xs font-semibold uppercase text-gray-500">
+            {$listUsergroupMemberUsers.data?.members.length} Users
+          </div>
+        {/if}
       </div>
     </form>
     <DialogFooter>
@@ -102,7 +135,7 @@
       >
       <Button
         type="primary"
-        disabled={$submitting || $form.newName.trim() === ""}
+        disabled={$submitting || $form.name.trim() === ""}
         form={formId}
         submitForm
       >
