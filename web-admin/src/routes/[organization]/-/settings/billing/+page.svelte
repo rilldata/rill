@@ -6,5 +6,7 @@
   $: organization = $page.params.organization;
 </script>
 
-<Plan {organization} />
-<Payment {organization} />
+<div class="flex flex-col gap-y-5">
+  <Plan {organization} />
+  <Payment {organization} />
+</div>

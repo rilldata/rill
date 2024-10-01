@@ -10,9 +10,9 @@
     <div class="settings-title">
       <span>{title}</span>
       {#if titleIcon === "info"}
-        <InfoCircleFilled />
+        <InfoCircleFilled className="text-yellow-500" size="14px" />
       {:else if titleIcon === "error"}
-        <CancelCircle />
+        <CancelCircle className="text-red-600" size="14px" />
       {/if}
     </div>
     <slot name="body" />
@@ -38,7 +38,7 @@
   }
 
   .settings-title {
-    @apply flex flex-row items-center;
+    @apply flex flex-row gap-x-2 items-center;
     @apply text-lg font-semibold;
   }
 

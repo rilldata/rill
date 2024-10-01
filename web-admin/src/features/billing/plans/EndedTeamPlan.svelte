@@ -41,7 +41,7 @@
   let open = false;
 </script>
 
-<SettingsContainer title={plan.name} titleIcon="info">
+<SettingsContainer title={plan.displayName ?? plan.name} titleIcon="info">
   <div slot="body">
     <div>
       Your subscription ends on {subscription.currentBillingCycleEndDate}

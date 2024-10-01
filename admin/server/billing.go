@@ -305,6 +305,11 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 		}
 	}
 
+	// returnUrl is mandatory so if not passed default to home page
+	if req.ReturnUrl == "" {
+		req.ReturnUrl = s.admin.URLs.Frontend()
+	}
+
 	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

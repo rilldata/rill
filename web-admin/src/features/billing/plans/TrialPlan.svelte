@@ -27,7 +27,7 @@
   let open = false;
 </script>
 
-<SettingsContainer title={plan.name}>
+<SettingsContainer title={plan.displayName ?? plan.name}>
   <div slot="body">
     <div>
       {trialEndMessage} Ready to get started with Rill?

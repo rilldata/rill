@@ -8,7 +8,7 @@
   export let plan: V1BillingPlan;
 </script>
 
-<SettingsContainer title={plan.name}>
+<SettingsContainer title={plan.displayName ?? plan.name}>
   <div slot="body">
     <div>You’re currently on a custom contract.</div>
     <PlanQuotas {organization} quotas={plan.quotas} />
