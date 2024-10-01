@@ -40,6 +40,7 @@ export function handleTrialPlan(
     cta,
   };
   const diff = endDate.diff(today);
+  console.log(diff);
   if (
     diff.milliseconds > 0 &&
     trialIssue.type !== V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED
@@ -68,6 +69,8 @@ export function handleTrialPlan(
 }
 
 export function getTrialMessageForDays(diff: Duration<true>) {
+  if (diff.milliseconds < 0) return "Your trial has ended.";
+
   diff = shiftToLargest(diff, ["seconds", "minutes", "hours", "days"]);
   const formattedDiff = diff.toHuman({ unitDisplay: "short" });
   return `Your trial expires in ${formattedDiff}.`;

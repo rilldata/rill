@@ -69,6 +69,7 @@
         planName: teamPlan.name,
       },
     });
+    open = false;
   }
 
   $: error =

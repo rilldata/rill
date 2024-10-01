@@ -36,6 +36,7 @@
     await $planCanceller.mutateAsync({
       organization,
     });
+    open = false;
   }
 
   let open = false;

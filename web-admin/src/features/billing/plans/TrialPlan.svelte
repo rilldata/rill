@@ -16,11 +16,14 @@
   export let subscription: V1Subscription;
 
   let trialEndMessage: string;
+  let trialEnded = false;
   $: {
     const today = DateTime.now();
     const endDate = DateTime.fromJSDate(new Date(subscription.trialEndDate));
     if (endDate.isValid) {
+      const diff = endDate.diff(today);
       trialEndMessage = getTrialMessageForDays(endDate.diff(today));
+      trialEnded = diff.milliseconds < 0;
     }
   }
 
@@ -43,7 +46,11 @@
   </svelte:fragment>
 
   <Button type="primary" slot="action" on:click={() => (open = true)}>
-    End trial and start Team plan
+    {#if trialEnded}
+      Start Team plan
+    {:else}
+      End trial and start Team plan
+    {/if}
   </Button>
 </SettingsContainer>
 
