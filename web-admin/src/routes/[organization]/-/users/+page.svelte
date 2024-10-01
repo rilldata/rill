@@ -204,7 +204,13 @@
   {:else if $listOrganizationMemberUsers.isSuccess}
     <div class="flex flex-col gap-4">
       <div class="flex flex-row gap-x-4">
-        <Search placeholder="Search" bind:value={searchText} large />
+        <Search
+          placeholder="Search"
+          bind:value={searchText}
+          large
+          autofocus={false}
+          showBorderOnFocus={false}
+        />
         <Button
           type="primary"
           large
