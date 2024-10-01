@@ -38,6 +38,9 @@
           pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
         }),
+      meta: {
+        widthPercent: 3,
+      },
     },
 
     {
@@ -51,6 +54,9 @@
           isCurrentUser: row.original.userEmail === currentUserEmail,
           onSetRole: onSetRole,
         }),
+      meta: {
+        widthPercent: 3,
+      },
     },
     {
       accessorKey: "createdOn",
@@ -59,6 +65,9 @@
         if (!row.original.createdOn) return "-";
         return formatDate(row.original.createdOn);
       },
+      meta: {
+        widthPercent: 10,
+      },
     },
     {
       accessorKey: "updatedOn",
@@ -66,6 +75,9 @@
       cell: ({ row }) => {
         if (!row.original.updatedOn) return "-";
         return formatDate(row.original.updatedOn);
+      },
+      meta: {
+        widthPercent: 10,
       },
     },
     {
@@ -81,6 +93,9 @@
           onRemove: onRemove,
           onAddUsergroupMemberUser: onAddUsergroupMemberUser,
         }),
+      meta: {
+        widthPercent: 0,
+      },
     },
   ];
 </script>

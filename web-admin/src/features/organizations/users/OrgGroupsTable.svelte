@@ -20,11 +20,17 @@
     {
       accessorKey: "groupName",
       header: "Name",
+      meta: {
+        widthPercent: 3,
+      },
     },
     {
       accessorKey: "roleName",
       header: "Role",
       enableSorting: false,
+      meta: {
+        widthPercent: 3,
+      },
       cell: ({ row }) =>
         flexRender(OrgGroupsTableRoleCell, {
           name: row.original.groupName,
@@ -42,6 +48,9 @@
         if (!row.original.createdOn) return "-";
         return formatDate(row.original.createdOn);
       },
+      meta: {
+        widthPercent: 10,
+      },
     },
     // TODO: use relative datetime
     {
@@ -50,6 +59,9 @@
       cell: ({ row }) => {
         if (!row.original.updatedOn) return "-";
         return formatDate(row.original.updatedOn);
+      },
+      meta: {
+        widthPercent: 10,
       },
     },
     {
@@ -64,6 +76,9 @@
           onDelete: onDelete,
           onRemoveUser: onRemoveUser,
         }),
+      meta: {
+        widthPercent: 0,
+      },
     },
   ];
 </script>
