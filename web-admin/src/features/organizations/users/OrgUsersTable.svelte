@@ -1,9 +1,5 @@
 <script lang="ts">
-  import type {
-    V1MemberUser,
-    V1UserInvite,
-    V1MemberUsergroup,
-  } from "@rilldata/web-admin/client";
+  import type { V1MemberUser, V1UserInvite } from "@rilldata/web-admin/client";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import { flexRender } from "@tanstack/svelte-table";
