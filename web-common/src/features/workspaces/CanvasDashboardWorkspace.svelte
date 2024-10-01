@@ -36,7 +36,7 @@
 
   let canvasDashboardName: string;
   let selectedComponentFileArtifact: FileArtifact | undefined;
-  let selectedView = "split";
+  let selectedView: "split" | "code" | "viz";
   let showGrid = true;
   let showComponentEditor = false;
   let containerWidth: number;
@@ -226,7 +226,7 @@
   </WorkspaceHeader>
 
   <div class="flex w-full h-full flex-row overflow-hidden" slot="body">
-    {#if selectedView == "code" || selectedView == "split"}
+    {#if selectedView === "code" || selectedView === "split"}
       <div
         transition:slide={{ duration: 400, axis: "x" }}
         class="relative h-full flex-shrink-0 w-full border-r"
@@ -303,7 +303,7 @@
       </div>
     {/if}
 
-    {#if selectedView == "viz" || selectedView == "split"}
+    {#if selectedView === "viz" || selectedView === "split"}
       <CanvasDashboardPreview
         {canvasDashboardName}
         {gap}

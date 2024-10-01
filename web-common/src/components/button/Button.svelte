@@ -35,6 +35,7 @@
   export let target: string | undefined = undefined;
   export let fit = false;
   export let noWrap = false;
+  export let gray = false;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
 
@@ -57,6 +58,7 @@
   class:square
   class:circle
   class:selected
+  class:gray
   class:loading
   class:large
   class:small
@@ -230,7 +232,7 @@
   }
 
   .subtle:disabled {
-    @apply text-slate-400 bg-slate-50;
+    @apply text-slate-400 bg-transparent;
   }
 
   /* LINK STYLES */
@@ -367,5 +369,9 @@
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
     @apply bg-white px-0;
+  }
+
+  .gray {
+    @apply saturate-0;
   }
 </style>

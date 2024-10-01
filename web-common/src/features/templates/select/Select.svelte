@@ -50,6 +50,5 @@
     label={selectProperties.label || ""}
     options={selectOptions}
     placeholder={selectProperties.placeholder || ""}
-    className="bg-white"
   />
 </div>

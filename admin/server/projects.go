@@ -449,7 +449,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// if there is no subscription for the org, submit a job to start a trial
-	bi, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+	bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

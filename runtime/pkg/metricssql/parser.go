@@ -54,9 +54,9 @@ type query struct {
 	priority   int
 
 	// fields available after parsing FROM clause
-	metricsView *runtimev1.MetricsViewV2
-	dims        map[string]any
-	measures    map[string]any
+	metricsViewSpec *runtimev1.MetricsViewSpec
+	dims            map[string]any
+	measures        map[string]any
 }
 
 // Rewrite parses a metrics SQL query and compiles it to a metricview.Query.
@@ -155,11 +155,11 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 	}
 
 	q.q.MetricsView = tblName.Name.String()
-	q.metricsView = mv.GetMetricsView()
 	spec := mv.GetMetricsView().State.ValidSpec
 	if spec == nil {
 		return fmt.Errorf("metrics view %q is not valid: (status: %q, error: %q)", mv.Meta.GetName(), mv.Meta.ReconcileStatus, mv.Meta.ReconcileError)
 	}
+	q.metricsViewSpec = spec
 	q.measures = make(map[string]any, len(spec.Measures))
 	for _, measure := range spec.Measures {
 		q.measures[measure.Name] = nil
@@ -270,7 +270,7 @@ func (q *query) parseColumnNameExpr(in ast.Node) (string, string, error) {
 		return col, "DIMENSION", nil
 	} else if _, ok := q.measures[col]; ok {
 		return col, "MEASURE", nil
-	} else if q.metricsView.Spec.TimeDimension == col {
+	} else if q.metricsViewSpec.TimeDimension == col {
 		return col, "DIMENSION", nil
 	}
 	return "", "", fmt.Errorf("metrics sql: selected column `%s` not found in dimensions/measures in metrics view", col)

@@ -109,7 +109,7 @@ func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *riv
 }
 
 func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx context.Context) error {
-	cancelled, err := w.admin.DB.FindBillingIssueByTypeNotOverdueProcessed(ctx, database.BillingIssueTypeSubscriptionCancelled)
+	cancelled, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypeSubscriptionCancelled, false)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no orgs have this billing issue
