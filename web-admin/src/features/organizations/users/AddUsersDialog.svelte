@@ -74,6 +74,14 @@
           type: "success",
           message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${values.role}`,
         });
+
+        if (errored) {
+          eventBus.emit("notification", {
+            type: "error",
+            message:
+              "Some invitations could not be sent. Please check the email addresses and try again.",
+          });
+        }
       },
       validationMethod: "oninput",
     },
@@ -107,7 +115,7 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
-      <DialogTitle>Add user</DialogTitle>
+      <DialogTitle>Add users</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
