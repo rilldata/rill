@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from "svelte";
   import Search from "../icons/Search.svelte";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   /* Autofocus search bar on mount */
   export let autofocus = true;
