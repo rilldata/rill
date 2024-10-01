@@ -183,6 +183,7 @@ const sidebars = {
           items: [
             'tutorials/other/add-column-dimension',
             'tutorials/other/create-map-component',
+            'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
             'tutorials/other/Rill Cloud/visual-metric-editor-rc',
             'tutorials/other/yaml-vs-ui',
