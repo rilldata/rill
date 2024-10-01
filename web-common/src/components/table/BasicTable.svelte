@@ -13,6 +13,7 @@
     SortingState,
     TableOptions,
   } from "@tanstack/svelte-table";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
@@ -64,9 +65,11 @@
     <thead>
       {#each $table.getHeaderGroups() as headerGroup}
         <tr>
-          {#each headerGroup.headers as header}
+          {#each headerGroup.headers as header (header.id)}
+            {@const widthPercent = header.column.columnDef.meta?.widthPercent}
             <th
               colSpan={header.colSpan}
+              style={`width: ${widthPercent}%;`}
               class="px-4 py-2 text-left"
               on:click={header.column.getToggleSortingHandler()}
             >
@@ -103,7 +106,7 @@
         <tr>
           {#each row.getVisibleCells() as cell}
             <td
-              class={`px-4 py-2 truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
+              class="px-4 py-2 truncate"
               data-label={cell.column.columnDef.header}
             >
               <svelte:component
