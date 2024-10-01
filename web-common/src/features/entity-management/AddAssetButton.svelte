@@ -91,10 +91,18 @@
   }
 
   /**
-   * Put an example Dashboard file in the `dashboards` directory
+   * Put an example Metrics View file in the `metrics_views` directory
    */
-  async function handleAddDashboard() {
+  async function handleAddMetricsView() {
     const newRoute = await handleEntityCreate(ResourceKind.MetricsView);
+    await wrapNavigation(newRoute);
+  }
+
+  /**
+   * Put an example Explore file in the `explores` directory
+   */
+  async function handleAddExplore() {
+    const newRoute = await handleEntityCreate(ResourceKind.Explore);
     await wrapNavigation(newRoute);
   }
 
@@ -245,16 +253,28 @@
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      aria-label="Add Dashboard"
+      aria-label="Add Metrics View"
       class="flex gap-x-2"
-      on:click={handleAddDashboard}
+      on:click={handleAddMetricsView}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
         className="text-gray-900"
         size="16px"
       />
-      Dashboard
+      Metrics
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      aria-label="Add Explore Dashboard"
+      class="flex gap-x-2"
+      on:click={handleAddExplore}
+    >
+      <svelte:component
+        this={resourceIconMapping[ResourceKind.Explore]}
+        className="text-gray-900"
+        size="16px"
+      />
+      Explore Dashboard
     </DropdownMenu.Item>
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import type { Table } from "@tanstack/svelte-table";
   import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
@@ -13,7 +13,7 @@
 <thead>
   <tr>
     <td>
-      <MetricsExplorerIcon size={"14px"} />
+      <ExploreIcon size={"14px"} />
       {numDashboards} dashboard{numDashboards !== 1 ? "s" : ""}
     </td>
   </tr>

@@ -18,7 +18,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
+  import PreviewButton from "@rilldata/web-common/features/explores/PreviewButton.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
     WorkspaceContainer,

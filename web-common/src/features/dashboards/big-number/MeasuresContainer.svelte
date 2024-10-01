@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -12,7 +11,8 @@
 
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
 
-  export let metricViewName;
+  export let metricsViewName: string;
+  export let exploreName: string;
   export let exploreContainerWidth;
 
   const MEASURE_HEIGHT = 60;
@@ -38,12 +38,11 @@
     selectors: {
       activeMeasure: { selectedMeasureNames },
     },
+    validSpecStore,
   } = getStateManagers();
 
   $: instanceId = $runtime.instanceId;
 
-  // query the `/meta` endpoint to get the measures and the default time grain
-  $: metricsView = useMetricsView(instanceId, metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let metricsContainerHeight: number;
@@ -126,7 +125,7 @@
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
-    metricViewName,
+    metricsViewName,
     {
       measures: $selectedMeasureNames.map((name) => ({ name })),
       where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
@@ -148,8 +147,8 @@
   }
 
   $: showHideMeasures = createShowHideMeasuresStore(
-    metricViewName,
-    metricsView,
+    exploreName,
+    validSpecStore,
   );
 
   const toggleMeasureVisibility = (e) => {
@@ -186,8 +185,8 @@
         tooltipText="Choose measures to display"
       />
     </div>
-    {#if $metricsView.data?.measures}
-      {#each $metricsView.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
+    {#if $validSpecStore.data?.metricsView?.measures}
+      {#each $validSpecStore.data?.metricsView?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
         <div
           bind:this={measureNodes[index]}
           style:width="{MEASURE_WIDTH}px"
