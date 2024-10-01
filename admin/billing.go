@@ -142,7 +142,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		return org, nil, nil
 	}
 
-	subs, err := s.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 	}
@@ -193,7 +193,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return nil, nil, fmt.Errorf("failed to get default plan: %w", err)
 	}
 
-	subs, err := s.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 	}

@@ -40,7 +40,7 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 	}
 
 	// check if the org has any active subscription
-	sub, err := w.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	sub, err := w.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
 	}
@@ -131,7 +131,7 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 		}
 
 		// check if the org has any active subscription
-		sub, err := w.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+		sub, err := w.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 		if err != nil {
 			return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
 		}

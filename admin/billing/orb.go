@@ -179,58 +179,20 @@ func (o *Orb) CreateSubscriptionInFuture(ctx context.Context, customerID string,
 	return o.createSubscription(ctx, customerID, plan, startDate)
 }
 
-func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
-	var err error
-	var sub *orb.Subscription
-	if startDate.IsZero() {
-		sub, err = o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
-			ExternalCustomerID: orb.String(customerID),
-			PlanID:             orb.String(plan.ID),
-		})
-	} else {
-		sub, err = o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
-			ExternalCustomerID: orb.String(customerID),
-			PlanID:             orb.String(plan.ID),
-			StartDate:          orb.F(startDate),
-		})
-	}
+func (o *Orb) GetActiveSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
+	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusActive)
 	if err != nil {
 		return nil, err
 	}
-
-	return &Subscription{
-		ID:                           sub.ID,
-		Customer:                     getBillingCustomerFromOrbCustomer(&sub.Customer),
-		Plan:                         plan,
-		StartDate:                    sub.StartDate,
-		EndDate:                      sub.EndDate,
-		CurrentBillingCycleStartDate: sub.CurrentBillingPeriodStartDate,
-		CurrentBillingCycleEndDate:   sub.CurrentBillingPeriodEndDate,
-		TrialEndDate:                 sub.TrialInfo.EndDate,
-		Metadata:                     sub.Metadata,
-	}, nil
+	return subs, nil
 }
 
-func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
-	sub, err := o.client.Subscriptions.List(ctx, orb.SubscriptionListParams{
-		ExternalCustomerID: orb.String(customerID),
-		Status:             orb.F(orb.SubscriptionListParamsStatusActive),
-	})
+func (o *Orb) GetUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
+	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusUpcoming)
 	if err != nil {
 		return nil, err
 	}
-
-	var subscriptions []*Subscription
-	for i := 0; i < len(sub.Data); i++ {
-		s := sub.Data[i]
-		billingSub, err := getBillingSubscriptionFromOrbSubscription(&s)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions = append(subscriptions, billingSub)
-	}
-	return subscriptions, nil
+	return subs, nil
 }
 
 func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
@@ -260,6 +222,14 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 		TrialEndDate:                 s.TrialInfo.EndDate,
 		Metadata:                     s.Metadata,
 	}, nil
+}
+
+func (o *Orb) UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error) {
+	sub, err := o.client.Subscriptions.UnscheduleCancellation(ctx, subscriptionID)
+	if err != nil {
+		return nil, err
+	}
+	return getBillingSubscriptionFromOrbSubscription(sub)
 }
 
 func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
@@ -295,7 +265,22 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 		}
 	}
 
-	subs, err := o.GetSubscriptionsForCustomer(ctx, customerID)
+	// cancel all upcoming subscriptions for the customer immediately
+	upcomingSubs, err := o.GetUpcomingSubscriptionsForCustomer(ctx, customerID)
+	if err != nil {
+		return time.Time{}, err
+	}
+	for _, s := range upcomingSubs {
+		_, err := o.client.Subscriptions.Cancel(ctx, s.ID, orb.SubscriptionCancelParams{
+			CancelOption: orb.F(orb.SubscriptionCancelParamsCancelOptionImmediate),
+		})
+		if err != nil {
+			return time.Time{}, err
+		}
+	}
+
+	// cancel all active subscriptions for the customer as per the cancel option
+	subs, err := o.GetActiveSubscriptionsForCustomer(ctx, customerID)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -386,6 +371,60 @@ func (o *Orb) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.H
 	}
 	ow := &orbWebhook{orb: o, jobs: jc}
 	return ow.handleWebhook
+}
+
+func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
+	var err error
+	var sub *orb.Subscription
+	if startDate.IsZero() {
+		sub, err = o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
+			ExternalCustomerID: orb.String(customerID),
+			PlanID:             orb.String(plan.ID),
+		})
+	} else {
+		sub, err = o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
+			ExternalCustomerID: orb.String(customerID),
+			PlanID:             orb.String(plan.ID),
+			StartDate:          orb.F(startDate),
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &Subscription{
+		ID:                           sub.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&sub.Customer),
+		Plan:                         plan,
+		StartDate:                    sub.StartDate,
+		EndDate:                      sub.EndDate,
+		CurrentBillingCycleStartDate: sub.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   sub.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 sub.TrialInfo.EndDate,
+		Metadata:                     sub.Metadata,
+	}, nil
+}
+
+func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status orb.SubscriptionListParamsStatus) ([]*Subscription, error) {
+	sub, err := o.client.Subscriptions.List(ctx, orb.SubscriptionListParams{
+		ExternalCustomerID: orb.String(customerID),
+		Status:             orb.F(status),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var subscriptions []*Subscription
+	for i := 0; i < len(sub.Data); i++ {
+		s := sub.Data[i]
+		billingSub, err := getBillingSubscriptionFromOrbSubscription(&s)
+		if err != nil {
+			return nil, err
+		}
+
+		subscriptions = append(subscriptions, billingSub)
+	}
+	return subscriptions, nil
 }
 
 func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {

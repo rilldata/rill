@@ -69,11 +69,19 @@ func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, can
 	return time.Time{}, nil
 }
 
-func (n noop) GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
+func (n noop) GetActiveSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
+	return []*Subscription{{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}}, nil
+}
+
+func (n noop) GetUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
 	return []*Subscription{{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}}, nil
 }
 
 func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
+	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
+}
+
+func (n noop) UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error) {
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 

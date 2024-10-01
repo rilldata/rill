@@ -41,8 +41,10 @@ type Biller interface {
 	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) (time.Time, error)
 	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error)
-	GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
+	GetActiveSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
+	GetUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
 	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error)
+	UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error)
 
 	GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error)
 	IsInvoiceValid(ctx context.Context, invoice *Invoice) bool

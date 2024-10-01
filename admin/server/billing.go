@@ -36,7 +36,7 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
 	}
 
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -88,7 +88,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
 
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -170,8 +170,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	} else if len(subs) == 1 {
 		// schedule plan change
-		newSub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
-		//newSub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionImmediate)
+		newSub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionImmediate)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -199,7 +198,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	subs, err = s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err = s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -280,7 +279,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
 
-	_, err = s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
+	bisc, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Errorf(codes.FailedPrecondition, "subscription not cancelled for the organization %s", org.Name)
@@ -288,22 +287,13 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if len(subs) > 1 {
 		return nil, status.Errorf(codes.FailedPrecondition, "multiple subscriptions found for the organization %s", org.Name)
-	}
-
-	subEndDate := time.Time{}
-	if len(subs) == 1 {
-		subEndDate = subs[0].EndDate
-	}
-
-	if subEndDate.Before(time.Now()) {
-		return nil, status.Errorf(codes.FailedPrecondition, "subscription already expired but still getting listed for the organization %s", org.Name)
 	}
 
 	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
@@ -322,38 +312,59 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	}
 
 	var newSub *billing.Subscription
-	if subEndDate.IsZero() {
+	if len(subs) == 0 {
 		newSub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-	} else {
-		//newSub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
-		newSub, err = s.admin.Biller.CreateSubscriptionInFuture(ctx, org.BillingCustomerID, plan, subEndDate)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+	} else if len(subs) == 1 {
+		// To make request idempotent, if subscription is still on cancellation schedule, unschedule it
+		if subs[0].EndDate == subs[0].CurrentBillingCycleEndDate {
+			sub, err := s.admin.Biller.UnscheduleCancellation(ctx, subs[0].ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if sub.Plan.ID == plan.ID {
+				return &adminv1.RenewBillingSubscriptionResponse{
+					Organization:  organizationToDTO(org),
+					Subscriptions: []*adminv1.Subscription{subscriptionToDTO(sub)},
+				}, nil
+			}
+
+			newSub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan, billing.SubscriptionChangeOptionImmediate)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		} else {
+			newSub = subs[0]
 		}
 	}
 
-	// update quotas at a future date ??
-	//org, err := s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-	//	Name:                                org.Name,
-	//	DisplayName:                         org.DisplayName,
-	//	Description:                         org.Description,
-	//	CustomDomain:                        org.CustomDomain,
-	//	QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
-	//	QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
-	//	QuotaSlotsTotal:                     valOrDefault(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-	//	QuotaSlotsPerDeployment:             valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-	//	QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-	//	QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-	//	BillingCustomerID:                   org.BillingCustomerID,
-	//	PaymentCustomerID:                   org.PaymentCustomerID,
-	//	BillingEmail:                        org.BillingEmail,
-	//})
-	//if err != nil {
-	//	return nil, status.Error(codes.Internal, err.Error())
-	//}
+	// update quotas
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
+		Description:                         org.Description,
+		CustomDomain:                        org.CustomDomain,
+		QuotaProjects:                       valOrDefault(newSub.Plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    valOrDefault(newSub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     valOrDefault(newSub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             valOrDefault(newSub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             valOrDefault(newSub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(newSub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// delete the billing issue
+	err = s.admin.DB.DeleteBillingIssue(ctx, bisc.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	return &adminv1.RenewBillingSubscriptionResponse{
 		Organization:  organizationToDTO(org),
@@ -430,7 +441,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}
 
 	// get subscriptions if present
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
