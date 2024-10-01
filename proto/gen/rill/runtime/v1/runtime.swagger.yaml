@@ -3990,22 +3990,18 @@ definitions:
         type: array
         items:
           type: string
-        title: Dimensions to show
-      dimensionsExclude:
-        type: boolean
-        description: |-
-          If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-          Since it is processed during validation, this will always be false in `state.valid_spec`.
+        description: Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       measures:
         type: array
         items:
           type: string
-        title: Measures to show
-      measuresExclude:
-        type: boolean
-        description: |-
-          If true, `measures` will be inverted during validation to include all measures except the ones listed.
-          Since it is processed during validation, this will always be false in `state.valid_spec`.
+        description: Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       timeRange:
         type: string
         description: |-
@@ -4034,22 +4030,18 @@ definitions:
         type: array
         items:
           type: string
-        description: Dimensions to show.
-      dimensionsExclude:
-        type: boolean
-        description: |-
-          If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-          Since it is processed during validation, this will always be false in `state.valid_spec`.
+        description: Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       measures:
         type: array
         items:
           type: string
-        title: Measures available
-      measuresExclude:
-        type: boolean
-        description: |-
-          If true, `measures` will be inverted during validation to include all measures except the ones listed.
-          Since it is processed during validation, this will always be false in `state.valid_spec`.
+        description: Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       theme:
         type: string
         title: Theme to use
@@ -4125,6 +4117,27 @@ definitions:
         $ref: '#/definitions/v1Condition'
       subquery:
         $ref: '#/definitions/v1Subquery'
+  v1FieldSelector:
+    type: object
+    properties:
+      invert:
+        type: boolean
+        description: Invert the result such that all fields *except* the selected fields are returned.
+      all:
+        type: boolean
+        description: Select all fields.
+      fields:
+        $ref: '#/definitions/v1StringListValue'
+        description: Select specific fields by name.
+      regex:
+        type: string
+        description: Select fields by a regular expression.
+      duckdbExpression:
+        type: string
+        description: Select fields by a DuckDB SQL SELECT expression. For example "* EXCLUDE (city)".
+    description: |-
+      FieldSelector describes logic for selecting a list of fields.
+      It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
   v1FileEvent:
     type: string
     enum:
@@ -5951,6 +5964,13 @@ definitions:
         $ref: '#/definitions/v1SourceSpec'
       state:
         $ref: '#/definitions/v1SourceState'
+  v1StringListValue:
+    type: object
+    properties:
+      values:
+        type: array
+        items:
+          type: string
   v1StructType:
     type: object
     properties:

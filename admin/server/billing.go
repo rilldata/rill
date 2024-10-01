@@ -114,7 +114,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
 	}
 
-	be, err := s.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypePaymentFailed)
+	be, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -407,7 +407,7 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org billing errors")
 	}
 
-	issues, err := s.admin.DB.FindBillingIssues(ctx, org.ID)
+	issues, err := s.admin.DB.FindBillingIssuesForOrg(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -447,7 +447,7 @@ func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *ad
 		return nil, err
 	}
 
-	err = s.admin.DB.DeleteBillingIssueByType(ctx, org.ID, t)
+	err = s.admin.DB.DeleteBillingIssueByTypeForOrg(ctx, org.ID, t)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
