@@ -16,6 +16,7 @@
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
+  export let emptyText = "No data available";
 
   let sorting: SortingState = [];
 
@@ -101,20 +102,34 @@
       {/each}
     </thead>
     <tbody>
-      {#each $table.getRowModel().rows as row}
+      {#if $table.getRowModel().rows.length === 0}
         <tr>
-          {#each row.getVisibleCells() as cell}
-            <td
-              class="px-4 py-2 truncate"
-              data-label={cell.column.columnDef.header}
-            >
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            </td>
-          {/each}
+          <td
+            colspan={columns.length}
+            class="px-4 py-4 text-center text-gray-500"
+          >
+            {emptyText}
+          </td>
         </tr>
-      {/each}
+      {:else}
+        {#each $table.getRowModel().rows as row}
+          <tr>
+            {#each row.getVisibleCells() as cell}
+              <td
+                class="px-4 py-2 truncate"
+                data-label={cell.column.columnDef.header}
+              >
+                <svelte:component
+                  this={flexRender(
+                    cell.column.columnDef.cell,
+                    cell.getContext(),
+                  )}
+                />
+              </td>
+            {/each}
+          </tr>
+        {/each}
+      {/if}
     </tbody>
   </table>
 </div>

@@ -19,7 +19,7 @@
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
       accessorKey: "groupName",
-      header: "Name",
+      header: "Group",
       meta: {
         widthPercent: 3,
       },

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from "svelte";
   import Search from "../icons/Search.svelte";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   /* Autofocus search bar on mount */
   export let autofocus = true;
@@ -12,7 +13,7 @@
   export let placeholder = "Search";
   export let border = true;
   export let background = true;
-
+  export let large = false;
   /* Reference of input DOM element */
   let ref: HTMLInputElement;
 
@@ -40,7 +41,7 @@
       ref?.focus();
     }}
   >
-    <Search />
+    <Search size={large ? "18px" : "16px"} />
   </button>
   <input
     bind:this={ref}

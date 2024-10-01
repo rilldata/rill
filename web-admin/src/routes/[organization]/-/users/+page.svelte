@@ -20,11 +20,13 @@
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { Search } from "@rilldata/web-common/components/search";
 
   let userEmail = "";
   let userRole = "";
   let isSuperUser = false;
   let isAddUserDialogOpen = false;
+  let searchText = "";
 
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsers =
@@ -42,6 +44,11 @@
       roleName: invite.role,
     })) ?? []),
   ];
+
+  // TODO: fuzzy search
+  $: filteredUsers = usersWithPendingInvites.filter((user) =>
+    user.userEmail.toLowerCase().includes(searchText.toLowerCase()),
+  );
 
   const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
@@ -196,22 +203,25 @@
     </div>
   {:else if $listOrganizationMemberUsers.isSuccess}
     <div class="flex flex-col gap-4">
+      <div class="flex flex-row gap-x-4">
+        <Search placeholder="Search" bind:value={searchText} large />
+        <Button
+          type="primary"
+          large
+          on:click={() => (isAddUserDialogOpen = true)}
+        >
+          <Plus size="16px" />
+          <span>Add users</span>
+        </Button>
+      </div>
       <OrgUsersTable
-        data={usersWithPendingInvites}
+        data={filteredUsers}
         userGroups={$listOrganizationMemberUsergroups.data?.members}
         currentUserEmail={$currentUser.data?.user.email}
         onRemove={handleRemove}
         onSetRole={handleSetRole}
         onAddUsergroupMemberUser={handleAddUsergroupMemberUser}
       />
-      <Button
-        type="primary"
-        large
-        on:click={() => (isAddUserDialogOpen = true)}
-      >
-        <Plus size="16px" />
-        <span>Add user</span>
-      </Button>
     </div>
   {/if}
 </div>

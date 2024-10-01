@@ -215,6 +215,14 @@
     </div>
   {:else if $listOrganizationMemberUsergroups.isSuccess}
     <div class="flex flex-col gap-4">
+      <Button
+        type="primary"
+        large
+        on:click={() => (isCreateUserGroupDialogOpen = true)}
+      >
+        <Plus size="16px" />
+        <span>Create group</span>
+      </Button>
       <OrgGroupsTable
         data={$listOrganizationMemberUsergroups.data.members}
         currentUserEmail={$currentUser.data?.user.email}
@@ -225,14 +233,6 @@
         onRevokeRole={handleRevokeRole}
         onRemoveUser={handleRemoveUser}
       />
-      <Button
-        type="primary"
-        large
-        on:click={() => (isCreateUserGroupDialogOpen = true)}
-      >
-        <Plus size="16px" />
-        <span>Create group</span>
-      </Button>
     </div>
   {/if}
 </div>
