@@ -71,6 +71,7 @@ func TestImpl_err(t *testing.T) {
 		KeyFunc: func(cfg any) string {
 			return cfg.(string)
 		},
+		ErrorTTL: time.Minute,
 	})
 	ci := c.(*cacheImpl)
 	_, _, err := c.Acquire(context.Background(), "foo")

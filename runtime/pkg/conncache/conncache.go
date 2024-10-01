@@ -166,6 +166,7 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 	if e.status == entryStatusOpen && !reopen {
 		defer c.mu.Unlock()
 		if e.err != nil {
+			c.releaseEntry(k, e)
 			return nil, nil, e.err
 		}
 		return e.handle, c.releaseFunc(k, e), nil
@@ -223,7 +224,7 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 			if reopen {
 				closeErr = c.closeConnection(e)
 			}
-			if closeErr != nil {
+			if closeErr != nil || !reopen {
 				handle, err = c.openConnection(cfg)
 			}
 
