@@ -433,7 +433,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
-	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
+	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
 }
@@ -476,7 +476,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
-	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
+	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
 }
@@ -533,7 +533,6 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.QueryArgsJson = spec.QueryArgsJson
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
-	opts.OpenProjectSubpath = annotations.WebOpenProjectSubpath
 	for _, notifier := range spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
@@ -550,6 +549,8 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
 		}
 	}
+	opts.WebOpenPath = annotations.WebOpenPath
+	opts.WebOpenState = annotations.WebOpenState
 	return opts, nil
 }
 
@@ -588,11 +589,11 @@ type reportYAML struct {
 }
 
 type reportAnnotations struct {
-	AdminOwnerUserID      string `yaml:"admin_owner_user_id"`
-	AdminManaged          bool   `yaml:"admin_managed"`
-	AdminNonce            string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
-	WebOpenProjectSubpath string `yaml:"web_open_project_subpath"`
-	WebOpenState          string `yaml:"web_open_state"`
+	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
+	AdminManaged     bool   `yaml:"admin_managed"`
+	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
+	WebOpenPath      string `yaml:"web_open_path"`
+	WebOpenState     string `yaml:"web_open_state"`
 }
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {
@@ -604,7 +605,8 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
-	res.WebOpenProjectSubpath = annotations["web_open_project_subpath"]
+	res.WebOpenPath = annotations["web_open_path"]
+	res.WebOpenState = annotations["web_open_state"]
 
 	return res
 }

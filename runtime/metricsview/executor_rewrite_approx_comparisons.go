@@ -159,6 +159,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
 			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
 		}
+	} else if sortDelta {
+		return false
 	}
 	// TODO: Good ideas for approx delta sorts?
 

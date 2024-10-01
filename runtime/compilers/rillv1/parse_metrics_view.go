@@ -15,23 +15,20 @@ import (
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
-	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title              string           `yaml:"title"`
-	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
-	Description        string           `yaml:"description"`
-	Model              string           `yaml:"model"`
-	Database           string           `yaml:"database"`
-	DatabaseSchema     string           `yaml:"database_schema"`
-	Table              string           `yaml:"table"`
-	TimeDimension      string           `yaml:"timeseries"`
-	Watermark          string           `yaml:"watermark"`
-	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
-	DefaultTimeRange   string           `yaml:"default_time_range"`
-	AvailableTimeZones []string         `yaml:"available_time_zones"`
-	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
-	DefaultTheme       string           `yaml:"default_theme"`
-	Dimensions         []*struct {
+	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Title             string           `yaml:"title"`
+	DisplayName       string           `yaml:"display_name"` // Backwards compatibility
+	Description       string           `yaml:"description"`
+	Model             string           `yaml:"model"`
+	Database          string           `yaml:"database"`
+	DatabaseSchema    string           `yaml:"database_schema"`
+	Table             string           `yaml:"table"`
+	TimeDimension     string           `yaml:"timeseries"`
+	Watermark         string           `yaml:"watermark"`
+	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	Dimensions        []*struct {
 		Name        string
 		Label       string
 		Column      string
@@ -42,8 +39,7 @@ type MetricsViewYAML struct {
 		Unnest      bool
 		URI         string
 	}
-	DefaultDimensions []string `yaml:"default_dimensions"`
-	Measures          []*struct {
+	Measures []*struct {
 		Name                string
 		Label               string
 		Type                string
@@ -57,97 +53,19 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	DefaultMeasures   []string `yaml:"default_measures"`
-	Security          *MetricsViewSecurityPolicyYAML
-	DefaultComparison struct {
+	Security *SecurityPolicyYAML
+
+	// DEPRECATED FIELDS
+	DefaultTimeRange   string   `yaml:"default_time_range"`
+	AvailableTimeZones []string `yaml:"available_time_zones"`
+	DefaultTheme       string   `yaml:"default_theme"`
+	DefaultDimensions  []string `yaml:"default_dimensions"`
+	DefaultMeasures    []string `yaml:"default_measures"`
+	DefaultComparison  struct {
 		Mode      string `yaml:"mode"`
 		Dimension string `yaml:"dimension"`
 	} `yaml:"default_comparison"`
-	AvailableTimeRanges []AvailableTimeRange `yaml:"available_time_ranges"`
-}
-
-type AvailableTimeRange struct {
-	Range             string
-	ComparisonOffsets []AvailableComparisonOffset
-}
-
-type tmpAvailableTimeRange struct {
-	Range             string                      `yaml:"range"`
-	ComparisonOffsets []AvailableComparisonOffset `yaml:"comparison_offsets"`
-}
-
-func (t *AvailableTimeRange) UnmarshalYAML(v *yaml.Node) error {
-	// This adds support for mixed definition
-	// EG:
-	// available_time_ranges:
-	//   - P1W
-	//   - range: P4W
-	//     comparison_ranges ...
-	if v == nil {
-		return nil
-	}
-
-	switch v.Kind {
-	case yaml.ScalarNode:
-		t.Range = v.Value
-
-	case yaml.MappingNode:
-		// avoid infinite loop by using a separate struct
-		tmp := &tmpAvailableTimeRange{}
-		err := v.Decode(tmp)
-		if err != nil {
-			return err
-		}
-		t.Range = tmp.Range
-		t.ComparisonOffsets = tmp.ComparisonOffsets
-
-	default:
-		return fmt.Errorf("available_time_range entry should be either a string or an object")
-	}
-
-	return nil
-}
-
-type AvailableComparisonOffset struct {
-	Offset string
-	Range  string
-}
-
-type tmpAvailableComparisonOffset struct {
-	Offset string `yaml:"offset"`
-	Range  string `yaml:"range"`
-}
-
-func (o *AvailableComparisonOffset) UnmarshalYAML(v *yaml.Node) error {
-	// This adds support for mixed definition
-	// EG:
-	// comparison_offsets:
-	//   - rill-PY
-	//   - offset: rill-PM
-	//     range: P2M
-	if v == nil {
-		return nil
-	}
-
-	switch v.Kind {
-	case yaml.ScalarNode:
-		o.Offset = v.Value
-
-	case yaml.MappingNode:
-		// avoid infinite loop by using a separate struct
-		tmp := &tmpAvailableComparisonOffset{}
-		err := v.Decode(tmp)
-		if err != nil {
-			return err
-		}
-		o.Offset = tmp.Offset
-		o.Range = tmp.Range
-
-	default:
-		return fmt.Errorf("comparison_offsets entry should be either a string or an object")
-	}
-
-	return nil
+	AvailableTimeRanges []ExploreTimeRangeYAML `yaml:"available_time_ranges"`
 }
 
 type MetricsViewFieldSelectorYAML struct {
@@ -273,7 +191,7 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	return nil
 }
 
-type MetricsViewSecurityPolicyYAML struct {
+type SecurityPolicyYAML struct {
 	Access    string `yaml:"access"`
 	RowFilter string `yaml:"row_filter"`
 	Include   []*struct {
@@ -284,10 +202,10 @@ type MetricsViewSecurityPolicyYAML struct {
 		Condition string    `yaml:"if"`
 		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
 	}
-	Rules []*MetricsViewSecurityRuleYAML `yaml:"rules"`
+	Rules []*SecurityRuleYAML `yaml:"rules"`
 }
 
-func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
+func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
 	if p == nil {
 		return rules, nil
@@ -437,7 +355,7 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 	return rules, nil
 }
 
-type MetricsViewSecurityRuleYAML struct {
+type SecurityRuleYAML struct {
 	Type   string
 	Action string
 	If     string
@@ -446,7 +364,7 @@ type MetricsViewSecurityRuleYAML struct {
 	SQL    string
 }
 
-func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
+func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 	condition := r.If
 	if condition != "" {
 		tmp, err := ResolveTemplate(condition, validationTemplateData)
@@ -541,7 +459,7 @@ const (
 	nameIsDimension uint8 = 2
 )
 
-// parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
+// parseMetricsView parses a metrics view definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(node *Node) error {
 	// Parse YAML
 	tmp := &MetricsViewYAML{}
@@ -789,7 +707,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}
 
-			for _, o := range r.ComparisonOffsets {
+			for _, o := range r.ComparisonTimeRanges {
 				err := validateISO8601(o.Offset, false, false)
 				if err != nil {
 					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
@@ -814,6 +732,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// Not setting Kind because for backwards compatibility, it may actually be a source or an external table.
 		node.Refs = append(node.Refs, ResourceName{Name: tmp.Model})
 	}
+	if tmp.Table != "" {
+		// By convention, if the table name matches a source or model name we add a DAG link.
+		// We may want to remove this at some point, but the cases where it would not be desired are very rare.
+		// Not setting Kind so that inference kicks in.
+		node.Refs = append(node.Refs, ResourceName{Name: tmp.Table})
+	}
+
 	if tmp.DefaultTheme != "" {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
@@ -835,11 +760,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain
-	spec.DefaultTimeRange = tmp.DefaultTimeRange
-	spec.AvailableTimeZones = tmp.AvailableTimeZones
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
-	spec.DefaultTheme = tmp.DefaultTheme
 
 	for _, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -856,24 +778,36 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Uri:         dim.URI,
 		})
 	}
-	spec.DefaultDimensions = tmp.DefaultDimensions
 
 	spec.Measures = measures
-	spec.DefaultMeasures = tmp.DefaultMeasures
 
+	spec.SecurityRules = securityRules
+
+	// Backwards compatibility: When the version is 0, populate the deprecated fields and also emit an Explore resource for the metrics view.
+	if node.Version > 0 {
+		return nil
+	}
+
+	spec.DefaultTimeRange = tmp.DefaultTimeRange
+	spec.AvailableTimeZones = tmp.AvailableTimeZones
+	spec.DefaultTheme = tmp.DefaultTheme
+	spec.DefaultDimensions = tmp.DefaultDimensions
+	spec.DefaultMeasures = tmp.DefaultMeasures
 	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
 	if tmp.DefaultComparison.Dimension != "" {
 		spec.DefaultComparisonDimension = tmp.DefaultComparison.Dimension
 	}
-
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
+			// nolint:staticcheck // We still need to set it
 			t := &runtimev1.MetricsViewSpec_AvailableTimeRange{
 				Range: r.Range,
 			}
-			if r.ComparisonOffsets != nil {
-				t.ComparisonOffsets = make([]*runtimev1.MetricsViewSpec_AvailableComparisonOffset, len(r.ComparisonOffsets))
-				for i, o := range r.ComparisonOffsets {
+			if r.ComparisonTimeRanges != nil {
+				// nolint:staticcheck // We still need to set it
+				t.ComparisonOffsets = make([]*runtimev1.MetricsViewSpec_AvailableComparisonOffset, len(r.ComparisonTimeRanges))
+				for i, o := range r.ComparisonTimeRanges {
+					// nolint:staticcheck // We still need to set it
 					t.ComparisonOffsets[i] = &runtimev1.MetricsViewSpec_AvailableComparisonOffset{
 						Offset: o.Offset,
 						Range:  o.Range,
@@ -884,7 +818,70 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
-	spec.SecurityRules = securityRules
+	refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: node.Name}}
+	if tmp.DefaultTheme != "" {
+		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
+	}
+	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, refs...)
+	if err != nil {
+		// We mustn't error because we have already emitted one resource.
+		// Since this probably means an explore has been defined separately, we can just ignore this error.
+		return nil
+	}
+
+	e.ExploreSpec.Title = spec.Title
+	e.ExploreSpec.Description = spec.Description
+	e.ExploreSpec.MetricsView = node.Name
+	for _, dim := range spec.Dimensions {
+		e.ExploreSpec.Dimensions = append(e.ExploreSpec.Dimensions, dim.Name)
+	}
+	e.ExploreSpec.DimensionsSelector = nil
+	for _, m := range spec.Measures {
+		e.ExploreSpec.Measures = append(e.ExploreSpec.Measures, m.Name)
+	}
+	e.ExploreSpec.MeasuresSelector = nil
+	e.ExploreSpec.Theme = spec.DefaultTheme
+	for _, tr := range tmp.AvailableTimeRanges {
+		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
+		for _, ctr := range tr.ComparisonTimeRanges {
+			res.ComparisonTimeRanges = append(res.ComparisonTimeRanges, &runtimev1.ExploreComparisonTimeRange{
+				Offset: ctr.Offset,
+				Range:  ctr.Range,
+			})
+		}
+		e.ExploreSpec.TimeRanges = append(e.ExploreSpec.TimeRanges, res)
+	}
+	e.ExploreSpec.TimeZones = spec.AvailableTimeZones
+
+	var exploreComparisonMode runtimev1.ExploreComparisonMode
+	switch spec.DefaultComparisonMode {
+	case runtimev1.MetricsViewSpec_COMPARISON_MODE_UNSPECIFIED:
+		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_UNSPECIFIED
+	case runtimev1.MetricsViewSpec_COMPARISON_MODE_NONE:
+		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
+	case runtimev1.MetricsViewSpec_COMPARISON_MODE_TIME:
+		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME
+	case runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION:
+		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION
+	}
+
+	var presetDimensionsSelector, presetMeasuresSelector *runtimev1.FieldSelector
+	if len(spec.DefaultDimensions) == 0 {
+		presetDimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
+	if len(spec.DefaultMeasures) == 0 {
+		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
+	e.ExploreSpec.Presets = []*runtimev1.ExplorePreset{{
+		Label:               "Default",
+		Dimensions:          spec.DefaultDimensions,
+		DimensionsSelector:  presetDimensionsSelector,
+		Measures:            spec.DefaultMeasures,
+		MeasuresSelector:    presetMeasuresSelector,
+		TimeRange:           spec.DefaultTimeRange,
+		ComparisonMode:      exploreComparisonMode,
+		ComparisonDimension: spec.DefaultComparisonDimension,
+	}}
 
 	return nil
 }

@@ -87,7 +87,6 @@
   $: hoveredTime =
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
     $tableInteractionStore.time;
-
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: scrubStartCords = $xScale(scrubStart);

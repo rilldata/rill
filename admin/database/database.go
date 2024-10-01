@@ -261,7 +261,19 @@ type DB interface {
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
 
-	FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*Organization, error)
+	FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*Organization, error)
+
+	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
+	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
+
+	FindBillingIssuesForOrg(ctx context.Context, orgID string) ([]*BillingIssue, error)
+	FindBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
+	FindBillingIssueByType(ctx context.Context, errorType BillingIssueType) ([]*BillingIssue, error)
+	FindBillingIssueByTypeAndOverdueProcessed(ctx context.Context, errorType BillingIssueType, overdueProcessed bool) ([]*BillingIssue, error)
+	UpsertBillingIssue(ctx context.Context, opts *UpsertBillingIssueOptions) (*BillingIssue, error)
+	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
+	DeleteBillingIssue(ctx context.Context, id string) error
+	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -614,6 +626,7 @@ type MagicAuthToken struct {
 	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
 	MetricsViewFields     []string       `db:"metrics_view_fields"`
 	State                 string         `db:"state"`
+	Title                 string         `db:"title"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -635,6 +648,7 @@ type InsertMagicAuthTokenOptions struct {
 	MetricsViewFilterJSON string
 	MetricsViewFields     []string
 	State                 string
+	Title                 string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -963,4 +977,78 @@ func NewRandomKeyring() ([]*EncryptionKey, error) {
 	}
 
 	return encKeyRing, nil
+}
+
+type BillingIssueType int
+
+const (
+	BillingIssueTypeUnspecified           BillingIssueType = iota
+	BillingIssueTypeOnTrial                                = 1
+	BillingIssueTypeTrialEnded                             = 2
+	BillingIssueTypeNoPaymentMethod                        = 3
+	BillingIssueTypeNoBillableAddress                      = 4
+	BillingIssueTypePaymentFailed                          = 5
+	BillingIssueTypeSubscriptionCancelled                  = 6
+)
+
+type BillingIssueLevel int
+
+const (
+	BillingIssueLevelUnspecified BillingIssueLevel = iota
+	BillingIssueLevelWarning                       = 1
+	BillingIssueLevelError                         = 2
+)
+
+type BillingIssue struct {
+	ID        string
+	OrgID     string
+	Type      BillingIssueType
+	Level     BillingIssueLevel
+	Metadata  BillingIssueMetadata
+	EventTime time.Time
+	CreatedOn time.Time
+}
+
+type BillingIssueMetadata interface{}
+
+type BillingIssueMetadataOnTrial struct {
+	SubID   string    `json:"subscription_id"`
+	PlanID  string    `json:"plan_id"`
+	EndDate time.Time `json:"end_date"`
+}
+
+type BillingIssueMetadataTrialEnded struct {
+	SubID              string    `json:"subscription_id"`
+	PlanID             string    `json:"plan_id"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
+}
+
+type BillingIssueMetadataNoPaymentMethod struct{}
+
+type BillingIssueMetadataNoBillableAddress struct{}
+
+type BillingIssueMetadataPaymentFailed struct {
+	Invoices map[string]*BillingIssueMetadataPaymentFailedMeta `json:"invoices"`
+}
+
+type BillingIssueMetadataPaymentFailedMeta struct {
+	ID                 string    `json:"id"`
+	Number             string    `json:"invoice_number"`
+	URL                string    `json:"invoice_url"`
+	Amount             string    `json:"amount"`
+	Currency           string    `json:"currency"`
+	DueDate            time.Time `json:"due_date"`
+	FailedOn           time.Time `json:"failed_on"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
+}
+
+type BillingIssueMetadataSubscriptionCancelled struct {
+	EndDate time.Time `json:"end_date"`
+}
+
+type UpsertBillingIssueOptions struct {
+	OrgID     string           `validate:"required"`
+	Type      BillingIssueType `validate:"required"`
+	Metadata  BillingIssueMetadata
+	EventTime time.Time `validate:"required"`
 }

@@ -118,7 +118,19 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 
 	require.Equal(t, lenParseErrs, len(parseErrs), "parse errors: %s", strings.Join(parseErrs, "\n"))
 	require.Equal(t, lenReconcileErrs, len(reconcileErrs), "reconcile errors: %s", strings.Join(reconcileErrs, "\n"))
-	require.Equal(t, lenResources, len(rs), "resources: %s", strings.Join(names, "\n"))
+	if lenResources != -1 {
+		require.Equal(t, lenResources, len(rs), "resources: %s", strings.Join(names, "\n"))
+	}
+}
+
+func GetResource(t testing.TB, rt *runtime.Runtime, id, kind, name string) *runtimev1.Resource {
+	ctrl, err := rt.Controller(context.Background(), id)
+	require.NoError(t, err)
+
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: kind, Name: name}, true)
+	require.NoError(t, err)
+
+	return r
 }
 
 func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.Resource) {
@@ -211,7 +223,7 @@ func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedPa
 	for _, pe := range pp.GetProjectParser().State.ParseErrors {
 		parseErrs[pe.FilePath] = pe.Message
 	}
-	require.Len(t, parseErrs, len(expectedParseErrors))
+	require.Len(t, parseErrs, len(expectedParseErrors), "Should have %d parse errors", len(expectedParseErrors))
 
 	for f, pe := range parseErrs {
 		// Checking parseError using Contains instead of Equal

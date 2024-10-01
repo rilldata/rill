@@ -1,7 +1,7 @@
+import { expect } from "@playwright/test";
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { interactWithTimeRangeMenu } from "../utils/dashboardHelpers";
-import { expect } from "@playwright/test";
 import { test } from "../utils/test";
 
 test.describe("smoke tests for number formatting", () => {
@@ -77,10 +77,10 @@ dimensions:
       ["humanized default", "100.0k", "100000"],
       ["USD", "$300.6k", "300576.83999999857"],
       ["humanized chosen", "300.6k", "300576.83999999857"],
-      ["No Format", "300576.83999999857", "300576.83999999857"],
+      ["No Format", "300.6k", "300576.83999999857"],
       ["percentage", "30.1M%", "300576.83999999857"],
       ["interval_ms", "5 m", "5m 576ms"],
-      ["d3 fixed", "300576.840", "300576.840"],
+      ["d3 fixed", "300.6k", "300576.840"],
     ]) {
       // check bignum with correct format exists/is visible
       await expect(
@@ -109,7 +109,7 @@ dimensions:
       name: "Select a measure to filter by",
     });
     await measuresButton.click();
-    await page.getByRole("menuitem", { name: "USD" }).click();
+    await page.getByRole("option", { name: "USD" }).click();
     await page
       .getByRole("menu", { name: "Showing USD" })
       .waitFor({ state: "hidden" });
@@ -119,7 +119,7 @@ dimensions:
       page.getByRole("row", { name: "null $98.8k 33%" }),
     ).toBeVisible();
     await measuresButton.click();
-    await page.getByRole("menuitem", { name: "percentage" }).click();
+    await page.getByRole("option", { name: "percentage" }).click();
     await expect(measuresButton).toHaveText("Showing percentage");
     await expect(
       page.getByRole("row", { name: "null 9.9M% 33%" }),
@@ -127,7 +127,7 @@ dimensions:
 
     // try interval_ms...
     await measuresButton.click();
-    await page.getByRole("menuitem", { name: "interval_ms" }).click();
+    await page.getByRole("option", { name: "interval_ms" }).click();
     await expect(measuresButton).toHaveText("Showing interval_ms");
     // ...and add a time comparison to check deltas
     await interactWithTimeRangeMenu(page, async () => {
@@ -141,7 +141,7 @@ dimensions:
 
     // try No Format...
     await measuresButton.click();
-    await page.getByRole("menuitem", { name: "No Format" }).click();
+    await page.getByRole("option", { name: "No Format" }).click();
     await expect(measuresButton).toHaveText("Showing No Format");
 
     await expect(

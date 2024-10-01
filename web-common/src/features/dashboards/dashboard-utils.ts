@@ -150,22 +150,26 @@ export function getComparisonRequestMeasures(
 }
 
 export function getBreadcrumbOptions(
-  dashboards: V1Resource[],
-  canvases: V1Resource[],
+  dashboardResources: V1Resource[],
+  canvaseResources: V1Resource[],
 ): Map<string, PathOption> {
-  const dashboardOptions = dashboards.reduce((map, dimension) => {
-    const name = dimension.meta?.name?.name ?? "";
-    const label = dimension.metricsView?.state?.validSpec?.title || name;
+  const dashboardOptions = dashboardResources.reduce(
+    (map, dashboardResource) => {
+      const name = dashboardResource.meta?.name?.name ?? "";
+      const label =
+        dashboardResource.metricsView?.state?.validSpec?.title || name;
 
-    if (label && name)
-      map.set(name.toLowerCase(), { label, section: "dashboard", depth: 0 });
+      if (label && name)
+        map.set(name.toLowerCase(), { label, section: "dashboard", depth: 0 });
 
-    return map;
-  }, new Map<string, PathOption>());
+      return map;
+    },
+    new Map<string, PathOption>(),
+  );
 
-  const canvasOptions = canvases.reduce((map, canvas) => {
-    const name = canvas.meta?.name?.name ?? "";
-    const label = canvas?.dashboard?.spec?.title || name;
+  const canvasOptions = canvaseResources.reduce((map, canvasResource) => {
+    const name = canvasResource.meta?.name?.name ?? "";
+    const label = canvasResource?.canvas?.spec?.title || name;
 
     if (label && name)
       map.set(name.toLowerCase(), { label, section: "custom", depth: 0 });

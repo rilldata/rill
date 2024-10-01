@@ -52,7 +52,7 @@
   $: metricsViewName = currentDashboard?.meta?.name?.name;
 </script>
 
-<div class="flex flex-col size-full">
+<div class="flex flex-col size-full overflow-hidden">
   <header>
     {#if $dashboardsQuery.data}
       <Breadcrumbs {pathParts} {currentPath}>

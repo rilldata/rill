@@ -16,7 +16,7 @@ import (
 type RepoStore interface {
 	Driver() string
 	// Root returns directory where artifacts are stored.
-	Root() string
+	Root(ctx context.Context) (string, error)
 	CommitHash(ctx context.Context) (string, error)
 	ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]DirEntry, error)
 	Get(ctx context.Context, path string) (string, error)

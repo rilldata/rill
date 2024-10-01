@@ -185,6 +185,70 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	return &runtimev1.GetResourceResponse{Resource: r}, nil
 }
 
+// GetExplore implements runtimev1.RuntimeServiceServer
+func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreRequest) (*runtimev1.GetExploreResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.name", req.Name),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: req.Name}
+	e, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, "resource not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	e, access, err := s.applySecurityPolicy(ctx, req.InstanceId, e)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "resource not found")
+	}
+
+	validSpec := e.GetExplore().State.ValidSpec
+	if validSpec == nil {
+		return &runtimev1.GetExploreResponse{
+			Explore: e,
+		}, nil
+	}
+
+	n = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: validSpec.MetricsView}
+	m, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, "metrics view not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	m, access, err = s.applySecurityPolicy(ctx, req.InstanceId, m)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "metrics view not found")
+	}
+
+	return &runtimev1.GetExploreResponse{
+		Explore:     e,
+		MetricsView: m,
+	}, nil
+}
+
 // GetModelSplits implements runtimev1.RuntimeServiceServer
 func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSplitsRequest) (*runtimev1.GetModelSplitsResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -224,7 +288,7 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 		return &runtimev1.GetModelSplitsResponse{}, nil
 	}
 
-	afterIdx := -1
+	afterIdx := 0
 	afterKey := ""
 	if req.PageToken != "" {
 		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
@@ -239,7 +303,16 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 	}
 	defer release()
 
-	splits, err := catalog.FindModelSplits(ctx, splitsModelID, afterIdx, afterKey, validPageSize(req.PageSize))
+	opts := &drivers.FindModelSplitsOptions{
+		ModelID:      splitsModelID,
+		WherePending: req.Pending,
+		WhereErrored: req.Errored,
+		AfterIndex:   afterIdx,
+		AfterKey:     afterKey,
+		Limit:        validPageSize(req.PageSize),
+	}
+
+	splits, err := catalog.FindModelSplits(ctx, opts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -341,6 +414,9 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 	case *runtimev1.Resource_MetricsView:
 		// For metrics views, we need to remove fields excluded by the field access rules.
 		return s.applyMetricsViewSecurity(r, security), true, nil
+	case *runtimev1.Resource_Explore:
+		// For explores, we need to remove fields excluded by the field access rules.
+		return s.applyExploreSecurity(r, security), true, nil
 	default:
 		// The resource can be returned as is.
 		return r, true, nil
@@ -405,6 +481,75 @@ func (s *Server) applyMetricsViewSpecSecurity(spec *runtimev1.MetricsViewSpec, p
 	}
 
 	return dims, ms, true
+}
+
+// applyExploreSecurity rewrites an explore based on the field access conditions of a security policy.
+func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.ResolvedSecurity) *runtimev1.Resource {
+	if security.CanAccessAllFields() {
+		return r
+	}
+
+	// We only rewrite the ValidSpec at the moment.
+	// In the future, to avoid leaking field names in the main spec (which is not really used outside of the reconciler),
+	// we might consider not returning the spec at all for non-admins.
+	spec := r.GetExplore().State.ValidSpec
+	if spec == nil {
+		return r
+	}
+	if spec.DimensionsSelector != nil || spec.MeasuresSelector != nil {
+		// If the ValidSpec has dynamic selectors, we don't know what the available fields, so we can't filter it correctly.
+		// This should never happen because the Explore reconciler should have resolved the fields and removed the exclude flags.
+		panic(fmt.Errorf("the ValidSpec for an explore should not have exclude flags set"))
+	}
+
+	// Clone the spec so we can edit it in-place
+	spec = proto.Clone(spec).(*runtimev1.ExploreSpec)
+
+	// Filter the dimensions
+	var dims []string
+	for _, dim := range spec.Dimensions {
+		if security.CanAccessField(dim) {
+			dims = append(dims, dim)
+		}
+	}
+	spec.Dimensions = dims
+
+	// Filter the measures
+	var ms []string
+	for _, m := range spec.Measures {
+		if security.CanAccessField(m) {
+			ms = append(ms, m)
+		}
+	}
+	spec.Measures = ms
+
+	// Filter the dimensions and measures in the presets
+	for _, p := range spec.Presets {
+		var dims []string
+		for _, dim := range p.Dimensions {
+			if security.CanAccessField(dim) {
+				dims = append(dims, dim)
+			}
+		}
+		p.Dimensions = dims
+
+		var ms []string
+		for _, m := range p.Measures {
+			if security.CanAccessField(m) {
+				ms = append(ms, m)
+			}
+		}
+		p.Measures = ms
+	}
+
+	// We mustn't modify the resource in-place
+	return &runtimev1.Resource{
+		Meta: r.Meta,
+		Resource: &runtimev1.Resource_Explore{Explore: &runtimev1.Explore{
+			Spec:  r.GetExplore().Spec,
+			State: &runtimev1.ExploreState{ValidSpec: spec},
+		}},
+	}
 }
 
 // modelSplitsToPB converts a slice of drivers.ModelSplit to a slice of runtimev1.ModelSplit.

@@ -14,8 +14,14 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (h *Handle) Root() string {
-	return h.projPath
+func (h *Handle) Root(ctx context.Context) (string, error) {
+	err := h.rlockEnsureCloned(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer h.repoMu.RUnlock()
+
+	return h.projPath, nil
 }
 
 func (h *Handle) CommitHash(ctx context.Context) (string, error) {
