@@ -78,15 +78,8 @@ const sidebars = {
                 'tutorials/rill_advanced_features/canvas_dashboards/vega-lite',
                 'tutorials/rill_advanced_features/canvas_dashboards/vega-lite2',
                 'tutorials/rill_advanced_features/canvas_dashboards/canvas-dashboards',
-                'tutorials/rill_advanced_features/canvas_dashboards/filters',
-                {
-                  type: 'category',
-                  label: 'More Examples',
-                  items: [
-                    'tutorials/rill_advanced_features/canvas_dashboards/more-dashboard-examples/vega-lite3',
+                'tutorials/rill_advanced_features/canvas_dashboards/filters'
 
-                  ]
-                },
               ]
             },
 
@@ -182,7 +175,9 @@ const sidebars = {
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
             'tutorials/other/add-column-dimension',
+            'tutorials/other/custom-charts',
             'tutorials/other/create-map-component',
+            'tutorials/other/embed-dashboard',
             'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
             'tutorials/other/Rill Cloud/visual-metric-editor-rc',
