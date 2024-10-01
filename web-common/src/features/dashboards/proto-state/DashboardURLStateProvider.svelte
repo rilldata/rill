@@ -7,7 +7,7 @@
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { getStateManagers } from "../state-managers/state-managers";
 
-  export let metricViewName: string;
+  export let metricsViewName: string;
 
   const ctx = getStateManagers();
   let unsubscribe: Unsubscriber;
@@ -22,7 +22,7 @@
   $: ({ error } = timeRangeSummaryStore);
   $: timeRangeSummaryError = error as HTTPError;
 
-  $: if (metricViewName === $ctxName && $metricsViewSchema?.data?.schema) {
+  $: if (metricsViewName === $ctxName && $metricsViewSchema?.data?.schema) {
     // Make sure we use the correct sync instance for the current metrics view
     unsubscribe?.();
     unsubscribe = useDashboardUrlSync(ctx, $metricsViewSchema?.data?.schema);

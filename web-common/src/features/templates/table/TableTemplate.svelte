@@ -68,6 +68,7 @@
   $: if (isValidSchema) {
     const stateManagerContext = createStateManagers({
       queryClient,
+      exploreName: "TODO", // Historically, State Managers have only been used for Explore, not Canvas.
       metricsViewName: tableProperties.metrics_view,
       extraKeyPrefix: TABLE_PREFIX,
     });

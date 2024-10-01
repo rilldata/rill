@@ -8,7 +8,7 @@
 
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CopyIcon from "../../icons/CopyIcon.svelte";
-  import MetricsExplorerIcon from "../../icons/MetricsExplorerIcon.svelte";
+  import ExploreIcon from "../../icons/ExploreIcon.svelte";
 
   let subMenuOpen = false;
 </script>
@@ -36,7 +36,7 @@
         Option 1
       </DropdownMenu.Item>
       <DropdownMenu.Item>
-        <MetricsExplorerIcon className="w-4 h-4 mr-2" />
+        <ExploreIcon className="w-4 h-4 mr-2" />
         Option 2
       </DropdownMenu.Item>
     </DropdownMenu.Content>

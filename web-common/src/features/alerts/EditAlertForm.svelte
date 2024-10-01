@@ -1,18 +1,19 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
+  import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import {
     extractAlertFormValues,
     extractAlertNotification,
   } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
-    useMetricsView,
     useMetricsViewTimeRange,
+    useMetricsViewValidSpec,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     type V1AlertSpec,
     type V1MetricsViewAggregationRequest,
@@ -44,16 +45,22 @@
       alertSpec.queryArgsJson) as string,
   ) as V1MetricsViewAggregationRequest;
 
-  $: metricsViewSpec = useMetricsView($runtime?.instanceId, metricsViewName);
+  $: metricsViewSpec = useMetricsViewValidSpec(
+    $runtime?.instanceId,
+    metricsViewName,
+  );
   $: timeRange = useMetricsViewTimeRange(
     $runtime?.instanceId,
     metricsViewName,
     { query: { queryClient } },
   );
 
+  $: exploreName = getExploreName(alertSpec.annotations?.web_open_path ?? "");
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: alertSpec.title as string,
+      exploreName: exploreName ?? metricsViewName,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertNotification(alertSpec),
@@ -89,6 +96,7 @@
                 : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
+              webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
             },
           },
         });

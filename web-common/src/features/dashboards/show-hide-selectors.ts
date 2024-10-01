@@ -1,17 +1,17 @@
+import type { QueryObserverResult } from "@rilldata/svelte-query";
 import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 import {
   updateMetricsExplorerByName,
-  useDashboardStore,
+  useExploreStore,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   RpcStatus,
-  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { type Readable, derived, get } from "svelte/store";
 
 export type ShowHideSelectorState = {
@@ -28,8 +28,10 @@ export type ShowHideSelectorStore = Readable<ShowHideSelectorState> &
   ShowHideSelectorReducers;
 
 function createShowHideStore<Item>(
-  metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
+  exploreName: string,
+  validSpecStore: Readable<
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+  >,
   type: "dimensions" | "measures",
   labelSelector: (i: Item) => string,
 ) {
@@ -51,13 +53,14 @@ function createShowHideStore<Item>(
   const persistentStore = getPersistentDashboardStore();
 
   const derivedStore = derived(
-    [metricsView, useDashboardStore(metricsViewName)],
-    ([meta, metricsExplorer]) => {
+    [validSpecStore, useExploreStore(exploreName)],
+    ([validSpec, metricsExplorer]) => {
       if (
-        !meta?.data ||
+        !validSpec?.data?.metricsView ||
+        !validSpec?.data?.explore ||
         !metricsExplorer ||
-        !meta.isSuccess ||
-        meta.isRefetching
+        !validSpec.isSuccess ||
+        validSpec.isRefetching
       ) {
         return {
           selectableItems: [],
@@ -66,14 +69,18 @@ function createShowHideStore<Item>(
         };
       }
 
-      const items = meta.data[type] ?? [];
+      const items = validSpec.data.explore[type] ?? [];
       const selectableItems: Array<SearchableFilterSelectableItem> = items.map(
         (i) => ({
-          name: i.name,
-          label: labelSelector(i),
+          name: i,
+          label: labelSelector(
+            validSpec.data.metricsView?.[type]?.find(
+              (r) => r.name === i,
+            ) as Item,
+          ),
         }),
       );
-      const availableKeys = items.map((i) => i.name);
+      const availableKeys = [...items];
       const visibleKeysSet = metricsExplorer[visibleFieldInStore];
 
       return {
@@ -85,7 +92,7 @@ function createShowHideStore<Item>(
   ) as ShowHideSelectorStore;
 
   derivedStore.setAllToVisible = () => {
-    updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
+    updateMetricsExplorerByName(exploreName, (metricsExplorer) => {
       metricsExplorer[visibleFieldInStore] = new Set(
         get(derivedStore).availableKeys,
       );
@@ -97,7 +104,7 @@ function createShowHideStore<Item>(
   };
 
   derivedStore.setAllToNotVisible = () => {
-    updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
+    updateMetricsExplorerByName(exploreName, (metricsExplorer) => {
       // Remove all keys except for the first one
       const firstKey = get(derivedStore).availableKeys.slice(0, 1);
       metricsExplorer[visibleFieldInStore] = new Set(firstKey);
@@ -110,7 +117,7 @@ function createShowHideStore<Item>(
   };
 
   derivedStore.toggleVisibility = (key) => {
-    updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
+    updateMetricsExplorerByName(exploreName, (metricsExplorer) => {
       if (metricsExplorer[visibleFieldInStore].has(key)) {
         metricsExplorer[visibleFieldInStore].delete(key);
       } else {
@@ -129,35 +136,39 @@ function createShowHideStore<Item>(
 }
 
 export function createShowHideMeasuresStore(
-  metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
+  exploreName: string,
+  validSpecStore: Readable<
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+  >,
 ) {
   return createShowHideStore<MetricsViewSpecMeasureV2>(
-    metricsViewName,
-    metricsView,
+    exploreName,
+    validSpecStore,
     "measures",
     /*
      * This selector returns the best available string for each measure,
      * using the "label" if available but falling back to the expression
      * if needed.
      */
-    (m) => m.label || m.expression,
+    (m) => m.label || m.expression || m.name!,
   );
 }
 
 export function createShowHideDimensionsStore(
-  metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
+  exploreName: string,
+  validSpecStore: Readable<
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+  >,
 ) {
   return createShowHideStore<MetricsViewSpecDimensionV2>(
-    metricsViewName,
-    metricsView,
+    exploreName,
+    validSpecStore,
     "dimensions",
     /*
      * This selector returns the best available string for each dimension,
      * using the "label" if available but falling back to the name of
      * the categorical column (which must be present) if needed
      */
-    (d) => d.label || d.name,
+    (d) => d.label || d.name!,
   );
 }

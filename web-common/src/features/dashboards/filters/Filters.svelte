@@ -9,7 +9,6 @@
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { useModelHasTimeSeries } from "../selectors";
-  import { useMetricsView } from "../selectors/index";
   import { getStateManagers } from "../state-managers/state-managers";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
@@ -26,6 +25,7 @@
   const StateManagers = getStateManagers();
   const {
     metricsViewName,
+    exploreName,
     actions: {
       dimensionsFilter: {
         toggleDimensionValueSelection,
@@ -35,14 +35,15 @@
       filters: { clearAllFilters },
     },
     selectors: {
+      dimensions: { allDimensions },
       dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
+      measures: { allMeasures },
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
       pivot: { showPivot },
     },
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
-  const metricsView = useMetricsView(StateManagers);
 
   $: ({
     selectedTimeRange,
@@ -54,13 +55,13 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: dimensions = $metricsView.data?.dimensions ?? [];
+  $: dimensions = $allDimensions;
   $: dimensionIdMap = getMapFromArray(
     dimensions,
     (dimension) => (dimension.name || dimension.column) as string,
   );
 
-  $: measures = $metricsView.data?.measures ?? [];
+  $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
@@ -107,7 +108,7 @@
           {selectedComparisonTimeRange}
         />
         {#if !$showPivot && minTimeGrain}
-          <TimeGrainSelector metricsViewName={$metricsViewName} />
+          <TimeGrainSelector exploreName={$exploreName} />
         {/if}
       {/if}
     </div>

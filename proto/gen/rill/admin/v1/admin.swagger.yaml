@@ -1008,9 +1008,12 @@ paths:
               attributes:
                 type: object
                 description: If set, will use the provided attributes outright.
+              type:
+                type: string
+                description: Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
               kind:
                 type: string
-                description: Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+                description: 'Deprecated: Alias for `type`.'
               resource:
                 type: string
                 description: Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
@@ -1507,19 +1510,24 @@ paths:
                 type: string
                 format: int64
                 description: TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
-              metricsView:
+              resourceType:
                 type: string
-                description: Metrics view the token will provide access to.
-              metricsViewFilter:
+                description: Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+              resourceName:
+                type: string
+                description: Name of the resource to grant access to.
+              filter:
                 $ref: '#/definitions/v1Expression'
-                description: Optional filter to apply to all queries to the metrics view.
-              metricsViewFields:
+                description: |-
+                  Optional filter to apply as a row filter in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+              fields:
                 type: array
                 items:
                   type: string
                 description: |-
-                  Optional list of names of dimensions and measures to limit access to.
-                  If empty, all dimensions and measures are accessible.
+                  Optional list of fields to limit access to. If empty, no field access rule will be added.
+                  This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
               state:
                 type: string
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
@@ -4323,11 +4331,13 @@ definitions:
         type: string
       attributes:
         type: object
-      metricsView:
+      resourceType:
         type: string
-      metricsViewFilter:
+      resourceName:
+        type: string
+      filter:
         $ref: '#/definitions/v1Expression'
-      metricsViewFields:
+      fields:
         type: array
         items:
           type: string

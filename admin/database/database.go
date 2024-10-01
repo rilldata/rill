@@ -622,9 +622,10 @@ type MagicAuthToken struct {
 	UsedOn                time.Time      `db:"used_on"`
 	CreatedByUserID       *string        `db:"created_by_user_id"`
 	Attributes            map[string]any `db:"attributes"`
-	MetricsView           string         `db:"metrics_view"`
-	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
-	MetricsViewFields     []string       `db:"metrics_view_fields"`
+	ResourceType          string         `db:"resource_type"`
+	ResourceName          string         `db:"resource_name"`
+	FilterJSON            string         `db:"filter_json"`
+	Fields                []string       `db:"fields"`
 	State                 string         `db:"state"`
 	Title                 string         `db:"title"`
 }
@@ -637,18 +638,19 @@ type MagicAuthTokenWithUser struct {
 
 // InsertMagicAuthTokenOptions defines options for creating a MagicAuthToken.
 type InsertMagicAuthTokenOptions struct {
-	ID                    string
-	SecretHash            []byte
-	Secret                []byte
-	ProjectID             string `validate:"required"`
-	ExpiresOn             *time.Time
-	CreatedByUserID       *string
-	Attributes            map[string]any
-	MetricsView           string `validate:"required"`
-	MetricsViewFilterJSON string
-	MetricsViewFields     []string
-	State                 string
-	Title                 string
+	ID              string
+	SecretHash      []byte
+	Secret          []byte
+	ProjectID       string `validate:"required"`
+	ExpiresOn       *time.Time
+	CreatedByUserID *string
+	Attributes      map[string]any
+	ResourceType    string `validate:"required"`
+	ResourceName    string `validate:"required"`
+	FilterJSON      string
+	Fields          []string
+	State           string
+	Title           string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.

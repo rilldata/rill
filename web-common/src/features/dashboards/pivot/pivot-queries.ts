@@ -67,10 +67,10 @@ export function createPivotAggregationRowQuery(
 
   return derived(
     [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricViewName], set) =>
+    ([runtime, metricsViewName], set) =>
       createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           measures: prepareMeasureForComparison(measures),
           dimensions,

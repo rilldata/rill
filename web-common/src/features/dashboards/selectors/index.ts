@@ -4,13 +4,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  ResourceKind,
-  useResource,
-} from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
   type RpcStatus,
   type V1MetricsViewComparisonResponse,
-  type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewComparison,
   createQueryServiceMetricsViewSchema,
@@ -23,35 +18,6 @@ import type {
 } from "@tanstack/svelte-query";
 import { type Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
-
-export const useMetricsView = <T = V1MetricsViewSpec>(
-  ctx: StateManagers,
-  selector?: (meta: V1MetricsViewSpec) => T,
-): Readable<QueryObserverResult<T | V1MetricsViewSpec, RpcStatus>> => {
-  return derived(
-    [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricViewName], set) => {
-      return useResource(
-        runtime.instanceId,
-        metricViewName,
-        ResourceKind.MetricsView,
-        {
-          select: (data) =>
-            selector
-              ? selector(data.resource?.metricsView?.state?.validSpec)
-              : data.resource?.metricsView?.state?.validSpec,
-          queryClient: ctx.queryClient,
-        },
-      ).subscribe(set);
-    },
-  );
-};
-
-export const useModelHasTimeSeries = (ctx: StateManagers) =>
-  useMetricsView(
-    ctx,
-    (meta) => !!meta?.timeDimension,
-  ) as CreateQueryResult<boolean>;
 
 export const getFilterSearchList = (
   ctx: StateManagers,
@@ -74,10 +40,10 @@ export const getFilterSearchList = (
       ctx.metricsViewName,
       ctx.runtime,
     ],
-    ([metricsExplorer, timeControls, metricViewName, runtime], set) => {
+    ([metricsExplorer, timeControls, metricsViewName, runtime], set) => {
       return createQueryServiceMetricsViewComparison(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           dimension: { name: dimension },
           measures: [{ name: metricsExplorer.leaderboardMeasureName }],
@@ -107,8 +73,8 @@ export function createTimeRangeSummary(
   ctx: StateManagers,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   return derived(
-    [ctx.runtime, ctx.metricsViewName, useMetricsView(ctx)],
-    ([runtime, metricsViewName, metricsView], set) =>
+    [ctx.runtime, ctx.metricsViewName, ctx.validSpecStore],
+    ([runtime, metricsViewName, validSpec], set) =>
       createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
         metricsViewName,
@@ -116,7 +82,8 @@ export function createTimeRangeSummary(
         {
           query: {
             queryClient: ctx.queryClient,
-            enabled: !metricsView.error && !!metricsView.data?.timeDimension,
+            enabled:
+              !validSpec.error && !!validSpec.data?.metricsView?.timeDimension,
           },
         },
       ).subscribe(set),
