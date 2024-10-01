@@ -18,9 +18,9 @@ export const pivotSelectors = {
         type: PivotChipType.Measure,
       }));
   },
-  dimensions: ({ metricsSpecQueryResult, dashboard }: DashboardDataSources) => {
+  dimensions: ({ validMetricsView, dashboard }: DashboardDataSources) => {
     {
-      const dimensions = metricsSpecQueryResult.data?.dimensions ?? [];
+      const dimensions = validMetricsView?.dimensions ?? [];
 
       const columns = dashboard.pivot.columns;
       const rows = dashboard.pivot.rows;

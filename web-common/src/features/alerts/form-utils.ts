@@ -33,6 +33,7 @@ export type AlertFormValues = {
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
+  exploreName: string;
   whereFilter: V1Expression;
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
   timeRange: V1TimeRange;

@@ -1,41 +1,42 @@
 import { expect } from "@playwright/test";
+import {
+  createExploreFromModel,
+  createExploreFromSource,
+} from "web-local/tests/utils/exploreHelpers";
+import {
+  assertLeaderboards,
+  interactWithTimeRangeMenu,
+} from "web-local/tests/utils/metricsViewHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
-  assertLeaderboards,
-  createDashboardFromModel,
-  createDashboardFromSource,
-  interactWithTimeRangeMenu,
-} from "../utils/dashboardHelpers";
-import {
+  AD_BIDS_EXPLORE_PATH,
+  AD_BIDS_METRICS_PATH,
   assertAdBidsDashboard,
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
 import { createSource } from "../utils/sourceHelpers";
 import { test } from "../utils/test";
-import { waitForFileNavEntry } from "../utils/waitHelpers";
+import { gotoNavEntry, waitForFileNavEntry } from "../utils/waitHelpers";
 
-test.describe("dashboard", () => {
-  test("Autogenerate dashboard from source", async ({ page }) => {
+test.describe("explores", () => {
+  test("Autogenerate explore from source", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
-    await createDashboardFromSource(page, "/sources/AdBids.yaml");
-    await waitForFileNavEntry(page, `/dashboards/AdBids_dashboard.yaml`, true);
+    await createExploreFromSource(page);
+    await waitForFileNavEntry(
+      page,
+      "/explore-dashboards/AdBids_metrics_explore.yaml",
+      true,
+    );
     await page.getByRole("button", { name: "Preview" }).click();
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
   });
 
-  test("Autogenerate dashboard from model", async ({ page }) => {
+  test("Autogenerate explore from model", async ({ page }) => {
     await createAdBidsModel(page);
-    await Promise.all([
-      waitForFileNavEntry(
-        page,
-        `/dashboards/AdBids_model_dashboard.yaml`,
-        true,
-      ),
-      createDashboardFromModel(page, "/models/AdBids_model.sql"),
-    ]);
+    await createExploreFromModel(page);
 
     await page.getByRole("button", { name: "Preview" }).click();
     await assertAdBidsDashboard(page);
@@ -69,7 +70,7 @@ test.describe("dashboard", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "/models/AdBids_model.sql");
+    await createExploreFromModel(page);
     await page.getByRole("button", { name: "Preview" }).click();
 
     // Check the total records are 100k
@@ -214,36 +215,22 @@ test.describe("dashboard", () => {
     //    Check that the data is updated for last 6 hours
     //    Change time range back to all time
 
-    // Open Edit Metrics
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    // Edit Explore
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
 
     // Get the dashboard name field and change it
 
-    const changeDisplayNameDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+    const changeDisplayNameDoc = `
+type: explore
 
-    type: metrics_view
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: ""
-    measures:
-      - label: Total records
-        expression: count(*)
-        name: total_records
-        description: Total number of records present
-        format_preset: humanize
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
+title: "Adbids dashboard renamed"
+metrics_view: AdBids_model_metrics
 
-        `;
-    await watcher.updateAndWaitForDashboard(changeDisplayNameDoc);
+dimensions: '*'
+measures: '*'
+`;
+    await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -252,21 +239,23 @@ test.describe("dashboard", () => {
 
     // Assert that name changed
     await expect(
-      page.getByRole("link", { name: "AdBids_model_dashboard_rename" }),
+      page.getByRole("link", { name: "Adbids dashboard renamed" }),
     ).toBeVisible();
 
     // Assert that no time dimension specified
     // await expect(page.getByText("No time dimension specified")).toBeVisible();
 
-    // Open Edit Metrics
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    // Edit Explore
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Metrics View" }).click();
 
     // Add timestamp column back
 
     const addBackTimestampColumnDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    version: 1
     type: metrics_view
-    title: "AdBids_model_dashboard_rename"
+    title: "AdBids_model_dashboard"
     model: "AdBids_model"
     default_time_range: ""
     smallest_time_grain: "week"
@@ -289,6 +278,10 @@ test.describe("dashboard", () => {
 
         `;
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
+    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    await page
+      .getByRole("menuitem", { name: "Adbids dashboard renamed" })
+      .click();
 
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
@@ -296,42 +289,18 @@ test.describe("dashboard", () => {
     // Assert that time dimension is now week
     await expect(timeGrainSelector).toHaveText("by Week");
 
-    // Open Edit Metrics
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    // Edit Explore
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
 
-    const deleteOnlyMeasureDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
-    type: metrics_view
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures: []
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
-
-        `;
-    await updateCodeEditor(page, deleteOnlyMeasureDoc);
-    // Check warning message appears, Preview is disabled
-    await expect(
-      page.getByText("must define at least one measure"),
-    ).toBeVisible();
-
-    await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
-
-    // Add back the total rows measure for
+    // Write an incomplete measure
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    version: 1
     type: metrics_view
-    title: "AdBids_model_dashboard_rename"
+    title: "AdBids_model_dashboard"
     model: "AdBids_model"
     default_time_range: ""
     smallest_time_grain: "week"
@@ -351,10 +320,14 @@ test.describe("dashboard", () => {
         `;
 
     await updateCodeEditor(page, docWithIncompleteMeasure);
+    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
     await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
+    // Complete the measure
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+version: 1
 type: metrics_view
 title: "AdBids_model_dashboard_rename"
 model: "AdBids_model"
@@ -382,6 +355,7 @@ dimensions:
         `;
 
     await updateCodeEditor(page, docWithCompleteMeasure);
+    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
     await expect(page.getByRole("button", { name: "Preview" })).toBeEnabled();
 
     // Preview
@@ -474,7 +448,7 @@ dimensions:
 
     await expect(page.getByText("~0%")).toBeVisible();
 
-    // await page.getByRole("button", { name: "Edit Metrics" }).click();
+    // await page.getByRole("button", { name: "Edit Explore" }).click();
 
     // go back to the dashboard
 

@@ -1,21 +1,20 @@
 import { expect } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
-import { interactWithTimeRangeMenu } from "web-local/tests/utils/dashboardHelpers";
+import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
+import { interactWithTimeRangeMenu } from "web-local/tests/utils/metricsViewHelpers";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { test } from "../utils/test";
 
-test.describe("time controls settings from dashboard config", () => {
+test.describe("time controls settings from explore preset", () => {
   // dashboard test setup
   useDashboardFlowTestSetup();
 
-  test("default_time_range", async ({ page }) => {
+  test("preset time_range", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
     // Set a time range that is one of the supported presets
-    await watcher.updateAndWaitForDashboard(
-      getDashboardYaml(`default_time_range: "P4W"
-default_comparison:
-  mode: time
+    await watcher.updateAndWaitForExplore(
+      getDashboardYaml(`time_range: "P4W"
+  comparison_mode: time
 `),
     );
     // Preview
@@ -24,15 +23,17 @@ default_comparison:
     // Time range has changed
     await expect(page.getByText("Last 4 Weeks")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total rows 26.7k -4.7k -15%")).toBeVisible();
+    await expect(
+      page.getByText("Total records 26.7k -4.7k -15%"),
+    ).toBeVisible();
     await expect(page.getByText("Facebook 7.0k 2.8k 67%")).toBeVisible();
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
 
     // Set a time range that is one of the period to date preset
-    await watcher.updateAndWaitForDashboard(
-      getDashboardYaml(`default_time_range: "rill-WTD"
-default_comparison:
-  mode: time
+    await watcher.updateAndWaitForExplore(
+      getDashboardYaml(`time_range: "rill-WTD"
+  comparison_mode: time
 `),
     );
     // Preview
@@ -41,7 +42,7 @@ default_comparison:
     // Time range has changed
     await expect(page.getByText("Week to Date")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total rows 3.4k +156 5%")).toBeVisible();
+    await expect(page.getByText("Total records 3.4k +156 5%")).toBeVisible();
     await expect(page.getByText("Facebook 889 36 4%")).toBeVisible();
 
     // Select a different time range
@@ -53,15 +54,15 @@ default_comparison:
       page.getByRole("menuitem", { name: "Last 7 Days" }),
     ).not.toBeVisible();
     // Data has changed
-    await expect(page.getByText("Total rows 7.9k -15 ~0%")).toBeVisible();
+    await expect(page.getByText("Total records 7.9k -15 ~0%")).toBeVisible();
     await expect(page.getByText("Facebook 2.0k -51 -2%")).toBeVisible();
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
 
     // Set a time range that is not one of the supported presets
-    await watcher.updateAndWaitForDashboard(
-      getDashboardYaml(`default_time_range: "P2W"
-default_comparison:
-  mode: time
+    await watcher.updateAndWaitForExplore(
+      getDashboardYaml(`time_range: "P2W"
+  comparison_mode: time
 `),
     );
     // Preview
@@ -70,18 +71,19 @@ default_comparison:
     // Time range has changed
     await expect(page.getByText("Last 2 Weeks")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total rows 11.2k -4.3k -28%")).toBeVisible();
+    await expect(
+      page.getByText("Total records 11.2k -4.3k -28%"),
+    ).toBeVisible();
     await expect(page.getByText("Facebook 2.9k -1.2k -29%")).toBeVisible();
   });
 
-  test("default_comparison", async ({ page }) => {
+  test("preset comparison_modes", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
     // Set comparison to time
-    await watcher.updateAndWaitForDashboard(
-      getDashboardYaml(`default_time_range: "P4W"
-default_comparison:
-  mode: time
+    await watcher.updateAndWaitForExplore(
+      getDashboardYaml(`time_range: "P4W"
+  comparison_mode: time
 `),
     );
     // Preview
@@ -89,14 +91,13 @@ default_comparison:
     // Comparison is selected
     await expect(page.getByRole("switch", { name: "Comparing" })).toBeChecked();
     // Go back to metrics editor
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
-
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
     // Set comparison to dimension
-    await watcher.updateAndWaitForDashboard(
-      getDashboardYaml(`default_time_range: "P4W"
-default_comparison:
-  mode: dimension
-  dimension: publisher
+    await watcher.updateAndWaitForExplore(
+      getDashboardYaml(`time_range: "P4W"
+  comparison_mode: dimension
+  comparison_dimension: publisher
 `),
     );
     // Preview
@@ -109,34 +110,35 @@ default_comparison:
         .getByLabel("Toggle breakdown for publisher dimension"),
     ).toBeVisible();
     // Go back to metrics editor
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
-
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Explore" }).click();
     // Set comparison to none
-    await watcher.updateAndWaitForDashboard(
-      getDashboardYaml(`default_time_range: "P4W"
-default_comparison:
-  mode: none
+    await watcher.updateAndWaitForExplore(
+      getDashboardYaml(`time_range: "P4W"
+  comparison_mode: dimension
 `),
     );
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
   });
 
-  test("available_time_ranges", async ({ page }) => {
+  test("preset time_ranges", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
-    await watcher.updateAndWaitForDashboard(
-      getDashboardYaml(`default_time_range: "P4W"
-default_comparison:
-  mode: time
-available_time_ranges:
-  - PT6H
-  - range: P5D
-    comparison_offsets:
-      - rill-PP
-      - rill-PW
-  - P4W
-  - rill-WTD
-  - rill-MTD`),
+    await watcher.updateAndWaitForExplore(
+      getDashboardYaml(
+        `time_range: "P4W"
+  comparison_mode: time
+`,
+        `time_ranges:
+- PT6H
+- range: P5D
+  comparison_offsets:
+    - rill-PP
+    - rill-PW
+- P4W
+- rill-WTD
+- rill-MTD`,
+      ),
     );
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
@@ -163,7 +165,7 @@ available_time_ranges:
       page.getByRole("menu", { name: "Select time range" }),
     ).not.toBeVisible();
     // Assert data has changed
-    await expect(page.getByText("Total rows 272 -23 -8%")).toBeVisible();
+    await expect(page.getByText("Total records 272 -23 -8%")).toBeVisible();
     await expect(page.getByText("Facebook 68 -3 -4%")).toBeVisible();
 
     // Open the time comparison
@@ -186,7 +188,7 @@ available_time_ranges:
       page.getByRole("menu", { name: "Time comparison selector" }),
     ).not.toBeVisible();
     // Assert data has changed
-    await expect(page.getByText("Total rows 272 -18 -6%")).toBeVisible();
+    await expect(page.getByText("Total records 272 -18 -6%")).toBeVisible();
     await expect(page.getByText("Facebook 68 -24 -26%")).toBeVisible();
 
     // Select Last 5 days
@@ -194,7 +196,7 @@ available_time_ranges:
       await page.getByRole("menuitem", { name: "Last 5 Days" }).click();
     });
     // Assert data has changed
-    await expect(page.getByText("Total rows 5.6k +16 ~0%")).toBeVisible();
+    await expect(page.getByText("Total records 5.6k +16 ~0%")).toBeVisible();
     await page.pause();
     await expect(page.getByText("Facebook 1.5k -25 -2%")).toBeVisible();
 
@@ -213,33 +215,22 @@ available_time_ranges:
       page.getByRole("menu", { name: "Time comparison selector" }),
     ).not.toBeVisible();
     // Assert data has changed
-    await expect(page.getByText("Total rows 5.6k -23 ~0%")).toBeVisible();
+    await expect(page.getByText("Total records 5.6k -23 ~0%")).toBeVisible();
     await expect(page.getByText("Facebook 1.5k -6 ~0%")).toBeVisible();
   });
 });
 
-function getDashboardYaml(defaults: string) {
+function getDashboardYaml(defaults: string, extras = "") {
   return `
-# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+type: explore
+title: "AdBids_model_metrics_explore"
+metrics_view: "AdBids_model_metrics"
+${extras}
 
-type: metrics_view
-title: "AdBids_model_dashboard_rename"
-model: "AdBids_model"
-timeseries: "timestamp"
-${defaults}
-measures:
-  - label: Total rows
-    expression: count(*)
-    name: total_rows
-    description: Total number of records present
-dimensions:
-  - name: publisher
-    label: Publisher
-    column: publisher
-    description: ""
-  - name: domain
-    label: Domain Name
-    column: domain
-    description: ""
+measures: '*'
+dimensions: '*'
+
+presets:
+- ${defaults}
   `;
 }

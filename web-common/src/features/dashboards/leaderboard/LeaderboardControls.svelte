@@ -2,14 +2,13 @@
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
   import * as Select from "@rilldata/web-common/components/select";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
 
-  export let metricViewName: string;
+  export let exploreName: string;
 
   const {
     selectors: {
@@ -23,20 +22,20 @@
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
+    validSpecStore,
   } = getStateManagers();
-
-  let active = false;
-
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: measures = $filteredSimpleMeasures();
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
+
+  let active = false;
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
@@ -49,8 +48,8 @@
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
-    metricViewName,
-    metricsView,
+    exploreName,
+    validSpecStore,
   );
 
   const toggleDimensionVisibility = (e) => {

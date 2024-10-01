@@ -1,12 +1,19 @@
 import { expect } from "@playwright/test";
-import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
-import { test } from "../utils/test";
-import { useDashboardFlowTestSetup } from "./dashboard-flow-test-setup";
+import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
+import {
+  AD_BIDS_EXPLORE_PATH,
+  AD_BIDS_METRICS_PATH,
+} from "web-local/tests/utils/dataSpecifcHelpers";
+import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
+import { updateCodeEditor, wrapRetryAssertion } from "./utils/commonHelpers";
+import { test } from "./utils/test";
 
 test.describe("Metrics editor", () => {
   useDashboardFlowTestSetup();
 
   test("Metrics editor", async ({ page }) => {
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+
     await updateCodeEditor(page, "");
 
     // inspector should point to the documentation
@@ -20,8 +27,10 @@ test.describe("Metrics editor", () => {
       await expect(page.getByText("start with a skeleton")).toBeHidden();
     });
 
+    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
     // the Preview button should be disabled
     await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
     // the editor should show a validation error
     await expect(
@@ -52,6 +61,7 @@ test.describe("Metrics editor", () => {
     await expect(page.getByText("Table columns")).toBeVisible();
 
     // go to the dashboard and make sure the metrics and dimensions are there.
+    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
     await page.getByRole("button", { name: "Preview" }).click();
 
     // check to see metrics make sense.
@@ -63,12 +73,14 @@ test.describe("Metrics editor", () => {
     ).toBeVisible();
 
     // go back to the metrics page.
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Metrics View" }).click();
 
     // Create a metrics view from a table (rather than a model)
     await updateCodeEditor(
       page,
-      `type: metrics_view
+      `version: 1
+type: metrics_view
 title: "AdBids table"
 table: "AdBids"
 timeseries: "timestamp"

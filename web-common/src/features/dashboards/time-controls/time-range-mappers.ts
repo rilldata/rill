@@ -5,7 +5,7 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsViewSpec,
+  V1ExploreSpec,
   V1TimeGrain,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -42,14 +42,14 @@ export const PreviousCompleteRangeMap: Partial<
  */
 export function mapTimeRange(
   timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
   const timeRange: V1TimeRange = {};
   switch (timeControlState.selectedTimeRange.name) {
     case TimeRangePreset.DEFAULT:
-      timeRange.isoDuration = metricsView.defaultTimeRange;
+      timeRange.isoDuration = explore.presets?.[0]?.timeRange;
       break;
 
     case TimeRangePreset.CUSTOM:

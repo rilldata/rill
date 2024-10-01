@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
+  import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -11,22 +12,22 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import PreviewButton from "@rilldata/web-common/features/explores/PreviewButton.svelte";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
-  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
-  import MetricsEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditor.svelte";
+  import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import VisualMetrics from "./VisualMetrics.svelte";
-  import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import {
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
-  import { mapParseErrorsToLines } from "../metrics-views/errors";
   import { featureFlags } from "../feature-flags";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import VisualMetrics from "./VisualMetrics.svelte";
 
   const { visualEditing } = featureFlags;
 
@@ -54,14 +55,15 @@
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: ({ data: resourceData, isFetching } = $resourceQuery);
-  $: isResourceLoading = resourceIsLoading(resourceData);
+  $: ({ data: resource, isFetching } = $resourceQuery);
+  $: isResourceLoading = resourceIsLoading(resource);
 
-  $: connector = resourceData?.metricsView?.state?.validSpec?.connector ?? "";
-  $: database = resourceData?.metricsView?.state?.validSpec?.database ?? "";
+  $: isOldMetricsView = !$remoteContent?.includes("version: 1");
+  $: connector = resource?.metricsView?.state?.validSpec?.connector ?? "";
+  $: database = resource?.metricsView?.state?.validSpec?.database ?? "";
   $: databaseSchema =
-    resourceData?.metricsView?.state?.validSpec?.databaseSchema ?? "";
-  $: table = resourceData?.metricsView?.state?.validSpec?.table ?? "";
+    resource?.metricsView?.state?.validSpec?.databaseSchema ?? "";
+  $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
@@ -120,13 +122,16 @@
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      <PreviewButton
-        dashboardName={metricsViewName}
-        status={previewStatus}
-        disabled={previewDisabled}
-      />
-
-      <DeployDashboardCta />
+      {#if isOldMetricsView}
+        <PreviewButton
+          dashboardName={metricsViewName}
+          disabled={previewDisabled}
+          status={previewStatus}
+        />
+        <DeployDashboardCta />
+      {:else}
+        <GoToDashboardButton {resource} />
+      {/if}
       <LocalAvatarButton />
       {#if $visualEditing}
         <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
@@ -141,7 +146,7 @@
         {fileArtifact}
         {filePath}
         {errors}
-        metricViewName={metricsViewName}
+        {metricsViewName}
       />
     {:else}
       <VisualMetrics

@@ -209,7 +209,7 @@ function getAggregationQueryForTopList(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
     ],
-    ([runtime, metricViewName, dashboardStore, timeStore], set) => {
+    ([runtime, metricsViewName, dashboardStore, timeStore], set) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
@@ -228,7 +228,7 @@ function getAggregationQueryForTopList(
 
       return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
           dimensions: [

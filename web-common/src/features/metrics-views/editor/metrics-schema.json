@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "The definition for dashboard metrics view",
+  "title": "The definition for metrics views",
   "type": "object",
   "properties": {
     "title": {
@@ -141,5 +141,5 @@
     { "required": ["model"] },
     { "required": ["table"] }
   ],
-  "required": ["title", "dimensions", "measures"]
+  "required": ["dimensions", "measures"]
 }

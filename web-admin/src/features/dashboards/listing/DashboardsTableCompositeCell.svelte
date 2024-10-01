@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
-  import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -24,7 +24,7 @@
   $: href = isEmbedded
     ? undefined
     : isMetricsExplorer
-      ? `/${organization}/${project}/${name}`
+      ? `/${organization}/${project}/explore/${name}`
       : `/${organization}/${project}/-/dashboards/${name}`;
 </script>
 
@@ -36,7 +36,7 @@
 >
   <div class="flex gap-x-2 items-center">
     {#if isMetricsExplorer}
-      <MetricsExplorerIcon size={"14px"} className="text-slate-500" />
+      <ExploreIcon size={"14px"} className="text-slate-500" />
     {:else}
       <CanvasIcon size={"14px"} className="text-slate-500" />
     {/if}
