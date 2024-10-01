@@ -17,7 +17,7 @@
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Plus } from "lucide-svelte";
-  import AddUserDialog from "@rilldata/web-admin/features/organizations/users/AddUserDialog.svelte";
+  import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
@@ -216,7 +216,7 @@
   {/if}
 </div>
 
-<AddUserDialog
+<AddUsersDialog
   bind:open={isAddUserDialogOpen}
   email={userEmail}
   role={userRole}
