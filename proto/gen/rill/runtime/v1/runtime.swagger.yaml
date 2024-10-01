@@ -4008,12 +4008,44 @@ definitions:
           Time range for the explore.
           It corresponds to the `range` property of the explore's `time_ranges`.
           If not found in `time_ranges`, it should be added to the list.
+      timezone:
+        type: string
+      timeGrain:
+        type: string
       comparisonMode:
         $ref: '#/definitions/v1ExploreComparisonMode'
         description: Comparison mode.
+      compareTimeRange:
+        type: string
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+      view:
+        $ref: '#/definitions/v1ExploreWebView'
+      overviewSortBy:
+        type: string
+      overviewSortAsc:
+        type: boolean
+      overviewExpandedDimension:
+        type: string
+      timeDimensionMeasure:
+        type: string
+      timeDimensionChartType:
+        type: string
+      timeDimensionPin:
+        type: boolean
+      pivotRows:
+        type: array
+        items:
+          type: string
+      pivotCols:
+        type: array
+        items:
+          type: string
+      pivotSortBy:
+        type: string
+      pivotSortAsc:
+        type: boolean
   v1ExploreSpec:
     type: object
     properties:
@@ -4094,6 +4126,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1ExploreComparisonTimeRange'
         title: Comparison time ranges available for this time range
+  v1ExploreWebView:
+    type: string
+    enum:
+      - EXPLORE_ACTIVE_PAGE_OVERVIEW
+      - EXPLORE_ACTIVE_PAGE_TIME_DIMENSION
+      - EXPLORE_ACTIVE_PAGE_PIVOT
+      - EXPLORE_ACTIVE_PAGE_CANVAS
+    default: EXPLORE_ACTIVE_PAGE_OVERVIEW
   v1ExportFormat:
     type: string
     enum:

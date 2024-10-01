@@ -76,6 +76,38 @@ proto3.util.setEnumType(ExploreComparisonMode, "rill.runtime.v1.ExploreCompariso
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.ExploreWebView
+ */
+export enum ExploreWebView {
+  /**
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_OVERVIEW = 0;
+   */
+  EXPLORE_ACTIVE_PAGE_OVERVIEW = 0,
+
+  /**
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_TIME_DIMENSION = 1;
+   */
+  EXPLORE_ACTIVE_PAGE_TIME_DIMENSION = 1,
+
+  /**
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_PIVOT = 2;
+   */
+  EXPLORE_ACTIVE_PAGE_PIVOT = 2,
+
+  /**
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_CANVAS = 3;
+   */
+  EXPLORE_ACTIVE_PAGE_CANVAS = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ExploreWebView)
+proto3.util.setEnumType(ExploreWebView, "rill.runtime.v1.ExploreWebView", [
+  { no: 0, name: "EXPLORE_ACTIVE_PAGE_OVERVIEW" },
+  { no: 1, name: "EXPLORE_ACTIVE_PAGE_TIME_DIMENSION" },
+  { no: 2, name: "EXPLORE_ACTIVE_PAGE_PIVOT" },
+  { no: 3, name: "EXPLORE_ACTIVE_PAGE_CANVAS" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.AssertionStatus
  */
 export enum AssertionStatus {
@@ -2366,6 +2398,16 @@ export class ExplorePreset extends Message<ExplorePreset> {
   timeRange = "";
 
   /**
+   * @generated from field: string timezone = 11;
+   */
+  timezone = "";
+
+  /**
+   * @generated from field: string time_grain = 12;
+   */
+  timeGrain = "";
+
+  /**
    * Comparison mode.
    *
    * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 7;
@@ -2373,11 +2415,71 @@ export class ExplorePreset extends Message<ExplorePreset> {
   comparisonMode = ExploreComparisonMode.UNSPECIFIED;
 
   /**
+   * @generated from field: string compare_time_range = 13;
+   */
+  compareTimeRange = "";
+
+  /**
    * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
    *
    * @generated from field: string comparison_dimension = 8;
    */
   comparisonDimension = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.ExploreWebView view = 14;
+   */
+  view = ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW;
+
+  /**
+   * @generated from field: string overview_sort_by = 15;
+   */
+  overviewSortBy = "";
+
+  /**
+   * @generated from field: bool overview_sort_asc = 16;
+   */
+  overviewSortAsc = false;
+
+  /**
+   * @generated from field: string overview_expanded_dimension = 17;
+   */
+  overviewExpandedDimension = "";
+
+  /**
+   * @generated from field: string time_dimension_measure = 18;
+   */
+  timeDimensionMeasure = "";
+
+  /**
+   * @generated from field: string time_dimension_chart_type = 19;
+   */
+  timeDimensionChartType = "";
+
+  /**
+   * @generated from field: bool time_dimension_pin = 20;
+   */
+  timeDimensionPin = false;
+
+  /**
+   * @generated from field: repeated string pivot_rows = 21;
+   */
+  pivotRows: string[] = [];
+
+  /**
+   * @generated from field: repeated string pivot_cols = 22;
+   */
+  pivotCols: string[] = [];
+
+  /**
+   * @generated from field: string pivot_sort_by = 23;
+   */
+  pivotSortBy = "";
+
+  /**
+   * @generated from field: bool pivot_sort_asc = 24;
+   */
+  pivotSortAsc = false;
 
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
@@ -2393,8 +2495,22 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
+    { no: 13, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "view", kind: "enum", T: proto3.getEnumType(ExploreWebView) },
+    { no: 15, name: "overview_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "overview_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "overview_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "pivot_rows", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 22, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 23, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {

@@ -25,6 +25,9 @@ import {
 import {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  type V1ExplorePreset,
+  V1ExploreSpec,
+  V1ExploreWebView,
   V1Expression,
   V1MetricsViewSpec,
   V1Operation,
@@ -33,14 +36,23 @@ import {
 export function getMetricsExplorerFromUrl(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
 ): { entity: Partial<MetricsExplorerEntity>; errors: Error[] } {
   // TODO: replace this with V1ExplorePreset once it is available on main
   const entity: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
 
-  const measures = getMapFromArray(metricsView.measures ?? [], (m) => m.name!);
+  const preset = explore.presets?.[0] ?? {};
+
+  const measures = getMapFromArray(
+    metricsView.measures?.filter((m) => explore.measures?.includes(m.name!)) ??
+      [],
+    (m) => m.name!,
+  );
   const dimensions = getMapFromArray(
-    metricsView.dimensions ?? [],
+    metricsView.dimensions?.filter((d) =>
+      explore.dimensions?.includes(d.name!),
+    ) ?? [],
     (d) => d.name!,
   );
 
@@ -56,38 +68,58 @@ export function getMetricsExplorerFromUrl(
       entity.dimensionThresholdFilters = dimensionThresholdFilters;
   }
 
-  if (searchParams.has("tr")) {
-    const { timeRange, error } = fromTimeRangeUrlParam(
-      searchParams.get("tr") as string,
-    );
-    if (error) errors.push(error);
-    entity.selectedTimeRange = timeRange;
-  }
-  if (searchParams.has("tz")) {
-    entity.selectedTimezone = searchParams.get("tz") as string;
-  }
-  if (searchParams.has("ctr")) {
-    const { timeRange, error } = fromTimeRangeUrlParam(
-      searchParams.get("ctr") as string,
-    );
-    if (error) errors.push(error);
-    entity.selectedComparisonTimeRange = timeRange;
-  }
-  if (searchParams.has("cd")) {
-    const cd = searchParams.get("cd") as string;
-    if (dimensions.has(cd)) {
-      entity.selectedComparisonDimension = cd;
-    }
-  }
+  const { entity: trEntity, errors: trErrors } = fromTimeRangesParams(
+    searchParams,
+    dimensions,
+    preset,
+  );
+  Object.assign(entity, trEntity);
+  errors.push(...trErrors);
 
   Object.assign(
     entity,
-    fromOverviewUrlParams(searchParams, measures, dimensions),
+    fromOverviewUrlParams(searchParams, measures, dimensions, explore, preset),
   );
 
-  entity.tdd = fromTimeDimensionUrlParams(searchParams, measures);
+  entity.tdd = fromTimeDimensionUrlParams(searchParams, measures, preset);
 
-  entity.pivot = fromPivotUrlParams(searchParams, measures, dimensions);
+  entity.pivot = fromPivotUrlParams(searchParams, measures, dimensions, preset);
+
+  return { entity, errors };
+}
+
+function fromTimeRangesParams(
+  searchParams: URLSearchParams,
+  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  preset: V1ExplorePreset,
+) {
+  const entity: Partial<MetricsExplorerEntity> = {};
+  const errors: Error[] = [];
+
+  const timeRange = preset.timeRange || searchParams.get("tr");
+  if (timeRange) {
+    const { timeRange: selectedTimeRange, error } =
+      fromTimeRangeUrlParam(timeRange);
+    if (error) errors.push(error);
+    entity.selectedTimeRange = selectedTimeRange;
+  }
+  const timeZone = preset.timezone || searchParams.get("tz");
+  if (timeZone) {
+    entity.selectedTimezone = timeZone;
+  }
+
+  const comparisonTimeRange =
+    preset.compareTimeRange || searchParams.get("ctr");
+  if (comparisonTimeRange) {
+    const { timeRange, error } = fromTimeRangeUrlParam(comparisonTimeRange);
+    if (error) errors.push(error);
+    entity.selectedComparisonTimeRange = timeRange;
+  }
+  const comparisonDimension =
+    preset.comparisonDimension || searchParams.get("cd");
+  if (comparisonDimension && dimensions.has(comparisonDimension)) {
+    entity.selectedComparisonDimension = comparisonDimension;
+  }
 
   return { entity, errors };
 }
@@ -133,40 +165,48 @@ function fromOverviewUrlParams(
   searchParams: URLSearchParams,
   measures: Map<string, MetricsViewSpecMeasureV2>,
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  explore: V1ExploreSpec,
+  preset: V1ExplorePreset,
 ) {
   const entity: Partial<MetricsExplorerEntity> = {};
 
+  let selectedMeasures = preset.measures ?? explore.measures ?? [];
   if (searchParams.has("e.m")) {
     const mes = searchParams.get("e.m") as string;
-    if (mes === "*") {
-      entity.allMeasuresVisible = true;
-      entity.visibleMeasureKeys = new Set(measures.keys());
-    } else {
-      entity.allMeasuresVisible = false;
-      entity.visibleMeasureKeys = new Set(
-        mes.split(",").filter((m) => measures.has(m)),
-      );
+    if (mes !== "*") {
+      selectedMeasures = mes.split(",").filter((m) => measures.has(m));
     }
   }
+  entity.allMeasuresVisible =
+    selectedMeasures.length === explore.measures?.length;
+  entity.visibleMeasureKeys = new Set(selectedMeasures);
 
+  let selectedDimensions = preset.dimensions ?? explore.dimensions ?? [];
   if (searchParams.has("e.d")) {
     const dims = searchParams.get("e.d") as string;
-    if (dims === "*") {
-      entity.allDimensionsVisible = true;
-      entity.visibleDimensionKeys = new Set(dimensions.keys());
-    } else {
-      entity.allDimensionsVisible = false;
-      entity.visibleDimensionKeys = new Set(
-        dims.split(",").filter((d) => dimensions.has(d)),
-      );
+    if (dims !== "*") {
+      selectedDimensions = dims.split(",").filter((d) => dimensions.has(d));
     }
   }
+  entity.allDimensionsVisible =
+    selectedDimensions.length === explore.dimensions?.length;
+  entity.visibleDimensionKeys = new Set(selectedDimensions);
 
+  entity.leaderboardMeasureName =
+    preset.overviewSortBy ?? explore.measures?.[0];
   if (searchParams.has("e.sb")) {
     const sortBy = searchParams.get("e.sb") as string;
     if (measures.has(sortBy)) {
       entity.leaderboardMeasureName = sortBy;
     }
+  }
+
+  if (preset.overviewSortAsc !== undefined) {
+    entity.sortDirection = preset.overviewSortAsc
+      ? SortDirection.ASCENDING
+      : SortDirection.DESCENDING;
+  } else {
+    entity.sortDirection = SortDirection.DESCENDING;
   }
   if (searchParams.has("e.sd")) {
     const sortDir = searchParams.get("e.sd") as string;
@@ -174,6 +214,7 @@ function fromOverviewUrlParams(
       sortDir === "ASC" ? SortDirection.ASCENDING : SortDirection.DESCENDING;
   }
 
+  entity.selectedDimensionName = preset.overviewExpandedDimension ?? "";
   if (searchParams.has("e.ed")) {
     const dim = searchParams.get("e.ed") as string;
     if (dimensions.has(dim)) {
@@ -187,10 +228,11 @@ function fromOverviewUrlParams(
 function fromTimeDimensionUrlParams(
   searchParams: URLSearchParams,
   measures: Map<string, MetricsViewSpecMeasureV2>,
+  preset: V1ExplorePreset,
 ) {
-  let ttdMeasure: string | undefined;
-  let ttdChartType: TDDChart | undefined;
-  let ttdPin: number | undefined;
+  let ttdMeasure = preset.timeDimensionMeasure;
+  let ttdChartType = preset.timeDimensionChartType as TDDChart | undefined;
+  let ttdPin: number | undefined; // TODO
 
   if (searchParams.has("tdd.m")) {
     const mes = searchParams.get("tdd.m") as string;
@@ -222,6 +264,7 @@ function fromPivotUrlParams(
   searchParams: URLSearchParams,
   measures: Map<string, MetricsViewSpecMeasureV2>,
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  preset: V1ExplorePreset,
 ): PivotState {
   const mapPivotEntry = (entry: string): PivotChipData | undefined => {
     if (entry in FromURLParamTimeDimensionMap) {
@@ -255,19 +298,26 @@ function fromPivotUrlParams(
   };
 
   const rowDimensions: PivotChipData[] = [];
+  let pivotRows = preset.pivotRows;
   if (searchParams.has("p.r")) {
-    const pivotRows = searchParams.get("p.r") as string;
-    pivotRows.split(",").forEach((pivotRow) => {
+    pivotRows = (searchParams.get("p.r") as string).split(",");
+  }
+  if (pivotRows) {
+    pivotRows.forEach((pivotRow) => {
       const chip = mapPivotEntry(pivotRow);
       if (!chip) return;
       rowDimensions.push(chip);
     });
   }
+
   const colMeasures: PivotChipData[] = [];
   const colDimensions: PivotChipData[] = [];
+  let pivotCols = preset.pivotCols;
   if (searchParams.has("p.c")) {
-    const pivotCols = searchParams.get("p.c") as string;
-    pivotCols.split(",").forEach((pivotRow) => {
+    pivotCols = (searchParams.get("p.c") as string).split(",");
+  }
+  if (pivotCols) {
+    pivotCols.forEach((pivotRow) => {
       const chip = mapPivotEntry(pivotRow);
       if (!chip) return;
       if (chip.type === PivotChipType.Measure) {
@@ -279,7 +329,9 @@ function fromPivotUrlParams(
   }
 
   return {
-    active: searchParams.get("view") === "pivot",
+    active:
+      searchParams.get("view") === "pivot" ||
+      preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
     rows: {
       dimension: rowDimensions,
     },
