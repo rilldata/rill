@@ -32,7 +32,7 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfBold("Organization %q has following subscription\n", ch.Org)
 				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 
-				ch.PrintfWarn("\nRenewing subscription for organization %q. Plan change will be effective immediately if its a different plan.\n", ch.Org)
+				ch.PrintfWarn("\nSubscription renewal for %q will take place immediately.\n", ch.Org)
 				ch.PrintfWarn("\nTo edit plan for non cancelled subscription, please use `rill billing subscription edit` command.\n")
 				ok, err := cmdutil.ConfirmPrompt("Do you want to Continue ?", "", false)
 				if err != nil {
