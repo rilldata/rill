@@ -1,6 +1,7 @@
 <script lang="ts">
   import AvatarCircleList from "@rilldata/web-admin/features/organizations/users/AvatarCircleList.svelte";
-  import { Combobox, Selected } from "bits-ui";
+  import { Combobox } from "bits-ui";
+  import type { Selected } from "bits-ui";
   import { Check } from "lucide-svelte";
 
   export let options: {
