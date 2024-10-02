@@ -1,6 +1,6 @@
 <script lang="ts">
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { Meta, Story, Template } from "@storybook/addon-svelte-csf";
+  import { Story, Template } from "@storybook/addon-svelte-csf";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -9,6 +9,10 @@
   let message: string;
   let type: string;
   let iconType: string;
+
+  export const meta = {
+    title: "Banner stories",
+  };
 
   const bannerTypeOptions = [
     "default",
@@ -33,8 +37,6 @@
     });
   }
 </script>
-
-<Meta title="Banner stories" />
 
 <Template>
   <BannerCenter />

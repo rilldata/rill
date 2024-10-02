@@ -1,5 +1,5 @@
 import {
-  V1Condition,
+  type V1Condition,
   V1Operation,
   type V1Expression,
 } from "@rilldata/web-common/runtime-client";

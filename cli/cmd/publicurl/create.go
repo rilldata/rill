@@ -21,7 +21,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var fields []string
 
 	createCmd := &cobra.Command{
-		Use:   "create [<project-name>] <metrics view>",
+		Use:   "create [<project-name>] <explore>",
 		Short: "Create a public URL",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -41,7 +41,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			metricsView := args[len(args)-1]
+			explore := args[len(args)-1]
 
 			var filterExpr *runtimev1.Expression
 			if filter != "" {
@@ -52,18 +52,19 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			err = validateMetricsView(cmd.Context(), ch, project, metricsView, fields)
+			err = validateExplore(cmd.Context(), ch, project, explore, fields)
 			if err != nil {
 				return err
 			}
 
 			res, err := client.IssueMagicAuthToken(cmd.Context(), &adminv1.IssueMagicAuthTokenRequest{
-				Organization:      ch.Org,
-				Project:           project,
-				TtlMinutes:        int64(ttlMinutes),
-				MetricsView:       metricsView,
-				MetricsViewFilter: filterExpr,
-				MetricsViewFields: fields,
+				Organization: ch.Org,
+				Project:      project,
+				TtlMinutes:   int64(ttlMinutes),
+				ResourceType: runtime.ResourceKindExplore,
+				ResourceName: explore,
+				Filter:       filterExpr,
+				Fields:       fields,
 			})
 			if err != nil {
 				return err
@@ -84,7 +85,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	return createCmd
 }
 
-func validateMetricsView(ctx context.Context, ch *cmdutil.Helper, project, metricsView string, fields []string) error {
+func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore string, fields []string) error {
 	client, err := ch.Client()
 	if err != nil {
 		return err
@@ -109,27 +110,41 @@ func validateMetricsView(ctx context.Context, ch *cmdutil.Helper, project, metri
 		return fmt.Errorf("failed to connect to runtime: %w", err)
 	}
 
+	expl, err := rt.GetResource(ctx, &runtimev1.GetResourceRequest{
+		InstanceId: depl.RuntimeInstanceId,
+		Name: &runtimev1.ResourceName{
+			Kind: runtime.ResourceKindExplore,
+			Name: explore,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get explore %q: %w", explore, err)
+	}
+
+	spec := expl.Resource.GetExplore().State.ValidSpec
+	if spec == nil {
+		return fmt.Errorf("explore %q is invalid", explore)
+	}
+
 	mv, err := rt.GetResource(ctx, &runtimev1.GetResourceRequest{
 		InstanceId: depl.RuntimeInstanceId,
 		Name: &runtimev1.ResourceName{
 			Kind: runtime.ResourceKindMetricsView,
-			Name: metricsView,
+			Name: spec.MetricsView,
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to get metrics view %q: %w", metricsView, err)
+		return fmt.Errorf("failed to get metrics view %q: %w", spec.MetricsView, err)
 	}
 
-	spec := mv.Resource.GetMetricsView().Spec
-
 	for _, f := range fields {
-		if strings.EqualFold(f, spec.TimeDimension) {
+		if strings.EqualFold(f, mv.Resource.GetMetricsView().Spec.TimeDimension) {
 			continue
 		}
 
 		found := false
 		for _, dim := range spec.Dimensions {
-			if strings.EqualFold(f, dim.Name) {
+			if strings.EqualFold(f, dim) {
 				found = true
 				break
 			}
@@ -139,7 +154,7 @@ func validateMetricsView(ctx context.Context, ch *cmdutil.Helper, project, metri
 		}
 
 		for _, m := range spec.Measures {
-			if strings.EqualFold(f, m.Name) {
+			if strings.EqualFold(f, m) {
 				found = true
 				break
 			}
@@ -148,7 +163,7 @@ func validateMetricsView(ctx context.Context, ch *cmdutil.Helper, project, metri
 			continue
 		}
 
-		return fmt.Errorf("field %q not found in metrics view %q", f, metricsView)
+		return fmt.Errorf("field %q not found in explore %q", f, explore)
 	}
 
 	return nil

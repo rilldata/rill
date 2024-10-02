@@ -1,5 +1,4 @@
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -8,7 +7,7 @@ import {
   type DimensionDataItem,
 } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
-  TimeSeriesDatum,
+  type TimeSeriesDatum,
   useTimeSeriesDataStore,
 } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -368,20 +367,21 @@ export function createTimeDimensionDataStore(
   return derived(
     [
       ctx.dashboardStore,
-      useMetricsView(ctx),
+      ctx.validSpecStore,
       useTimeControlStore(ctx),
       useTimeSeriesDataStore(ctx),
       useDimensionTableData(ctx),
     ],
     ([
       dashboardStore,
-      metricsView,
+      validSpec,
       timeControls,
       timeSeries,
       tableDimensionData,
     ]) => {
       if (timeSeries?.isError) return { isFetching: false, isError: true };
       if (
+        !validSpec.data ||
         !timeControls.ready ||
         timeControls?.isFetching ||
         timeSeries?.isFetching
@@ -406,7 +406,7 @@ export function createTimeDimensionDataStore(
       const isAllTime =
         timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
-      const measure = metricsView?.data?.measures?.find(
+      const measure = validSpec.data?.metricsView?.measures?.find(
         (m) => m.name === measureName,
       );
 

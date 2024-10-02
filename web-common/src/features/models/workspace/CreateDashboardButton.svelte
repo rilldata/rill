@@ -9,9 +9,9 @@
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { useModel } from "../selectors";
   import { featureFlags } from "../../feature-flags";
+  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useModel } from "../selectors";
 
   export let modelName: string;
   export let hasError = false;
@@ -25,13 +25,13 @@
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  $: createDashboardFromModel = useCreateDashboardFromTableUIAction(
+  $: createMetricsViewFromModel = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     connector as string,
     "",
     "",
     modelName,
-    "dashboards",
+    "metrics",
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
@@ -40,14 +40,14 @@
 <Tooltip alignment="right" distance={8} location="bottom">
   <Button
     disabled={!modelIsIdle || hasError}
-    on:click={createDashboardFromModel}
+    on:click={createMetricsViewFromModel}
     type="primary"
   >
     <IconSpaceFixer pullLeft pullRight={collapse}>
       <Add />
     </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>
-      Generate dashboard
+      Generate metrics
       {#if $ai}
         with AI
       {/if}
@@ -55,11 +55,11 @@
   </Button>
   <TooltipContent slot="tooltip-content">
     {#if hasError}
-      Fix the errors in your model to autogenerate dashboard
+      Fix the errors in your model
     {:else if !modelIsIdle}
-      Model is not ready to generate a dashboard
+      Model is not ready
     {:else}
-      Generate a dashboard from this model
+      Generate metrics from this model
     {/if}
   </TooltipContent>
 </Tooltip>

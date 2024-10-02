@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { V1ModelSplitData } from "../../../runtime-client";
+  import type { V1ModelSplitData } from "../../../runtime-client";
 
   export let data: V1ModelSplitData;
 </script>

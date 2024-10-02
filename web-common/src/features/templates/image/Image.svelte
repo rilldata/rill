@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { ImageProperties } from "@rilldata/web-common/features/templates/types";
-  import { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import type { ImageProperties } from "@rilldata/web-common/features/templates/types";
+  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
@@ -66,7 +66,7 @@
 
       const blob = await response.blob();
       return URL.createObjectURL(blob);
-    } catch (error) {
+    } catch {
       throw new Error("Failed to fetch image from server");
     }
   };

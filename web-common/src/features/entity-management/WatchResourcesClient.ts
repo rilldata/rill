@@ -7,9 +7,9 @@ import {
   getRuntimeServiceGetModelSplitsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  V1Resource,
+  type V1Resource,
   V1ResourceEvent,
-  V1WatchResourcesResponse,
+  type V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateComponentData,
@@ -45,9 +45,6 @@ export class WatchResourcesClient {
     if (!res?.event || !res?.name || !res?.name?.name || !res?.name?.kind) {
       return;
     }
-
-    // temporarily ignore Explore. a future PR will refactor to incorporate it
-    if (res.name.kind === ResourceKind.Explore) return;
 
     // Get the previous resource from the query cache
     const previousResource = queryClient.getQueryData<{
@@ -204,6 +201,20 @@ export class WatchResourcesClient {
           case ResourceKind.MetricsView: {
             const failed = !!res.resource.meta?.reconcileError;
             void invalidateMetricsViewData(queryClient, res.name.name, failed);
+
+            // Done
+            return;
+          }
+
+          case ResourceKind.Explore: {
+            const failed = !!res.resource.meta?.reconcileError;
+            if (res.resource.explore?.state?.validSpec?.metricsView) {
+              void invalidateMetricsViewData(
+                queryClient,
+                res.resource.explore.state.validSpec.metricsView,
+                failed,
+              );
+            }
 
             // Done
             return;

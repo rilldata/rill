@@ -9,7 +9,7 @@
 import { max, min } from "d3-array";
 import { cubicOut } from "svelte/easing";
 import { tweened } from "svelte/motion";
-import { derived, get, writable, Writable } from "svelte/store";
+import { derived, get, writable, type Writable } from "svelte/store";
 import type { EasingFunction } from "svelte/transition";
 
 const LINEAR_SCALE_STORE_DEFAULTS = {

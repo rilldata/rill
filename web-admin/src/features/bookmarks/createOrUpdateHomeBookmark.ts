@@ -9,7 +9,11 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { useQueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export function createHomeBookmarkModifier(instanceId: string) {
+export function createHomeBookmarkModifier(
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+) {
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
   const projectIdRes = useProjectId(
@@ -21,7 +25,8 @@ export function createHomeBookmarkModifier(instanceId: string) {
     instanceId,
     get(page).params.organization,
     get(page).params.project,
-    get(page).params.dashboard,
+    metricsViewName,
+    exploreName,
   );
 
   return (data: string) => {
@@ -48,8 +53,8 @@ export function createHomeBookmarkModifier(instanceId: string) {
           displayName: "Home",
           description: "Main view For this dashboard",
           projectId: projectId.data,
-          resourceKind: ResourceKind.MetricsView,
-          resourceName: get(page).params.dashboard,
+          resourceKind: ResourceKind.Explore,
+          resourceName: exploreName,
           shared: true,
           default: true,
           data,

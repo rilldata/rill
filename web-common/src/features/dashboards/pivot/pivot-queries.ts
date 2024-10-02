@@ -6,16 +6,16 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  V1Expression,
-  V1MetricsViewAggregationDimension,
-  V1MetricsViewAggregationMeasure,
-  V1MetricsViewAggregationResponseDataItem,
-  V1MetricsViewAggregationSort,
+  type V1Expression,
+  type V1MetricsViewAggregationDimension,
+  type V1MetricsViewAggregationMeasure,
+  type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationSort,
   createQueryServiceMetricsViewAggregation,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { Readable, derived, readable } from "svelte/store";
+import { type Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
   getFilterForMeasuresTotalsAxesQuery,
@@ -67,10 +67,10 @@ export function createPivotAggregationRowQuery(
 
   return derived(
     [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricViewName], set) =>
+    ([runtime, metricsViewName], set) =>
       createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           measures: prepareMeasureForComparison(measures),
           dimensions,

@@ -158,26 +158,55 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
 		}
 
+		// Build condition for what the magic auth token can access
+		var condition strings.Builder
+		// All themes
+		condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
+		// The magic token's resource
+		condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(mdl.ResourceType), duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))))
+		// If the magic token's resource is an Explore, we also need to include its underlying metrics view
+		if mdl.ResourceType == runtime.ResourceKindExplore {
+			client, err := s.admin.OpenRuntimeClient(depl)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
+			}
+			defer client.Close()
+
+			resp, err := client.GetResource(ctx, &runtimev1.GetResourceRequest{
+				InstanceId: depl.RuntimeInstanceID,
+				Name: &runtimev1.ResourceName{
+					Kind: mdl.ResourceType,
+					Name: mdl.ResourceName,
+				},
+			})
+			if err != nil {
+				if status.Code(err) == codes.NotFound {
+					return nil, status.Errorf(codes.NotFound, "resource for magic token not found (name=%q, type=%q)", mdl.ResourceName, mdl.ResourceType)
+				}
+				return nil, status.Errorf(codes.Internal, "could not get resource for magic token: %s", err.Error())
+			}
+
+			spec := resp.Resource.GetExplore().State.ValidSpec
+			if spec != nil {
+				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+			}
+		}
+
 		attr = mdl.Attributes
 
-		// Deny access to all resources except themes and mdl.MetricsView
+		// Add a rule that denies access to anything that doesn't match the condition.
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
-					Condition: fmt.Sprintf(
-						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ lower .self.name }}'=%s)",
-						runtime.ResourceKindTheme,
-						runtime.ResourceKindMetricsView,
-						duckdbsql.EscapeStringValue(strings.ToLower(mdl.MetricsView)),
-					),
-					Allow: false,
+					Condition: fmt.Sprintf("NOT (%s)", condition.String()),
+					Allow:     false,
 				},
 			},
 		})
 
-		if mdl.MetricsViewFilterJSON != "" {
+		if mdl.FilterJSON != "" {
 			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(mdl.MetricsViewFilterJSON), expr)
+			err := protojson.Unmarshal([]byte(mdl.FilterJSON), expr)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
 			}
@@ -191,11 +220,11 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			})
 		}
 
-		if len(mdl.MetricsViewFields) > 0 {
+		if len(mdl.Fields) > 0 {
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_FieldAccess{
 					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Fields: mdl.MetricsViewFields,
+						Fields: mdl.Fields,
 						Allow:  true,
 					},
 				},
