@@ -18,12 +18,22 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
+  import type { V1MemberUser } from "@rilldata/web-admin/client";
 
   export let open = false;
   export let groupName: string;
   export let currentUserEmail: string;
+  export let searchUsersList: V1MemberUser[];
   export let onRename: (groupName: string, newName: string) => void;
   export let onRemoveUser: (groupName: string, email: string) => void;
+  export let onAddUser: (groupName: string, email: string) => void;
+
+  // TODO: if user is already in group, disable the option
+  // Otherwise, "user is already a member of the usergroup"
+  $: console.log("searchUsersList: ", searchUsersList);
+
+  let searchText = "";
 
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
@@ -31,7 +41,7 @@
     groupName,
   );
 
-  const formId = "rename-user-group-form";
+  const formId = "edit-user-group-form";
 
   const initialValues = {
     newName: groupName,
@@ -67,6 +77,11 @@
       },
     },
   );
+
+  $: coercedUsersToOptions = searchUsersList.map((user) => ({
+    value: user.userEmail,
+    label: user.userEmail,
+  }));
 </script>
 
 <Dialog
@@ -89,7 +104,7 @@
       on:submit|preventDefault={submit}
       use:enhance
     >
-      <div class="flex flex-col gap-2 w-full">
+      <div class="flex flex-col gap-4 w-full">
         <Input
           bind:value={$form.newName}
           placeholder="New user group name"
@@ -97,6 +112,20 @@
           label="Group label"
           errors={$errors.newName}
           alwaysShowError
+        />
+
+        <Combobox
+          bind:inputValue={searchText}
+          options={coercedUsersToOptions}
+          id="user-group-users"
+          label="Users"
+          name="searchUsers"
+          placeholder="Search for users"
+          onSelectedChange={(value) => {
+            if (value) {
+              onAddUser(value.value, groupName);
+            }
+          }}
         />
       </div>
     </form>
@@ -128,8 +157,9 @@
                   <span class="text-xs text-gray-500">{member.userEmail}</span>
                 </div>
               </div>
+              <!-- TODO: use text-red-500 when type is text and danger on hover? -->
               <Button
-                type="plain"
+                type="text"
                 on:click={() => {
                   onRemoveUser(groupName, member.userEmail);
                 }}
