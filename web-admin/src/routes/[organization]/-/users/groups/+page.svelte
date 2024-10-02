@@ -280,12 +280,14 @@
       <OrgGroupsTable
         data={filteredGroups}
         currentUserEmail={$currentUser.data?.user.email}
+        searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
         onRename={handleRename}
         onDelete={handleDelete}
         onAddRole={handleAddRole}
         onSetRole={handleSetRole}
         onRevokeRole={handleRevokeRole}
         onRemoveUser={handleRemoveUser}
+        onAddUser={handleAddUsergroupMemberUser}
       />
     </div>
   {/if}

@@ -26,9 +26,11 @@
     usergroup: string,
   ) => void;
 
+  let searchText = "";
+
   // TODO: if user is already in group, disable the option
   // Otherwise, "user is already a member of the usergroup"
-  $: console.log("yes we can search users now: ", searchUsersList);
+  // $: console.log("yes we can search users now: ", searchUsersList);
 
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
@@ -41,8 +43,6 @@
   const initialValues = {
     name: "",
   };
-
-  let searchText = "";
 
   const schema = yup(
     object({

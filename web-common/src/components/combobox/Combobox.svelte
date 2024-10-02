@@ -10,6 +10,11 @@
   export let id = "";
   export let onSelectedChange: (value: Selected<string> | undefined) => void;
 
+  function handleSelectedChange(selected: Selected<string> | undefined) {
+    onSelectedChange(selected);
+    inputValue = "";
+  }
+
   // FIXME: fuzzy
   $: filteredItems = inputValue
     ? options.filter((fruit) => fruit.value.includes(inputValue.toLowerCase()))
@@ -23,7 +28,11 @@
     </label>
   {/if}
 
-  <Combobox.Root items={filteredItems} bind:inputValue {onSelectedChange}>
+  <Combobox.Root
+    items={filteredItems}
+    bind:inputValue
+    onSelectedChange={handleSelectedChange}
+  >
     <Combobox.Input
       class="flex justify-center items-center pl-2 w-full border border-gray-300 rounded-[2px] cursor-pointer min-h-8 h-fit &:focus-within:border-primary-500 &:focus-within:ring-2 &:focus-within:ring-primary-100"
       {placeholder}
@@ -43,7 +52,7 @@
         >
           {item.label}
           <Combobox.ItemIndicator class="ml-auto" asChild={false}>
-            <Check />
+            <Check size="16px" />
           </Combobox.ItemIndicator>
         </Combobox.Item>
       {:else}
