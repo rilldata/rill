@@ -48,28 +48,6 @@
         widthPercent: 3,
       },
     },
-    // {
-    //   accessorKey: "createdOn",
-    //   header: "Created On",
-    //   cell: ({ row }) => {
-    //     if (!row.original.createdOn) return "-";
-    //     return formatDate(row.original.createdOn);
-    //   },
-    //   meta: {
-    //     widthPercent: 10,
-    //   },
-    // },
-    // {
-    //   accessorKey: "updatedOn",
-    //   header: "Updated On",
-    //   cell: ({ row }) => {
-    //     if (!row.original.updatedOn) return "-";
-    //     return formatDate(row.original.updatedOn);
-    //   },
-    //   meta: {
-    //     widthPercent: 10,
-    //   },
-    // },
     {
       accessorKey: "actions",
       header: "",
