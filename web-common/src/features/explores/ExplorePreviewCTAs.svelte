@@ -3,7 +3,6 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
@@ -51,6 +50,5 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
     <DeployDashboardCta />
-    <LocalAvatarButton />
   {/if}
 </div>

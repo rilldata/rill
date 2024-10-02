@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import GenerateVegaSpecPrompt from "@rilldata/web-common/features/canvas-components/prompt/GenerateVegaSpecPrompt.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
@@ -42,15 +41,16 @@
 </script>
 
 <WorkspaceHeader
+  resourceKind={ResourceKind.Component}
   on:change={handleNameChange}
   titleInput={fileName}
   {hasUnsavedChanges}
+  {filePath}
   showInspectorToggle={false}
 >
   <svelte:fragment slot="cta">
     <PanelCTA side="right">
       <Button on:click={() => (generateOpen = true)}>Generate using AI</Button>
-      <LocalAvatarButton />
     </PanelCTA>
   </svelte:fragment>
 </WorkspaceHeader>

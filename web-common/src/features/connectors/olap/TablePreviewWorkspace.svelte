@@ -10,13 +10,13 @@
 </script>
 
 <WorkspaceContainer inspector={false}>
-  <TableWorkspaceHeader
+  <!-- <TableWorkspaceHeader
     {connector}
     {database}
     {databaseSchema}
     {table}
     slot="header"
-  />
+  /> -->
   <ConnectedPreviewTable
     {connector}
     {database}

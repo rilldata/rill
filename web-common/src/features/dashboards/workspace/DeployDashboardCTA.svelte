@@ -23,6 +23,7 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import { get } from "svelte/store";
   import { Button } from "../../../components/button";
+  import Rocket from "svelte-radix/Rocket.svelte";
 
   $: currentProject = createLocalServiceGetCurrentProject({
     query: {
@@ -82,7 +83,8 @@
       on:click={onShowDeploy}
       type="primary"
     >
-      Deploy to share
+      <Rocket size="16px" />
+      Deploy
     </Button>
     <TooltipContent slot="tooltip-content">
       Deploy this dashboard to Rill Cloud

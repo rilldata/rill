@@ -686,7 +686,7 @@
   .wrapper {
     @apply size-full max-w-full max-h-full flex-none;
     @apply overflow-hidden;
-    @apply flex gap-x-3 p-4;
+    @apply flex gap-x-2;
   }
 
   h1 {

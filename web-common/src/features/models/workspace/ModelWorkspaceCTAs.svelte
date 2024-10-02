@@ -5,15 +5,11 @@
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
-  import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
   import {
@@ -92,17 +88,11 @@
 
 {#if availableMetricsViews?.length === 0}
   <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
-{:else if availableMetricsViews?.length === 1}
+  <!-- {:else if availableMetricsViews?.length === 1}
   <Tooltip distance={8} alignment="end">
     <Button
       type="primary"
-      on:click={async () => {
-        if (availableMetricsViews[0]?.meta?.filePaths?.[0]) {
-          await goto(
-            `/files/${removeLeadingSlash(availableMetricsViews[0].meta.filePaths[0])}`,
-          );
-        }
-      }}
+    
     >
       <IconSpaceFixer pullLeft pullRight={collapse}>
         <Forward />
@@ -112,48 +102,54 @@
     <TooltipContent slot="tooltip-content">
       Go to the metrics view associated with this model
     </TooltipContent>
-  </Tooltip>
+  </Tooltip> -->
 {:else}
-  <Tooltip distance={8} alignment="end">
-    <WithTogglableFloatingElement
-      let:toggleFloatingElement
-      distance={8}
-      alignment="end"
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger
+      asChild
+      let:builder
+      on:click={async () => {
+        if (availableMetricsViews[0]?.meta?.filePaths?.[0]) {
+          await goto(
+            `/files/${removeLeadingSlash(availableMetricsViews[0].meta.filePaths[0])}`,
+          );
+        }
+      }}
     >
-      <Button on:click={toggleFloatingElement} type="primary">
-        <IconSpaceFixer pullLeft pullRight={collapse}>
-          <Forward />
-        </IconSpaceFixer>
-        <ResponsiveButtonText {collapse}>Go to metrics</ResponsiveButtonText>
-      </Button>
-      <Menu
-        dark
-        slot="floating-element"
-        let:toggleFloatingElement
-        on:escape={toggleFloatingElement}
-        on:click-outside={toggleFloatingElement}
-      >
+      <Tooltip distance={8} alignment="end">
+        <Button builders={[builder]} type="primary">
+          Go to metrics view
+
+          {#if availableMetricsViews.length > 1}
+            <IconSpaceFixer pullRight>
+              <CaretDownIcon />
+            </IconSpaceFixer>
+          {/if}
+        </Button>
+
+        <TooltipContent slot="tooltip-content">
+          Go to one of {availableMetricsViews.length} metrics views associated with
+          this model
+        </TooltipContent>
+      </Tooltip>
+    </DropdownMenu.Trigger>
+
+    {#if availableMetricsViews.length}
+      <DropdownMenu.Content align="end">
         {#each availableMetricsViews as resource (resource?.meta?.name?.name)}
-          <MenuItem
-            on:select={async () => {
+          <DropdownMenu.Item
+            on:click={async () => {
               if (resource?.meta?.filePaths?.[0]) {
                 await goto(
                   `/files/${removeLeadingSlash(resource.meta.filePaths[0])}`,
                 );
-                toggleFloatingElement();
               }
             }}
           >
             {resource?.meta?.name?.name ?? "Loading..."}
-          </MenuItem>
+          </DropdownMenu.Item>
         {/each}
-      </Menu>
-    </WithTogglableFloatingElement>
-    <TooltipContent slot="tooltip-content">
-      Go to one of {availableMetricsViews.length} metrics views associated with this
-      model
-    </TooltipContent>
-  </Tooltip>
+      </DropdownMenu.Content>
+    {/if}
+  </DropdownMenu.Root>
 {/if}
-
-<LocalAvatarButton />

@@ -192,6 +192,15 @@
     @apply bg-transparent text-slate-400;
   }
 
+  .secondary:active:hover,
+  .secondary.selected:hover,
+  .ghost:active:hover,
+  .ghost.selected:hover,
+  .dashed:active:hover,
+  .dashed.selected:hover {
+    @apply bg-primary-200;
+  }
+
   /* PLAIN STYLES */
 
   .plain {
@@ -333,7 +342,7 @@
   /* TWEAKS */
 
   .small {
-    @apply h-6 text-[11px];
+    @apply text-[11px] h-6 min-h-6;
   }
 
   .large {

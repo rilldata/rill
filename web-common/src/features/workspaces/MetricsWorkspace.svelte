@@ -1,9 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -12,7 +10,6 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import PreviewButton from "@rilldata/web-common/features/explores/PreviewButton.svelte";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
@@ -115,6 +112,8 @@
 
 <WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
   <WorkspaceHeader
+    {filePath}
+    resourceKind={ResourceKind.MetricsView}
     hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
     showInspectorToggle={$selectedView === "code" && isModelingSupported}
@@ -122,17 +121,10 @@
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if isOldMetricsView}
-        <PreviewButton
-          dashboardName={metricsViewName}
-          disabled={previewDisabled}
-          status={previewStatus}
-        />
-        <DeployDashboardCta />
-      {:else}
+      {#if !isOldMetricsView}
         <GoToDashboardButton {resource} />
       {/if}
-      <LocalAvatarButton />
+
       {#if $visualEditing}
         <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
       {/if}

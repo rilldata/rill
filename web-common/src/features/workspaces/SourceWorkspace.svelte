@@ -50,6 +50,7 @@
 
   $: workspace = workspaces.get(filePath);
   $: tableVisible = workspace.table.visible;
+  $: inspectorVisible = workspace.inspector.visible;
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
@@ -137,6 +138,8 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
+    {filePath}
+    resourceKind={ResourceKind.Source}
     slot="header"
     titleInput={fileName}
     showTableToggle
@@ -145,7 +148,7 @@
   >
     <svelte:fragment slot="workspace-controls">
       <p
-        class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
+        class="ui-copy-muted line-clamp-1 text-[11px]"
         transition:fade={{ duration: 200 }}
       >
         {#if refreshedOn}
@@ -156,7 +159,6 @@
 
     <svelte:fragment slot="cta" let:width>
       {@const collapse = width < 800}
-
       <div class="flex gap-x-2 items-center">
         <SourceCTAs
           hasUnsavedChanges={$hasUnsavedChanges}
@@ -172,10 +174,7 @@
     </svelte:fragment>
   </WorkspaceHeader>
 
-  <div
-    slot="body"
-    class="editor-pane size-full overflow-hidden flex flex-col gap-y-2"
-  >
+  <div slot="body" class="editor-pane size-full overflow-hidden flex flex-col">
     <WorkspaceEditorContainer>
       {#key assetName}
         <SourceEditor {fileArtifact} {allErrors} />
@@ -183,7 +182,7 @@
     </WorkspaceEditorContainer>
 
     {#if $tableVisible}
-      <WorkspaceTableContainer fade={$hasUnsavedChanges}>
+      <WorkspaceTableContainer {filePath} fade={$hasUnsavedChanges}>
         {#if allErrors[0]?.message}
           <ErrorPane {filePath} errorMessage={allErrors[0].message} />
         {:else if !allErrors.length}
@@ -200,6 +199,7 @@
   <svelte:fragment slot="inspector">
     {#if connector && tableName && resource}
       <WorkspaceInspector
+        {filePath}
         {connector}
         {database}
         {databaseSchema}

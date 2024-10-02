@@ -1,15 +1,16 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { useFileNamesInDirectory } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { WorkspaceHeader } from "../../layout/workspace";
   import { PROTECTED_FILES } from "../file-explorer/protected-paths";
+  import type { ResourceKind } from "../entity-management/resource-selectors";
 
   export let filePath: string;
   export let hasUnsavedChanges: boolean;
+  export let resourceKind: ResourceKind | "file";
 
   let fileName: string;
   let folder: string;
@@ -39,13 +40,11 @@
 </script>
 
 <WorkspaceHeader
+  {filePath}
+  {resourceKind}
   editable={!isProtectedFile}
   on:change={onChangeCallback}
   {hasUnsavedChanges}
   showInspectorToggle={false}
   titleInput={fileName}
->
-  <svelte:fragment slot="cta">
-    <LocalAvatarButton />
-  </svelte:fragment>
-</WorkspaceHeader>
+/>

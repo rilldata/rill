@@ -97,6 +97,8 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
+    {filePath}
+    resourceKind={ResourceKind.Model}
     slot="header"
     titleInput={fileName}
     showTableToggle
@@ -128,7 +130,7 @@
     </svelte:fragment>
   </WorkspaceHeader>
 
-  <div slot="body" class="size-full overflow-hidden flex flex-col gap-y-2">
+  <div slot="body" class="size-full overflow-hidden flex flex-col gap-y-0">
     <WorkspaceEditorContainer>
       {#key assetName}
         <ModelEditor {fileArtifact} bind:autoSave={$autoSave} onSave={save} />
@@ -136,7 +138,7 @@
     </WorkspaceEditorContainer>
 
     {#if $tableVisible}
-      <WorkspaceTableContainer>
+      <WorkspaceTableContainer {filePath}>
         {#if !allErrors.length}
           <ConnectedPreviewTable
             {connector}
@@ -163,6 +165,7 @@
   <svelte:fragment slot="inspector">
     {#if connector && tableName && resource}
       <WorkspaceInspector
+        {filePath}
         {connector}
         {database}
         {databaseSchema}

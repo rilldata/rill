@@ -156,7 +156,9 @@ export const useGetMetricsViewsForModel = (
   return useClientFilteredResources(
     instanceId,
     ResourceKind.MetricsView,
-    (res) => res.metricsView?.spec?.table === modelName,
+    (res) =>
+      res.metricsView?.spec?.model === modelName ||
+      res.metricsView?.spec?.table === modelName,
   );
 };
 

@@ -148,6 +148,7 @@ export class FileArtifact {
   }
 
   updateLocalContent = (content: string | null, alert = false) => {
+    console.log({ content });
     const hasUnsavedChanges = get(this.hasUnsavedChanges);
     const autoSave = get(this.autoSave);
 

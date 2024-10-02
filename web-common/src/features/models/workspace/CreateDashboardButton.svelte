@@ -12,6 +12,7 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel } from "../selectors";
+  import { Wand } from "lucide-svelte";
 
   export let modelName: string;
   export let hasError = false;
@@ -44,10 +45,10 @@
     type="primary"
   >
     <IconSpaceFixer pullLeft pullRight={collapse}>
-      <Add />
+      <Wand size="14px" />
     </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>
-      Generate metrics
+      Generate metrics view
       {#if $ai}
         with AI
       {/if}

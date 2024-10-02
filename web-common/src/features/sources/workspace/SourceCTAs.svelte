@@ -5,7 +5,6 @@
   } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { createEventDispatcher } from "svelte";
   import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import ButtonContent from "./ButtonContent.svelte";
@@ -72,5 +71,3 @@
     <EnterIcon size="14px" />
   </IconSpaceFixer>
 </Button>
-
-<LocalAvatarButton />

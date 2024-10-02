@@ -45,6 +45,7 @@ export class WatchFilesClient {
           await fileArtifacts.getFileArtifact(res.path).fetchContent(true);
 
           if (res.path === "/rill.yaml") {
+            console.log(res.path);
             // If it's a rill.yaml file, invalidate the dev JWT queries
             void queryClient.invalidateQueries(
               getRuntimeServiceIssueDevJWTQueryKey({}),

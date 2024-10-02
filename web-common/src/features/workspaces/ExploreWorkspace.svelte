@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -79,7 +78,6 @@
         status={previewStatus}
       />
       <DeployDashboardCta />
-      <LocalAvatarButton />
     </div>
   </WorkspaceHeader>
 

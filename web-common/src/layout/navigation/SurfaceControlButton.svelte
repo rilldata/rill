@@ -1,6 +1,6 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
+  import HideSidebar from "@rilldata/web-common/components/icons/HideSidebar.svelte";
   import SurfaceView from "@rilldata/web-common/components/icons/SurfaceView.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -24,8 +24,9 @@
   aria-label={label}
 >
   <Button
-    type="secondary"
-    selected={true}
+    type={navOpen ? "secondary" : "ghost"}
+    gray={!navOpen}
+    selected={navOpen}
     square
     on:click
     on:mousedown={() => {
@@ -34,7 +35,7 @@
   >
     <Tooltip location="bottom" alignment="start" distance={12} bind:active>
       {#if navOpen}
-        <HideLeftSidebar size="18px" />
+        <HideSidebar side="left" open={navOpen} size="18px" />
       {:else}
         <SurfaceView size="16px" mode={"hamburger"} />
       {/if}
@@ -63,6 +64,6 @@
   }
 
   .shift {
-    left: 8px !important;
+    left: 12px !important;
   }
 </style>

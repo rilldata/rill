@@ -5,7 +5,6 @@
   } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import Add from "../../../components/icons/Add.svelte";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -43,6 +42,7 @@
     showInspectorToggle={false}
     titleInput={table}
     hasUnsavedChanges={false}
+    {filePath}
   >
     <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}
@@ -57,7 +57,6 @@
             {/if}
           </ResponsiveButtonText>
         </Button>
-        <LocalAvatarButton />
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>

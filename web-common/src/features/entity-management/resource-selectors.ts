@@ -27,6 +27,8 @@ export enum ResourceKind {
   Component = "rill.runtime.v1.Component",
   Canvas = "rill.runtime.v1.Canvas",
   API = "rill.runtime.v1.API",
+  // Extended to support rill.yaml and .env files
+  ProjectConfig = "rill.runtime.v1.ProjectConfig",
 }
 
 export type UserFacingResourceKinds = Exclude<
