@@ -1,7 +1,14 @@
 import {
+  adminServiceListPublicBillingPlans,
   createAdminServiceListPublicBillingPlans,
+  getAdminServiceListPublicBillingPlansQueryKey,
   type V1BillingPlan,
 } from "@rilldata/web-admin/client";
+import {
+  isTeamPlan,
+  isTrialPlan,
+} from "@rilldata/web-admin/features/billing/plans/utils";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { DateTime } from "luxon";
 
 export function getCategorisedPlans() {
@@ -12,9 +19,9 @@ export function getCategorisedPlans() {
         let teamPlan: V1BillingPlan;
 
         data.plans.forEach((p) => {
-          if (p.default && p.trialPeriodDays) {
+          if (isTrialPlan(p)) {
             trialPlan = p;
-          } else if (p.name === "Teams" && !teamPlan) {
+          } else if (isTeamPlan(p) && !teamPlan) {
             teamPlan = p;
           }
         });
@@ -26,6 +33,17 @@ export function getCategorisedPlans() {
       },
     },
   });
+}
+
+export async function fetchTeamPlan() {
+  const plansResp = await queryClient.fetchQuery({
+    queryKey: getAdminServiceListPublicBillingPlansQueryKey(),
+    queryFn: () => adminServiceListPublicBillingPlans(),
+  });
+  for (const plan of plansResp.plans) {
+    if (isTeamPlan(plan)) return plan;
+  }
+  return undefined;
 }
 
 export function getNextBillingCycleDate(curEndDateRaw: string): string {

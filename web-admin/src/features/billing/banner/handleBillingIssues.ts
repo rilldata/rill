@@ -8,6 +8,7 @@ import {
   PaymentBillingIssueTypes,
 } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
 import { handleTrialPlan } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
+import { isTrialPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
 export function handleBillingIssues(
@@ -15,7 +16,7 @@ export function handleBillingIssues(
   plan: V1BillingPlan,
   issues: V1BillingIssue[],
 ) {
-  if (plan.trialPeriodDays) {
+  if (isTrialPlan(plan)) {
     eventBus.emit("banner", handleTrialPlan(subscription, issues));
     return;
   }

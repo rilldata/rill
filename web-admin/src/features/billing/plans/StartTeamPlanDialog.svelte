@@ -1,3 +1,13 @@
+<script lang="ts" context="module">
+  /**
+   * 1. base - When user chooses to upgrade from a trial plan.
+   * 2. size - When user hits the size limit and wants to upgrade.
+   * 3. org  - When user hits the organization limit and wants to upgrade.
+   * 4. proj - When user hits the project limit and wants to upgrade.
+   */
+  export type TeamPlanDialogTypes = "base" | "size" | "org" | "proj";
+</script>
+
 <script lang="ts">
   import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
   import {
@@ -15,26 +25,24 @@
     createAdminServiceUpdateBillingSubscription,
     type RpcStatus,
   } from "@rilldata/web-admin/client/index.js";
+  import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
   import type { AxiosError } from "axios";
+  import { getPaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
+  import { createAdminServiceGetPaymentsPortalURL } from "@rilldata/web-admin/client";
+  import { buildAutoCloseUrl } from "@rilldata/web-admin/client/redirect-utils";
 
   export let organization: string;
   export let open = false;
-  /**
-   * 1. base - When user chooses to upgrade from a trial plan.
-   * 2. size - When user hits the size limit and wants to upgrade.
-   * 3. org - When user hits the organization limit and wants to upgrade.
-   * 4. proj - When user hits the project limit and wants to upgrade.
-   */
-  export let type: "base" | "size" | "org" | "proj";
+
+  export let type: TeamPlanDialogTypes;
 
   let title: string;
   let description =
     "Starting a Team plan will end your trial and start your billing cycle today. " +
     "Pricing is based on amount of data ingested (and compressed) into Rill.";
   let buttonText = "Start Team plan";
-
-  $: {
-    switch (type) {
+  function setCopyBasedOnType(t: TeamPlanDialogTypes) {
+    switch (t) {
       case "base":
         title = "Start Team plan";
         buttonText = "Continue";
@@ -55,13 +63,23 @@
         break;
     }
   }
+  $: setCopyBasedOnType(type);
 
   const categorisedPlans = getCategorisedPlans();
   $: teamPlan = $categorisedPlans.data?.teamPlan;
+  $: paymentIssues = getPaymentIssues(organization);
+  $: paymentUrl = createAdminServiceGetPaymentsPortalURL(organization, {
+    returnUrl: buildAutoCloseUrl(),
+  });
+
+  const userPromptWindow = new PopupWindow();
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   async function handleUpgradePlan() {
     if (!teamPlan) return;
+    if ($paymentIssues.data?.length) {
+      await userPromptWindow.openAndWait($paymentUrl.data.url);
+    }
 
     await $planUpdater.mutateAsync({
       organization,

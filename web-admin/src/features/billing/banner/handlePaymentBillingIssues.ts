@@ -1,4 +1,5 @@
 import {
+  createAdminServiceListOrganizationBillingIssues,
   type V1BillingIssue,
   V1BillingIssueType,
   type V1Subscription,
@@ -15,6 +16,15 @@ export const PaymentBillingIssueTypes: Partial<
   [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]:
     "There is no billing address on file.",
 };
+
+export function getPaymentIssues(organization: string) {
+  return createAdminServiceListOrganizationBillingIssues(organization, {
+    query: {
+      select: (data) =>
+        data.issues?.filter((i) => i.type in PaymentBillingIssueTypes),
+    },
+  });
+}
 
 export function handlePaymentIssues(
   subscription: V1Subscription,
