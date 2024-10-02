@@ -178,7 +178,9 @@ export function useCreateMetricsViewFromTableUIAction(
       }
     } catch (err) {
       eventBus.emit("notification", {
-        message: "Failed to create a dashboard for " + tableName,
+        message:
+          `Failed to create ${createExplore ? "a dashboard" : "metrics"} for ` +
+          tableName,
         detail: err.response?.data?.message ?? err.message,
       });
     }
