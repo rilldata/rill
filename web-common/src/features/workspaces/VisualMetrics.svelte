@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     createQueryServiceTableColumns,
-    V1Resource,
+    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { FileArtifact } from "../entity-management/file-artifact";
@@ -28,7 +28,7 @@
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import { tick } from "svelte";
   import type { ItemType, Confirmation } from "../visual-metrics-editing/lib";
   import {

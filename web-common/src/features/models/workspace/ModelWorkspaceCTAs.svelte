@@ -19,7 +19,7 @@
   import {
     V1ExportFormat,
     V1ReconcileStatus,
-    V1Resource,
+    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";

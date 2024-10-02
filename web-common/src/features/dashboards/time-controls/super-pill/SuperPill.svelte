@@ -1,11 +1,20 @@
 <script lang="ts">
+  import * as Elements from "./components";
+  import {
+    ALL_TIME_RANGE_ALIAS,
+    CUSTOM_TIME_RANGE_ALIAS,
+    type ISODurationString,
+    type NamedRange,
+    type RangeBuckets,
+    deriveInterval,
+  } from "../new-time-controls";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
-    TimeRange,
+    type TimeRange,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -16,15 +25,6 @@
     useExploreStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    CUSTOM_TIME_RANGE_ALIAS,
-    ISODurationString,
-    NamedRange,
-    RangeBuckets,
-    deriveInterval,
-  } from "../new-time-controls";
-  import * as Elements from "./components";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;

@@ -1,6 +1,6 @@
 import {
   Decoration,
-  DecorationSet,
+  type DecorationSet,
   EditorView,
   ViewPlugin,
   WidgetType,

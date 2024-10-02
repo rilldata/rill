@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { V1MetricsViewRowsResponseDataItem } from "@rilldata/web-common/runtime-client";
+  import type { V1MetricsViewRowsResponseDataItem } from "@rilldata/web-common/runtime-client";
   import type { VirtualizedTableColumns } from "../virtualized-table/types";
   import VirtualTable from "../virtualized-table/VirtualTable.svelte";
 

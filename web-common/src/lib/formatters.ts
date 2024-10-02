@@ -6,7 +6,7 @@ import {
   DATES,
   FLOATS,
   INTEGERS,
-  Interval,
+  type Interval,
   INTERVALS,
   isList,
   isNested,

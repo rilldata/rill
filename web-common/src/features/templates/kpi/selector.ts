@@ -6,7 +6,7 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
-import { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
+import { type CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useKPITotals(

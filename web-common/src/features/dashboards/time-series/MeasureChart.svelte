@@ -28,7 +28,7 @@
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
     TimeRangePreset,
     TimeRoundingStrategy,
@@ -41,6 +41,7 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let exploreName: string;
@@ -78,7 +79,7 @@
   $: numberKind = numberKindForMeasure(measure);
 
   const tweenProps = { duration: 400, easing: cubicOut };
-  const xScale = getContext(contexts.scale("x"));
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
   let hovered: boolean = false;
   let scrub;
@@ -92,13 +93,13 @@
 
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
-  $: mouseOverCords = $xScale(mouseoverValue?.x);
+  $: mouseOverCords = mouseoverValue?.x && $xScale(mouseoverValue?.x);
 
   let isOverStart = false;
   let isOverEnd = false;
   let isInsideScrub = false;
 
-  $: if (mouseOverCords && scrubStartCords && scrubEndCords) {
+  $: if (mouseOverCords !== undefined && scrubStartCords && scrubEndCords) {
     const min = Math.min(scrubStartCords, scrubEndCords);
     const max = Math.max(scrubStartCords, scrubEndCords);
 

@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 import {
-  LightnessMap,
-  ThemeColorKind,
+  type LightnessMap,
+  type ThemeColorKind,
   defaultPrimaryColors,
   defaultSecondaryColors,
   mutedColors,

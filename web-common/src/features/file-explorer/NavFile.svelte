@@ -6,7 +6,7 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import type { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -18,10 +18,10 @@
     MetricsEventSpace,
     ResourceKindToScreenMap,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { Save } from "lucide-svelte";
-  import { Readable } from "svelte/store";
+  import type { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";

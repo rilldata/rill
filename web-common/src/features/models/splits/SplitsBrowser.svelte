@@ -1,9 +1,9 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { Selected } from "bits-ui";
+  import type { Selected } from "bits-ui";
   import CollapsibleSectionTitle from "../../../layout/CollapsibleSectionTitle.svelte";
-  import { V1Resource } from "../../../runtime-client";
+  import type { V1Resource } from "../../../runtime-client";
   import SplitsFilter from "./SplitsFilter.svelte";
   import SplitsTable from "./SplitsTable.svelte";
 

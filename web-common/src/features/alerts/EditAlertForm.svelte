@@ -15,8 +15,8 @@
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import {
-    V1AlertSpec,
-    V1MetricsViewAggregationRequest,
+    type V1AlertSpec,
+    type V1MetricsViewAggregationRequest,
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
   } from "../../runtime-client";
@@ -25,8 +25,8 @@
   import BaseAlertForm from "./BaseAlertForm.svelte";
   import { getSnoozeValueFromAlertSpec } from "./delivery-tab/snooze";
   import {
-    AlertFormValues,
     alertFormValidationSchema,
+    type AlertFormValues,
     getAlertQueryArgsFromFormValues,
   } from "./form-utils";
 
@@ -114,7 +114,7 @@
           message: "Alert edited",
           type: "success",
         });
-      } catch (e) {
+      } catch {
         // showing error below
       }
     },

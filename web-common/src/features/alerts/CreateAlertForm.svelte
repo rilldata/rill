@@ -7,7 +7,7 @@
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import {
-    AlertFormValues,
+    type AlertFormValues,
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
@@ -155,7 +155,7 @@
             text: "Go to alerts",
           },
         });
-      } catch (e) {
+      } catch {
         // showing error below
       }
     },

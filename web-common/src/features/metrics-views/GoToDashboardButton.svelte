@@ -6,7 +6,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { V1Resource } from "@rilldata/web-common/runtime-client";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { ResourceKind } from "../entity-management/resource-selectors";

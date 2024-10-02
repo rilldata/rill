@@ -8,11 +8,11 @@ import {
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
-  ExploreValidSpecResponse,
+  type ExploreValidSpecResponse,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
 import {
-  V1MetricsViewTimeRangeResponse,
+  type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
   type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
@@ -20,9 +20,15 @@ import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store"
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
-import { Readable, Writable, derived, get, writable } from "svelte/store";
 import {
-  MetricsExplorerStoreType,
+  type Readable,
+  type Writable,
+  derived,
+  get,
+  writable,
+} from "svelte/store";
+import {
+  type MetricsExplorerStoreType,
   metricsExplorerStore,
   updateMetricsExplorerByName,
   useExploreStore,
@@ -30,7 +36,7 @@ import {
 import { createStateManagerActions, type StateManagerActions } from "./actions";
 import type { DashboardCallbackExecutor } from "./actions/types";
 import {
-  StateManagerReadables,
+  type StateManagerReadables,
   createStateManagerReadables,
 } from "./selectors";
 

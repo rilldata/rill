@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { YAMLDimension, YAMLMeasure, MenuOption } from "./lib";
+  import { YAMLDimension, YAMLMeasure, type MenuOption } from "./lib";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
+  import type { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
   import { FileArtifact } from "../entity-management/file-artifact";
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";

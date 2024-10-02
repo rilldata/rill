@@ -1,15 +1,15 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceExport,
   V1ExportFormat,
-  V1MetricsViewAggregationRequest,
+  type V1MetricsViewAggregationRequest,
   V1TimeGrain,
-  V1TimeRange,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
@@ -20,9 +20,9 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
-  PivotColumns,
-  PivotRows,
-  PivotState,
+  type PivotColumns,
+  type PivotRows,
+  type PivotState,
 } from "./types";
 
 export default async function exportPivot({

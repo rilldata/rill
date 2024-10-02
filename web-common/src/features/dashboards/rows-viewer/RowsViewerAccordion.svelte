@@ -6,10 +6,10 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
-  import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+  import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
   import {
-    V1Expression,
-    V1MetricsViewAggregationResponseDataItem,
+    type V1Expression,
+    type V1MetricsViewAggregationResponseDataItem,
     createQueryServiceMetricsViewAggregation,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

@@ -2,7 +2,7 @@
 node_modules
 /build
 /dist
-/.svelte-kit
+.svelte-kit
 /package
 .env
 .env.*
@@ -79,3 +79,4 @@ rill-binary-sa.json
 sysroot/
 latest.txt
 /web-common/coverage
+

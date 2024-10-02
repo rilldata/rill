@@ -14,9 +14,9 @@
   import {
     V1ExportFormat,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReportSpec,
+    type V1ReportSpec,
     getRuntimeServiceGetResourceQueryKey,
-    V1ReportSpecAnnotations,
+    type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
@@ -125,7 +125,7 @@
               },
           type: "success",
         });
-      } catch (e) {
+      } catch {
         // showing error below
       }
     },
@@ -153,7 +153,7 @@
         : getTimeIn24FormatFromDateTime(getNextQuarterHour()),
       timeZone: reportSpec?.refreshSchedule?.timeZone ?? getLocalIANA(),
       exportFormat: reportSpec
-        ? reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED
+        ? (reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED)
         : V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: reportSpec
         ? reportSpec.exportLimit === "0"

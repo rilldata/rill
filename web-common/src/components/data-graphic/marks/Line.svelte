@@ -9,7 +9,7 @@
   import type { Readable } from "svelte/store";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
-  import { PlotConfig, lineFactory } from "../utils";
+  import { type PlotConfig, lineFactory } from "../utils";
 
   const markID = guidGenerator();
 
@@ -102,9 +102,9 @@
     Math.max(
       2 /
         (totalTravelDistance /
-          (($xScale.range()[1] - $xScale.range()[0]) *
+          ((Number($xScale.range()[1]) - Number($xScale.range()[0])) *
             ($config.devicePixelRatio || 3))),
-      (($xScale.range()[1] - $xScale.range()[0]) *
+      ((Number($xScale.range()[1]) - Number($xScale.range()[0])) *
         ($config.devicePixelRatio || 3) *
         0.7) /
         data.length /

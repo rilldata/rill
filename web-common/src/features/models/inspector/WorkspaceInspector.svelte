@@ -16,7 +16,7 @@
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import {
-    V1Resource,
+    type V1Resource,
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";

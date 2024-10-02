@@ -1,5 +1,5 @@
-import { V1ComponentVariable } from "@rilldata/web-common/runtime-client";
-import { Readable, derived, writable } from "svelte/store";
+import { type V1ComponentVariable } from "@rilldata/web-common/runtime-client";
+import { type Readable, derived, writable } from "svelte/store";
 
 interface ComponentVariable extends V1ComponentVariable {
   currentValue?: unknown;

@@ -9,7 +9,7 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import {
     V1ReconcileStatus,
-    V1Resource,
+    type V1Resource,
     createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
