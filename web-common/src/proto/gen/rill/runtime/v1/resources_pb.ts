@@ -80,31 +80,37 @@ proto3.util.setEnumType(ExploreComparisonMode, "rill.runtime.v1.ExploreCompariso
  */
 export enum ExploreWebView {
   /**
-   * @generated from enum value: EXPLORE_ACTIVE_PAGE_OVERVIEW = 0;
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_UNSPECIFIED = 0;
    */
-  EXPLORE_ACTIVE_PAGE_OVERVIEW = 0,
+  EXPLORE_ACTIVE_PAGE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: EXPLORE_ACTIVE_PAGE_TIME_DIMENSION = 1;
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_OVERVIEW = 1;
    */
-  EXPLORE_ACTIVE_PAGE_TIME_DIMENSION = 1,
+  EXPLORE_ACTIVE_PAGE_OVERVIEW = 1,
 
   /**
-   * @generated from enum value: EXPLORE_ACTIVE_PAGE_PIVOT = 2;
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_TIME_DIMENSION = 2;
    */
-  EXPLORE_ACTIVE_PAGE_PIVOT = 2,
+  EXPLORE_ACTIVE_PAGE_TIME_DIMENSION = 2,
 
   /**
-   * @generated from enum value: EXPLORE_ACTIVE_PAGE_CANVAS = 3;
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_PIVOT = 3;
    */
-  EXPLORE_ACTIVE_PAGE_CANVAS = 3,
+  EXPLORE_ACTIVE_PAGE_PIVOT = 3,
+
+  /**
+   * @generated from enum value: EXPLORE_ACTIVE_PAGE_CANVAS = 4;
+   */
+  EXPLORE_ACTIVE_PAGE_CANVAS = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(ExploreWebView)
 proto3.util.setEnumType(ExploreWebView, "rill.runtime.v1.ExploreWebView", [
-  { no: 0, name: "EXPLORE_ACTIVE_PAGE_OVERVIEW" },
-  { no: 1, name: "EXPLORE_ACTIVE_PAGE_TIME_DIMENSION" },
-  { no: 2, name: "EXPLORE_ACTIVE_PAGE_PIVOT" },
-  { no: 3, name: "EXPLORE_ACTIVE_PAGE_CANVAS" },
+  { no: 0, name: "EXPLORE_ACTIVE_PAGE_UNSPECIFIED" },
+  { no: 1, name: "EXPLORE_ACTIVE_PAGE_OVERVIEW" },
+  { no: 2, name: "EXPLORE_ACTIVE_PAGE_TIME_DIMENSION" },
+  { no: 3, name: "EXPLORE_ACTIVE_PAGE_PIVOT" },
+  { no: 4, name: "EXPLORE_ACTIVE_PAGE_CANVAS" },
 ]);
 
 /**
@@ -2415,9 +2421,9 @@ export class ExplorePreset extends Message<ExplorePreset> {
   comparisonMode = ExploreComparisonMode.UNSPECIFIED;
 
   /**
-   * @generated from field: string compare_time_range = 13;
+   * @generated from field: optional string compare_time_range = 13;
    */
-  compareTimeRange = "";
+  compareTimeRange?: string;
 
   /**
    * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
@@ -2429,7 +2435,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
   /**
    * @generated from field: rill.runtime.v1.ExploreWebView view = 14;
    */
-  view = ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW;
+  view = ExploreWebView.EXPLORE_ACTIVE_PAGE_UNSPECIFIED;
 
   /**
    * @generated from field: string overview_sort_by = 15;
@@ -2498,7 +2504,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 11, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
-    { no: 13, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "view", kind: "enum", T: proto3.getEnumType(ExploreWebView) },
     { no: 15, name: "overview_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },

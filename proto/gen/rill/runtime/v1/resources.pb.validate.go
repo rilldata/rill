@@ -4872,8 +4872,6 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	// no validation rules for ComparisonMode
 
-	// no validation rules for CompareTimeRange
-
 	// no validation rules for ComparisonDimension
 
 	// no validation rules for View
@@ -4893,6 +4891,10 @@ func (m *ExplorePreset) validate(all bool) error {
 	// no validation rules for PivotSortBy
 
 	// no validation rules for PivotSortAsc
+
+	if m.CompareTimeRange != nil {
+		// no validation rules for CompareTimeRange
+	}
 
 	if len(errors) > 0 {
 		return ExplorePresetMultiError(errors)

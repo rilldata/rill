@@ -5,16 +5,26 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import {
+  URLStateDefaultSortDirection,
+  URLStateDefaultTDDChartType,
+  URLStateDefaultTimezone,
+} from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
-import { ToURLParamTimeDimensionMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import {
+  FromActivePageMap,
+  ToURLParamTDDChartMap,
+  ToURLParamTimeDimensionMap,
+  ToURLParamViewMap,
+} from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   arrayOrderedEquals,
   arrayUnorderedEquals,
 } from "@rilldata/web-common/lib/arrayUtils";
-import type {
+import {
   V1ExplorePreset,
   V1ExploreSpec,
+  V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
 
 export function getUrlFromMetricsExplorer(
@@ -24,6 +34,14 @@ export function getUrlFromMetricsExplorer(
   preset: V1ExplorePreset,
 ) {
   if (!metrics) return;
+
+  const currentView = FromActivePageMap[metrics.activePage];
+  if (
+    (preset.view !== undefined && preset.view !== currentView) ||
+    currentView !== V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW
+  ) {
+    searchParams.set("vw", ToURLParamViewMap[currentView] as string);
+  }
 
   const expr = mergeMeasureFilters(metrics);
   if (expr && expr?.cond?.exprs?.length) {
@@ -50,7 +68,11 @@ function toTimeRangesUrl(
   ) {
     searchParams.set("tr", metrics.selectedTimeRange.name);
   }
-  if (metrics.selectedTimezone !== preset.timezone) {
+  if (
+    (preset.timezone !== undefined &&
+      metrics.selectedTimezone !== preset.timezone) ||
+    metrics.selectedTimezone !== URLStateDefaultTimezone
+  ) {
     searchParams.set("tz", metrics.selectedTimezone);
   }
 
@@ -88,20 +110,25 @@ function toOverviewUrl(
     }
   }
 
+  const defaultLeaderboardMeasure =
+    preset.measures?.[0] ?? explore.measures?.[0];
   if (
     // if sort by is defined then only set param if selected is not the same.
     (preset.overviewSortBy &&
       metrics.leaderboardMeasureName !== preset.overviewSortBy) ||
-    // else the default is the 1st measure in explore, so check that next
-    metrics.leaderboardMeasureName !== explore.measures?.[0]
+    // else the default is the 1st measure in preset or explore, so check that next
+    metrics.leaderboardMeasureName !== defaultLeaderboardMeasure
   ) {
     searchParams.set("o.sb", metrics.leaderboardMeasureName);
   }
 
   const sortAsc = metrics.sortDirection === SortDirection.ASCENDING;
   if (
-    preset.overviewSortAsc === undefined ||
-    preset.overviewSortAsc !== sortAsc
+    // if preset has a sort direction then only set if not the same
+    (preset.overviewSortAsc !== undefined &&
+      preset.overviewSortAsc !== sortAsc) ||
+    // else if the direction is not the default then set the param
+    metrics.sortDirection !== URLStateDefaultSortDirection
   ) {
     searchParams.set("o.sd", sortAsc ? "ASC" : "DESC");
   }
@@ -129,12 +156,16 @@ function toTimeDimensionUrlParams(
   if (
     (preset.timeDimensionChartType !== undefined &&
       metrics.tdd.chartType !== preset.timeDimensionChartType) ||
-    metrics.tdd.chartType !== TDDChart.DEFAULT
+    metrics.tdd.chartType !== URLStateDefaultTDDChartType
   ) {
-    searchParams.set("tdd.p", metrics.tdd.chartType);
+    searchParams.set(
+      "tdd.ct",
+      ToURLParamTDDChartMap[metrics.tdd.chartType] ?? "",
+    );
   }
 
   // TODO: pin
+  // TODO: what should be done when chartType is set but expandedMeasureName is not st
 }
 
 function toPivotUrlParams(
@@ -151,7 +182,7 @@ function toPivotUrlParams(
   };
 
   const rows = metrics.pivot.rows.dimension.map(mapPivotEntry);
-  if (arrayOrderedEquals(rows, preset.pivotRows ?? [])) {
+  if (!arrayOrderedEquals(rows, preset.pivotRows ?? [])) {
     searchParams.set("p.r", rows.join(","));
   }
 
@@ -159,7 +190,7 @@ function toPivotUrlParams(
     ...metrics.pivot.columns.dimension.map(mapPivotEntry),
     ...metrics.pivot.columns.measure.map(mapPivotEntry),
   ];
-  if (arrayOrderedEquals(cols, preset.pivotCols ?? [])) {
+  if (!arrayOrderedEquals(cols, preset.pivotCols ?? [])) {
     searchParams.set("p.c", cols.join(","));
   }
 

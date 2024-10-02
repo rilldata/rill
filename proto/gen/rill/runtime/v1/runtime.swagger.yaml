@@ -4129,11 +4129,12 @@ definitions:
   v1ExploreWebView:
     type: string
     enum:
+      - EXPLORE_ACTIVE_PAGE_UNSPECIFIED
       - EXPLORE_ACTIVE_PAGE_OVERVIEW
       - EXPLORE_ACTIVE_PAGE_TIME_DIMENSION
       - EXPLORE_ACTIVE_PAGE_PIVOT
       - EXPLORE_ACTIVE_PAGE_CANVAS
-    default: EXPLORE_ACTIVE_PAGE_OVERVIEW
+    default: EXPLORE_ACTIVE_PAGE_UNSPECIFIED
   v1ExportFormat:
     type: string
     enum:

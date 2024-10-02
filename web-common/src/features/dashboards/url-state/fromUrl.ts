@@ -14,14 +14,20 @@ import {
   TDDChart,
   TDDState,
 } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import {
+  URLStateDefaultSortDirection,
+  URLStateDefaultTimezone,
+} from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
-import { FromURLParamTimeDimensionMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import {
+  FromURLParamTDDChartMap,
+  FromURLParamTimeDimensionMap,
+  FromURLParamViewMap,
+  ToActivePageViewMap,
+} from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import {
-  DashboardTimeControls,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types";
+import { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -37,12 +43,11 @@ export function getMetricsExplorerFromUrl(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
+  preset: V1ExplorePreset,
 ): { entity: Partial<MetricsExplorerEntity>; errors: Error[] } {
   // TODO: replace this with V1ExplorePreset once it is available on main
   const entity: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
-
-  const preset = explore.presets?.[0] ?? {};
 
   const measures = getMapFromArray(
     metricsView.measures?.filter((m) => explore.measures?.includes(m.name!)) ??
@@ -55,6 +60,14 @@ export function getMetricsExplorerFromUrl(
     ) ?? [],
     (d) => d.name!,
   );
+
+  if (searchParams.has("vw")) {
+    entity.activePage = Number(
+      ToActivePageViewMap[
+        FromURLParamViewMap[searchParams.get("vw") as string]
+      ] ?? "0",
+    );
+  }
 
   if (searchParams.has("f")) {
     const {
@@ -106,6 +119,8 @@ function fromTimeRangesParams(
   const timeZone = preset.timezone || searchParams.get("tz");
   if (timeZone) {
     entity.selectedTimezone = timeZone;
+  } else {
+    entity.selectedTimezone = URLStateDefaultTimezone;
   }
 
   const comparisonTimeRange =
@@ -148,17 +163,16 @@ function fromTimeRangeUrlParam(tr: string): {
   timeRange?: DashboardTimeControls;
   error?: Error;
 } {
-  if (tr in TimeRangePreset) {
-    return {
-      timeRange: {
-        name: tr,
-      } as DashboardTimeControls,
-    };
-  }
-
+  // TODO: validation
   return {
-    error: new Error(`unknown time range: ${tr}`),
+    timeRange: {
+      name: tr,
+    } as DashboardTimeControls,
   };
+
+  // return {
+  //   error: new Error(`unknown time range: ${tr}`),
+  // };
 }
 
 function fromOverviewUrlParams(
@@ -171,8 +185,8 @@ function fromOverviewUrlParams(
   const entity: Partial<MetricsExplorerEntity> = {};
 
   let selectedMeasures = preset.measures ?? explore.measures ?? [];
-  if (searchParams.has("e.m")) {
-    const mes = searchParams.get("e.m") as string;
+  if (searchParams.has("o.m")) {
+    const mes = searchParams.get("o.m") as string;
     if (mes !== "*") {
       selectedMeasures = mes.split(",").filter((m) => measures.has(m));
     }
@@ -182,8 +196,8 @@ function fromOverviewUrlParams(
   entity.visibleMeasureKeys = new Set(selectedMeasures);
 
   let selectedDimensions = preset.dimensions ?? explore.dimensions ?? [];
-  if (searchParams.has("e.d")) {
-    const dims = searchParams.get("e.d") as string;
+  if (searchParams.has("o.d")) {
+    const dims = searchParams.get("o.d") as string;
     if (dims !== "*") {
       selectedDimensions = dims.split(",").filter((d) => dimensions.has(d));
     }
@@ -193,9 +207,9 @@ function fromOverviewUrlParams(
   entity.visibleDimensionKeys = new Set(selectedDimensions);
 
   entity.leaderboardMeasureName =
-    preset.overviewSortBy ?? explore.measures?.[0];
-  if (searchParams.has("e.sb")) {
-    const sortBy = searchParams.get("e.sb") as string;
+    preset.overviewSortBy ?? preset.measures?.[0] ?? explore.measures?.[0];
+  if (searchParams.has("o.sb")) {
+    const sortBy = searchParams.get("o.sb") as string;
     if (measures.has(sortBy)) {
       entity.leaderboardMeasureName = sortBy;
     }
@@ -206,17 +220,17 @@ function fromOverviewUrlParams(
       ? SortDirection.ASCENDING
       : SortDirection.DESCENDING;
   } else {
-    entity.sortDirection = SortDirection.DESCENDING;
+    entity.sortDirection = URLStateDefaultSortDirection;
   }
-  if (searchParams.has("e.sd")) {
-    const sortDir = searchParams.get("e.sd") as string;
+  if (searchParams.has("o.sd")) {
+    const sortDir = searchParams.get("o.sd") as string;
     entity.sortDirection =
       sortDir === "ASC" ? SortDirection.ASCENDING : SortDirection.DESCENDING;
   }
 
   entity.selectedDimensionName = preset.overviewExpandedDimension ?? "";
-  if (searchParams.has("e.ed")) {
-    const dim = searchParams.get("e.ed") as string;
+  if (searchParams.has("o.ed")) {
+    const dim = searchParams.get("o.ed") as string;
     if (dimensions.has(dim)) {
       entity.selectedDimensionName = dim;
     }
@@ -242,8 +256,8 @@ function fromTimeDimensionUrlParams(
   }
   if (searchParams.has("tdd.ct")) {
     const ct = searchParams.get("tdd.ct") as string;
-    if (ct in TDDChart) {
-      ttdChartType = TDDChart[ct];
+    if (ct in FromURLParamTDDChartMap) {
+      ttdChartType = FromURLParamTDDChartMap[ct];
     }
   }
   if (searchParams.has("tdd.p")) {
@@ -330,7 +344,7 @@ function fromPivotUrlParams(
 
   return {
     active:
-      searchParams.get("view") === "pivot" ||
+      searchParams.get("vw") === "pivot" ||
       preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
     rows: {
       dimension: rowDimensions,
