@@ -71,6 +71,7 @@
 
       eventBus.emit("notification", { message: "User group created" });
     } catch (error) {
+      console.error("Error creating user group", error);
       eventBus.emit("notification", {
         message: "Error creating user group",
         type: "error",
@@ -94,6 +95,7 @@
 
       eventBus.emit("notification", { message: "User group renamed" });
     } catch (error) {
+      console.error("Error renaming user group", error);
       eventBus.emit("notification", {
         message: "Error renaming user group",
         type: "error",
@@ -114,6 +116,7 @@
 
       eventBus.emit("notification", { message: "User group deleted" });
     } catch (error) {
+      console.error("Error deleting user group", error);
       eventBus.emit("notification", {
         message: "Error deleting user group",
         type: "error",
@@ -137,6 +140,7 @@
 
       eventBus.emit("notification", { message: "User group role added" });
     } catch (error) {
+      console.error("Error adding role to user group", error);
       eventBus.emit("notification", {
         message: "Error adding role to user group",
         type: "error",
@@ -160,6 +164,7 @@
 
       eventBus.emit("notification", { message: "User group role updated" });
     } catch (error) {
+      console.error("Error updating user group role", error);
       eventBus.emit("notification", {
         message: "Error updating user group role",
         type: "error",
@@ -180,6 +185,7 @@
 
       eventBus.emit("notification", { message: "User group role revoked" });
     } catch (error) {
+      console.error("Error revoking user group role", error);
       eventBus.emit("notification", {
         message: "Error revoking user group role",
         type: "error",
@@ -206,6 +212,7 @@
         message: "User removed from user group",
       });
     } catch (error) {
+      console.error("Error removing user from user group", error);
       eventBus.emit("notification", {
         message: "Error removing user from user group",
         type: "error",
@@ -240,6 +247,7 @@
         message: "User added to user group",
       });
     } catch (error) {
+      console.error("Error adding user to user group", error);
       eventBus.emit("notification", {
         message: "Error adding user to user group",
         type: "error",
