@@ -29,7 +29,7 @@
           isCurrentUser: row.original.userEmail === currentUserEmail,
         }),
       meta: {
-        widthPercent: 3,
+        widthPercent: 5,
       },
     },
 
@@ -45,7 +45,7 @@
           onSetRole: onSetRole,
         }),
       meta: {
-        widthPercent: 3,
+        widthPercent: 5,
       },
     },
     {
