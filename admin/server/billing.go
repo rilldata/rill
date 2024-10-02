@@ -178,18 +178,16 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	} else if len(subs) == 1 {
 		// schedule plan change
-		newSub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, billing.SubscriptionChangeOptionImmediate)
+		newSub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	} else {
 		// multiple subscriptions, cancel them first immediately and assign new plan should not happen unless externally assigned multiple subscriptions to the same org in the billing system.
 		// RepairOrganizationBilling does not fix multiple subscription issue, we are not sure which subscription to cancel and which to keep. However, in case of plan change we can safely cancel all older subscriptions and create a new one with new plan.
-		for _, sub := range subs {
-			_, err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
+		_, err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		// create new subscription
@@ -344,7 +342,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 				}, nil
 			}
 
-			newSub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan, billing.SubscriptionChangeOptionImmediate)
+			newSub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}

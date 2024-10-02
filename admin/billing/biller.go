@@ -36,15 +36,16 @@ type Biller interface {
 
 	// CreateSubscription creates a subscription for the given organization. Subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
-	// CreateSubscriptionInFuture creates a subscription for the given organization with a start date in the future.
-	CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error)
+	// CancelSubscription cancels the give subscription and returns the end date of the subscription
 	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) (time.Time, error)
-	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
+	// UnscheduleCancellation cancels the scheduled cancellation for the given subscription and returns the updated subscription
+	UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error)
+	// CancelSubscriptionsForCustomer cancels all the active and upcoming subscription for the given organization and returns the end date of the subscription
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error)
+	// ChangeSubscriptionPlan changes the plan of the given subscription immediately and returns the updated subscription
+	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error)
 	GetActiveSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
 	GetUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
-	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error)
-	UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error)
 
 	GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error)
 	IsInvoiceValid(ctx context.Context, invoice *Invoice) bool
@@ -147,13 +148,6 @@ type SubscriptionCancellationOption int
 const (
 	SubscriptionCancellationOptionEndOfSubscriptionTerm SubscriptionCancellationOption = iota
 	SubscriptionCancellationOptionImmediate
-)
-
-type SubscriptionChangeOption int
-
-const (
-	SubscriptionChangeOptionEndOfSubscriptionTerm SubscriptionChangeOption = iota
-	SubscriptionChangeOptionImmediate
 )
 
 type PaymentProvider string

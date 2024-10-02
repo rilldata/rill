@@ -61,10 +61,6 @@ func (n noop) CreateSubscription(ctx context.Context, customerID string, plan *P
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
-func (n noop) CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
-	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
-}
-
 func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
 	return time.Time{}, nil
 }
@@ -77,7 +73,7 @@ func (n noop) GetUpcomingSubscriptionsForCustomer(ctx context.Context, customerI
 	return []*Subscription{{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}}, nil
 }
 
-func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
+func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 

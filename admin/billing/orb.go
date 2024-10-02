@@ -168,15 +168,7 @@ func (o *Orb) UpdateCustomerEmail(ctx context.Context, customerID, email string)
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
-	return o.createSubscription(ctx, customerID, plan, time.Time{})
-}
-
-func (o *Orb) CreateSubscriptionInFuture(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
-	if startDate.Before(time.Now()) {
-		return nil, errors.New("start date must be in the future")
-	}
-
-	return o.createSubscription(ctx, customerID, plan, startDate)
+	return o.createSubscription(ctx, customerID, plan)
 }
 
 func (o *Orb) GetActiveSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
@@ -195,18 +187,10 @@ func (o *Orb) GetUpcomingSubscriptionsForCustomer(ctx context.Context, customerI
 	return subs, nil
 }
 
-func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
-	var changeOptionParams orb.SubscriptionSchedulePlanChangeParamsChangeOption
-	switch changeOption {
-	case SubscriptionChangeOptionImmediate:
-		changeOptionParams = orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate
-	case SubscriptionChangeOptionEndOfSubscriptionTerm:
-		changeOptionParams = orb.SubscriptionSchedulePlanChangeParamsChangeOptionEndOfSubscriptionTerm
-	}
-
+func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
 	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, orb.SubscriptionSchedulePlanChangeParams{
 		PlanID:       orb.String(plan.ID),
-		ChangeOption: orb.F(changeOptionParams),
+		ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate),
 	})
 	if err != nil {
 		return nil, err
@@ -373,21 +357,11 @@ func (o *Orb) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.H
 	return ow.handleWebhook
 }
 
-func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *Plan, startDate time.Time) (*Subscription, error) {
-	var err error
-	var sub *orb.Subscription
-	if startDate.IsZero() {
-		sub, err = o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
-			ExternalCustomerID: orb.String(customerID),
-			PlanID:             orb.String(plan.ID),
-		})
-	} else {
-		sub, err = o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
-			ExternalCustomerID: orb.String(customerID),
-			PlanID:             orb.String(plan.ID),
-			StartDate:          orb.F(startDate),
-		})
-	}
+func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
+	sub, err := o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
+		ExternalCustomerID: orb.String(customerID),
+		PlanID:             orb.String(plan.ID),
+	})
 	if err != nil {
 		return nil, err
 	}
