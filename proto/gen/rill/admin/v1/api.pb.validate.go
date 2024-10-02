@@ -10759,6 +10759,10 @@ func (m *SudoUpdateUserQuotasRequest) validate(all bool) error {
 		// no validation rules for SingleuserOrgs
 	}
 
+	if m.TrialOrgs != nil {
+		// no validation rules for TrialOrgs
+	}
+
 	if len(errors) > 0 {
 		return SudoUpdateUserQuotasRequestMultiError(errors)
 	}
@@ -31946,6 +31950,8 @@ func (m *UserQuotas) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for SingleuserOrgs
+
+	// no validation rules for TrialOrgs
 
 	if len(errors) > 0 {
 		return UserQuotasMultiError(errors)

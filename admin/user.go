@@ -27,6 +27,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 			GithubUsername:      user.GithubUsername,
 			GithubRefreshToken:  user.GithubRefreshToken,
 			QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+			QuotaTrialOrgs:      user.QuotaTrialOrgs,
 			PreferenceTimeZone:  user.PreferenceTimeZone,
 		})
 	} else if !errors.Is(err, database.ErrNotFound) {
@@ -61,6 +62,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		DisplayName:         name,
 		PhotoURL:            photoURL,
 		QuotaSingleuserOrgs: database.DefaultQuotaSingleuserOrgs,
+		QuotaTrialOrgs:      database.DefaultQuotaTrialOrgs,
 		Superuser:           isFirstUser,
 	}
 
@@ -226,6 +228,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		BillingEmail:                        email,
 		BillingCustomerID:                   "", // Populated later
 		PaymentCustomerID:                   "", // Populated later
+		CreatedByUserID:                     &userID,
 	})
 	if err != nil {
 		return nil, err

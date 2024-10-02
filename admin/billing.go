@@ -43,6 +43,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
@@ -128,6 +129,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -177,6 +179,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
+			CreatedByUserID:                     org.CreatedByUserID,
 		})
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -240,6 +243,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -272,6 +276,13 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to upsert billing warning: %w", err)
+	}
+
+	if org.CreatedByUserID != nil {
+		err = s.DB.IncrementCurrentTrialOrgCount(ctx, *org.CreatedByUserID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to increment current trial org count: %w", err)
+		}
 	}
 
 	return org, sub, nil

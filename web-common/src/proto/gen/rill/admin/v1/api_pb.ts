@@ -3958,6 +3958,11 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
    */
   singleuserOrgs?: number;
 
+  /**
+   * @generated from field: optional int32 trial_orgs = 3;
+   */
+  trialOrgs?: number;
+
   constructor(data?: PartialMessage<SudoUpdateUserQuotasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3968,6 +3973,7 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "singleuser_orgs", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 3, name: "trial_orgs", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateUserQuotasRequest {
@@ -11365,6 +11371,11 @@ export class UserQuotas extends Message<UserQuotas> {
    */
   singleuserOrgs = 0;
 
+  /**
+   * @generated from field: int32 trial_orgs = 2;
+   */
+  trialOrgs = 0;
+
   constructor(data?: PartialMessage<UserQuotas>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11374,6 +11385,7 @@ export class UserQuotas extends Message<UserQuotas> {
   static readonly typeName = "rill.admin.v1.UserQuotas";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "singleuser_orgs", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "trial_orgs", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserQuotas {

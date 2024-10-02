@@ -134,7 +134,17 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if bi != nil {
-			// start trial
+			// check against trial orgs quota
+			if org.CreatedByUserID != nil {
+				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
+				if err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+				if u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
+					return nil, status.Errorf(codes.FailedPrecondition, "org creator has reached the maximum trial orgs quota %d", u.QuotaTrialOrgs)
+				}
+			}
+
 			updatedOrg, sub, err := s.admin.StartTrial(ctx, org)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
@@ -355,6 +365,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -433,6 +444,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		BillingCustomerID:                   req.BillingCustomerId,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
 	}
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -555,6 +567,7 @@ func (s *Server) updateQuotasAndSchedulePlanChangeByAPIJob(ctx context.Context, 
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

@@ -454,6 +454,16 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if bi != nil {
+		// check against trial orgs quota
+		if org.CreatedByUserID != nil {
+			u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
+				return nil, status.Errorf(codes.FailedPrecondition, "org creator has reached the maximum trial orgs quota %d", u.QuotaTrialOrgs)
+			}
+		}
 		_, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID)
 		if err != nil {
 			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))

@@ -338,6 +338,7 @@ export interface V1Usergroup {
 
 export interface V1UserQuotas {
   singleuserOrgs?: number;
+  trialOrgs?: number;
 }
 
 export interface V1UserPreferences {
@@ -447,6 +448,7 @@ export interface V1SudoUpdateUserQuotasResponse {
 export interface V1SudoUpdateUserQuotasRequest {
   email?: string;
   singleuserOrgs?: number;
+  trialOrgs?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {

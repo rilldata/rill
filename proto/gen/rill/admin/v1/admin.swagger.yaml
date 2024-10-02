@@ -4922,6 +4922,9 @@ definitions:
       singleuserOrgs:
         type: integer
         format: int32
+      trialOrgs:
+        type: integer
+        format: int32
   v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
@@ -5050,6 +5053,9 @@ definitions:
     type: object
     properties:
       singleuserOrgs:
+        type: integer
+        format: int32
+      trialOrgs:
         type: integer
         format: int32
   v1Usergroup:
