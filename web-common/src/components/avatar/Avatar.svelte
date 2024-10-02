@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Avatar } from "bits-ui";
-  import { UserRoundIcon } from "lucide-svelte";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let loadingStatus: Avatar.Props["loadingStatus"] = undefined;
   export let src: string | null = null;
@@ -14,22 +14,51 @@
 
 <Avatar.Root
   bind:loadingStatus
-  class="{size} rounded-full border {loadingStatus === 'loaded'
-    ? 'border-foreground'
-    : 'border-transparent'} bg-muted text-[17px] font-medium uppercase text-muted-foreground"
+  class={cn(
+    size,
+    "rounded-full",
+    loadingStatus === "loaded" ? "border-foreground" : "border-transparent",
+    "text-[17px]",
+    "font-medium",
+    "uppercase",
+    "text-muted-foreground",
+  )}
 >
   <div
-    class="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-transparent"
+    class={cn(
+      `flex h-full w-full items-center justify-center overflow-hidden rounded-full border`,
+      {
+        // TODO: revisit to random it, chroma didn't work, hmm
+        "border-transparent bg-yellow-500": !src && alt,
+        "border-dashed bg-transparent border-slate-400": !src && !alt,
+      },
+    )}
   >
     {#if !src}
       {#if alt}
         <Avatar.Image {src} {alt} />
-        <Avatar.Fallback class="border border-muted text-xs">
+        <Avatar.Fallback class="text-xs text-white">
           {getInitials(alt)}
         </Avatar.Fallback>
       {:else}
-        <Avatar.Fallback class="border-dashed border-muted text-xs">
-          <UserRoundIcon size="20px" class="mt-1" />
+        <Avatar.Fallback class="text-xs text-slate-400">
+          <svg
+            class="mt-[6px]"
+            width="24"
+            height="22"
+            viewBox="0 0 24 22"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 10C14.7614 10 17 7.76142 17 5C17 2.23858 14.7614 0 12 0C9.23858 0 7 2.23858 7 5C7 7.76142 9.23858 10 12 10Z"
+              fill="#94A3B8"
+            />
+            <path
+              d="M12 33.913C18.6274 33.913 24 29.0076 24 22.9565C24 16.9054 18.6274 12 12 12C5.37258 12 0 16.9054 0 22.9565C0 29.0076 5.37258 33.913 12 33.913Z"
+              fill="#94A3B8"
+            />
+          </svg>
         </Avatar.Fallback>
       {/if}
     {/if}

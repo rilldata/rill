@@ -21,7 +21,6 @@
     inputValue = ""; // FIXME: reset input value
   }
 
-  // FIXME: fuzzy
   $: filteredItems = inputValue
     ? options.filter((fruit) => fruit.value.includes(inputValue.toLowerCase()))
     : options;
@@ -39,6 +38,7 @@
     bind:inputValue
     onSelectedChange={handleSelectedChange}
   >
+    <!-- TODO: replicate <Input>'s style -->
     <Combobox.Input
       class="flex justify-center items-center pl-2 w-full border border-gray-300 rounded-[2px] cursor-pointer min-h-8 h-fit &:focus-within:border-primary-500 &:focus-within:ring-2 &:focus-within:ring-primary-100"
       {placeholder}
