@@ -129,6 +129,7 @@
           onSelectedChange={(value) => {
             if (value) {
               onAddUser(value.value, groupName);
+              searchText = "";
             }
           }}
         />
@@ -166,9 +167,8 @@
                     >
                   </div>
                 </div>
-                <!-- TODO: use text-red-500 when type is text and danger on hover? -->
                 <Button
-                  type="text"
+                  type="danger-text"
                   on:click={() => {
                     onRemoveUser(groupName, member.userEmail);
                   }}
