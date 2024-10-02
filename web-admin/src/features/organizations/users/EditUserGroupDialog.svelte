@@ -29,16 +29,20 @@
   export let onRemoveUser: (groupName: string, email: string) => void;
   export let onAddUser: (groupName: string, email: string) => void;
 
-  // TODO: if user is already in group, disable the option
-  // Otherwise, "user is already a member of the usergroup"
-  $: console.log("searchUsersList: ", searchUsersList);
-
   let searchText = "";
 
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     groupName,
+  );
+
+  // We don't want to show users that are already in the group
+  $: availableSearchUsersList = searchUsersList.filter(
+    (user) =>
+      !$listUsergroupMemberUsers.data?.members.some(
+        (member) => member.userEmail === user.userEmail,
+      ),
   );
 
   const formId = "edit-user-group-form";
@@ -78,7 +82,7 @@
     },
   );
 
-  $: coercedUsersToOptions = searchUsersList.map((user) => ({
+  $: coercedUsersToOptions = availableSearchUsersList.map((user) => ({
     value: user.userEmail,
     label: user.userEmail,
     name: user.userName,

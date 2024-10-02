@@ -61,7 +61,7 @@
           </Combobox.ItemIndicator>
         </Combobox.Item>
       {:else}
-        <span class="block px-5 py-2 text-sm text-muted-foreground">
+        <span class="block px-5 py-4 text-xs text-gray-500">
           No results found
         </span>
       {/each}
