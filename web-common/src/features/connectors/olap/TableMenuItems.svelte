@@ -36,7 +36,7 @@
     database,
     databaseSchema,
     table,
-    "metrics",
+    false,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );

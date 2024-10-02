@@ -43,7 +43,7 @@
           "",
           "",
           sourceName,
-          "metrics",
+          true,
           BehaviourEventMedium.Button,
           MetricsEventSpace.Modal,
         )
@@ -96,7 +96,7 @@
           on:click={generateMetrics}
           type="primary"
         >
-          Generate metrics
+          Generate dashboard
 
           {#if $ai}
             with AI

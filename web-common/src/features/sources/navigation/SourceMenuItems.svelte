@@ -67,7 +67,7 @@
     "",
     "",
     tableName,
-    "metrics",
+    false,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
