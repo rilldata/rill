@@ -83,6 +83,7 @@
 
       eventBus.emit("notification", { message: "User added to organization" });
     } catch (error) {
+      console.error("Error adding user to organization", error);
       eventBus.emit("notification", {
         message: "Error adding user to organization",
         type: "error",
@@ -113,6 +114,7 @@
         message: "User removed from organization",
       });
     } catch (error) {
+      console.error("Error removing user from organization", error);
       eventBus.emit("notification", {
         message: "Error removing user from organization",
         type: "error",
@@ -142,6 +144,7 @@
         message: "User role updated",
       });
     } catch (error) {
+      console.error("Error updating user role", error);
       eventBus.emit("notification", {
         message: "Error updating user role",
         type: "error",
