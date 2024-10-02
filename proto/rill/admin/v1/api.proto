@@ -1279,7 +1279,7 @@ message SudoUpdateOrganizationCustomDomainResponse {
 
 message SudoUpdateUserQuotasRequest {
   string email = 1;
-  optional int32 singleuser_orgs = 2 [deprecated = true];
+  optional int32 singleuser_orgs = 2;
   optional int32 trial_orgs = 3;
 }
 
@@ -2122,7 +2122,7 @@ message Subscription {
 }
 
 message UserQuotas {
-  int32 singleuser_orgs = 1 [deprecated = true];
+  int32 singleuser_orgs = 1;
   int32 trial_orgs = 2;
 }
 

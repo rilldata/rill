@@ -3962,8 +3962,7 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
   email = "";
 
   /**
-   * @generated from field: optional int32 singleuser_orgs = 2 [deprecated = true];
-   * @deprecated
+   * @generated from field: optional int32 singleuser_orgs = 2;
    */
   singleuserOrgs?: number;
 
@@ -11385,8 +11384,7 @@ export class Subscription extends Message<Subscription> {
  */
 export class UserQuotas extends Message<UserQuotas> {
   /**
-   * @generated from field: int32 singleuser_orgs = 1 [deprecated = true];
-   * @deprecated
+   * @generated from field: int32 singleuser_orgs = 1;
    */
   singleuserOrgs = 0;
 
