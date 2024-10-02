@@ -1,8 +1,13 @@
 <script lang="ts">
+  import AvatarCircleList from "@rilldata/web-admin/features/organizations/users/AvatarCircleList.svelte";
   import { Combobox, Selected } from "bits-ui";
   import { Check } from "lucide-svelte";
 
-  export let options: { value: string; label: string }[] = [];
+  export let options: {
+    value: string;
+    label: string;
+    name: string;
+  }[] = [];
   export let inputValue = "";
   export let name = "";
   export let placeholder = "Search";
@@ -12,7 +17,7 @@
 
   function handleSelectedChange(selected: Selected<string> | undefined) {
     onSelectedChange(selected);
-    inputValue = "";
+    inputValue = ""; // FIXME: reset input value
   }
 
   // FIXME: fuzzy
@@ -39,18 +44,18 @@
       aria-label={placeholder}
     />
 
+    <!-- NOTE: 52px * 4 for 208px to show scroller -->
     <Combobox.Content
-      class="w-full rounded-sm border border-muted bg-background px-1 py-1 shadow-popover outline-none"
+      class="w-full rounded-sm border border-muted bg-background p-[6px] shadow-md outline-none max-h-[208px] overflow-y-auto"
       sideOffset={8}
     >
-      <!-- TODO: brb to polish -->
       {#each filteredItems as item (item.value)}
         <Combobox.Item
-          class="flex h-10 w-full select-none items-center rounded p-4 text-sm outline-none transition-all duration-75 data-[highlighted]:bg-muted"
+          class="flex h-[52px] w-full select-none items-center rounded px-4 py-2 text-sm outline-none transition-all duration-75 data-[highlighted]:bg-slate-100"
           value={item.value}
           label={item.label}
         >
-          {item.label}
+          <AvatarCircleList name={item.name} email={item.value} />
           <Combobox.ItemIndicator class="ml-auto" asChild={false}>
             <Check size="16px" />
           </Combobox.ItemIndicator>
