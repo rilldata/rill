@@ -14,23 +14,10 @@
   import { object, string } from "yup";
   import { page } from "$app/stores";
   import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
-  import type { V1MemberUser } from "@rilldata/web-admin/client";
-  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
 
   export let open = false;
   export let groupName: string;
-  export let searchUsersList: V1MemberUser[];
   export let onCreate: (name: string) => void;
-  export let onAddUsergroupMemberUser: (
-    email: string,
-    usergroup: string,
-  ) => void;
-
-  let searchText = "";
-
-  // TODO: if user is already in group, disable the option
-  // Otherwise, "user is already a member of the usergroup"
-  // $: console.log("yes we can search users now: ", searchUsersList);
 
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
@@ -74,12 +61,6 @@
       },
     },
   );
-
-  // TODO: rework this to a list view
-  $: coercedUsersToOptions = searchUsersList.map((user) => ({
-    value: user.userEmail,
-    label: user.userEmail,
-  }));
 </script>
 
 <Dialog
@@ -116,22 +97,6 @@
           placeholder="Untitled"
           errors={$errors.name}
           alwaysShowError
-        />
-
-        <!-- TODO: revisit; what happens when users are added but groupName is empty? -->
-        <!-- NOTE: Client side search current users until we have a different endpoint to search users server-side -->
-        <Combobox
-          bind:inputValue={searchText}
-          options={coercedUsersToOptions}
-          id="create-user-group-users"
-          label="Users"
-          name="searchUsers"
-          placeholder="Search for users"
-          onSelectedChange={(value) => {
-            if (value) {
-              onAddUsergroupMemberUser(value.value, groupName);
-            }
-          }}
         />
 
         <!-- TODO: List users, remove -->
