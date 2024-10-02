@@ -298,5 +298,4 @@
   groupName={userGroupName}
   searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
   onCreate={handleCreate}
-  onAddUsergroupMemberUser={handleAddUsergroupMemberUser}
 />
