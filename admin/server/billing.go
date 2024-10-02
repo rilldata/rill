@@ -36,7 +36,7 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
 	}
 
-	subs, err := s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -86,7 +86,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
 
-	subs, err := s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -204,7 +204,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	subs, err = s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err = s.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -293,7 +293,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	subs, err := s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -454,7 +454,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}
 
 	// get subscriptions if present
-	subs, err := s.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	subs, err := s.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

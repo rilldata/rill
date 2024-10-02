@@ -171,16 +171,8 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 	return o.createSubscription(ctx, customerID, plan)
 }
 
-func (o *Orb) GetActiveSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
+func (o *Orb) GetActiveSubscriptions(ctx context.Context, customerID string) ([]*Subscription, error) {
 	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusActive)
-	if err != nil {
-		return nil, err
-	}
-	return subs, nil
-}
-
-func (o *Orb) GetUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
-	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusUpcoming)
 	if err != nil {
 		return nil, err
 	}
@@ -249,8 +241,8 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 		}
 	}
 
-	// cancel all upcoming subscriptions for the customer immediately
-	upcomingSubs, err := o.GetUpcomingSubscriptionsForCustomer(ctx, customerID)
+	// cancel all upcoming subscriptions for the customer immediately, there shouldn't be any but just in case
+	upcomingSubs, err := o.getUpcomingSubscriptionsForCustomer(ctx, customerID)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -264,7 +256,7 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 	}
 
 	// cancel all active subscriptions for the customer as per the cancel option
-	subs, err := o.GetActiveSubscriptionsForCustomer(ctx, customerID)
+	subs, err := o.GetActiveSubscriptions(ctx, customerID)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -399,6 +391,14 @@ func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status or
 		subscriptions = append(subscriptions, billingSub)
 	}
 	return subscriptions, nil
+}
+
+func (o *Orb) getUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
+	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusUpcoming)
+	if err != nil {
+		return nil, err
+	}
+	return subs, nil
 }
 
 func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {

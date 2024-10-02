@@ -207,7 +207,7 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 		}
 
 		// double check - get active subscriptions for the org
-		sub, err := w.admin.Biller.GetActiveSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+		sub, err := w.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
 		if err != nil {
 			return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
 		}

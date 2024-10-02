@@ -65,11 +65,7 @@ func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, can
 	return time.Time{}, nil
 }
 
-func (n noop) GetActiveSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
-	return []*Subscription{{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}}, nil
-}
-
-func (n noop) GetUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
+func (n noop) GetActiveSubscriptions(ctx context.Context, customerID string) ([]*Subscription, error) {
 	return []*Subscription{{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}}, nil
 }
 
