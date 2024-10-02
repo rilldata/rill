@@ -106,12 +106,11 @@ type Subscription struct {
 }
 
 type Customer struct {
-	ID                 string
-	Email              string
-	Name               string
-	PaymentProviderID  string
-	PortalURL          string
-	HasBillableAddress bool
+	ID                string
+	Email             string
+	Name              string
+	PaymentProviderID string
+	PortalURL         string
 }
 
 type Usage struct {

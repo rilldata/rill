@@ -526,12 +526,11 @@ func getBillingSubscriptionFromOrbSubscription(s *orb.Subscription) (*Subscripti
 
 func getBillingCustomerFromOrbCustomer(c *orb.Customer) *Customer {
 	return &Customer{
-		ID:                 c.ExternalCustomerID,
-		Email:              c.Email,
-		Name:               c.Name,
-		PaymentProviderID:  c.PaymentProviderID,
-		PortalURL:          c.PortalURL,
-		HasBillableAddress: c.BillingAddress.PostalCode != "",
+		ID:                c.ExternalCustomerID,
+		Email:             c.Email,
+		Name:              c.Name,
+		PaymentProviderID: c.PaymentProviderID,
+		PortalURL:         c.PortalURL,
 	}
 }
 

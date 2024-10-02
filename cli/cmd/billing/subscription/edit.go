@@ -29,12 +29,11 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if subResp.Subscription == nil {
-				ch.PrintfWarn("No subscriptions found for organization %q\n", ch.Org)
-				return nil
+				ch.PrintfWarn("Organization %q has no subscription\n", ch.Org)
+			} else {
+				ch.PrintfBold("Organization %q has following subscription\n", ch.Org)
+				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 			}
-
-			ch.PrintfBold("Organization %q has following subscription\n", ch.Org)
-			ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 
 			ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
 			ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")

@@ -49,7 +49,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, bc.HasBillableAddress)
+	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, bc.HasBillableAddress)
+	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress)
 	if err != nil {
 		return nil, nil, err
 	}

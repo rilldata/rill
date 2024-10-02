@@ -58,9 +58,7 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 
 func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.UpdateBillingSubscriptionRequest) (*adminv1.UpdateBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
-	if req.PlanName != "" {
-		observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
-	}
+	observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
@@ -598,11 +596,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 		validationErrs = append(validationErrs, "no payment method found")
 	}
 
-	bc, err := s.admin.Biller.FindCustomer(ctx, org.BillingCustomerID)
-	if err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-	if !bc.HasBillableAddress {
+	if !pc.HasBillableAddress {
 		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
 	}
 
@@ -762,7 +756,9 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 	case database.BillingIssueTypeSubscriptionCancelled:
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_SubscriptionCancelled{
-				SubscriptionCancelled: &adminv1.BillingIssueMetadataSubscriptionCancelled{},
+				SubscriptionCancelled: &adminv1.BillingIssueMetadataSubscriptionCancelled{
+					EndDate: timestamppb.New(m.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate),
+				},
 			},
 		}
 	case database.BillingIssueTypeNeverSubscribed:
