@@ -7,7 +7,7 @@ import {
   type DimensionDataItem,
 } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
-  TimeSeriesDatum,
+  type TimeSeriesDatum,
   useTimeSeriesDataStore,
 } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";

@@ -112,7 +112,7 @@
         $sourceQuery.data?.meta?.name?.name ?? "",
         runtimeInstanceId,
       );
-    } catch (err) {
+    } catch {
       // no-op
     }
   };

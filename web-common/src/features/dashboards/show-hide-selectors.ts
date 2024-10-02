@@ -6,13 +6,13 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
+import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   RpcStatus,
 } from "@rilldata/web-common/runtime-client";
-import { Readable, derived, get } from "svelte/store";
+import { type Readable, derived, get } from "svelte/store";
 
 export type ShowHideSelectorState = {
   selectableItems: Array<SearchableFilterSelectableItem>;

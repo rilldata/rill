@@ -5,7 +5,7 @@
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import {
     createRuntimeServiceListConnectorDrivers,
-    V1ConnectorDriver,
+    type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";

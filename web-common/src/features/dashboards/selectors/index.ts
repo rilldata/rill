@@ -4,9 +4,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  RpcStatus,
-  V1MetricsViewComparisonResponse,
-  V1MetricsViewTimeRangeResponse,
+  type RpcStatus,
+  type V1MetricsViewComparisonResponse,
+  type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewComparison,
   createQueryServiceMetricsViewSchema,
   createQueryServiceMetricsViewTimeRange,
@@ -16,7 +16,7 @@ import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { Readable, derived } from "svelte/store";
+import { type Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 
 export const getFilterSearchList = (

@@ -10,9 +10,9 @@
 
   import {
     createQueryServiceResolveComponent,
-    V1ComponentSpecRendererProperties,
-    V1ComponentSpecResolverProperties,
-    V1ComponentVariable,
+    type V1ComponentSpecRendererProperties,
+    type V1ComponentSpecResolverProperties,
+    type V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";

@@ -4,7 +4,7 @@
   import { getTypeOptions } from "@rilldata/web-common/features/alerts/criteria-tab/getTypeOptions";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
-  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { createForm } from "svelte-forms-lib";
@@ -29,7 +29,7 @@
       value: $form["measure"],
       label: measure?.label?.length
         ? measure.label
-        : measure?.expression ?? $form["measure"],
+        : (measure?.expression ?? $form["measure"]),
     },
   ];
   $: selectedMeasure = $metricsView.data?.measures?.find(

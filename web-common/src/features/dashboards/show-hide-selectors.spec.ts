@@ -33,7 +33,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { createValidSpecQueryMock } from "@rilldata/web-common/features/dashboards/stores/test-data/query-mocks";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
+import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 

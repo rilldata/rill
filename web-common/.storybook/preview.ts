@@ -1,11 +1,11 @@
 import "../src/app.css";
 import "../static/fonts/fonts.css";
-
+import { fn } from "@storybook/test";
 import type { Preview } from "@storybook/svelte";
 
 const preview: Preview = {
   parameters: {
-    actions: { argTypesRegex: "^on[A-Z].*" },
+    actions: { "on:click": fn() },
     controls: {
       matchers: {
         color: /(background|color)$/i,

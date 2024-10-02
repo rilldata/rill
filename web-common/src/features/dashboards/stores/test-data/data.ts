@@ -8,21 +8,20 @@ import {
   getStartOfPeriod,
 } from "@rilldata/web-common/lib/time/transforms";
 import {
-  DashboardTimeControls,
+  type DashboardTimeControls,
   Period,
   TimeOffsetType,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import {
+import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
-  TypeCode,
   V1ExploreSpec,
   V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
-  type V1StructType,
-  V1TimeGrain,
+  V1MetricsViewTimeRangeResponse,
+  V1StructType,
 } from "@rilldata/web-common/runtime-client";
+import { TypeCode, V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export const AD_BIDS_NAME = "AdBids";
 export const AD_BIDS_EXPLORE_NAME = AD_BIDS_NAME + "_explore";

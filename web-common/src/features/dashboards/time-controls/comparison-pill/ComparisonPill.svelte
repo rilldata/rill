@@ -3,9 +3,9 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
-    TimeRange,
+    type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
   import {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Select from "@rilldata/web-common/components/select";
-  import { Selected } from "bits-ui";
+  import type { Selected } from "bits-ui";
   import Button from "../../../components/button/Button.svelte";
 
   export let selectedFilter: string;

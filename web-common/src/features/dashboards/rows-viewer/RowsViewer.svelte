@@ -2,10 +2,10 @@
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+  import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewRows,
-    V1Expression,
+    type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { writable } from "svelte/store";

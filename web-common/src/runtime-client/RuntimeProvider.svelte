@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { AuthContext, runtime } from "./runtime-store";
+  import { type AuthContext, runtime } from "./runtime-store";
 
   const queryClient = useQueryClient();
 

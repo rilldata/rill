@@ -3,23 +3,23 @@ import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/fi
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  TimeControlState,
+  type TimeControlState,
   useTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   mapComparisonTimeRange,
   mapTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import {
+import type {
   V1ExploreSpec,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
 
 export function getTDDExportArgs(
   ctx: StateManagers,

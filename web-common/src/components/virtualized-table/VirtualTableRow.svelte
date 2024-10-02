@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
-  import {
+  import type {
     V1MetricsViewColumn,
     V1MetricsViewRowsResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
-  import { ComponentType } from "svelte";
+  import type { ComponentType } from "svelte";
   import VirtualTableCell from "./VirtualTableCell.svelte";
   import type VirtualTableRowHeader from "./VirtualTableRowHeader.svelte";
 

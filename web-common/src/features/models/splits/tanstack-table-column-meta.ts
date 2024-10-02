@@ -1,4 +1,4 @@
-import { RowData } from "@tanstack/svelte-table";
+import { type RowData } from "@tanstack/svelte-table";
 
 declare module "@tanstack/svelte-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -21,13 +21,13 @@ import type {
 } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
-  TimeRange,
+  type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  V1ExploreSpec,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
+  type V1ExploreSpec,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";

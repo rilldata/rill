@@ -2,11 +2,11 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
   ResourceKind,
-  UserFacingResourceKinds,
+  type UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   runtimeServicePutFile,
-  V1Resource,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";

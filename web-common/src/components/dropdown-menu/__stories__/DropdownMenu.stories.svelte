@@ -1,14 +1,17 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { Meta, Story } from "@storybook/addon-svelte-csf";
+  import { Story } from "@storybook/addon-svelte-csf";
   import * as DropdownMenu from "..";
+
+  export const meta = {
+    title: "Components/Dropdown Menu",
+  };
+
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CopyIcon from "../../icons/CopyIcon.svelte";
   import ExploreIcon from "../../icons/ExploreIcon.svelte";
 
   let subMenuOpen = false;
 </script>
-
-<Meta title="Components/Dropdown Menu" />
 
 <Story name="Simple">
   <DropdownMenu.Root>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "../../components/button";
-  import { V1Resource, runtimeServicePutFile } from "../../runtime-client";
+  import { type V1Resource, runtimeServicePutFile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import {

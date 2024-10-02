@@ -2,12 +2,12 @@ import type { CreateQueryOptions } from "@rilldata/svelte-query";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
-  RpcStatus,
-  V1ExploreSpec,
-  V1GetExploreResponse,
+  type RpcStatus,
+  type V1ExploreSpec,
+  type V1GetExploreResponse,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
 export function useExplore(
   instanceId: string,

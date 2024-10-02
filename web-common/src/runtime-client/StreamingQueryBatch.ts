@@ -1,5 +1,5 @@
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
-import {
+import type {
   QueryServiceQueryBatchBody,
   V1Query,
   V1QueryBatchResponse,

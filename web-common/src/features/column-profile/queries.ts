@@ -9,12 +9,12 @@ import {
   createQueryServiceColumnTopK,
   createQueryServiceTableCardinality,
   QueryServiceColumnNumericHistogramHistogramMethod,
-  V1ProfileColumn,
-  V1TableColumnsResponse,
+  type V1ProfileColumn,
+  type V1TableColumnsResponse,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import type { QueryObserverResult } from "@tanstack/query-core";
-import { derived, Readable, writable } from "svelte/store";
+import { derived, type Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {
   return queries.some((query) => query?.isFetching);

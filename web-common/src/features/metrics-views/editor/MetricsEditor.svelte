@@ -1,14 +1,14 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
-  import { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { yamlSchema } from "codemirror-json-schema/yaml";
-  import { JSONSchema7 } from "json-schema";
+  import type { JSONSchema7 } from "json-schema";
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { createPlaceholder } from "./create-placeholder";
   import metricsSchema from "./metrics-schema.json";

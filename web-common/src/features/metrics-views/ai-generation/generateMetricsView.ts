@@ -12,8 +12,8 @@ import {
   type MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
 import {
-  RuntimeServiceGenerateMetricsViewFileBody,
-  V1GenerateMetricsViewFileResponse,
+  type RuntimeServiceGenerateMetricsViewFileBody,
+  type V1GenerateMetricsViewFileResponse,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
 } from "../../../runtime-client";
@@ -106,7 +106,7 @@ export function useCreateMetricsViewFromTableUIAction(
           await runtimeServiceGetFile(instanceId, { path: newFilePath });
           // success, AI is done
           break;
-        } catch (err) {
+        } catch {
           // 404 error, AI is not done
         }
       }
@@ -198,7 +198,7 @@ export async function createDashboardFromTableInMetricsEditor(
           // success, AI is done
           break;
         }
-      } catch (err) {
+      } catch {
         // 404 error, AI is not done
       }
     }

@@ -5,22 +5,24 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
+import type {
   RpcStatus,
   V1Expression,
   V1GetResourceResponse,
   V1MetricsViewSpec,
   V1Resource,
+  V1MetricsViewTimeRangeResponse,
+} from "@rilldata/web-common/runtime-client";
+import {
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
-  type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryOptions,
   CreateQueryResult,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
-import { ErrorType } from "../../runtime-client/http-client";
+import type { ErrorType } from "../../runtime-client/http-client";
 
 export function useMetricsView(
   instanceId: string,

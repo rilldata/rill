@@ -68,6 +68,9 @@ test.describe("File Explorer", () => {
       await page.getByLabel("Folder name").fill("my-directory");
       await page.getByLabel("Folder name").press("Enter");
 
+      // Page reloads in test environment
+      await page.waitForTimeout(2000);
+
       // Add something to the folder
       await page.getByRole("directory", { name: "my-directory" }).hover();
       await page.getByLabel("my-directory actions menu").click();

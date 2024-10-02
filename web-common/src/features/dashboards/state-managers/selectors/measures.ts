@@ -1,8 +1,8 @@
 import {
-  MetricsViewSpecDimensionSelector,
+  type MetricsViewSpecDimensionSelector,
   MetricsViewSpecMeasureType,
-  MetricsViewSpecMeasureV2,
-  V1MetricsViewSpec,
+  type MetricsViewSpecMeasureV2,
+  type V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
