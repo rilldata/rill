@@ -64,7 +64,8 @@
             try {
               await onCreate(email, values.role, isSuperUser);
               succeeded.push(email);
-            } catch (_error) {
+            } catch (error) {
+              console.error("Error adding user to organization", error);
               errored = true;
             }
           }),
