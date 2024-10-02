@@ -40,7 +40,6 @@
     })) ?? []),
   ];
 
-  // FIXME: fuzzy
   $: filteredUsers = usersWithPendingInvites.filter((user) =>
     user.userEmail.toLowerCase().includes(searchText.toLowerCase()),
   );
