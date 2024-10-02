@@ -371,7 +371,7 @@ func (c *Client) SendInvoicePaymentFailed(opts *InvoicePaymentFailed) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Payment for %s has failed", opts.OrgName),
 		Title:   fmt.Sprintf("Payment for %s has failed", opts.OrgName),
-		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has failed. Your projects will be hibenrated on %s if payment is not received.", opts.Currency, opts.Amount, opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
+		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has failed. Your projects will be hibenrated on %s if payment not received.", opts.Currency, opts.Amount, opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
 	})
 }
 
