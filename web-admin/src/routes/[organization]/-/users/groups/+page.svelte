@@ -296,6 +296,5 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
-  searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
   onCreate={handleCreate}
 />
