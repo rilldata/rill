@@ -478,7 +478,7 @@ export function canEnablePivotComparison(
   pivotState: PivotState,
   comparisonStart: string | Date | undefined,
 ) {
-  // Disable if more than 5 measures
+  // Disable if more than 10 measures
   if (pivotState.columns.measure.length > 10) {
     return false;
   }
