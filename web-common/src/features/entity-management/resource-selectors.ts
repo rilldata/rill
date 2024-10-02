@@ -3,16 +3,16 @@ import {
   createRuntimeServiceListResources,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  RpcStatus,
+  type RpcStatus,
   runtimeServiceGetResource,
   runtimeServiceListResources,
-  V1GetResourceResponse,
-  V1ListResourcesResponse,
+  type V1GetResourceResponse,
+  type V1ListResourcesResponse,
   V1ReconcileStatus,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
-import { ErrorType } from "../../runtime-client/http-client";
+import type { ErrorType } from "../../runtime-client/http-client";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",

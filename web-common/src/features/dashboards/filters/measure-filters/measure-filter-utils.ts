@@ -1,7 +1,7 @@
 import {
   mapExprToMeasureFilter,
   mapMeasureFilterToExpr,
-  MeasureFilterEntry,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   createAndExpression,
@@ -12,7 +12,7 @@ import type {
   DimensionThresholdFilter,
   MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { V1Expression } from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function mergeMeasureFilters(
   dashboard: MetricsExplorerEntity,

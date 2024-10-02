@@ -26,6 +26,7 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import {
   getQueryServiceMetricsViewSchemaQueryKey,
   queryServiceMetricsViewSchema,
+  type V1ExploreSpec,
   type V1Expression,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
@@ -40,6 +41,7 @@ export async function getDashboardFromAggregationRequest({
   timeRangeSummary,
   executionTime,
   metricsView,
+  explore,
   annotations,
 }: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
@@ -49,6 +51,7 @@ export async function getDashboardFromAggregationRequest({
       instanceId,
       dashboard,
       metricsView,
+      explore,
       annotations["web_open_state"],
     );
     loadedFromState = true;
@@ -166,6 +169,7 @@ async function mergeDashboardFromUrlState(
   instanceId: string,
   dashboard: MetricsExplorerEntity,
   metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
   urlState: string,
 ) {
   const schemaResp = await queryClient.fetchQuery({
@@ -180,6 +184,7 @@ async function mergeDashboardFromUrlState(
   const parsedDashboard = getDashboardStateFromUrl(
     urlState,
     metricsViewSpec,
+    exploreSpec,
     schemaResp.schema,
   );
   for (const k in parsedDashboard) {

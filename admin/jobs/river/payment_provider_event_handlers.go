@@ -36,7 +36,7 @@ func (w *PaymentMethodAddedWorker) Work(ctx context.Context, job *river.Job[Paym
 	}
 
 	// check for no payment method billing error
-	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNoPaymentMethod)
+	be, err := w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNoPaymentMethod)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -128,7 +128,7 @@ func (w *CustomerAddressUpdatedWorker) Work(ctx context.Context, job *river.Job[
 	}
 
 	// look for no billable address billing error and remove it
-	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNoBillableAddress)
+	be, err := w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNoBillableAddress)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)

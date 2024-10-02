@@ -30,7 +30,7 @@ export const primaryDimension = (
   dashData: DashboardDataSources,
 ): MetricsViewSpecDimensionV2 | undefined => {
   const dimName = dashData.dashboard.selectedDimensionName;
-  return dashData.metricsSpecQueryResult.data?.dimensions?.find(
+  return dashData.validMetricsView?.dimensions?.find(
     (dim) => dim.name === dimName,
   );
 };

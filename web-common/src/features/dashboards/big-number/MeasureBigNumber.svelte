@@ -2,6 +2,7 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
@@ -10,19 +11,17 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import {
-    CrossfadeParams,
-    FlyParams,
+    type CrossfadeParams,
+    type FlyParams,
     crossfade,
     fly,
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
-
+  export let onExpandMeasure: () => void;
   export let comparisonValue: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
@@ -35,9 +34,11 @@
       ? (value - comparisonValue) / comparisonValue
       : undefined;
 
-  const dispatch = createEventDispatcher();
-
-  $: measureValueFormatter = createMeasureValueFormatter<null>(measure);
+  $: measureValueFormatter = createMeasureValueFormatter<null>(
+    measure,
+    false,
+    true,
+  );
 
   // this is used to show the full value in tooltips when the user hovers
   // over the number. If not present, we'll use the string "no data"
@@ -82,8 +83,10 @@
   let suppressTooltip = false;
 
   const handleExpandMeasure = () => {
-    isMeasureExpanded = !isMeasureExpanded;
-    dispatch("expand-measure");
+    if (!isMeasureExpanded) {
+      isMeasureExpanded = true;
+      onExpandMeasure();
+    }
   };
 </script>
 

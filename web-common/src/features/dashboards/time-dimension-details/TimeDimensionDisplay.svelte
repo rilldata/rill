@@ -25,17 +25,17 @@
     tableInteractionStore,
   } from "./time-dimension-data-store";
   import type { TableData } from "./types";
-  import {
+  import type {
     MetricsViewSpecDimensionV2,
     MetricsViewSpecMeasureV2,
   } from "@rilldata/web-common/runtime-client";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
   import { useDimensionTableData } from "./time-dimension-data-store";
-  import { TimeSeriesDatum } from "../time-series/timeseries-data-store";
-  import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import type { TimeSeriesDatum } from "../time-series/timeseries-data-store";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
-  export let metricViewName: string;
+  export let exploreName: string;
   export let formattedTimeSeriesData: TimeSeriesDatum[];
   export let primaryTotal: number;
   export let unfilteredTotal: number;
@@ -110,10 +110,12 @@
     timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
   ) as (d: Date) => string;
 
-  $: if (comparisonDimension && dimensionName) {
+  $: if (comparisonDimension && dimensionName && $tableDimensionData.length) {
     const selectedValues = selectedDimensionValues({
       dashboard: $dashboardStore,
     })(dimensionName);
+
+    console.log($tableDimensionData);
 
     timeDimensionData = prepareDimensionData(
       formattedTimeSeriesData,
@@ -125,7 +127,8 @@
       isAllTime,
       pinIndex,
     );
-  } else {
+  } else if (!comparisonDimension && !dimensionName) {
+    console.log("testng");
     const currentRange = selectedTimeRange?.name;
 
     let currentLabel = "Custom Range";
@@ -215,7 +218,7 @@
     else if (pinIndex === -1) {
       newPinIndex = length - 1;
     }
-    metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
+    metricsExplorerStore.setPinIndex(exploreName, newPinIndex);
   }
 
   function handleKeyDown(
@@ -246,14 +249,14 @@
   <TDDHeader
     {excludeMode}
     {dimensionName}
-    {metricViewName}
+    {exploreName}
     expandedMeasureName={measure.name ?? ""}
     {areAllTableRowsSelected}
     isRowsEmpty={!rowHeaderLabels.length}
     isFetching={!timeDimensionData?.columnHeaderData}
     on:toggle-all-search-items={toggleAllSearchItems}
     on:search={(e) => {
-      metricsExplorerStore.setSearchText(metricViewName, e.detail);
+      metricsExplorerStore.setSearchText(exploreName, e.detail);
     }}
   />
 

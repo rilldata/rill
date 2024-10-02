@@ -20,7 +20,7 @@ import {
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  MeasureType,
+  type MeasureType,
   type PivotDataRow,
   type PivotDataStoreConfig,
   type PivotTimeConfig,

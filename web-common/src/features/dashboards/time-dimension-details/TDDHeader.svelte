@@ -14,12 +14,8 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -32,7 +28,7 @@
   import TDDExportButton from "./TDDExportButton.svelte";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
 
-  export let metricViewName: string;
+  export let exploreName: string;
   export let dimensionName: string | undefined;
   export let isFetching = false;
   export let excludeMode: boolean;
@@ -45,21 +41,17 @@
 
   const {
     selectors: {
-      measures: { measureLabel },
+      measures: { measureLabel, allMeasures },
       dimensions: { getDimensionDisplayName },
     },
     actions: {
       dimensionsFilter: { toggleDimensionFilterMode },
     },
+    dashboardStore,
   } = getStateManagers();
 
-  $: metricsView = useMetricsView(getStateManagers());
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  $: allMeasures = $metricsView?.data?.measures ?? [];
-
-  $: selectableMeasures = allMeasures
-    ?.filter((m) => m.name !== undefined || m.label !== undefined)
+  $: selectableMeasures = $allMeasures
+    .filter((m) => m.name !== undefined || m.label !== undefined)
     .map((m) =>
       // Note: undefined values are filtered out above, so the
       // empty string fallback is unreachable.
@@ -69,10 +61,10 @@
       }),
     );
 
-  $: selectedItems = allMeasures?.map((m) => m.name === expandedMeasureName);
+  $: selectedItems = $allMeasures.map((m) => m.name === expandedMeasureName);
 
   $: selectedMeasureLabel =
-    allMeasures?.find((m) => m.name === expandedMeasureName)?.label ??
+    $allMeasures.find((m) => m.name === expandedMeasureName)?.label ??
     expandedMeasureName ??
     "";
 
@@ -104,7 +96,7 @@
   }
 
   function switchMeasure(event) {
-    metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
+    metricsExplorerStore.setExpandedMeasureName(exploreName, event.detail);
   }
 
   let showReplacePivotModal = false;
@@ -138,7 +130,7 @@
         ]
       : [];
     metricsExplorerStore.createPivot(
-      metricViewName,
+      exploreName,
       { dimension: rowDimensions },
       {
         dimension: [
@@ -167,7 +159,7 @@
         <Row size="16px" /> Rows
       </div>
 
-      <ComparisonSelector chipStyle {metricViewName} />
+      <ComparisonSelector chipStyle {exploreName} />
     </div>
 
     <div class="flex items-center gap-x-4 pl-2">
@@ -175,7 +167,7 @@
         <Column size="16px" /> Columns
       </div>
       <div class="flex items-center gap-x-2">
-        <TimeGrainSelector {metricViewName} pill />
+        <TimeGrainSelector {exploreName} tdd />
         <SearchableFilterChip
           label={selectedMeasureLabel}
           on:item-clicked={switchMeasure}
@@ -247,10 +239,7 @@
       </Tooltip>
 
       {#if $exports}
-        <TDDExportButton
-          {metricViewName}
-          includeScheduledReport={$adminServer}
-        />
+        <TDDExportButton includeScheduledReport={$adminServer} />
       {/if}
       <Button
         compact
@@ -267,10 +256,10 @@
 
 <ReplacePivotDialog
   open={showReplacePivotModal}
-  on:close={() => {
+  onCancel={() => {
     showReplacePivotModal = false;
   }}
-  on:replace={() => createPivot()}
+  onReplace={createPivot}
 />
 
 <style lang="postcss">

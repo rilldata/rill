@@ -1,6 +1,6 @@
 import {
   getRuntimeServiceGetResourceQueryKey,
-  V1Resource,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 

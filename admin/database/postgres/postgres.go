@@ -1139,8 +1139,8 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
-	if opts.MetricsViewFields == nil {
-		opts.MetricsViewFields = []string{}
+	if opts.Fields == nil {
+		opts.Fields = []string{}
 	}
 
 	encSecret, encKeyID, err := c.encrypt(opts.Secret)
@@ -1150,9 +1150,9 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state, title)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State, opts.Title,
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, resource_type, resource_name, filter_json, fields, state, title)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.ResourceType, opts.ResourceName, opts.FilterJSON, opts.Fields, opts.State, opts.Title,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
@@ -1948,7 +1948,7 @@ func (c *connection) FindOrganizationForBillingCustomerID(ctx context.Context, c
 	return res, nil
 }
 
-func (c *connection) FindBillingIssues(ctx context.Context, orgID string) ([]*database.BillingIssue, error) {
+func (c *connection) FindBillingIssuesForOrg(ctx context.Context, orgID string) ([]*database.BillingIssue, error) {
 	var res []*billingIssueDTO
 	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE org_id = $1`, orgID)
 	if err != nil {
@@ -1962,7 +1962,7 @@ func (c *connection) FindBillingIssues(ctx context.Context, orgID string) ([]*da
 	return billingErrors, nil
 }
 
-func (c *connection) FindBillingIssueByType(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
+func (c *connection) FindBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
 	res := &billingIssueDTO{}
 	err := c.db.GetContext(ctx, res, `SELECT * FROM billing_issues WHERE org_id = $1 AND type = $2`, orgID, errorType)
 	if err != nil {
@@ -1971,9 +1971,9 @@ func (c *connection) FindBillingIssueByType(ctx context.Context, orgID string, e
 	return res.AsModel(), nil
 }
 
-func (c *connection) FindBillingIssueByTypeNotOverdueProcessed(ctx context.Context, errorType database.BillingIssueType) ([]*database.BillingIssue, error) {
+func (c *connection) FindBillingIssueByType(ctx context.Context, errorType database.BillingIssueType) ([]*database.BillingIssue, error) {
 	var res []*billingIssueDTO
-	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1 AND overdue_processed = false`, errorType)
+	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1`, errorType)
 	if err != nil {
 		return nil, parseErr("billing issues", err)
 	}
@@ -1985,13 +1985,18 @@ func (c *connection) FindBillingIssueByTypeNotOverdueProcessed(ctx context.Conte
 	return billingErrors, nil
 }
 
-func (c *connection) FindBillingIssueByTypeNotOverdueProcessedForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
-	res := &billingIssueDTO{}
-	err := c.db.GetContext(ctx, res, `SELECT * FROM billing_issues WHERE org_id = $1 AND type = $2 AND overdue_processed = false`, orgID, errorType)
+func (c *connection) FindBillingIssueByTypeAndOverdueProcessed(ctx context.Context, errorType database.BillingIssueType, overdueProcessed bool) ([]*database.BillingIssue, error) {
+	var res []*billingIssueDTO
+	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1 AND overdue_processed = $2`, errorType, overdueProcessed)
 	if err != nil {
-		return nil, parseErr("billing issue", err)
+		return nil, parseErr("billing issues", err)
 	}
-	return res.AsModel(), nil
+
+	var billingErrors []*database.BillingIssue
+	for _, dto := range res {
+		billingErrors = append(billingErrors, dto.AsModel())
+	}
+	return billingErrors, nil
 }
 
 func (c *connection) UpsertBillingIssue(ctx context.Context, opts *database.UpsertBillingIssueOptions) (*database.BillingIssue, error) {
@@ -2032,7 +2037,7 @@ func (c *connection) DeleteBillingIssue(ctx context.Context, id string) error {
 	return checkDeleteRow("billing issue", res, err)
 }
 
-func (c *connection) DeleteBillingIssueByType(ctx context.Context, orgID string, errorType database.BillingIssueType) error {
+func (c *connection) DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_issues WHERE org_id = $1 AND type = $2", orgID, errorType)
 	return checkDeleteRow("billing issue", res, err)
 }
@@ -2163,8 +2168,8 @@ func (c *connection) decryptMap(m map[string]string, encKeyID string) (map[strin
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenDTO struct {
 	*database.MagicAuthToken
-	Attributes        pgtype.JSON      `db:"attributes"`
-	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+	Attributes pgtype.JSON      `db:"attributes"`
+	Fields     pgtype.TextArray `db:"fields"`
 }
 
 func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
@@ -2172,7 +2177,7 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 	if err != nil {
 		return nil, err
 	}
-	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
+	err = dto.Fields.AssignTo(&dto.MagicAuthToken.Fields)
 	if err != nil {
 		return nil, err
 	}
@@ -2193,8 +2198,8 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes        pgtype.JSON      `db:"attributes"`
-	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+	Attributes pgtype.JSON      `db:"attributes"`
+	Fields     pgtype.TextArray `db:"fields"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -2202,7 +2207,7 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	if err != nil {
 		return nil, err
 	}
-	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
+	err = dto.Fields.AssignTo(&dto.MagicAuthToken.Fields)
 	if err != nil {
 		return nil, err
 	}

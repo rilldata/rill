@@ -3,14 +3,14 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  V1MetricsViewAggregationResponseDataItem,
-  V1MetricsViewTimeSeriesResponse,
+  type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewTimeSeriesResponse,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
-import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
-import { DimensionDataItem } from "./multiple-dimension-queries";
+import type { DimensionDataItem } from "./multiple-dimension-queries";
 
 export interface TimeSeriesDatum {
   ts?: Date;
@@ -47,10 +47,10 @@ export function createMetricsViewTimeSeries(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
     ],
-    ([runtime, metricViewName, dashboardStore, timeControls], set) =>
+    ([runtime, metricsViewName, dashboardStore, timeControls], set) =>
       createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           measureNames: measures,
           where: sanitiseExpression(

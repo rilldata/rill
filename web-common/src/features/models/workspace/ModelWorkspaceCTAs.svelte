@@ -4,8 +4,10 @@
     Button,
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
@@ -14,22 +16,32 @@
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
-  import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ExportFormat,
+    V1ReconcileStatus,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useGetDashboardsForModel } from "../../dashboards/selectors";
+  import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
+  import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
+  export let resource: V1Resource | undefined;
   export let modelName: string;
-  export let suppressTooltips = false;
   export let modelHasError = false;
-
   export let collapse = false;
 
   const exportModelMutation = createExportTableMutation();
 
-  $: dashboardsQuery = useGetDashboardsForModel($runtime.instanceId, modelName);
+  $: isModelIdle =
+    resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  $: availableDashboards = $dashboardsQuery.data ?? [];
+  $: metricsViewsQuery = useGetMetricsViewsForModel(
+    $runtime.instanceId,
+    modelName,
+  );
+
+  $: availableMetricsViews = $metricsViewsQuery.data ?? [];
 
   const onExport = async (format: V1ExportFormat) => {
     return $exportModelMutation.mutateAsync({
@@ -42,82 +54,52 @@
   };
 </script>
 
-<Tooltip
-  alignment="middle"
-  distance={16}
-  location="left"
-  suppress={suppressTooltips}
->
-  <!-- attach floating element right here-->
-  <WithTogglableFloatingElement
-    alignment="end"
-    bind:active={suppressTooltips}
-    distance={8}
-    let:toggleFloatingElement
-    location="bottom"
-  >
+<ModelRefreshButton {resource} {collapse} />
+
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger asChild let:builder>
     <Button
-      disabled={modelHasError}
-      on:click={toggleFloatingElement}
+      disabled={modelHasError || !isModelIdle}
       type="secondary"
+      builders={[builder]}
     >
-      <IconSpaceFixer pullLeft pullRight={collapse}
-        ><CaretDownIcon /></IconSpaceFixer
-      >
+      <IconSpaceFixer pullLeft pullRight={collapse}>
+        <Export />
+      </IconSpaceFixer>
 
       <ResponsiveButtonText {collapse}>Export</ResponsiveButtonText>
+      <CaretDownIcon />
     </Button>
-    <Menu
-      dark
-      let:toggleFloatingElement
-      on:click-outside={toggleFloatingElement}
-      on:escape={toggleFloatingElement}
-      slot="floating-element"
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="end">
+    <DropdownMenu.Item
+      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
     >
-      <MenuItem
-        on:select={() => {
-          toggleFloatingElement();
-          onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET);
-        }}
-      >
-        Export as Parquet
-      </MenuItem>
-      <MenuItem
-        on:select={() => {
-          toggleFloatingElement();
-          onExport(V1ExportFormat.EXPORT_FORMAT_CSV);
-        }}
-      >
-        Export as CSV
-      </MenuItem>
-      <MenuItem
-        on:select={() => {
-          toggleFloatingElement();
-          onExport(V1ExportFormat.EXPORT_FORMAT_XLSX);
-        }}
-      >
-        Export as XLSX
-      </MenuItem>
-    </Menu>
-  </WithTogglableFloatingElement>
-  <TooltipContent slot="tooltip-content">
-    {#if modelHasError}Fix the errors in your model to export
-    {:else}
-      Export the modeled data as a file
-    {/if}
-  </TooltipContent>
-</Tooltip>
+      Export as Parquet
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_CSV)}
+    >
+      Export as CSV
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_XLSX)}
+    >
+      Export as XLSX
+    </DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
 
-{#if availableDashboards?.length === 0}
+{#if availableMetricsViews?.length === 0}
   <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
-{:else if availableDashboards?.length === 1}
+{:else if availableMetricsViews?.length === 1}
   <Tooltip distance={8} alignment="end">
     <Button
       type="primary"
       on:click={async () => {
-        if (availableDashboards[0]?.meta?.filePaths?.[0]) {
+        if (availableMetricsViews[0]?.meta?.filePaths?.[0]) {
           await goto(
-            `/files/${removeLeadingSlash(availableDashboards[0].meta.filePaths[0])}`,
+            `/files/${removeLeadingSlash(availableMetricsViews[0].meta.filePaths[0])}`,
           );
         }
       }}
@@ -125,10 +107,10 @@
       <IconSpaceFixer pullLeft pullRight={collapse}>
         <Forward />
       </IconSpaceFixer>
-      <ResponsiveButtonText {collapse}>Go to dashboard</ResponsiveButtonText>
+      <ResponsiveButtonText {collapse}>Go to metrics</ResponsiveButtonText>
     </Button>
     <TooltipContent slot="tooltip-content">
-      Go to the dashboard associated with this model
+      Go to the metrics view associated with this model
     </TooltipContent>
   </Tooltip>
 {:else}
@@ -142,7 +124,7 @@
         <IconSpaceFixer pullLeft pullRight={collapse}>
           <Forward />
         </IconSpaceFixer>
-        <ResponsiveButtonText {collapse}>Go to dashboard</ResponsiveButtonText>
+        <ResponsiveButtonText {collapse}>Go to metrics</ResponsiveButtonText>
       </Button>
       <Menu
         dark
@@ -151,7 +133,7 @@
         on:escape={toggleFloatingElement}
         on:click-outside={toggleFloatingElement}
       >
-        {#each availableDashboards as resource}
+        {#each availableMetricsViews as resource (resource?.meta?.name?.name)}
           <MenuItem
             on:select={async () => {
               if (resource?.meta?.filePaths?.[0]) {
@@ -168,7 +150,8 @@
       </Menu>
     </WithTogglableFloatingElement>
     <TooltipContent slot="tooltip-content">
-      Go to one of {availableDashboards.length} dashboards associated with this model
+      Go to one of {availableMetricsViews.length} metrics views associated with this
+      model
     </TooltipContent>
   </Tooltip>
 {/if}

@@ -137,7 +137,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
         if (res.result)
           this.listeners.get("response")?.forEach((cb) => void cb(res.result));
       }
-    } catch (err) {
+    } catch {
       clearTimeout(this.retryTimeout);
 
       if (this.controller) this.cancel();

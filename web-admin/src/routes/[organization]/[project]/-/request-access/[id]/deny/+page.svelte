@@ -45,7 +45,7 @@
         type: "success",
         message: `${$requestAccess.data.email} has been denied access to ${project}`,
       });
-    } catch (e) {
+    } catch {
       eventBus.emit("notification", {
         type: "error",
         message: parseAccessRequestError(

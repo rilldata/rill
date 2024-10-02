@@ -5,7 +5,7 @@
     onMount,
     setContext,
   } from "svelte";
-  import { Writable, writable } from "svelte/store";
+  import { type Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
   import { clickOutside } from "../../../lib/actions/click-outside";
 

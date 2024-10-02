@@ -1,14 +1,12 @@
 <script lang="ts">
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
-  import {
-    useDashboard,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
@@ -18,7 +16,8 @@
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
 
-  export let metricViewName: string;
+  export let exploreName: string;
+  export let metricsViewName: string;
 
   const { cloudDataViewer, readOnly } = featureFlags;
 
@@ -26,23 +25,23 @@
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: metricsExplorer = useDashboardStore(metricViewName);
+  $: exploreStore = useExploreStore(exploreName);
 
-  $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
-  $: expandedMeasureName = $metricsExplorer?.tdd?.expandedMeasureName;
-  $: showPivot = $metricsExplorer?.pivot?.active;
+  $: selectedDimensionName = $exploreStore?.selectedDimensionName;
+  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
+  $: showPivot = $exploreStore?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
-    metricViewName,
+    metricsViewName,
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isRillDeveloper = $readOnly === false;
 
-  // Check if the mock user (if selected) has access to the dashboard
-  $: dashboard = useDashboard($runtime.instanceId, metricViewName);
+  // Check if the mock user (if selected) has access to the explore
+  $: explore = useExploreValidSpec($runtime.instanceId, exploreName);
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && $dashboard.error?.response?.status === 404;
+    $selectedMockUserStore && $explore.error?.response?.status === 404;
 </script>
 
 <article
@@ -57,7 +56,7 @@
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
-      {#key metricViewName}
+      {#key exploreName}
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
@@ -71,7 +70,7 @@
   {#if mockUserHasNoAccess}
     <!-- Additional safeguard for mock users without dashboard access. -->
     <ErrorPage
-      statusCode={$dashboard.error?.response?.status}
+      statusCode={$explore.error?.response?.status}
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
     />
@@ -83,14 +82,18 @@
       class:left-shift={extraLeftPadding}
     >
       <section class="pt-2 w-full" class:!w-fit={!expandedMeasureName}>
-        {#key metricViewName}
+        {#key exploreName}
           {#if hasTimeSeries}
             <MetricsTimeSeriesCharts
-              {metricViewName}
+              {exploreName}
               workspaceWidth={exploreContainerWidth}
             />
           {:else}
-            <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+            <MeasuresContainer
+              {exploreContainerWidth}
+              {metricsViewName}
+              {exploreName}
+            />
           {/if}
         {/key}
       </section>
@@ -109,7 +112,7 @@
 </article>
 
 {#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !mockUserHasNoAccess}
-  <RowsViewerAccordion {metricViewName} />
+  <RowsViewerAccordion {metricsViewName} {exploreName} />
 {/if}
 
 <style lang="postcss">

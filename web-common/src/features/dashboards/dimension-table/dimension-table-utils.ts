@@ -14,7 +14,7 @@ import {
   copyFilterExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationResponseDataItem,
   V1Operation,
 } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";

@@ -4,7 +4,7 @@ import {
   getDimensionValueTimeSeries,
   type DimensionDataItem,
 } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-import { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+import { type TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
 import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";

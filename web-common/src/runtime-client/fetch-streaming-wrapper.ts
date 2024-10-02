@@ -36,7 +36,7 @@ export async function* streamingFetchWrapper<T>(
         const json = JSON.parse(prevPart + part);
         prevPart = "";
         yield json;
-      } catch (err) {
+      } catch {
         prevPart = part;
         // nothing
       }

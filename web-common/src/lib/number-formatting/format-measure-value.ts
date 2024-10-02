@@ -10,13 +10,13 @@ import {
   formatMsInterval,
   formatMsToDuckDbIntervalString,
 } from "./strategies/intervals";
+import { NonFormatter } from "./strategies/none";
 import { PerRangeFormatter } from "./strategies/per-range";
 import {
   defaultCurrencyOptions,
   defaultGenericNumOptions,
   defaultPercentOptions,
 } from "./strategies/per-range-default-options";
-import { NonFormatter } from "./strategies/none";
 
 /**
  * This function is intended to provides a compact,
@@ -82,6 +82,13 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
 }
 
 /**
+ * Parse the currency symbol from a d3 format string.
+ */
+export function includesCurrencySymbol(formatString: string): boolean {
+  return formatString.includes("$");
+}
+
+/**
  * This function is intended to provide a lossless
  * humanized string representation of a number in cases
  * where a raw number will be meaningless to the user.
@@ -116,6 +123,7 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
 export function createMeasureValueFormatter<T extends null | undefined = never>(
   measureSpec: MetricsViewSpecMeasureV2,
   useUnabridged = false,
+  isBigNumber = false,
 ): (value: number | string | T) => string | T {
   const humanizer = useUnabridged
     ? humanizeDataTypeUnabridged
@@ -135,9 +143,21 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   if (measureSpec.formatD3 !== undefined && measureSpec.formatD3 !== "") {
     try {
       const formatter = d3format(measureSpec.formatD3);
-      return (value: number | string | T) =>
-        typeof value === "number" ? formatter(value) : value;
-    } catch (error) {
+      const hasCurrencySymbol = includesCurrencySymbol(measureSpec.formatD3);
+      return (value: number | string | T) => {
+        if (typeof value !== "number") return value;
+
+        if (isBigNumber) {
+          // For Big Number always use the humanizer
+          if (hasCurrencySymbol) {
+            return humanizer(value, FormatPreset.CURRENCY_USD);
+          } else {
+            return humanizer(value, FormatPreset.HUMANIZE);
+          }
+        }
+        return formatter(value);
+      };
+    } catch {
       return (value: number | string | T) =>
         typeof value === "number"
           ? humanizer(value, FormatPreset.HUMANIZE)
@@ -146,11 +166,14 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   }
 
   // finally, use the formatPreset.
-  const formatPreset =
+  let formatPreset =
     measureSpec.formatPreset && measureSpec.formatPreset !== ""
       ? (measureSpec.formatPreset as FormatPreset)
       : FormatPreset.HUMANIZE;
 
+  if (isBigNumber && formatPreset === FormatPreset.NONE) {
+    formatPreset = FormatPreset.HUMANIZE;
+  }
   return (value: number | T) =>
     typeof value === "number" ? humanizer(value, formatPreset) : value;
 }

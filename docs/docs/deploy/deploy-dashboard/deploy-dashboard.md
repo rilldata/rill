@@ -17,7 +17,7 @@ Cloud datastores will typically require service keys to access data. Make sure t
 
 The flow diagram below shows two options for deploying an existing project. 
 
-**Deploy via the UI or CLI using `rill project upload`**: 
+**Deploy via the UI or CLI using `rill project deploy`**: 
 ```mermaid
 graph LR;
     A(Local code files);
@@ -101,7 +101,7 @@ Once completed, you'll see the newly updated repository on the UI of your status
 ## Deploying a project via the CLI
 
 :::note
-Starting from v0.49, we have deprecated `rill deploy` in favor of `rill project upload` and `rill project connect-github`. For more information on the `rill deploy` command click [here](#deprecated-rill-deploy).
+Starting from v0.49, we have deprecated `rill deploy` in favor of `rill project deploy` and `rill project connect-github`. For more information on the `rill deploy` command click [here](#deprecated-rill-deploy).
 :::
 
 ### Deploy project without GitHub Repository

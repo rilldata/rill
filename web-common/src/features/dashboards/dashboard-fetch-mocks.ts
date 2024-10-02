@@ -1,5 +1,7 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type {
+  V1ExploreSpec,
+  V1GetExploreResponse,
   V1GetResourceResponse,
   V1MetricsViewSpec,
   V1TimeRangeSummary,
@@ -42,6 +44,41 @@ export class DashboardFetchMocks {
     } as V1GetResourceResponse);
   }
 
+  public mockMetricsExplore(
+    name: string,
+    metricsView: V1MetricsViewSpec,
+    explore: V1ExploreSpec,
+  ) {
+    this.responses.set(`resources__explore__${name}`, {
+      metricsView: {
+        meta: {
+          name: {
+            kind: ResourceKind.MetricsView,
+            name,
+          },
+        },
+        metricsView: {
+          state: {
+            validSpec: metricsView,
+          },
+        },
+      },
+      explore: {
+        meta: {
+          name: {
+            kind: ResourceKind.Explore,
+            name,
+          },
+        },
+        explore: {
+          state: {
+            validSpec: explore,
+          },
+        },
+      },
+    } as V1GetExploreResponse);
+  }
+
   public mockTimeRangeSummary(
     metricsViewName: string,
     resp: V1TimeRangeSummary,
@@ -62,6 +99,10 @@ export class DashboardFetchMocks {
     switch (type) {
       case "resource":
         key = type + "__" + u.searchParams.get("name.name");
+        break;
+
+      case "resources":
+        key = type + "__" + parts[0] + "__" + u.searchParams.get("name");
         break;
 
       case "catalog":
@@ -88,6 +129,7 @@ export class DashboardFetchMocks {
       ready: true,
       ok: true,
       json: () => this.responses.get(key),
+      headers: new Map([["content-type", "application/json"]]),
     };
   }
 }

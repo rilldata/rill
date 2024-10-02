@@ -22,7 +22,7 @@
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
   import type { TDDComparison, TableData, TablePosition } from "./types";

@@ -243,6 +243,11 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID, subID, pl
 		return fmt.Errorf("failed to upsert billing error: %w", err)
 	}
 
+	if subID == "" || planID == "" {
+		s.Logger.Named("billing").Warn("no subscription or plan ID provided, skipping trial billing issues", zap.String("org_id", orgID))
+		return nil
+	}
+
 	// raise on-trial billing warning
 	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 		OrgID: orgID,
@@ -261,9 +266,9 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID, subID, pl
 	return nil
 }
 
-// CleanupTrialBillingIssues removes trial related billing issues and cancel associated jobs
+// CleanupTrialBillingIssues removes trial related billing issues
 func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) error {
-	bite, err := s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeTrialEnded)
+	bite, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing issue: %w", err)
@@ -277,7 +282,7 @@ func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) e
 		}
 	}
 
-	biot, err := s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeOnTrial)
+	biot, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeOnTrial)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing issue: %w", err)
@@ -294,9 +299,9 @@ func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) e
 	return nil
 }
 
-// CleanupBillingErrorSubCancellation removes subscription cancellation related billing error and cancel associated job
+// CleanupBillingErrorSubCancellation removes subscription cancellation related billing error
 func (s *Service) CleanupBillingErrorSubCancellation(ctx context.Context, orgID string) error {
-	bisc, err := s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
+	bisc, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -314,7 +319,7 @@ func (s *Service) CleanupBillingErrorSubCancellation(ctx context.Context, orgID 
 }
 
 func (s *Service) CheckBillingErrors(ctx context.Context, orgID string) error {
-	be, err := s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeTrialEnded)
+	be, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return err
@@ -325,7 +330,7 @@ func (s *Service) CheckBillingErrors(ctx context.Context, orgID string) error {
 		return fmt.Errorf("trial has ended")
 	}
 
-	be, err = s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypePaymentFailed)
+	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypePaymentFailed)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return err
@@ -336,7 +341,7 @@ func (s *Service) CheckBillingErrors(ctx context.Context, orgID string) error {
 		return fmt.Errorf("invoice payment failed")
 	}
 
-	be, err = s.DB.FindBillingIssueByType(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
+	be, err = s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return err
