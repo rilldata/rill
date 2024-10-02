@@ -258,7 +258,7 @@
     <div class="text-red-500">
       Error loading organization user groups: {$listOrganizationMemberUsergroups.error}
     </div>
-  {:else if $listOrganizationMemberUsergroups.isSuccess}
+  {:else if $listOrganizationMemberUsergroups.isSuccess && $listOrganizationMemberUsers.isSuccess}
     <div class="flex flex-col gap-4">
       <div class="flex flex-row gap-x-4">
         <Search
