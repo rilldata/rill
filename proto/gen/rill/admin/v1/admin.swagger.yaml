@@ -4655,11 +4655,8 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-      subscriptions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Subscription'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1ReportOptions:
     type: object
     properties:
@@ -4879,11 +4876,8 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-      subscriptions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Subscription'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1SudoUpdateOrganizationCustomDomainRequest:
     type: object
     properties:
@@ -4969,11 +4963,8 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-      subscriptions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Subscription'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1UpdateBookmarkRequest:
     type: object
     properties:

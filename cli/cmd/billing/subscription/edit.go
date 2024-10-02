@@ -55,7 +55,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.PrintfSuccess("Successfully subscribed to plan %q for org %q\n", plan, ch.Org)
-			ch.PrintSubscriptions(resp.Subscriptions)
+			ch.PrintSubscriptions([]*adminv1.Subscription{resp.Subscription})
 			return nil
 		},
 	}

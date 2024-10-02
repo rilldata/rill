@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/riverqueue/river"
@@ -40,20 +41,12 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 	}
 
 	// check if the org has any active subscription
-	sub, err := w.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
+	sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
 	}
 
-	if len(sub) == 0 {
-		return fmt.Errorf("no active subscription found for the org %q", org.Name)
-	}
-
-	if len(sub) > 1 {
-		return fmt.Errorf("multiple active subscriptions found for the org %q", org.Name)
-	}
-
-	if sub[0].ID != job.Args.SubID || sub[0].Plan.ID != job.Args.PlanID {
+	if sub.ID != job.Args.SubID || sub.Plan.ID != job.Args.PlanID {
 		// subscription or plan have changed, ignore
 		w.logger.Warn("plan change api worker - subscription or plan changed before job could run, doing nothing, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 		return nil
@@ -74,16 +67,16 @@ func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanCha
 	}
 
 	// if the new plan is still a trial plan, raise on-trial billing issue. Can happen if manually assigned new trial plan for example to extend trial period for a customer
-	if sub[0].TrialEndDate.After(time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1)) {
+	if sub.TrialEndDate.After(time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1)) {
 		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeOnTrial,
 			Metadata: &database.BillingIssueMetadataOnTrial{
-				SubID:   sub[0].ID,
-				PlanID:  sub[0].Plan.ID,
-				EndDate: sub[0].TrialEndDate,
+				SubID:   sub.ID,
+				PlanID:  sub.Plan.ID,
+				EndDate: sub.TrialEndDate,
 			},
-			EventTime: sub[0].StartDate,
+			EventTime: sub.StartDate,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to upsert billing warning: %w", err)
@@ -131,14 +124,16 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 		}
 
 		// check if the org has any active subscription
-		sub, err := w.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
+		sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 		if err != nil {
-			return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
+			if !errors.Is(err, billing.ErrNotFound) {
+				return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
+			}
 		}
 
-		if len(sub) > 0 {
-			w.logger.Warn("active subscriptions found for the org even after sub cancellation, skipping hibernation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-			return fmt.Errorf("active subscriptions found for the org %q", org.Name)
+		if sub != nil {
+			w.logger.Warn("active subscription found for the org even after sub cancellation, skipping hibernation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+			return fmt.Errorf("active subscription found for the org %q", org.Name)
 		}
 
 		// update quotas to 0 and hibernate all projects

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/riverqueue/river"
@@ -206,23 +208,17 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 			return fmt.Errorf("failed to find organization: %w", err)
 		}
 
-		// double check - get active subscriptions for the org
-		sub, err := w.admin.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
+		// double check - get active subscription for the org
+		sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 		if err != nil {
+			if errors.Is(err, billing.ErrNotFound) || strings.Contains(err.Error(), "multiple active subscriptions") {
+				w.logger.Warn("trial grace period end check - subscription mismatch, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+				continue
+			}
 			return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
 		}
 
-		if len(sub) == 0 {
-			w.logger.Warn("trial grace period end check - no active subscription found for the org, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-			continue
-		}
-
-		if len(sub) > 1 {
-			w.logger.Warn("trial grace period end check - multiple active subscriptions found for the org, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-			continue
-		}
-
-		if sub[0].ID != m.SubID || sub[0].Plan.ID != m.PlanID {
+		if sub.ID != m.SubID || sub.Plan.ID != m.PlanID {
 			w.logger.Warn("trial grace period end check - subscription or plan changed, but billing issue not updated, doing nothing, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 			// subscription or plan have changed, mark the billing issue as processed
 			err = w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, o.ID)

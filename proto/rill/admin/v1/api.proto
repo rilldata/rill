@@ -1265,7 +1265,7 @@ message SudoUpdateOrganizationBillingCustomerRequest {
 
 message SudoUpdateOrganizationBillingCustomerResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
@@ -2006,12 +2006,12 @@ message CancelBillingSubscriptionResponse {}
 
 message UpdateBillingSubscriptionResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
 }
 
 message RenewBillingSubscriptionResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
 }
 
 message GetPaymentsPortalURLRequest {

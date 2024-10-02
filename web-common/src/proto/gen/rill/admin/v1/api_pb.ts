@@ -3839,9 +3839,9 @@ export class SudoUpdateOrganizationBillingCustomerResponse extends Message<SudoU
   organization?: Organization;
 
   /**
-   * @generated from field: repeated rill.admin.v1.Subscription subscriptions = 2;
+   * @generated from field: rill.admin.v1.Subscription subscriptions = 2;
    */
-  subscriptions: Subscription[] = [];
+  subscriptions?: Subscription;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationBillingCustomerResponse>) {
     super();
@@ -3852,7 +3852,7 @@ export class SudoUpdateOrganizationBillingCustomerResponse extends Message<SudoU
   static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "message", T: Organization },
-    { no: 2, name: "subscriptions", kind: "message", T: Subscription, repeated: true },
+    { no: 2, name: "subscriptions", kind: "message", T: Subscription },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationBillingCustomerResponse {
@@ -10381,9 +10381,9 @@ export class UpdateBillingSubscriptionResponse extends Message<UpdateBillingSubs
   organization?: Organization;
 
   /**
-   * @generated from field: repeated rill.admin.v1.Subscription subscriptions = 2;
+   * @generated from field: rill.admin.v1.Subscription subscription = 2;
    */
-  subscriptions: Subscription[] = [];
+  subscription?: Subscription;
 
   constructor(data?: PartialMessage<UpdateBillingSubscriptionResponse>) {
     super();
@@ -10394,7 +10394,7 @@ export class UpdateBillingSubscriptionResponse extends Message<UpdateBillingSubs
   static readonly typeName = "rill.admin.v1.UpdateBillingSubscriptionResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "message", T: Organization },
-    { no: 2, name: "subscriptions", kind: "message", T: Subscription, repeated: true },
+    { no: 2, name: "subscription", kind: "message", T: Subscription },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBillingSubscriptionResponse {
@@ -10424,9 +10424,9 @@ export class RenewBillingSubscriptionResponse extends Message<RenewBillingSubscr
   organization?: Organization;
 
   /**
-   * @generated from field: repeated rill.admin.v1.Subscription subscriptions = 2;
+   * @generated from field: rill.admin.v1.Subscription subscription = 2;
    */
-  subscriptions: Subscription[] = [];
+  subscription?: Subscription;
 
   constructor(data?: PartialMessage<RenewBillingSubscriptionResponse>) {
     super();
@@ -10437,7 +10437,7 @@ export class RenewBillingSubscriptionResponse extends Message<RenewBillingSubscr
   static readonly typeName = "rill.admin.v1.RenewBillingSubscriptionResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "message", T: Organization },
-    { no: 2, name: "subscriptions", kind: "message", T: Subscription, repeated: true },
+    { no: 2, name: "subscription", kind: "message", T: Subscription },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RenewBillingSubscriptionResponse {

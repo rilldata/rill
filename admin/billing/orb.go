@@ -171,12 +171,21 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 	return o.createSubscription(ctx, customerID, plan)
 }
 
-func (o *Orb) GetActiveSubscriptions(ctx context.Context, customerID string) ([]*Subscription, error) {
-	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusActive)
+func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Subscription, error) {
+	subs, err := o.getActiveSubscriptions(ctx, customerID)
 	if err != nil {
 		return nil, err
 	}
-	return subs, nil
+
+	if len(subs) == 0 {
+		return nil, ErrNotFound
+	}
+
+	if len(subs) > 1 {
+		return nil, fmt.Errorf("multiple active subscriptions found for customer %s", customerID)
+	}
+
+	return subs[0], nil
 }
 
 func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
@@ -208,26 +217,6 @@ func (o *Orb) UnscheduleCancellation(ctx context.Context, subscriptionID string)
 	return getBillingSubscriptionFromOrbSubscription(sub)
 }
 
-func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
-	var cancelParams orb.SubscriptionCancelParams
-	switch cancelOption {
-	case SubscriptionCancellationOptionEndOfSubscriptionTerm:
-		cancelParams = orb.SubscriptionCancelParams{
-			CancelOption: orb.F(orb.SubscriptionCancelParamsCancelOptionEndOfSubscriptionTerm),
-		}
-	case SubscriptionCancellationOptionImmediate:
-		cancelParams = orb.SubscriptionCancelParams{
-			CancelOption: orb.F(orb.SubscriptionCancelParamsCancelOptionImmediate),
-		}
-	}
-
-	sub, err := o.client.Subscriptions.Cancel(ctx, subscriptionID, cancelParams)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return sub.EndDate, nil
-}
-
 func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
 	var cancelParams orb.SubscriptionCancelParams
 	switch cancelOption {
@@ -256,7 +245,7 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 	}
 
 	// cancel all active subscriptions for the customer as per the cancel option
-	subs, err := o.GetActiveSubscriptions(ctx, customerID)
+	subs, err := o.getActiveSubscriptions(ctx, customerID)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -391,6 +380,14 @@ func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status or
 		subscriptions = append(subscriptions, billingSub)
 	}
 	return subscriptions, nil
+}
+
+func (o *Orb) getActiveSubscriptions(ctx context.Context, customerID string) ([]*Subscription, error) {
+	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusActive)
+	if err != nil {
+		return nil, err
+	}
+	return subs, nil
 }
 
 func (o *Orb) getUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {

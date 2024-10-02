@@ -412,7 +412,7 @@ export interface V1UpdateBookmarkRequest {
 
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+  subscription?: V1Subscription;
 }
 
 export interface V1UnsubscribeReportResponse {
@@ -480,7 +480,7 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
 
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+  subscriptions?: V1Subscription;
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
@@ -633,7 +633,7 @@ export interface V1ReportOptions {
 
 export interface V1RenewBillingSubscriptionResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+  subscription?: V1Subscription;
 }
 
 export interface V1RenameUsergroupResponse {

@@ -58,7 +58,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 }
 
 // RepairOrganizationBilling repairs billing for an organization by checking if customer exists in billing systems, if not creating new. Useful for migrating existing orgs to billing system and in rare case when InitOrganizationBilling fails in the middle
-func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.Organization, initSub bool) (*database.Organization, []*billing.Subscription, error) {
+func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.Organization, initSub bool) (*database.Organization, *billing.Subscription, error) {
 	var bc *billing.Customer
 	var pc *payment.Customer
 	var err error
@@ -144,24 +144,19 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		return org, nil, nil
 	}
 
-	subs, err := s.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
+	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
-	}
-
-	if len(subs) > 1 {
-		s.Logger.Named("billing").Warn("multiple subscriptions found for org, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-		return org, subs, nil
+		if !errors.Is(err, billing.ErrNotFound) {
+			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
+		}
 	}
 
 	var updatedOrg *database.Organization
-	if len(subs) == 0 {
-		var sub *billing.Subscription
+	if sub == nil {
 		updatedOrg, sub, err = s.StartTrial(ctx, org)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to start trial: %w", err)
 		}
-		subs = append(subs, sub)
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 		// update org quotas, this subscription might have been manually created
@@ -170,12 +165,12 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			DisplayName:                         org.DisplayName,
 			Description:                         org.Description,
 			CustomDomain:                        org.CustomDomain,
-			QuotaProjects:                       biggerOfInt(subs[0].Plan.Quotas.NumProjects, org.QuotaProjects),
-			QuotaDeployments:                    biggerOfInt(subs[0].Plan.Quotas.NumDeployments, org.QuotaDeployments),
-			QuotaSlotsTotal:                     biggerOfInt(subs[0].Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-			QuotaSlotsPerDeployment:             biggerOfInt(subs[0].Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-			QuotaOutstandingInvites:             biggerOfInt(subs[0].Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-			QuotaStorageLimitBytesPerDeployment: biggerOfInt64(subs[0].Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+			QuotaProjects:                       biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
+			QuotaDeployments:                    biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
+			QuotaSlotsTotal:                     biggerOfInt(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+			QuotaSlotsPerDeployment:             biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+			QuotaOutstandingInvites:             biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+			QuotaStorageLimitBytesPerDeployment: biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
@@ -186,7 +181,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		}
 	}
 
-	return updatedOrg, subs, nil
+	return updatedOrg, sub, nil
 }
 
 func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
@@ -196,29 +191,23 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return nil, nil, fmt.Errorf("failed to get default plan: %w", err)
 	}
 
-	subs, err := s.Biller.GetActiveSubscriptions(ctx, org.BillingCustomerID)
+	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
+		if !errors.Is(err, billing.ErrNotFound) {
+			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
+		}
 	}
 
-	if len(subs) > 1 {
-		s.Logger.Named("billing").Warn("multiple subscriptions found for org, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-		return nil, nil, nil
-	}
-
-	if len(subs) == 1 && subs[0].Plan.ID != plan.ID {
+	if sub != nil && sub.Plan.ID != plan.ID {
 		s.Logger.Named("billing").Warn("subscription already exists for org with different plan, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 		return nil, nil, nil
 	}
 
-	var sub *billing.Subscription
-	if len(subs) == 0 {
+	if sub == nil {
 		sub, err = s.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create subscription: %w", err)
 		}
-	} else {
-		sub = subs[0]
 	}
 
 	if sub.ID == "" || sub.Plan.ID == "" {
