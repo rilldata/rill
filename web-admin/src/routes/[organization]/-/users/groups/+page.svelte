@@ -48,7 +48,6 @@
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
 
-  // FIXME: fuzzy
   $: filteredGroups = $listOrganizationMemberUsergroups.data?.members.filter(
     (group) => group.groupName.toLowerCase().includes(searchText.toLowerCase()),
   );
