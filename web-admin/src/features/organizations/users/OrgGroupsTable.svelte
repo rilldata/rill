@@ -25,7 +25,7 @@
       accessorKey: "groupName",
       header: "Group",
       meta: {
-        widthPercent: 3,
+        widthPercent: 5,
       },
     },
     {
@@ -41,7 +41,7 @@
           onRevokeRole: onRevokeRole,
         }),
       meta: {
-        widthPercent: 3,
+        widthPercent: 5,
       },
     },
     {

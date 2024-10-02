@@ -64,7 +64,7 @@
             try {
               await onCreate(email, values.role, isSuperUser);
               succeeded.push(email);
-            } catch (e) {
+            } catch (_error) {
               errored = true;
             }
           }),
