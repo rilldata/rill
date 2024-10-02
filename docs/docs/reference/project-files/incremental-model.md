@@ -14,9 +14,8 @@ sidebar_position: 31
 
 **`splits`** - Defines the split of the underlying data, can either be `glob` or `sql`. 
   - **`glob`** - define the glob pattern of your bucket
-    - **`path`** -
-    - **`partition`** -
-
+    - **`path`** - if you need to define the partition type, use path (keep glob empty)
+    - **`partition`** - directory or hive 
   - **`sql`** - 
 
 **`splitswatermark`** -
