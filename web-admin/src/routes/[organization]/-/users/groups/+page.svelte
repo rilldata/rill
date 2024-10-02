@@ -30,6 +30,7 @@
   let searchText = "";
 
   $: organization = $page.params.organization;
+  // FIXME: Ideally, we have membersCount in this response
   $: listOrganizationMemberUsergroups =
     createAdminServiceListOrganizationMemberUsergroups(organization);
   $: listOrganizationMemberUsers =
