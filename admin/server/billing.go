@@ -335,6 +335,11 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 			if sub.Plan.ID == plan.ID {
+				// delete the billing issue
+				err = s.admin.DB.DeleteBillingIssue(ctx, bisc.ID)
+				if err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
 				return &adminv1.RenewBillingSubscriptionResponse{
 					Organization:  organizationToDTO(org),
 					Subscriptions: []*adminv1.Subscription{subscriptionToDTO(sub)},
