@@ -81,6 +81,7 @@
   $: coercedUsersToOptions = searchUsersList.map((user) => ({
     value: user.userEmail,
     label: user.userEmail,
+    name: user.userName,
   }));
 </script>
 
@@ -132,7 +133,9 @@
     {#if $listUsergroupMemberUsers.data?.members.length > 0}
       <div class="flex flex-col gap-2 w-full">
         <div class="flex flex-row items-center gap-x-1">
-          <div class="text-xs font-semibold uppercase text-gray-500">Users</div>
+          <div class="text-xs font-semibold uppercase text-gray-500">
+            {$listUsergroupMemberUsers.data?.members.length} Users
+          </div>
           <Tooltip location="right" alignment="middle" distance={8}>
             <div class="text-gray-500">
               <InfoCircle size="12px" />
@@ -142,32 +145,35 @@
             </TooltipContent>
           </Tooltip>
         </div>
-        <div class="flex flex-col gap-2">
-          {#each $listUsergroupMemberUsers.data?.members as member}
-            <div class="flex flex-row justify-between gap-2 items-center">
-              <div class="flex items-center gap-2">
-                <Avatar size="h-7 w-7" alt={member.userName} />
-                <div class="flex flex-col text-left">
-                  <span class="text-sm font-medium text-gray-900">
-                    {member.userName}
-                    <span class="text-gray-500 font-normal">
-                      {member.userEmail === currentUserEmail ? "(You)" : ""}
+        <div class="max-h-[208px] overflow-y-auto">
+          <div class="flex flex-col gap-2">
+            {#each $listUsergroupMemberUsers.data?.members as member}
+              <div class="flex flex-row justify-between gap-2 items-center">
+                <div class="flex items-center gap-2">
+                  <Avatar size="h-7 w-7" alt={member.userName} />
+                  <div class="flex flex-col text-left">
+                    <span class="text-sm font-medium text-gray-900">
+                      {member.userName}
+                      <span class="text-gray-500 font-normal">
+                        {member.userEmail === currentUserEmail ? "(You)" : ""}
+                      </span>
                     </span>
-                  </span>
-                  <span class="text-xs text-gray-500">{member.userEmail}</span>
+                    <span class="text-xs text-gray-500">{member.userEmail}</span
+                    >
+                  </div>
                 </div>
+                <!-- TODO: use text-red-500 when type is text and danger on hover? -->
+                <Button
+                  type="text"
+                  on:click={() => {
+                    onRemoveUser(groupName, member.userEmail);
+                  }}
+                >
+                  Remove
+                </Button>
               </div>
-              <!-- TODO: use text-red-500 when type is text and danger on hover? -->
-              <Button
-                type="text"
-                on:click={() => {
-                  onRemoveUser(groupName, member.userEmail);
-                }}
-              >
-                Remove
-              </Button>
-            </div>
-          {/each}
+            {/each}
+          </div>
         </div>
       </div>
     {:else}

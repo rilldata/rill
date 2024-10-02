@@ -17,14 +17,14 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open={isDropdownOpen}>
-  <DropdownMenu.Trigger class="flex-none">
-    <IconButton rounded active={isDropdownOpen}>
-      <ThreeDot size="16px" />
-    </IconButton>
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start">
-    {#if !isCurrentUser}
+{#if !isCurrentUser}
+  <DropdownMenu.Root bind:open={isDropdownOpen}>
+    <DropdownMenu.Trigger class="flex-none">
+      <IconButton rounded active={isDropdownOpen}>
+        <ThreeDot size="16px" />
+      </IconButton>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start">
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
@@ -35,9 +35,9 @@
         <Trash2Icon size="12px" />
         <span class="ml-2">Remove</span>
       </DropdownMenu.Item>
-    {/if}
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+{/if}
 
 <RemoveUserFromOrgConfirmDialog
   bind:open={isRemoveConfirmOpen}
