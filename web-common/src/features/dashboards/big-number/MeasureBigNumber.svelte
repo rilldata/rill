@@ -21,7 +21,7 @@
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
-  export let onExpandMeasure: () => void;
+  export let onExpandMeasure: () => void = () => {};
   export let comparisonValue: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
