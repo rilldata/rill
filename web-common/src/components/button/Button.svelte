@@ -13,6 +13,7 @@
     | "dashed"
     | "link"
     | "text"
+    | "danger-text"
     | "add";
 
   export let type: ButtonType = "plain";
@@ -272,12 +273,17 @@
 
   /* TEXT STYLES */
 
-  .text {
+  .text,
+  .danger-text {
     @apply text-slate-600 p-0;
   }
 
   .text:hover {
     @apply text-primary-700;
+  }
+
+  .danger-text:hover {
+    @apply text-red-500;
   }
 
   .text:active,
