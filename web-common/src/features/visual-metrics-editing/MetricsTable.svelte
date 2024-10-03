@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
   import Checkbox from "./Checkbox.svelte";
   import MetricsTableRow from "./MetricsTableRow.svelte";
   import { ROW_HEIGHT } from "./lib";

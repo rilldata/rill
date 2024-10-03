@@ -34,7 +34,7 @@
   ) => void = voidFunction;
   export let onChange: (newValue: string) => void = voidFunction;
   export let onBlur: (
-    e: FocusEvent & {
+    e?: FocusEvent & {
       currentTarget: EventTarget & HTMLDivElement;
     },
   ) => void = voidFunction;
@@ -183,7 +183,10 @@
       bind:selectElement
       bind:value
       options={options ?? []}
-      {onChange}
+      onChange={(e) => {
+        onChange(e);
+        onBlur();
+      }}
       fontSize={14}
       {truncate}
       {placeholder}

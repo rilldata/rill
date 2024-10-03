@@ -14,6 +14,7 @@
   export let expression: string;
   export let name: string;
   export let editing: boolean;
+  export let onBlur: () => void;
 
   let viewingSimple = parseExpression(expression).simple;
 
@@ -114,6 +115,7 @@
               expression = props.expression;
             }
           }
+          onBlur();
         }}
       />
       of
@@ -136,6 +138,7 @@
             if (props.expression) {
               expression = props.expression;
             }
+            onBlur();
           }}
         />
       {/key}
@@ -146,6 +149,7 @@
         full
         bind:value={expression}
         multiline
+        {onBlur}
         fontFamily={`"Source Code Variable", monospace`}
       />
     {/if}

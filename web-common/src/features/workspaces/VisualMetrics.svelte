@@ -1,6 +1,9 @@
 <script lang="ts">
   import {
     createQueryServiceTableColumns,
+    createRuntimeServiceDeleteFile,
+    createRuntimeServicePutFile,
+    type MetricsViewSpecDimensionV2,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -29,7 +32,7 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
-  import { tick } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import type { ItemType, Confirmation } from "../visual-metrics-editing/lib";
   import {
     YAMLMeasure,
@@ -39,6 +42,8 @@
     types,
   } from "../visual-metrics-editing/lib";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { useMetricsView } from "../dashboards/selectors";
+  import { fileArtifacts } from "../entity-management/file-artifacts";
 
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
@@ -56,7 +61,52 @@
     dimensions: new Set<number>(),
   };
 
+  const putFile = createRuntimeServicePutFile();
+  const deleteFile = createRuntimeServiceDeleteFile();
+
+  $: tempName = `${fileArtifact.fileName.split(".yaml")[0]}-temp`;
+  $: tempPath = fileArtifact.path.replace(
+    fileArtifact.fileName,
+    `${tempName}.yaml`,
+  );
+
+  let tempFileArtifact: FileArtifact;
+
+  onMount(async () => {
+    const blob = await fileArtifact.fetchContent();
+
+    //  await tempFileArtifact.saveContent(blob)
+
+    await $putFile.mutateAsync({
+      instanceId,
+      data: {
+        path: tempPath,
+        blob,
+      },
+    });
+
+    tempFileArtifact = new FileArtifact(tempPath, true);
+  });
+
+  async function deleteTempFile() {
+    await $deleteFile.mutateAsync({
+      instanceId,
+      params: {
+        path: tempPath,
+        force: true,
+      },
+    });
+  }
+
+  onDestroy(deleteTempFile);
+
   $: ({ instanceId } = $runtime);
+
+  $: what = useMetricsView(instanceId, tempName);
+
+  // $: tempFileArtifact = new FileArtifact(tempPath, true);
+
+  // $: console.log($what.data);
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
 
@@ -80,19 +130,6 @@
   $: databaseSchema = stringGuard(rawDatabaseSchema);
   $: model = stringGuard(rawModel) || stringGuard(rawTable);
 
-  $: itemGroups = {
-    measures:
-      raw.measures instanceof YAMLSeq
-        ? raw.measures.items.map((item) => new YAMLMeasure(item))
-        : [],
-    dimensions:
-      raw.dimensions instanceof YAMLSeq
-        ? raw.dimensions.items.map(
-            (item, i) => new YAMLDimension(item, dimensions[i]),
-          )
-        : [],
-  };
-
   $: smallestTimeGrain =
     rawSmallestTimeGrain && typeof rawSmallestTimeGrain === "string"
       ? rawSmallestTimeGrain
@@ -108,6 +145,26 @@
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
   $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
   $: connector = $resourceQuery?.data?.model?.spec?.outputConnector;
+
+  $: itemGroups = {
+    measures:
+      raw.measures instanceof YAMLSeq
+        ? raw.measures.items.map((item) => new YAMLMeasure(item))
+        : [],
+    dimensions:
+      raw.dimensions instanceof YAMLSeq
+        ? createDimensions(raw.dimensions, dimensions)
+        : [],
+  };
+
+  function createDimensions(
+    rawDimensions: YAMLSeq<YAMLMap<string, string>>,
+    metricsViewDimensions: MetricsViewSpecDimensionV2[],
+  ) {
+    return rawDimensions.items.map(
+      (item, i) => new YAMLDimension(item, metricsViewDimensions[i]),
+    );
+  }
 
   $: columnsQuery = createQueryServiceTableColumns(instanceId, model, {
     connector,
@@ -331,8 +388,8 @@
   }
 
   $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
-    (acc, { name, label }) => {
-      acc.name = Math.max(acc.name, name.length);
+    (acc, { name, label, resourceName }) => {
+      acc.name = Math.max(acc.name, name.length || resourceName?.length || 0);
       acc.label = Math.max(acc.label, label.length);
       return acc;
     },
@@ -357,6 +414,8 @@
     measureNamesAndLabels.label,
   );
 </script>
+
+<svelte:window on:beforeunload={deleteTempFile} />
 
 <div class="wrapper">
   <div class="main-area">
@@ -400,6 +459,7 @@
           value: label,
           label,
         }))}
+        placeholder="Select a time grain"
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {
@@ -554,7 +614,9 @@
     {#key $editingItem}
       <Sidebar
         {item}
+        {tempFileArtifact}
         {columns}
+        tempMetricsViewName={tempName}
         onDelete={() => {
           triggerDelete(index, type);
         }}

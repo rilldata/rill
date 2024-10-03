@@ -115,11 +115,11 @@
 
 <WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
   <WorkspaceHeader
-    hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={onChangeCallback}
-    showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
     titleInput={fileName}
+    hasUnsavedChanges={$hasUnsavedChanges}
+    showInspectorToggle={$selectedView === "code" && isModelingSupported}
+    on:change={onChangeCallback}
   >
     <div class="flex gap-x-2" slot="cta">
       {#if isOldMetricsView}
@@ -149,13 +149,15 @@
         {metricsViewName}
       />
     {:else}
-      <VisualMetrics
-        {errors}
-        {fileArtifact}
-        switchView={() => {
-          $selectedView = "code";
-        }}
-      />
+      {#key fileArtifact}
+        <VisualMetrics
+          {errors}
+          {fileArtifact}
+          switchView={() => {
+            $selectedView = "code";
+          }}
+        />
+      {/key}
     {/if}
   </svelte:fragment>
 
