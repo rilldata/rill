@@ -19,7 +19,6 @@
 
   function handleSelectedChange(selected: Selected<string> | undefined) {
     onSelectedChange(selected);
-    inputValue = ""; // FIXME: reset input value
   }
 
   $: filteredItems = inputValue
