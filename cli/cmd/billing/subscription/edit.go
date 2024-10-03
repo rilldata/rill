@@ -31,7 +31,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if subResp.Subscription == nil {
 				ch.PrintfWarn("Organization %q has no subscription\n", ch.Org)
 			} else {
-				ch.PrintfBold("Organization %q has following subscription\n", ch.Org)
+				ch.PrintfBold("Organization %q has the following subscription\n", ch.Org)
 				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 			}
 
