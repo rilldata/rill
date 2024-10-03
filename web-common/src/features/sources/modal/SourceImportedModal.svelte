@@ -35,7 +35,7 @@
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
-  $: createMetricsViewFromTable =
+  $: createExploreFromTable =
     sourcePath !== null
       ? useCreateMetricsViewFromTableUIAction(
           $runtime.instanceId,
@@ -62,9 +62,9 @@
     // This should never happen, because the button is
     // disabled when this is null, but adding this check
     // for type narrowing and just in case.
-    if (createMetricsViewFromTable === null) return;
+    if (createExploreFromTable === null) return;
     close();
-    await createMetricsViewFromTable();
+    await createExploreFromTable();
   }
 </script>
 
@@ -92,7 +92,7 @@
 
         <Button
           builders={[builder]}
-          disabled={createMetricsViewFromTable === null}
+          disabled={createExploreFromTable === null}
           on:click={generateMetrics}
           type="primary"
         >

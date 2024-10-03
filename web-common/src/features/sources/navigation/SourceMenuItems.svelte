@@ -69,7 +69,7 @@
     MetricsEventSpace.LeftPanel,
   );
 
-  $: createExploreDashboardFromTable = useCreateMetricsViewFromTableUIAction(
+  $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     sinkConnector as string,
     database,
@@ -164,7 +164,7 @@
 </NavigationMenuItem>
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createExploreDashboardFromTable}
+  on:click={createExploreFromTable}
 >
   <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
