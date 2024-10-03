@@ -1,9 +1,14 @@
 <script lang="ts">
-  import type {
-    V1BillingPlan,
-    V1Subscription,
+  import {
+    createAdminServiceListOrganizationBillingIssues,
+    V1BillingIssueType,
+    type V1BillingPlan,
+    type V1Subscription,
   } from "@rilldata/web-admin/client";
-  import { getTrialMessageForDays } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
+  import {
+    getTrialIssue,
+    getTrialMessageForDays,
+  } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
@@ -15,15 +20,26 @@
   export let plan: V1BillingPlan;
   export let subscription: V1Subscription;
 
+  $: issues = createAdminServiceListOrganizationBillingIssues(organization);
+  $: trialIssue = getTrialIssue($issues.data?.issues ?? []);
+  // prefer using end date from BillingIssues since we use that to hibernate projects and take other actions
+  $: subscriptionEndDate =
+    trialIssue?.metadata?.onTrial?.endDate ?? subscription.trialEndDate;
+
   let trialEndMessage: string;
   let trialEnded = false;
   $: {
-    const today = DateTime.now();
-    const endDate = DateTime.fromJSDate(new Date(subscription.trialEndDate));
-    if (endDate.isValid) {
-      const diff = endDate.diff(today);
-      trialEndMessage = getTrialMessageForDays(endDate.diff(today));
-      trialEnded = diff.milliseconds < 0;
+    if (trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED) {
+      trialEndMessage = "Your trial has ended.";
+      trialEnded = true;
+    } else {
+      const today = DateTime.now();
+      const endDate = DateTime.fromJSDate(new Date(subscriptionEndDate));
+      if (endDate.isValid) {
+        const diff = endDate.diff(today);
+        trialEndMessage = getTrialMessageForDays(endDate.diff(today));
+        trialEnded = diff.milliseconds < 0;
+      }
     }
   }
 

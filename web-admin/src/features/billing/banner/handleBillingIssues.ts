@@ -17,7 +17,7 @@ export function handleBillingIssues(
   issues: V1BillingIssue[],
 ) {
   if (isTrialPlan(plan)) {
-    eventBus.emit("banner", handleTrialPlan(subscription, issues));
+    eventBus.emit("banner", handleTrialPlan(issues));
     return;
   }
 
