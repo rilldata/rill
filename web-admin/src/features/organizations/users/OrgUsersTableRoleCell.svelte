@@ -37,15 +37,6 @@
       >
         <span>Viewer</span>
       </DropdownMenu.CheckboxItem>
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "collaborator"}
-        on:click={() => {
-          handleUpdateRole("collaborator");
-        }}
-      >
-        <span>Collaborator</span>
-      </DropdownMenu.CheckboxItem>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}
