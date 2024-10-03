@@ -65,4 +65,4 @@
   ];
 </script>
 
-<BasicTable {data} {columns} emptyText="No users found" />
+<BasicTable {data} {columns} emptyText="No users found" scrollable />
