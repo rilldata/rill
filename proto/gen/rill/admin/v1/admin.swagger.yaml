@@ -4761,12 +4761,8 @@ definitions:
     properties:
       id:
         type: string
-      planId:
-        type: string
-      planName:
-        type: string
-      planDisplayName:
-        type: string
+      plan:
+        $ref: '#/definitions/v1BillingPlan'
       startDate:
         type: string
         format: date-time
