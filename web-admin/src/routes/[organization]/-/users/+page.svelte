@@ -49,8 +49,6 @@
     user.userEmail.toLowerCase().includes(searchText.toLowerCase()),
   );
 
-  $: console.log("filteredUsers: ", filteredUsers);
-
   const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
   const addOrganizationMemberUser =
