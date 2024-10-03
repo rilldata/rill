@@ -10,10 +10,11 @@
       label: "Users",
       route: "",
     },
-    {
-      label: "Groups",
-      route: "/groups",
-    },
+    // TODO: Uncomment this once we have user groups
+    // {
+    //   label: "Groups",
+    //   route: "/groups",
+    // },
   ];
 </script>
 
