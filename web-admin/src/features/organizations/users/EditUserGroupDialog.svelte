@@ -130,7 +130,6 @@
           onSelectedChange={(value) => {
             if (value) {
               onAddUser(value.value, groupName);
-              searchText = "";
             }
           }}
         />
