@@ -1,4 +1,4 @@
-import { NumberKind, NumberParts } from "./humanizer-types";
+import { NumberKind, type NumberParts } from "./humanizer-types";
 import { PerRangeFormatter } from "./strategies/per-range";
 
 /**

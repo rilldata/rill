@@ -47,7 +47,7 @@ export class PopupWindow {
       try {
         // safeguard try catch
         this.window?.close();
-      } catch (e) {
+      } catch {
         // no-op
       }
       if (this.timer) clearInterval(this.timer);

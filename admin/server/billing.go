@@ -463,9 +463,7 @@ func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *ad
 func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 	return &adminv1.Subscription{
 		Id:                           sub.ID,
-		PlanId:                       sub.Plan.ID,
-		PlanName:                     sub.Plan.Name,
-		PlanDisplayName:              sub.Plan.DisplayName,
+		Plan:                         billingPlanToDTO(sub.Plan),
 		StartDate:                    valOrNullTime(sub.StartDate),
 		EndDate:                      valOrNullTime(sub.EndDate),
 		CurrentBillingCycleStartDate: valOrNullTime(sub.CurrentBillingCycleStartDate),

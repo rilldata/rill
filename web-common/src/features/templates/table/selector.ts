@@ -2,31 +2,34 @@ import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboar
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  PivotDataStoreConfig,
-  PivotState,
+  type PivotDataStoreConfig,
+  type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
-  useMetricsView,
   useMetricsViewTimeRange,
+  useMetricsViewValidSpec,
 } from "@rilldata/web-common/features/dashboards/selectors";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useStartEndTime } from "@rilldata/web-common/features/templates/kpi/selector";
-import { TableProperties } from "@rilldata/web-common/features/templates/types";
+import type { TableProperties } from "@rilldata/web-common/features/templates/types";
 import {
   validateDimensions,
   validateMeasures,
   validateMetricsView,
 } from "@rilldata/web-common/features/templates/utils";
 import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import { Readable, derived } from "svelte/store";
+import { type Readable, derived } from "svelte/store";
 
 export function useComparisonStartEndTime(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   timeRange: string,
   comparisonRange: string | undefined,
 ) {
-  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+  const allTimeRangeQuery = useMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+  );
   return derived(allTimeRangeQuery, (allTimeRange) => {
     const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
     const maxTimeDate = new Date(maxTime ?? 0);
@@ -51,7 +54,7 @@ export function getTableConfig(
   const { metrics_view, time_range, comparison_range } = tableProperties;
   return derived(
     [
-      useMetricsView(instanceId, tableProperties.metrics_view),
+      useMetricsViewValidSpec(instanceId, tableProperties.metrics_view),
       useStartEndTime(instanceId, metrics_view, time_range.toUpperCase()),
       useComparisonStartEndTime(
         instanceId,
@@ -106,7 +109,7 @@ export function hasValidTableSchema(
   tableProperties: TableProperties,
 ) {
   return derived(
-    [useMetricsView(instanceId, tableProperties.metrics_view)],
+    [useMetricsViewValidSpec(instanceId, tableProperties.metrics_view)],
     ([metricsView]) => {
       const measures = tableProperties.measures;
       const rowDimensions = tableProperties.row_dimensions || [];

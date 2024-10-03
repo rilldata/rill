@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     createQueryServiceResolveComponent,
-    V1ComponentVariable,
+    type V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";

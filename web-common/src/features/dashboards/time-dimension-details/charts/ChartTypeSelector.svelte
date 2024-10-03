@@ -7,7 +7,7 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 
-  export let metricViewName: string;
+  export let exploreName: string;
   export let chartType: TDDChart;
   export let hasComparison: boolean;
 
@@ -38,12 +38,12 @@
 
   function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
     if (isDisabled) return;
-    metricsExplorerStore.setTDDChartType(metricViewName, type);
+    metricsExplorerStore.setTDDChartType(exploreName, type);
   }
 
   // switch to default if current selected chart is not available
   $: if (!hasComparison && comparisonCharts.includes(chartType)) {
-    metricsExplorerStore.setTDDChartType(metricViewName, TDDChart.DEFAULT);
+    metricsExplorerStore.setTDDChartType(exploreName, TDDChart.DEFAULT);
   }
 </script>
 

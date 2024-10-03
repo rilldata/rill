@@ -2,8 +2,8 @@ import { goto } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-import { get } from "svelte/store";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { get } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import type { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -12,8 +12,8 @@ import {
   type MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
 import {
-  RuntimeServiceGenerateMetricsViewFileBody,
-  V1GenerateMetricsViewFileResponse,
+  type RuntimeServiceGenerateMetricsViewFileBody,
+  type V1GenerateMetricsViewFileResponse,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
 } from "../../../runtime-client";
@@ -46,7 +46,7 @@ const runtimeServiceGenerateMetricsViewFileWithSignal = (
  *
  * This function is to be called from all `Generate dashboard with AI` CTAs *outside* of the Metrics Editor.
  */
-export function useCreateDashboardFromTableUIAction(
+export function useCreateMetricsViewFromTableUIAction(
   instanceId: string,
   connector: string,
   database: string,
@@ -78,7 +78,7 @@ export function useCreateDashboardFromTableUIAction(
 
     // Get a unique name
     const newDashboardName = getName(
-      `${tableName}_dashboard`,
+      `${tableName}_metrics`,
       fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
     const newFilePath = `/${folder}/${newDashboardName}.yaml`;
@@ -106,7 +106,7 @@ export function useCreateDashboardFromTableUIAction(
           await runtimeServiceGetFile(instanceId, { path: newFilePath });
           // success, AI is done
           break;
-        } catch (err) {
+        } catch {
           // 404 error, AI is not done
         }
       }
@@ -198,7 +198,7 @@ export async function createDashboardFromTableInMetricsEditor(
           // success, AI is done
           break;
         }
-      } catch (err) {
+      } catch {
         // 404 error, AI is not done
       }
     }

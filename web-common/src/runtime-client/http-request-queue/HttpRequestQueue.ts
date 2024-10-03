@@ -1,13 +1,13 @@
 import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
 import {
   fetchWrapper,
-  FetchWrapperOptions,
+  type FetchWrapperOptions,
 } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { RequestQueueEntry } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueueTypes";
 import {
   getHeapByName,
   getHeapByQuery,
-  RequestQueueNameEntry,
+  type RequestQueueNameEntry,
 } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueueTypes";
 import {
   ActiveColumnPriorityOffset,
@@ -32,7 +32,7 @@ try {
   ) {
     QueryQueueSize = 200;
   }
-} catch (err) {
+} catch {
   // no-op
 }
 

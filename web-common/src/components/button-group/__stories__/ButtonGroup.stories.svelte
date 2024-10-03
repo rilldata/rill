@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { Meta, Story } from "@storybook/addon-svelte-csf";
-
+  import { Story } from "@storybook/addon-svelte-csf";
   import { action } from "@storybook/addon-actions";
-
   import Delta from "../../icons/Delta.svelte";
   import PieChart from "../../icons/PieChart.svelte";
   import { ButtonGroup, SubButton } from "../index";
+
+  export const meta = {
+    title: "Button group stories",
+    argTypes: {
+      clickAction: { action: "subbutton-click" },
+    },
+  };
 
   const pieTooltips = {
     selected: "Hide percent of total",
@@ -21,13 +26,6 @@
 
   const deltaPieCombos = [[], ["delta"], ["pie"], ["delta", "pie"]];
 </script>
-
-<Meta
-  title="Button group stories"
-  argTypes={{
-    clickAction: { action: "subbutton-click" },
-  }}
-/>
 
 <Story name="Button group, selected vs disabled (tabular)">
   <p>

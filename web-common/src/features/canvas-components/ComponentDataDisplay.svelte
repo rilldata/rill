@@ -7,8 +7,8 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
     createQueryServiceResolveComponent,
-    V1ComponentSpecResolverProperties,
-    V1ComponentVariable,
+    type V1ComponentSpecResolverProperties,
+    type V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";

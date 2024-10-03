@@ -7,7 +7,7 @@ function id(x) { return x[0]; }
     inPostprocessor,
     havingPostprocessor,
     andOrPostprocessor,
-  } from "./post-processors.ts";
+  } from "./post-processors";
 let Lexer = undefined;
 let ParserRules = [
     {"name": "_$ebnf$1", "symbols": []},

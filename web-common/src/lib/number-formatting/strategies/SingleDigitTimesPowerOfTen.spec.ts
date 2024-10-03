@@ -1,4 +1,4 @@
-import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
+import { type FormatterFactoryOptions, NumberKind } from "../humanizer-types";
 import {
   SingleDigitTimesPowerOfTenFormatter,
   closeToIntTimesPowerOfTen,

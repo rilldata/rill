@@ -1,4 +1,4 @@
-import { V1ComponentSpec } from "@rilldata/web-common/runtime-client";
+import type { V1ComponentSpec } from "@rilldata/web-common/runtime-client";
 import { Document, parse } from "yaml";
 
 export function getChartYaml(

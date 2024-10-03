@@ -201,3 +201,23 @@ export async function convertExprToToplist(
     toplist.data.map((t) => t[dimensionName]),
   );
 }
+
+const ExploreNameRegex = /\/explore\/((?:\w|-)+)/;
+export function getExploreName(webOpenPath: string) {
+  const matches = ExploreNameRegex.exec(webOpenPath);
+  if (!matches || matches.length < 1) return "";
+  return matches[1];
+}
+
+export function getExplorePageUrl(
+  curPageUrl: URL,
+  organization: string,
+  project: string,
+  exploreName: string,
+  state: string,
+) {
+  const url = new URL(`${curPageUrl.protocol}//${curPageUrl.host}`);
+  url.pathname = `/${organization}/${project}/explore/${exploreName}`;
+  url.searchParams.set("state", state);
+  return url.toString();
+}

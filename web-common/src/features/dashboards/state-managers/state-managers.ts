@@ -8,40 +8,49 @@ import {
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
-  V1MetricsViewTimeRangeResponse,
+  type ExploreValidSpecResponse,
+  useExploreValidSpec,
+} from "@rilldata/web-common/features/explores/selectors";
+import {
+  type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
   type RpcStatus,
-  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
-import { Readable, Writable, derived, get, writable } from "svelte/store";
 import {
-  MetricsExplorerStoreType,
+  type Readable,
+  type Writable,
+  derived,
+  get,
+  writable,
+} from "svelte/store";
+import {
+  type MetricsExplorerStoreType,
   metricsExplorerStore,
   updateMetricsExplorerByName,
-  useDashboardStore,
+  useExploreStore,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
-import {
-  ResourceKind,
-  useResource,
-} from "../../entity-management/resource-selectors";
 import { createStateManagerActions, type StateManagerActions } from "./actions";
 import type { DashboardCallbackExecutor } from "./actions/types";
 import {
-  StateManagerReadables,
+  type StateManagerReadables,
   createStateManagerReadables,
 } from "./selectors";
 
 export type StateManagers = {
   runtime: Writable<Runtime>;
   metricsViewName: Writable<string>;
+  exploreName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
   dashboardStore: Readable<MetricsExplorerEntity>;
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
+  >;
+  validSpecStore: Readable<
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   >;
   queryClient: QueryClient;
   updateDashboard: DashboardCallbackExecutor;
@@ -71,53 +80,46 @@ export function getStateManagers(): StateManagers {
 export function createStateManagers({
   queryClient,
   metricsViewName,
+  exploreName,
   extraKeyPrefix,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
+  exploreName: string;
   extraKeyPrefix?: string;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
+  const exploreNameStore = writable(exploreName);
+
   const dashboardStore: Readable<MetricsExplorerEntity> = derived(
-    [metricsViewNameStore],
+    [exploreNameStore],
     ([name], set) => {
-      const store = useDashboardStore(name);
+      const store = useExploreStore(name);
       return store.subscribe(set);
     },
   );
 
-  // Note: this is equivalent to `useMetricsView`
-  const metricsSpecStore: Readable<
-    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
-  > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {
-    useResource(r.instanceId, metricViewName, ResourceKind.MetricsView, {
-      queryClient,
-    }).subscribe((result) => {
-      // In case the store was created with a name that has incorrect casing
-      if (result.data?.meta?.name?.name) {
-        metricsViewNameStore.set(result.data.meta.name.name);
-      }
-
-      return set({
-        ...result,
-        data: result.data?.metricsView?.state?.validSpec,
-      });
-    });
-  });
+  const validSpecStore: Readable<
+    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+  > = derived([runtime, exploreNameStore], ([r, exploreName], set) =>
+    useExploreValidSpec(r.instanceId, exploreName, { queryClient }).subscribe(
+      set,
+    ),
+  );
 
   const timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   > = derived(
-    [runtime, metricsViewNameStore, metricsSpecStore],
-    ([runtime, mvName, metricsView], set) =>
+    [runtime, metricsViewNameStore, validSpecStore],
+    ([runtime, mvName, validSpec], set) =>
       createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
         mvName,
         {},
         {
           query: {
-            queryClient: queryClient,
-            enabled: !!metricsView.data?.timeDimension,
+            queryClient,
+            enabled: !!validSpec?.data?.metricsView?.timeDimension,
           },
         },
       ).subscribe(set),
@@ -136,14 +138,16 @@ export function createStateManagers({
   );
 
   // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
-  initPersistentDashboardStore((extraKeyPrefix || "") + metricsViewName);
+  initPersistentDashboardStore((extraKeyPrefix || "") + exploreName);
   const persistentDashboardStore = getPersistentDashboardStore();
 
   return {
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
+    exploreName: exploreNameStore,
     metricsStore: metricsExplorerStore,
     timeRangeSummaryStore,
+    validSpecStore,
     queryClient,
     dashboardStore,
 
@@ -153,7 +157,7 @@ export function createStateManagers({
      */
     selectors: createStateManagerReadables({
       dashboardStore,
-      metricsSpecQueryResultStore: metricsSpecStore,
+      validSpecStore,
       timeRangeSummaryStore,
       queryClient,
     }),
