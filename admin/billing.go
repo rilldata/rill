@@ -363,19 +363,33 @@ func valOrDefault[T any](ptr *T, def T) T {
 }
 
 func biggerOfInt(ptr *int, def int) int {
-	if ptr != nil {
-		if *ptr < 0 || *ptr > def {
-			return *ptr
-		}
+	if ptr == nil {
+		return def
 	}
+
+	if *ptr < 0 || def < 0 {
+		return -1
+	}
+
+	if *ptr > def {
+		return *ptr
+	}
+
 	return def
 }
 
 func biggerOfInt64(ptr *int64, def int64) int64 {
-	if ptr != nil {
-		if *ptr < 0 || *ptr > def {
-			return *ptr
-		}
+	if ptr == nil {
+		return def
 	}
+
+	if *ptr < 0 || def < 0 {
+		return -1
+	}
+
+	if *ptr > def {
+		return *ptr
+	}
+
 	return def
 }
