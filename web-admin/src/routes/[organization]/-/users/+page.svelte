@@ -10,6 +10,7 @@
     createAdminServiceListOrganizationInvites,
     getAdminServiceListOrganizationInvitesQueryKey,
   } from "@rilldata/web-admin/client";
+  import type { V1UserInvite } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -31,18 +32,24 @@
   $: listOrganizationInvites =
     createAdminServiceListOrganizationInvites(organization);
 
-  $: usersWithPendingInvites = [
-    ...($listOrganizationMemberUsers.data?.members ?? []),
-    ...($listOrganizationInvites.data?.invites?.map((invite) => ({
+  function coerceInvitesToUsers(invites: V1UserInvite[]) {
+    return invites.map((invite) => ({
       ...invite,
       userEmail: invite.email,
       roleName: invite.role,
-    })) ?? []),
+    }));
+  }
+
+  $: usersWithPendingInvites = [
+    ...($listOrganizationMemberUsers.data?.members ?? []),
+    ...coerceInvitesToUsers($listOrganizationInvites.data?.invites ?? []),
   ];
 
   $: filteredUsers = usersWithPendingInvites.filter((user) =>
     user.userEmail.toLowerCase().includes(searchText.toLowerCase()),
   );
+
+  $: console.log("filteredUsers: ", filteredUsers);
 
   const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
