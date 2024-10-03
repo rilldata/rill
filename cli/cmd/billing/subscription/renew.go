@@ -29,7 +29,7 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if subResp.Subscription != nil {
-				ch.PrintfBold("Organization %q has following subscription\n", ch.Org)
+				ch.PrintfBold("Organization %q has the following subscription\n", ch.Org)
 				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 
 				ch.PrintfWarn("\nSubscription renewal for %q will take place immediately.\n", ch.Org)
