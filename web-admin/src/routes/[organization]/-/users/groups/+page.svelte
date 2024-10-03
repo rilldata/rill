@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
   import { page } from "$app/stores";
   import {
     createAdminServiceAddOrganizationMemberUsergroup,
@@ -305,4 +305,4 @@
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
   onCreate={handleCreate}
-/>
+/> -->
