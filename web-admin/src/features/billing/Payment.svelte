@@ -16,9 +16,8 @@
     returnUrl: $page.url.toString(),
   });
   $: paymentIssues = getPaymentIssues(organization);
-  $: paymentIssueTexts = $paymentIssues.data?.map(
-    (i) => PaymentBillingIssueTypes[i.type],
-  );
+  $: paymentIssueTexts =
+    $paymentIssues.data?.map((i) => PaymentBillingIssueTypes[i.type]) ?? [];
 
   $: plan = getPlanForOrg(organization);
   $: isTrial = $plan.data && isTrialPlan($plan.data);

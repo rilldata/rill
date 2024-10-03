@@ -16,7 +16,11 @@
   $: issues = createAdminServiceListOrganizationBillingIssues(organization);
 
   $: if ($subscription.data?.subscription && $issues.data?.issues) {
-    handleBillingIssues($subscription.data.subscription, $issues.data.issues);
+    handleBillingIssues(
+      organization,
+      $subscription.data.subscription,
+      $issues.data.issues,
+    );
   }
 </script>
 

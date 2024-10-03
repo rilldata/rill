@@ -27,7 +27,7 @@
   $: plan = subscription.plan;
 
   $: categorisedPlans = getCategorisedPlans();
-  $: teamPlan = $categorisedPlans.data.trialPlan;
+  $: teamPlan = $categorisedPlans.data?.teamPlan;
 
   $: planCanceller = createAdminServiceCancelBillingSubscription();
   async function handleCancelPlan() {

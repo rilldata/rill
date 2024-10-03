@@ -32,6 +32,6 @@ export interface BannerMessage {
     target?: string;
 
     // callback when we need to take action like open pylon
-    onClick?: () => void;
+    onClick?: () => void | Promise<void>;
   };
 }

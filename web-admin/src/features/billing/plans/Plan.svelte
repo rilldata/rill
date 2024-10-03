@@ -11,7 +11,7 @@
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: subscription = $subscriptionQuery?.data?.subscription;
 
-  $: isTrial = subscription.plan && isTrialPlan(subscription.plan);
+  $: isTrial = subscription?.plan && isTrialPlan(subscription.plan);
   $: hasEnded = !!subscription?.endDate;
   $: isBilled = !!subscription?.currentBillingCycleEndDate;
 </script>

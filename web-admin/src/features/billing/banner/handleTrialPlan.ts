@@ -49,7 +49,6 @@ export function handleTrialPlan(issues: V1BillingIssue[]): BannerMessage {
     cta,
   };
   const diff = endDate.diff(today);
-  console.log(diff);
   if (
     diff.milliseconds > 0 &&
     trialIssue.type !== V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED

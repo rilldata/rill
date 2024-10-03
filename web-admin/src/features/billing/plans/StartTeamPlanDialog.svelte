@@ -29,7 +29,7 @@
   import type { AxiosError } from "axios";
   import { getPaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
   import { createAdminServiceGetPaymentsPortalURL } from "@rilldata/web-admin/client";
-  import { buildAutoCloseUrl } from "@rilldata/web-admin/client/redirect-utils";
+  import { page } from "$app/stores";
 
   export let organization: string;
   export let open = false;
@@ -69,7 +69,7 @@
   $: teamPlan = $categorisedPlans.data?.teamPlan;
   $: paymentIssues = getPaymentIssues(organization);
   $: paymentUrl = createAdminServiceGetPaymentsPortalURL(organization, {
-    returnUrl: buildAutoCloseUrl(),
+    returnUrl: `${$page.url.protocol}//${$page.url.host}/auto-close`,
   });
 
   const userPromptWindow = new PopupWindow();
@@ -89,6 +89,12 @@
     });
     open = false;
   }
+
+  $: loading =
+    $categorisedPlans.isLoading ||
+    $paymentIssues.isLoading ||
+    $paymentUrl.isLoading ||
+    $planUpdater.isLoading;
 
   $: error =
     ($planUpdater.error as unknown as AxiosError<RpcStatus>)?.response?.data
@@ -123,7 +129,8 @@
       <Button
         type="primary"
         on:click={handleUpgradePlan}
-        loading={$planUpdater.isLoading}
+        {loading}
+        disabled={loading}
       >
         {buttonText}
       </Button>
