@@ -126,6 +126,7 @@
           label="Users"
           name="searchUsers"
           placeholder="Search for users"
+          emptyText="No users found"
           onSelectedChange={(value) => {
             if (value) {
               onAddUser(value.value, groupName);
