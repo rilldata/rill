@@ -226,6 +226,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+
 	return &adminv1.CancelBillingSubscriptionResponse{}, nil
 }
 
@@ -298,6 +300,9 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
+
+			s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
+
 			return &adminv1.RenewBillingSubscriptionResponse{
 				Organization: organizationToDTO(org),
 				Subscription: subscriptionToDTO(sub),
@@ -337,6 +342,8 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
 
 	return &adminv1.RenewBillingSubscriptionResponse{
 		Organization: organizationToDTO(org),
