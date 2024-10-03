@@ -52,7 +52,7 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintfSuccess("Successfully renewed subscription to plan %q for org %q\.n", plan, ch.Org)
+			ch.PrintfSuccess("Successfully renewed subscription to plan %q for org %q.\n", plan, ch.Org)
 			ch.PrintSubscriptions([]*adminv1.Subscription{resp.Subscription})
 			return nil
 		},
