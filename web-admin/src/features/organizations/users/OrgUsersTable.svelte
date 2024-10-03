@@ -36,7 +36,6 @@
     {
       accessorKey: "roleName",
       header: "Role",
-      enableSorting: false,
       cell: ({ row }) =>
         flexRender(OrgUsersTableRoleCell, {
           email: row.original.userEmail,
