@@ -11,6 +11,7 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
+  import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
@@ -37,6 +38,16 @@
     databaseSchema,
     table,
     false,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
+  $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    $runtime.instanceId,
+    connector,
+    database,
+    databaseSchema,
+    table,
+    true,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -76,6 +87,17 @@
   <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
     Generate metrics
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+</NavigationMenuItem>
+
+<NavigationMenuItem on:click={createExploreFromTable}>
+  <ExploreIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate dashboard
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />
