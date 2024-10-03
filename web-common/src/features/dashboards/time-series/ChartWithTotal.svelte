@@ -139,7 +139,8 @@
         enabled:
           visible &&
           !!timeControls.ready &&
-          (!isComparison || !!timeControls.comparisonAdjustedStart),
+          isComparison &&
+          !!timeControls.comparisonAdjustedStart,
         keepPreviousData: true,
       },
     },
@@ -194,7 +195,7 @@
     },
     {
       query: {
-        enabled: !!timeControls.ready,
+        enabled: visible && !!timeControls.ready,
       },
     },
   );
@@ -227,7 +228,7 @@
     stateManagers,
     filteredMeasures,
     "chart",
-    visible,
+    visible && !!comparisonDimension,
   );
 
   $: dimensionData = $dimensionDataQuery;
@@ -247,7 +248,12 @@
   }
 </script>
 
-<div class="flex flex-row gap-x-4 w-full" bind:this={container}>
+<div
+  class="flex flex-row gap-x-4 w-full"
+  bind:this={container}
+  role="presentation"
+  aria-label="{measure.label ?? measure.name} chart"
+>
   <MeasureBigNumber
     {measure}
     value={primaryTotal}

@@ -268,9 +268,9 @@ export function getDimensionValueTimeSeries(
   ctx: StateManagers | undefined,
   measures: string[],
   surface: "chart" | "table",
-  visible = true,
+  enabled = true,
 ): Readable<DimensionDataItem[]> {
-  if (!visible || !ctx) return derived([], () => []);
+  if (!enabled || !ctx) return derived([], () => []);
   return derived(
     [
       ctx.dashboardStore,
@@ -295,8 +295,7 @@ export function getDimensionValueTimeSeries(
         timeSeriesData?.isFetching
       )
         return set([]);
-      if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
-        return;
+      if (!timeDimension) return;
 
       const { batchedTopList, batchedQueries } = batchAggregationQueries(
         ctx,

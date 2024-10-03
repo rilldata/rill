@@ -110,12 +110,10 @@
     timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
   ) as (d: Date) => string;
 
-  $: if (comparisonDimension && dimensionName && $tableDimensionData.length) {
+  $: if (comparisonDimension && dimensionName && $tableDimensionData?.length) {
     const selectedValues = selectedDimensionValues({
       dashboard: $dashboardStore,
     })(dimensionName);
-
-    console.log($tableDimensionData);
 
     timeDimensionData = prepareDimensionData(
       formattedTimeSeriesData,
@@ -128,7 +126,6 @@
       pinIndex,
     );
   } else if (!comparisonDimension && !dimensionName) {
-    console.log("testng");
     const currentRange = selectedTimeRange?.name;
 
     let currentLabel = "Custom Range";
