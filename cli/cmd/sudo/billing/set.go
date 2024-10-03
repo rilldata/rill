@@ -37,6 +37,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfSuccess("Updated billing information for organization %s\n", org)
 			fmt.Printf("Billing Customer Id: %s\n", res.Organization.BillingCustomerId)
+
 			if res.Subscription == nil {
 				fmt.Printf("No existing subscriptions\n")
 				return nil
@@ -45,8 +46,8 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			subscription := res.Subscription
 			fmt.Printf("Subscription:\n")
 			fmt.Printf("  Subscription ID: %s\n", subscription.Id)
-			fmt.Printf("  Plan ID: %s\n", subscription.PlanId)
-			fmt.Printf("  Plan Name: %s\n", subscription.PlanName)
+			fmt.Printf("  Plan ID: %s\n", subscription.Plan.Id)
+			fmt.Printf("  Plan Name: %s\n", subscription.Plan.Name)
 			fmt.Printf("  Subscription Start Date: %s\n", subscription.StartDate.AsTime().Format(time.DateTime))
 			fmt.Printf("  Subscription End Date: %s\n", subscription.EndDate.AsTime().Format(time.DateTime))
 			fmt.Printf("  Subscription Current Billing Cycle Start Date: %s\n", subscription.CurrentBillingCycleStartDate.AsTime().Format(time.DateTime))

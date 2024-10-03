@@ -585,9 +585,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 	return &adminv1.Subscription{
 		Id:                           sub.ID,
-		PlanId:                       sub.Plan.ID,
-		PlanName:                     sub.Plan.Name,
-		PlanDisplayName:              sub.Plan.DisplayName,
+		Plan:                         billingPlanToDTO(sub.Plan),
 		StartDate:                    timestamppb.New(sub.StartDate),
 		EndDate:                      timestamppb.New(sub.EndDate),
 		CurrentBillingCycleStartDate: timestamppb.New(sub.CurrentBillingCycleStartDate),

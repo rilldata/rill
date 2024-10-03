@@ -318,8 +318,8 @@ func toSubscriptionsTable(subs []*adminv1.Subscription) []*subscription {
 func toSubscriptionRow(s *adminv1.Subscription) *subscription {
 	return &subscription{
 		ID:                           s.Id,
-		PlanName:                     s.PlanName,
-		PlanDisplayName:              s.PlanDisplayName,
+		PlanName:                     s.Plan.Name,
+		PlanDisplayName:              s.Plan.DisplayName,
 		StartDate:                    s.StartDate.AsTime().Local().Format(time.DateTime),
 		EndDate:                      s.EndDate.AsTime().Local().Format(time.DateTime),
 		CurrentBillingCycleStartDate: s.CurrentBillingCycleStartDate.AsTime().Local().Format(time.DateTime),
