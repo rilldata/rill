@@ -37,7 +37,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
 			ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
-			ok, err := cmdutil.ConfirmPrompt("Do you want to Continue ?", "", false)
+			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
 			if err != nil {
 				return err
 			}
