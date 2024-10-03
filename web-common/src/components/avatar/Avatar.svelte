@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Avatar } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  import { getRandomTailwindColor } from "@rilldata/web-common/features/themes/color-config";
+  // import { getRandomTailwindColor } from "@rilldata/web-common/features/themes/color-config";
 
   export let loadingStatus: Avatar.Props["loadingStatus"] = undefined;
   export let src: string | null = null;
@@ -13,7 +13,7 @@
   }
 
   // FIXME
-  $: bgColor = `bg-${getRandomTailwindColor()}`;
+  // $: bgColor = `bg-${getRandomTailwindColor()}`;
 </script>
 
 <Avatar.Root
