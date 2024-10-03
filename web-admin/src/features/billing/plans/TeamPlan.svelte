@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     createAdminServiceCancelBillingSubscription,
-    type V1BillingPlan,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
@@ -23,8 +22,9 @@
   import { Button } from "@rilldata/web-common/components/button";
 
   export let organization: string;
-  export let plan: V1BillingPlan;
   export let subscription: V1Subscription;
+
+  $: plan = subscription.plan;
 
   $: categorisedPlans = getCategorisedPlans();
   $: teamPlan = $categorisedPlans.data.trialPlan;

@@ -1,6 +1,5 @@
 import type {
   V1BillingIssue,
-  V1BillingPlan,
   V1Subscription,
 } from "@rilldata/web-admin/client";
 import {
@@ -13,10 +12,9 @@ import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
 export function handleBillingIssues(
   subscription: V1Subscription,
-  plan: V1BillingPlan,
   issues: V1BillingIssue[],
 ) {
-  if (isTrialPlan(plan)) {
+  if (isTrialPlan(subscription.plan)) {
     eventBus.emit("banner", handleTrialPlan(issues));
     return;
   }

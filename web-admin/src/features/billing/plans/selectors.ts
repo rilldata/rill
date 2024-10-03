@@ -8,7 +8,7 @@ import {
 } from "@rilldata/web-admin/features/billing/plans/utils";
 import { DateTime } from "luxon";
 
-export function getCategorisedPlans() {
+export function getCategorisedPlans(enabled = true) {
   return createAdminServiceListPublicBillingPlans({
     query: {
       select: (data) => {
@@ -28,6 +28,7 @@ export function getCategorisedPlans() {
           teamPlan,
         };
       },
+      enabled,
     },
   });
 }

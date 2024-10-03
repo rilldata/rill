@@ -65,7 +65,7 @@
   }
   $: setCopyBasedOnType(type);
 
-  const categorisedPlans = getCategorisedPlans();
+  $: categorisedPlans = getCategorisedPlans(open);
   $: teamPlan = $categorisedPlans.data?.teamPlan;
   $: paymentIssues = getPaymentIssues(organization);
   $: paymentUrl = createAdminServiceGetPaymentsPortalURL(organization, {

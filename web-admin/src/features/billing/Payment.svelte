@@ -4,7 +4,7 @@
     getPaymentIssues,
     PaymentBillingIssueTypes,
   } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
-  import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { isTrialPlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import { getPlanForOrg } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -21,8 +21,7 @@
   );
 
   $: plan = getPlanForOrg(organization);
-  const categorisedPlans = getCategorisedPlans();
-  $: isTrial = $plan?.id === $categorisedPlans.data?.trialPlan?.id;
+  $: isTrial = $plan.data && isTrialPlan($plan.data);
 </script>
 
 {#if !isTrial}

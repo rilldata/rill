@@ -97,7 +97,7 @@
     (map, { name, displayName }) =>
       map.set(name.toLowerCase(), {
         label: displayName || name,
-        pill: $plan?.displayName ?? "",
+        pill: $plan.data?.displayName ?? "",
       }),
     new Map<string, PathOption>(),
   );

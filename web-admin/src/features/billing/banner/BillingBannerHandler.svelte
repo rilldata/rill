@@ -2,7 +2,6 @@
   import {
     createAdminServiceGetBillingSubscription,
     createAdminServiceListOrganizationBillingIssues,
-    createAdminServiceListPublicBillingPlans,
   } from "@rilldata/web-admin/client";
   import {
     showUpgradeDialog,
@@ -14,18 +13,10 @@
   export let organization: string;
 
   $: subscription = createAdminServiceGetBillingSubscription(organization);
-  const plans = createAdminServiceListPublicBillingPlans();
-  $: plan = $plans?.data?.plans?.find(
-    (p) => p.id === $subscription.data?.subscription?.planId,
-  );
   $: issues = createAdminServiceListOrganizationBillingIssues(organization);
 
-  $: if ($subscription.data?.subscription && plan && $issues.data?.issues) {
-    handleBillingIssues(
-      $subscription.data.subscription,
-      plan,
-      $issues.data.issues,
-    );
+  $: if ($subscription.data?.subscription && $issues.data?.issues) {
+    handleBillingIssues($subscription.data.subscription, $issues.data.issues);
   }
 </script>
 

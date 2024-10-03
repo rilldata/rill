@@ -2,31 +2,28 @@
   import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
   import EndedTeamPlan from "@rilldata/web-admin/features/billing/plans/EndedTeamPlan.svelte";
   import EnterprisePlan from "@rilldata/web-admin/features/billing/plans/EnterprisePlan.svelte";
-  import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
   import TeamPlan from "@rilldata/web-admin/features/billing/plans/TeamPlan.svelte";
   import TrialPlan from "@rilldata/web-admin/features/billing/plans/TrialPlan.svelte";
-  import { getPlanForOrg } from "@rilldata/web-admin/features/billing/selectors";
+  import { isTrialPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 
   export let organization: string;
 
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
-  $: plan = getPlanForOrg(organization);
   $: subscription = $subscriptionQuery?.data?.subscription;
 
-  const categorisedPlans = getCategorisedPlans();
-  $: isTrial = $plan?.id === $categorisedPlans.data?.trialPlan?.id;
+  $: isTrial = subscription.plan && isTrialPlan(subscription.plan);
   $: hasEnded = !!subscription?.endDate;
   $: isBilled = !!subscription?.currentBillingCycleEndDate;
 </script>
 
-{#if $plan}
+{#if subscription}
   {#if isTrial}
-    <TrialPlan {organization} plan={$plan} {subscription} />
+    <TrialPlan {organization} {subscription} />
   {:else if isBilled}
-    <TeamPlan {organization} plan={$plan} {subscription} />
+    <TeamPlan {organization} {subscription} />
   {:else if hasEnded}
-    <EndedTeamPlan {organization} plan={$plan} {subscription} />
+    <EndedTeamPlan {organization} {subscription} />
   {:else}
-    <EnterprisePlan {organization} plan={$plan} />
+    <EnterprisePlan {organization} plan={subscription.plan} />
   {/if}
 {/if}

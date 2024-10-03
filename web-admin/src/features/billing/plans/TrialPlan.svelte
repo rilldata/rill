@@ -2,7 +2,6 @@
   import {
     createAdminServiceListOrganizationBillingIssues,
     V1BillingIssueType,
-    type V1BillingPlan,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import {
@@ -17,8 +16,9 @@
   import { DateTime } from "luxon";
 
   export let organization: string;
-  export let plan: V1BillingPlan;
   export let subscription: V1Subscription;
+
+  $: plan = subscription.plan;
 
   $: issues = createAdminServiceListOrganizationBillingIssues(organization);
   $: trialIssue = getTrialIssue($issues.data?.issues ?? []);

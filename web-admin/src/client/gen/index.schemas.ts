@@ -522,9 +522,7 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
 
 export interface V1Subscription {
   id?: string;
-  planId?: string;
-  planName?: string;
-  planDisplayName?: string;
+  plan?: V1BillingPlan;
   startDate?: string;
   endDate?: string;
   currentBillingCycleStartDate?: string;
