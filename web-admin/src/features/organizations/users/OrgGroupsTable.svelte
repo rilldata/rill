@@ -31,7 +31,6 @@
     {
       accessorKey: "roleName",
       header: "Role",
-      enableSorting: false,
       cell: ({ row }) =>
         flexRender(OrgGroupsTableRoleCell, {
           name: row.original.groupName,
