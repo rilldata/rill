@@ -57,7 +57,7 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
-	editCmd.Flags().StringVar(&plan, "plan", "", "Plan Name to renew subscription to")
+	editCmd.Flags().StringVar(&plan, "plan", "", "Plan name to renew subscription to")
 
 	return editCmd
 }
