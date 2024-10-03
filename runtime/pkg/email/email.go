@@ -440,7 +440,7 @@ func (c *Client) SendTrialStarted(opts *TrialStarted) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your trial for %s has started", opts.OrgName),
 		Title:   fmt.Sprintf("Your trial for %s has started", opts.OrgName),
-		Body:    template.HTML(fmt.Sprintf("Welcome, Your trial for %q has started and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+		Body:    template.HTML(fmt.Sprintf("Welcome to Rill! Your trial for %q has started and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
 	})
 }
 
