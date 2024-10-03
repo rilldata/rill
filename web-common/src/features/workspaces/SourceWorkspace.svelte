@@ -50,7 +50,6 @@
 
   $: workspace = workspaces.get(filePath);
   $: tableVisible = workspace.table.visible;
-  $: inspectorVisible = workspace.inspector.visible;
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);

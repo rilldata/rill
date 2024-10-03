@@ -12,6 +12,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { ResourceKind } from "../../entity-management/resource-selectors";
 
   export let connector: string;
   export let database: string = "";
@@ -42,7 +43,8 @@
     showInspectorToggle={false}
     titleInput={table}
     hasUnsavedChanges={false}
-    {filePath}
+    resourceKind={ResourceKind.Source}
+    filePath={table}
   >
     <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}

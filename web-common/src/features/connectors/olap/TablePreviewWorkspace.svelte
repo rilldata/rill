@@ -10,18 +10,14 @@
 </script>
 
 <WorkspaceContainer inspector={false}>
-  <!-- <TableWorkspaceHeader
+  <TableWorkspaceHeader
     {connector}
     {database}
     {databaseSchema}
     {table}
     slot="header"
-  /> -->
-  <ConnectedPreviewTable
-    {connector}
-    {database}
-    {databaseSchema}
-    {table}
-    slot="body"
   />
+  <div class="border size-full rounded-[2px]" slot="body">
+    <ConnectedPreviewTable {connector} {database} {databaseSchema} {table} />
+  </div>
 </WorkspaceContainer>

@@ -25,7 +25,6 @@
   import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { setContext } from "svelte";
-  import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
   import {
@@ -216,10 +215,7 @@
     </div>
   </WorkspaceHeader>
 
-  <div
-    class="flex w-full h-full flex-row overflow-hidden gap-x-[1px]"
-    slot="body"
-  >
+  <div class="flex w-full h-full flex-row overflow-hidden" slot="body">
     {#if selectedView === "code" || selectedView === "split"}
       <div
         class="relative h-full flex-shrink-0 w-full"

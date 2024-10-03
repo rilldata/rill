@@ -28,11 +28,7 @@
 
   const { visualEditing } = featureFlags;
 
-  const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
-
   export let fileArtifact: FileArtifact;
-
-  let previewStatus: string[] = [];
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -52,8 +48,7 @@
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: ({ data: resource, isFetching } = $resourceQuery);
-  $: isResourceLoading = resourceIsLoading(resource);
+  $: ({ data: resource } = $resourceQuery);
 
   $: isOldMetricsView = !$remoteContent?.includes("version: 1");
   $: connector = resource?.metricsView?.state?.validSpec?.connector ?? "";
@@ -71,24 +66,6 @@
   $: isModelingSupported = connector
     ? $isModelingSupportedForOlapDriver
     : $isModelingSupportedForDefaultOlapDriver;
-
-  $: previewDisabled =
-    !$remoteContent?.length ||
-    !!allErrors?.length ||
-    isResourceLoading ||
-    isFetching;
-
-  $: if (!$remoteContent?.length) {
-    previewStatus = [
-      "Your metrics definition is empty. Get started by trying one of the options in the editor.",
-    ];
-  } else if (allErrors?.length && allErrors[0].message) {
-    // content & errors
-    previewStatus = [allErrors[0].message, TOOLTIP_CTA];
-  } else {
-    // preview is available
-    previewStatus = ["Explore your metrics dashboard"];
-  }
 
   async function onChangeCallback(
     e: Event & {
