@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Avatar } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  // import { getRandomTailwindColor } from "@rilldata/web-common/features/themes/color-config";
 
   export let loadingStatus: Avatar.Props["loadingStatus"] = undefined;
   export let src: string | null = null;
@@ -11,9 +10,6 @@
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
   }
-
-  // FIXME
-  // $: bgColor = `bg-${getRandomTailwindColor()}`;
 </script>
 
 <Avatar.Root
@@ -32,8 +28,7 @@
       `flex h-full w-full items-center justify-center overflow-hidden rounded-full border`,
       {
         "border-dashed bg-transparent border-slate-400": !src && !alt,
-        [`border-transparent bg-yellow-500`]: !src && alt,
-        // [`border-transparent ${bgColor}`]: !src && alt,
+        [`border-transparent bg-slate-500`]: !src && alt,
       },
     )}
   >
