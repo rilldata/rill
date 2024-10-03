@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
@@ -64,6 +65,17 @@
     databaseSchema,
     tableName,
     false,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
+
+  $: createExploreDashboardFromTable = useCreateMetricsViewFromTableUIAction(
+    $runtime.instanceId,
+    sinkConnector as string,
+    database,
+    databaseSchema,
+    tableName,
+    true,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -137,6 +149,26 @@
   <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
     Generate metrics
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $sourceHasError}
+      Source has errors
+    {:else if !sourceIsIdle}
+      Source is being ingested
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={createExploreDashboardFromTable}
+>
+  <ExploreIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate dashboard
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />

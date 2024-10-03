@@ -6,6 +6,7 @@
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
+  import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -40,6 +41,17 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
+
+  $: createExploreDashboardFromTable = useCreateMetricsViewFromTableUIAction(
+    $runtime.instanceId,
+    connector as string,
+    "",
+    "",
+    tableName,
+    true,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
 </script>
 
 <NavigationMenuItem
@@ -49,6 +61,27 @@
   <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
     Generate metrics
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $modelHasError}
+      Model has errors
+    {:else if !modelIsIdle}
+      Dependencies are being reconciled.
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>
+
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={createExploreDashboardFromTable}
+>
+  <ExploreIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate dashboard
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />
