@@ -403,3 +403,13 @@ export const mutedColors = {
   900: "220.9 39.3% 11%",
   950: "224 71.4% 4.1%;",
 };
+
+export function getRandomTailwindColor(): string {
+  const colorNames = Object.keys(TailwindColorPresets);
+  const randomColorName =
+    colorNames[Math.floor(Math.random() * colorNames.length)];
+  const randomShadeIndex = Math.floor(
+    Math.random() * TailwindColorSpacing.length,
+  );
+  return `${randomColorName.toLowerCase()}-${TailwindColorSpacing[randomShadeIndex]}`;
+}

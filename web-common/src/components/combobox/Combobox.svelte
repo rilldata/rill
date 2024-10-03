@@ -15,6 +15,7 @@
   export let label = "";
   export let id = "";
   export let onSelectedChange: (value: Selected<string> | undefined) => void;
+  export let emptyText = "No results found";
 
   function handleSelectedChange(selected: Selected<string> | undefined) {
     onSelectedChange(selected);
@@ -62,7 +63,7 @@
         </Combobox.Item>
       {:else}
         <span class="block px-5 py-4 text-xs text-gray-500">
-          No results found
+          {emptyText}
         </span>
       {/each}
     </Combobox.Content>

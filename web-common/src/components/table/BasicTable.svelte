@@ -17,6 +17,7 @@
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
   export let emptyText = "No data available";
+  export let scrollable = false;
 
   let sorting: SortingState = [];
 
@@ -60,9 +61,9 @@
   const table = createSvelteTable(options);
 </script>
 
-<div class="overflow-x-auto">
+<div class="overflow-x-auto" class:scroll-container={scrollable}>
   <table class="w-full">
-    <thead>
+    <thead class={scrollable ? "sticky top-0 z-30 bg-white" : ""}>
       {#each $table.getHeaderGroups() as headerGroup}
         <tr>
           {#each headerGroup.headers as header (header.id)}
@@ -175,5 +176,11 @@
   }
   tbody tr:last-child td:last-child {
     @apply rounded-br-sm;
+  }
+
+  .scroll-container {
+    height: 680px;
+    width: 100%;
+    overflow-y: auto;
   }
 </style>
