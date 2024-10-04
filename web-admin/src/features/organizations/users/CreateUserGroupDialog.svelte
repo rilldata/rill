@@ -99,7 +99,6 @@
           alwaysShowError
         />
 
-        <!-- TODO: List users, remove -->
         {#if $listUsergroupMemberUsers.data?.members.length > 0}
           <div class="text-xs font-semibold uppercase text-gray-500">
             {$listUsergroupMemberUsers.data?.members.length} Users
