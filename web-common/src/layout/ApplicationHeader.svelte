@@ -33,6 +33,9 @@
     data,
   } = $page);
 
+  $: ({ unsavedFiles } = fileArtifacts);
+  $: ({ size: unsavedFileCount } = $unsavedFiles);
+
   $: exploresQuery = useValidExplores(instanceId);
   $: canvasQuery = useValidCanvases(instanceId);
   $: projectTitleQuery = useProjectTitle(instanceId);
@@ -178,6 +181,7 @@
       textClass="font-medium"
       value={projectTitle}
       onConfirm={submitTitleChange}
+      showIndicator={unsavedFileCount > 0}
     />
   {/if}
 
