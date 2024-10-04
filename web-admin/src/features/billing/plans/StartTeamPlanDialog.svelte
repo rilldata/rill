@@ -1,11 +1,12 @@
 <script lang="ts" context="module">
   /**
-   * 1. base - When user chooses to upgrade from a trial plan.
-   * 2. size - When user hits the size limit and wants to upgrade.
-   * 3. org  - When user hits the organization limit and wants to upgrade.
-   * 4. proj - When user hits the project limit and wants to upgrade.
+   * 1. base  - When user chooses to upgrade from a trial plan.
+   * 2. size  - When user hits the size limit and wants to upgrade.
+   * 3. org   - When user hits the organization limit and wants to upgrade.
+   * 4. proj  - When user hits the project limit and wants to upgrade.
+   * 5. renew - After user cancels a subscription and wants to renew.
    */
-  export type TeamPlanDialogTypes = "base" | "size" | "org" | "proj";
+  export type TeamPlanDialogTypes = "base" | "size" | "org" | "proj" | "renew";
 </script>
 
 <script lang="ts">
@@ -61,11 +62,18 @@
       case "proj":
         title = "To deploy a second project, start a Team plan";
         break;
+
+      case "renew":
+        title = "Renew Team plan";
+        // TODO resume
+        description = `Your billing cycle will resume on TODO. Pricing is based on amount of data ingested (and compressed) into Rill`;
+        buttonText = "Continue";
+        break;
     }
   }
   $: setCopyBasedOnType(type);
 
-  $: categorisedPlans = getCategorisedPlans(open);
+  $: categorisedPlans = getCategorisedPlans(open); // only fetch when the dialog is opened
   $: teamPlan = $categorisedPlans.data?.teamPlan;
   $: paymentIssues = getPaymentIssues(organization);
   $: paymentUrl = createAdminServiceGetPaymentsPortalURL(organization, {
@@ -91,7 +99,7 @@
   }
 
   $: loading =
-    $categorisedPlans.isLoading ||
+    $categorisedPlans.isLoading || // TODO: wait for this in handleUpgradePlan instead of add to spinner
     $paymentIssues.isLoading ||
     $paymentUrl.isLoading ||
     $planUpdater.isLoading;
@@ -126,12 +134,7 @@
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-3">
       <Button type="secondary" on:click={() => (open = false)}>Close</Button>
-      <Button
-        type="primary"
-        on:click={handleUpgradePlan}
-        {loading}
-        disabled={loading}
-      >
+      <Button type="primary" on:click={handleUpgradePlan} {loading}>
         {buttonText}
       </Button>
     </AlertDialogFooter>

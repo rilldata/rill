@@ -18,12 +18,11 @@
 
 {#if subscription}
   {#if isTrial}
-    <TrialPlan {organization} {subscription} />
+    <!--    <TrialPlan {organization} {subscription} />-->
+    <EndedTeamPlan {organization} {subscription} />
   {:else if isBilled}
     <TeamPlan {organization} {subscription} />
-  {:else if hasEnded}
-    <EndedTeamPlan {organization} {subscription} />
-  {:else}
+  {:else if hasEnded}{:else}
     <EnterprisePlan {organization} plan={subscription.plan} />
   {/if}
 {/if}

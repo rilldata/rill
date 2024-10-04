@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getOrgBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -8,19 +9,28 @@
 
   export let organization: string;
   export let project: string;
+
+  $: orgBlockerIssues = getOrgBlockerIssues(organization);
 </script>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
-        <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
-        <CtaMessage>
-          To redeploy the project, run the following command in the Rill CLI:
-        </CtaMessage>
-        <CLICommandDisplay
-          command="rill project hibernate {project} --redeploy"
-        />
+        {#if $orgBlockerIssues.data}
+          <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
+          <p class="text-base text-red-600 text-center">
+            {$orgBlockerIssues.data}
+          </p>
+        {:else}
+          <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
+          <CtaMessage>
+            To redeploy the project, run the following command in the Rill CLI:
+          </CtaMessage>
+          <CLICommandDisplay
+            command="rill project hibernate {project} --redeploy"
+          />
+        {/if}
       </svelte:fragment>
       <svelte:fragment slot="read-project">
         <CtaHeader variant="bold">This project is hibernating</CtaHeader>

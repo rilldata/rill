@@ -2,7 +2,10 @@ import {
   type V1BillingIssue,
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
-import { showUpgradeDialog } from "@rilldata/web-admin/features/billing/banner/bannerCTADialogs";
+import {
+  showUpgradeDialog,
+  upgradeDialogType,
+} from "@rilldata/web-admin/features/billing/banner/bannerCTADialogs";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
@@ -12,7 +15,10 @@ const WarningPeriodInDays = 7;
 const cta: BannerMessage["cta"] = {
   text: "Upgrade ->",
   type: "button",
-  onClick: () => showUpgradeDialog.set(true),
+  onClick: () => {
+    showUpgradeDialog.set(true);
+    upgradeDialogType.set("base");
+  },
 };
 
 export function getTrialIssue(issues: V1BillingIssue[]) {
@@ -27,8 +33,8 @@ export function handleTrialPlan(issues: V1BillingIssue[]): BannerMessage {
   const trialIssue = getTrialIssue(issues);
 
   const endDateStr =
-    trialIssue.metadata?.onTrial?.endDate ??
-    trialIssue.metadata?.trialEnded?.gracePeriodEndDate ??
+    trialIssue?.metadata?.onTrial?.endDate ??
+    trialIssue?.metadata?.trialEnded?.gracePeriodEndDate ??
     "";
 
   const today = DateTime.now();
@@ -79,6 +85,14 @@ export function handleTrialPlan(issues: V1BillingIssue[]): BannerMessage {
 export function getTrialMessageForDays(diff: Duration) {
   if (diff.milliseconds < 0) return "Your trial has ended.";
   return `Your trial expires in ${humanizeDuration(diff)}.`;
+}
+
+export function trialHasPastGracePeriod(trialEndedIssue: V1BillingIssue) {
+  const gracePeriodDate = new Date(
+    trialEndedIssue.metadata?.trialEnded?.gracePeriodEndDate,
+  );
+  const gracePeriodTime = gracePeriodDate.getTime();
+  return Number.isNaN(gracePeriodTime) || gracePeriodTime < Date.now();
 }
 
 function humanizeDuration(dur: Duration) {
