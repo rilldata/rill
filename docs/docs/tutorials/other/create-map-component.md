@@ -35,7 +35,7 @@ Creating the dashboard with AI will not add the `name:` key to the dimensions, s
 From the UI, select +Add -> Component.
 This will open the default component sample graph. Delete all the information under `type:component`.
 
-First, lets create the `data:` key. As mentioned, we'll use the metrics_sql and select one measure and one dimension.
+First, let's create the `data:` key. We'll use the metrics_sql and select one measure and one dimension for the generated dashboard.
 
 ```yaml
 data:
@@ -51,21 +51,19 @@ You should see a table appear with the data from the SQL query.
 ![img](/img/tutorials/other/maps/data.png)
 
 
-### Using Generate AI feature
+### Using Generate using AI feature
 
-As this is using OpenAPI, we can use AI to generate our chart. 
-
-Let's start by asking it to create a simple bar chart.
-
+Select `Generate using AI` and fill in the prompt as shown below. IN order to ensure that our data is what we expect, let's create a simple bar chart first.
 
 ```
 Make me a bar chart using the states and total_sales column data.
 ```
 As we can see from the image below, the results automatically overwrites the vega_lite section and creates a spec that displays a bar_chart.
+
 ![img](/img/tutorials/other/maps/bar.png)
 
 
-However, we are not trying to make a bar chart, instead we want to make a map based on the total_sales per state and visualize this is a USA map. In order to do so, you will need to download the public geoJSON file for USA ([Available in the public folder of my-rill-project in our rill example repository](https://github.com/rilldata/rill-examples/blob/main/my-rill-tutorial/public/us-states.json))
+Once confirmed, we want to use the AI feature again to generate a map based on the total_sales per state and visualize this is as a USA map. In order to do so, you will need to download the public geoJSON file for USA ([Available in the public folder of my-rill-project in our rill example repository](https://github.com/rilldata/rill-examples/blob/main/my-rill-tutorial/public/us-states.json))
 
 Once this is added to public/us-states.json of your Rill project directory, we can try to ask OpenAI to create a map visualization. Note this might take a few tiems and it's not perfect.
 
@@ -74,11 +72,9 @@ In my example, I input the following prompt:
 ```
 Using table as the data, I want to look up the state column from public/us-states.json. The GeoJSON data has its features inside the features array, and I want to match the state field with properties.NAME. Do not add fields: ["geometry"]. Instead, assign the entire GeoJSON feature as geo, without isolating any specific fields. I will use geo for shape encoding, and color will be determined by total_sales. The projection should be albersUsa.
 ```
-
-This results in the following, but no graph is being shown. As more complex graphs in Vega-lite comes with some understanding of creating these specs and how it interacts, the issue here is that there is an extra mapping that is causing an error and once removed the map is displayed.
-
-![img](/img/tutorials/other/maps/map_broken.png)
-
+:::note
+As this is using AI to generate the the vega_lite spec, there is no guarantee that you will get the results you are looking for everytime. In the above example, we had to provide quite a detailed prompt in order for the generated result to satisfy the requirements and a correct chart to be displayed.
+:::
 
 ![img](/img/tutorials/other/maps/map_fixed.png)
 
