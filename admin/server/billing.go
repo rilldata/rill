@@ -145,6 +145,11 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	superuser := claims.Superuser(ctx)
+
+	if !plan.Public && !superuser {
+		return nil, status.Errorf(codes.FailedPrecondition, "not enough privileges to assign plan %s", plan.Name)
+	}
+
 	// check for validation errors
 	err = s.planChangeValidationChecks(ctx, org, superuser)
 	if err != nil {
