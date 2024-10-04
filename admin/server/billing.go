@@ -108,7 +108,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 					return nil, status.Error(codes.Internal, err.Error())
 				}
 				if u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
-					return nil, status.Errorf(codes.FailedPrecondition, "org creator has reached the maximum trial orgs quota %d", u.QuotaTrialOrgs)
+					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
 				}
 			}
 

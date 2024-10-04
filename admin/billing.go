@@ -208,6 +208,13 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create subscription: %w", err)
 		}
+
+		if org.CreatedByUserID != nil {
+			err = s.DB.IncrementCurrentTrialOrgCount(ctx, *org.CreatedByUserID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to increment current trial org count: %w", err)
+			}
+		}
 	}
 
 	if sub.ID == "" || sub.Plan.ID == "" {
@@ -238,18 +245,9 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	// delete never subscribed billing issue
-	bins, err := s.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+	err = s.CleanupSubscriptionBillingIssues(ctx, org.ID)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, nil, fmt.Errorf("failed to find billing issue: %w", err)
-		}
-	}
-	if bins != nil {
-		err = s.DB.DeleteBillingIssue(ctx, bins.ID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to delete billing issue: %w", err)
-		}
+		return nil, nil, err
 	}
 
 	// raise on-trial billing warning
@@ -265,13 +263,6 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to upsert billing warning: %w", err)
-	}
-
-	if org.CreatedByUserID != nil {
-		err = s.DB.IncrementCurrentTrialOrgCount(ctx, *org.CreatedByUserID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to increment current trial org count: %w", err)
-		}
 	}
 
 	return org, sub, nil
@@ -308,30 +299,16 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, cr
 
 // CleanupTrialBillingIssues removes trial related billing issues
 func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) error {
-	bite, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
+	err := s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeTrialEnded)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing issue: %w", err)
-		}
-	}
-
-	if bite != nil {
-		err = s.DB.DeleteBillingIssue(ctx, bite.ID)
-		if err != nil {
 			return fmt.Errorf("failed to delete billing issue: %w", err)
 		}
 	}
 
-	biot, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeOnTrial)
+	err = s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeOnTrial)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing issue: %w", err)
-		}
-	}
-
-	if biot != nil {
-		err = s.DB.DeleteBillingIssue(ctx, biot.ID)
-		if err != nil {
 			return fmt.Errorf("failed to delete billing issue: %w", err)
 		}
 	}
@@ -341,31 +318,17 @@ func (s *Service) CleanupTrialBillingIssues(ctx context.Context, orgID string) e
 
 // CleanupSubscriptionBillingIssues removes subscription related billing issues
 func (s *Service) CleanupSubscriptionBillingIssues(ctx context.Context, orgID string) error {
-	bins, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeNeverSubscribed)
+	err := s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeNeverSubscribed)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing issue: %w", err)
-		}
-	}
-
-	if bins != nil {
-		err = s.DB.DeleteBillingIssue(ctx, bins.ID)
-		if err != nil {
 			return fmt.Errorf("failed to delete billing issue: %w", err)
 		}
 	}
 
-	bisc, err := s.DB.FindBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
+	err = s.DB.DeleteBillingIssueByTypeForOrg(ctx, orgID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return fmt.Errorf("failed to find billing errors: %w", err)
-		}
-	}
-
-	if bisc != nil {
-		err = s.DB.DeleteBillingIssue(ctx, bisc.ID)
-		if err != nil {
-			return fmt.Errorf("failed to delete billing error: %w", err)
+			return fmt.Errorf("failed to delete billing errors: %w", err)
 		}
 	}
 

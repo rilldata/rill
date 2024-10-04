@@ -83,6 +83,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				userQuotas := res.User.Quotas
 				ch.PrintfSuccess("Updated user's quota\n")
 				fmt.Printf("User: %s\n", email)
+				fmt.Printf("Trial orgs: %d\n", userQuotas.TrialOrgs)
 				fmt.Printf("Single user orgs: %d\n", userQuotas.SingleuserOrgs)
 			} else {
 				return fmt.Errorf("Please set --org or --user")

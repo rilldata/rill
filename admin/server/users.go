@@ -289,6 +289,9 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 	if req.SingleuserOrgs != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser_orgs", int(*req.SingleuserOrgs)))
 	}
+	if req.TrialOrgs != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.trial_orgs", int(*req.TrialOrgs)))
+	}
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
