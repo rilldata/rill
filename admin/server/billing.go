@@ -69,14 +69,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Error(codes.InvalidArgument, "plan name must be provided")
 	}
 
-	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
-	if err != nil {
-		if errors.Is(err, billing.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "plan not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	if org.BillingCustomerID == "" {
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
@@ -92,26 +84,13 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Errorf(codes.FailedPrecondition, "plan cannot be changed on existing subscription as it was cancelled, please renew the subscription")
 	}
 
-	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
 	if err != nil {
-		if !errors.Is(err, billing.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+		if errors.Is(err, billing.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "plan not found")
 		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	if sub != nil && sub.Plan.ID != plan.ID {
-		// To make the call idempotent
-		org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		return &adminv1.UpdateBillingSubscriptionResponse{
-			Organization: organizationToDTO(org),
-			Subscription: subscriptionToDTO(sub),
-		}, nil
-	}
-
 	// if its a trial plan, start trial only if its a new org
 	if plan.Default {
 		bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
@@ -163,6 +142,13 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		s.logger.Named("billing").Warn("plan downgrade request", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_name", plan.Name))
 	}
 
+	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil {
+		if !errors.Is(err, billing.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
 	if sub == nil {
 		// create new subscription
 		sub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
@@ -173,11 +159,13 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	} else {
 		// schedule plan change
 		oldPlan := sub.Plan
-		sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+		if oldPlan.ID != plan.ID {
+			sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			s.logger.Named("billing").Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("old_plan_id", oldPlan.ID), zap.String("old_plan_name", oldPlan.Name), zap.String("new_plan_id", sub.Plan.ID), zap.String("new_plan_name", sub.Plan.Name))
 		}
-		s.logger.Named("billing").Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("old_plan_id", oldPlan.ID), zap.String("old_plan_name", oldPlan.Name), zap.String("new_plan_id", sub.Plan.ID), zap.String("new_plan_name", sub.Plan.Name))
 	}
 
 	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
@@ -239,10 +227,6 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.RenewBillingSubscriptionRequest) (*adminv1.RenewBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 	observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
-
-	if req.Organization == "" || req.PlanName == "" {
-		return nil, status.Error(codes.InvalidArgument, "organization and plan name are required")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
