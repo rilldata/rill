@@ -10231,6 +10231,11 @@ export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubsc
    */
   planName = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 3;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<UpdateBillingSubscriptionRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -10241,6 +10246,7 @@ export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubsc
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBillingSubscriptionRequest {
@@ -10311,6 +10317,11 @@ export class RenewBillingSubscriptionRequest extends Message<RenewBillingSubscri
    */
   planName = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 3;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<RenewBillingSubscriptionRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -10321,6 +10332,7 @@ export class RenewBillingSubscriptionRequest extends Message<RenewBillingSubscri
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RenewBillingSubscriptionRequest {

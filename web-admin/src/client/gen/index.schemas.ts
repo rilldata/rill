@@ -314,11 +314,12 @@ export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
   role?: string;
 };
 
+export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
+
 export type AdminServiceUpdateBillingSubscriptionBodyBody = {
   planName?: string;
+  superuserForceAccess?: boolean;
 };
-
-export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
 export interface V1WhitelistedDomain {
   domain?: string;
