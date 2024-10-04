@@ -9,7 +9,6 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import { useDashboardPolicyCheck } from "../dashboards/granular-access-policies/useDashboardPolicyCheck";
-  import DeployDashboardCta from "../dashboards/workspace/DeployDashboardCTA.svelte";
   import { featureFlags } from "../feature-flags";
 
   export let exploreName: string;
@@ -49,6 +48,5 @@
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
-    <DeployDashboardCta />
   {/if}
 </div>

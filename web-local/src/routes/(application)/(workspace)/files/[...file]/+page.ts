@@ -5,6 +5,11 @@ import { error, redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
 export const load = async ({ params: { file } }) => {
+  //   if (!file) {
+  //     return {
+  //       fileArtifact: null,
+  //     };
+  //   }
   const readOnly = get(featureFlags.readOnly);
   const path = addLeadingSlash(file);
 
@@ -25,7 +30,6 @@ export const load = async ({ params: { file } }) => {
     await fileArtifact.fetchContent();
 
     return {
-      filePath: path,
       fileArtifact,
     };
   } catch (e) {

@@ -120,7 +120,7 @@
 <style lang="postcss">
   button,
   a {
-    @apply flex text-center items-center justify-center;
+    @apply flex flex-none text-center items-center justify-center;
     @apply text-xs leading-snug font-normal;
     @apply select-none  cursor-pointer;
     @apply rounded-[2px];

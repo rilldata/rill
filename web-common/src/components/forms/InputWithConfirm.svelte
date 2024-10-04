@@ -11,11 +11,14 @@
   export let id = "";
   export let textClass = "";
   export let editable = true;
+  export let bumpDown = false;
+  export let size: "sm" | "md" | "lg" = "lg";
 
   let hovering = false;
   let editing = false;
   let open = false;
-  let editedValue = value;
+
+  $: editedValue = value;
 
   async function triggerConfirm() {
     if (!editedValue) return;
@@ -37,10 +40,9 @@
 >
   {#if editing}
     <Input
+      {size}
       {id}
       bind:value={editedValue}
-      width="fit"
-      height="100%"
       claimFocusOnMount
       onEnter={triggerConfirm}
       onEscape={reset}
@@ -68,11 +70,11 @@
       <Check size="16px" />
     </Button>
   {:else}
-    <h1
-      class="border border-transparent h-full flex justify-center items-center font-medium select-none pointer-events-none pl-2 {textClass}"
-    >
-      {value}
-    </h1>
+    <div class="input-wrapper">
+      <h1 class:bump-down={bumpDown} class="{textClass} {size}">
+        {value}
+      </h1>
+    </div>
 
     {#if editable}
       <DropdownMenu.Root bind:open>
@@ -102,3 +104,40 @@
     {/if}
   {/if}
 </div>
+
+<style lang="postcss">
+  h1 {
+    @apply flex items-center;
+    @apply p-0 bg-transparent;
+    @apply size-full;
+    @apply outline-none border-0;
+    @apply cursor-text min-w-fit;
+
+    vertical-align: middle;
+  }
+
+  .bump-down {
+    @apply pt-[1px];
+  }
+
+  .input-wrapper {
+    @apply overflow-hidden;
+    @apply flex justify-center items-center px-2;
+    @apply w-fit  justify-center;
+    @apply border border-transparent rounded-[2px];
+    @apply cursor-pointer;
+    @apply h-fit;
+  }
+
+  .sm {
+    height: 24px;
+  }
+
+  .md {
+    height: 26px;
+  }
+
+  .lg {
+    height: 30px;
+  }
+</style>

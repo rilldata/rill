@@ -1,22 +1,16 @@
 <script lang="ts">
-  import {
-    Button,
-    IconSpaceFixer,
-  } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import { createEventDispatcher } from "svelte";
-  import EnterIcon from "../../../components/icons/EnterIcon.svelte";
-  import ButtonContent from "./ButtonContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
 
   const dispatch = createEventDispatcher();
 
   export let hasErrors: boolean;
   export let hasUnsavedChanges: boolean;
   export let isLocalFileConnector: boolean;
-  export let collapse: boolean;
 
   $: label = hasUnsavedChanges ? "Save and refresh" : "Refresh";
 
@@ -41,7 +35,7 @@
       type="secondary"
       disabled={hasUnsavedChanges}
     >
-      <ButtonContent {collapse} {hasUnsavedChanges} {isLocalFileConnector} />
+      <RefreshIcon size="14px" />
     </Button>
 
     <TooltipContent slot="tooltip-content"
@@ -52,7 +46,7 @@
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
       <Button builders={[builder]} {label} {type}>
-        <ButtonContent {collapse} {hasUnsavedChanges} {isLocalFileConnector} />
+        <RefreshIcon size="14px" />
       </Button>
     </DropdownMenu.Trigger>
 

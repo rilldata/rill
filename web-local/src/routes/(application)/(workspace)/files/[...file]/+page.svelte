@@ -32,13 +32,14 @@
 
   let editor: EditorView;
 
-  $: ({ filePath, fileArtifact } = data);
+  $: ({ fileArtifact } = data);
   $: ({
     autoSave,
     hasUnsavedChanges,
     fileName,
     resourceName,
     inferredResourceKind,
+    path,
   } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
@@ -48,15 +49,15 @@
   $: extensions =
     resourceKind === ResourceKind.API
       ? [customYAMLwithJSONandSQL]
-      : getExtensionsForFile(filePath);
+      : getExtensionsForFile(path);
 
   onMount(() => {
-    expandDirectory(filePath);
+    expandDirectory(path);
     // TODO: Focus on the code editor
   });
 
   afterNavigate(() => {
-    expandDirectory(filePath);
+    expandDirectory(path);
     // TODO: Focus on the code editor
   });
 
@@ -79,7 +80,7 @@
     <FileWorkspaceHeader
       slot="header"
       resourceKind={resourceKind ?? $inferredResourceKind ?? "file"}
-      {filePath}
+      filePath={path}
       hasUnsavedChanges={$hasUnsavedChanges}
     />
     <WorkspaceEditorContainer slot="body">

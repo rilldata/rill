@@ -24,30 +24,13 @@
   import { get } from "svelte/store";
   import { Button } from "../../../components/button";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import {
-    ResourceKind,
-    useClientFilteredResources,
-  } from "../../entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
+
+  export let hasValidDashboard: boolean;
 
   let pushThroughGitOpen = false;
   let deployConfirmOpen = false;
   let deployCTAUrl: string;
-
-  $: ({ instanceId } = $runtime);
-
-  $: canvasDashboards = useClientFilteredResources(
-    instanceId,
-    ResourceKind.Canvas,
-  );
-
-  $: dashboards = useClientFilteredResources(instanceId, ResourceKind.Explore);
-
-  $: dashboardCount =
-    ($dashboards.data?.length ?? 0) + ($canvasDashboards.data?.length ?? 0);
-
-  // $: metricsViewDashboards = useClientFilteredResources(instanceId, ResourceKind.MetricsView, (res) => (res.metricsView?.state?.validSpec.))
 
   $: currentProject = createLocalServiceGetCurrentProject({
     query: {
@@ -104,7 +87,7 @@
     <Button
       loading={$currentProject.isLoading}
       on:click={onShowDeploy}
-      type={dashboardCount > 0 ? "primary" : "secondary"}
+      type={hasValidDashboard ? "primary" : "secondary"}
     >
       <Rocket size="16px" />
 

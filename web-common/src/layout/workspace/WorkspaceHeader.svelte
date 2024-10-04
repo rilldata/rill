@@ -39,8 +39,9 @@
       color={resourceColorMapping[resourceKind]}
     />
 
-    <div class="wrapper slide h-7">
+    <div class="wrapper slide">
       <InputWithConfirm
+        size="md"
         {editable}
         id="model-title-input"
         textClass="text-xl font-semibold"
