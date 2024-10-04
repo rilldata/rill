@@ -142,40 +142,26 @@ export function getDefaultMetricsExplorerEntity(
   explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ): MetricsExplorerEntity {
-  // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
-  // and (2) we filter out undefined values
-  const defaultMeasureNames = (metricsView?.measures
-    ?.map((measure) => measure?.name)
-    .filter((name) => name !== undefined) ?? []) as string[];
+  const preset = explore.presets?.[0];
 
-  // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
-  // and (2) we filter out undefined values
-  const defaultDimNames = (metricsView?.dimensions
-    ?.map((dim) => dim.name)
-    .filter((name) => name !== undefined) ?? []) as string[];
+  const defaultMeasureNames = preset?.measures ?? explore?.measures ?? [];
+
+  const defaultDimNames = preset?.dimensions ?? explore?.dimensions ?? [];
 
   const metricsExplorer: MetricsExplorerEntity = {
     name,
-    visibleMeasureKeys: metricsView.defaultMeasures?.length
-      ? new Set(
-          metricsView.defaultMeasures
-            .map((dm) => normaliseName(dm, metricsView.measures))
-            .filter((dm) => !!dm) as string[],
-        )
-      : new Set(defaultMeasureNames),
-    allMeasuresVisible:
-      !metricsView.defaultMeasures?.length ||
-      metricsView.defaultMeasures?.length === defaultMeasureNames.length,
-    visibleDimensionKeys: metricsView.defaultDimensions?.length
-      ? new Set(
-          metricsView.defaultDimensions
-            .map((dd) => normaliseName(dd, metricsView.dimensions))
-            .filter((dd) => !!dd) as string[],
-        )
-      : new Set(defaultDimNames),
-    allDimensionsVisible:
-      !metricsView.defaultDimensions?.length ||
-      metricsView.defaultDimensions?.length === defaultDimNames.length,
+    visibleMeasureKeys: new Set(
+      defaultMeasureNames
+        .map((dm) => normaliseName(dm, metricsView.measures))
+        .filter((dm) => !!dm) as string[],
+    ),
+    allMeasuresVisible: defaultMeasureNames.length === explore.measures?.length,
+    visibleDimensionKeys: new Set(
+      defaultDimNames
+        .map((dd) => normaliseName(dd, metricsView.dimensions))
+        .filter((dd) => !!dd) as string[],
+    ),
+    allDimensionsVisible: defaultDimNames.length === explore.dimensions?.length,
     leaderboardMeasureName: defaultMeasureNames[0],
     whereFilter: createAndExpression([]),
     havingFilter: createAndExpression([]),

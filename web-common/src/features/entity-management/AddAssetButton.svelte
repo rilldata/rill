@@ -59,7 +59,7 @@
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
     const previousScreenName = getScreenNameFromPage();
-    await goto(toPath);
+    await goto(`/files${toPath}`);
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.Navigate,
       BehaviourEventMedium.Button,
@@ -86,24 +86,24 @@
    * Put an example Model file in the `models` directory
    */
   async function handleAddModel() {
-    const newRoute = await handleEntityCreate(ResourceKind.Model);
-    await wrapNavigation(newRoute);
+    const newFilePath = await handleEntityCreate(ResourceKind.Model);
+    await wrapNavigation(newFilePath);
   }
 
   /**
    * Put an example Metrics View file in the `metrics_views` directory
    */
   async function handleAddMetricsView() {
-    const newRoute = await handleEntityCreate(ResourceKind.MetricsView);
-    await wrapNavigation(newRoute);
+    const newFilePath = await handleEntityCreate(ResourceKind.MetricsView);
+    await wrapNavigation(newFilePath);
   }
 
   /**
    * Put an example Explore file in the `explores` directory
    */
   async function handleAddExplore() {
-    const newRoute = await handleEntityCreate(ResourceKind.Explore);
-    await wrapNavigation(newRoute);
+    const newFilePath = await handleEntityCreate(ResourceKind.Explore);
+    await wrapNavigation(newFilePath);
   }
 
   /**
@@ -162,48 +162,48 @@
    * Put an example API file in the `apis` directory
    */
   async function handleAddAPI() {
-    const newRoute = await handleEntityCreate(ResourceKind.API);
-    if (newRoute) await goto(newRoute);
+    const newFilePath = await handleEntityCreate(ResourceKind.API);
+    await wrapNavigation(newFilePath);
   }
 
   /**
    * Put an example Chart file in the `charts` directory
    */
   async function handleAddComponent() {
-    const newRoute = await handleEntityCreate(ResourceKind.Component);
-    await wrapNavigation(newRoute);
+    const newFilePath = await handleEntityCreate(ResourceKind.Component);
+    await wrapNavigation(newFilePath);
   }
 
   /**
    * Put an example Canvas file in the `canvas` directory
    */
   async function handleAddCanvasDashboard() {
-    const newRoute = await handleEntityCreate(ResourceKind.Canvas);
-    await wrapNavigation(newRoute);
+    const newFilePath = await handleEntityCreate(ResourceKind.Canvas);
+    await wrapNavigation(newFilePath);
   }
 
   /**
    * Put an example Theme file in the `themes` directory
    */
   async function handleAddTheme() {
-    const newRoute = await handleEntityCreate(ResourceKind.Theme);
-    await wrapNavigation(newRoute);
+    const newFilePath = await handleEntityCreate(ResourceKind.Theme);
+    await wrapNavigation(newFilePath);
   }
 
   /**
    * Put an example Report file in the `reports` directory
    */
   // async function handleAddReport() {
-  //   const newRoute = await handleEntityCreate(ResourceKind.Report);
-  //   if (newRoute) await goto(newRoute);
+  //   const newFilePath = await handleEntityCreate(ResourceKind.Report);
+  //   if (newFilePath) await goto(newFilePath);
   // }
 
   /**
    * Put an example Alert file in the `alerts` directory
    */
   // async function handleAddAlert() {
-  //   const newRoute = await handleEntityCreate(ResourceKind.Alert);
-  //   if (newRoute) await goto(newRoute);
+  //   const newFilePath = await handleEntityCreate(ResourceKind.Alert);
+  //   if (newFilePath) await goto(newFilePath);
   // }
 </script>
 

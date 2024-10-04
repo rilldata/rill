@@ -5,6 +5,8 @@ import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explor
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { get } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";
+import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
+import { waitUntil } from "../../../lib/waitUtils";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import type { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 import {
@@ -20,6 +22,7 @@ import {
 import httpClient from "../../../runtime-client/http-client";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
+import { handleEntityCreate } from "../../file-explorer/new-files";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
 /**
@@ -52,7 +55,7 @@ export function useCreateMetricsViewFromTableUIAction(
   database: string,
   databaseSchema: string,
   tableName: string,
-  folder: string,
+  createExplore: boolean,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
@@ -64,7 +67,7 @@ export function useCreateMetricsViewFromTableUIAction(
     const abortController = new AbortController();
 
     overlay.set({
-      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your dashboard`,
+      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your ${createExplore ? "dashboard" : "metrics"}`,
       detail: {
         component: OptionToCancelAIGeneration,
         props: {
@@ -77,11 +80,11 @@ export function useCreateMetricsViewFromTableUIAction(
     });
 
     // Get a unique name
-    const newDashboardName = getName(
+    const newMetricsViewName = getName(
       `${tableName}_metrics`,
       fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
-    const newFilePath = `/${folder}/${newDashboardName}.yaml`;
+    const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
 
     try {
       // First, request an AI-generated dashboard
@@ -92,7 +95,7 @@ export function useCreateMetricsViewFromTableUIAction(
           database: database,
           databaseSchema: databaseSchema,
           table: tableName,
-          path: newFilePath,
+          path: newMetricsViewFilePath,
           useAi: isAiEnabled, // AI isn't enabled during e2e tests
         },
         abortController.signal,
@@ -103,7 +106,9 @@ export function useCreateMetricsViewFromTableUIAction(
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         try {
-          await runtimeServiceGetFile(instanceId, { path: newFilePath });
+          await runtimeServiceGetFile(instanceId, {
+            path: newMetricsViewFilePath,
+          });
           // success, AI is done
           break;
         } catch {
@@ -118,24 +123,64 @@ export function useCreateMetricsViewFromTableUIAction(
           database: database,
           databaseSchema: databaseSchema,
           table: tableName,
-          path: newFilePath,
+          path: newMetricsViewFilePath,
           useAi: false,
         });
       }
 
-      // Preview
       const previousScreenName = getScreenNameFromPage();
-      await goto(`/files${newFilePath}`);
-      void behaviourEvent.fireNavigationEvent(
-        newDashboardName,
-        behaviourEventMedium,
-        metricsEventSpace,
-        previousScreenName,
-        MetricsEventScreenName.Dashboard,
-      );
+
+      if (createExplore) {
+        // Get the Metrics View to use as a base for the Explore
+        const metricsViewResource = fileArtifacts
+          .getFileArtifact(newMetricsViewFilePath)
+          .getResource(queryClient, instanceId);
+
+        // Create the Explore file
+        const newExploreFilePath = await handleEntityCreate(
+          ResourceKind.Explore,
+          get(metricsViewResource)?.data,
+        );
+        if (!newExploreFilePath) {
+          throw new Error("Failed to create an Explore file");
+        }
+
+        // Wait until the Explore is ready
+        const exploreResource = fileArtifacts
+          .getFileArtifact(newExploreFilePath)
+          .getResource(queryClient, instanceId);
+        await waitUntil(
+          () => get(exploreResource)?.data?.meta?.name?.name !== undefined,
+        );
+
+        // Navigate to the Explore Preview
+        const newExploreName = get(exploreResource)?.data?.meta?.name?.name;
+        if (!newExploreName) {
+          throw new Error("Failed to create an Explore resource");
+        }
+        await goto(`/explore/${newExploreName}`);
+        void behaviourEvent.fireNavigationEvent(
+          newExploreName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          previousScreenName,
+          MetricsEventScreenName.Dashboard,
+        );
+      } else {
+        await goto(`/files${newMetricsViewFilePath}`);
+        void behaviourEvent.fireNavigationEvent(
+          newMetricsViewName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          previousScreenName,
+          MetricsEventScreenName.MetricsDefinition,
+        );
+      }
     } catch (err) {
       eventBus.emit("notification", {
-        message: "Failed to create a dashboard for " + tableName,
+        message:
+          `Failed to create ${createExplore ? "a dashboard" : "metrics"} for ` +
+          tableName,
         detail: err.response?.data?.message ?? err.message,
       });
     }
