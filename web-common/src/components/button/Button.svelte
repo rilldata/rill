@@ -11,8 +11,7 @@
     | "dashed"
     | "link"
     | "text"
-    | "add"
-    | "special";
+    | "add";
 
   export let type: ButtonType = "plain";
   export let status: "info" | "error" = "info";
@@ -387,10 +386,5 @@
 
   .gray {
     @apply saturate-0;
-  }
-
-  .special {
-    /* @apply border-primary-600 border; */
-    /* @apply bg-gradient-to-r from-primary-800/75 to-primary-900/75 text-white; */
   }
 </style>
