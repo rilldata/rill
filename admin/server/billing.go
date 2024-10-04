@@ -299,22 +299,10 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		if sub.Plan.ID == plan.ID {
-			// delete the sub cancelled billing issue and we are done
-			err = s.admin.DB.DeleteBillingIssue(ctx, bisc.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
+	}
 
-			s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
-
-			return &adminv1.RenewBillingSubscriptionResponse{
-				Organization: organizationToDTO(org),
-				Subscription: subscriptionToDTO(sub),
-			}, nil
-		}
-
-		// change the plan
+	if sub.Plan.ID != plan.ID {
+		// change the plan, won't happen for new subscriptions
 		sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
