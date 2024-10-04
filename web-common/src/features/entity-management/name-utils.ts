@@ -36,7 +36,6 @@ export function isDuplicateName(
   fromName: string,
   names: Array<string>,
 ) {
-  console.log(name, fromName, names);
   if (name.toLowerCase() === fromName.toLowerCase()) return false;
   return names.findIndex((n) => n?.toLowerCase() === name.toLowerCase()) >= 0;
 }
