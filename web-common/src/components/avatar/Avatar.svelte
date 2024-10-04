@@ -6,6 +6,7 @@
   export let src: string | null = null;
   export let alt: string | null = null;
   export let size: string = "h-12 w-12";
+  export let bgColor: string = "bg-blue-500";
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -28,7 +29,7 @@
       `flex h-full w-full items-center justify-center overflow-hidden rounded-full border`,
       {
         "border-dashed bg-transparent border-slate-400": !src && !alt,
-        [`border-transparent bg-slate-500`]: !src && alt,
+        [`border-transparent ${bgColor}`]: !src && alt,
       },
     )}
   >
