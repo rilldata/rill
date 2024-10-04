@@ -3,8 +3,6 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { workspaces } from "./workspace-stores";
   import { navigationOpen } from "../navigation/Navigation.svelte";
-  import { scale } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import {
