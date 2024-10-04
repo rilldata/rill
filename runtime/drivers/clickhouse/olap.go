@@ -502,6 +502,10 @@ func (c *connection) renameTable(ctx context.Context, oldName, newName, onCluste
 	return c.DropTable(context.Background(), oldName, false)
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return c.config.CanScaleToZero
+}
+
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
 // It returns a function that puts the connection back in the pool (if applicable).
 func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() error, error) {

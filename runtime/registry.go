@@ -243,39 +243,6 @@ func (r *registryCache) list() ([]*drivers.Instance, error) {
 	return res, nil
 }
 
-func (r *registryCache) instanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error) {
-	r.mu.RLock()
-	inst, ok := r.instances[instanceID]
-	if !ok {
-		r.mu.RUnlock()
-		return nil, drivers.ErrNotFound
-	}
-	r.mu.RUnlock()
-
-	res := &InstanceHealth{
-		Controller: inst.controllerErr,
-	}
-
-	// check olap error
-	olap, or, err := r.rt.OLAP(ctx, instanceID, inst.instance.ResolveOLAPConnector())
-	if err != nil {
-		res.OLAP = err
-	} else {
-		res.OLAP = olap.(drivers.Handle).Ping(ctx)
-		or()
-	}
-
-	// check repo error
-	repo, rr, err := r.rt.Repo(ctx, instanceID)
-	if err != nil {
-		res.Repo = err
-	} else {
-		res.Repo = repo.(drivers.Handle).Ping(ctx)
-		rr()
-	}
-	return res, nil
-}
-
 func (r *registryCache) get(instanceID string) (*drivers.Instance, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

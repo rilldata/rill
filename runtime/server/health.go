@@ -94,7 +94,7 @@ func (s *Server) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	for _, h := range status.InstancesHealth {
-		if h.Controller != nil || h.Repo != nil {
+		if h.Controller != "" || h.Repo != "" {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

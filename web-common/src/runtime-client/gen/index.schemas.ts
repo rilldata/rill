@@ -1619,10 +1619,15 @@ export interface V1IssueDevJWTRequest {
   admin?: boolean;
 }
 
+export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
+
 export interface V1InstanceHealth {
   controllerError?: string;
   olapError?: string;
   repoError?: string;
+  metricsViewErrors?: V1InstanceHealthMetricsViewErrors;
+  parseErrorCount?: number;
+  reconcileErrorCount?: number;
 }
 
 export interface V1InstanceHealthResponse {
