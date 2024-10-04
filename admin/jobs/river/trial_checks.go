@@ -221,10 +221,15 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 		// get active subscription for the org
 		sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 		if err != nil {
-			return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
+			if !errors.Is(err, billing.ErrNotFound) {
+				return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
+			}
 		}
-		if sub.ID != m.SubID || sub.Plan.ID != m.PlanID {
-			w.logger.Warn("trial grace period has ended, but org has different active subscription, not cancelling, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("sub_id", sub.ID), zap.String("sub_plan_id", sub.Plan.ID), zap.String("expected_sub_id", m.SubID), zap.String("expected_sub_plan_id", m.PlanID))
+		if sub == nil {
+			// might happen if previous job failed in middle
+			w.logger.Warn("trial grace period has ended, but org has no active subscription, please check", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+		} else if sub.ID != m.SubID || sub.Plan.ID != m.PlanID {
+			w.logger.Warn("trial grace period has ended, but org has different active subscription, doing nothing, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("sub_id", sub.ID), zap.String("sub_plan_id", sub.Plan.ID), zap.String("expected_sub_id", m.SubID), zap.String("expected_sub_plan_id", m.PlanID))
 			continue
 		}
 
