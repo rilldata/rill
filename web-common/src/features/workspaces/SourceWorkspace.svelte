@@ -152,12 +152,10 @@
       </p>
     </svelte:fragment>
 
-    <svelte:fragment slot="cta" let:width>
-      {@const collapse = width < 800}
+    <svelte:fragment slot="cta">
       <div class="flex gap-x-2 items-center">
         <SourceCTAs
           hasUnsavedChanges={$hasUnsavedChanges}
-          {collapse}
           hasErrors={$hasErrors}
           {isLocalFileConnector}
           on:save-source={fileArtifact.saveLocalContent}

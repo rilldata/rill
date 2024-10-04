@@ -33,7 +33,7 @@
 </script>
 
 <div
-  role="presentation"
+  aria-label="file heading"
   class="h-full w-fit font-medium flex gap-x-2 items-center"
   on:mouseenter={() => (hovering = true)}
   on:mouseleave={() => (hovering = false)}
@@ -80,6 +80,7 @@
       <DropdownMenu.Root bind:open>
         <DropdownMenu.Trigger asChild let:builder>
           <Button
+            label="Title actions"
             builders={[builder]}
             square
             small

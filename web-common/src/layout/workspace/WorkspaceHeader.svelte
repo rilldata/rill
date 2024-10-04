@@ -21,7 +21,7 @@
   export let showTableToggle = false;
   export let hasUnsavedChanges: boolean;
   export let filePath: string;
-  export let onTitleChange: (title: string) => void;
+  export let onTitleChange: (title: string) => void = () => {};
 
   let width: number;
 

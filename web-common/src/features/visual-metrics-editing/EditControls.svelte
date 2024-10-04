@@ -23,14 +23,7 @@
 </script>
 
 <Tooltip distance={8} activeDelay={500}>
-  <Button
-    {type}
-    noStroke
-    gray={!selected}
-    square
-    title="Edit"
-    on:click={onEdit}
-  >
+  <Button {type} noStroke gray={!selected} square on:click={onEdit}>
     <Pen size="14px" />
   </Button>
   <TooltipContent slot="tooltip-content">
@@ -39,14 +32,7 @@
 </Tooltip>
 
 <Tooltip distance={8} activeDelay={500}>
-  <Button
-    {type}
-    noStroke
-    square
-    gray={!selected}
-    title="Delete"
-    on:click={onDelete}
-  >
+  <Button {type} noStroke square gray={!selected} on:click={onDelete}>
     <Trash2Icon size="14px" />
   </Button>
   <TooltipContent slot="tooltip-content">
@@ -55,14 +41,7 @@
 </Tooltip>
 
 <Tooltip distance={8} activeDelay={500}>
-  <Button
-    {type}
-    noStroke
-    square
-    gray={!selected}
-    title="Duplicate"
-    on:click={onDuplicate}
-  >
+  <Button {type} noStroke square gray={!selected} on:click={onDuplicate}>
     <CopyIcon size="14px" />
   </Button>
   <TooltipContent slot="tooltip-content">
@@ -77,7 +56,6 @@
     square
     gray={!selected}
     disabled={first}
-    title="Move to top"
     on:click={() => onMoveTo(true)}
   >
     <ArrowUpToLineIcon size="14px" />
@@ -94,7 +72,6 @@
     square
     gray={!selected}
     disabled={last}
-    title="Move to bottom"
     on:click={() => onMoveTo(false)}
   >
     <ArrowDownToLineIcon size="14px" />
