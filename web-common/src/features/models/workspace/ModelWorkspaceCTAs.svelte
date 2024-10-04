@@ -7,7 +7,6 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
-  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -50,7 +49,7 @@
   };
 </script>
 
-<ModelRefreshButton {resource} {collapse} />
+<ModelRefreshButton {resource} />
 
 <DropdownMenu.Root>
   <DropdownMenu.Trigger asChild let:builder>
@@ -84,21 +83,6 @@
 
 {#if availableMetricsViews?.length === 0}
   <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
-  <!-- {:else if availableMetricsViews?.length === 1}
-  <Tooltip distance={8} alignment="end">
-    <Button
-      type="primary"
-    
-    >
-      <IconSpaceFixer pullLeft pullRight={collapse}>
-        <Forward />
-      </IconSpaceFixer>
-      <ResponsiveButtonText {collapse}>Go to metrics</ResponsiveButtonText>
-    </Button>
-    <TooltipContent slot="tooltip-content">
-      Go to the metrics view associated with this model
-    </TooltipContent>
-  </Tooltip> -->
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger

@@ -1,12 +1,7 @@
 <script lang="ts">
-  import {
-    Button,
-    IconSpaceFixer,
-  } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import {
     V1ReconcileStatus,
     type V1Resource,
@@ -15,7 +10,6 @@
   import { runtime } from "../../../runtime-client/runtime-store";
 
   export let resource: V1Resource | undefined;
-  export let collapse = false;
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
 

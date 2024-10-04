@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
