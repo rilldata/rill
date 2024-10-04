@@ -86,7 +86,7 @@
     id="value"
     onInput={valueUpdater}
     placeholder={"0"}
-    width={null}
+    width="auto"
   />
 </div>
 {#if groupErr}

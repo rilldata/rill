@@ -43,7 +43,7 @@
   export let multiline = false;
   export let fontFamily = "inherit";
   export let sameWidth = false;
-  export let width: string | null = "100%";
+  export let width: string = "100%";
   export let textClass = "text-xs";
   export let enableSearch = false;
 
