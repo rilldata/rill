@@ -277,10 +277,6 @@
     line-height: 1.6;
   }
 
-  input {
-    /* @apply pt-[7px] pb-[6px]; */
-  }
-
   .multiline-input {
     @apply overflow-auto break-words;
     @apply h-fit min-h-fit;
