@@ -36,8 +36,8 @@
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
         <div class="flex flex-col gap-y-4">
-          <h3 class="text-sm text-gray-800 font-medium">
-            Share your current view with another project member
+          <h3 class="text-xs text-gray-800 font-normal">
+            Share your current view with another project member.
           </h3>
           <Button
             type="secondary"
