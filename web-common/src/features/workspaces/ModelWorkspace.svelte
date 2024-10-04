@@ -64,14 +64,10 @@
     });
   }
 
-  async function handleNameChange(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
       [
@@ -103,7 +99,7 @@
     titleInput={fileName}
     showTableToggle
     hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={handleNameChange}
+    onTitleChange={handleNameChange}
   >
     <svelte:fragment slot="workspace-controls">
       <p

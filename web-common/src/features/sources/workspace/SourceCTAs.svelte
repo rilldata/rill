@@ -8,6 +8,8 @@
   import { createEventDispatcher } from "svelte";
   import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import ButtonContent from "./ButtonContent.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -24,20 +26,28 @@
 </script>
 
 {#if !isLocalFileConnector || hasUnsavedChanges}
-  <Button
-    on:click={() => {
-      if (isLocalFileConnector && !hasUnsavedChanges) return;
-      if (hasUnsavedChanges) {
-        dispatch("save-source");
-      } else {
-        dispatch("refresh-source");
-      }
-    }}
-    {label}
-    {type}
-  >
-    <ButtonContent {collapse} {hasUnsavedChanges} {isLocalFileConnector} />
-  </Button>
+  <Tooltip distance={8}>
+    <Button
+      square
+      on:click={() => {
+        if (isLocalFileConnector && !hasUnsavedChanges) return;
+        if (hasUnsavedChanges) {
+          dispatch("save-source");
+        } else {
+          dispatch("refresh-source");
+        }
+      }}
+      {label}
+      type="secondary"
+      disabled={hasUnsavedChanges}
+    >
+      <ButtonContent {collapse} {hasUnsavedChanges} {isLocalFileConnector} />
+    </Button>
+
+    <TooltipContent slot="tooltip-content"
+      >Save your changes to refresh
+    </TooltipContent>
+  </Tooltip>
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
@@ -64,10 +74,7 @@
 <Button
   disabled={hasUnsavedChanges || hasErrors}
   on:click={() => dispatch("create-model")}
-  type="primary"
+  type="secondary"
 >
-  <ResponsiveButtonText {collapse}>Create model</ResponsiveButtonText>
-  <IconSpaceFixer pullLeft pullRight={collapse}>
-    <EnterIcon size="14px" />
-  </IconSpaceFixer>
+  Create model
 </Button>

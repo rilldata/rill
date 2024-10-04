@@ -47,17 +47,13 @@
     isResourceLoading ||
     isFetching;
 
-  async function onChangeCallback(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
-      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
+      fileArtifacts.getNamesForKind(ResourceKind.Explore),
     );
     if (newRoute) await goto(newRoute);
   }
@@ -66,10 +62,12 @@
 <WorkspaceContainer inspector={false}>
   <WorkspaceHeader
     hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={onChangeCallback}
+    onTitleChange={onChangeCallback}
     showInspectorToggle={false}
     slot="header"
     titleInput={fileName}
+    {filePath}
+    resourceKind={ResourceKind.Explore}
   >
     <div class="flex gap-x-2" slot="cta">
       <PreviewButton

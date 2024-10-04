@@ -95,14 +95,10 @@
   $: editorWidth = editorPercentage * containerWidth;
   $: componentEditorHeight = componentEditorPercentage * containerHeight;
 
-  async function onChangeCallback(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       $runtime.instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
       fileArtifacts.getNamesForKind(ResourceKind.Canvas),
@@ -194,13 +190,13 @@
   inspector={false}
 >
   <WorkspaceHeader
+    slot="header"
     {filePath}
     resourceKind={ResourceKind.Canvas}
     hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={onChangeCallback}
     showInspectorToggle={false}
-    slot="header"
     titleInput={fileName}
+    onTitleChange={onChangeCallback}
   >
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
       {#if selectedView === "split" || selectedView === "viz"}
@@ -290,15 +286,17 @@
       </div>
     {/if}
 
-    <Resizer
-      absolute={false}
-      direction="EW"
-      side="right"
-      dimension={editorWidth}
-      min={300}
-      max={0.65 * containerWidth}
-      onUpdate={(width) => (editorPercentage = width / containerWidth)}
-    />
+    {#if selectedView === "split"}
+      <Resizer
+        absolute={false}
+        direction="EW"
+        side="right"
+        dimension={editorWidth}
+        min={300}
+        max={0.65 * containerWidth}
+        onUpdate={(width) => (editorPercentage = width / containerWidth)}
+      />
+    {/if}
 
     {#if selectedView === "viz" || selectedView === "split"}
       <CanvasDashboardPreview

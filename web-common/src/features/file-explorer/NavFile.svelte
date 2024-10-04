@@ -53,8 +53,14 @@
     removeLeadingSlash($page.params.file ?? "");
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: ({ resourceName, hasUnsavedChanges, saveLocalContent } = fileArtifact);
-  $: resourceKind = $resourceName?.kind as ResourceKind;
+  $: ({
+    resourceName,
+    hasUnsavedChanges,
+    saveLocalContent,
+    inferredResourceKind,
+  } = fileArtifact);
+  $: resourceKind = ($resourceName?.kind ??
+    $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);

@@ -23,14 +23,10 @@
     folder,
   );
 
-  const onChangeCallback = async (
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) => {
+  const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
       $runtime.instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
       $currentDirectoryFileNamesQuery.data ?? [],
@@ -43,7 +39,7 @@
   {filePath}
   {resourceKind}
   editable={!isProtectedFile}
-  on:change={onChangeCallback}
+  onTitleChange={onChangeCallback}
   {hasUnsavedChanges}
   showInspectorToggle={false}
   titleInput={fileName}

@@ -11,7 +11,8 @@
     | "dashed"
     | "link"
     | "text"
-    | "add";
+    | "add"
+    | "special";
 
   export let type: ButtonType = "plain";
   export let status: "info" | "error" = "info";
@@ -39,6 +40,10 @@
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
 
+  let className: string | undefined = undefined;
+
+  export { className as class };
+
   const dispatch = createEventDispatcher();
 
   const handleClick = (event: MouseEvent) => {
@@ -53,7 +58,7 @@
   role="button"
   tabindex={disabled ? -1 : 0}
   {href}
-  class="{$$props.class} {type}"
+  class="{className} {type}"
   {disabled}
   class:square
   class:circle
@@ -382,5 +387,10 @@
 
   .gray {
     @apply saturate-0;
+  }
+
+  .special {
+    /* @apply border-primary-600 border; */
+    /* @apply bg-gradient-to-r from-primary-800/75 to-primary-900/75 text-white; */
   }
 </style>

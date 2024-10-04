@@ -9,9 +9,10 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { Code2Icon, Database, FileIcon } from "lucide-svelte";
 import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
 import { Settings } from "lucide-svelte";
+import TableIcon from "@rilldata/web-common/components/icons/TableIcon.svelte";
 
 export const resourceIconMapping = {
-  [ResourceKind.Source]: Database,
+  [ResourceKind.Source]: TableIcon,
   [ResourceKind.Connector]: Database,
   [ResourceKind.Model]: Code2Icon,
   [ResourceKind.MetricsView]: MetricsViewIcon,

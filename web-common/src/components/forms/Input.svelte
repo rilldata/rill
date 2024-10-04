@@ -22,6 +22,15 @@
   export let alwaysShowError = false;
   export let optional = false;
   export let truncate = false;
+  export let height = "30px";
+  export let width = "100%";
+  export let selected: number = -1;
+  export let full = false;
+  export let multiline = false;
+  export let fontFamily = "inherit";
+  export let sameWidth = false;
+  export let textClass = "text-xs";
+  export let enableSearch = false;
   export let fields: string[] | undefined = [];
   export let options:
     | { value: string; label: string; type?: string }[]
@@ -38,14 +47,8 @@
       currentTarget: EventTarget & HTMLDivElement;
     },
   ) => void = voidFunction;
-  export let selected: number = -1;
-  export let full = false;
-  export let multiline = false;
-  export let fontFamily = "inherit";
-  export let sameWidth = false;
-  export let width = "100%";
-  export let textClass = "text-xs";
-  export let enableSearch = false;
+  export let onEnter: () => void = voidFunction;
+  export let onEscape: () => void = voidFunction;
 
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
@@ -70,9 +73,27 @@
     focus = false;
     onBlur(e);
   }
+
+  function onKeydown(
+    e: KeyboardEvent & {
+      currentTarget: EventTarget & HTMLDivElement;
+    },
+  ) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onEnter();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onEscape();
+    }
+  }
 </script>
 
-<div class="flex flex-col gap-y-1" class:w-full={full} style:width>
+<div
+  class="flex flex-col gap-y-1 h-full justify-center"
+  class:w-full={full}
+  style:width
+>
   {#if label}
     <div class="label-wrapper">
       <label for={id} class="line-clamp-1">
@@ -112,6 +133,7 @@
 
   {#if !options?.length}
     <div
+      style:height
       class="input-wrapper overflow-hidden {textClass}"
       style:font-family={fontFamily}
     >
@@ -124,25 +146,23 @@
       {#if multiline}
         <div
           {id}
+          style:height
           contenteditable
           class="multiline-input"
           {placeholder}
           role="textbox"
           tabindex="0"
-          bind:textContent={value}
           aria-multiline="true"
-          on:keydown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-            }
-          }}
           bind:this={inputElement}
+          bind:textContent={value}
+          on:keydown={onKeydown}
           on:blur={onElementBlur}
           on:focus={() => (focus = true)}
         />
       {:else}
         <input
           {id}
+          style:height
           {type}
           {placeholder}
           name={id}
@@ -153,6 +173,7 @@
             value = e.currentTarget.value;
             onInput(value, e);
           }}
+          on:keydown={onKeydown}
           on:blur={onElementBlur}
           on:focus={() => (focus = true)}
         />
@@ -222,23 +243,19 @@
   .multiline-input {
     @apply size-full;
     @apply outline-none border-0;
+    @apply py-[5px] pb-[6px];
+    @apply cursor-text min-w-fit;
   }
 
   .multiline-input {
-    @apply overflow-auto break-words py-[5px] cursor-text;
-  }
-
-  input {
-    @apply h-[30px] py-0;
+    @apply overflow-auto break-words;
   }
 
   .input-wrapper {
-    @apply flex justify-center items-center pl-2;
-    @apply w-full;
+    @apply flex justify-center items-center px-2;
+    @apply w-fit bg-background justify-center;
     @apply border border-gray-300 rounded-[2px];
-
     @apply cursor-pointer;
-    @apply min-h-8 h-fit;
   }
 
   .input-wrapper:focus-within {

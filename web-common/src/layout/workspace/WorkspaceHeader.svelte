@@ -12,6 +12,7 @@
     resourceColorMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
 
   export let resourceKind: ResourceKind | "file";
   export let titleInput: string;
@@ -20,9 +21,9 @@
   export let showTableToggle = false;
   export let hasUnsavedChanges: boolean;
   export let filePath: string;
+  export let onTitleChange: (title: string) => void;
 
   let width: number;
-  let titleWidth: number;
 
   $: value = titleInput;
   $: workspaceLayout = workspaces.get(filePath);
@@ -38,31 +39,13 @@
       color={resourceColorMapping[resourceKind]}
     />
 
-    <div class="wrapper slide">
-      <label aria-hidden for="model-title-input" bind:clientWidth={titleWidth}>
-        {value}
-      </label>
-      <input
+    <div class="wrapper slide h-7">
+      <InputWithConfirm
+        {editable}
         id="model-title-input"
-        name="title"
-        type="text"
-        autocomplete="off"
-        spellcheck="false"
-        disabled={!editable}
-        style:width="{titleWidth}px"
-        bind:value
-        on:change
-        on:keydown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            e.currentTarget.blur();
-          }
-        }}
-        on:blur={() => {
-          if (value.length === 0) {
-            value = titleInput;
-          }
-        }}
+        textClass="text-xl font-semibold"
+        {value}
+        onConfirm={onTitleChange}
       />
 
       {#if hasUnsavedChanges}
@@ -123,30 +106,9 @@
 
 <style lang="postcss">
   header {
-    @apply bg-gray-100 px-2 w-full;
+    @apply bg-gray-100 px-4 w-full;
     @apply justify-between;
     @apply flex flex-none gap-x-2  py-2;
-  }
-
-  input:focus,
-  input:not(:disabled):hover {
-    @apply border-primary-500 outline-none;
-    @apply ring-2 ring-primary-100 bg-background;
-  }
-
-  input,
-  label {
-    @apply whitespace-pre rounded-[2px] border border-transparent;
-    @apply truncate font-semibold text-xl bg-gray-100;
-  }
-
-  input {
-    @apply absolute text-left;
-    text-indent: 6px;
-  }
-
-  label {
-    @apply w-fit min-w-8 px-2 text-transparent max-w-full;
   }
 
   .wrapper {

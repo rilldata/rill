@@ -11,10 +11,11 @@
   export let isLocalFileConnector: boolean;
 </script>
 
-<IconSpaceFixer pullLeft pullRight={collapse}>
-  <RefreshIcon size="14px" />
-</IconSpaceFixer>
-<ResponsiveButtonText {collapse}>
+<!-- <IconSpaceFixer pullLeft pullRight={collapse}> -->
+<RefreshIcon size="14px" />
+<!-- </IconSpaceFixer> -->
+
+<!-- <ResponsiveButtonText {collapse}>
   <div class="flex">
     {#if hasUnsavedChanges}
       <span
@@ -33,4 +34,4 @@
 </ResponsiveButtonText>
 {#if !hasUnsavedChanges && isLocalFileConnector}
   <CaretDownIcon size="14px" />
-{/if}
+{/if} -->

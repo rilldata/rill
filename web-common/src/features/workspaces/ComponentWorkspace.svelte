@@ -70,15 +70,19 @@
     <div class="size-full flex-col flex overflow-hidden gap-y-[1px]">
       <div class="size-full overflow-y-auto">
         <ComponentStatusDisplay {isFetching} {componentName}>
-          <CanvasDashboardEmbed
-            {canvasName}
-            chartView
-            gap={8}
-            columns={10}
-            items={[
-              { width: 10, height: 10, x: 0, y: 0, component: componentName },
-            ]}
-          />
+          <div
+            class="size-full rounded-[2px] overflow-hidden border border-gray-300"
+          >
+            <CanvasDashboardEmbed
+              {canvasName}
+              chartView
+              gap={8}
+              columns={10}
+              items={[
+                { width: 10, height: 10, x: 0, y: 0, component: componentName },
+              ]}
+            />
+          </div>
         </ComponentStatusDisplay>
       </div>
       <Resizer

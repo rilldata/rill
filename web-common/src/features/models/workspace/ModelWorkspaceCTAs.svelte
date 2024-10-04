@@ -58,13 +58,9 @@
       disabled={modelHasError || !isModelIdle}
       type="secondary"
       builders={[builder]}
+      square
     >
-      <IconSpaceFixer pullLeft pullRight={collapse}>
-        <Export />
-      </IconSpaceFixer>
-
-      <ResponsiveButtonText {collapse}>Export</ResponsiveButtonText>
-      <CaretDownIcon />
+      <Export size="15px" />
     </Button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end">
@@ -117,7 +113,7 @@
       }}
     >
       <Tooltip distance={8} alignment="end">
-        <Button builders={[builder]} type="primary">
+        <Button builders={[builder]} type="secondary">
           Go to metrics view
 
           {#if availableMetricsViews.length > 1}

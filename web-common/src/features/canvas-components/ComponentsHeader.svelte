@@ -21,14 +21,10 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: componentName = extractFileName(filePath);
 
-  async function handleNameChange(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
       runtimeInstanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       componentName,
       fileArtifacts.getNamesForKind(ResourceKind.Component),
@@ -42,7 +38,7 @@
 
 <WorkspaceHeader
   resourceKind={ResourceKind.Component}
-  on:change={handleNameChange}
+  onTitleChange={handleNameChange}
   titleInput={fileName}
   {hasUnsavedChanges}
   {filePath}
@@ -50,7 +46,9 @@
 >
   <svelte:fragment slot="cta">
     <PanelCTA side="right">
-      <Button on:click={() => (generateOpen = true)}>Generate using AI</Button>
+      <Button type="secondary" on:click={() => (generateOpen = true)}
+        >Generate using AI</Button
+      >
     </PanelCTA>
   </svelte:fragment>
 </WorkspaceHeader>

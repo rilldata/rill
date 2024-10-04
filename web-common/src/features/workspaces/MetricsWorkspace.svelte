@@ -5,10 +5,7 @@
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import {
-    ResourceKind,
-    resourceIsLoading,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
@@ -67,14 +64,10 @@
     ? $isModelingSupportedForOlapDriver
     : $isModelingSupportedForDefaultOlapDriver;
 
-  async function onChangeCallback(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
       fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
@@ -92,7 +85,7 @@
     {filePath}
     resourceKind={ResourceKind.MetricsView}
     hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={onChangeCallback}
+    onTitleChange={onChangeCallback}
     showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
     titleInput={fileName}

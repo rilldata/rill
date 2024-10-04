@@ -36,14 +36,13 @@
 {#if isIncrementalModel}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button type="secondary" builders={[builder]} disabled={!isModelIdle}>
-        <IconSpaceFixer pullLeft pullRight={collapse}>
-          <RefreshIcon size="14px" />
-        </IconSpaceFixer>
-        <ResponsiveButtonText {collapse}>Refresh</ResponsiveButtonText>
-        <IconSpaceFixer pullLeft pullRight={collapse}>
-          <CaretDownIcon />
-        </IconSpaceFixer>
+      <Button
+        square
+        type="secondary"
+        builders={[builder]}
+        disabled={!isModelIdle}
+      >
+        <RefreshIcon size="14px" />
       </Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
@@ -56,10 +55,7 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}
-  <Button type="secondary" on:click={() => refreshModel(true)}>
-    <IconSpaceFixer pullLeft pullRight={collapse}>
-      <RefreshIcon size="14px" />
-    </IconSpaceFixer>
-    <ResponsiveButtonText {collapse}>Refresh</ResponsiveButtonText>
+  <Button square type="secondary" on:click={() => refreshModel(true)}>
+    <RefreshIcon size="14px" />
   </Button>
 {/if}

@@ -22,12 +22,9 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { parseDocument } from "yaml";
   import { get } from "svelte/store";
+  import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
 
   let showDropOverlay = false;
-  let editingTitle = false;
-  let hovering = false;
-  let open = false;
-  let editedTitle = "";
 
   $: ({
     url: { pathname },
@@ -43,6 +40,26 @@
   $: projectTitleQuery = useProjectTitle(instanceId);
 
   $: ({ data: title } = $projectTitleQuery);
+
+  async function submitTitleChange(editedTitle: string) {
+    const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
+
+    let content = get(artifact.localContent) ?? get(artifact.remoteContent);
+
+    if (!content) {
+      await artifact.fetchContent();
+      content = get(artifact.localContent) ?? get(artifact.remoteContent);
+      if (!content) {
+        return;
+      }
+    }
+    const parsed = parseDocument(content);
+
+    parsed.set("title", editedTitle);
+
+    artifact.updateLocalContent(parsed.toString(), true);
+    await artifact.saveLocalContent();
+  }
 </script>
 
 <main
@@ -66,79 +83,8 @@
         Developer
       </span>
 
-      <div
-        role="presentation"
-        class="font-medium flex gap-x-2 items-center ml-3"
-        on:mouseenter={() => (hovering = true)}
-        on:mouseleave={() => (hovering = false)}
-      >
-        {#if editingTitle}
-          <Input
-            value={title}
-            width="fit"
-            claimFocusOnMount
-            onInput={(title) => {
-              editedTitle = title;
-            }}
-            onBlur={(e) => {
-              const target = e.relatedTarget;
-              if (
-                target instanceof HTMLElement &&
-                target.getAttribute("aria-label") === "Save title"
-              ) {
-                return;
-              }
-
-              editingTitle = false;
-            }}
-          />
-
-          <Button
-            type="ghost"
-            small
-            square
-            label="Save title"
-            on:click={async () => {
-              const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
-
-              const content =
-                get(artifact.localContent) ?? get(artifact.remoteContent);
-
-              if (!content) return;
-              const parsed = parseDocument(content);
-
-              parsed.set("title", editedTitle);
-
-              artifact.updateLocalContent(parsed.toString(), true);
-              await artifact.saveLocalContent();
-              editingTitle = false;
-            }}
-          >
-            <Check size="16px" />
-          </Button>
-        {:else}
-          <h1 class="font-medium">{title}</h1>
-          {#if hovering || open}
-            <DropdownMenu.Root bind:open>
-              <DropdownMenu.Trigger asChild let:builder>
-                <Button builders={[builder]} square small type="ghost">
-                  <ThreeDot size="16px" />
-                </Button>
-              </DropdownMenu.Trigger>
-
-              <DropdownMenu.Content align="start">
-                <DropdownMenu.Item
-                  on:click={() => {
-                    editingTitle = !editingTitle;
-                  }}
-                >
-                  <Pencil size="16px" />
-                  Rename
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          {/if}
-        {/if}
+      <div class="h-6 w-fit ml-2">
+        <InputWithConfirm value={title} onConfirm={submitTitleChange} />
       </div>
 
       <div class="ml-auto flex gap-x-2">
