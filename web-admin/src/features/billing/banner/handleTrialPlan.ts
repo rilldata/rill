@@ -76,12 +76,12 @@ export function handleTrialPlan(issues: V1BillingIssue[]): BannerMessage {
   return bannerMessage;
 }
 
-export function getTrialMessageForDays(diff: Duration<true>) {
+export function getTrialMessageForDays(diff: Duration) {
   if (diff.milliseconds < 0) return "Your trial has ended.";
   return `Your trial expires in ${humanizeDuration(diff)}.`;
 }
 
-function humanizeDuration(dur: Duration<true>) {
+function humanizeDuration(dur: Duration) {
   dur = shiftToLargest(dur, ["seconds", "minutes", "hours", "days"]);
   return dur.toHuman({ unitDisplay: "short" });
 }

@@ -124,6 +124,8 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeTrialEnded,
 			Metadata: &database.BillingIssueMetadataTrialEnded{
+				SubID:              m.SubID,
+				PlanID:             m.PlanID,
 				GracePeriodEndDate: gracePeriodEndDate,
 			},
 			EventTime: m.EndDate.AddDate(0, 0, 1),
