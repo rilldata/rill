@@ -2,6 +2,8 @@
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { createEventDispatcher } from "svelte";
 
+  const dispatch = createEventDispatcher();
+
   type ButtonType =
     | "primary"
     | "secondary"
@@ -38,12 +40,9 @@
   export let gray = false;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
-
-  let className: string | undefined = undefined;
-
   export { className as class };
 
-  const dispatch = createEventDispatcher();
+  let className: string | undefined = undefined;
 
   const handleClick = (event: MouseEvent) => {
     if (!disabled) {
