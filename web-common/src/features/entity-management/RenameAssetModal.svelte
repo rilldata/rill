@@ -146,6 +146,7 @@
         alwaysShowError
         id={isDir ? "folder-name" : "file-name"}
         label={isDir ? "Folder name" : "File name"}
+        onEnter={submit}
       />
     </form>
     <Dialog.Footer class="gap-x-2">

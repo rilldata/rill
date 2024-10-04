@@ -12,8 +12,6 @@
   export let hasUnsavedChanges: boolean;
   export let isLocalFileConnector: boolean;
 
-  $: label = hasUnsavedChanges ? "Save and refresh" : "Refresh";
-
   $: type = (
     hasUnsavedChanges ? "primary" : "secondary"
   ) as Button["$$prop_def"]["type"];
@@ -31,7 +29,7 @@
           dispatch("refresh-source");
         }
       }}
-      {label}
+      label="Refresh"
       type="secondary"
       disabled={hasUnsavedChanges}
     >
@@ -45,7 +43,7 @@
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button builders={[builder]} {label} {type}>
+      <Button builders={[builder]} label="Refresh" {type}>
         <RefreshIcon size="14px" />
       </Button>
     </DropdownMenu.Trigger>

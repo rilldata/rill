@@ -80,6 +80,3 @@
     <span>Move to bottom</span>
   </TooltipContent>
 </Tooltip>
-
-<style lang="postcss">
-</style>

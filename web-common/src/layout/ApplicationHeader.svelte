@@ -21,7 +21,10 @@
   import Button from "../components/button/Button.svelte";
   import Play from "svelte-radix/Play.svelte";
   import { ResourceKind } from "../features/entity-management/resource-selectors";
-  import type { V1ResourceName } from "../runtime-client";
+  import type { V1Resource, V1ResourceName } from "../runtime-client";
+  import type { FileArtifact } from "../features/entity-management/file-artifact";
+  import Tooltip from "../components/tooltip/Tooltip.svelte";
+  import TooltipContent from "../components/tooltip/TooltipContent.svelte";
 
   export let mode: string;
 
@@ -68,20 +71,35 @@
 
   $: metricsViewName = currentDashboard?.meta?.name?.name;
 
-  $: resourceNameStore = data?.fileArtifact?.resourceName;
+  $: fileArtifact = data.fileArtifact as FileArtifact | undefined;
+
+  $: resourceNameStore = fileArtifact?.resourceName;
+  $: remoteContent = fileArtifact?.remoteContent;
+  $: inferredResourceKind = fileArtifact?.inferredResourceKind;
+
+  $: isNewMetricsView = $remoteContent?.includes("version: 1");
+
+  $: dashboardResourceInErrorState = Boolean(
+    $inferredResourceKind &&
+      getPreviewType($inferredResourceKind) !== null &&
+      !isNewMetricsView &&
+      previewHref === null,
+  );
 
   $: resourceName = resourceNameStore && $resourceNameStore;
 
-  $: previewType =
-    getPreviewType(resourceName?.kind) ??
-    getPreviewType(defaultDashboard?.meta?.name?.kind);
-
-  $: previewName =
-    getPreviewName(resourceName) ??
-    getPreviewName(defaultDashboard?.meta?.name);
-
+  $: previewType = getPreviewType(resourceName?.kind);
+  $: previewName = getPreviewName(resourceName, explores);
   $: previewHref =
     previewName && previewType ? `/${previewType}/${previewName}` : null;
+
+  $: defaultType = getPreviewType(defaultDashboard?.meta?.name?.kind);
+  $: defaultName = getPreviewName(defaultDashboard?.meta?.name, explores);
+  $: fallbackHref =
+    defaultName && defaultType ? `/${defaultType}/${defaultName}` : null;
+
+  $: href =
+    previewType === null || isNewMetricsView ? fallbackHref : previewHref;
 
   async function submitTitleChange(editedTitle: string) {
     const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
@@ -117,14 +135,22 @@
     }
   }
 
-  function getPreviewName(name: V1ResourceName | undefined): string | null {
+  function getPreviewName(
+    name: V1ResourceName | undefined,
+    validExploreDashboards: V1Resource[],
+  ): string | null {
     switch (name?.kind) {
       case ResourceKind.Canvas:
-      case ResourceKind.Explore:
         return name?.name ?? null;
+      case ResourceKind.Explore:
+        return (
+          validExploreDashboards.find(
+            ({ meta }) => meta?.name?.name === name.name,
+          )?.meta?.name?.name ?? null
+        );
       case ResourceKind.MetricsView:
         return (
-          explores.find(
+          validExploreDashboards.find(
             ({ explore }) => explore?.spec?.metricsView === name.name,
           )?.meta?.name?.name ?? null
         );
@@ -143,7 +169,6 @@
     {mode}
   </span>
 
-  <slot name="left" />
   {#if mode === "Preview"}
     {#if $exploresQuery?.data}
       <Breadcrumbs {pathParts} {currentPath} />
@@ -152,6 +177,7 @@
     <InputWithConfirm
       size="md"
       bumpDown
+      type="Project"
       textClass="font-medium"
       value={projectTitle}
       onConfirm={submitTitleChange}
@@ -166,14 +192,24 @@
         </StateManagersProvider>
       {/if}
     {:else if mode === "Developer"}
-      <Button
-        square
-        type="secondary"
-        href={previewHref}
-        disabled={!previewHref}
+      <Tooltip
+        suppress={!dashboardResourceInErrorState}
+        distance={8}
+        location="left"
       >
-        <Play size="16px" />
-      </Button>
+        <Button
+          label="Preview"
+          square
+          type="secondary"
+          {href}
+          disabled={!href || dashboardResourceInErrorState}
+        >
+          <Play size="16px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          Dashboard errors must be resolved before previewing
+        </TooltipContent>
+      </Tooltip>
     {/if}
     <DeployDashboardCta {hasValidDashboard} />
     <LocalAvatarButton />

@@ -106,9 +106,7 @@ export class FileArtifact {
     );
 
     this.onRemoteContentChange((content) => {
-      if (!get(this.resourceName)) {
-        this.inferredResourceKind.set(inferResourceKind(this.path, content));
-      }
+      this.inferredResourceKind.set(inferResourceKind(this.path, content));
     });
   }
 

@@ -12,6 +12,7 @@
   export let textClass = "";
   export let editable = true;
   export let bumpDown = false;
+  export let type: "Project" | "File" = "File";
   export let size: "sm" | "md" | "lg" = "lg";
 
   let hovering = false;
@@ -33,7 +34,8 @@
 </script>
 
 <div
-  aria-label="file heading"
+  role="heading"
+  aria-level="1"
   class="h-full w-fit font-medium flex gap-x-2 items-center"
   on:mouseenter={() => (hovering = true)}
   on:mouseleave={() => (hovering = false)}
@@ -80,7 +82,7 @@
       <DropdownMenu.Root bind:open>
         <DropdownMenu.Trigger asChild let:builder>
           <Button
-            label="Title actions"
+            label="{type} title actions"
             builders={[builder]}
             square
             small
