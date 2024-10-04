@@ -1,5 +1,6 @@
 <script lang="ts">
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import { getRandomColor } from "@rilldata/web-common/features/themes/color-config";
 
   export let name: string;
   export let email: string;
@@ -8,7 +9,11 @@
 </script>
 
 <div class="flex items-center gap-2">
-  <Avatar size="h-7 w-7" alt={pendingAcceptance ? null : name} />
+  <Avatar
+    size="h-7 w-7"
+    alt={pendingAcceptance ? null : name}
+    bgColor={getRandomColor()}
+  />
   <div class="flex flex-col text-left">
     <span class="text-sm font-medium text-gray-900">
       {name}
