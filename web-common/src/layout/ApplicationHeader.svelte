@@ -18,13 +18,10 @@
   import { get } from "svelte/store";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import { parseDocument } from "yaml";
-  import Button from "../components/button/Button.svelte";
-  import Play from "svelte-radix/Play.svelte";
   import { ResourceKind } from "../features/entity-management/resource-selectors";
   import type { V1Resource, V1ResourceName } from "../runtime-client";
   import type { FileArtifact } from "../features/entity-management/file-artifact";
-  import Tooltip from "../components/tooltip/Tooltip.svelte";
-  import TooltipContent from "../components/tooltip/TooltipContent.svelte";
+  import PreviewButton from "../features/explores/PreviewButton.svelte";
 
   export let mode: string;
 
@@ -192,24 +189,11 @@
         </StateManagersProvider>
       {/if}
     {:else if mode === "Developer"}
-      <Tooltip
+      <PreviewButton
+        {href}
         suppress={!dashboardResourceInErrorState}
-        distance={8}
-        location="left"
-      >
-        <Button
-          label="Preview"
-          square
-          type="secondary"
-          {href}
-          disabled={!href || dashboardResourceInErrorState}
-        >
-          <Play size="16px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Dashboard errors must be resolved before previewing
-        </TooltipContent>
-      </Tooltip>
+        disabled={!href || dashboardResourceInErrorState}
+      />
     {/if}
     <DeployDashboardCta {hasValidDashboard} />
     <LocalAvatarButton />

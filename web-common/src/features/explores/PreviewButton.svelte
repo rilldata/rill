@@ -9,18 +9,17 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { Play } from "lucide-svelte";
+  import Play from "svelte-radix/Play.svelte";
 
   export let disabled: boolean;
-  export let status: string[] = [];
-  export let dashboardName: string | undefined;
-  export let type: "dashboard" | "explore" | "custom" = "explore";
+  export let suppress: boolean;
+  export let href: string | null;
 
   const viewDashboard = () => {
-    if (!dashboardName) return;
+    if (!href) return;
     behaviourEvent
       .fireNavigationEvent(
-        dashboardName,
+        href,
         BehaviourEventMedium.Button,
         MetricsEventSpace.Workspace,
         MetricsEventScreenName.MetricsDefinition,
@@ -29,30 +28,22 @@
       .catch(console.error);
   };
 
-  $: loading = $navigating?.to?.route?.id === `/(viz)/${type}/[name]`;
+  $: loading = $navigating?.to?.url.pathname === href;
 </script>
 
-<Tooltip
-  alignment="middle"
-  distance={5}
-  location="right"
-  suppress={!status.length}
->
+<Tooltip {suppress} distance={8} location="left">
   <Button
-    disabled={disabled || !dashboardName}
-    href={`/${type}/${dashboardName}`}
     label="Preview"
+    square
     {loading}
     on:click={viewDashboard}
     type="secondary"
+    {href}
+    {disabled}
   >
-    <Play size="10px" />
-    Preview
+    <Play size="16px" />
   </Button>
-
   <TooltipContent slot="tooltip-content">
-    {#each status as message (message)}
-      <div>{message}</div>
-    {/each}
+    Dashboard errors must be resolved before previewing
   </TooltipContent>
 </Tooltip>
