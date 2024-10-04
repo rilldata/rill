@@ -48,7 +48,7 @@ func (n *noop) PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID 
 	return nil, nil
 }
 
-func (n *noop) PlanChangeByAPI(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*InsertResult, error) {
+func (n *noop) HandlePlanChangeBillingIssues(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*InsertResult, error) {
 	return nil, nil
 }
 

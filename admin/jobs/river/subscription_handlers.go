@@ -14,23 +14,23 @@ import (
 	"go.uber.org/zap"
 )
 
-type PlanChangeByAPIArgs struct {
+type HandlePlanChangeBillingIssuesArgs struct {
 	OrgID     string
 	SubID     string
 	PlanID    string
 	StartDate time.Time // just for deduplication
 }
 
-func (PlanChangeByAPIArgs) Kind() string { return "plan_change_by_api" }
+func (HandlePlanChangeBillingIssuesArgs) Kind() string { return "handle_plan_change_billing_issues" }
 
-type PlanChangeByAPIWorker struct {
-	river.WorkerDefaults[PlanChangeByAPIArgs]
+type HandlePlanChangeBillingIssues struct {
+	river.WorkerDefaults[HandlePlanChangeBillingIssuesArgs]
 	admin  *admin.Service
 	logger *zap.Logger
 }
 
-// Work This worker handle plan changes when upgrading plan or when we manually assign a new trial plan through admin API, does not handle changes done directly in the billing system
-func (w *PlanChangeByAPIWorker) Work(ctx context.Context, job *river.Job[PlanChangeByAPIArgs]) error {
+// Work handles the billing issues for the org after a plan change
+func (w *HandlePlanChangeBillingIssues) Work(ctx context.Context, job *river.Job[HandlePlanChangeBillingIssuesArgs]) error {
 	org, err := w.admin.DB.FindOrganization(ctx, job.Args.OrgID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {

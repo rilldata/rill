@@ -101,7 +101,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	if sub != nil && sub.Plan.ID != plan.ID {
 		// To make the call idempotent
-		org, err = s.updateQuotasAndSchedulePlanChangeByAPIJob(ctx, org, sub)
+		org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -180,7 +180,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		s.logger.Named("billing").Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("old_plan_id", oldPlan.ID), zap.String("old_plan_name", oldPlan.Name), zap.String("new_plan_id", sub.Plan.ID), zap.String("new_plan_name", sub.Plan.Name))
 	}
 
-	org, err = s.updateQuotasAndSchedulePlanChangeByAPIJob(ctx, org, sub)
+	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -513,7 +513,7 @@ func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *ad
 	return &adminv1.SudoDeleteOrganizationBillingIssueResponse{}, nil
 }
 
-func (s *Server) updateQuotasAndSchedulePlanChangeByAPIJob(ctx context.Context, org *database.Organization, sub *billing.Subscription) (*database.Organization, error) {
+func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *database.Organization, sub *billing.Subscription) (*database.Organization, error) {
 	org, err := s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
@@ -534,8 +534,8 @@ func (s *Server) updateQuotasAndSchedulePlanChangeByAPIJob(ctx context.Context, 
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// schedule plan change by API job
-	_, err = s.admin.Jobs.PlanChangeByAPI(ctx, org.ID, sub.ID, sub.Plan.ID, sub.CurrentBillingCycleStartDate)
+	// schedule job to handle billing issues
+	_, err = s.admin.Jobs.HandlePlanChangeBillingIssues(ctx, org.ID, sub.ID, sub.Plan.ID, sub.CurrentBillingCycleStartDate)
 	if err != nil {
 		return nil, err
 	}
