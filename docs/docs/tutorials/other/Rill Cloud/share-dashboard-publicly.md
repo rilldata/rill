@@ -52,7 +52,7 @@ Checking the public URL can be done by running the following:
 rill public-url list --project <your_project>
   ID                                     DASHBOARD     FILTER                                CREATED BY              CREATED ON            LAST USED ON          EXPIRES ON  
  -------------------------------------- ------------- ------------------------------------- ----------------------- --------------------- --------------------- ------------ 
-  3564c499-c8bd-4c1c-bab8-c33a218a5009   dashboard_1   (author_name IN ["Robert Schulze"])   roy.endo@rilldata.com   2024-09-30 09:34:41   2024-09-30 09:34:41               
+  3564c499-c8bd-4c1c-bab8-c33a218a5009   dashboard_1   (author_name IN ["Alexey Milovidov""])   roy.endo@rilldata.com   2024-09-30 09:34:41   2024-09-30 09:34:41               
   cab99113-d5a8-468d-981e-213e41c7d1bf   dashboard_1                                         roy.endo@rilldata.com   2024-09-30 09:29:26   2024-09-30 09:34:32               
 
 NOTE: For security reasons, the actual URLs can't be displayed after creation.
@@ -63,7 +63,7 @@ As you can see, you can receive information on who created, what filters, when i
 
 Feel free to take a look at the created public URLs and note the difference between a dashboard with a filter and without.
 
-![Public URL without filter](https://ui.rilldata.com/rill_learn/my-rill-tutorial/-/share/rill_mgc_h2zgRaakdAAj1wW8szKB4sgEexaVyuKDbBwOlr0vlSG6HKjLz4mbTG?state=CgYKBFAxNEQYBSIJCgdyaWxsLVBQKgltZWFzdXJlXzA4AEgBWAFgBGoDVVRDeAKAAQGYAf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwGiAQQaAggIsAEA8AEB%2BAECgAIBigIHZGVmYXVsdJACAQ%3D%3D)
+[Public URL without filter](https://ui.rilldata.com/rill_learn/my-rill-tutorial/-/share/rill_mgc_boCupdujFIo0I0DFL7yoO3bAGdbaSqXWUn5OXIlXL8VeDDTENARBPv)
 
 
-![Public URL with Filter](https://ui.rilldata.com/rill_learn/my-rill-tutorial/-/share/rill_mgc_234NinqSqfB12PVZ7xofjW9rah3cVWl7K5C3gxy4QnZP2mLkPDLqGr)
+[Public URL with Filter](https://ui.rilldata.com/rill_learn/my-rill-tutorial/-/share/rill_mgc_1iB5JJ7CPz4g59vTihTnlYOkvqn8mYivtNxSpnvgnhc1IY56Pi86hs)

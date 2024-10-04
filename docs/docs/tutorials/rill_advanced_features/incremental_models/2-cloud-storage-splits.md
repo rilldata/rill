@@ -86,6 +86,7 @@ refresh:
 Once Rill ingests the data, your UI should looks something like this: 
 ![img](/img/tutorials/302/incremental.png)
 
+
 Your YAML should look like the following:
 
 ```yaml
