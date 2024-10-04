@@ -13,6 +13,8 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let resourceKind: ResourceKind | "file";
   export let titleInput: string;
@@ -66,20 +68,21 @@
     </div>
 
     {#if showTableToggle}
-      <Button
-        type="secondary"
-        square
-        selected={$tableVisible}
-        on:click={workspaceLayout.table.toggle}
-      >
-        <HideBottomPane size="18px" open={$tableVisible} />
-
-        <svelte:fragment slot="tooltip-content">
+      <Tooltip distance={8}>
+        <Button
+          type="secondary"
+          square
+          selected={$tableVisible}
+          on:click={workspaceLayout.table.toggle}
+        >
+          <HideBottomPane size="18px" open={$tableVisible} />
+        </Button>
+        <TooltipContent slot="tooltip-content">
           <SlidingWords active={$tableVisible} reverse>
             results preview
           </SlidingWords>
-        </svelte:fragment>
-      </Button>
+        </TooltipContent>
+      </Tooltip>
     {/if}
 
     {#if showInspectorToggle}
