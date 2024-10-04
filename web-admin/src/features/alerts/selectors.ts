@@ -15,6 +15,7 @@ export function useAlerts(instanceId: string, enabled = true) {
     {
       query: {
         enabled: enabled && !!instanceId,
+        refetchOnMount: true,
       },
     },
   );

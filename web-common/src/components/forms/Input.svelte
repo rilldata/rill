@@ -22,7 +22,7 @@
   export let alwaysShowError = false;
   export let optional = false;
   export let truncate = false;
-  export let width = "100%";
+  export let width: string = "100%";
   export let size: "sm" | "md" | "lg" = "lg";
   export let selected: number = -1;
   export let full = false;

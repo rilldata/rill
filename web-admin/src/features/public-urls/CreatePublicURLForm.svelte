@@ -142,8 +142,8 @@
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
     <div class="flex flex-col gap-y-4">
-      <h3 class="text-sm text-gray-800 font-semibold">
-        Create a shareable public URL for this view
+      <h3 class="text-xs text-gray-800 font-normal">
+        Create a shareable public URL for this view.
       </h3>
 
       <div class="flex flex-col gap-y-1">
