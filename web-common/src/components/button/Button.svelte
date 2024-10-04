@@ -40,9 +40,9 @@
   export let gray = false;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
-  export { className as class };
 
   let className: string | undefined = undefined;
+  export { className as class };
 
   const handleClick = (event: MouseEvent) => {
     if (!disabled) {

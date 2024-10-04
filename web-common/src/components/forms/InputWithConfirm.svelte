@@ -5,6 +5,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Pencil from "svelte-radix/Pencil1.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
 
   export let value: string | undefined = "";
   export let onConfirm: (newValue: string) => void | Promise<void> = () => {};
@@ -14,6 +16,7 @@
   export let bumpDown = false;
   export let type: "Project" | "File" = "File";
   export let size: "sm" | "md" | "lg" = "lg";
+  export let showIndicator = false;
 
   let hovering = false;
   let editing = false;
@@ -36,7 +39,7 @@
 <div
   role="heading"
   aria-level="1"
-  class="h-full w-fit font-medium flex gap-x-2 items-center"
+  class="h-full w-fit font-medium flex gap-x-0 items-center"
   on:mouseenter={() => (hovering = true)}
   on:mouseleave={() => (hovering = false)}
 >
@@ -78,6 +81,13 @@
       </h1>
     </div>
 
+    {#if showIndicator}
+      <span
+        class="w-1.5 h-1.5 bg-gray-300 rounded flex-none mr-1"
+        transition:scale={{ duration: 200, easing: cubicOut }}
+      />
+    {/if}
+
     {#if editable}
       <DropdownMenu.Root bind:open>
         <DropdownMenu.Trigger asChild let:builder>
@@ -115,7 +125,6 @@
     @apply size-full;
     @apply outline-none border-0;
     @apply cursor-text min-w-fit;
-
     vertical-align: middle;
   }
 

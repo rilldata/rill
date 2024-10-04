@@ -110,11 +110,11 @@ export class FileArtifact {
     });
   }
 
-  updateRemoteContent = (content: string, alert = true) => {
-    this.remoteContent.set(content);
-    if (alert) {
+  updateRemoteContent = (newContent: string, alert = true) => {
+    this.remoteContent.set(newContent);
+    if (alert && newContent !== get(this.remoteContent)) {
       for (const callback of this.remoteCallbacks) {
-        callback(content);
+        callback(newContent);
       }
     }
   };

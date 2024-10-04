@@ -55,14 +55,8 @@
         textClass="text-xl font-semibold"
         {value}
         onConfirm={onTitleChange}
+        showIndicator={hasUnsavedChanges}
       />
-
-      {#if hasUnsavedChanges}
-        <span
-          class="w-1.5 h-1.5 bg-gray-300 rounded flex-none"
-          transition:scale={{ duration: 200, easing: cubicOut }}
-        />
-      {/if}
     </div>
   </div>
 
@@ -92,15 +86,17 @@
     {/if}
 
     {#if showInspectorToggle}
-      <Button
-        type="secondary"
-        square
-        selected={$inspectorVisible}
-        on:click={workspaceLayout.inspector.toggle}
-      >
-        <HideSidebar open={$inspectorVisible} size="18px" />
+      <Tooltip distance={8}>
+        <Button
+          type="secondary"
+          square
+          selected={$inspectorVisible}
+          on:click={workspaceLayout.inspector.toggle}
+        >
+          <HideSidebar open={$inspectorVisible} size="18px" />
+        </Button>
 
-        <svelte:fragment slot="tooltip-content">
+        <TooltipContent slot="tooltip-content">
           <SlidingWords
             active={$inspectorVisible}
             direction="horizontal"
@@ -108,8 +104,8 @@
           >
             inspector
           </SlidingWords>
-        </svelte:fragment>
-      </Button>
+        </TooltipContent>
+      </Tooltip>
     {/if}
   </div>
 </header>
