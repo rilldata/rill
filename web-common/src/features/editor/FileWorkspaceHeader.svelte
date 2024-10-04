@@ -10,7 +10,7 @@
 
   export let filePath: string;
   export let hasUnsavedChanges: boolean;
-  export let resourceKind: ResourceKind | "file";
+  export let resourceKind: ResourceKind | undefined;
 
   let fileName: string;
   let folder: string;

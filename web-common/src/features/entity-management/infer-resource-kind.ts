@@ -16,10 +16,6 @@ export function inferResourceKind(
 ): ResourceKind | null {
   const fileExtension = extractFileExtension(path);
 
-  if (path === "/rill.yaml" || path === "/.env") {
-    return ResourceKind.ProjectConfig;
-  }
-
   // If it's not a YAML or SQL file, we don't know what it is
   if (fileExtension !== ".yaml" && fileExtension !== ".sql") {
     return null;

@@ -32,13 +32,14 @@
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
   import { getMatchingReferencesAndEntries } from "./utils";
   import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
+  import SimpleMessage from "@rilldata/web-common/layout/inspector/SimpleMessage.svelte";
 
   export let hasUnsavedChanges: boolean;
   export let connector: string;
   export let database: string;
   export let databaseSchema: string;
   export let tableName: string;
-  export let resource: V1Resource;
+  export let resource: V1Resource | undefined;
   export let sourceIsReconciling: boolean = false;
   export let isEmpty = false;
   export let hasErrors: boolean;
@@ -187,136 +188,141 @@
 </script>
 
 <Inspector {filePath}>
-  <div class="wrapper" class:grayscale={hasUnsavedChanges}>
-    {#if sourceIsReconciling}
-      <div class="size-full flex items-center justify-center">
-        <ReconcilingSpinner />
-      </div>
-    {:else if isEmpty}
-      <div class="px-4 py-24 italic ui-copy-disabled text-center">
-        {source ? "Source" : "Model"} is empty.
-      </div>
-    {:else if source || model}
-      <InspectorHeaderGrid>
-        <svelte:fragment slot="top-left">
-          {#if source}
-            <p>
-              {connectorType}
-              {fileExtension && `(${fileExtension})`}
-            </p>
-          {:else}
-            <WithModelResultTooltip modelHasError={hasErrors}>
+  {#if !connector || !resource || !tableName}
+    <SimpleMessage message="Fix the errors in the file to continue." />
+  {:else}
+    <div class="wrapper" class:grayscale={hasUnsavedChanges}>
+      {#if sourceIsReconciling}
+        <div class="size-full flex items-center justify-center">
+          <ReconcilingSpinner />
+        </div>
+      {:else if isEmpty}
+        <div class="px-4 py-24 italic ui-copy-disabled text-center">
+          {source ? "Source" : "Model"} is empty.
+        </div>
+      {:else if source || model}
+        <InspectorHeaderGrid>
+          <svelte:fragment slot="top-left">
+            {#if source}
               <p>
-                {#if isNaN(rollup)}
-                  ~
-                {:else if rollup === 0}
-                  Result set is empty
-                {:else if rollup === Infinity}
-                  {rowCount} selected
-                {:else if rollup !== 1}
-                  {formatBigNumberPercentage(rollup)}
-                  of source rows
-                {:else}
-                  No change in row count
-                {/if}
+                {connectorType}
+                {fileExtension && `(${fileExtension})`}
               </p>
+            {:else}
+              <WithModelResultTooltip modelHasError={hasErrors}>
+                <p>
+                  {#if isNaN(rollup)}
+                    ~
+                  {:else if rollup === 0}
+                    Result set is empty
+                  {:else if rollup === Infinity}
+                    {rowCount} selected
+                  {:else if rollup !== 1}
+                    {formatBigNumberPercentage(rollup)}
+                    of source rows
+                  {:else}
+                    No change in row count
+                  {/if}
+                </p>
 
-              <svelte:fragment slot="tooltip-title">
-                Rollup percentage
-              </svelte:fragment>
-              <svelte:fragment slot="tooltip-description"
-                >The ratio of resultset rows to source rows, as a percentage.
-              </svelte:fragment>
-            </WithModelResultTooltip>
-          {/if}
-        </svelte:fragment>
-        <svelte:fragment slot="top-right">{rowCount}</svelte:fragment>
+                <svelte:fragment slot="tooltip-title">
+                  Rollup percentage
+                </svelte:fragment>
+                <svelte:fragment slot="tooltip-description"
+                  >The ratio of resultset rows to source rows, as a percentage.
+                </svelte:fragment>
+              </WithModelResultTooltip>
+            {/if}
+          </svelte:fragment>
+          <svelte:fragment slot="top-right">{rowCount}</svelte:fragment>
 
-        <svelte:fragment slot="bottom-left">
-          {#if source}
-            <Tooltip location="left" alignment="start" distance={24}>
-              {#if nullPercentage !== undefined}
-                <p>{nullPercentage} null</p>
-              {/if}
-
-              <TooltipContent slot="tooltip-content">
+          <svelte:fragment slot="bottom-left">
+            {#if source}
+              <Tooltip location="left" alignment="start" distance={24}>
                 {#if nullPercentage !== undefined}
-                  {nullPercentage} of table values are null
-                {:else}
-                  awaiting calculation of total null table values
+                  <p>{nullPercentage} null</p>
                 {/if}
-              </TooltipContent>
-            </Tooltip>
-          {:else}
-            <WithModelResultTooltip modelHasError={hasErrors}>
-              <div
-                class:font-normal={hasErrors}
-                class:text-gray-500={hasErrors}
-              >
-                {#if columnDelta > 0}
-                  {formatInteger(columnDelta)}
-                  {columnDelta === 1 ? "column" : "columns"} added
-                {:else if columnDelta < 0}
-                  {formatInteger(-columnDelta)}
-                  {-columnDelta === 1 ? "column" : "columns"} dropped
-                {:else}
-                  No change in column count
-                {/if}
-              </div>
 
-              <svelte:fragment slot="tooltip-title">Column diff</svelte:fragment
-              >
-              <svelte:fragment slot="tooltip-description">
-                The difference in column counts between the sources and model.
-              </svelte:fragment>
-            </WithModelResultTooltip>
-          {/if}
-        </svelte:fragment>
+                <TooltipContent slot="tooltip-content">
+                  {#if nullPercentage !== undefined}
+                    {nullPercentage} of table values are null
+                  {:else}
+                    awaiting calculation of total null table values
+                  {/if}
+                </TooltipContent>
+              </Tooltip>
+            {:else}
+              <WithModelResultTooltip modelHasError={hasErrors}>
+                <div
+                  class:font-normal={hasErrors}
+                  class:text-gray-500={hasErrors}
+                >
+                  {#if columnDelta > 0}
+                    {formatInteger(columnDelta)}
+                    {columnDelta === 1 ? "column" : "columns"} added
+                  {:else if columnDelta < 0}
+                    {formatInteger(-columnDelta)}
+                    {-columnDelta === 1 ? "column" : "columns"} dropped
+                  {:else}
+                    No change in column count
+                  {/if}
+                </div>
 
-        <svelte:fragment slot="bottom-right">{columnCount}</svelte:fragment>
-      </InspectorHeaderGrid>
+                <svelte:fragment slot="tooltip-title"
+                  >Column diff</svelte:fragment
+                >
+                <svelte:fragment slot="tooltip-description">
+                  The difference in column counts between the sources and model.
+                </svelte:fragment>
+              </WithModelResultTooltip>
+            {/if}
+          </svelte:fragment>
 
-      <hr />
+          <svelte:fragment slot="bottom-right">{columnCount}</svelte:fragment>
+        </InspectorHeaderGrid>
 
-      {#if showReferences && referencedThings?.length}
-        <References modelHasError={hasErrors} {referencedThings} />
         <hr />
-      {/if}
 
-      <div>
-        <div class="px-4">
-          <CollapsibleSectionTitle
-            tooltipText="available columns"
-            bind:active={showColumns}
-          >
-            {model ? "Model columns" : "Source columns"}
-          </CollapsibleSectionTitle>
+        {#if showReferences && referencedThings?.length}
+          <References modelHasError={hasErrors} {referencedThings} />
+          <hr />
+        {/if}
+
+        <div>
+          <div class="px-4">
+            <CollapsibleSectionTitle
+              tooltipText="available columns"
+              bind:active={showColumns}
+            >
+              {model ? "Model columns" : "Source columns"}
+            </CollapsibleSectionTitle>
+          </div>
+
+          {#if showColumns}
+            <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+              <ColumnProfile
+                {connector}
+                {database}
+                {databaseSchema}
+                objectName={tableName}
+                indentLevel={0}
+              />
+            </div>
+          {/if}
         </div>
 
-        {#if showColumns}
-          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-            <ColumnProfile
-              {connector}
-              {database}
-              {databaseSchema}
-              objectName={tableName}
-              indentLevel={0}
-            />
-          </div>
-        {/if}
-      </div>
-
-      {#if model}
-        {#if isSplit}
-          <hr />
-          <SplitsBrowser {resource} />
-        {:else if isIncremental}
-          <hr />
-          <IncrementalProcessing {resource} />
+        {#if model}
+          {#if isSplit}
+            <hr />
+            <SplitsBrowser {resource} />
+          {:else if isIncremental}
+            <hr />
+            <IncrementalProcessing {resource} />
+          {/if}
         {/if}
       {/if}
-    {/if}
-  </div>
+    </div>
+  {/if}
 </Inspector>
 
 <style lang="postcss">

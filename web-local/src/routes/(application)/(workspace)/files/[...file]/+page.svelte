@@ -79,7 +79,7 @@
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader
       slot="header"
-      resourceKind={resourceKind ?? $inferredResourceKind ?? "file"}
+      resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
       filePath={path}
       hasUnsavedChanges={$hasUnsavedChanges}
     />

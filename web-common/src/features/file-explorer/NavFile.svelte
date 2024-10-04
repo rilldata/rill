@@ -26,12 +26,16 @@
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
-  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
+  import {
+    resourceColorMapping,
+    resourceIconMapping,
+  } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
+  import { Settings } from "lucide-svelte";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -108,8 +112,13 @@
   >
     <div class="flex-none">
       <svelte:component
-        this={resourceKind ? resourceIconMapping[resourceKind] : File}
+        this={resourceKind
+          ? resourceIconMapping[resourceKind]
+          : filePath === "/.env" || filePath === "/rill.yaml"
+            ? Settings
+            : File}
         size="14px"
+        color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
       />
     </div>
     <span class="truncate w-full" class:text-red-600={$hasErrors}>

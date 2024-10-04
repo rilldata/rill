@@ -28,8 +28,8 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
   import {
-    resourceColorMapping,
     resourceIconMapping,
+    resourceColorMapping,
   } from "../entity-management/resource-icon-mapping";
 
   export let fileArtifact: FileArtifact;

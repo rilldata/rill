@@ -8,15 +8,17 @@
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import {
-    resourceIconMapping,
     resourceColorMapping,
+    resourceIconMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { Settings } from "lucide-svelte";
+  import File from "@rilldata/web-common/components/icons/File.svelte";
 
-  export let resourceKind: ResourceKind | "file";
+  export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
@@ -36,9 +38,13 @@
 <header class="slide" bind:clientWidth={width} class:!pl-12={!$navigationOpen}>
   <div class="flex gap-x-0 items-center">
     <svelte:component
-      this={resourceIconMapping[resourceKind]}
+      this={resourceKind
+        ? resourceIconMapping[resourceKind]
+        : filePath === "/.env" || filePath === "/rill.yaml"
+          ? Settings
+          : File}
       size="19px"
-      color={resourceColorMapping[resourceKind]}
+      color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
     />
 
     <div class="wrapper slide">

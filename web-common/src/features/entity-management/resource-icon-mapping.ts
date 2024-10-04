@@ -6,9 +6,8 @@ import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelt
 import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
 import ThemeIcon from "@rilldata/web-common/components/icons/ThemeIcon.svelte";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { Code2Icon, Database, FileIcon } from "lucide-svelte";
+import { Code2Icon, Database } from "lucide-svelte";
 import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
-import { Settings } from "lucide-svelte";
 import TableIcon from "@rilldata/web-common/components/icons/TableIcon.svelte";
 
 export const resourceIconMapping = {
@@ -23,8 +22,6 @@ export const resourceIconMapping = {
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,
   [ResourceKind.Alert]: AlertCircleOutline,
-  [ResourceKind.ProjectConfig]: Settings,
-  file: FileIcon,
 };
 
 export const resourceColorMapping = {
@@ -36,9 +33,9 @@ export const resourceColorMapping = {
   [ResourceKind.API]: "#EA580C",
   [ResourceKind.Component]: "#65A30D",
   [ResourceKind.Canvas]: "#008FD4",
+
+  // To follow up later
   [ResourceKind.Theme]: "red",
   [ResourceKind.Report]: "red",
   [ResourceKind.Alert]: "red",
-  [ResourceKind.ProjectConfig]: "#9CA3AF",
-  file: "#9CA3AF",
 };

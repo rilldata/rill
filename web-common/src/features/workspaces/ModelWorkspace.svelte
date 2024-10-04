@@ -161,19 +161,16 @@
     {/if}
   </div>
 
-  <svelte:fragment slot="inspector">
-    {#if connector && tableName && resource}
-      <WorkspaceInspector
-        {filePath}
-        {connector}
-        {database}
-        {databaseSchema}
-        {tableName}
-        hasErrors={$hasErrors}
-        hasUnsavedChanges={$hasUnsavedChanges}
-        {resource}
-        isEmpty={!$remoteContent?.length}
-      />
-    {/if}
-  </svelte:fragment>
+  <WorkspaceInspector
+    slot="inspector"
+    {filePath}
+    {connector}
+    {database}
+    {databaseSchema}
+    {tableName}
+    hasErrors={$hasErrors}
+    hasUnsavedChanges={$hasUnsavedChanges}
+    {resource}
+    isEmpty={!$remoteContent?.length}
+  />
 </WorkspaceContainer>
