@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
@@ -23,7 +23,6 @@
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { createModelFromTable } from "../../connectors/olap/createModel";
@@ -41,9 +40,7 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  const dispatch = createEventDispatcher();
-
-  const { customDashboards, ai } = featureFlags;
+  const { ai } = featureFlags;
 
   $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   let source: V1SourceV2 | undefined;
@@ -64,10 +61,21 @@
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     sinkConnector as string,
-    "",
-    "",
+    database,
+    databaseSchema,
     tableName,
-    "metrics",
+    false,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
+
+  $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    $runtime.instanceId,
+    sinkConnector as string,
+    database,
+    databaseSchema,
+    tableName,
+    true,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -154,30 +162,26 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
-{#if $customDashboards}
-  <NavigationMenuItem
-    disabled={disableCreateDashboard}
-    on:click={() => {
-      dispatch("generate-chart", {
-        table: source?.state?.table,
-        connector: source?.state?.connector,
-      });
-    }}
-  >
-    <Explore slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate chart with AI
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={createExploreFromTable}
+>
+  <ExploreIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate dashboard
+    {#if $ai}
+      with AI
       <WandIcon class="w-3 h-3" />
-    </div>
-    <svelte:fragment slot="description">
-      {#if $sourceHasError}
-        Source has errors
-      {:else if !sourceIsIdle}
-        Source is being ingested
-      {/if}
-    </svelte:fragment>
-  </NavigationMenuItem>
-{/if}
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $sourceHasError}
+      Source has errors
+    {:else if !sourceIsIdle}
+      Source is being ingested
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>
 
 <NavigationMenuItem on:click={onRefreshSource}>
   <RefreshIcon slot="icon" />

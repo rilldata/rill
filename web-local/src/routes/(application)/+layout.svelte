@@ -3,8 +3,6 @@
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
-  import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
-  import { overlay } from "@rilldata/web-common/layout/overlay-store";
 
   let showDropOverlay = false;
 
@@ -30,22 +28,6 @@
 
 {#if showDropOverlay}
   <FileDrop bind:showDropOverlay />
-{:else if $overlay !== null}
-  <BlockingOverlayContainer
-    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
-  >
-    <div slot="title" class="font-bold">
-      {$overlay?.title}
-    </div>
-    <svelte:fragment slot="detail">
-      {#if $overlay?.detail}
-        <svelte:component
-          this={$overlay.detail.component}
-          {...$overlay.detail.props}
-        />
-      {/if}
-    </svelte:fragment>
-  </BlockingOverlayContainer>
 {/if}
 
 <AddDataModal />

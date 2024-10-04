@@ -2092,14 +2092,12 @@ message Organization {
 
 message Subscription {
   string id = 1;
-  string plan_id = 2;
-  string plan_name = 3;
-  string plan_display_name = 4;
-  google.protobuf.Timestamp start_date = 5;
-  google.protobuf.Timestamp end_date = 6;
-  google.protobuf.Timestamp current_billing_cycle_start_date = 7;
-  google.protobuf.Timestamp current_billing_cycle_end_date = 8;
-  google.protobuf.Timestamp trial_end_date = 9;
+  BillingPlan plan = 2;
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp end_date = 4;
+  google.protobuf.Timestamp current_billing_cycle_start_date = 5;
+  google.protobuf.Timestamp current_billing_cycle_end_date = 6;
+  google.protobuf.Timestamp trial_end_date = 7;
 }
 
 message UserQuotas {

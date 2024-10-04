@@ -11206,42 +11206,32 @@ export class Subscription extends Message<Subscription> {
   id = "";
 
   /**
-   * @generated from field: string plan_id = 2;
+   * @generated from field: rill.admin.v1.BillingPlan plan = 2;
    */
-  planId = "";
+  plan?: BillingPlan;
 
   /**
-   * @generated from field: string plan_name = 3;
-   */
-  planName = "";
-
-  /**
-   * @generated from field: string plan_display_name = 4;
-   */
-  planDisplayName = "";
-
-  /**
-   * @generated from field: google.protobuf.Timestamp start_date = 5;
+   * @generated from field: google.protobuf.Timestamp start_date = 3;
    */
   startDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp end_date = 6;
+   * @generated from field: google.protobuf.Timestamp end_date = 4;
    */
   endDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp current_billing_cycle_start_date = 7;
+   * @generated from field: google.protobuf.Timestamp current_billing_cycle_start_date = 5;
    */
   currentBillingCycleStartDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp current_billing_cycle_end_date = 8;
+   * @generated from field: google.protobuf.Timestamp current_billing_cycle_end_date = 6;
    */
   currentBillingCycleEndDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp trial_end_date = 9;
+   * @generated from field: google.protobuf.Timestamp trial_end_date = 7;
    */
   trialEndDate?: Timestamp;
 
@@ -11254,14 +11244,12 @@ export class Subscription extends Message<Subscription> {
   static readonly typeName = "rill.admin.v1.Subscription";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "plan_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "start_date", kind: "message", T: Timestamp },
-    { no: 6, name: "end_date", kind: "message", T: Timestamp },
-    { no: 7, name: "current_billing_cycle_start_date", kind: "message", T: Timestamp },
-    { no: 8, name: "current_billing_cycle_end_date", kind: "message", T: Timestamp },
-    { no: 9, name: "trial_end_date", kind: "message", T: Timestamp },
+    { no: 2, name: "plan", kind: "message", T: BillingPlan },
+    { no: 3, name: "start_date", kind: "message", T: Timestamp },
+    { no: 4, name: "end_date", kind: "message", T: Timestamp },
+    { no: 5, name: "current_billing_cycle_start_date", kind: "message", T: Timestamp },
+    { no: 6, name: "current_billing_cycle_end_date", kind: "message", T: Timestamp },
+    { no: 7, name: "trial_end_date", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Subscription {

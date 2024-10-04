@@ -23,9 +23,12 @@
   $: dashboards = $dashboardsQuery.data ?? [];
 
   async function handleCreateDashboard() {
-    const newRoute = await handleEntityCreate(ResourceKind.Explore, resource);
-    if (newRoute) {
-      await goto(newRoute);
+    const newFilePath = await handleEntityCreate(
+      ResourceKind.Explore,
+      resource,
+    );
+    if (newFilePath) {
+      await goto(`/files/${newFilePath}`);
     }
   }
 </script>
