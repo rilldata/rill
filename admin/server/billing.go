@@ -144,20 +144,20 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
-	superuser := claims.Superuser(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
-	if !plan.Public && !superuser {
-		return nil, status.Errorf(codes.FailedPrecondition, "not enough privileges to assign plan %s", plan.Name)
+	if !plan.Public && !forceAccess {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %s", plan.Name)
 	}
 
 	// check for validation errors
-	err = s.planChangeValidationChecks(ctx, org, superuser)
+	err = s.planChangeValidationChecks(ctx, org, forceAccess)
 	if err != nil {
 		return nil, err
 	}
 
 	if planDowngrade(plan, org) {
-		if !superuser {
+		if !forceAccess {
 			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
 		}
 		s.logger.Named("billing").Warn("plan downgrade request", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_name", plan.Name))
@@ -275,8 +275,10 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to trial plan %s", plan.Name)
 	}
 
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
 	// check for validation errors
-	err = s.planChangeValidationChecks(ctx, org, claims.Superuser(ctx))
+	err = s.planChangeValidationChecks(ctx, org, forceAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -543,7 +545,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 	return org, nil
 }
 
-func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.Organization, superuser bool) error {
+func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.Organization, forceAccess bool) error {
 	// not a trial plan, check for a payment method and a valid billing address
 	var validationErrs []string
 	pc, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
@@ -568,7 +570,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 		validationErrs = append(validationErrs, "a previous payment is due, please pay the outstanding amount")
 	}
 
-	if len(validationErrs) > 0 && !superuser {
+	if len(validationErrs) > 0 && !forceAccess {
 		return status.Errorf(codes.FailedPrecondition, "please fix following by visiting billing portal: %s", strings.Join(validationErrs, ", "))
 	}
 

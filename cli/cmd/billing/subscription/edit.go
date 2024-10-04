@@ -8,6 +8,7 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var plan string
+	var force bool
 
 	editCmd := &cobra.Command{
 		Use:   "edit",
@@ -47,8 +48,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{
-				Organization: ch.Org,
-				PlanName:     plan,
+				Organization:         ch.Org,
+				PlanName:             plan,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
@@ -60,6 +62,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 	editCmd.Flags().StringVar(&plan, "plan", "", "Plan Name to change subscription to")
+	editCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
+	editCmd.Flags().MarkHidden("force")
 
 	return editCmd
 }

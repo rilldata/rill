@@ -8,8 +8,9 @@ import (
 
 func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 	var plan string
+	var force bool
 
-	editCmd := &cobra.Command{
+	renewCmd := &cobra.Command{
 		Use:   "renew",
 		Args:  cobra.NoArgs,
 		Short: "Renew cancelled organization subscription",
@@ -45,8 +46,9 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.RenewBillingSubscription(cmd.Context(), &adminv1.RenewBillingSubscriptionRequest{
-				Organization: ch.Org,
-				PlanName:     plan,
+				Organization:         ch.Org,
+				PlanName:             plan,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
@@ -57,7 +59,9 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
-	editCmd.Flags().StringVar(&plan, "plan", "", "Plan name to renew subscription to")
+	renewCmd.Flags().StringVar(&plan, "plan", "", "Plan name to renew subscription to")
+	renewCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
+	renewCmd.Flags().MarkHidden("force")
 
-	return editCmd
+	return renewCmd
 }

@@ -28609,6 +28609,8 @@ func (m *UpdateBillingSubscriptionRequest) validate(all bool) error {
 
 	// no validation rules for PlanName
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return UpdateBillingSubscriptionRequestMultiError(errors)
 	}
@@ -28823,6 +28825,8 @@ func (m *RenewBillingSubscriptionRequest) validate(all bool) error {
 	// no validation rules for Organization
 
 	// no validation rules for PlanName
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return RenewBillingSubscriptionRequestMultiError(errors)

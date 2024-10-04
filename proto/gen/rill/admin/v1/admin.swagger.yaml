@@ -442,6 +442,8 @@ paths:
             properties:
               planName:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/billing/subscriptions/renew:
@@ -470,6 +472,8 @@ paths:
             properties:
               planName:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
