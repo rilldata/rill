@@ -31,7 +31,7 @@
     "",
     "",
     modelName,
-    "metrics",
+    false,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
