@@ -61,7 +61,7 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	renewCmd.Flags().StringVar(&plan, "plan", "", "Plan name to renew subscription to")
 	renewCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
-	renewCmd.Flags().MarkHidden("force")
+	_ = renewCmd.Flags().MarkHidden("force")
 
 	return renewCmd
 }

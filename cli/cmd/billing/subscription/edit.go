@@ -63,7 +63,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	editCmd.Flags().StringVar(&plan, "plan", "", "Plan Name to change subscription to")
 	editCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
-	editCmd.Flags().MarkHidden("force")
+	_ = editCmd.Flags().MarkHidden("force")
 
 	return editCmd
 }
