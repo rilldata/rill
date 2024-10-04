@@ -126,7 +126,10 @@
     </svelte:fragment>
   </WorkspaceHeader>
 
-  <div slot="body" class="size-full overflow-hidden flex flex-col gap-y-0">
+  <div
+    slot="body"
+    class="editor-pane size-full overflow-hidden flex flex-col gap-y-0"
+  >
     <WorkspaceEditorContainer>
       {#key assetName}
         <ModelEditor {fileArtifact} bind:autoSave={$autoSave} onSave={save} />
