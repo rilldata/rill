@@ -480,7 +480,7 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
 
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription;
+  subscription?: V1Subscription;
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
@@ -524,9 +524,7 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
 
 export interface V1Subscription {
   id?: string;
-  planId?: string;
-  planName?: string;
-  planDisplayName?: string;
+  plan?: V1BillingPlan;
   startDate?: string;
   endDate?: string;
   currentBillingCycleStartDate?: string;
