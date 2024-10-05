@@ -30,7 +30,7 @@
   let trialEnded = false;
   $: {
     if (trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED) {
-      trialEndMessage = "Your trial has ended.";
+      trialEndMessage = "Your trial has expired.";
       trialEnded = true;
     } else {
       const today = DateTime.now();
@@ -43,10 +43,12 @@
     }
   }
 
+  $: title = (plan.displayName ?? plan.name) + trialEnded ? " expired" : "";
+
   let open = false;
 </script>
 
-<SettingsContainer title={plan.displayName ?? plan.name}>
+<SettingsContainer {title}>
   <div slot="body">
     <div>
       {trialEndMessage} Ready to get started with Rill?

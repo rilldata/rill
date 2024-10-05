@@ -54,12 +54,12 @@
         class:current={isCurrentPage}
       >
         <span>{selected?.label}</span>
-        {#if selected?.pill}
-          <Chip type="dimension" label={selected.pill} readOnly>
-            <svelte:fragment slot="body">{selected.pill}</svelte:fragment>
-          </Chip>
-        {/if}
       </a>
+      {#if selected?.pill}
+        <Chip type="dimension" label={selected.pill} readOnly>
+          <svelte:fragment slot="body">{selected.pill}</svelte:fragment>
+        </Chip>
+      {/if}
     {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>

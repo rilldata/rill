@@ -3,6 +3,7 @@
     createAdminServiceCancelBillingSubscription,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
+  import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import {
     getCategorisedPlans,
@@ -36,6 +37,7 @@
     await $planCanceller.mutateAsync({
       organization,
     });
+    void invalidateBillingInfo(organization);
     open = false;
   }
 

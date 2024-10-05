@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+  import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
   import {
     AlertDialog,
@@ -95,6 +96,7 @@
         planName: teamPlan.name,
       },
     });
+    void invalidateBillingInfo(organization);
     open = false;
   }
 

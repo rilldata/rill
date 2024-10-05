@@ -59,5 +59,5 @@ async function openPaymentPortal(organization: string) {
         returnUrl: window.location.href,
       }),
   });
-  window.open(urlResp.url, "_target");
+  window.open(urlResp.url, "_self");
 }
