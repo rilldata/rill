@@ -15,6 +15,7 @@ import { PerRangeFormatter } from "./strategies/per-range";
 import {
   defaultCurrencyOptions,
   defaultGenericNumOptions,
+  defaultNoFormattingOptions,
   defaultPercentOptions,
 } from "./strategies/per-range-default-options";
 
@@ -71,11 +72,16 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
         value,
       );
 
+    case FormatPreset.DEFAULT:
+      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
+        value,
+      );
+
     default:
       console.warn(
         "Unknown format preset, using default formatter. All number kinds should be handled.",
       );
-      return new PerRangeFormatter(defaultGenericNumOptions).stringFormat(
+      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
         value,
       );
   }
@@ -169,7 +175,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   let formatPreset =
     measureSpec.formatPreset && measureSpec.formatPreset !== ""
       ? (measureSpec.formatPreset as FormatPreset)
-      : FormatPreset.HUMANIZE;
+      : FormatPreset.DEFAULT;
 
   if (isBigNumber && formatPreset === FormatPreset.NONE) {
     formatPreset = FormatPreset.HUMANIZE;
