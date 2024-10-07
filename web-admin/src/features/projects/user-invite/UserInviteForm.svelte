@@ -92,7 +92,7 @@
 >
   <MultiInput
     id="emails"
-    placeholder="Invite by email, separated by commas"
+    placeholder="Search users or add emails, separated by commas"
     contentClassName="relative"
     bind:values={$form.emails}
     errors={$errors.emails}
