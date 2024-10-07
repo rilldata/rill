@@ -85,7 +85,13 @@
   </td>
 
   <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
-    <span>{name || "-"}</span>
+    {#if !name && item instanceof YAMLDimension && item.resourceName}
+      <span class="text-gray-500" title="This name was inherited automatically">
+        {item.resourceName}
+      </span>
+    {:else}
+      <span>{name || "-"}</span>
+    {/if}
   </td>
   <td on:click={onCellClick} aria-label="Label">
     <div class="text-[12px] pr-4">

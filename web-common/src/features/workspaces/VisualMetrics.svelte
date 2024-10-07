@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createQueryServiceTableColumns,
+    type MetricsViewSpecDimensionV2,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -79,24 +80,7 @@
   $: timeDimension = stringGuard(rawTimeDimension);
   $: databaseSchema = stringGuard(rawDatabaseSchema);
   $: model = stringGuard(rawModel) || stringGuard(rawTable);
-
-  $: itemGroups = {
-    measures:
-      raw.measures instanceof YAMLSeq
-        ? raw.measures.items.map((item) => new YAMLMeasure(item))
-        : [],
-    dimensions:
-      raw.dimensions instanceof YAMLSeq
-        ? raw.dimensions.items.map(
-            (item, i) => new YAMLDimension(item, dimensions[i]),
-          )
-        : [],
-  };
-
-  $: smallestTimeGrain =
-    rawSmallestTimeGrain && typeof rawSmallestTimeGrain === "string"
-      ? rawSmallestTimeGrain
-      : undefined;
+  $: smallestTimeGrain = stringGuard(rawSmallestTimeGrain);
 
   // Queries
   $: modelsQuery = useModels(instanceId);
@@ -127,6 +111,53 @@
 
   /** display the main error (the first in this array) at the bottom */
   $: mainError = errors?.at(0);
+
+  $: itemGroups = {
+    measures:
+      raw.measures instanceof YAMLSeq
+        ? raw.measures.items.map((item) => new YAMLMeasure(item))
+        : [],
+    dimensions:
+      raw.dimensions instanceof YAMLSeq
+        ? createDimensions(raw.dimensions, dimensions)
+        : [],
+  };
+
+  $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
+    (acc, { name, label, resourceName }) => {
+      acc.name = Math.max(acc.name, name.length || resourceName?.length || 0);
+      acc.label = Math.max(acc.label, label.length);
+      return acc;
+    },
+    { name: 0, label: 0 },
+  );
+
+  $: measureNamesAndLabels = itemGroups.measures.reduce(
+    (acc, { name, label }) => {
+      acc.name = Math.max(acc.name, name.length);
+      acc.label = Math.max(acc.label, label.length);
+      return acc;
+    },
+    { name: 0, label: 0 },
+  );
+
+  $: longestName = Math.max(
+    dimensionNamesAndLabels.name,
+    measureNamesAndLabels.name,
+  );
+  $: longestLabel = Math.max(
+    dimensionNamesAndLabels.label,
+    measureNamesAndLabels.label,
+  );
+
+  function createDimensions(
+    rawDimensions: YAMLSeq<YAMLMap<string, string>>,
+    metricsViewDimensions: MetricsViewSpecDimensionV2[],
+  ) {
+    return rawDimensions.items.map(
+      (item, i) => new YAMLDimension(item, metricsViewDimensions[i]),
+    );
+  }
 
   function stringGuard(value: unknown | undefined): string {
     return value && typeof value === "string" ? value : "";
@@ -329,33 +360,6 @@
       type: "success",
     });
   }
-
-  $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
-    (acc, { name, label }) => {
-      acc.name = Math.max(acc.name, name.length);
-      acc.label = Math.max(acc.label, label.length);
-      return acc;
-    },
-    { name: 0, label: 0 },
-  );
-
-  $: measureNamesAndLabels = itemGroups.measures.reduce(
-    (acc, { name, label }) => {
-      acc.name = Math.max(acc.name, name.length);
-      acc.label = Math.max(acc.label, label.length);
-      return acc;
-    },
-    { name: 0, label: 0 },
-  );
-
-  $: longestName = Math.max(
-    dimensionNamesAndLabels.name,
-    measureNamesAndLabels.name,
-  );
-  $: longestLabel = Math.max(
-    dimensionNamesAndLabels.label,
-    measureNamesAndLabels.label,
-  );
 </script>
 
 <div class="wrapper">

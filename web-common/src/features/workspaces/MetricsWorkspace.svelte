@@ -111,13 +111,15 @@
         {metricsViewName}
       />
     {:else}
-      <VisualMetrics
-        {errors}
-        {fileArtifact}
-        switchView={() => {
-          $selectedView = "code";
-        }}
-      />
+      {#key fileArtifact}
+        <VisualMetrics
+          {errors}
+          {fileArtifact}
+          switchView={() => {
+            $selectedView = "code";
+          }}
+        />
+      {/key}
     {/if}
   </svelte:fragment>
 
