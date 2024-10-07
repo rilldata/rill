@@ -34,6 +34,30 @@
         onInvite={() => (open = false)}
       />
       <UserInviteAllowlist {organization} {project} />
+      <div>
+        <div class="text-xs text-gray-500 font-semibold uppercase">
+          Organization
+        </div>
+        <div class="text-xs text-gray-800">
+          Everyone from <span class="font-bold">{organization}</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
+        <!-- TODO: create AvatarSquareList -->
+        {#each userGroupsList as group}
+          <div class="text-xs text-gray-800">
+            Everyone from <span class="font-bold">{group.groupName}</span>
+          </div>
+        {/each}
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
+        <!-- TODO: use AvatarCircleList -->
+        {#each users as user}
+          <div class="text-xs text-gray-500">{user.userEmail}</div>
+        {/each}
+      </div>
     </div>
   </DropdownMenuContent>
 </DropdownMenu>
