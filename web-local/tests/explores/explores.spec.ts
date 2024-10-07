@@ -420,7 +420,10 @@ dimensions:
       page.getByText("No comparison dimension selected"),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "No comparison dimension" }).click();
+    await page
+      .getByRole("button", { name: "Select a comparison dimension" })
+      .first()
+      .click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
     await page.getByText("google.com", { exact: true }).click({ force: true });

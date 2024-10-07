@@ -63,8 +63,13 @@
 <DropdownMenu.Root bind:open typeahead={false}>
   <DropdownMenu.Trigger>
     <Tooltip distance={8} suppress={open}>
-      <Chip {label} active={open} type="dimension" caret>
-        <span class="font-bold truncate" slot="body"> {label}</span>
+      <Chip
+        label="Select a comparison dimension"
+        active={open}
+        type="dimension"
+        caret
+      >
+        <span class="font-bold truncate" slot="body">{label}</span>
       </Chip>
 
       <TooltipContent slot="tooltip-content" maxWidth="220px">
