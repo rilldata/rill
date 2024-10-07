@@ -14,6 +14,25 @@ export const setPrimaryDimension = (
   }
 };
 
+export const toggleDimensionVisibility = (
+  { dashboard }: DashboardMutables,
+
+  dimensionName: string,
+) => {
+  const deleted = dashboard.visibleDimensionKeys.delete(dimensionName);
+
+  if (!deleted) {
+    dashboard.visibleDimensionKeys.add(dimensionName);
+  }
+};
+
+export const setVisibleDimensions = (
+  { dashboard }: DashboardMutables,
+  dimensions: string[],
+) => {
+  dashboard.visibleDimensionKeys = new Set(dimensions);
+};
+
 export const dimensionActions = {
   /**
    * Sets the primary dimension for the dashboard, which
@@ -21,4 +40,6 @@ export const dimensionActions = {
    * to undefined closes the dimension table.
    */
   setPrimaryDimension,
+  toggleDimensionVisibility,
+  setVisibleDimensions,
 };
