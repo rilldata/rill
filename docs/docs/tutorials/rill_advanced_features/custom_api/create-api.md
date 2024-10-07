@@ -53,7 +53,7 @@ Both of these SQL queries will return the same data, why?
 
 As discussed when creating the measure, we defined the name of the measure so we can use the name in the SQL query. You can test the API's output with the following syntax, `http://localhost:9009/v1/instances/default/api/<filename>`
 
-Once you have confirmed that the local running APIs work as expected, we can select update [or push changes to GitHub repository](/tutorials/rill_advanced_features/advanced_developer/update-rill-cloud) to push the changes to your project.
+Once you have confirmed that the local running APIs work as expected, we can select update [or push changes to GitHub repository](https://docs.rilldata.com/tutorials/rill_advanced_features/advanced_developer/update-rill-cloud) to push the changes to your project.
 
 :::note
 If the `update` button is not available on your current UI, you can find this on the dashboard page!
