@@ -94,7 +94,7 @@
       Deploy
     </Button>
     <TooltipContent slot="tooltip-content">
-      Deploy this dashboard to Rill Cloud
+      Deploy this project to Rill Cloud
     </TooltipContent>
   </Tooltip>
 {/if}

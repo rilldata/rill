@@ -1,7 +1,7 @@
 <script lang="ts">
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
-  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
+  import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import { page } from "$app/stores";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
@@ -199,7 +199,7 @@
         disabled={!href || dashboardResourceInErrorState}
       />
     {/if}
-    <DeployDashboardCta {hasValidDashboard} />
+    <DeployProjectCTA {hasValidDashboard} />
     <LocalAvatarButton />
   </div>
 </header>
