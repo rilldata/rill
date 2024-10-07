@@ -32,12 +32,14 @@ measures:
   - label: "Number of bids"
     expression: count(*)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - label: "Total volume"
     expression: sum(volume)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - label: "Total impressions"
     expression: sum(impressions)
+    format_preset: humanize
   - label: "Total clicks"
     expression: sum(clicks)
+    format_preset: humanize

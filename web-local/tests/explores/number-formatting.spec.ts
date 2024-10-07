@@ -24,7 +24,7 @@ title: "AdBids_model_dashboard"
 model: "AdBids_model"
 timeseries: "timestamp"
 measures:
-- label: humanized default
+- label: default format
   expression: count(*)
   name: total_rows
   description: Total number of records present
@@ -81,7 +81,7 @@ dimensions:
      * check big nums
      ******************/
     for (const [name, bignum, tooltip_num] of [
-      ["humanized default", "100.0k", "100000"],
+      ["default format", "100,000", "100000"],
       ["USD", "$300.6k", "300576.83999999857"],
       ["humanized chosen", "300.6k", "300576.83999999857"],
       ["No Format", "300.6k", "300576.83999999857"],
@@ -165,11 +165,11 @@ dimensions:
      ******************/
     await page.getByText("Publisher").click();
 
-    // humanized default
+    // default format
     await expect(
       page
         .locator("div")
-        .filter({ hasText: /^8\.9k$/ })
+        .filter({ hasText: /^8,868$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
