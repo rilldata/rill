@@ -3,14 +3,12 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
   import { runtime } from "../../runtime-client/runtime-store";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import { useDashboardPolicyCheck } from "../dashboards/granular-access-policies/useDashboardPolicyCheck";
-  import DeployDashboardCta from "../dashboards/workspace/DeployDashboardCTA.svelte";
   import { featureFlags } from "../feature-flags";
 
   export let exploreName: string;
@@ -50,7 +48,5 @@
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
-    <DeployDashboardCta />
-    <LocalAvatarButton />
   {/if}
 </div>

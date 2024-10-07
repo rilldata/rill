@@ -3,14 +3,12 @@
   import type { EditorView } from "@codemirror/view";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import ComponentsEditor from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditor.svelte";
   import ComponentsEditorContainer from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditorContainer.svelte";
   import AddComponentMenu from "@rilldata/web-common/features/canvas/AddComponentMenu.svelte";
   import CanvasDashboardPreview from "@rilldata/web-common/features/canvas/CanvasDashboardPreview.svelte";
   import type { Vector } from "@rilldata/web-common/features/canvas/types";
   import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
-  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -18,7 +16,6 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import PreviewButton from "@rilldata/web-common/features/explores/PreviewButton.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
     WorkspaceContainer,
@@ -28,9 +25,12 @@
   import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { setContext } from "svelte";
-  import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
+  import {
+    resourceIconMapping,
+    resourceColorMapping,
+  } from "../entity-management/resource-icon-mapping";
 
   export let fileArtifact: FileArtifact;
 
@@ -95,14 +95,10 @@
   $: editorWidth = editorPercentage * containerWidth;
   $: componentEditorHeight = componentEditorPercentage * containerHeight;
 
-  async function onChangeCallback(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       $runtime.instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
       fileArtifacts.getNamesForKind(ResourceKind.Canvas),
@@ -194,53 +190,34 @@
   inspector={false}
 >
   <WorkspaceHeader
-    hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={onChangeCallback}
-    showInspectorToggle={false}
     slot="header"
+    {filePath}
+    resourceKind={ResourceKind.Canvas}
+    hasUnsavedChanges={$hasUnsavedChanges}
+    showInspectorToggle={false}
     titleInput={fileName}
+    onTitleChange={onChangeCallback}
   >
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
-      <ViewSelector bind:selectedView />
-
       {#if selectedView === "split" || selectedView === "viz"}
-        <div
-          class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
-        >
+        <div class="flex gap-x-1 flex-none items-center h-full rounded-full">
           <Switch small id="grid" bind:checked={showGrid} />
           <Label for="grid" class="font-normal text-xs">Grid</Label>
         </div>
       {/if}
 
       <AddComponentMenu {addComponent} />
-
-      <PreviewButton
-        dashboardName={canvasDashboardName}
-        disabled={Boolean(errors.length)}
-        type="custom"
-      />
-
-      <DeployDashboardCta />
-      <LocalAvatarButton />
+      <ViewSelector bind:selectedView />
     </div>
   </WorkspaceHeader>
 
   <div class="flex w-full h-full flex-row overflow-hidden" slot="body">
     {#if selectedView === "code" || selectedView === "split"}
       <div
-        transition:slide={{ duration: 400, axis: "x" }}
-        class="relative h-full flex-shrink-0 w-full border-r"
+        class="relative h-full flex-shrink-0 w-full"
         class:!w-full={selectedView === "code"}
         style:width="{editorPercentage * 100}%"
       >
-        <Resizer
-          direction="EW"
-          side="right"
-          dimension={editorWidth}
-          min={300}
-          max={0.65 * containerWidth}
-          onUpdate={(width) => (editorPercentage = width / containerWidth)}
-        />
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
             <ComponentsEditorContainer error={errors[0]}>
@@ -258,49 +235,67 @@
             </ComponentsEditorContainer>
           </section>
 
-          <section
-            style:height="{componentEditorPercentage * 100}%"
-            class:!h-12={!showComponentEditor}
-            class="size-full flex flex-col flex-none bg-white flex-shrink-0 relative border-t !min-h-12"
-          >
-            <Resizer
-              direction="NS"
-              dimension={componentEditorHeight}
-              min={80}
-              max={0.85 * containerHeight}
-              onUpdate={(height) =>
-                (componentEditorPercentage = height / containerHeight)}
-            />
-            <header
-              class="flex justify-between items-center bg-gray-100 px-4 h-12 flex-none"
+          {#if selectedComponentName || showComponentEditor}
+            <section
+              style:height="{componentEditorPercentage * 100}%"
+              class:!h-12={!showComponentEditor}
+              class="size-full flex flex-col flex-none flex-shrink-0 relative !min-h-12"
             >
-              <h1 class="font-semibold text-[16px] truncate">
-                {#if selectedComponentName}
-                  {selectedComponentName}.yaml
-                {:else}
-                  Select a component to edit
-                {/if}
-              </h1>
-              {#if selectedComponentName || showComponentEditor}
+              <Resizer
+                direction="NS"
+                dimension={componentEditorHeight}
+                min={80}
+                max={0.85 * containerHeight}
+                onUpdate={(height) =>
+                  (componentEditorPercentage = height / containerHeight)}
+              />
+              <header
+                class="flex justify-between items-center pr-2 bg-gray-100 flex-none py-2"
+              >
+                <h1
+                  class="font-semibold text-xl truncate flex items-center gap-x-2"
+                >
+                  {#if selectedComponentName}
+                    <svelte:component
+                      this={resourceIconMapping[ResourceKind.Component]}
+                      size="18px"
+                      color={resourceColorMapping[ResourceKind.Component]}
+                    />
+                    {selectedComponentName}.yaml
+                  {/if}
+                </h1>
+
                 <Button
-                  type="text"
+                  type="subtle"
                   on:click={() => (showComponentEditor = !showComponentEditor)}
                 >
                   {showComponentEditor ? "Close" : "Open"}
                 </Button>
-              {/if}
-            </header>
+              </header>
 
-            {#if showComponentEditor}
-              <div class="size-full overflow-hidden">
-                {#if selectedComponentFilePath}
-                  <ComponentsEditor filePath={selectedComponentFilePath} />
-                {/if}
-              </div>
-            {/if}
-          </section>
+              {#if showComponentEditor}
+                <div class="size-full overflow-hidden">
+                  {#if selectedComponentFilePath}
+                    <ComponentsEditor filePath={selectedComponentFilePath} />
+                  {/if}
+                </div>
+              {/if}
+            </section>
+          {/if}
         </div>
       </div>
+    {/if}
+
+    {#if selectedView === "split"}
+      <Resizer
+        absolute={false}
+        direction="EW"
+        side="right"
+        dimension={editorWidth}
+        min={300}
+        max={0.65 * containerWidth}
+        onUpdate={(width) => (editorPercentage = width / containerWidth)}
+      />
     {/if}
 
     {#if selectedView === "viz" || selectedView === "split"}

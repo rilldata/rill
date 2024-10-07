@@ -106,17 +106,15 @@ export class FileArtifact {
     );
 
     this.onRemoteContentChange((content) => {
-      if (!get(this.resourceName)) {
-        this.inferredResourceKind.set(inferResourceKind(this.path, content));
-      }
+      this.inferredResourceKind.set(inferResourceKind(this.path, content));
     });
   }
 
-  updateRemoteContent = (content: string, alert = true) => {
-    this.remoteContent.set(content);
-    if (alert) {
+  updateRemoteContent = (newContent: string, alert = true) => {
+    this.remoteContent.set(newContent);
+    if (alert && newContent !== get(this.remoteContent)) {
       for (const callback of this.remoteCallbacks) {
-        callback(content);
+        callback(newContent);
       }
     }
   };

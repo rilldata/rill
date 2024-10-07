@@ -139,6 +139,6 @@
   }
 
   section {
-    @apply size-full flex-col rounded-sm bg-white flex overflow-hidden relative;
+    @apply size-full flex-col bg-white flex overflow-hidden relative;
   }
 </style>

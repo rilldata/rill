@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -12,6 +11,7 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel } from "../selectors";
+  import { Wand } from "lucide-svelte";
 
   export let modelName: string;
   export let hasError = false;
@@ -44,10 +44,10 @@
     type="primary"
   >
     <IconSpaceFixer pullLeft pullRight={collapse}>
-      <Add />
+      <Wand size="14px" />
     </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>
-      Generate metrics
+      Generate metrics view
       {#if $ai}
         with AI
       {/if}

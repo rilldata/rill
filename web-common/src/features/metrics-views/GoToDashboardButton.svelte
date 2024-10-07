@@ -38,7 +38,7 @@
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button type="primary" builders={[builder]}>
+      <Button type="secondary" builders={[builder]}>
         Go to dashboard
         <CaretDownIcon />
       </Button>
@@ -61,7 +61,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item on:click={handleCreateDashboard}>
           <Add />
-          Create explore
+          Create Explore dashboard
         </DropdownMenu.Item>
       </DropdownMenu.Group>
     </DropdownMenu.Content>
