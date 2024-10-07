@@ -33,7 +33,7 @@
   $: tableVisible = workspaceLayout.table.visible;
 </script>
 
-<header class="slide" bind:clientWidth={width} class:!pl-12={!$navigationOpen}>
+<header class="slide" bind:clientWidth={width} class:!pl-10={!$navigationOpen}>
   <div class="flex gap-x-0 items-center">
     <svelte:component
       this={resourceKind
@@ -45,17 +45,15 @@
       color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
     />
 
-    <div class="wrapper slide">
-      <InputWithConfirm
-        size="md"
-        {editable}
-        id="model-title-input"
-        textClass="text-xl font-semibold"
-        {value}
-        onConfirm={onTitleChange}
-        showIndicator={hasUnsavedChanges}
-      />
-    </div>
+    <InputWithConfirm
+      size="md"
+      {editable}
+      id="model-title-input"
+      textClass="text-xl font-semibold"
+      {value}
+      onConfirm={onTitleChange}
+      showIndicator={hasUnsavedChanges}
+    />
   </div>
 
   <div class="flex items-center gap-x-2 w-fit">
@@ -113,12 +111,5 @@
     @apply bg-gray-100 px-4 w-full;
     @apply justify-between;
     @apply flex flex-none gap-x-2  py-2;
-  }
-
-  .wrapper {
-    @apply w-fit gap-x-2;
-    @apply relative flex items-center;
-    @apply font-bold pr-2 self-start pl-1;
-    font-size: 16px;
   }
 </style>

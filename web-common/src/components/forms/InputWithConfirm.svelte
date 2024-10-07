@@ -37,8 +37,7 @@
 </script>
 
 <div
-  role="heading"
-  aria-level="1"
+  role="presentation"
   class="h-full w-fit font-medium flex gap-x-0 items-center"
   on:mouseenter={() => (hovering = true)}
   on:mouseleave={() => (hovering = false)}
@@ -123,8 +122,8 @@
     @apply flex items-center;
     @apply p-0 bg-transparent;
     @apply size-full;
-    @apply outline-none border-0;
-    @apply cursor-text min-w-fit;
+    @apply outline-none border-0 select-none;
+    @apply cursor-default min-w-fit;
     vertical-align: middle;
   }
 
@@ -137,7 +136,6 @@
     @apply flex justify-center items-center px-2;
     @apply w-fit  justify-center;
     @apply border border-transparent rounded-[2px];
-    @apply cursor-pointer;
     @apply h-fit;
   }
 
