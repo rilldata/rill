@@ -184,12 +184,10 @@ type Parser struct {
 	Resources map[ResourceName]*Resource
 	Errors    []*runtimev1.ParseError
 
-	// Mapping of local data files to resource paths that depend on them
-	localDataToResourcepath map[string]map[string]any
-
 	// Internal state
 	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths
 	resourcesForUnspecifiedRef map[string][]*Resource // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
+	resourceNamesForDataPaths map[string][]ResourceName // Index of local data files to resources that depend on them
 	insertedResources          []*Resource
 	updatedResources           []*Resource
 	deletedResources           []*Resource
