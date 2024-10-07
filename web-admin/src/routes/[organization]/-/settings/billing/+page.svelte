@@ -6,6 +6,7 @@
   $: organization = $page.params.organization;
 </script>
 
+<!-- TODO: add loading spinners -->
 <div class="flex flex-col w-full gap-y-5">
   <Plan {organization} />
   <Payment {organization} />

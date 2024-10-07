@@ -11,7 +11,7 @@ export function getPlanForOrg(org: string, enabled = true) {
   return createAdminServiceGetBillingSubscription(org, {
     query: {
       enabled: enabled && !!org,
-      select: (data) => data.subscription.plan,
+      select: (data) => data.subscription?.plan,
     },
   });
 }

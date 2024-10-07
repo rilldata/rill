@@ -22,7 +22,7 @@ export function handleSubscriptionIssues(cancelledSubIssue: V1BillingIssue) {
       new Date(cancelledSubIssue.metadata.subscriptionCancelled?.endDate),
     );
     if (endDate.isValid) {
-      accessTimeout = `but you still have access through ${endDate.toLocaleString(DateTime.DATE_MED)}`;
+      accessTimeout = ` but you still have access through ${endDate.toLocaleString(DateTime.DATE_MED)}`;
     }
   }
 

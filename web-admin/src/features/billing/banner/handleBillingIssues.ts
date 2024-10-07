@@ -1,4 +1,3 @@
-import { V1BillingIssueType } from "@rilldata/web-admin/client";
 import type {
   V1BillingIssue,
   V1Subscription,

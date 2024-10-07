@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+  import { mergedMutationStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
   import {
@@ -24,11 +25,10 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import {
+    createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
-    type RpcStatus,
   } from "@rilldata/web-admin/client/index.js";
   import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
-  import type { AxiosError } from "axios";
   import { getPaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
   import { createAdminServiceGetPaymentsPortalURL } from "@rilldata/web-admin/client";
   import { page } from "$app/stores";
@@ -78,24 +78,35 @@
   $: teamPlan = $categorisedPlans.data?.teamPlan;
   $: paymentIssues = getPaymentIssues(organization);
   $: paymentUrl = createAdminServiceGetPaymentsPortalURL(organization, {
-    returnUrl: `${$page.url.protocol}//${$page.url.host}/auto-close`,
+    returnUrl: `${$page.url.protocol}//${$page.url.host}/-/auto-close`,
   });
 
   const userPromptWindow = new PopupWindow();
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
+  const planRenewer = createAdminServiceRenewBillingSubscription();
+  const status = mergedMutationStatus([planUpdater, planRenewer]);
   async function handleUpgradePlan() {
     if (!teamPlan) return;
     if ($paymentIssues.data?.length) {
       await userPromptWindow.openAndWait($paymentUrl.data.url);
     }
 
-    await $planUpdater.mutateAsync({
-      organization,
-      data: {
-        planName: teamPlan.name,
-      },
-    });
+    if (type === "renew") {
+      await $planRenewer.mutateAsync({
+        organization,
+        data: {
+          planName: teamPlan.name,
+        },
+      });
+    } else {
+      await $planUpdater.mutateAsync({
+        organization,
+        data: {
+          planName: teamPlan.name,
+        },
+      });
+    }
     void invalidateBillingInfo(organization);
     open = false;
   }
@@ -104,11 +115,7 @@
     $categorisedPlans.isLoading || // TODO: wait for this in handleUpgradePlan instead of add to spinner
     $paymentIssues.isLoading ||
     $paymentUrl.isLoading ||
-    $planUpdater.isLoading;
-
-  $: error =
-    ($planUpdater.error as unknown as AxiosError<RpcStatus>)?.response?.data
-      ?.message ?? $planUpdater.error?.message;
+    $status.isLoading;
 </script>
 
 <AlertDialog bind:open>
@@ -128,9 +135,11 @@
         </ul>
       </AlertDialogDescription>
 
-      {#if error}
+      {#if $status.isError}
         <div class="text-red-500 text-sm py-px">
-          {error}
+          {#each $status.errors as e}
+            <div>{e}</div>
+          {/each}
         </div>
       {/if}
     </AlertDialogHeader>

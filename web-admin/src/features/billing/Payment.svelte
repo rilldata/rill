@@ -23,7 +23,7 @@
   $: isTrial = $plan.data && isTrialPlan($plan.data);
 </script>
 
-{#if !isTrial}
+{#if $plan.data && !isTrial}
   <SettingsContainer
     title="Payment Method"
     titleIcon={paymentIssueTexts.length ? "error" : "none"}

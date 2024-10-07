@@ -43,7 +43,7 @@
     }
   }
 
-  $: title = (plan.displayName ?? plan.name) + trialEnded ? " expired" : "";
+  $: title = (plan.displayName || plan.name) + (trialEnded ? " expired" : "");
 
   let open = false;
 </script>
