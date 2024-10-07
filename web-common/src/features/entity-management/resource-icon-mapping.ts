@@ -35,7 +35,7 @@ export const resourceColorMapping = {
   [ResourceKind.Canvas]: "#008FD4",
 
   // To follow up later
-  [ResourceKind.Theme]: "red",
-  [ResourceKind.Report]: "red",
-  [ResourceKind.Alert]: "red",
+  [ResourceKind.Theme]: "black",
+  [ResourceKind.Report]: "black",
+  [ResourceKind.Alert]: "black",
 };
