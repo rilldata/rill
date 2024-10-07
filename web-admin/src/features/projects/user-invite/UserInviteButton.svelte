@@ -17,7 +17,8 @@
   } from "@rilldata/web-common/components/dropdown-menu";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
   import AvatarCircleList from "../../organizations/users/AvatarCircleList.svelte";
-  import AvatarSquareList from "../../organizations/users/AvatarSquareList.svelte";
+  import UserInviteGroup from "./UserInviteGroup.svelte";
+  import UserInviteOrganization from "./UserInviteOrganization.svelte";
 
   export let organization: string;
   export let project: string;
@@ -78,18 +79,15 @@
         <div class="text-xs text-gray-500 font-semibold uppercase">
           Organization
         </div>
-        <div class="text-xs text-gray-800">
-          Everyone from <span class="font-bold">{organization}</span>
+        <div class="flex flex-col gap-y-1">
+          <UserInviteOrganization {organization} />
         </div>
       </div>
       <div>
         <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
         <div class="flex flex-col gap-y-1">
           {#each userGroupsList as group}
-            <!-- TODO: get org-level users count -->
-            <AvatarSquareList name={group.groupName}>
-              {@html `Everyone from <span class="font-bold">${group.groupName}</span>`}
-            </AvatarSquareList>
+            <UserInviteGroup {organization} usergroup={group.groupName} />
           {/each}
         </div>
       </div>
