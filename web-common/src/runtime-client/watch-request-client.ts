@@ -39,7 +39,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
-  private outOfFocusThrottler = new Throttler(5000, 30000);
+  private outOfFocusThrottler = new Throttler(120000, 30000);
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -49,7 +49,10 @@ export class WatchRequestClient<Res extends WatchResponse> {
   ]);
   public closed = writable(false);
 
-  on<K extends keyof EventMap<Res>>(event: K, listener: Callback<Res, K>) {
+  public on<K extends keyof EventMap<Res>>(
+    event: K,
+    listener: Callback<Res, K>,
+  ) {
     this.listeners.get(event)?.push(listener);
   }
 
@@ -137,8 +140,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
     } catch {
       clearTimeout(this.retryTimeout);
 
-      if (get(this.closed)) return;
       this.cancel();
+      if (get(this.closed)) return;
 
       this.reconnect().catch((e) => {
         throw new Error(e);
