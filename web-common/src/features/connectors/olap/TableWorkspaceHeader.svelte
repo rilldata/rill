@@ -27,7 +27,7 @@
     database,
     databaseSchema,
     table,
-    "metrics",
+    false,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );

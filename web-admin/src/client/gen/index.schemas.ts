@@ -273,10 +273,6 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceUpdateBillingSubscriptionBody = {
-  planName?: string;
-};
-
 export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -320,6 +316,11 @@ export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
+export type AdminServiceUpdateBillingSubscriptionBodyBody = {
+  planName?: string;
+  superuserForceAccess?: boolean;
+};
+
 export interface V1WhitelistedDomain {
   domain?: string;
   role?: string;
@@ -342,6 +343,7 @@ export interface V1Usergroup {
 
 export interface V1UserQuotas {
   singleuserOrgs?: number;
+  trialOrgs?: number;
 }
 
 export interface V1UserPreferences {
@@ -411,7 +413,7 @@ export interface V1UpdateBookmarkRequest {
 
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+  subscription?: V1Subscription;
 }
 
 export interface V1UnsubscribeReportResponse {
@@ -451,6 +453,7 @@ export interface V1SudoUpdateUserQuotasResponse {
 export interface V1SudoUpdateUserQuotasRequest {
   email?: string;
   singleuserOrgs?: number;
+  trialOrgs?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
@@ -478,7 +481,7 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
 
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+  subscription?: V1Subscription;
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
@@ -625,6 +628,11 @@ export interface V1ReportOptions {
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
+}
+
+export interface V1RenewBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
 }
 
 export interface V1RenameUsergroupResponse {
@@ -1304,6 +1312,7 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_PAYMENT_FAILED: "BILLING_ISSUE_TYPE_PAYMENT_FAILED",
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
 } as const;
 
 export interface V1BillingIssueMetadataTrialEnded {
@@ -1341,6 +1350,10 @@ export interface V1BillingIssueMetadataNoBillableAddress {
   [key: string]: any;
 }
 
+export interface V1BillingIssueMetadataNeverSubscribed {
+  [key: string]: any;
+}
+
 export interface V1BillingIssueMetadata {
   onTrial?: V1BillingIssueMetadataOnTrial;
   trialEnded?: V1BillingIssueMetadataTrialEnded;
@@ -1348,6 +1361,7 @@ export interface V1BillingIssueMetadata {
   noBillableAddress?: V1BillingIssueMetadataNoBillableAddress;
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
+  neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
 }
 
 export type V1BillingIssueLevel =

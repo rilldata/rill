@@ -138,9 +138,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -158,7 +158,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, display_name=$2, description=$3, custom_domain=$4, quota_projects=$5, quota_deployments=$6, quota_slots_total=$7, quota_slots_per_deployment=$8, quota_outstanding_invites=$9, quota_storage_limit_bytes_per_deployment=$10, billing_customer_id=$11, payment_customer_id=$12, billing_email=$13, updated_on=now() WHERE id=$14 RETURNING *", opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, display_name=$2, description=$3, custom_domain=$4, quota_projects=$5, quota_deployments=$6, quota_slots_total=$7, quota_slots_per_deployment=$8, quota_outstanding_invites=$9, quota_storage_limit_bytes_per_deployment=$10, billing_customer_id=$11, payment_customer_id=$12, billing_email=$13, created_by_user_id=$14, updated_on=now() WHERE id=$15 RETURNING *", opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -694,13 +694,14 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_refresh_token=$5, quota_singleuser_orgs=$6, preference_time_zone=$7, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_refresh_token=$5, quota_singleuser_orgs=$6, quota_trial_orgs=$7, preference_time_zone=$8, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
 		opts.GithubUsername,
 		opts.GithubRefreshToken,
 		opts.QuotaSingleuserOrgs,
+		opts.QuotaTrialOrgs,
 		opts.PreferenceTimeZone).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
@@ -732,6 +733,23 @@ func (c *connection) CheckUserIsAProjectMember(ctx context.Context, userID, proj
 		return false, parseErr("check", err)
 	}
 	return res, nil
+}
+
+func (c *connection) GetCurrentTrialOrgCount(ctx context.Context, userID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT current_trial_orgs_count FROM users WHERE id=$1", userID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("org count", err)
+	}
+	return count, nil
+}
+
+func (c *connection) IncrementCurrentTrialOrgCount(ctx context.Context, userID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE users SET current_trial_orgs_count = current_trial_orgs_count + 1 WHERE id=$1", userID)
+	if err != nil {
+		return parseErr("org count", err)
+	}
+	return nil
 }
 
 func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertUsergroupOptions) (*database.Usergroup, error) {
@@ -1895,6 +1913,15 @@ func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]stri
 	return res, nil
 }
 
+func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = '' OR payment_customer_id = ''`)
+	if err != nil {
+		return nil, parseErr("billing orgs without billing or payment info", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
@@ -1919,15 +1946,6 @@ func (c *connection) FindBillingUsageReportedOn(ctx context.Context) (time.Time,
 func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_reporting_time SET usage_reported_on=$1`, usageReportedOn)
 	return checkUpdateRow("billing usage", res, err)
-}
-
-func (c *connection) FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*database.Organization, error) {
-	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
-	if err != nil {
-		return nil, parseErr("billing orgs without billing id", err)
-	}
-	return res, nil
 }
 
 func (c *connection) FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*database.Organization, error) {
@@ -2260,6 +2278,8 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataPaymentFailed{}
 	case database.BillingIssueTypeSubscriptionCancelled:
 		metadata = &database.BillingIssueMetadataSubscriptionCancelled{}
+	case database.BillingIssueTypeNeverSubscribed:
+		metadata = &database.BillingIssueMetadataNeverSubscribed{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {

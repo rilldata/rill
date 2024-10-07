@@ -28,7 +28,7 @@ export async function handleEntityCreate(
   });
 
   // Return the path to the new file, so we can navigate the user to it
-  return `/files/${newPath}`;
+  return `/${newPath}`;
 }
 
 export function getPathForNewResourceFile(

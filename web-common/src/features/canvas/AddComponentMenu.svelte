@@ -30,11 +30,11 @@
       .map((c) => c.meta?.name?.name ?? "") ?? [];
 
   async function handleAddComponent() {
-    const newRoute = await handleEntityCreate(ResourceKind.Component);
+    const newFilePath = await handleEntityCreate(ResourceKind.Component);
 
-    if (!newRoute) return;
+    if (!newFilePath) return;
 
-    const componentName = getNameFromFile(newRoute);
+    const componentName = getNameFromFile(newFilePath);
 
     if (componentName) {
       addComponent(componentName);
