@@ -24,7 +24,7 @@
 
 <DropdownMenu bind:open typeahead={false}>
   <DropdownMenuTrigger
-    class="w-18 flex flex-row gap-1 items-center {open
+    class="w-18 flex flex-row gap-1 items-center rounded-sm {open
       ? 'bg-slate-200'
       : 'hover:bg-slate-100'} px-2 py-1"
   >
