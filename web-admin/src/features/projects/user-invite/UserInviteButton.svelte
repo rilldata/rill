@@ -63,8 +63,8 @@
     <Button builders={[builder]} type="secondary">Share</Button>
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[520px] p-4" side="bottom" align="end">
-    <div class="flex flex-col gap-y-3">
-      <div class="flex flex-row items-center">
+    <div class="flex flex-col">
+      <div class="flex flex-row items-center mb-4">
         <div class="text-sm font-medium">{project}</div>
         <div class="grow"></div>
         <CopyInviteLinkButton {copyLink} />
@@ -75,7 +75,7 @@
         onInvite={() => (open = false)}
       />
       <UserInviteAllowlist {organization} {project} />
-      <div>
+      <div class="mt-4">
         <div class="text-xs text-gray-500 font-semibold uppercase">
           Organization
         </div>
@@ -83,7 +83,7 @@
           <UserInviteOrganization {organization} />
         </div>
       </div>
-      <div>
+      <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
         <div class="flex flex-col gap-y-1">
           {#each userGroupsList as group}
@@ -91,7 +91,7 @@
           {/each}
         </div>
       </div>
-      <div>
+      <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
         <div class="flex flex-col gap-y-1">
           {#each usersWithPendingInvites as user}
