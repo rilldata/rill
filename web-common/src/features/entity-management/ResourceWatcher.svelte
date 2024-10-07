@@ -23,8 +23,6 @@
     `${host}/v1/instances/${instanceId}/resources/-/watch`,
   );
 
-  const resourceClosed = resourceWatcher.closed;
-
   $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;
 
   onMount(() => {
