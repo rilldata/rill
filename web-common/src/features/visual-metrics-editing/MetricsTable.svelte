@@ -48,6 +48,18 @@
     .map((_, i) => i)
     .filter((i) => filter(items[i], searchValue));
 
+  $: nameColumn = Math.max(180, longest.name * 8.5 + 32);
+  $: labelColumn = Math.max(180, longest.label * 7 + 50);
+
+  $: formatWidth = type === "measures" ? 140 : 0;
+
+  $: partialWidth =
+    gutterWidth + nameColumn + expressionWidth + labelColumn + formatWidth;
+
+  $: descriptionWidth = Math.max(220, wrapperWidth - partialWidth);
+
+  $: tableWidth = partialWidth + descriptionWidth;
+
   function handleDragStart(e: MouseEvent, i: number) {
     if (e.button !== 0) return;
 
@@ -100,18 +112,6 @@
         item?.column?.toLowerCase().includes(searchValue.toLowerCase()))
     );
   }
-
-  $: nameColumn = longest.name * 8.5 + 32;
-  $: labelColumn = longest.label * 7 + 50;
-
-  $: formatWidth = type === "measures" ? 140 : 0;
-
-  $: partialWidth =
-    gutterWidth + nameColumn + expressionWidth + labelColumn + formatWidth;
-
-  $: descriptionWidth = Math.max(220, wrapperWidth - partialWidth);
-
-  $: tableWidth = partialWidth + descriptionWidth;
 </script>
 
 <div
