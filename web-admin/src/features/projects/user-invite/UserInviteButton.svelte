@@ -10,15 +10,13 @@
   import UserInviteAllowlist from "@rilldata/web-admin/features/projects/user-invite/UserInviteAllowlist.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import {
-    DropdownMenu,
-    DropdownMenuTrigger,
-    DropdownMenuContent,
-  } from "@rilldata/web-common/components/dropdown-menu";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
   import AvatarCircleList from "../../organizations/users/AvatarCircleList.svelte";
   import UserInviteGroup from "./UserInviteGroup.svelte";
   import UserInviteOrganization from "./UserInviteOrganization.svelte";
+
+  import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
 
   export let organization: string;
   export let project: string;
@@ -58,11 +56,11 @@
   ];
 </script>
 
-<DropdownMenu bind:open>
-  <DropdownMenuTrigger asChild let:builder>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger asChild let:builder>
     <Button builders={[builder]} type="secondary">Share</Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent class="w-[520px] p-4" side="bottom" align="end">
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content class="w-[520px] p-4" side="bottom" align="end">
     <div class="flex flex-col">
       <div class="flex flex-row items-center mb-4">
         <div class="text-sm font-medium">{project}</div>
@@ -96,15 +94,18 @@
         <!-- 52 * 4 = 208px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[208px]">
           {#each usersWithPendingInvites as user}
-            <AvatarCircleList
-              name={user.userName ?? user.userEmail}
-              email={user.userEmail}
-              isCurrentUser={user.userEmail === $currentUser.data?.user.email}
-              pendingAcceptance={!user.userName}
-            />
+            <div class="flex flex-row items-center gap-x-2 justify-between">
+              <AvatarCircleList
+                name={user.userName ?? user.userEmail}
+                email={user.userEmail}
+                isCurrentUser={user.userEmail === $currentUser.data?.user.email}
+                pendingAcceptance={!user.userName}
+              />
+              <UserInviteUserSetRole {organization} {project} {user} />
+            </div>
           {/each}
         </div>
       </div>
     </div>
-  </DropdownMenuContent>
-</DropdownMenu>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
