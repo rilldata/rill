@@ -45,6 +45,7 @@
         }),
       meta: {
         widthPercent: 5,
+        marginLeft: "8px",
       },
     },
     {
