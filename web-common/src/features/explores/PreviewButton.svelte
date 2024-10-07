@@ -12,7 +12,6 @@
   import Play from "svelte-radix/Play.svelte";
 
   export let disabled: boolean;
-  export let suppress: boolean = false;
   export let href: string | null;
 
   const viewDashboard = () => {
@@ -31,7 +30,7 @@
   $: loading = $navigating?.to?.url.pathname === href;
 </script>
 
-<Tooltip {suppress} distance={8} location="left">
+<Tooltip suppress={!disabled} distance={8} location="left">
   <Button
     label="Preview"
     square
