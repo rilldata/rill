@@ -64,7 +64,7 @@ export function useValidDashboards(instanceId: string) {
           // Filter for valid Explores and Canvases
           return data?.resources?.filter(
             (res) =>
-              !!res.explore?.state?.validSpec || res.canvas?.state?.validSpec,
+              !!res.explore?.state?.validSpec || !!res.canvas?.state?.validSpec,
           );
         },
       },
