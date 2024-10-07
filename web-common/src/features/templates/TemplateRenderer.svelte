@@ -21,7 +21,7 @@
   export let renderer: string;
   export let componentName: string;
   export let input: V1ComponentVariable[] | undefined;
-  export let output: V1ComponentVariable | undefined;
+  export let output: V1ComponentVariable[] | undefined;
   export let resolverProperties: V1ComponentSpecResolverProperties | undefined;
 
   const canvasName = getContext("rill::canvas:name") as string;
