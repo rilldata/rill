@@ -27,7 +27,7 @@
   export let project: string;
   export let user: User;
 
-  let isDropdownOpen = false;
+  let isOpen = false;
 
   const queryClient = useQueryClient();
 
@@ -65,14 +65,14 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open={isDropdownOpen}>
+<DropdownMenu.Root bind:open={isOpen}>
   <DropdownMenu.Trigger
-    class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
+    class="w-18 flex flex-row gap-1 items-center rounded-sm {isOpen
       ? 'bg-slate-200'
       : 'hover:bg-slate-100'} px-2 py-1"
   >
     {capitalize(user.roleName)}
-    {#if isDropdownOpen}
+    {#if isOpen}
       <CaretUpIcon size="12px" />
     {:else}
       <CaretDownIcon size="12px" />
