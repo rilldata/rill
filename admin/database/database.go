@@ -124,6 +124,8 @@ type DB interface {
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
 	CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error)
 	CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error)
+	GetCurrentTrialOrgCount(ctx context.Context, userID string) (int, error)
+	IncrementCurrentTrialOrgCount(ctx context.Context, userID string) error
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	UpdateUsergroupName(ctx context.Context, name, groupID string) (*Usergroup, error)
@@ -256,12 +258,12 @@ type DB interface {
 	DeleteAssets(ctx context.Context, ids []string) error
 
 	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
+	FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error)
+
 	// CountBillingProjectsForOrganization counts the projects which are not hibernated and created before the given time
 	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
-
-	FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*Organization, error)
 
 	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
 	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
@@ -306,6 +308,7 @@ type Organization struct {
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
+	CreatedByUserID                     *string   `db:"created_by_user_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -323,6 +326,7 @@ type InsertOrganizationOptions struct {
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
+	CreatedByUserID                     *string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -340,6 +344,7 @@ type UpdateOrganizationOptions struct {
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
+	CreatedByUserID                     *string
 }
 
 // Project represents one Git connection.
@@ -479,18 +484,20 @@ type RuntimeSlotsUsed struct {
 // User is a person registered in Rill.
 // Users may belong to multiple organizations and projects.
 type User struct {
-	ID                  string
-	Email               string
-	DisplayName         string    `db:"display_name"`
-	PhotoURL            string    `db:"photo_url"`
-	GithubUsername      string    `db:"github_username"`
-	GithubRefreshToken  string    `db:"github_refresh_token"`
-	CreatedOn           time.Time `db:"created_on"`
-	UpdatedOn           time.Time `db:"updated_on"`
-	ActiveOn            time.Time `db:"active_on"`
-	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
-	PreferenceTimeZone  string    `db:"preference_time_zone"`
-	Superuser           bool      `db:"superuser"`
+	ID                    string
+	Email                 string
+	DisplayName           string    `db:"display_name"`
+	PhotoURL              string    `db:"photo_url"`
+	GithubUsername        string    `db:"github_username"`
+	GithubRefreshToken    string    `db:"github_refresh_token"`
+	CreatedOn             time.Time `db:"created_on"`
+	UpdatedOn             time.Time `db:"updated_on"`
+	ActiveOn              time.Time `db:"active_on"`
+	QuotaSingleuserOrgs   int       `db:"quota_singleuser_orgs"`
+	QuotaTrialOrgs        int       `db:"quota_trial_orgs"`
+	CurrentTrialOrgsCount int       `db:"current_trial_orgs_count"`
+	PreferenceTimeZone    string    `db:"preference_time_zone"`
+	Superuser             bool      `db:"superuser"`
 }
 
 // InsertUserOptions defines options for inserting a new user
@@ -499,6 +506,7 @@ type InsertUserOptions struct {
 	DisplayName         string
 	PhotoURL            string
 	QuotaSingleuserOrgs int
+	QuotaTrialOrgs      int
 	Superuser           bool
 }
 
@@ -509,6 +517,7 @@ type UpdateUserOptions struct {
 	GithubUsername      string
 	GithubRefreshToken  string
 	QuotaSingleuserOrgs int
+	QuotaTrialOrgs      int
 	PreferenceTimeZone  string
 }
 
@@ -852,6 +861,7 @@ const (
 	DefaultQuotaSlotsPerDeployment             = 5
 	DefaultQuotaOutstandingInvites             = 200
 	DefaultQuotaSingleuserOrgs                 = 3
+	DefaultQuotaTrialOrgs                      = 2
 	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
 )
 
@@ -991,6 +1001,7 @@ const (
 	BillingIssueTypeNoBillableAddress                      = 4
 	BillingIssueTypePaymentFailed                          = 5
 	BillingIssueTypeSubscriptionCancelled                  = 6
+	BillingIssueTypeNeverSubscribed                        = 7
 )
 
 type BillingIssueLevel int
@@ -1047,6 +1058,8 @@ type BillingIssueMetadataPaymentFailedMeta struct {
 type BillingIssueMetadataSubscriptionCancelled struct {
 	EndDate time.Time `json:"end_date"`
 }
+
+type BillingIssueMetadataNeverSubscribed struct{}
 
 type UpsertBillingIssueOptions struct {
 	OrgID     string           `validate:"required"`

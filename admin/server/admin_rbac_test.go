@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/rilldata/rill/admin/jobs"
 	"net"
 	"strconv"
 	"testing"
@@ -72,6 +73,8 @@ func TestAdmin_RBAC(t *testing.T) {
 		payment.NewNoop(),
 	)
 	require.NoError(t, err)
+
+	service.Jobs = jobs.NewNoopClient()
 
 	db := service.DB
 

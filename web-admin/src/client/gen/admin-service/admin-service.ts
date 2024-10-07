@@ -41,7 +41,8 @@ import type {
   V1GetBillingSubscriptionResponse,
   V1CancelBillingSubscriptionResponse,
   V1UpdateBillingSubscriptionResponse,
-  AdminServiceUpdateBillingSubscriptionBody,
+  AdminServiceUpdateBillingSubscriptionBodyBody,
+  V1RenewBillingSubscriptionResponse,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMemberUsersResponse,
@@ -1201,13 +1202,13 @@ export const createAdminServiceCancelBillingSubscription = <
  */
 export const adminServiceUpdateBillingSubscription = (
   organization: string,
-  adminServiceUpdateBillingSubscriptionBody: AdminServiceUpdateBillingSubscriptionBody,
+  adminServiceUpdateBillingSubscriptionBodyBody: AdminServiceUpdateBillingSubscriptionBodyBody,
 ) => {
   return httpClient<V1UpdateBillingSubscriptionResponse>({
     url: `/v1/organizations/${organization}/billing/subscriptions`,
     method: "patch",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceUpdateBillingSubscriptionBody,
+    data: adminServiceUpdateBillingSubscriptionBodyBody,
   });
 };
 
@@ -1215,7 +1216,7 @@ export type AdminServiceUpdateBillingSubscriptionMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>
 >;
 export type AdminServiceUpdateBillingSubscriptionMutationBody =
-  AdminServiceUpdateBillingSubscriptionBody;
+  AdminServiceUpdateBillingSubscriptionBodyBody;
 export type AdminServiceUpdateBillingSubscriptionMutationError = RpcStatus;
 
 export const createAdminServiceUpdateBillingSubscription = <
@@ -1225,7 +1226,10 @@ export const createAdminServiceUpdateBillingSubscription = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
     TError,
-    { organization: string; data: AdminServiceUpdateBillingSubscriptionBody },
+    {
+      organization: string;
+      data: AdminServiceUpdateBillingSubscriptionBodyBody;
+    },
     TContext
   >;
 }) => {
@@ -1233,7 +1237,10 @@ export const createAdminServiceUpdateBillingSubscription = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
-    { organization: string; data: AdminServiceUpdateBillingSubscriptionBody }
+    {
+      organization: string;
+      data: AdminServiceUpdateBillingSubscriptionBodyBody;
+    }
   > = (props) => {
     const { organization, data } = props ?? {};
 
@@ -1243,7 +1250,70 @@ export const createAdminServiceUpdateBillingSubscription = <
   return createMutation<
     Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
     TError,
-    { organization: string; data: AdminServiceUpdateBillingSubscriptionBody },
+    {
+      organization: string;
+      data: AdminServiceUpdateBillingSubscriptionBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RenewBillingSubscription renews the billing plan for the organization once cancelled
+ */
+export const adminServiceRenewBillingSubscription = (
+  organization: string,
+  adminServiceUpdateBillingSubscriptionBodyBody: AdminServiceUpdateBillingSubscriptionBodyBody,
+) => {
+  return httpClient<V1RenewBillingSubscriptionResponse>({
+    url: `/v1/organizations/${organization}/billing/subscriptions/renew`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateBillingSubscriptionBodyBody,
+  });
+};
+
+export type AdminServiceRenewBillingSubscriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRenewBillingSubscription>>
+>;
+export type AdminServiceRenewBillingSubscriptionMutationBody =
+  AdminServiceUpdateBillingSubscriptionBodyBody;
+export type AdminServiceRenewBillingSubscriptionMutationError = RpcStatus;
+
+export const createAdminServiceRenewBillingSubscription = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRenewBillingSubscription>>,
+    TError,
+    {
+      organization: string;
+      data: AdminServiceUpdateBillingSubscriptionBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRenewBillingSubscription>>,
+    {
+      organization: string;
+      data: AdminServiceUpdateBillingSubscriptionBodyBody;
+    }
+  > = (props) => {
+    const { organization, data } = props ?? {};
+
+    return adminServiceRenewBillingSubscription(organization, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRenewBillingSubscription>>,
+    TError,
+    {
+      organization: string;
+      data: AdminServiceUpdateBillingSubscriptionBodyBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -6552,7 +6622,8 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
     | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
     | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
-    | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
+    | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
+    | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
     url: `/v1/superuser/organizations/${organization}/billing/issues/${type}`,
@@ -6584,7 +6655,8 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
         | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
-        | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED";
+        | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
+        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
     },
     TContext
   >;
@@ -6602,7 +6674,8 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
         | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
-        | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED";
+        | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
+        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
     }
   > = (props) => {
     const { organization, type } = props ?? {};
@@ -6622,7 +6695,8 @@ export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
         | "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD"
         | "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS"
         | "BILLING_ISSUE_TYPE_PAYMENT_FAILED"
-        | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED";
+        | "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED"
+        | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED";
     },
     TContext
   >(mutationFn, mutationOptions);

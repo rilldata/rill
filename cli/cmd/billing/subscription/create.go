@@ -41,7 +41,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.PrintfSuccess("Successfully subscribed to plan %q for org %q with billing customer ID %q\n", plan, ch.Org, resp.Organization.BillingCustomerId)
-			ch.PrintSubscriptions(resp.Subscriptions)
+			ch.PrintSubscriptions([]*adminv1.Subscription{resp.Subscription})
 			return nil
 		},
 	}
