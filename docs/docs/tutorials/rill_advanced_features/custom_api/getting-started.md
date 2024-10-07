@@ -37,7 +37,7 @@ Created service "my-api-service" in org "Rill_Learn".
 Access token: rill_svc_<RANDOM_STRING>
 ```
 
-Once this is created, you can use the service access token to create a user token. Using [dashboard access policies](https://docs.rilldata.com/manage/security), we can add the following to our [dashboard_1.yaml](../advanced_developer/advanced-dashboard.md) file.
+Once this is created, you can use the service access token to create a user token. Using [dashboard access policies](https://docs.rilldata.com/manage/security), we can add the following to our [advanced_metrics_view_explore.yaml](../advanced_developer/advanced-dashboard.md) file.
 ```yaml
 security:
   access: "{{ .user.admin }} AND '{{ .user.domain }}' == 'rilldata.com'"

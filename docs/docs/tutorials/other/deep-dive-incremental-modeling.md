@@ -62,7 +62,7 @@ rill project splits  deepdive --local
   591d2ae89c74e7c11516097fbf3c1723   {"path":"2024/09/30/17/38/44/rilldata-incremental-model.csv","uri":"gs://rendo-test/2024/09/30/17/38/44/rilldata-incremental-model.csv"}   2024-09-30T23:49:39Z   319ms     
   ```
 
-Run the code again to insert 5 more rows. You wont see the new data yet populated in Rill even when refreshing the page. You'll have to run a refresh of the model. Let's do that.
+Run the code again to insert 5 more rows. You won't see the new data yet populated in Rill even when refreshing the page. You'll have to run a refresh of the model. Let's do that.
 
 ### Refreshing the Incremental Model
 

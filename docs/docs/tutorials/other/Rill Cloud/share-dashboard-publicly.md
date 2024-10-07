@@ -52,8 +52,8 @@ Checking the public URL can be done by running the following:
 rill public-url list --project <your_project>
   ID                                     DASHBOARD     FILTER                                CREATED BY              CREATED ON            LAST USED ON          EXPIRES ON  
  -------------------------------------- ------------- ------------------------------------- ----------------------- --------------------- --------------------- ------------ 
-  3564c499-c8bd-4c1c-bab8-c33a218a5009   dashboard_1   (author_name IN ["Alexey Milovidov""])   roy.endo@rilldata.com   2024-09-30 09:34:41   2024-09-30 09:34:41               
-  cab99113-d5a8-468d-981e-213e41c7d1bf   dashboard_1                                         roy.endo@rilldata.com   2024-09-30 09:29:26   2024-09-30 09:34:32               
+  3564c499-c8bd-4c1c-bab8-c33a218a5009   advanced_metrics_view_explore   (author_name IN ["Alexey Milovidov""])   roy.endo@rilldata.com   2024-09-30 09:34:41   2024-09-30 09:34:41               
+  cab99113-d5a8-468d-981e-213e41c7d1bf   advanced_metrics_view_explore                                         roy.endo@rilldata.com   2024-09-30 09:29:26   2024-09-30 09:34:32               
 
 NOTE: For security reasons, the actual URLs can't be displayed after creation.
 ```

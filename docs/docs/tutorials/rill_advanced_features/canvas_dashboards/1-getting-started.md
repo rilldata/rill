@@ -42,6 +42,7 @@ Under the + Add dropdown, select More to find the chart and custom dashboard com
 
 Once you select either of these, a dedicated folder `components` and `canvas-dashboards` will be created.
 
+
 import DocsRating from '@site/src/components/DocsRating';
 
 ---

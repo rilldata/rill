@@ -185,9 +185,11 @@ const sidebars = {
             'tutorials/other/embed-dashboard',
             'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
-            'tutorials/other/Rill Cloud/visual-metric-editor-rc',
-            'tutorials/other/yaml-vs-ui',
-            'tutorials/other/trial-check',
+            
+            'tutorials/other/Rill Cloud/views',
+      //      'tutorials/other/Rill Cloud/visual-metric-editor-rc',
+       //     'tutorials/other/yaml-vs-ui',
+       //     'tutorials/other/trial-check',
             'tutorials/other/avg_avg',
 
           ]

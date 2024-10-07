@@ -23,7 +23,7 @@ Splits in models are enabled by defining the split parameter as seen below:
 
 ```yaml
 splits:
-    some splits definition
+    sql/glob: some splits definition
 ```
 
 Depending on your data, this can be defined as a `SQL:` statement or a `glob:` pattern. Once configured, Rill will try to split your existing data into smaller subcategories which allows you to refresh specific sections only instead of reingesting the whole dataset. (only when incremental is enabled)
@@ -39,3 +39,8 @@ rill project refresh --model <model_name> --split <split_key>
 
 
 Let's look at a few simple examples before diving into our ClickHouse project.
+
+import DocsRating from '@site/src/components/DocsRating';
+
+---
+<DocsRating />

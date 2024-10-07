@@ -18,7 +18,7 @@ Let's start by creating a chart for our Canvas dashboard.
 
 ![project-view](/img/tutorials/301/add-custom-dashboard.png)
 
-### Creating a bar graph that calculates the top contributors to the Repository
+### Creating a bar graph that calculates the top 5 contributors to the Repository
 
 Let's use the `advanced_commits__model` table to obtain our data.
 
@@ -134,6 +134,8 @@ vega_lite: |
   }
 ```
 </details>
+
+If you are unfamiliar with creating vega-lite specs, you can use natural language to create components. Please see the following how-to for more information! [Using Natural Language to create Components](https://docs.rilldata.com/tutorials/other/custom-charts)
 
 **Custom Component Complete**
 

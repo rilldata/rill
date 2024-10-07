@@ -81,6 +81,10 @@ variables:
     type: string
     value: ""
 
+  - name: timegrain 
+    type: string
+    value: "P1W" #you can also define a default value for the variable
+
 items:
   - component:
       markdown:
@@ -90,4 +94,11 @@ items:
 
 Now upon selection of the author dropdown, we can see the stacked bar chart change. You can make the same changes to the Highest Contributor chart, as well. See below for a sample of a completed canvas dashboard.
 
+
 ![img](/img/tutorials/301/canvas-dashboard-filters.png)
+
+
+import DocsRating from '@site/src/components/DocsRating';
+
+---
+<DocsRating />

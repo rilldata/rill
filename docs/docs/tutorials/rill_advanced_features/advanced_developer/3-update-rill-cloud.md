@@ -39,7 +39,8 @@ Your branch is up to date with 'origin/main'.
 Untracked files:
   (use "git add <file>..." to include in what will be committed)
 	.DS_Store
-	dashboards/dashboard_1.yaml
+	explore-dashboards/advanced_metrics_view_explore.yaml
+  metrics/advanced_metrics_view.yaml
 	models/advanced_commits___model.sql
 	tmp/
 
@@ -49,20 +50,12 @@ nothing added to commit but untracked files present (use "git add" to track)
 Let's try again after adding the mentioned files.
 
 ```
-git add dashboards/dashboard_1.yaml 
+git add explore-dashboards/advanced_metrics_view_explore.yaml
+git add metrics/advanced_metrics_view.yaml
 git add models/advanced_commits___model.sql 
 git commit -m "Adding new files"           
     [main 68b293e] Adding new files
-    2 files changed, 91 insertions(+)
-    create mode 100644 dashboards/dashboard_1.yaml
-    create mode 100644 models/advanced_commits___model.sql
-
-    Enumerating objects: 9, done.
-    Counting objects: 100% (9/9), done.
-    Delta compression using up to 12 threads
-    Compressing objects: 100% (6/6), done.
-    Writing objects: 100% (6/6), 1.57 KiB | 1.57 MiB/s, done.
-    Total 6 (delta 0), reused 2 (delta 0), pack-reused 0
+    ...
     To https://github.com/royendo/my-rill-tutorial.git
     59beefe..68b293e  main -> main
     branch 'main' set up to track 'origin/main'.

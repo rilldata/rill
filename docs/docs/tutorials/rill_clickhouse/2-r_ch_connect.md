@@ -39,12 +39,15 @@ Once updated, we can create the clickhouse connection by selection `+Add Data` >
 
 ![clickhouse](/img/tutorials/ch/clickhouse-connector.png)
 :::tip
-You can obtain the credentials from your ClickHouse Cloud account by following:
+You can obtain the credentials from your ClickHouse Cloud account by clicking the `Connect` button in the left panel.:
 
-UPDATE THIS
+![clickhouse](/img/tutorials/ch/clickhouse-cloud-credential.png)
+```
+"https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true"
+```
 
 :::
-Once this is created, a `clickhouse.yaml` file in the `connectors` folder.
+Once this is created, a `clickhouse.yaml` file will appear in the `connectors` folder.
 
 Example for a locally running ClickHouse server:
 ```yaml

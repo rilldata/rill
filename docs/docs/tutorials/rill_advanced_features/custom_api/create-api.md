@@ -18,11 +18,12 @@ Now that the access has been created, we can make the actual custom APIs. For th
 
 For the `SQL_api`, we will retreive the author's with the most net line changes from the model.
 ```sql
+sql: |
   SELECT 
       author_name, 
       sum(net_line_changes) as net_line_changes,
   FROM advanced_commits___model 
-    where author_date > '2024-07-01 00:00:00 Z' 
+    where author_date > '2024-07-01 00:00:00' 
     group by author_name 
     order by net_line_changes DESC  
     limit 10 
@@ -30,13 +31,14 @@ For the `SQL_api`, we will retreive the author's with the most net line changes 
 
 
 
-For `metrics_view_api`, we will use `dashboard_1` and run the following SQL query:
+For `metrics_view_api`, we will use `advanced_metrics_view` and run the following SQL query:
 ```sql
+metrics_sql: |
   SELECT 
       author_name, 
       net_line_changes 
-  FROM dashboard_1 
-    where author_date > '2024-07-01 00:00:00 Z' 
+  FROM advanced_metrics_view
+    where author_date > '2024-07-01 00:00:00' 
     order by net_line_changes DESC 
     limit 10
 ```

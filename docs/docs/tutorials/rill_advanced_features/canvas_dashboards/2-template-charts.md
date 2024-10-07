@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 ## Using Rill Custom Components Templates
 
-Rill provides a few templates for Rill-Authored charts. We will use the dashboard, `dashboard_1` to create a few custom dashboards. For a more extensive list of examples, please see [our reference page](https://docs.rilldata.com/reference/project-files/components#Examples)!
+Rill provides a few templates for Rill-Authored charts. We will use the metrics_view, `advanced_metrics_view` to create a few custom components. For a more extensive list of examples, please see [our reference page](https://docs.rilldata.com/reference/project-files/components#Examples)!
 
 ### Components:
 
@@ -25,10 +25,11 @@ Rill provides a few templates for Rill-Authored charts. We will use the dashboar
 type: component
 
 kpi:
-  metrics_view: dashboard_1
+  metrics_view: advanced_metrics_view
   time_range: P1W
-  measure: net_line_changes #if name parameter is defined on measure
+  measure: net_line_changes #if name is defined
   comparison_range: P1W
+
   ```
 </TabItem>
 
@@ -45,7 +46,7 @@ data:
     select 
       measure_2,
       date_trunc('day', author_date) as date,     
-    from dashboard_1
+    from advanced_metrics_view
     where author_date > '2024-07-14'
 
 bar_chart:

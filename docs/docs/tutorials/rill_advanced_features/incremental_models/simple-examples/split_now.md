@@ -100,3 +100,8 @@ royendo@Roys-MacBook-Pro-2 modeling % rill project splits splits_range_increment
 The above is a static model. The split is defined by a set range(0,10) so there is no reason for us to put a refresh key-pair on this. However, real data is likely not static and will require some sort of refresh when you push to Rill Cloud.
 
 Let's take a look at a more realistic example, our ClickHouse project.
+
+import DocsRating from '@site/src/components/DocsRating';
+
+---
+<DocsRating />

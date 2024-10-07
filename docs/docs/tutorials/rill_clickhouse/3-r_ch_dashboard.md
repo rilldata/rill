@@ -1,6 +1,6 @@
 ---
-title: "3. Create Dashboard in Rill"
-sidebar_label: "3. Create Dashboard in Rill"
+title: "3. Create Metrics-view and Dashboard in Rill"
+sidebar_label: "3. Create Metrics-view and Dashboard in Rill"
 sidebar_position: 4
 hide_table_of_contents: false
 tags:
@@ -15,22 +15,32 @@ If you noticed in the previous screenshot, we had a table called `uk_price_paid`
 In the case that you have not already added this table to your local or Cloud database, please follow the step on [ClickHouse's site](https://clickhouse.com/docs/en/getting-started/example-datasets/uk-price-paid) for the steps to do so!
 :::
 
-### Create dashboard
-Let's create a dashboard based on the table via the `generate dashboard via AI`.
+### Create metrics-view
+
+Let's create a metrics-view based on the table via the `Generate metrics via AI`.
 
 <img src = '/img/tutorials/ch/ai-generate.gif' class='rounded-gif' />
 <br />
 
 ### What are we looking at?
 
-Returning back to the Metric view, select `Edit Metrics` in the UI, let's do a quick run through of the components within the dashboard.
+This is our metrics-view, where we can define measures and dimensions to be used on dashboards.  
 
 ```yaml
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# This file was generated using AI.
+
+version: 1
 type: metrics_view
+
 title: UK Price Paid Metrics
+connector: clickhouse
 table: uk_price_paid
 timeseries: date
+
 dimensions:
+
     ...
 
 measures:
@@ -41,11 +51,17 @@ While we go into more details in our [Rill Basics course](/tutorials/rill_basics
 
 ---
 
-`Dimensions` - These are our categorial columns that we can use on the dashboard to filter and slice;
+`timeseries` - This is our time column that is used on as our x-axis for graphs.
 
-`Measures` - These are our numerical aggregates defined in the metrics layer. We can see functions such as MAX(), COUNT(), and AVG() used on the underlying table.
+`connector` - this is our manually defined ClickHouse connector
 
-`Timeseries` - This is our time column that is used on as our x-axis for graphs.
+`dimensions` - These are our categorial columns that we can use on the dashboard to filter and slice;
+
+`measures` - These are our numerical aggregates defined in the metrics layer. We can see functions such as MAX(), COUNT(), and AVG() used on the underlying table.
+
+### Create the explore dashboard
+
+When you're ready, you can create the visualization on top of the metric layer. Let's select `create explore`. This will create a simple explore-dashboards/uk_price_paid_metrics_explore.yaml file that reads in all the dimensions and measures. For more information on the available key-pairs, please refer to the [reference documentation.](https://docs.rilldata.com/reference/project-files/explores)
 
 ---
 
