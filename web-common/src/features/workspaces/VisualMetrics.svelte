@@ -368,6 +368,7 @@
           truncate
           value={model}
           options={[...modelNames, ...sourceNames]}
+          placeholder="Select a model"
           label="Model or source referenced"
           onChange={(newModelName) => {
             confirmation = {
@@ -384,6 +385,7 @@
         truncate
         value={timeDimension}
         options={timeOptions}
+        placeholder="Select time column"
         label="Time column"
         hint="Column from model that will be used as primary time dimension in dashboards"
         onChange={async (value) => {
@@ -400,6 +402,7 @@
           value: label,
           label,
         }))}
+        placeholder="Select time grain"
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {
