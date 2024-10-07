@@ -10,7 +10,6 @@
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
 
   export let metricsViewName: string;
-  export let exploreName: string;
   export let exploreContainerWidth: number;
 
   const MEASURE_HEIGHT = 60;

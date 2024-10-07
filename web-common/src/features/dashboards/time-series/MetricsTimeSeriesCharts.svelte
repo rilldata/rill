@@ -55,7 +55,6 @@
         allMeasures,
         visibleMeasures,
         isMeasureValidPercentOfTotal,
-        getFilteredMeasuresAndDimensions,
         getMeasureByName,
       },
       dimensionFilters: { includedDimensionValues },

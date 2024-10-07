@@ -92,11 +92,7 @@
               workspaceWidth={exploreContainerWidth}
             />
           {:else}
-            <MeasuresContainer
-              {exploreContainerWidth}
-              {metricsViewName}
-              {exploreName}
-            />
+            <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
           {/if}
         {/key}
       </div>
