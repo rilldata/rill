@@ -4,7 +4,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { Folder, PlusCircleIcon } from "lucide-svelte";
+  import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import File from "../../components/icons/File.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
@@ -235,12 +235,7 @@
         class="flex gap-x-2"
         on:click={handleAddSource}
       >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Source]}
-          color={resourceColorMapping[ResourceKind.Source]}
-          className="text-gray-900"
-          size="16px"
-        />
+        <svelte:component this={Database} color="#C026D3" size="16px" />
         Data
       </DropdownMenu.Item>
       <DropdownMenu.Item
@@ -251,7 +246,6 @@
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
           color={resourceColorMapping[ResourceKind.Model]}
-          className="text-gray-900"
           size="16px"
         />
         Model
@@ -265,7 +259,6 @@
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
         color={resourceColorMapping[ResourceKind.MetricsView]}
-        className="text-gray-900"
         size="16px"
       />
       Metrics
@@ -278,7 +271,6 @@
       <svelte:component
         this={resourceIconMapping[ResourceKind.Explore]}
         color={resourceColorMapping[ResourceKind.Explore]}
-        className="text-gray-900"
         size="16px"
       />
       Explore Dashboard
@@ -297,7 +289,6 @@
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
             color={resourceColorMapping[ResourceKind.API]}
-            className="text-gray-900"
             size="16px"
           />
           API
@@ -311,7 +302,6 @@
             <svelte:component
               this={resourceIconMapping[ResourceKind.Canvas]}
               color={resourceColorMapping[ResourceKind.Canvas]}
-              className="text-gray-900"
               size="16px"
             />
             Canvas Dashboard
@@ -320,7 +310,6 @@
             <svelte:component
               this={resourceIconMapping[ResourceKind.Component]}
               color={resourceColorMapping[ResourceKind.Component]}
-              className="text-gray-900"
               size="16px"
             />
             Component
@@ -330,7 +319,6 @@
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
             color={resourceColorMapping[ResourceKind.Theme]}
-            className="text-gray-900"
             size="16px"
           />
           Theme
