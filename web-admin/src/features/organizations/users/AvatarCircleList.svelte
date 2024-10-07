@@ -1,6 +1,6 @@
 <script lang="ts">
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import { getRandomColor } from "@rilldata/web-common/features/themes/color-config";
+  import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
 
   export let name: string;
   export let email: string;
@@ -14,7 +14,7 @@
     size="h-7 w-7"
     src={photoUrl}
     alt={pendingAcceptance ? null : name}
-    bgColor={getRandomColor(email)}
+    bgColor={getRandomBgColor(email)}
   />
   <div class="flex flex-col text-left">
     <span class="text-sm font-medium text-gray-900">

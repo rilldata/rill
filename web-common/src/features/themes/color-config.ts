@@ -404,7 +404,7 @@ export const mutedColors = {
   950: "224 71.4% 4.1%;",
 };
 
-export function getRandomColor(name: string): string {
+export function getRandomBgColor(name: string): string {
   const colorList = [
     "bg-blue-500",
     "bg-green-500",
