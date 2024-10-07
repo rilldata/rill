@@ -38,7 +38,7 @@ export const visibleMeasures = ({
 
 export const getMeasureByName = (
   dashData: DashboardDataSources,
-): ((name: string) => MetricsViewSpecMeasureV2 | undefined) => {
+): ((name: string | undefined) => MetricsViewSpecMeasureV2 | undefined) => {
   return (name: string | undefined) => {
     return allMeasures(dashData)?.find((measure) => measure.name === name);
   };

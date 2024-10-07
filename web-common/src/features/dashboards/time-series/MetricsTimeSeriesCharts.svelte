@@ -303,8 +303,8 @@
         tooltipText="Choose measures to display"
         onSelect={(name) => toggleMeasureVisibility(name)}
         selectableItems={$allMeasures.map(({ name, label }) => ({
-          name,
-          label: label ?? name,
+          name: name ?? "",
+          label: label ?? name ?? "",
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {
