@@ -9,9 +9,10 @@
 
   const fileWatcher = new WatchFilesClient().client;
   const resourceWatcher = new WatchResourcesClient().client;
-  const fileAttempts = fileWatcher.retryAttempts;
-  const resourceAttempts = resourceWatcher.retryAttempts;
-  const closed = fileWatcher.closed;
+  const { retryAttempts: fileAttempts, closed: fileWatcherClosed } =
+    fileWatcher;
+  const { retryAttempts: resourceAttempts, closed: resourceWatcherClosed } =
+    fileWatcher;
 
   export let host: string;
   export let instanceId: string;
@@ -21,6 +22,8 @@
   $: resourceWatcher.watch(
     `${host}/v1/instances/${instanceId}/resources/-/watch`,
   );
+
+  const resourceClosed = resourceWatcher.closed;
 
   $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;
 
@@ -72,7 +75,7 @@
     body="Try restarting the server"
   />
 {:else}
-  {#if $closed}
+  {#if $fileWatcherClosed || $resourceWatcherClosed}
     <Banner
       banner={{
         message:
