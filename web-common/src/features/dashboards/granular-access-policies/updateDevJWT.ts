@@ -42,7 +42,7 @@ export async function updateDevJWT(
         };
         return runtimeState;
       });
-    } catch (e) {
+    } catch {
       // no-op
     }
   }

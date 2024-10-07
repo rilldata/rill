@@ -1,10 +1,10 @@
-import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import { generateAlertName } from "@rilldata/web-common/features/alerts/utils";
 import {
   MeasureFilterOperation,
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
 const MetricsView: V1MetricsViewSpec = {

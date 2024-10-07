@@ -7,8 +7,6 @@
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
 
-  export let metricsViewName: string;
-
   const { dimensionSearch } = featureFlags;
 
   let searchBarOpen = false;
@@ -57,7 +55,6 @@
     {/if}
 
     <GlobalDimensionSearchResults
-      {metricsViewName}
       searchText={submittedSearchText}
       onSelect={reset}
       bind:open={searchResultsOpen}

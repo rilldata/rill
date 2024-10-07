@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
+import { type FormatterFactoryOptions, NumberKind } from "../humanizer-types";
 import { PerRangeFormatter } from "./per-range";
 
 const invalidRangeOptions1: FormatterFactoryOptions = {

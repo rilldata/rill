@@ -4,53 +4,53 @@
     createAdminServiceIssueMagicAuthToken,
     getAdminServiceListMagicAuthTokensQueryKey,
   } from "@rilldata/web-admin/client";
-  import { Button } from "@rilldata/web-common/components/button";
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
-  import { object, string } from "yup";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import {
-    convertDateToMinutes,
-    getMetricsViewFields,
-    getSanitizedDashboardStateParam,
-    hasDashboardDimensionThresholdFilter,
-    hasDashboardWhereFilter,
-  } from "./form-utils";
   import { Divider } from "@rilldata/web-common/components/menu";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import {
     Popover,
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
+  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { Pencil } from "lucide-svelte";
-  import { IconButton } from "@rilldata/web-common/components/button";
-  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import { DateTime } from "luxon";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string } from "yup";
+  import {
+    convertDateToMinutes,
+    getExploreFields,
+    getSanitizedDashboardStateParam,
+    hasDashboardDimensionThresholdFilter,
+    hasDashboardWhereFilter,
+  } from "./form-utils";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
 
   const {
     dashboardStore,
-    metricsViewName,
+    exploreName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
     },
   } = StateManagers;
 
-  $: ({ organization, project } = $page.params);
+  $: ({ organization, project, dashboard } = $page.params);
 
   $: isTitleEmpty = $form.title.trim() === "";
 
-  $: metricsViewFields = getMetricsViewFields(
+  $: exploreFields = getExploreFields(
     $dashboardStore,
     $visibleDimensions,
     $visibleMeasures,
@@ -58,7 +58,7 @@
 
   $: sanitizedState = getSanitizedDashboardStateParam(
     $dashboardStore,
-    metricsViewFields,
+    exploreFields,
   );
 
   let token: string;
@@ -92,11 +92,10 @@
             organization,
             project,
             data: {
-              metricsView: $metricsViewName,
-              metricsViewFilter: hasWhereFilter
-                ? $dashboardStore.whereFilter
-                : undefined,
-              metricsViewFields,
+              resourceType: ResourceKind.Explore as string,
+              resourceName: dashboard,
+              filter: hasWhereFilter ? $dashboardStore.whereFilter : undefined,
+              fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
@@ -143,8 +142,8 @@
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
     <div class="flex flex-col gap-y-4">
-      <h3 class="text-sm text-gray-800 font-semibold">
-        Create a shareable public URL for this view
+      <h3 class="text-xs text-gray-800 font-normal">
+        Create a shareable public URL for this view.
       </h3>
 
       <div class="flex flex-col gap-y-1">
@@ -232,7 +231,7 @@
         </p>
         <div class="flex flex-row gap-1 mt-2">
           <FilterChipsReadOnly
-            metricsViewName={$metricsViewName}
+            exploreName={$exploreName}
             filters={$dashboardStore.whereFilter}
             dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
             timeRange={undefined}

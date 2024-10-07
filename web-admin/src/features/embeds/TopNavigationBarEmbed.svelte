@@ -46,8 +46,11 @@
   function onSelectResource(name: string) {
     // Because the breadcrumb only returns the identifying name, we need to look up the V1ResourceName (name + kind)
     const resource = visualizations?.find(
-      (listing) => listing.meta.name.name === name,
+      (listing) => listing.meta.name.name.toLowerCase() === name,
     );
+    if (!resource) {
+      throw new Error(`Resource not found: ${name}`);
+    }
     dispatch("select-resource", resource.meta.name);
   }
 </script>

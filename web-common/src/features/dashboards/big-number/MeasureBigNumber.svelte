@@ -13,8 +13,8 @@
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import {
-    CrossfadeParams,
-    FlyParams,
+    type CrossfadeParams,
+    type FlyParams,
     crossfade,
     fly,
   } from "svelte/transition";

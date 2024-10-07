@@ -1336,19 +1336,22 @@ presets:
 		Resource: &runtimev1.Resource_Explore{
 			Explore: &runtimev1.Explore{
 				Spec: &runtimev1.ExploreSpec{
-					Title:             "Hello",
-					MetricsView:       "mv1",
-					Dimensions:        []string{"internal"},
-					DimensionsExclude: true,
-					Measures:          nil,
-					MeasuresExclude:   true,
-					TimeZones:         []string{"UTC", "America/Los_Angeles"},
+					Title:       "Hello",
+					MetricsView: "mv1",
+					Dimensions:  nil,
+					DimensionsSelector: &runtimev1.FieldSelector{
+						Invert:   true,
+						Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"internal"}}},
+					},
+					Measures:         nil,
+					MeasuresSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					TimeZones:        []string{"UTC", "America/Los_Angeles"},
 					Presets: []*runtimev1.ExplorePreset{
 						{
-							Label:             "Default",
-							DimensionsExclude: true,
-							Measures:          []string{"x"},
-							ComparisonMode:    runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
+							Label:              "Default",
+							DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+							Measures:           []string{"x"},
+							ComparisonMode:     runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
 						},
 					},
 				},

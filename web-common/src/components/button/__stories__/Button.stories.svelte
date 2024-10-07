@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { Meta, Story, Template } from "@storybook/addon-svelte-csf";
-
+  import { Story, Template } from "@storybook/addon-svelte-csf";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+
+  export const meta = {
+    title: 'Button stories"',
+  };
 
   type ButtonTypes = "primary" | "secondary" | "text";
   type ButtonStatuses = "info" | "error";
@@ -31,8 +34,6 @@
     }
   }
 </script>
-
-<Meta title="Button stories" />
 
 <Template>
   <table>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { V1Resource } from "../../../runtime-client";
+  import type { V1Resource } from "../../../runtime-client";
 
   export let resource: V1Resource;
 

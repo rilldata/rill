@@ -1,6 +1,6 @@
 import { scaleLinear, scaleTime } from "d3-scale";
 import { getContext, setContext } from "svelte";
-import { derived, Writable } from "svelte/store";
+import { derived, type Writable } from "svelte/store";
 import { contexts } from "../constants";
 import { createExtremumResolutionStore } from "./extremum-resolution-store";
 import type { ScaleStore, SimpleConfigurationStore } from "./types";

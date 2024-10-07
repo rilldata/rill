@@ -163,7 +163,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
         }
         return formatter(value);
       };
-    } catch (error) {
+    } catch {
       return (value: number | string | T) =>
         typeof value === "number"
           ? humanizer(value, FormatPreset.HUMANIZE)

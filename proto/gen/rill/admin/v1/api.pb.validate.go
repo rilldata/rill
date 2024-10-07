@@ -3683,6 +3683,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for TtlSeconds
 
+	// no validation rules for Type
+
 	// no validation rules for Kind
 
 	// no validation rules for Resource
@@ -20761,14 +20763,16 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 
 	// no validation rules for TtlMinutes
 
-	// no validation rules for MetricsView
+	// no validation rules for ResourceType
+
+	// no validation rules for ResourceName
 
 	if all {
-		switch v := interface{}(m.GetMetricsViewFilter()).(type) {
+		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
-					field:  "MetricsViewFilter",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -20776,16 +20780,16 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
-					field:  "MetricsViewFilter",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetMetricsViewFilter()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return IssueMagicAuthTokenRequestValidationError{
-				field:  "MetricsViewFilter",
+				field:  "Filter",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -31420,11 +31424,34 @@ func (m *Subscription) validate(all bool) error {
 
 	// no validation rules for Id
 
-	// no validation rules for PlanId
-
-	// no validation rules for PlanName
-
-	// no validation rules for PlanDisplayName
+	if all {
+		switch v := interface{}(m.GetPlan()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SubscriptionValidationError{
+					field:  "Plan",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SubscriptionValidationError{
+					field:  "Plan",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPlan()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SubscriptionValidationError{
+				field:  "Plan",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if all {
 		switch v := interface{}(m.GetStartDate()).(type) {
@@ -33348,14 +33375,16 @@ func (m *MagicAuthToken) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for MetricsView
+	// no validation rules for ResourceType
+
+	// no validation rules for ResourceName
 
 	if all {
-		switch v := interface{}(m.GetMetricsViewFilter()).(type) {
+		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, MagicAuthTokenValidationError{
-					field:  "MetricsViewFilter",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -33363,16 +33392,16 @@ func (m *MagicAuthToken) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, MagicAuthTokenValidationError{
-					field:  "MetricsViewFilter",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetMetricsViewFilter()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return MagicAuthTokenValidationError{
-				field:  "MetricsViewFilter",
+				field:  "Filter",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

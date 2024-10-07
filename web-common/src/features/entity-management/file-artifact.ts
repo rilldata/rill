@@ -1,6 +1,5 @@
 import {
   extractFileExtension,
-  extractFileName,
   splitFolderAndName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
@@ -190,11 +189,13 @@ export class FileArtifact {
   };
 
   saveLocalContent = async () => {
-    const local = get(this.localContent);
-    if (local === null) return;
-
     const blob = get(this.localContent);
+    if (blob === null) return;
 
+    await this.saveContent(blob);
+  };
+
+  saveContent = async (blob: string) => {
     const instanceId = get(runtime).instanceId;
     const key = getRuntimeServiceGetFileQueryKey(instanceId, {
       path: this.path,
@@ -207,8 +208,11 @@ export class FileArtifact {
     try {
       await runtimeServicePutFile(instanceId, {
         path: this.path,
-        blob: local,
+        blob,
       }).catch(console.error);
+
+      // Optimistically update the remote content
+      this.remoteContent.set(blob);
 
       this.updateLocalContent(null);
     } catch (e) {
@@ -223,19 +227,6 @@ export class FileArtifact {
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
-  }
-
-  updateReconciling(resource: V1Resource) {
-    this.updateResourceNameIfChanged(resource);
-    this.reconciling.set(
-      resource.meta?.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
-    );
-  }
-
-  updateLastUpdated(resource: V1Resource) {
-    this.updateResourceNameIfChanged(resource);
-    this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
   hardDeleteResource() {
@@ -314,13 +305,19 @@ export class FileArtifact {
     );
   }
 
-  getEntityName() {
-    return get(this.resourceName)?.name ?? extractFileName(this.path);
-  }
-
   private updateResourceNameIfChanged(resource: V1Resource) {
     const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;
+
+    // Temporary fix to avoid associating V1MetricsView and V1Explore to same file
+    const kind = inferResourceKind(this.path, get(this.remoteContent) ?? "");
+    if (
+      kind === ResourceKind.MetricsView &&
+      resource.meta?.name?.kind === ResourceKind.Explore
+    ) {
+      return;
+    }
+
     const curName = get(this.resourceName);
     if (
       curName?.name !== resource.meta?.name?.name ||

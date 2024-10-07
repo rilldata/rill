@@ -6,13 +6,13 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
-    V1Resource,
+    type V1Resource,
     createQueryServiceTableCardinality,
   } from "@rilldata/web-common/runtime-client";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { Reference } from "../utils/get-table-references";
+  import type { Reference } from "../utils/get-table-references";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let referencedThings: [V1Resource, Reference][];

@@ -6,13 +6,13 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import {
     ConnectorDriverPropertyType,
-    RpcStatus,
-    V1ConnectorDriver,
+    type RpcStatus,
+    type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
   import { submitAddDataForm } from "./submitAddDataForm";
-  import { AddDataFormType } from "./types";
+  import type { AddDataFormType } from "./types";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -125,7 +125,7 @@
               hint={property.hint}
               errors={$errors[toYupFriendlyKey(property.key)]}
               bind:value={$form[toYupFriendlyKey(property.key)]}
-              onInput={onStringInputChange}
+              onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
