@@ -17,6 +17,7 @@
   import UserInviteOrganization from "./UserInviteOrganization.svelte";
 
   import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
+  import UserInviteGroupSetRole from "./UserInviteGroupSetRole.svelte";
 
   export let organization: string;
   export let project: string;
@@ -83,9 +84,13 @@
       </div>
       <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
+        <!-- 52 * 4 = 208px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[208px]">
           {#each userGroupsList as group}
-            <UserInviteGroup {organization} usergroup={group.groupName} />
+            <div class="flex flex-row items-center gap-x-2 justify-between">
+              <UserInviteGroup {organization} usergroup={group.groupName} />
+              <UserInviteGroupSetRole {organization} {project} {group} />
+            </div>
           {/each}
         </div>
       </div>
