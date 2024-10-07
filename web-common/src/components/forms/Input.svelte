@@ -32,9 +32,10 @@
   export let textClass = "text-xs";
   export let enableSearch = false;
   export let fields: string[] | undefined = [];
+  export let noOptionsMessage = "No valid options";
   export let options:
     | { value: string; label: string; type?: string }[]
-    | undefined = [];
+    | undefined = undefined;
   export let onInput: (
     newValue: string,
     e: Event & {
@@ -127,7 +128,7 @@
     </div>
   {/if}
 
-  {#if !options?.length}
+  {#if !options}
     <div
       class="input-wrapper {textClass}"
       style:width
@@ -204,6 +205,10 @@
       {truncate}
       {placeholder}
     />
+  {:else}
+    <div class="text-sm h-8 items-center flex text-gray-500 italic">
+      {noOptionsMessage}
+    </div>
   {/if}
 
   {#if errors && (alwaysShowError || (!focus && value))}

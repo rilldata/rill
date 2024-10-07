@@ -391,6 +391,7 @@
         options={timeOptions}
         placeholder="Select time column"
         label="Time column"
+        noOptionsMessage="No timeseries columns in model"
         hint="Column from model that will be used as primary time dimension in dashboards"
         onChange={async (value) => {
           await updateProperty("timeseries", value);
