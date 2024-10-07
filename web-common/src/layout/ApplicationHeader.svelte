@@ -193,11 +193,7 @@
         </StateManagersProvider>
       {/if}
     {:else if mode === "Developer"}
-      <PreviewButton
-        {href}
-        suppress={!dashboardResourceInErrorState}
-        disabled={!href || dashboardResourceInErrorState}
-      />
+      <PreviewButton {href} disabled={!href || dashboardResourceInErrorState} />
     {/if}
     <DeployProjectCTA {hasValidDashboard} />
     <LocalAvatarButton />

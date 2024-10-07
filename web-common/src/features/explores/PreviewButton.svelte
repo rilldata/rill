@@ -12,7 +12,7 @@
   import Play from "svelte-radix/Play.svelte";
 
   export let disabled: boolean;
-  export let suppress: boolean;
+  export let suppress: boolean = false;
   export let href: string | null;
 
   const viewDashboard = () => {
@@ -44,6 +44,6 @@
     <Play size="16px" />
   </Button>
   <TooltipContent slot="tooltip-content">
-    Dashboard errors must be resolved before previewing
+    File errors must be resolved before previewing
   </TooltipContent>
 </Tooltip>
