@@ -83,7 +83,7 @@ export class FileArtifact {
   // unnecessary calls to GetResource API.
   lastStateUpdatedOn: string | undefined;
 
-  constructor(filePath: string) {
+  constructor(filePath: string, forceFetch = false) {
     const [folderName, fileName] = splitFolderAndName(filePath);
 
     this.path = filePath;
@@ -110,6 +110,10 @@ export class FileArtifact {
         this.inferredResourceKind.set(inferResourceKind(this.path, content));
       }
     });
+
+    if (forceFetch) {
+      this.fetchContent().catch(console.error);
+    }
   }
 
   updateRemoteContent = (content: string, alert = true) => {
@@ -145,6 +149,8 @@ export class FileArtifact {
     }
 
     this.updateRemoteContent(blob, true);
+
+    return blob;
   }
 
   updateLocalContent = (content: string | null, alert = false) => {

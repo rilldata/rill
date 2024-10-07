@@ -2,10 +2,19 @@
   import { YAMLDimension, YAMLMeasure, type MenuOption } from "./lib";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import type { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewAggregation,
+    createQueryServiceMetricsViewTimeRange,
+    createQueryServiceMetricsViewTimeSeries,
+    V1TimeGrain,
+    type V1ProfileColumn,
+  } from "@rilldata/web-common/runtime-client";
   import { FileArtifact } from "../entity-management/file-artifact";
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
-  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import {
+    FormatPreset,
+    NumberKind,
+  } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -14,6 +23,14 @@
   import SimpleSqlExpression from "./SimpleSQLExpression.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { NUMERICS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import {
+    useMetricsView,
+    useMetricsViewTimeRange,
+  } from "../dashboards/selectors";
+  import MeasureBigNumber from "../dashboards/big-number/MeasureBigNumber.svelte";
+  import { EntityStatus } from "../entity-management/types";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let item: YAMLMeasure | YAMLDimension;
   export let fileArtifact: FileArtifact;
@@ -26,6 +43,8 @@
   export let onDelete: () => void;
   export let onCancel: (unsavedChanges: boolean) => void;
   export let resetEditing: () => void;
+  export let tempMetricsViewName: string;
+  export let tempFileArtifact: FileArtifact;
 
   let editingClone = structuredClone(item);
 
@@ -239,6 +258,100 @@
 
     eventBus.emit("notification", { message: "Item saved", type: "success" });
   }
+
+  $: ({ instanceId } = $runtime);
+
+  $: tempMetricsViewQuery = useMetricsView(instanceId, tempMetricsViewName);
+  $: timeRangeQuery = useMetricsViewTimeRange(instanceId, tempMetricsViewName, {
+    query: { queryClient },
+  });
+
+  $: ({ data: timeRangeData } = $timeRangeQuery);
+  $: ({ data } = $tempMetricsViewQuery);
+
+  // $: what = data?.metricsView?.state?.validSpec.
+
+  $: measures = (data?.metricsView?.spec?.measures ?? []).filter(
+    ({ name }) => name === editingClone.name,
+  );
+
+  $: primaryTotalQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    tempMetricsViewName,
+    {
+      measures,
+      //  where: whereFilter,
+      timeRange: {
+        start: timeRangeData?.timeRangeSummary?.min,
+        end: timeRangeData?.timeRangeSummary?.max,
+      },
+    },
+    {
+      query: {
+        enabled: !!measures.length && !!timeRangeData,
+        queryClient,
+      },
+    },
+  );
+
+  $: ({ data: primaryTotalData, isFetching } = $primaryTotalQuery);
+
+  $: primaryTimeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
+    instanceId,
+    tempMetricsViewName,
+    {
+      measureNames: measures.map(({ name }) => name as string),
+
+      timeStart: timeRangeData?.timeRangeSummary?.min,
+      timeEnd: timeRangeData?.timeRangeSummary?.max,
+      timeGranularity: V1TimeGrain.TIME_GRAIN_DAY,
+    },
+    {
+      query: {
+        enabled: !!measures.length && !!timeRangeData,
+      },
+    },
+  );
+
+  $: ({ data: primaryTimeSeriesData } = $primaryTimeSeriesQuery);
+
+  // $: what = primaryTimeSeriesData?.data;
+
+  $: intervalDuration = TIME_GRAIN[V1TimeGrain.TIME_GRAIN_DAY]
+    ?.duration as Period;
+  $: formattedData = prepareTimeSeries(
+    primaryTimeSeriesData?.data || [],
+    [],
+    intervalDuration,
+    "UTC",
+  );
+
+  import { prepareTimeSeries } from "../dashboards/time-series/utils";
+
+  // $: formattedData = prepareTimeSeries(what ?? [], undefined, "day", "UTC");
+
+  // $: tempFileArtifact = new FileArtifact(tempPath);
+
+  $: ({ remoteContent: tempRemoteContent } = tempFileArtifact);
+
+  async function onInputBlur(key: string) {
+    console.log("blur", $tempRemoteContent?.length);
+    if (!$tempRemoteContent) return;
+    console.log($tempRemoteContent);
+    const parsed = parseDocument($tempRemoteContent ?? "");
+    const sequence = parsed.get(type) as YAMLSeq;
+    const item = sequence.items[index] as YAMLMap;
+    item.set(key, editingClone[key]);
+    parsed.set(type, sequence);
+    await tempFileArtifact.saveContent(parsed.toString());
+    await queryClient.invalidateQueries(primaryTotalQuery.queryKey);
+    // await $primaryTotalQuery.refetch();
+  }
+  import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import type { Period } from "@rilldata/web-common/lib/time/types";
+
+  $: console.log({ formattedData });
 </script>
 
 <svelte:window
@@ -274,6 +387,9 @@
         </div>
       {:else if key === "expression" && type === "measures"}
         <SimpleSqlExpression
+          onBlur={async () => {
+            await onInputBlur("expression");
+          }}
           {editing}
           columns={columnOptions}
           {numericColumns}
@@ -292,6 +408,7 @@
           {placeholder}
           multiline={key === "description"}
           enableSearch={key === "column"}
+          onBlur={() => onInputBlur(key)}
           bind:selected
           bind:value={editingClone[key]}
           fields={fields.map(({ label }) => label)}
@@ -309,8 +426,26 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <!-- <h2>Preview</h2> -->
+    <h2>Preview</h2>
 
+    <div class="flex gap-x-2 items-center">
+      <MeasureBigNumber
+        status={isFetching ? EntityStatus.Running : EntityStatus.Idle}
+        value={primaryTotalData?.data?.[0][editingClone.name]}
+        measure={measures[0]}
+      />
+
+      <div class="w-full h-8">
+        <Chart
+          showGrid={false}
+          showAxis={false}
+          showBorder={false}
+          data={formattedData}
+          numberKind={NumberKind.ANY}
+          yAccessor={measures[0].name}
+        />
+      </div>
+    </div>
     <p>
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">
@@ -330,7 +465,11 @@
         >
           Cancel
         </Button>
-        <Tooltip location="top" distance={8}>
+        <Tooltip
+          location="top"
+          distance={8}
+          suppress={!requiredPropertiesUnfilled.length}
+        >
           <Button
             type="primary"
             on:click={saveChanges}
@@ -353,7 +492,7 @@
     @apply text-lg font-semibold mb-4;
   }
 
-  /* h2 {
+  h2 {
     @apply text-sm font-medium;
-  } */
+  }
 </style>

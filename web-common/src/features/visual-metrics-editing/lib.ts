@@ -32,6 +32,7 @@ export class YAMLDimension {
   label: string;
   description: string;
   unnest: boolean | undefined;
+  resourceName: string;
 
   constructor(
     item?: YAMLMap<string, string>,
@@ -39,13 +40,14 @@ export class YAMLDimension {
   ) {
     this.column = item?.get("column") ?? "";
     this.expression = item?.get("expression") ?? "";
-    this.name = item?.get("name") ?? dimension?.name ?? "";
+    this.name = item?.get("name") ?? "";
     this.label = item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
     this.unnest =
       item?.get("unnest") === undefined
         ? undefined
         : item?.get("unnest") === "true";
+    this.resourceName = dimension?.name ?? "";
   }
 }
 
