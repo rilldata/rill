@@ -10,6 +10,10 @@
   function onCopy() {
     navigator.clipboard.writeText(copyLink).catch(console.error);
     copied = true;
+
+    setTimeout(() => {
+      copied = false;
+    }, 2_000);
   }
 </script>
 
