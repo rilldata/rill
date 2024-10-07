@@ -8,8 +8,11 @@
     createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let resource: V1Resource | undefined;
+  export let hasUnsavedChanges: boolean;
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
@@ -30,14 +33,23 @@
 {#if isIncrementalModel}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button
-        square
-        type="secondary"
-        builders={[builder]}
-        disabled={!isModelIdle}
-      >
-        <RefreshIcon size="14px" />
-      </Button>
+      <Tooltip distance={8}>
+        <Button
+          square
+          type="secondary"
+          builders={[builder]}
+          disabled={!isModelIdle || hasUnsavedChanges}
+        >
+          <RefreshIcon size="14px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          {#if hasUnsavedChanges}
+            Save your changes to refresh
+          {:else}
+            Refresh source
+          {/if}
+        </TooltipContent>
+      </Tooltip>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Item on:click={() => refreshModel(false)}>
@@ -49,7 +61,21 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}
-  <Button square type="secondary" on:click={() => refreshModel(true)}>
-    <RefreshIcon size="14px" />
-  </Button>
+  <Tooltip distance={8}>
+    <Button
+      square
+      disabled={hasUnsavedChanges}
+      type="secondary"
+      on:click={() => refreshModel(true)}
+    >
+      <RefreshIcon size="14px" />
+    </Button>
+    <TooltipContent slot="tooltip-content">
+      {#if hasUnsavedChanges}
+        Save your changes to refresh
+      {:else}
+        Refresh source
+      {/if}
+    </TooltipContent>
+  </Tooltip>
 {/if}

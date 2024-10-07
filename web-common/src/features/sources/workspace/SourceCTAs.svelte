@@ -36,16 +36,23 @@
       <RefreshIcon size="14px" />
     </Button>
 
-    <TooltipContent slot="tooltip-content"
-      >Save your changes to refresh
+    <TooltipContent slot="tooltip-content">
+      {#if hasUnsavedChanges}
+        Save your changes to refresh
+      {:else}
+        Refresh source
+      {/if}
     </TooltipContent>
   </Tooltip>
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button builders={[builder]} label="Refresh" {type}>
-        <RefreshIcon size="14px" />
-      </Button>
+      <Tooltip distance={8}>
+        <Button builders={[builder]} label="Refresh" {type}>
+          <RefreshIcon size="14px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">Refresh source</TooltipContent>
+      </Tooltip>
     </DropdownMenu.Trigger>
 
     <DropdownMenu.Content>

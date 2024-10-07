@@ -121,6 +121,7 @@
           {collapse}
           modelHasError={$hasErrors}
           modelName={assetName}
+          hasUnsavedChanges={$hasUnsavedChanges}
         />
       </div>
     </svelte:fragment>

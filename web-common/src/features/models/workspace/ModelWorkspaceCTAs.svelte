@@ -25,8 +25,11 @@
   export let modelName: string;
   export let modelHasError = false;
   export let collapse = false;
+  export let hasUnsavedChanges: boolean;
 
   const exportModelMutation = createExportTableMutation();
+
+  let open = false;
 
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -49,20 +52,23 @@
   };
 </script>
 
-<ModelRefreshButton {resource} />
+<ModelRefreshButton {resource} {hasUnsavedChanges} />
 
-<DropdownMenu.Root>
+<DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger asChild let:builder>
-    <Button
-      disabled={modelHasError || !isModelIdle}
-      type="secondary"
-      builders={[builder]}
-      square
-    >
-      <Export size="15px" />
-    </Button>
+    <Tooltip distance={8} suppress={open}>
+      <Button
+        disabled={modelHasError || !isModelIdle}
+        type="secondary"
+        builders={[builder]}
+        square
+      >
+        <Export size="15px" />
+      </Button>
+      <TooltipContent slot="tooltip-content">Export model</TooltipContent>
+    </Tooltip>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="end">
+  <DropdownMenu.Content align="start">
     <DropdownMenu.Item
       on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
     >
