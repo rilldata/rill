@@ -85,7 +85,7 @@
       </div>
       <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
-        <div class="flex flex-col gap-y-1">
+        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[208px]">
           {#each userGroupsList as group}
             <UserInviteGroup {organization} usergroup={group.groupName} />
           {/each}
@@ -93,7 +93,8 @@
       </div>
       <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
-        <div class="flex flex-col gap-y-1">
+        <!-- 52 * 4 = 208px -->
+        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[208px]">
           {#each usersWithPendingInvites as user}
             <AvatarCircleList
               name={user.userName ?? user.userEmail}
