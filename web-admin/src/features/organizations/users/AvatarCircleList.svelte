@@ -9,7 +9,7 @@
   export let pendingAcceptance: boolean = false;
 </script>
 
-<div class="flex items-center gap-2">
+<div class="flex items-center gap-2 py-2 pl-2">
   <Avatar
     size="h-7 w-7"
     src={photoUrl}

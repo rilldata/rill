@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceGetCurrentUser,
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
@@ -15,13 +16,16 @@
     DropdownMenuContent,
   } from "@rilldata/web-common/components/dropdown-menu";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
+  import AvatarCircleList from "../../organizations/users/AvatarCircleList.svelte";
 
   export let organization: string;
   export let project: string;
+
   let open = false;
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
+  $: currentUser = createAdminServiceGetCurrentUser();
   $: listProjectMemberUsergroups =
     createAdminServiceListProjectMemberUsergroups(organization, project);
   $: listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
@@ -32,6 +36,7 @@
     organization,
     project,
   );
+
   $: userGroupsList = $listProjectMemberUsergroups.data?.members ?? [];
   $: usersList = $listProjectMemberUsers.data?.members ?? [];
   $: invitesList = $listProjectInvites.data?.invites ?? [];
@@ -39,11 +44,16 @@
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
       ...invite,
+      userName: null,
       userEmail: invite.email,
       roleName: invite.role,
     }));
   }
-  $: users = [...usersList, ...coerceInvitesToUsers(invitesList)];
+
+  $: usersWithPendingInvites = [
+    ...usersList,
+    ...coerceInvitesToUsers(invitesList),
+  ];
 </script>
 
 <DropdownMenu bind:open>
@@ -82,10 +92,16 @@
       </div>
       <div>
         <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
-        <!-- TODO: use AvatarCircleList -->
-        {#each users as user}
-          <div class="text-xs text-gray-500">{user.userEmail}</div>
-        {/each}
+        <div class="flex flex-col gap-y-1">
+          {#each usersWithPendingInvites as user}
+            <AvatarCircleList
+              name={user.userName ?? user.userEmail}
+              email={user.userEmail}
+              isCurrentUser={user.userEmail === $currentUser.data?.user.email}
+              pendingAcceptance={!user.userName}
+            />
+          {/each}
+        </div>
       </div>
     </div>
   </DropdownMenuContent>
