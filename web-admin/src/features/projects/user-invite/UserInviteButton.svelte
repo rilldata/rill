@@ -66,14 +66,21 @@
         onInvite={() => (open = false)}
       />
       <UserInviteAllowlist {organization} {project} />
-      <!-- <div class="text-xs text-gray-500 font-semibold uppercase">
-        Organization
-      </div> -->
+      <div>
+        <div class="text-xs text-gray-500 font-semibold uppercase">
+          Organization
+        </div>
+        <div class="text-xs text-gray-800">
+          Everyone from <span class="font-bold">{organization}</span>
+        </div>
+      </div>
       <div>
         <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
         <!-- TODO: create AvatarSquareList -->
         {#each userGroupsList as group}
-          <div class="text-xs text-gray-500">{group.groupName}</div>
+          <div class="text-xs text-gray-800">
+            Everyone from <span class="font-bold">{group.groupName}</span>
+          </div>
         {/each}
       </div>
       <div>
