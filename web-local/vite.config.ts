@@ -1,6 +1,6 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
@@ -18,13 +18,14 @@ const config = defineConfig(({ mode }) => ({
       src: "/src", // trick to get absolute imports to work
       "@rilldata/web-local": "/src",
       "@rilldata/web-common": "/../web-common/src",
+      "@rilldata/web-admin": "/../web-admin/src",
       // Adding $img alias to fix Vite build warnings due to static assets referenced in CSS
       // See: https://stackoverflow.com/questions/75843825/sveltekit-dev-build-and-path-problems-with-static-assets-referenced-in-css
-      $img: mode === "production" ? "/../web-common/static/img" : "../img",
+      $img: mode === "production" ? "/../web-common/static/img" : "/../img",
     },
   },
   server: {
-    port: 3000,
+    port: 3001,
     strictPort: true,
     fs: {
       allow: ["."],

@@ -6,7 +6,7 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import type { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -18,17 +18,17 @@
     MetricsEventSpace,
     ResourceKindToScreenMap,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { Save } from "lucide-svelte";
-  import { Readable } from "svelte/store";
+  import type { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
-  import DashboardMenuItems from "../dashboards/DashboardMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
+  import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
@@ -143,7 +143,7 @@
             />
             <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.MetricsView}
-            <DashboardMenuItems
+            <MetricsViewMenuItems
               {filePath}
               on:generate-chart={({ detail }) => onGenerateChart(detail)}
             />

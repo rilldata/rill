@@ -6,10 +6,10 @@
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
-    useValidDashboards,
+    useValidExplores,
   } from "@rilldata/web-common/features/dashboards/selectors.js";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
+  import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -20,16 +20,16 @@
     route,
   } = $page);
 
-  $: dashboardsQuery = useValidDashboards(instanceId);
+  $: exploresQuery = useValidExplores(instanceId);
   $: canvasQuery = useValidCanvases(instanceId);
   $: projectTitleQuery = useProjectTitle(instanceId);
 
   $: projectTitle = $projectTitleQuery.data ?? "Untitled Rill Project";
 
-  $: dashboards = $dashboardsQuery.data ?? [];
+  $: explores = $exploresQuery.data ?? [];
   $: canvases = $canvasQuery.data ?? [];
 
-  $: dashboardOptions = getBreadcrumbOptions(dashboards, canvases);
+  $: dashboardOptions = getBreadcrumbOptions(explores, canvases);
 
   $: projectPath = <PathOption>{
     label: projectTitle,
@@ -45,7 +45,7 @@
 
   $: currentPath = [projectTitle, dashboardName.toLowerCase()];
 
-  $: currentDashboard = dashboards.find(
+  $: currentDashboard = explores.find(
     (d) => d.meta?.name?.name?.toLowerCase() === dashboardName.toLowerCase(),
   );
 
@@ -54,7 +54,7 @@
 
 <div class="flex flex-col size-full overflow-hidden">
   <header>
-    {#if $dashboardsQuery.data}
+    {#if $exploresQuery.data}
       <Breadcrumbs {pathParts} {currentPath}>
         <a href="/" slot="icon">
           <Rill />
@@ -64,9 +64,9 @@
     <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
       PREVIEW
     </span>
-    {#if route.id?.includes("dashboard") && metricsViewName}
-      <StateManagersProvider {metricsViewName}>
-        <DashboardCtAs metricViewName={metricsViewName} />
+    {#if route.id?.includes("explore") && metricsViewName}
+      <StateManagersProvider {metricsViewName} exploreName={dashboardName}>
+        <ExplorePreviewCTAs exploreName={dashboardName} />
       </StateManagersProvider>
     {/if}
   </header>

@@ -22,6 +22,7 @@ type CanvasYAML struct {
 		Width     *uint32   `yaml:"width"`
 		Height    *uint32   `yaml:"height"`
 	} `yaml:"items"`
+	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -80,6 +81,17 @@ func (p *Parser) parseCanvas(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})
 	}
 
+	// Parse security rules
+	rules, err := tmp.Security.Proto()
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		if rule.GetAccess() == nil {
+			return fmt.Errorf("the 'canvas' resource type only supports 'access' security rules")
+		}
+	}
+
 	// Track canvas
 	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -92,6 +104,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Gap = tmp.Gap
 	r.CanvasSpec.Variables = variables
 	r.CanvasSpec.Items = items
+	r.CanvasSpec.SecurityRules = rules
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {

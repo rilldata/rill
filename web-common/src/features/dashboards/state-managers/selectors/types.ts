@@ -1,5 +1,5 @@
 import type {
-  RpcStatus,
+  V1ExploreSpec,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -23,7 +23,8 @@ import type { Expand } from "../types";
  */
 export type DashboardDataSources = {
   dashboard: MetricsExplorerEntity;
-  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, RpcStatus>;
+  validMetricsView: V1MetricsViewSpec | undefined;
+  validExplore: V1ExploreSpec | undefined;
   timeRangeSummary: QueryObserverResult<
     V1MetricsViewTimeRangeResponse,
     unknown

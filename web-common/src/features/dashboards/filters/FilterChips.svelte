@@ -5,12 +5,11 @@ The main feature-set component for dashboard filters
   import { Chip } from "@rilldata/web-common/components/chip";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
-  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
-  import { useMetricsView } from "../selectors/index";
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
@@ -29,20 +28,20 @@ The main feature-set component for dashboard filters
       filters: { clearAllFilters },
     },
     selectors: {
+      dimensions: { allDimensions },
       dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
+      measures: { allMeasures },
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
     },
   } = StateManagers;
 
-  const metricsView = useMetricsView(StateManagers);
-
-  $: dimensions = $metricsView.data?.dimensions ?? [];
+  $: dimensions = $allDimensions;
   $: dimensionIdMap = getMapFromArray(
     dimensions,
     (dimension) => dimension.name as string,
   );
 
-  $: measures = $metricsView.data?.measures ?? [];
+  $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
@@ -127,14 +126,7 @@ The main feature-set component for dashboard filters
       that enables clearing all filters -->
   {#if hasFilters}
     <div class="ml-auto">
-      <Chip
-        bgBaseClass="surface"
-        bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
-        textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
-        bgActiveClass="bg-gray-200 dark:bg-gray-600"
-        outlineBaseClass="outline-gray-400"
-        on:click={clearAllFilters}
-      >
+      <Chip on:click={clearAllFilters}>
         <span slot="icon" class="ui-copy-disabled-faint">
           <FilterRemove size="16px" />
         </span>

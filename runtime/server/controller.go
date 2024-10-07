@@ -288,7 +288,7 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 		return &runtimev1.GetModelSplitsResponse{}, nil
 	}
 
-	afterIdx := -1
+	afterIdx := 0
 	afterKey := ""
 	if req.PageToken != "" {
 		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
@@ -303,7 +303,16 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 	}
 	defer release()
 
-	splits, err := catalog.FindModelSplits(ctx, splitsModelID, afterIdx, afterKey, validPageSize(req.PageSize))
+	opts := &drivers.FindModelSplitsOptions{
+		ModelID:      splitsModelID,
+		WherePending: req.Pending,
+		WhereErrored: req.Errored,
+		AfterIndex:   afterIdx,
+		AfterKey:     afterKey,
+		Limit:        validPageSize(req.PageSize),
+	}
+
+	splits, err := catalog.FindModelSplits(ctx, opts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -487,8 +496,8 @@ func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.R
 	if spec == nil {
 		return r
 	}
-	if spec.DimensionsExclude || spec.MeasuresExclude {
-		// If the ValidSpec has exclude flags set, we don't know what the available fields, so we can't filter it correctly.
+	if spec.DimensionsSelector != nil || spec.MeasuresSelector != nil {
+		// If the ValidSpec has dynamic selectors, we don't know what the available fields, so we can't filter it correctly.
 		// This should never happen because the Explore reconciler should have resolved the fields and removed the exclude flags.
 		panic(fmt.Errorf("the ValidSpec for an explore should not have exclude flags set"))
 	}

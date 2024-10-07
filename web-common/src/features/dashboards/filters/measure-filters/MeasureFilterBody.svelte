@@ -4,9 +4,7 @@
   - a short hand notation of the filter criteria
 -->
 <script lang="ts">
-  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
     AllMeasureFilterOperationOptions,
     AllMeasureFilterTypeOptions,
@@ -18,8 +16,6 @@
   export let label: string | undefined;
   export let filter: MeasureFilterEntry | undefined;
   export let labelMaxWidth = "160px";
-  export let active = false;
-  export let readOnly = false;
   export let comparisonLabel = "";
 
   let typeLabel: string | undefined;
@@ -48,7 +44,7 @@
           AllMeasureFilterOperationOptions.find(
             (o) =>
               // svelte-check is throwing an error here stating `filter could be undefined` so we need this
-              o.value === filter?.operation ??
+              o.value === filter?.operation ||
               MeasureFilterOperation.GreaterThan,
           )?.shortLabel +
           " " +
@@ -82,13 +78,6 @@
   <div class="flex flex-wrap flex-row items-baseline gap-y-1">
     {#if shortLabel}
       {shortLabel}
-    {/if}
-    {#if !readOnly}
-      <IconSpaceFixer className="pl-2" pullRight>
-        <div class="transition-transform" class:-rotate-180={active}>
-          <CaretDownIcon className="inline" size="10px" />
-        </div>
-      </IconSpaceFixer>
     {/if}
   </div>
 </div>

@@ -10,4 +10,3 @@ CREATE TABLE billing_issues (
     FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
     CONSTRAINT billing_issues_org_id_type_unique UNIQUE (org_id, type)
 );
-

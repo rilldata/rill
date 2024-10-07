@@ -53,7 +53,7 @@ function measuresForDimensionTable(dashData: DashboardDataSources) {
     ...selectedMeasureNames(dashData),
     ...additionalMeasures(dashData),
   ]);
-  return getIndependentMeasures(dashData.metricsSpecQueryResult.data ?? {}, [
+  return getIndependentMeasures(dashData.validMetricsView ?? {}, [
     ...allMeasures,
   ]);
 }
@@ -79,7 +79,7 @@ export function leaderboardSortedQueryBody(
     prepareSortedQueryBody(
       dimensionName,
       getIndependentMeasures(
-        dashData.metricsSpecQueryResult.data ?? {},
+        dashData.validMetricsView ?? {},
         additionalMeasures(dashData),
       ),
       timeControlsState(dashData),

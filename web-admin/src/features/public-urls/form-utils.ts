@@ -12,7 +12,13 @@ export function hasDashboardWhereFilter(dashboardStore: MetricsExplorerEntity) {
   return dashboardStore.whereFilter?.cond?.exprs?.length;
 }
 
-export function getMetricsViewFields(
+export function hasDashboardDimensionThresholdFilter(
+  dashboardStore: MetricsExplorerEntity,
+) {
+  return dashboardStore.dimensionThresholdFilters?.length;
+}
+
+export function getExploreFields(
   dashboardStore: MetricsExplorerEntity,
   visibleDimensions: MetricsViewSpecDimensionV2[],
   visibleMeasures: MetricsViewSpecMeasureV2[],

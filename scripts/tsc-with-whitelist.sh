@@ -17,8 +17,9 @@ web-admin/src/features/scheduled-reports/selectors.ts: error TS2345
 web-admin/src/features/view-as-user/clearViewedAsUser.ts: error TS18047
 web-admin/src/features/view-as-user/clearViewedAsUser.ts: error TS2322
 web-admin/src/features/view-as-user/setViewedAsUser.ts: error TS2322
-web-admin/src/routes/[organization]/[project]/-/dashboards/+page.ts: error TS2307
 web-admin/src/features/projects/github/GithubData.ts: error TS2769
+web-admin/src/routes/[organization]/[project]/[dashboard]/+page.ts: error TS2307
+web-admin/src/routes/[organization]/[project]/-/dashboards/+page.ts: error TS2307
 web-common/src/components/button-group/ButtonGroup.spec.ts: error TS2345
 web-common/src/components/data-graphic/actions/mouse-position-to-domain-action-factory.ts: error TS2322
 web-common/src/components/data-graphic/actions/outline.ts: error TS18047
@@ -97,14 +98,14 @@ web-common/src/features/metrics-views/errors.ts: error TS2322
 web-common/src/features/metrics-views/errors.ts: error TS2345
 web-common/src/features/metrics-views/metrics-internal-store.ts: error TS18048
 web-common/src/features/metrics-views/metrics-internal-store.ts: error TS2345
-web-common/src/features/metrics-views/workspace/editor/create-placeholder.ts: error TS2322
+web-common/src/features/metrics-views/editor/create-placeholder.ts: error TS2322
 web-common/src/features/models/selectors.ts: error TS18048
 web-common/src/features/models/selectors.ts: error TS2345
 web-common/src/features/models/utils/embedded.ts: error TS18048
 web-common/src/features/models/utils/get-table-references/index.ts: error TS18048
 web-common/src/features/models/utils/get-table-references/index.ts: error TS2322
 web-common/src/features/models/utils/get-table-references/index.ts: error TS2532
-web-common/src/features/models/workspace/inspector/utils.ts: error TS18048
+web-common/src/features/models/inspector/utils.ts: error TS18048
 web-common/src/features/project/selectors.ts: error TS2345
 web-common/src/features/project/shorthand-title/index.spec.ts: error TS2345
 web-common/src/features/sources/createModel.ts: error TS2345
@@ -141,7 +142,12 @@ web-common/src/runtime-client/http-request-queue/HttpRequestQueueTypes.ts: error
 web-common/src/runtime-client/invalidation.ts: error TS18048
 web-common/src/runtime-client/invalidation.ts: error TS2345
 web-common/src/runtime-client/watch-request-client.ts: error TS2322
-web-common/vite.config.ts: error TS2339
+web-common/vite.config.ts: error TS2322
+web-admin/vite.config.ts: error TS2322
+web-auth/vite.config.ts: error TS2322
+web-local/vite.config.ts: error TS2345
+web-common/src/features/dashboards/url-state/filters/expression.cjs: error TS1286
+web-local/src/routes//dashboard/[name]/+page.ts: error TS2307
 "
 
 # Run TypeScript compiler and find all distinct error per file

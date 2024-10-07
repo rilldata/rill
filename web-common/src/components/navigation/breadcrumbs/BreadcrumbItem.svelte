@@ -46,7 +46,9 @@
         on:click={() => {
           if (isCurrentPage && !isEmbedded) window.location.reload();
         }}
-        href={linkMaker(currentPath, depth, current, selected, "")}
+        href={isCurrentPage
+          ? "#top"
+          : linkMaker(currentPath, depth, current, selected, "")}
         class="text-gray-500 hover:text-gray-600"
         class:current={isCurrentPage}
       >
@@ -65,7 +67,7 @@
           class="min-w-44 max-h-96 overflow-y-auto"
         >
           {#each options as [id, option] (id)}
-            {@const selected = id === current}
+            {@const selected = id === current.toLowerCase()}
             <DropdownMenu.CheckboxItem
               class="cursor-pointer"
               checked={selected}

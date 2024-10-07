@@ -2,7 +2,7 @@
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { Tag } from "../../components/tag";
   import {
-    V1AnalyzedConnector,
+    type V1AnalyzedConnector,
     createRuntimeServiceGetInstance,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";

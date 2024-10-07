@@ -1,4 +1,5 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
+import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   createRuntimeServiceGetResource,
@@ -14,6 +15,7 @@ export function useAlerts(instanceId: string, enabled = true) {
     {
       query: {
         enabled: enabled && !!instanceId,
+        refetchOnMount: true,
       },
     },
   );
@@ -36,9 +38,15 @@ export function useAlertDashboardName(instanceId: string, name: string) {
     {
       query: {
         select: (data) => {
+          const alertSpec = data.resource?.alert?.spec;
+          if (!alertSpec) return "";
+
+          if (alertSpec.annotations.web_open_path)
+            return getExploreName(alertSpec.annotations.web_open_path);
+
           const queryArgsJson = JSON.parse(
-            data.resource.alert.spec.resolverProperties.query_args_json ||
-              data.resource.alert.spec.queryArgsJson ||
+            alertSpec.resolverProperties.query_args_json ||
+              alertSpec.queryArgsJson ||
               "{}",
           );
 

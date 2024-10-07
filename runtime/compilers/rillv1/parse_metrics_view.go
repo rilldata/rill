@@ -53,7 +53,7 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	Security *MetricsViewSecurityPolicyYAML
+	Security *SecurityPolicyYAML
 
 	// DEPRECATED FIELDS
 	DefaultTimeRange   string   `yaml:"default_time_range"`
@@ -191,7 +191,7 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	return nil
 }
 
-type MetricsViewSecurityPolicyYAML struct {
+type SecurityPolicyYAML struct {
 	Access    string `yaml:"access"`
 	RowFilter string `yaml:"row_filter"`
 	Include   []*struct {
@@ -202,10 +202,10 @@ type MetricsViewSecurityPolicyYAML struct {
 		Condition string    `yaml:"if"`
 		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
 	}
-	Rules []*MetricsViewSecurityRuleYAML `yaml:"rules"`
+	Rules []*SecurityRuleYAML `yaml:"rules"`
 }
 
-func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
+func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
 	if p == nil {
 		return rules, nil
@@ -355,7 +355,7 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 	return rules, nil
 }
 
-type MetricsViewSecurityRuleYAML struct {
+type SecurityRuleYAML struct {
 	Type   string
 	Action string
 	If     string
@@ -364,7 +364,7 @@ type MetricsViewSecurityRuleYAML struct {
 	SQL    string
 }
 
-func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
+func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 	condition := r.If
 	if condition != "" {
 		tmp, err := ResolveTemplate(condition, validationTemplateData)
@@ -835,11 +835,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	for _, dim := range spec.Dimensions {
 		e.ExploreSpec.Dimensions = append(e.ExploreSpec.Dimensions, dim.Name)
 	}
-	e.ExploreSpec.DimensionsExclude = false
+	e.ExploreSpec.DimensionsSelector = nil
 	for _, m := range spec.Measures {
 		e.ExploreSpec.Measures = append(e.ExploreSpec.Measures, m.Name)
 	}
-	e.ExploreSpec.MeasuresExclude = false
+	e.ExploreSpec.MeasuresSelector = nil
 	e.ExploreSpec.Theme = spec.DefaultTheme
 	for _, tr := range tmp.AvailableTimeRanges {
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
@@ -864,12 +864,20 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	case runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION:
 		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION
 	}
+
+	var presetDimensionsSelector, presetMeasuresSelector *runtimev1.FieldSelector
+	if len(spec.DefaultDimensions) == 0 {
+		presetDimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
+	if len(spec.DefaultMeasures) == 0 {
+		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
 	e.ExploreSpec.Presets = []*runtimev1.ExplorePreset{{
 		Label:               "Default",
 		Dimensions:          spec.DefaultDimensions,
-		DimensionsExclude:   len(spec.DefaultDimensions) == 0,
+		DimensionsSelector:  presetDimensionsSelector,
 		Measures:            spec.DefaultMeasures,
-		MeasuresExclude:     len(spec.DefaultMeasures) == 0,
+		MeasuresSelector:    presetMeasuresSelector,
 		TimeRange:           spec.DefaultTimeRange,
 		ComparisonMode:      exploreComparisonMode,
 		ComparisonDimension: spec.DefaultComparisonDimension,

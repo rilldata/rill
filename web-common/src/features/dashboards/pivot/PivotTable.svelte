@@ -17,11 +17,11 @@
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
-    Cell,
-    ExpandedState,
-    SortingState,
-    TableOptions,
-    Updater,
+    type Cell,
+    type ExpandedState,
+    type SortingState,
+    type TableOptions,
+    type Updater,
     createSvelteTable,
     flexRender,
     getCoreRowModel,

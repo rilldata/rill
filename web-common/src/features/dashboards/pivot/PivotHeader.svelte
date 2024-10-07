@@ -4,7 +4,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import { PivotChipType, PivotChipData } from "./types";
+  import { PivotChipType, type PivotChipData } from "./types";
   import { slide } from "svelte/transition";
 
   const stateManagers = getStateManagers();

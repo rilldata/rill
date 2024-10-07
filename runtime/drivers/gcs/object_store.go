@@ -84,8 +84,8 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
-		apiError := &googleapi.Error{}
 		// in cases when no creds are passed
+		apiError := &googleapi.Error{}
 		if errors.As(err, &apiError) && apiError.Code == http.StatusUnauthorized {
 			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", apiError))
 		}
@@ -97,12 +97,8 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", retrieveError))
 		}
 
-		anonIt, anonErr := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
-		if anonErr == nil {
-			iter = anonIt
-			err = nil
-		}
+		return nil, err
 	}
 
-	return iter, err
+	return iter, nil
 }

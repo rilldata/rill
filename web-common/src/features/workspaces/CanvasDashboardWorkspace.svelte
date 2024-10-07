@@ -18,7 +18,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
+  import PreviewButton from "@rilldata/web-common/features/explores/PreviewButton.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
     WorkspaceContainer,
@@ -36,7 +36,7 @@
 
   let canvasDashboardName: string;
   let selectedComponentFileArtifact: FileArtifact | undefined;
-  let selectedView = "split";
+  let selectedView: "split" | "code" | "viz";
   let showGrid = true;
   let showComponentEditor = false;
   let containerWidth: number;
@@ -226,7 +226,7 @@
   </WorkspaceHeader>
 
   <div class="flex w-full h-full flex-row overflow-hidden" slot="body">
-    {#if selectedView == "code" || selectedView == "split"}
+    {#if selectedView === "code" || selectedView === "split"}
       <div
         transition:slide={{ duration: 400, axis: "x" }}
         class="relative h-full flex-shrink-0 w-full border-r"
@@ -303,7 +303,7 @@
       </div>
     {/if}
 
-    {#if selectedView == "viz" || selectedView == "split"}
+    {#if selectedView === "viz" || selectedView === "split"}
       <CanvasDashboardPreview
         {canvasDashboardName}
         {gap}

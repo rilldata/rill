@@ -2,8 +2,8 @@ import {
   mouseLocationToBoundingRect,
   placeElement,
 } from "@rilldata/web-common/lib/place-element";
-import { View } from "svelte-vega";
-import { VLTooltipFormatter } from "../types";
+import type { View } from "svelte-vega";
+import type { VLTooltipFormatter } from "../types";
 
 const TOOLTIP_ID = "rill-vg-tooltip";
 

@@ -16,7 +16,7 @@ export function useProjectTitle(instanceId: string) {
               title?: string;
               name?: string;
             };
-          } catch (e) {
+          } catch {
             // Ignore
           }
 

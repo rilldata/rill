@@ -1,14 +1,10 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
-  import {
-    ChipColors,
-    measureChipColors,
-  } from "@rilldata/web-common/components/chip/chip-types";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
   import MeasureFilterMenu from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterMenu.svelte";
   import { createEventDispatcher } from "svelte";
@@ -17,7 +13,6 @@
   export let dimensionName: string;
   export let name: string;
   export let label: string | undefined = undefined;
-  export let colors: ChipColors = measureChipColors;
   export let filter: MeasureFilterEntry | undefined = undefined;
 
   const dispatch = createEventDispatcher();
@@ -55,22 +50,14 @@
       suppress={active}
     >
       <Chip
-        {...colors}
+        type="measure"
         {active}
         builders={[builder]}
-        extraRounded={false}
         {label}
         on:remove={() => dispatch("remove")}
-        outline
         removable
+        removeTooltipText="Remove {label}"
       >
-        <!-- remove button tooltip -->
-        <svelte:fragment slot="remove-tooltip">
-          <slot name="remove-tooltip-content">
-            Remove {label}
-          </slot>
-        </svelte:fragment>
-        <!-- body -->
         <MeasureFilterBody {dimensionName} {filter} {label} slot="body" />
       </Chip>
       <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
@@ -79,9 +66,8 @@
             <svelte:fragment slot="name">{name}</svelte:fragment>
             <svelte:fragment slot="description">{label || ""}</svelte:fragment>
           </TooltipTitle>
-          {#if $$slots["body-tooltip-content"]}
-            <slot name="body-tooltip-content">Click to edit the values</slot>
-          {/if}
+
+          <slot name="body-tooltip-content">Click to edit the values</slot>
         </TooltipContent>
       </div>
     </Tooltip>

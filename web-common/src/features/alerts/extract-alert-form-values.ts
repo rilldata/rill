@@ -2,19 +2,19 @@ import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-
 import {
   getEmptyMeasureFilterEntry,
   mapExprToMeasureFilter,
-  MeasureFilterEntry,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  V1AlertSpec,
-  V1MetricsViewAggregationDimension,
-  V1MetricsViewAggregationMeasure,
-  V1MetricsViewAggregationRequest,
+  type V1AlertSpec,
+  type V1MetricsViewAggregationDimension,
+  type V1MetricsViewAggregationMeasure,
+  type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1Operation,
-  V1TimeRange,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 
 export type AlertFormValuesSubset = Pick<

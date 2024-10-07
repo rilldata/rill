@@ -1,19 +1,18 @@
 <script lang="ts">
-  import * as Elements from "../super-pill/components";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
-    TimeRange,
+    type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
+  import { DateTime, Interval } from "luxon";
   import {
     metricsExplorerStore,
-    useDashboardStore,
+    useExploreStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { DateTime, Interval } from "luxon";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import * as Elements from "../super-pill/components";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -21,19 +20,17 @@
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
-  const metricsView = useMetricsView(ctx);
   const {
-    metricsViewName,
+    exploreName,
     selectors: {
       timeRangeSelectors: { timeComparisonOptionsState },
     },
+    validSpecStore,
   } = ctx;
 
-  $: metricViewName = $metricsViewName;
+  $: exploreStore = useExploreStore($exploreName);
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+  $: activeTimeZone = $exploreStore?.selectedTimezone;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -42,7 +39,7 @@
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  $: metricsViewSpec = $metricsView.data ?? {};
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
@@ -53,12 +50,12 @@
   ) {
     if (!showTimeComparison) {
       metricsExplorerStore.displayTimeComparison(
-        metricViewName,
+        $exploreName,
         !showTimeComparison,
       );
     }
     metricsExplorerStore.setSelectedComparisonRange(
-      metricViewName,
+      $exploreName,
       {
         name,
         start,
@@ -74,7 +71,7 @@
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
       metricsExplorerStore.displayTimeComparison(
-        metricViewName,
+        $exploreName,
         !showTimeComparison,
       );
     }}

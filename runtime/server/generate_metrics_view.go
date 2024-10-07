@@ -202,6 +202,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
+	doc.Version = 1
 	doc.Type = "metrics_view"
 	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
@@ -320,6 +321,7 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
 func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
 	doc := &metricsViewYAML{
+		Version:       1,
 		Type:          "metrics_view",
 		Title:         identifierToTitle(tbl.Name),
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(schema),
@@ -394,18 +396,17 @@ func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metr
 // metricsViewYAML is a struct for generating a metrics view YAML file.
 // We do not use the parser's structs since they are not suitable for generating pretty output YAML.
 type metricsViewYAML struct {
-	Type                string                      `yaml:"type,omitempty"`
-	Title               string                      `yaml:"title,omitempty"`
-	Connector           string                      `yaml:"connector,omitempty"`
-	Database            string                      `yaml:"database,omitempty"`
-	DatabaseSchema      string                      `yaml:"database_schema,omitempty"`
-	Table               string                      `yaml:"table,omitempty"`
-	Model               string                      `yaml:"model,omitempty"`
-	TimeDimension       string                      `yaml:"timeseries,omitempty"`
-	Dimensions          []*metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
-	Measures            []*metricsViewMeasureYAML   `yaml:"measures,omitempty"`
-	AvailableTimeZones  []string                    `yaml:"available_time_zones,omitempty"`
-	AvailableTimeRanges []string                    `yaml:"available_time_ranges,omitempty"`
+	Version        int                         `yaml:"version,omitempty"`
+	Type           string                      `yaml:"type,omitempty"`
+	Title          string                      `yaml:"title,omitempty"`
+	Connector      string                      `yaml:"connector,omitempty"`
+	Database       string                      `yaml:"database,omitempty"`
+	DatabaseSchema string                      `yaml:"database_schema,omitempty"`
+	Table          string                      `yaml:"table,omitempty"`
+	Model          string                      `yaml:"model,omitempty"`
+	TimeDimension  string                      `yaml:"timeseries,omitempty"`
+	Dimensions     []*metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
+	Measures       []*metricsViewMeasureYAML   `yaml:"measures,omitempty"`
 }
 
 type metricsViewDimensionYAML struct {
@@ -420,32 +421,10 @@ type metricsViewMeasureYAML struct {
 	Description string
 }
 
-func insertEmptyLinesInYaml(node *yaml.Node) {
-	for i := 0; i < len(node.Content); i++ {
-		if node.Content[i].Kind == yaml.MappingNode {
-			for j := 0; j < len(node.Content[i].Content); j += 2 {
-				keyNode := node.Content[i].Content[j]
-				valueNode := node.Content[i].Content[j+1]
-
-				if keyNode.Value == "title" || keyNode.Value == "dimensions" || keyNode.Value == "measures" {
-					keyNode.HeadComment = "\n"
-				}
-				insertEmptyLinesInYaml(valueNode)
-			}
-		} else if node.Content[i].Kind == yaml.SequenceNode {
-			for j := 0; j < len(node.Content[i].Content); j++ {
-				if node.Content[i].Content[j].Kind == yaml.MappingNode {
-					node.Content[i].Content[j].HeadComment = "\n"
-				}
-			}
-		}
-	}
-}
-
 func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error) {
 	buf := new(bytes.Buffer)
 
-	buf.WriteString("# Dashboard YAML\n")
+	buf.WriteString("# Metrics view YAML\n")
 	buf.WriteString("# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards\n")
 	if aiPowered {
 		buf.WriteString("# This file was generated using AI.\n")
@@ -475,6 +454,28 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 	}
 
 	return buf.String(), nil
+}
+
+func insertEmptyLinesInYaml(node *yaml.Node) {
+	for i := 0; i < len(node.Content); i++ {
+		if node.Content[i].Kind == yaml.MappingNode {
+			for j := 0; j < len(node.Content[i].Content); j += 2 {
+				keyNode := node.Content[i].Content[j]
+				valueNode := node.Content[i].Content[j+1]
+
+				if keyNode.Value == "title" || keyNode.Value == "dimensions" || keyNode.Value == "measures" {
+					keyNode.HeadComment = "\n"
+				}
+				insertEmptyLinesInYaml(valueNode)
+			}
+		} else if node.Content[i].Kind == yaml.SequenceNode {
+			for j := 0; j < len(node.Content[i].Content); j++ {
+				if node.Content[i].Content[j].Kind == yaml.MappingNode {
+					node.Content[i].Content[j].HeadComment = "\n"
+				}
+			}
+		}
+	}
 }
 
 func identifierToTitle(s string) string {

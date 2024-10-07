@@ -13,7 +13,7 @@
 
 <script lang="ts">
   import { setContext, onDestroy } from "svelte";
-  import { writable, get, Writable } from "svelte/store";
+  import { writable, get, type Writable } from "svelte/store";
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher();
 

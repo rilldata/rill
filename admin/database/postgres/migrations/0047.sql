@@ -1,6 +1,6 @@
-CREATE TABLE report_tokens (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    report_name TEXT NOT NULL,
-    recipient_email TEXT NOT NULL,
-    magic_auth_token_id UUID NOT NULL REFERENCES magic_auth_tokens (id) ON DELETE CASCADE
-);
+ALTER TABLE magic_auth_tokens ADD COLUMN resource_type TEXT NOT NULL DEFAULT 'rill.runtime.v1.Explore';
+ALTER TABLE magic_auth_tokens RENAME COLUMN metrics_view TO resource_name;
+ALTER TABLE magic_auth_tokens RENAME COLUMN metrics_view_filter_json TO filter_json;
+ALTER TABLE magic_auth_tokens RENAME COLUMN metrics_view_fields TO fields;
+
+UPDATE bookmarks SET resource_kind = 'rill.runtime.v1.Explore' WHERE resource_kind = 'rill.runtime.v1.MetricsView';
