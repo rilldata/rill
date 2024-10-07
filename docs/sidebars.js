@@ -179,11 +179,11 @@ const sidebars = {
 
           },
           items: [
-            'tutorials/other/add-column-dimension',
+      //      'tutorials/other/add-column-dimension',
             'tutorials/other/custom-charts',
             'tutorials/other/create-map-component',
             'tutorials/other/embed-dashboard',
-            'tutorials/other/deep-dive-incremental-modeling',
+      //      'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
             
             'tutorials/other/Rill Cloud/views',
