@@ -64,16 +64,17 @@ func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer
 	})
 
 	return &Customer{
-		ID:               c.ID,
-		Name:             c.Name,
-		Email:            c.Email,
-		HasPaymentMethod: i.Next(),
+		ID:                 c.ID,
+		Name:               c.Name,
+		Email:              c.Email,
+		HasPaymentMethod:   i.Next(),
+		HasBillableAddress: c.Address != nil && c.Address.PostalCode != "",
 	}, nil
 }
 
 func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error) {
 	searchStart := organization.CreatedOn.Add(-5 * time.Minute) // search 5 minutes before the org creation time
-	searchEnd := organization.CreatedOn.Add(5 * time.Minute)    // search 5 minutes after the org creation time
+	searchEnd := organization.CreatedOn.Add(501 * time.Minute)  // search 15 minutes after the org creation time
 	params := &stripe.CustomerListParams{
 		Email: stripe.String(billing.Email(organization)),
 		CreatedRange: &stripe.RangeQueryParams{
@@ -91,10 +92,11 @@ func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.
 			})
 
 			return &Customer{
-				ID:               c.ID,
-				Name:             c.Name,
-				Email:            c.Email,
-				HasPaymentMethod: it.Next(),
+				ID:                 c.ID,
+				Name:               c.Name,
+				Email:              c.Email,
+				HasPaymentMethod:   it.Next(),
+				HasBillableAddress: c.Address != nil && c.Address.PostalCode != "",
 			}, nil
 		}
 	}

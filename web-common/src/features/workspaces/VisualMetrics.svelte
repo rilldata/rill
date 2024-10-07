@@ -360,7 +360,7 @@
 
 <div class="wrapper">
   <div class="main-area">
-    <div class="flex gap-x-4">
+    <div class="flex gap-x-4 border-b pb-4">
       {#key confirmation}
         <Input
           sameWidth
@@ -407,8 +407,6 @@
         }}
       />
     </div>
-
-    <span class="h-[1px] w-full bg-gray-200" />
 
     <div class="grid grid-cols-3 gap-4 relative">
       <div class="col-span-3 sm:col-span-2 lg:col-span-1">
@@ -464,7 +462,7 @@
       {#each types as type (type)}
         {@const items = itemGroups[type]}
         <div class="section">
-          <header class="flex gap-x-1 items-center">
+          <header class="flex gap-x-1 items-center flex-none">
             <Button
               type="ghost"
               square
@@ -481,7 +479,11 @@
                 <CaretDownIcon size="16px" className="!fill-gray-700" />
               </span>
             </Button>
-            <h1 class="capitalize font-medium">{type}</h1>
+
+            <h1 class="capitalize font-medium select-none pointer-events-none">
+              {type}
+            </h1>
+
             <Button
               type="ghost"
               square
@@ -501,6 +503,7 @@
               <PlusIcon size="16px" />
             </Button>
           </header>
+
           {#if !collapsed[type]}
             <MetricsTable
               selected={selected[type]}
@@ -686,7 +689,7 @@
   .wrapper {
     @apply size-full max-w-full max-h-full flex-none;
     @apply overflow-hidden;
-    @apply flex gap-x-3 p-4;
+    @apply flex gap-x-2;
   }
 
   h1 {
@@ -699,7 +702,7 @@
   }
 
   .section {
-    @apply flex flex-col gap-y-2 justify-start w-full h-fit max-w-full;
+    @apply flex flex-none flex-col gap-y-2 justify-start w-full h-fit max-w-full;
   }
 
   h2 {

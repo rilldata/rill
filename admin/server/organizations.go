@@ -180,6 +180,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
+		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
 		return nil, err
@@ -859,6 +860,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
 	}
 
 	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -901,6 +903,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
 		return nil, err

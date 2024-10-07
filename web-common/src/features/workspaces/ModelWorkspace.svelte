@@ -64,14 +64,10 @@
     });
   }
 
-  async function handleNameChange(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
       [
@@ -97,11 +93,13 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
+    {filePath}
+    resourceKind={ResourceKind.Model}
     slot="header"
     titleInput={fileName}
     showTableToggle
     hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={handleNameChange}
+    onTitleChange={handleNameChange}
   >
     <svelte:fragment slot="workspace-controls">
       <p
@@ -123,12 +121,16 @@
           {collapse}
           modelHasError={$hasErrors}
           modelName={assetName}
+          hasUnsavedChanges={$hasUnsavedChanges}
         />
       </div>
     </svelte:fragment>
   </WorkspaceHeader>
 
-  <div slot="body" class="editor-pane size-full overflow-hidden flex flex-col">
+  <div
+    slot="body"
+    class="editor-pane size-full overflow-hidden flex flex-col gap-y-0"
+  >
     <WorkspaceEditorContainer>
       {#key assetName}
         <ModelEditor {fileArtifact} bind:autoSave={$autoSave} onSave={save} />
@@ -136,7 +138,7 @@
     </WorkspaceEditorContainer>
 
     {#if $tableVisible}
-      <WorkspaceTableContainer>
+      <WorkspaceTableContainer {filePath}>
         {#if !allErrors.length}
           <ConnectedPreviewTable
             {connector}
@@ -160,18 +162,16 @@
     {/if}
   </div>
 
-  <svelte:fragment slot="inspector">
-    {#if connector && tableName && resource}
-      <WorkspaceInspector
-        {connector}
-        {database}
-        {databaseSchema}
-        {tableName}
-        hasErrors={$hasErrors}
-        hasUnsavedChanges={$hasUnsavedChanges}
-        {resource}
-        isEmpty={!$remoteContent?.length}
-      />
-    {/if}
-  </svelte:fragment>
+  <WorkspaceInspector
+    slot="inspector"
+    {filePath}
+    {connector}
+    {database}
+    {databaseSchema}
+    {tableName}
+    hasErrors={$hasErrors}
+    hasUnsavedChanges={$hasUnsavedChanges}
+    {resource}
+    isEmpty={!$remoteContent?.length}
+  />
 </WorkspaceContainer>

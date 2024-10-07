@@ -29,7 +29,10 @@
     useFileNamesInDirectory,
   } from "./file-selectors";
   import { getName } from "./name-utils";
-  import { resourceIconMapping } from "./resource-icon-mapping";
+  import {
+    resourceColorMapping,
+    resourceIconMapping,
+  } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
 
   let active = false;
@@ -234,6 +237,7 @@
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Source]}
+          color={resourceColorMapping[ResourceKind.Source]}
           className="text-gray-900"
           size="16px"
         />
@@ -246,6 +250,7 @@
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
+          color={resourceColorMapping[ResourceKind.Model]}
           className="text-gray-900"
           size="16px"
         />
@@ -259,6 +264,7 @@
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
+        color={resourceColorMapping[ResourceKind.MetricsView]}
         className="text-gray-900"
         size="16px"
       />
@@ -271,6 +277,7 @@
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Explore]}
+        color={resourceColorMapping[ResourceKind.Explore]}
         className="text-gray-900"
         size="16px"
       />
@@ -289,6 +296,7 @@
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
+            color={resourceColorMapping[ResourceKind.API]}
             className="text-gray-900"
             size="16px"
           />
@@ -302,6 +310,7 @@
           >
             <svelte:component
               this={resourceIconMapping[ResourceKind.Canvas]}
+              color={resourceColorMapping[ResourceKind.Canvas]}
               className="text-gray-900"
               size="16px"
             />
@@ -310,6 +319,7 @@
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddComponent}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Component]}
+              color={resourceColorMapping[ResourceKind.Component]}
               className="text-gray-900"
               size="16px"
             />
@@ -319,6 +329,7 @@
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
+            color={resourceColorMapping[ResourceKind.Theme]}
             className="text-gray-900"
             size="16px"
           />

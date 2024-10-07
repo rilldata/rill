@@ -1,18 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import {
-    ResourceKind,
-    resourceIsLoading,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import PreviewButton from "@rilldata/web-common/features/explores/PreviewButton.svelte";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
@@ -31,11 +25,7 @@
 
   const { visualEditing } = featureFlags;
 
-  const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
-
   export let fileArtifact: FileArtifact;
-
-  let previewStatus: string[] = [];
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -55,8 +45,7 @@
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: ({ data: resource, isFetching } = $resourceQuery);
-  $: isResourceLoading = resourceIsLoading(resource);
+  $: ({ data: resource } = $resourceQuery);
 
   $: isOldMetricsView = !$remoteContent?.includes("version: 1");
   $: connector = resource?.metricsView?.state?.validSpec?.connector ?? "";
@@ -75,32 +64,10 @@
     ? $isModelingSupportedForOlapDriver
     : $isModelingSupportedForDefaultOlapDriver;
 
-  $: previewDisabled =
-    !$remoteContent?.length ||
-    !!allErrors?.length ||
-    isResourceLoading ||
-    isFetching;
-
-  $: if (!$remoteContent?.length) {
-    previewStatus = [
-      "Your metrics definition is empty. Get started by trying one of the options in the editor.",
-    ];
-  } else if (allErrors?.length && allErrors[0].message) {
-    // content & errors
-    previewStatus = [allErrors[0].message, TOOLTIP_CTA];
-  } else {
-    // preview is available
-    previewStatus = ["Explore your metrics dashboard"];
-  }
-
-  async function onChangeCallback(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
       fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
@@ -115,24 +82,19 @@
 
 <WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
   <WorkspaceHeader
+    {filePath}
+    resourceKind={ResourceKind.MetricsView}
     hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={onChangeCallback}
+    onTitleChange={onChangeCallback}
     showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if isOldMetricsView}
-        <PreviewButton
-          dashboardName={metricsViewName}
-          disabled={previewDisabled}
-          status={previewStatus}
-        />
-        <DeployDashboardCta />
-      {:else}
+      {#if !isOldMetricsView}
         <GoToDashboardButton {resource} />
       {/if}
-      <LocalAvatarButton />
+
       {#if $visualEditing}
         <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
       {/if}
