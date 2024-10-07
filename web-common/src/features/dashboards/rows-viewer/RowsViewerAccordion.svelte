@@ -21,6 +21,8 @@
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import exportMetrics from "./export-metrics";
 
+  const exportDash = createQueryServiceExport();
+
   const { exports } = featureFlags;
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
@@ -132,7 +134,7 @@
   const handleExportMetrics = async (format: V1ExportFormat) => {
     await exportMetrics({
       ctx: stateManagers,
-      query: createQueryServiceExport(),
+      query: exportDash,
       format,
     });
   };

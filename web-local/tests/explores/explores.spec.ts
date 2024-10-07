@@ -114,8 +114,8 @@ test.describe("explores", () => {
     // Download the data as CSV
     // Start waiting for download before clicking. Note no await.
     const downloadCSVPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as CSV").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as CSV" }).click();
     const downloadCSV = await downloadCSVPromise;
     await downloadCSV.saveAs("temp/" + downloadCSV.suggestedFilename());
     const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
@@ -124,8 +124,8 @@ test.describe("explores", () => {
     // Download the data as XLSX
     // Start waiting for download before clicking. Note no await.
     const downloadXLSXPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as XLSX").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as XLSX" }).click();
     const downloadXLSX = await downloadXLSXPromise;
     await downloadXLSX.saveAs("temp/" + downloadXLSX.suggestedFilename());
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
@@ -134,8 +134,8 @@ test.describe("explores", () => {
     // Download the data as Parquet
     // Start waiting for download before clicking. Note no await.
     const downloadParquetPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as Parquet").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as Parquet" }).click();
     const downloadParquet = await downloadParquetPromise;
     await downloadParquet.saveAs("temp/" + downloadParquet.suggestedFilename());
 

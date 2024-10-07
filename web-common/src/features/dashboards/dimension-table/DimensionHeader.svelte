@@ -34,6 +34,7 @@
   export let isRowsEmpty = true;
 
   const dispatch = createEventDispatcher();
+  const exportDash = createQueryServiceExport();
 
   const stateManagers = getStateManagers();
   const {
@@ -158,7 +159,7 @@
   const handleExportTopList = async (format: V1ExportFormat) => {
     await exportToplist({
       ctx: stateManagers,
-      query: createQueryServiceExport(),
+      query: exportDash,
       format,
     });
   };

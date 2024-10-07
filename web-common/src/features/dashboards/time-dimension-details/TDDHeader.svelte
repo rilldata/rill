@@ -44,7 +44,7 @@
 
   const dispatch = createEventDispatcher();
   const { adminServer, exports } = featureFlags;
-
+  const exportDash = createQueryServiceExport();
   const stateManagers = getStateManagers();
 
   const {
@@ -172,7 +172,7 @@
   const handleExportTDD = async (format: V1ExportFormat) => {
     await exportTDD({
       ctx: stateManagers,
-      query: createQueryServiceExport(),
+      query: exportDash,
       format,
       timeDimension: $validSpecStore.data?.metricsView?.timeDimension as string,
     });

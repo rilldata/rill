@@ -49,7 +49,6 @@
     {:else}
       <button
         aria-label={label}
-        class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
         use:builderActions={{ builders: [builder] }}
         {...getAttrs([builder])}
       >
@@ -97,3 +96,13 @@
     bind:open={showScheduledReportDialog}
   />
 {/if}
+
+<style lang="postcss">
+  button {
+    @apply h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm text-gray-700;
+  }
+
+  button:hover {
+    @apply bg-gray-200;
+  }
+</style>

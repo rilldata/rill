@@ -56,10 +56,12 @@
 
   const scheduledReportsQueryArgs = getPivotExportArgs(stateManagers);
 
+  const exportDash = createQueryServiceExport();
+
   async function handleExportPivot(format: V1ExportFormat) {
     await exportPivot({
       ctx: stateManagers,
-      query: createQueryServiceExport(),
+      query: exportDash,
       format,
       timeDimension: $validSpecStore.data?.metricsView?.timeDimension,
     });
