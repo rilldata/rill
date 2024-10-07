@@ -4,11 +4,11 @@ import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte"
 import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
 import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
 import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
+import TableIcon from "@rilldata/web-common/components/icons/TableIcon.svelte";
 import ThemeIcon from "@rilldata/web-common/components/icons/ThemeIcon.svelte";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { Code2Icon, Database } from "lucide-svelte";
 import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
-import TableIcon from "@rilldata/web-common/components/icons/TableIcon.svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
@@ -33,9 +33,9 @@ export const resourceColorMapping = {
   [ResourceKind.API]: "#EA580C",
   [ResourceKind.Component]: "#65A30D",
   [ResourceKind.Canvas]: "#008FD4",
+  [ResourceKind.Theme]: "#DB2777",
 
   // To follow up later
-  [ResourceKind.Theme]: "black",
   [ResourceKind.Report]: "black",
   [ResourceKind.Alert]: "black",
 };

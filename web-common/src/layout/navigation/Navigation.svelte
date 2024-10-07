@@ -60,7 +60,7 @@
     side="right"
   />
   <div class="inner" style:width="{width}px">
-    <div class="px-2 pb-2 w-full pr-10">
+    <div class="p-2 w-full pr-10">
       <AddAssetButton />
     </div>
     <div class="scroll-container">
@@ -85,7 +85,7 @@
 
 <style lang="postcss">
   .sidebar {
-    @apply flex flex-col flex-none relative overflow-hidden pt-2;
+    @apply flex flex-col flex-none relative overflow-hidden;
     @apply h-full border-r z-0;
     transition-property: width;
     will-change: width;
