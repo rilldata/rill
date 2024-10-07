@@ -135,11 +135,12 @@ export function useCreateMetricsViewFromTableUIAction(
         const metricsViewResource = fileArtifacts
           .getFileArtifact(newMetricsViewFilePath)
           .getResource(queryClient, instanceId);
+        await waitUntil(() => get(metricsViewResource).data !== undefined);
 
         // Create the Explore file
         const newExploreFilePath = await handleEntityCreate(
           ResourceKind.Explore,
-          get(metricsViewResource)?.data,
+          get(metricsViewResource).data,
         );
         if (!newExploreFilePath) {
           throw new Error("Failed to create an Explore file");
@@ -149,12 +150,10 @@ export function useCreateMetricsViewFromTableUIAction(
         const exploreResource = fileArtifacts
           .getFileArtifact(newExploreFilePath)
           .getResource(queryClient, instanceId);
-        await waitUntil(
-          () => get(exploreResource)?.data?.meta?.name?.name !== undefined,
-        );
+        await waitUntil(() => get(exploreResource).data !== undefined);
 
         // Navigate to the Explore Preview
-        const newExploreName = get(exploreResource)?.data?.meta?.name?.name;
+        const newExploreName = get(exploreResource).data?.meta?.name?.name;
         if (!newExploreName) {
           throw new Error("Failed to create an Explore resource");
         }
