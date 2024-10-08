@@ -14,15 +14,11 @@ test.describe("Metrics editor", () => {
   test("Metrics editor", async ({ page }) => {
     await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
-    await page.waitForTimeout(5000);
-
     await page.getByLabel("code").click();
-
-    await page.waitForTimeout(5000);
 
     await updateCodeEditor(page, "");
 
-    // inspector should point to the documentatio
+    // inspector should point to the documentation
     await expect(page.getByText("For help building dashboards")).toBeVisible();
 
     // skeleton should result in an empty skeleton YAML file
