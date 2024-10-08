@@ -35,8 +35,6 @@ test.describe("explores", () => {
   });
 
   test("Autogenerate explore from model", async ({ page }) => {
-    test.slow();
-
     await createAdBidsModel(page);
     await createExploreFromModel(page);
 
