@@ -30,7 +30,7 @@
   const schema = yup(
     object({
       name: string().required(),
-      description: string(),
+      description: string().optional(),
     }),
   );
 
@@ -114,13 +114,14 @@
       description={`Your org URL will be https://ui.rilldata.com/${sanitizeOrgName($form.name)}, to comply with our naming rules.`}
       alwaysShowError
     />
-    <Input
+    <!-- Uncomment once we need description -->
+    <!-- <Input
       bind:value={$form.description}
       errors={$errors?.description}
       id="description"
       label="Description"
       placeholder="Describe your organization"
-    />
+    /> -->
   </form>
   {#if error?.message}
     <div class="text-red-500 text-sm py-px">
