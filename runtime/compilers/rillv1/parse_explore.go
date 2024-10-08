@@ -22,7 +22,6 @@ type ExploreYAML struct {
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
 	Defaults    *struct {
-		Label               string             `yaml:"label"`
 		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
 		Measures            *FieldSelectorYAML `yaml:"measures"`
 		TimeRange           string             `yaml:"time_range"`
