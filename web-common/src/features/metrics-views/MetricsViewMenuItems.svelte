@@ -19,6 +19,8 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
+  import { get } from "svelte/store";
+  import { waitUntil } from "../../lib/waitUtils";
   import { handleEntityCreate } from "../file-explorer/new-files";
 
   export let filePath: string;
@@ -62,13 +64,27 @@
   };
 
   async function createExploreDashboard() {
+    // Create the Explore file
     const newExploreFilePath = await handleEntityCreate(
       ResourceKind.Explore,
       $resourceQuery.data,
     );
-    if (newExploreFilePath) {
-      await goto(`/files/${newExploreFilePath}`);
+
+    // Wait until the Explore resource is ready
+    const exploreFileArtifact =
+      fileArtifacts.getFileArtifact(newExploreFilePath);
+    const exploreResource = exploreFileArtifact.getResource(
+      queryClient,
+      instanceId,
+    );
+    await waitUntil(() => get(exploreResource).data !== undefined);
+    const newExploreName = get(exploreResource).data?.meta?.name?.name;
+    if (!newExploreName) {
+      throw new Error("Failed to create an Explore resource");
     }
+
+    // Navigate to the Explore Preview
+    await goto(`/explore/${newExploreName}`);
   }
 </script>
 
