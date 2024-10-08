@@ -182,7 +182,7 @@ func (p *Parser) parseExplore(node *Node) error {
 
 	// Build and validate presets
 	var defaultPreset *runtimev1.ExplorePreset
-	for tmp.Defaults != nil {
+	if tmp.Defaults != nil {
 		if tmp.Defaults.TimeRange != "" {
 			if err := validateISO8601(tmp.Defaults.TimeRange, false, false); err != nil {
 				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
