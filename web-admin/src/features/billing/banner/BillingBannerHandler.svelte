@@ -1,27 +1,25 @@
 <script lang="ts">
-  import {
-    createAdminServiceGetBillingSubscription,
-    createAdminServiceListOrganizationBillingIssues,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
   import { handleBillingIssues } from "@rilldata/web-admin/features/billing/banner/handleBillingIssues";
   import StartTeamPlanDialog, {
     type TeamPlanDialogTypes,
   } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 
   export let organization: string;
 
   $: subscription = createAdminServiceGetBillingSubscription(organization);
-  $: issues = createAdminServiceListOrganizationBillingIssues(organization);
+  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
 
   let showStartTeamPlanDialog = false;
   let startTeamPlanType: TeamPlanDialogTypes = "base";
   let teamPlanEndDate = "";
 
-  $: if (!$subscription.isLoading && !$issues.isLoading) {
+  $: if (!$subscription.isLoading && $categorisedIssues.data) {
     handleBillingIssues(
       organization,
       $subscription.data.subscription,
-      $issues.data.issues ?? [],
+      $categorisedIssues.data,
       (type, endDate) => {
         showStartTeamPlanDialog = true;
         startTeamPlanType = type;

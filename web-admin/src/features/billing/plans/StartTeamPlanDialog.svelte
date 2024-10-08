@@ -14,7 +14,7 @@
 </script>
 
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { buildUpgradeUrl } from "@rilldata/web-admin/client/redirect-utils";
   import { mergedQueryStatusStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
@@ -37,8 +37,7 @@
     createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
   } from "@rilldata/web-admin/client/index.js";
-  import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
-  import { getPaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
+  import { usePaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
 
   export let organization: string;
   export let open = false;
@@ -83,9 +82,7 @@
   }
   $: setCopyBasedOnType(type);
 
-  $: paymentIssues = getPaymentIssues(organization);
-
-  const userPromptWindow = new PopupWindow();
+  $: paymentIssues = usePaymentIssues(organization);
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
@@ -98,12 +95,14 @@
     // only fetch when needed to avoid hitting orb for list of plans too often
     const teamPlan = await fetchTeamPlan();
     if ($paymentIssues.data?.length) {
-      await userPromptWindow.openAndWait(
+      window.open(
         await fetchPaymentsPortalURL(
           organization,
-          `${$page.url.protocol}//${$page.url.host}/-/auto-close`,
+          buildUpgradeUrl(organization),
         ),
+        "_self",
       );
+      return;
     }
 
     if (type === "renew") {

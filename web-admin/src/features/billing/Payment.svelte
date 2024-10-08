@@ -1,22 +1,21 @@
 <script lang="ts">
-  import {
-    getPaymentIssues,
-    PaymentBillingIssueTypes,
-  } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
+  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import { isTrialPlan } from "@rilldata/web-admin/features/billing/plans/utils";
-  import { getPlanForOrg } from "@rilldata/web-admin/features/billing/selectors";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
 
   export let organization: string;
 
-  $: paymentIssues = getPaymentIssues(organization);
-  $: paymentIssueTexts =
-    $paymentIssues.data?.map((i) => PaymentBillingIssueTypes[i.type]) ?? [];
+  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
 
-  $: plan = getPlanForOrg(organization);
-  $: isTrial = $plan.data && isTrialPlan($plan.data);
+  $: showPaymentBlock =
+    !$categorisedIssues.isLoading &&
+    // fresh orgs do not need payment
+    !$categorisedIssues.data.neverSubscribed &&
+    // orgs on trial do not need payment either
+    !$categorisedIssues.data.trial;
+
   async function handleManagePayment() {
     window.open(
       await fetchPaymentsPortalURL(organization, window.location.href),
@@ -25,14 +24,15 @@
   }
 </script>
 
-{#if $plan.data && !isTrial}
+{#if showPaymentBlock}
   <SettingsContainer
     title="Payment Method"
-    titleIcon={paymentIssueTexts.length ? "error" : "none"}
+    titleIcon={$categorisedIssues.data?.payment?.length ? "error" : "none"}
   >
     <div slot="body">
-      {#if paymentIssueTexts.length}
-        {paymentIssueTexts.join("")} Please click <b>Manage</b> below to correct.
+      {#if $categorisedIssues.data?.payment}
+        {getPaymentIssueErrorText($categorisedIssues.data.payment)} Please click
+        <b>Manage</b> below to correct.
       {:else}
         Your payment method is valid and good to go.
       {/if}

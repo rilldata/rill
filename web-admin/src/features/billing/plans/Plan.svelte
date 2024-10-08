@@ -1,35 +1,25 @@
 <script lang="ts">
-  import {
-    createAdminServiceGetBillingSubscription,
-    createAdminServiceListOrganizationBillingIssues,
-  } from "@rilldata/web-admin/client";
-  import {
-    getCancelledIssue,
-    getNeverSubscribedIssue,
-  } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues";
-  import { getTrialIssue } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
+  import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
   import EndedTeamPlan from "@rilldata/web-admin/features/billing/plans/EndedTeamPlan.svelte";
   import EnterprisePlan from "@rilldata/web-admin/features/billing/plans/EnterprisePlan.svelte";
   import TeamPlan from "@rilldata/web-admin/features/billing/plans/TeamPlan.svelte";
   import TrialPlan from "@rilldata/web-admin/features/billing/plans/TrialPlan.svelte";
   import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 
   export let organization: string;
 
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: subscription = $subscriptionQuery?.data?.subscription;
-  $: issues = createAdminServiceListOrganizationBillingIssues(organization);
 
-  $: neverSubbedIssue = getNeverSubscribedIssue($issues.data?.issues ?? []);
-  $: cancelledIssue = getCancelledIssue($issues.data?.issues ?? []);
-  $: trialIssue = getTrialIssue($issues.data?.issues ?? []);
+  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
 
   // fresh orgs will have a never subscribed issue associated with it
-  $: neverSubbed = !!neverSubbedIssue;
+  $: neverSubbed = !!$categorisedIssues.data?.neverSubscribed;
   // trial plan will have a trial issue associated with it
-  $: isTrial = !!trialIssue;
+  $: isTrial = !!$categorisedIssues.data?.trial;
   // ended subscription will have a cancelled issue associated with it
-  $: hasEnded = !!cancelledIssue;
+  $: hasEnded = !!$categorisedIssues.data?.cancelled;
   $: subIsTeamPlan = subscription?.plan && isTeamPlan(subscription.plan);
 </script>
 

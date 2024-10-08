@@ -8,23 +8,46 @@ import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/pla
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 
 export const PaymentBillingIssueTypes: Partial<
-  Record<V1BillingIssueType, string>
+  Record<V1BillingIssueType, { long: string; short: string }>
 > = {
-  [V1BillingIssueType.BILLING_ISSUE_TYPE_PAYMENT_FAILED]:
-    "Input a valid payment to maintain access.",
-  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD]:
-    "Input a valid payment to maintain access.",
-  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]:
-    "Input a valid billing address to maintain access.",
+  [V1BillingIssueType.BILLING_ISSUE_TYPE_PAYMENT_FAILED]: {
+    long: "Input a valid payment to maintain access.",
+    short: "payment",
+  },
+  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD]: {
+    long: "Input a valid payment to maintain access.",
+    short: "payment",
+  },
+  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]: {
+    long: "Input a valid billing address to maintain access.",
+    short: "billing address",
+  },
 };
 
-export function getPaymentIssues(organization: string) {
+export function usePaymentIssues(organization: string) {
   return createAdminServiceListOrganizationBillingIssues(organization, {
     query: {
-      select: (data) =>
-        data.issues?.filter((i) => i.type in PaymentBillingIssueTypes),
+      select: (data) => getPaymentIssues(data.issues ?? []),
     },
   });
+}
+
+export function getPaymentIssues(issues: V1BillingIssue[]) {
+  return issues?.filter((i) => i.type in PaymentBillingIssueTypes);
+}
+
+export function getPaymentIssueErrorText(paymentIssues: V1BillingIssue[]) {
+  const paymentFailed = paymentIssues.find(
+    (i) => i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_PAYMENT_FAILED,
+  );
+  if (paymentFailed) {
+    return "Payment has failed.";
+  }
+
+  const issueTexts = paymentIssues.map(
+    (i) => PaymentBillingIssueTypes[i.type].short,
+  );
+  return `No valid ${issueTexts.join(" or ")}.`;
 }
 
 export function handlePaymentIssues(
@@ -35,7 +58,7 @@ export function handlePaymentIssues(
   const issue = issues[0];
   const bannerMessage: BannerMessage = {
     type: "warning",
-    message: PaymentBillingIssueTypes[issue.type],
+    message: PaymentBillingIssueTypes[issue.type].long,
     iconType: "alert",
     cta: {
       text: "Update payment methods ->",

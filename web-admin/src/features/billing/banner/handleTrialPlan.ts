@@ -18,7 +18,7 @@ export function getTrialIssue(issues: V1BillingIssue[]) {
 }
 
 export function handleTrialPlan(
-  issues: V1BillingIssue[],
+  trialIssue: V1BillingIssue,
   onShowStartTeamPlan: ShowTeamPlanDialogCallback,
 ): BannerMessage {
   const cta: BannerMessage["cta"] = {
@@ -29,16 +29,14 @@ export function handleTrialPlan(
     },
   };
 
-  const trialIssue = getTrialIssue(issues);
-
   const endDateStr =
-    trialIssue?.metadata?.onTrial?.endDate ??
-    trialIssue?.metadata?.trialEnded?.gracePeriodEndDate ??
+    trialIssue.metadata.onTrial?.endDate ??
+    trialIssue.metadata.trialEnded?.gracePeriodEndDate ??
     "";
 
   const today = DateTime.now();
   const endDate = DateTime.fromJSDate(new Date(endDateStr));
-  if (!endDate.isValid || !trialIssue) {
+  if (!endDate.isValid) {
     return {
       type: "warning",
       message: "Your trial has expired. Upgrade to maintain access.",
