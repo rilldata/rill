@@ -18,12 +18,9 @@
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
-  import { featureFlags } from "../feature-flags";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import VisualMetrics from "./VisualMetrics.svelte";
-
-  const { visualEditing } = featureFlags;
 
   export let fileArtifact: FileArtifact;
 
@@ -95,9 +92,7 @@
         <GoToDashboardButton {resource} />
       {/if}
 
-      {#if $visualEditing}
-        <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
-      {/if}
+      <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
     </div>
   </WorkspaceHeader>
 

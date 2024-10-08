@@ -230,6 +230,7 @@ metrics_view: AdBids_model_metrics
 dimensions: '*'
 measures: '*'
 `;
+    await page.getByLabel("code").click();
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column
@@ -277,6 +278,8 @@ measures: '*'
         description: ""
 
         `;
+
+    await page.getByLabel("code").click();
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
     await page.getByRole("button", { name: "Go to dashboard" }).click();
     await page
@@ -426,7 +429,7 @@ dimensions:
       .click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
 
     await page.getByRole("cell", { name: "google.com", exact: true }).click();
     await page
