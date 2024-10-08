@@ -27,6 +27,7 @@
   export let organization: string;
   export let project: string;
   export let user: User;
+  export let isCurrentUser = false;
 
   let isOpen = false;
 
@@ -127,15 +128,16 @@
     >
       <span>Viewer</span>
     </DropdownMenu.CheckboxItem>
-    <!-- TODO; do not allow for current user to remove themselves -->
-    <DropdownMenu.Separator />
-    <DropdownMenu.Item
-      class="font-normal flex items-center"
-      on:click={() => {
-        handleRemove(user.userEmail);
-      }}
-    >
-      <span class="ml-6">Remove</span>
-    </DropdownMenu.Item>
+    {#if !isCurrentUser}
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={() => {
+          handleRemove(user.userEmail);
+        }}
+      >
+        <span class="ml-6">Remove</span>
+      </DropdownMenu.Item>
+    {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>

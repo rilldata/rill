@@ -106,7 +106,12 @@
                 isCurrentUser={user.userEmail === $currentUser.data?.user.email}
                 pendingAcceptance={!user.userName}
               />
-              <UserInviteUserSetRole {organization} {project} {user} />
+              <UserInviteUserSetRole
+                {organization}
+                {project}
+                {user}
+                isCurrentUser={user.userEmail === $currentUser.data?.user.email}
+              />
             </div>
           {/each}
         </div>
