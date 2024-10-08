@@ -1,5 +1,8 @@
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { DashboardMutables } from "./types";
+import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+
+const persistentDashboardStore = getPersistentDashboardStore();
 
 export const setPrimaryDimension = (
   { dashboard }: DashboardMutables,
@@ -24,6 +27,10 @@ export const toggleDimensionVisibility = (
   if (!deleted) {
     dashboard.visibleDimensionKeys.add(dimensionName);
   }
+
+  persistentDashboardStore.updateVisibleDimensions(
+    Array.from(dashboard.visibleDimensionKeys),
+  );
 };
 
 export const setVisibleDimensions = (
@@ -31,6 +38,10 @@ export const setVisibleDimensions = (
   dimensions: string[],
 ) => {
   dashboard.visibleDimensionKeys = new Set(dimensions);
+
+  persistentDashboardStore.updateVisibleDimensions(
+    Array.from(dashboard.visibleDimensionKeys),
+  );
 };
 
 export const dimensionActions = {
