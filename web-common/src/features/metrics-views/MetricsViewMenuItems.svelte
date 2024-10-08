@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -19,6 +20,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
+  import { handleEntityCreate } from "../file-explorer/new-files";
 
   export let filePath: string;
 
@@ -30,7 +32,7 @@
   const { customDashboards, ai } = featureFlags;
 
   $: instanceId = $runtime.instanceId;
-  $: dashboardQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   /**
@@ -38,7 +40,7 @@
    * Note that not all dashboards have an underlying model. Some dashboards are
    * underpinned by a source/table.
    */
-  $: referenceModelName = $dashboardQuery?.data?.meta?.refs?.filter(
+  $: referenceModelName = $resourceQuery?.data?.meta?.refs?.filter(
     (ref) => ref.kind === ResourceKind.Model,
   )?.[0]?.name;
 
@@ -64,13 +66,23 @@
     const previousScreenName = getScreenNameFromPage();
     await goto(`/files${filePath}`);
     await behaviourEvent.fireNavigationEvent(
-      ($dashboardQuery.data?.meta?.name as string) ?? "",
+      ($resourceQuery.data?.meta?.name as string) ?? "",
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       previousScreenName,
       MetricsEventScreenName.MetricsDefinition,
     );
   };
+
+  async function createExploreDashboard() {
+    const newExploreFilePath = await handleEntityCreate(
+      ResourceKind.Explore,
+      $resourceQuery.data,
+    );
+    if (newExploreFilePath) {
+      await goto(`/files/${newExploreFilePath}`);
+    }
+  }
 </script>
 
 {#if referenceModelName}
@@ -82,6 +94,10 @@
 <NavigationMenuItem on:click={editMetrics}>
   <MetricsViewIcon slot="icon" />
   Edit metrics
+</NavigationMenuItem>
+<NavigationMenuItem on:click={createExploreDashboard}>
+  <ExploreIcon slot="icon" />
+  Generate dashboard
 </NavigationMenuItem>
 {#if $customDashboards}
   <NavigationMenuItem
