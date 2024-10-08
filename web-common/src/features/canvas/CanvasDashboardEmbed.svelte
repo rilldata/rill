@@ -46,7 +46,7 @@
   bind:contentRect
   {scale}
   height={maxBottom * gridCell * scale}
-  width={defaults.DASHBOARD_WIDTH}
+  width={dashboardWidth}
 >
   {#each items as component, i (i)}
     {@const componentName = component.component}
