@@ -155,7 +155,7 @@ export function useCreateMetricsViewFromTableUIAction(
       // Create the Explore file
       const newExploreFilePath = await handleEntityCreate(
         ResourceKind.Explore,
-        undefined,
+        get(metricsViewResource).data,
       );
       if (!newExploreFilePath) {
         throw new Error("Failed to create an Explore file");
