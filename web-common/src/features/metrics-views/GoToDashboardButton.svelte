@@ -9,6 +9,7 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
+  import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import { handleEntityCreate } from "../file-explorer/new-files";
   import CreateExploreDashboardButton from "./CreateExploreDashboardButton.svelte";
@@ -45,7 +46,6 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Group>
-        <DropdownMenu.Label>Explore dashboards</DropdownMenu.Label>
         {#each dashboards as resource (resource?.meta?.name?.name)}
           {@const label =
             resource?.explore?.state?.validSpec?.title ??
@@ -53,7 +53,7 @@
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
             <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
-              <ExploreIcon />
+              <ExploreIcon color={resourceColorMapping[ResourceKind.Explore]} />
               {label}
             </DropdownMenu.Item>
           {/if}
@@ -61,7 +61,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item on:click={handleCreateDashboard}>
           <Add />
-          Create Explore dashboard
+          Create dashboard
         </DropdownMenu.Item>
       </DropdownMenu.Group>
     </DropdownMenu.Content>
