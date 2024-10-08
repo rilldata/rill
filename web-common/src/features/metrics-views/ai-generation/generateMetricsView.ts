@@ -181,7 +181,7 @@ export function useCreateMetricsViewFromTableUIAction(
       );
 
       // Navigate to the Explore workspace or to the Explore Preview
-      if (hasErrors) {
+      if (get(hasErrors)) {
         await goto(`/files${newExploreFilePath}`);
       } else {
         await goto(`/explore/${newExploreName}`);
