@@ -164,6 +164,14 @@ func (w *PurgeOrgWorker) Work(ctx context.Context, job *river.Job[PurgeOrgArgs])
 		w.logger.Warn("canceled subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 	}
 
+	// cleanup any assets for the org
+	err = w.admin.BatchDeleteAssets(ctx, func(ctx context.Context, pageSize int) ([]*database.Asset, error) {
+		return w.admin.DB.FindAssetsForOrg(ctx, org.ID, pageSize)
+	})
+	if err != nil {
+		return err
+	}
+
 	// delete org, billing issues will be cascade deleted
 	err = w.admin.DB.DeleteOrganization(ctx, org.Name)
 	if err != nil {

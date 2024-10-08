@@ -3,7 +3,7 @@
     createAdminServiceListOrganizationBillingIssues,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
-  import { getCancelledSubIssue } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues";
+  import { getCancelledIssue } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
@@ -14,23 +14,25 @@
   export let organization: string;
   export let subscription: V1Subscription;
 
-  $: plan = subscription.plan;
+  $: plan = subscription?.plan;
   $: issues = createAdminServiceListOrganizationBillingIssues(organization);
-  $: cancelledSubIssue = getCancelledSubIssue($issues.data?.issues ?? []);
+  $: cancelledSubIssue = getCancelledIssue($issues.data?.issues ?? []);
 
   let willEndOnText = "";
   $: if (cancelledSubIssue?.metadata.subscriptionCancelled?.endDate) {
     const endDate = DateTime.fromJSDate(
-      new Date(cancelledSubIssue.metadata.subscriptionCancelled?.endDate),
+      new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
     );
-    if (endDate.isValid)
+    if (endDate.isValid && endDate.millisecond > Date.now())
       willEndOnText = endDate.toLocaleString(DateTime.DATE_MED);
   }
 
   let open = false;
+
+  $: title = (plan?.displayName || plan?.name) ?? "Team Plan"; // assume team plan to avoid fetching plans list
 </script>
 
-<SettingsContainer title={plan.displayName ?? plan.name} titleIcon="info">
+<SettingsContainer {title} titleIcon="info">
   <div slot="body">
     <div>
       {#if willEndOnText}
@@ -40,7 +42,9 @@
       {/if}
       <PricingDetails />
     </div>
-    <PlanQuotas {organization} quotas={plan.quotas} />
+    {#if plan}
+      <PlanQuotas {organization} quotas={plan.quotas} />
+    {/if}
   </div>
   <svelte:fragment slot="contact">
     <span>For custom enterprise needs,</span>
@@ -54,4 +58,9 @@
   </Button>
 </SettingsContainer>
 
-<StartTeamPlanDialog bind:open {organization} type="renew" />
+<StartTeamPlanDialog
+  bind:open
+  {organization}
+  type="renew"
+  endDate={cancelledSubIssue?.metadata.subscriptionCancelled?.endDate}
+/>

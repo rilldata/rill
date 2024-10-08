@@ -15,11 +15,11 @@
   $: subscription = createAdminServiceGetBillingSubscription(organization);
   $: issues = createAdminServiceListOrganizationBillingIssues(organization);
 
-  $: if ($subscription.data?.subscription && $issues.data?.issues) {
+  $: if (!$subscription.isLoading && !$issues.isLoading) {
     handleBillingIssues(
       organization,
       $subscription.data.subscription,
-      $issues.data.issues,
+      $issues.data.issues ?? [],
     );
   }
 </script>

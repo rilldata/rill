@@ -35,6 +35,7 @@
 
   export let organization: string;
   export let open = false;
+  export let endDate = "";
 
   export let type: TeamPlanDialogTypes;
 
@@ -67,7 +68,9 @@
       case "renew":
         title = "Renew Team plan";
         // TODO resume
-        description = `Your billing cycle will resume on TODO. Pricing is based on amount of data ingested (and compressed) into Rill`;
+        description =
+          `Your billing cycle will resume on ${endDate}. ` +
+          "Pricing is based on amount of data ingested (and compressed) into Rill";
         buttonText = "Continue";
         break;
     }

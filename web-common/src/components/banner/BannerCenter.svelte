@@ -8,6 +8,10 @@
 
   onMount(() => {
     const unsubscribe = eventBus.on("banner", (newBanner) => {
+      if (newBanner?.type === "clear") {
+        banner = null;
+        return;
+      }
       banner = newBanner;
     });
 

@@ -18,13 +18,13 @@
   export let organization: string;
   export let subscription: V1Subscription;
 
-  $: plan = subscription.plan;
+  $: plan = subscription?.plan;
 
   $: issues = createAdminServiceListOrganizationBillingIssues(organization);
   $: trialIssue = getTrialIssue($issues.data?.issues ?? []);
   // prefer using end date from BillingIssues since we use that to hibernate projects and take other actions
   $: subscriptionEndDate =
-    trialIssue?.metadata?.onTrial?.endDate ?? subscription.trialEndDate;
+    trialIssue?.metadata?.onTrial?.endDate ?? subscription?.trialEndDate;
 
   let trialEndMessage: string;
   let trialEnded = false;
@@ -43,7 +43,9 @@
     }
   }
 
-  $: title = (plan.displayName || plan.name) + (trialEnded ? " expired" : "");
+  $: title =
+    ((plan?.displayName || plan?.name) ?? "Trial plan") +
+    (trialEnded ? " expired" : "");
 
   let open = false;
 </script>
@@ -54,7 +56,9 @@
       {trialEndMessage} Ready to get started with Rill?
       <PricingDetails />
     </div>
-    <PlanQuotas {organization} quotas={plan.quotas} />
+    {#if plan}
+      <PlanQuotas {organization} quotas={plan.quotas} />
+    {/if}
   </div>
   <svelte:fragment slot="contact">
     <span>For custom enterprise needs,</span>

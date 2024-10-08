@@ -7,7 +7,7 @@ import {
   PaymentBillingIssueTypes,
 } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
 import {
-  getCancelledSubIssue,
+  getCancelledIssue,
   handleSubscriptionIssues,
 } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues";
 import { handleTrialPlan } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
@@ -16,10 +16,10 @@ import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
 export function handleBillingIssues(
   organization: string,
-  subscription: V1Subscription,
+  subscription: V1Subscription | undefined,
   issues: V1BillingIssue[],
 ) {
-  const cancelledSubIssue = getCancelledSubIssue(issues);
+  const cancelledSubIssue = getCancelledIssue(issues);
   if (cancelledSubIssue) {
     eventBus.emit("banner", handleSubscriptionIssues(cancelledSubIssue));
     return;
@@ -33,11 +33,17 @@ export function handleBillingIssues(
   const paymentIssues = issues.filter(
     (i) => i.type in PaymentBillingIssueTypes,
   );
-  if (paymentIssues.length) {
+  if (paymentIssues.length && subscription) {
     eventBus.emit(
       "banner",
       handlePaymentIssues(organization, subscription, paymentIssues),
     );
     return;
   }
+
+  eventBus.emit("banner", {
+    type: "clear",
+    iconType: "none",
+    message: "",
+  });
 }

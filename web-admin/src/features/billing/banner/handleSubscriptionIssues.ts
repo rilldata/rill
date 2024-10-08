@@ -7,7 +7,12 @@ import {
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { DateTime } from "luxon";
 
-export function getCancelledSubIssue(issues: V1BillingIssue[]) {
+export function getNeverSubscribedIssue(issues: V1BillingIssue[]) {
+  return issues.find(
+    (i) => i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED,
+  );
+}
+export function getCancelledIssue(issues: V1BillingIssue[]) {
   return issues.find(
     (i) =>
       i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED,
@@ -21,7 +26,7 @@ export function handleSubscriptionIssues(cancelledSubIssue: V1BillingIssue) {
     const endDate = DateTime.fromJSDate(
       new Date(cancelledSubIssue.metadata.subscriptionCancelled?.endDate),
     );
-    if (endDate.isValid) {
+    if (endDate.isValid && endDate.millisecond > Date.now()) {
       accessTimeout = ` but you still have access through ${endDate.toLocaleString(DateTime.DATE_MED)}`;
     }
   }
