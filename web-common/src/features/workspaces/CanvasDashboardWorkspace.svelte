@@ -31,6 +31,7 @@
     resourceIconMapping,
     resourceColorMapping,
   } from "../entity-management/resource-icon-mapping";
+  import PreviewButton from "../explores/PreviewButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -198,13 +199,11 @@
     titleInput={fileName}
     onTitleChange={onChangeCallback}
   >
-    <div class="flex gap-x-4 items-center" slot="workspace-controls">
-      {#if selectedView === "split" || selectedView === "viz"}
-        <div class="flex gap-x-1 flex-none items-center h-full rounded-full">
-          <Switch small id="grid" bind:checked={showGrid} />
-          <Label for="grid" class="font-normal text-xs">Grid</Label>
-        </div>
-      {/if}
+    <div class="flex gap-x-2 items-center" slot="workspace-controls">
+      <PreviewButton
+        href="/custom/{canvasDashboardName}"
+        disabled={errors?.length > 0}
+      />
 
       <AddComponentMenu {addComponent} />
       <ViewSelector bind:selectedView />
@@ -299,18 +298,31 @@
     {/if}
 
     {#if selectedView === "viz" || selectedView === "split"}
-      <CanvasDashboardPreview
-        {canvasDashboardName}
-        {gap}
-        {items}
-        {columns}
-        {showGrid}
-        {variables}
-        bind:selectedComponentName
-        bind:selectedIndex
-        on:update={handlePreviewUpdate}
-        on:delete={handleDeleteEvent}
-      />
+      <section
+        class="size-full flex flex-col relative overflow-hidden border border-gray-300 rounded-[2px]"
+      >
+        <CanvasDashboardPreview
+          {canvasDashboardName}
+          {gap}
+          {items}
+          {columns}
+          {showGrid}
+          {variables}
+          bind:selectedComponentName
+          bind:selectedIndex
+          on:update={handlePreviewUpdate}
+          on:delete={handleDeleteEvent}
+        />
+
+        <div
+          class="flex gap-x-1 flex-none opacity-50 hover:opacity-100 transition-all bg-slate-100 shadow-lg py-1 border border-slate-200 px-2 items-center h-fit rounded-full absolute bottom-2 right-2"
+        >
+          <Switch small id="grid" bind:checked={showGrid} />
+          <Label for="grid" class="font-medium text-xs text-gray-600">
+            Grid
+          </Label>
+        </div>
+      </section>
     {/if}
   </div>
 </WorkspaceContainer>

@@ -18,10 +18,6 @@
   import { get } from "svelte/store";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import { parseDocument } from "yaml";
-  import { ResourceKind } from "../features/entity-management/resource-selectors";
-  import type { V1Resource, V1ResourceName } from "../runtime-client";
-  import type { FileArtifact } from "../features/entity-management/file-artifact";
-  import PreviewButton from "../features/explores/PreviewButton.svelte";
 
   export let mode: string;
 
@@ -30,7 +26,6 @@
   $: ({
     params: { name: dashboardName },
     route,
-    data,
   } = $page);
 
   $: ({ unsavedFiles } = fileArtifacts);
@@ -71,36 +66,6 @@
 
   $: metricsViewName = currentDashboard?.meta?.name?.name;
 
-  $: fileArtifact = data.fileArtifact as FileArtifact | undefined;
-
-  $: resourceNameStore = fileArtifact?.resourceName;
-  $: remoteContent = fileArtifact?.remoteContent;
-  $: inferredResourceKind = fileArtifact?.inferredResourceKind;
-
-  $: isNewMetricsView = $remoteContent?.includes("version: 1");
-
-  $: dashboardResourceInErrorState = Boolean(
-    $inferredResourceKind &&
-      getPreviewType($inferredResourceKind) !== null &&
-      !isNewMetricsView &&
-      previewHref === null,
-  );
-
-  $: resourceName = resourceNameStore && $resourceNameStore;
-
-  $: previewType = getPreviewType(resourceName?.kind);
-  $: previewName = getPreviewName(resourceName, explores);
-  $: previewHref =
-    previewName && previewType ? `/${previewType}/${previewName}` : null;
-
-  $: defaultType = getPreviewType(defaultDashboard?.meta?.name?.kind);
-  $: defaultName = getPreviewName(defaultDashboard?.meta?.name, explores);
-  $: fallbackHref =
-    defaultName && defaultType ? `/${defaultType}/${defaultName}` : null;
-
-  $: href =
-    previewType === null || isNewMetricsView ? fallbackHref : previewHref;
-
   async function submitTitleChange(editedTitle: string) {
     const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
 
@@ -119,44 +84,6 @@
 
     artifact.updateLocalContent(parsed.toString(), true);
     await artifact.saveLocalContent();
-  }
-
-  function getPreviewType(
-    kind: string | undefined,
-  ): "custom" | "explore" | null {
-    switch (kind) {
-      case ResourceKind.Canvas:
-        return "custom";
-      case ResourceKind.Explore:
-      case ResourceKind.MetricsView:
-        return "explore";
-      default:
-        return null;
-    }
-  }
-
-  function getPreviewName(
-    name: V1ResourceName | undefined,
-    validExploreDashboards: V1Resource[],
-  ): string | null {
-    switch (name?.kind) {
-      case ResourceKind.Canvas:
-        return name?.name ?? null;
-      case ResourceKind.Explore:
-        return (
-          validExploreDashboards.find(
-            ({ meta }) => meta?.name?.name === name.name,
-          )?.meta?.name?.name ?? null
-        );
-      case ResourceKind.MetricsView:
-        return (
-          validExploreDashboards.find(
-            ({ explore }) => explore?.spec?.metricsView === name.name,
-          )?.meta?.name?.name ?? null
-        );
-      default:
-        return null;
-    }
   }
 </script>
 
@@ -192,8 +119,6 @@
           <ExplorePreviewCTAs exploreName={dashboardName} />
         </StateManagersProvider>
       {/if}
-    {:else if mode === "Developer"}
-      <PreviewButton {href} disabled={!href || dashboardResourceInErrorState} />
     {/if}
     <DeployProjectCTA {hasValidDashboard} />
     <LocalAvatarButton />
