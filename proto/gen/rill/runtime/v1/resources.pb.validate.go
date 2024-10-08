@@ -4267,38 +4267,33 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	}
 
-	for idx, item := range m.GetPresets() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ExploreSpecValidationError{
-						field:  fmt.Sprintf("Presets[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ExploreSpecValidationError{
-						field:  fmt.Sprintf("Presets[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ExploreSpecValidationError{
-					field:  fmt.Sprintf("Presets[%v]", idx),
+	if all {
+		switch v := interface{}(m.GetDefaultPreset()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "DefaultPreset",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "DefaultPreset",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
 			}
 		}
-
+	} else if v, ok := interface{}(m.GetDefaultPreset()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreSpecValidationError{
+				field:  "DefaultPreset",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	for idx, item := range m.GetSecurityRules() {
@@ -4803,8 +4798,6 @@ func (m *ExplorePreset) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for Label
 
 	if all {
 		switch v := interface{}(m.GetDimensionsSelector()).(type) {

@@ -1,21 +1,12 @@
 <script lang="ts">
-  import * as Elements from "./components";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    CUSTOM_TIME_RANGE_ALIAS,
-    type ISODurationString,
-    type NamedRange,
-    type RangeBuckets,
-    deriveInterval,
-  } from "../new-time-controls";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
-    type DashboardTimeControls,
     TimeComparisonOption,
-    type TimeRange,
     TimeRangePreset,
+    type DashboardTimeControls,
+    type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
@@ -25,6 +16,15 @@
     useExploreStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
+  import {
+    ALL_TIME_RANGE_ALIAS,
+    CUSTOM_TIME_RANGE_ALIAS,
+    deriveInterval,
+    type ISODurationString,
+    type NamedRange,
+    type RangeBuckets,
+  } from "../new-time-controls";
+  import * as Elements from "./components";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -48,7 +48,7 @@
   $: selectedRange =
     $exploreStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
-  $: defaultTimeRange = exploreSpec.presets?.[0]?.timeRange;
+  $: defaultTimeRange = exploreSpec?.defaultPreset?.timeRange;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(

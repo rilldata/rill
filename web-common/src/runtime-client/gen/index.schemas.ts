@@ -1836,7 +1836,6 @@ export const V1ExploreComparisonMode = {
 } as const;
 
 export interface V1ExplorePreset {
-  label?: string;
   /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
   dimensions?: string[];
   dimensionsSelector?: V1FieldSelector;
@@ -1870,9 +1869,7 @@ If the list is empty, a default list should be shown. */
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
-  /** List of preconfigured UI states that can be toggled between.
-If the list is not empty, the first item should be selected by default. */
-  presets?: V1ExplorePreset[];
+  defaultPreset?: V1ExplorePreset;
   /** Security for the explore dashboard.
 These are not currently parsed from YAML, but will be derived from the parent metrics view. */
   securityRules?: V1SecurityRule[];
