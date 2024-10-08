@@ -762,7 +762,7 @@ service AdminService {
     };
   }
 
-  // CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+  // CancelBillingSubscription cancels the billing subscription for the organization
   rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
     option (google.api.http) = {
       delete: "/v1/organizations/{organization}/billing/subscriptions",

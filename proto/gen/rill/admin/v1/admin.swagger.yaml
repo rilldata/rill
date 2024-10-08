@@ -399,7 +399,7 @@ paths:
       tags:
         - AdminService
     delete:
-      summary: CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+      summary: CancelBillingSubscription cancels the billing subscription for the organization
       operationId: AdminService_CancelBillingSubscription
       responses:
         "200":

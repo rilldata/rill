@@ -67,6 +67,8 @@ import type {
   QueryServiceQueryBody,
   QueryServiceQueryBatch200,
   QueryServiceQueryBatchBody,
+  V1ExportReportResponse,
+  QueryServiceExportReportBody,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 import type { ErrorType } from "../../http-client";
@@ -2189,6 +2191,69 @@ export const createQueryServiceQueryBatch = <
     {
       instanceId: string;
       data: QueryServiceQueryBatchBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary ExportReport builds a URL to download the results of a query as a file.
+ */
+export const queryServiceExportReport = (
+  instanceId: string,
+  name: string,
+  queryServiceExportReportBody: QueryServiceExportReportBody,
+) => {
+  return httpClient<V1ExportReportResponse>({
+    url: `/v1/instances/${instanceId}/reports/${name}/export`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceExportReportBody,
+  });
+};
+
+export type QueryServiceExportReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceExportReport>>
+>;
+export type QueryServiceExportReportMutationBody = QueryServiceExportReportBody;
+export type QueryServiceExportReportMutationError = ErrorType<RpcStatus>;
+
+export const createQueryServiceExportReport = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceExportReport>>,
+    TError,
+    {
+      instanceId: string;
+      name: string;
+      data: QueryServiceExportReportBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceExportReport>>,
+    {
+      instanceId: string;
+      name: string;
+      data: QueryServiceExportReportBody;
+    }
+  > = (props) => {
+    const { instanceId, name, data } = props ?? {};
+
+    return queryServiceExportReport(instanceId, name, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceExportReport>>,
+    TError,
+    {
+      instanceId: string;
+      name: string;
+      data: QueryServiceExportReportBody;
     },
     TContext
   >(mutationFn, mutationOptions);

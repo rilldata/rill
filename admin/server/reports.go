@@ -612,6 +612,8 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
 		ProjectID:       projectID,
 		CreatedByUserID: ownerID,
+		ResourceType:    runtime.ResourceKindReport,
+		ResourceName:    reportName,
 		State:           opts.WebOpenState,
 		Title:           opts.Title,
 	}
@@ -637,40 +639,6 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		mgcOpts.Attributes = attrs
-	}
-
-	if mv, ok := args["metricsView"]; ok {
-		mgcOpts.MetricsView = mv.(string)
-	} else {
-		return nil, errors.New("missing metricsView in query args")
-	}
-
-	if filter, ok := args["where"]; ok {
-		filterJSON, err := json.Marshal(filter)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal filter JSON: %w", err)
-		}
-		mgcOpts.MetricsViewFilterJSON = string(filterJSON)
-	}
-
-	if dims, ok := args["dimensions"]; ok {
-		dimsMapSlice := dims.([]interface{}) // deliberately panics if not a slice
-		for _, dimMap := range dimsMapSlice {
-			dim := dimMap.(map[string]interface{}) // deliberately panics if not a map
-			mgcOpts.MetricsViewFields = append(mgcOpts.MetricsViewFields, dim["name"].(string))
-		}
-	}
-
-	if measures, ok := args["measures"]; ok {
-		measuresMapSlice := measures.([]interface{}) // deliberately panics if not a slice
-		for _, measureMap := range measuresMapSlice {
-			measure := measureMap.(map[string]interface{}) // deliberately panics if not a map
-			mgcOpts.MetricsViewFields = append(mgcOpts.MetricsViewFields, measure["name"].(string))
-		}
-	}
-
-	if len(mgcOpts.MetricsViewFields) == 0 {
-		return nil, errors.New("missing dimensions and measures in query args")
 	}
 
 	// issue magic tokens for new external emails

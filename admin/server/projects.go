@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -165,7 +166,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		// The magic token's resource
 		condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(mdl.ResourceType), duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))))
 		// If the magic token's resource is an Explore, we also need to include its underlying metrics view
-		if mdl.ResourceType == runtime.ResourceKindExplore {
+		if mdl.ResourceType == runtime.ResourceKindExplore || mdl.ResourceType == runtime.ResourceKindReport {
 			client, err := s.admin.OpenRuntimeClient(depl)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
@@ -186,9 +187,27 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				return nil, status.Errorf(codes.Internal, "could not get resource for magic token: %s", err.Error())
 			}
 
-			spec := resp.Resource.GetExplore().State.ValidSpec
-			if spec != nil {
-				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+			if mdl.ResourceType == runtime.ResourceKindExplore {
+				spec := resp.Resource.GetExplore().State.ValidSpec
+				if spec != nil {
+					condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+				}
+			}
+
+			if mdl.ResourceType == runtime.ResourceKindReport {
+				spec := resp.Resource.GetReport().Spec
+				var args map[string]interface{}
+				if spec.QueryArgsJson != "" {
+					err := json.Unmarshal([]byte(spec.QueryArgsJson), &args)
+					if err != nil {
+						return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
+					}
+				}
+				if len(args) > 0 {
+					if mv, ok := args["metricsView"]; ok {
+						condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mv.(string)))))
+					}
+				}
 			}
 		}
 

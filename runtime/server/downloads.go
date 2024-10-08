@@ -76,7 +76,12 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		req.BakedQuery = ""
 	}
 
-	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).SecurityClaims())
+	tkn, err := s.generateDownloadToken(&runtimev1.DownloadReportRequest{
+		InstanceId: req.InstanceId,
+		Limit:      req.Limit,
+		Format:     req.Format,
+		Query:      req.Query,
+	}, auth.GetClaims(ctx).SecurityClaims())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
 	}
@@ -84,6 +89,50 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 	out := fmt.Sprintf("/v1/download?token=%s", tkn)
 
 	return &runtimev1.ExportResponse{
+		DownloadUrlPath: out,
+	}, nil
+}
+
+func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRequest) (*runtimev1.ExportReportResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) { // currently all reports are served by mv
+		return nil, ErrForbidden
+	}
+
+	c, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get controller: %s", err.Error())
+	}
+
+	r, err := c.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: req.Name}, false)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get report: %s", err.Error())
+	}
+
+	if r.GetReport() == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "resource is not a report")
+	}
+
+	rep := r.GetReport()
+	t := req.ExecutionTime.AsTime()
+
+	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build export request: %w", err)
+	}
+
+	tkn, err := s.generateDownloadToken(&runtimev1.DownloadReportRequest{
+		InstanceId: req.InstanceId,
+		Limit:      req.Limit,
+		Format:     req.Format,
+		Query:      qry,
+	}, auth.GetClaims(ctx).SecurityClaims())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
+	}
+
+	out := fmt.Sprintf("/v1/download?token=%s", tkn)
+
+	return &runtimev1.ExportReportResponse{
 		DownloadUrlPath: out,
 	}, nil
 }
@@ -286,7 +335,7 @@ func init() {
 }
 
 // generateDownloadToken generates and encrypts a download token for the given request and attributes.
-func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *runtime.SecurityClaims) (string, error) {
+func (s *Server) generateDownloadToken(req *runtimev1.DownloadReportRequest, claims *runtime.SecurityClaims) (string, error) {
 	r, err := proto.Marshal(req)
 	if err != nil {
 		return "", err
@@ -317,7 +366,7 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *run
 }
 
 // parseDownloadToken decrypts and parses a download token and returns the request and attributes.
-func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, *runtime.SecurityClaims, error) {
+func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.DownloadReportRequest, *runtime.SecurityClaims, error) {
 	tkn := downloadToken{}
 	err := s.codec.Decode(tknStr, &tkn)
 	if err != nil {
@@ -339,7 +388,7 @@ func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, *r
 		return nil, nil, err
 	}
 
-	req := &runtimev1.ExportRequest{}
+	req := &runtimev1.DownloadReportRequest{}
 	err = proto.Unmarshal(r, req)
 	if err != nil {
 		return nil, nil, err
