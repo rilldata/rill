@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    createAdminServiceRemoveProjectMemberUser,
     createAdminServiceSetProjectMemberUserRole,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
@@ -32,6 +33,7 @@
   const queryClient = useQueryClient();
 
   $: setProjectMemberUserRole = createAdminServiceSetProjectMemberUserRole();
+  $: removeProjectMemberUser = createAdminServiceRemoveProjectMemberUser();
 
   async function handleSetRole(email: string, role: string) {
     try {
@@ -59,6 +61,34 @@
       console.error("Error updating user role", error);
       eventBus.emit("notification", {
         message: "Error updating user role",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleRemove(email: string) {
+    try {
+      await $removeProjectMemberUser.mutateAsync({
+        organization: organization,
+        project: project,
+        email: email,
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListProjectMemberUsersQueryKey(organization, project),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListProjectInvitesQueryKey(organization, project),
+      );
+
+      eventBus.emit("notification", {
+        message: "User removed",
+      });
+    } catch (error) {
+      console.error("Error removing user", error);
+      eventBus.emit("notification", {
+        message: "Error removing user",
         type: "error",
       });
     }
@@ -97,5 +127,15 @@
     >
       <span>Viewer</span>
     </DropdownMenu.CheckboxItem>
+    <!-- TODO; do not allow for current user to remove themselves -->
+    <DropdownMenu.Separator />
+    <DropdownMenu.Item
+      class="font-normal flex items-center"
+      on:click={() => {
+        handleRemove(user.userEmail);
+      }}
+    >
+      <span class="ml-6">Remove</span>
+    </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
