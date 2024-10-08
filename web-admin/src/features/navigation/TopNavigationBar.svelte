@@ -160,10 +160,7 @@
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<div
-  class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage && !onOrgPage}
->
+<div class="flex items-center w-full pr-4 pl-2 py-1">
   <!-- Left side -->
   <a
     href={rillLogoHref}
