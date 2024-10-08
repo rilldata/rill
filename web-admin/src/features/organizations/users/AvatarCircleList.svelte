@@ -10,7 +10,7 @@
 
 <div class="flex items-center gap-2 py-2 pl-2">
   <Avatar
-    size="h-7 w-7"
+    avatarSize="h-7 w-7"
     alt={pendingAcceptance ? null : name}
     bgColor={getRandomBgColor()}
   />
