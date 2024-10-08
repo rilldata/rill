@@ -1,18 +1,59 @@
 <script lang="ts">
-  import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
-  import AvatarSquareList from "../../organizations/users/AvatarSquareList.svelte";
+  import UserInviteGroupAvatar from "./UserInviteGroupAvatar.svelte";
+  import UserInviteGroupSetRole from "./UserInviteGroupSetRole.svelte";
+  import {
+    createAdminServiceListUsergroupMemberUsers,
+    type V1MemberUsergroup,
+  } from "@rilldata/web-admin/client";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
 
   export let organization: string;
-  export let usergroup: string;
+  export let project: string;
+  export let group: V1MemberUsergroup;
+
+  let isGroupHovered = false;
 
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
-    usergroup,
+    group.groupName,
   );
-  $: userGroupMembersCount =
-    $listUsergroupMemberUsers.data?.members?.length ?? 0;
+  $: userGroupMembers = $listUsergroupMemberUsers.data?.members ?? [];
 </script>
 
-<AvatarSquareList name={usergroup} count={userGroupMembersCount}>
-  {@html `Everyone from <span class="font-bold">${usergroup}</span>`}
-</AvatarSquareList>
+<Tooltip location="right" alignment="middle" distance={8}>
+  <div
+    role="button"
+    tabindex="0"
+    class="flex flex-row items-center gap-x-2 justify-between data-[hovered=true]:bg-slate-50 rounded-sm"
+    data-hovered={isGroupHovered}
+    on:mouseover={() => (isGroupHovered = true)}
+    on:mouseleave={() => (isGroupHovered = false)}
+    on:focus={() => (isGroupHovered = true)}
+    on:blur={() => (isGroupHovered = false)}
+  >
+    <UserInviteGroupAvatar {organization} usergroup={group.groupName} />
+    <UserInviteGroupSetRole {organization} {project} {group} />
+  </div>
+
+  <TooltipContent maxWidth="121px" slot="tooltip-content">
+    <ul>
+      {#each userGroupMembers.slice(0, 6) as user}
+        <div class="flex items-center gap-1 py-1">
+          <Avatar
+            size="h-4 w-4"
+            fontSize="text-[10px]"
+            alt={user.userName}
+            bgColor={getRandomBgColor()}
+          />
+          <li>{user.userName}</li>
+        </div>
+      {/each}
+      {#if userGroupMembers.length > 6}
+        <li>and {userGroupMembers.length - 6} more</li>
+      {/if}
+    </ul>
+  </TooltipContent>
+</Tooltip>
