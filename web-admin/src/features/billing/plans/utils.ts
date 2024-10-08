@@ -23,7 +23,7 @@ export function isTeamPlan(plan: V1BillingPlan) {
 
 export function getSubscriptionResumedText(endDate: string) {
   const date = DateTime.fromJSDate(new Date(endDate));
-  if (!date.isValid || date.millisecond < Date.now()) {
+  if (!date.isValid || date.toMillis() < Date.now()) {
     return "today";
   }
   const resumeDate = date.plus({ day: 1 });

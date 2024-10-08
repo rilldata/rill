@@ -30,7 +30,7 @@
     titleIcon={$categorisedIssues.data?.payment?.length ? "error" : "none"}
   >
     <div slot="body">
-      {#if $categorisedIssues.data?.payment}
+      {#if $categorisedIssues.data?.payment?.length}
         {getPaymentIssueErrorText($categorisedIssues.data.payment)} Please click
         <b>Manage</b> below to correct.
       {:else}

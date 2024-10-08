@@ -14,6 +14,7 @@
 </script>
 
 <script lang="ts">
+  import { page } from "$app/stores";
   import { buildUpgradeUrl } from "@rilldata/web-admin/client/redirect-utils";
   import { mergedQueryStatusStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
@@ -98,7 +99,7 @@
       window.open(
         await fetchPaymentsPortalURL(
           organization,
-          buildUpgradeUrl(organization),
+          `${$page.url.protocol}//${$page.url.host}/${organization}/-/upgrade`,
         ),
         "_self",
       );

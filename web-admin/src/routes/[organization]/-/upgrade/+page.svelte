@@ -6,8 +6,12 @@
     createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
   } from "@rilldata/web-admin/client";
-  import { getPaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
+  import {
+    getPaymentIssueErrorText,
+    getPaymentIssues,
+  } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
   import { getCancelledIssue } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues.js";
+  import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
     fetchPaymentsPortalURL,
     fetchTeamPlan,
@@ -38,7 +42,7 @@
     if (paymentIssues.length) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Please fix payment issues: `,
+        message: `Please fix payment issues: ${getPaymentIssueErrorText(paymentIssues)}`,
         link: {
           text: "Update payment",
           href: await fetchPaymentsPortalURL(
@@ -47,7 +51,7 @@
           ),
         },
         options: {
-          persisted: true,
+          persisted: true, // TODO: this is not honoured when link is added
         },
       });
       return goto(`/${organization}`);
@@ -72,6 +76,8 @@
         },
       });
     }
+
+    void invalidateBillingInfo(organization);
     return goto(`/${organization}`);
   }
 </script>

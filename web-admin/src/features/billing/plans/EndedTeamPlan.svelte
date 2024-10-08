@@ -23,7 +23,7 @@
     const endDate = DateTime.fromJSDate(
       new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
     );
-    if (endDate.isValid && endDate.millisecond > Date.now())
+    if (endDate.isValid && endDate.toMillis() > Date.now())
       willEndOnText = endDate.toLocaleString(DateTime.DATE_MED);
   }
 

@@ -26,7 +26,7 @@ export function handleSubscriptionIssues(
     const endDate = DateTime.fromJSDate(
       new Date(cancelledSubIssue.metadata.subscriptionCancelled?.endDate),
     );
-    if (endDate.isValid && endDate.millisecond > Date.now()) {
+    if (endDate.isValid && endDate.toMillis() > Date.now()) {
       accessTimeout = ` but you still have access through ${endDate.toLocaleString(DateTime.DATE_MED)}`;
     }
   }
