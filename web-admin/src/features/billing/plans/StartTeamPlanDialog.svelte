@@ -7,12 +7,21 @@
    * 5. renew - After user cancels a subscription and wants to renew.
    */
   export type TeamPlanDialogTypes = "base" | "size" | "org" | "proj" | "renew";
+  export type ShowTeamPlanDialogCallback = (
+    type: TeamPlanDialogTypes,
+    endDate: string,
+  ) => void;
 </script>
 
 <script lang="ts">
-  import { mergedMutationStatus } from "@rilldata/web-admin/client/utils";
+  import { page } from "$app/stores";
+  import { mergedQueryStatusStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
-  import { getCategorisedPlans } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import {
+    fetchPaymentsPortalURL,
+    fetchTeamPlan,
+  } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { getSubscriptionResumedText } from "@rilldata/web-admin/features/billing/plans/utils";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -30,8 +39,6 @@
   } from "@rilldata/web-admin/client/index.js";
   import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
   import { getPaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
-  import { createAdminServiceGetPaymentsPortalURL } from "@rilldata/web-admin/client";
-  import { page } from "$app/stores";
 
   export let organization: string;
   export let open = false;
@@ -67,9 +74,8 @@
 
       case "renew":
         title = "Renew Team plan";
-        // TODO resume
         description =
-          `Your billing cycle will resume on ${endDate}. ` +
+          `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}. ` +
           "Pricing is based on amount of data ingested (and compressed) into Rill";
         buttonText = "Continue";
         break;
@@ -77,22 +83,27 @@
   }
   $: setCopyBasedOnType(type);
 
-  $: categorisedPlans = getCategorisedPlans(open); // only fetch when the dialog is opened
-  $: teamPlan = $categorisedPlans.data?.teamPlan;
   $: paymentIssues = getPaymentIssues(organization);
-  $: paymentUrl = createAdminServiceGetPaymentsPortalURL(organization, {
-    returnUrl: `${$page.url.protocol}//${$page.url.host}/-/auto-close`,
-  });
 
   const userPromptWindow = new PopupWindow();
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
-  const status = mergedMutationStatus([planUpdater, planRenewer]);
+  $: allStatus = mergedQueryStatusStatus([
+    paymentIssues,
+    planUpdater,
+    planRenewer,
+  ]);
   async function handleUpgradePlan() {
-    if (!teamPlan) return;
+    // only fetch when needed to avoid hitting orb for list of plans too often
+    const teamPlan = await fetchTeamPlan();
     if ($paymentIssues.data?.length) {
-      await userPromptWindow.openAndWait($paymentUrl.data.url);
+      await userPromptWindow.openAndWait(
+        await fetchPaymentsPortalURL(
+          organization,
+          `${$page.url.protocol}//${$page.url.host}/-/auto-close`,
+        ),
+      );
     }
 
     if (type === "renew") {
@@ -113,12 +124,6 @@
     void invalidateBillingInfo(organization);
     open = false;
   }
-
-  $: loading =
-    $categorisedPlans.isLoading || // TODO: wait for this in handleUpgradePlan instead of add to spinner
-    $paymentIssues.isLoading ||
-    $paymentUrl.isLoading ||
-    $status.isLoading;
 </script>
 
 <AlertDialog bind:open>
@@ -138,9 +143,9 @@
         </ul>
       </AlertDialogDescription>
 
-      {#if $status.isError}
+      {#if $allStatus.isError}
         <div class="text-red-500 text-sm py-px">
-          {#each $status.errors as e}
+          {#each $allStatus.errors as e}
             <div>{e}</div>
           {/each}
         </div>
@@ -148,7 +153,11 @@
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-3">
       <Button type="secondary" on:click={() => (open = false)}>Close</Button>
-      <Button type="primary" on:click={handleUpgradePlan} {loading}>
+      <Button
+        type="primary"
+        on:click={handleUpgradePlan}
+        loading={$allStatus.isLoading}
+      >
         {buttonText}
       </Button>
     </AlertDialogFooter>

@@ -1,9 +1,6 @@
 import { V1BillingIssueType } from "@rilldata/web-admin/client";
 import type { V1BillingIssue } from "@rilldata/web-admin/client";
-import {
-  showUpgradeDialog,
-  upgradeDialogType,
-} from "@rilldata/web-admin/features/billing/banner/bannerCTADialogs";
+import type { ShowTeamPlanDialogCallback } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { DateTime } from "luxon";
 
@@ -19,7 +16,10 @@ export function getCancelledIssue(issues: V1BillingIssue[]) {
   );
 }
 
-export function handleSubscriptionIssues(cancelledSubIssue: V1BillingIssue) {
+export function handleSubscriptionIssues(
+  cancelledSubIssue: V1BillingIssue,
+  onShowStartTeamPlan: ShowTeamPlanDialogCallback,
+) {
   let accessTimeout = "";
 
   if (cancelledSubIssue.metadata.subscriptionCancelled?.endDate) {
@@ -39,8 +39,10 @@ export function handleSubscriptionIssues(cancelledSubIssue: V1BillingIssue) {
       text: "Renew ->",
       type: "button",
       onClick: () => {
-        showUpgradeDialog.set(true);
-        upgradeDialogType.set("renew");
+        onShowStartTeamPlan(
+          "renew",
+          cancelledSubIssue.metadata.subscriptionCancelled?.endDate ?? "",
+        );
       },
     },
   };

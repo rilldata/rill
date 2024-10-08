@@ -5,10 +5,7 @@
   } from "@rilldata/web-admin/client";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
-  import {
-    getCategorisedPlans,
-    getNextBillingCycleDate,
-  } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import {
@@ -27,13 +24,8 @@
 
   $: plan = subscription.plan;
 
-  $: categorisedPlans = getCategorisedPlans();
-  $: teamPlan = $categorisedPlans.data?.teamPlan;
-
   $: planCanceller = createAdminServiceCancelBillingSubscription();
   async function handleCancelPlan() {
-    if (!teamPlan) return;
-
     await $planCanceller.mutateAsync({
       organization,
     });

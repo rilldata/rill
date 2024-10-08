@@ -11,6 +11,7 @@ import {
   handleSubscriptionIssues,
 } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues";
 import { handleTrialPlan } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
+import type { ShowTeamPlanDialogCallback } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
 import { isTrialPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
@@ -18,15 +19,19 @@ export function handleBillingIssues(
   organization: string,
   subscription: V1Subscription | undefined,
   issues: V1BillingIssue[],
+  onShowStartTeamPlan: ShowTeamPlanDialogCallback,
 ) {
   const cancelledSubIssue = getCancelledIssue(issues);
   if (cancelledSubIssue) {
-    eventBus.emit("banner", handleSubscriptionIssues(cancelledSubIssue));
+    eventBus.emit(
+      "banner",
+      handleSubscriptionIssues(cancelledSubIssue, onShowStartTeamPlan),
+    );
     return;
   }
 
   if (isTrialPlan(subscription.plan)) {
-    eventBus.emit("banner", handleTrialPlan(issues));
+    eventBus.emit("banner", handleTrialPlan(issues, onShowStartTeamPlan));
     return;
   }
 

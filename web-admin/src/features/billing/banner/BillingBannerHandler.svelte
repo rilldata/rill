@@ -3,29 +3,37 @@
     createAdminServiceGetBillingSubscription,
     createAdminServiceListOrganizationBillingIssues,
   } from "@rilldata/web-admin/client";
-  import {
-    showUpgradeDialog,
-    upgradeDialogType,
-  } from "@rilldata/web-admin/features/billing/banner/bannerCTADialogs";
   import { handleBillingIssues } from "@rilldata/web-admin/features/billing/banner/handleBillingIssues";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import StartTeamPlanDialog, {
+    type TeamPlanDialogTypes,
+  } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
 
   export let organization: string;
 
   $: subscription = createAdminServiceGetBillingSubscription(organization);
   $: issues = createAdminServiceListOrganizationBillingIssues(organization);
 
+  let showStartTeamPlanDialog = false;
+  let startTeamPlanType: TeamPlanDialogTypes = "base";
+  let teamPlanEndDate = "";
+
   $: if (!$subscription.isLoading && !$issues.isLoading) {
     handleBillingIssues(
       organization,
       $subscription.data.subscription,
       $issues.data.issues ?? [],
+      (type, endDate) => {
+        showStartTeamPlanDialog = true;
+        startTeamPlanType = type;
+        teamPlanEndDate = endDate;
+      },
     );
   }
 </script>
 
 <StartTeamPlanDialog
-  bind:open={$showUpgradeDialog}
-  type={$upgradeDialogType}
+  bind:open={showStartTeamPlanDialog}
+  type={startTeamPlanType}
+  endDate={teamPlanEndDate}
   {organization}
 />

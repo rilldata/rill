@@ -1,13 +1,11 @@
 import {
-  adminServiceGetPaymentsPortalURL,
   createAdminServiceListOrganizationBillingIssues,
-  getAdminServiceGetPaymentsPortalURLQueryKey,
   type V1BillingIssue,
   V1BillingIssueType,
   type V1Subscription,
 } from "@rilldata/web-admin/client";
+import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export const PaymentBillingIssueTypes: Partial<
   Record<V1BillingIssueType, string>
@@ -42,22 +40,14 @@ export function handlePaymentIssues(
     cta: {
       text: "Update payment methods ->",
       type: "button",
-      onClick: async () => openPaymentPortal(organization),
+      onClick: async () => {
+        window.open(
+          await fetchPaymentsPortalURL(organization, window.location.href),
+          "_self",
+        );
+      },
     },
   };
 
   return bannerMessage;
-}
-
-async function openPaymentPortal(organization: string) {
-  const urlResp = await queryClient.fetchQuery({
-    queryKey: getAdminServiceGetPaymentsPortalURLQueryKey(organization, {
-      returnUrl: window.location.href,
-    }),
-    queryFn: () =>
-      adminServiceGetPaymentsPortalURL(organization, {
-        returnUrl: window.location.href,
-      }),
-  });
-  window.open(urlResp.url, "_self");
 }

@@ -1,7 +1,7 @@
 import type { RpcStatus } from "@rilldata/web-admin/client/gen/index.schemas";
-import type { CreateMutationResult, Query } from "@tanstack/svelte-query";
+import type { Query } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
-import { derived } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 
 export function isAdminServerQuery(query: Query): boolean {
   const [apiPath] = query.queryKey as string[];
@@ -20,12 +20,18 @@ export function isAdminServerQuery(query: Query): boolean {
   return adminApiEndpoints.some((endpoint) => apiPath.startsWith(endpoint));
 }
 
-export function mergedMutationStatus(mutations: CreateMutationResult[]) {
-  return derived(mutations, (mutations) => {
-    const isLoading = mutations.some((m) => m.isLoading);
-    const isError = mutations.some((m) => m.isError);
-    const errors = mutations
-      .map((m) => m.error)
+export function mergedQueryStatusStatus(
+  queriesOrMutations: Readable<{
+    isLoading: boolean;
+    isError: boolean;
+    error?: any;
+  }>[],
+) {
+  return derived(queriesOrMutations, (queriesOrMutations) => {
+    const isLoading = queriesOrMutations.some((q) => q.isLoading);
+    const isError = queriesOrMutations.some((q) => q.isError);
+    const errors = queriesOrMutations
+      .map((q) => q.error)
       .filter(Boolean) as AxiosError<RpcStatus>[];
     return {
       isLoading,

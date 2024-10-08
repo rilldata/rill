@@ -1,36 +1,41 @@
 import {
-  createAdminServiceListPublicBillingPlans,
-  type V1BillingPlan,
+  adminServiceGetPaymentsPortalURL,
+  adminServiceListPublicBillingPlans,
+  getAdminServiceGetPaymentsPortalURLQueryKey,
+  getAdminServiceListPublicBillingPlansQueryKey,
 } from "@rilldata/web-admin/client";
-import {
-  isTeamPlan,
-  isTrialPlan,
-} from "@rilldata/web-admin/features/billing/plans/utils";
+import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { DateTime } from "luxon";
 
-export function getCategorisedPlans(enabled = true) {
-  return createAdminServiceListPublicBillingPlans({
-    query: {
-      select: (data) => {
-        let trialPlan: V1BillingPlan;
-        let teamPlan: V1BillingPlan;
-
-        data.plans.forEach((p) => {
-          if (isTrialPlan(p)) {
-            trialPlan = p;
-          } else if (isTeamPlan(p) && !teamPlan) {
-            teamPlan = p;
-          }
-        });
-
-        return {
-          trialPlan,
-          teamPlan,
-        };
-      },
-      enabled,
-    },
+export async function fetchTeamPlan() {
+  const plansResp = await queryClient.fetchQuery({
+    queryKey: getAdminServiceListPublicBillingPlansQueryKey(),
+    queryFn: () => adminServiceListPublicBillingPlans(),
   });
+
+  return plansResp.plans.find(isTeamPlan);
+}
+
+export async function fetchPaymentsPortalURL(
+  organization: string,
+  returnUrl: string,
+) {
+  const portalUrlResp = await queryClient.fetchQuery({
+    queryKey: getAdminServiceGetPaymentsPortalURLQueryKey(organization, {
+      returnUrl,
+    }),
+    queryFn: () =>
+      adminServiceGetPaymentsPortalURL(organization, {
+        returnUrl,
+      }),
+    // always refetch since the signed url will expire
+    // TODO: figure out expiry time and use that instead
+    cacheTime: 0,
+    staleTime: 0,
+  });
+
+  return portalUrlResp.url;
 }
 
 export function getNextBillingCycleDate(curEndDateRaw: string): string {

@@ -2,24 +2,12 @@ import {
   type V1BillingIssue,
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
-import {
-  showUpgradeDialog,
-  upgradeDialogType,
-} from "@rilldata/web-admin/features/billing/banner/bannerCTADialogs";
+import type { ShowTeamPlanDialogCallback } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
 
 const WarningPeriodInDays = 7;
-
-const cta: BannerMessage["cta"] = {
-  text: "Upgrade ->",
-  type: "button",
-  onClick: () => {
-    showUpgradeDialog.set(true);
-    upgradeDialogType.set("base");
-  },
-};
 
 export function getTrialIssue(issues: V1BillingIssue[]) {
   return issues.find(
@@ -29,7 +17,18 @@ export function getTrialIssue(issues: V1BillingIssue[]) {
   );
 }
 
-export function handleTrialPlan(issues: V1BillingIssue[]): BannerMessage {
+export function handleTrialPlan(
+  issues: V1BillingIssue[],
+  onShowStartTeamPlan: ShowTeamPlanDialogCallback,
+): BannerMessage {
+  const cta: BannerMessage["cta"] = {
+    text: "Upgrade ->",
+    type: "button",
+    onClick: () => {
+      onShowStartTeamPlan("base", "");
+    },
+  };
+
   const trialIssue = getTrialIssue(issues);
 
   const endDateStr =
