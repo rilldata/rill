@@ -261,8 +261,9 @@
         color={resourceColorMapping[ResourceKind.MetricsView]}
         size="16px"
       />
-      Metrics
+      Metrics view
     </DropdownMenu.Item>
+    <DropdownMenu.Separator />
     <DropdownMenu.Item
       aria-label="Add Explore Dashboard"
       class="flex gap-x-2"
@@ -273,8 +274,9 @@
         color={resourceColorMapping[ResourceKind.Explore]}
         size="16px"
       />
-      Explore Dashboard
+      Explore dashboard
     </DropdownMenu.Item>
+    <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
@@ -295,6 +297,15 @@
           <DropdownMenu.Separator />
         </DropdownMenu.Item>
         {#if $customDashboards}
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddComponent}>
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Component]}
+              color={resourceColorMapping[ResourceKind.Component]}
+              size="16px"
+            />
+            Component
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             class="flex gap-x-2"
             on:click={handleAddCanvasDashboard}
@@ -304,16 +315,9 @@
               color={resourceColorMapping[ResourceKind.Canvas]}
               size="16px"
             />
-            Canvas Dashboard
+            Canvas dashboard
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddComponent}>
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Component]}
-              color={resourceColorMapping[ResourceKind.Component]}
-              size="16px"
-            />
-            Component
-          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
         {/if}
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
           <svelte:component
