@@ -56,7 +56,7 @@
     />
   </div>
 
-  <div class="flex items-center gap-x-1 w-fit">
+  <div class="flex items-center gap-x-2 w-fit">
     <slot name="workspace-controls" {width} />
 
     <div class="flex-none">

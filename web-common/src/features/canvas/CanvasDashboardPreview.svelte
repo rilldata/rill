@@ -176,7 +176,6 @@
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
 
-<!-- <div class="size-full rounded-[2px] overflow-hidden border border-gray-300"> -->
 <DashboardWrapper
   bind:contentRect
   {changing}
@@ -216,4 +215,3 @@
     />
   {/each}
 </DashboardWrapper>
-<!-- </div> -->

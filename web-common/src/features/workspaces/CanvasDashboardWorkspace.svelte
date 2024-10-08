@@ -314,9 +314,7 @@
           on:delete={handleDeleteEvent}
         />
 
-        <div
-          class="flex gap-x-1 flex-none opacity-50 hover:opacity-100 transition-all bg-slate-100 shadow-lg py-1 border border-slate-200 px-2 items-center h-fit rounded-full absolute bottom-2 right-2"
-        >
+        <div class="floating-grid-wrapper">
           <Switch small id="grid" bind:checked={showGrid} />
           <Label for="grid" class="font-medium text-xs text-gray-600">
             Grid
@@ -326,3 +324,16 @@
     {/if}
   </div>
 </WorkspaceContainer>
+
+<style lang="postcss">
+  .floating-grid-wrapper {
+    @apply transition-all;
+    @apply opacity-50 shadow-lg border border-slate-200 bg-slate-100;
+    @apply flex gap-x-1 flex-none py-1 px-2 items-center h-fit rounded-full;
+    @apply absolute bottom-2 right-2;
+  }
+
+  .floating-grid-wrapper:hover {
+    @apply opacity-100;
+  }
+</style>
