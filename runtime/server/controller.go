@@ -524,7 +524,9 @@ func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.R
 	spec.Measures = ms
 
 	// Filter the dimensions and measures in the presets
-	for _, p := range spec.Presets {
+	if spec.DefaultPreset != nil {
+		p := spec.DefaultPreset
+
 		var dims []string
 		for _, dim := range p.Dimensions {
 			if security.CanAccessField(dim) {

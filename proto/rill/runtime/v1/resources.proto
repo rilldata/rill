@@ -346,9 +346,8 @@ message ExploreSpec {
   // If the list is empty, a default list should be shown.
   // The values should be valid IANA location identifiers.
   repeated string time_zones = 10;
-  // List of preconfigured UI states that can be toggled between.
-  // If the list is not empty, the first item should be selected by default.
-  repeated ExplorePreset presets = 11;
+  // Preset UI state to show by default.
+  ExplorePreset default_preset = 15;
   // Security for the explore dashboard.
   // These are not currently parsed from YAML, but will be derived from the parent metrics view.
   repeated SecurityRule security_rules = 12;
@@ -374,8 +373,6 @@ message ExploreComparisonTimeRange {
 }
 
 message ExplorePreset {
-  // Display name of the preset
-  string label = 1;
   // Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
   repeated string dimensions = 2;
   // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
