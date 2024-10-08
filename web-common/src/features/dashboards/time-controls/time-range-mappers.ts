@@ -49,7 +49,7 @@ export function mapTimeRange(
   const timeRange: V1TimeRange = {};
   switch (timeControlState.selectedTimeRange.name) {
     case TimeRangePreset.DEFAULT:
-      timeRange.isoDuration = explore.presets?.[0]?.timeRange;
+      timeRange.isoDuration = explore?.defaultPreset?.timeRange;
       break;
 
     case TimeRangePreset.CUSTOM:
