@@ -16,6 +16,9 @@
   import UserInviteOrganization from "./UserInviteOrganization.svelte";
   import UserInviteGroup from "./UserInviteGroup.svelte";
   import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let organization: string;
   export let project: string;
@@ -36,9 +39,10 @@
     project,
   );
 
-  $: userGroupsList = $listProjectMemberUsergroups.data?.members ?? [];
-  $: usersList = $listProjectMemberUsers.data?.members ?? [];
-  $: invitesList = $listProjectInvites.data?.invites ?? [];
+  $: projectMemberUserGroupsList =
+    $listProjectMemberUsergroups.data?.members ?? [];
+  $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
+  $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
 
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
@@ -50,8 +54,8 @@
   }
 
   $: usersWithPendingInvites = [
-    ...usersList,
-    ...coerceInvitesToUsers(invitesList),
+    ...projectMemberUsersList,
+    ...coerceInvitesToUsers(projectInvitesList),
   ];
 </script>
 
@@ -84,7 +88,7 @@
         <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
         <!-- 52 * 4 = 208px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[208px]">
-          {#each userGroupsList as group}
+          {#each projectMemberUserGroupsList as group}
             <UserInviteGroup {organization} {project} {group} />
           {/each}
         </div>
@@ -101,12 +105,27 @@
                 isCurrentUser={user.userEmail === $currentUser.data?.user.email}
                 pendingAcceptance={!user.userName}
               />
-              <UserInviteUserSetRole
-                {organization}
-                {project}
-                {user}
-                isCurrentUser={user.userEmail === $currentUser.data?.user.email}
-              />
+              <!-- If user's role is Viewer and $currentUser.data?.user.email is in a group that has admin role, then hasMultipleAccess is true -->
+              {#if user.roleName === "viewer"}
+                <div class="flex flex-row items-center gap-x-1">
+                  <Tooltip location="bottom" alignment="middle" distance={8}>
+                    <div class="text-yellow-600">
+                      <InfoCircle size="16px" />
+                    </div>
+                    <TooltipContent maxWidth="400px" slot="tooltip-content">
+                      This person can still edit because they are part of the
+                      group Marketing
+                    </TooltipContent>
+                  </Tooltip>
+                  <UserInviteUserSetRole
+                    {organization}
+                    {project}
+                    {user}
+                    isCurrentUser={user.userEmail ===
+                      $currentUser.data?.user.email}
+                  />
+                </div>
+              {/if}
             </div>
           {/each}
         </div>

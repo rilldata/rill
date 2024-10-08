@@ -20,7 +20,7 @@
     organization,
     group.groupName,
   );
-  $: userGroupMembers = $listUsergroupMemberUsers.data?.members ?? [];
+  $: userGroupMemberUsersList = $listUsergroupMemberUsers.data?.members ?? [];
 </script>
 
 <Tooltip location="right" alignment="middle" distance={8}>
@@ -40,7 +40,7 @@
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">
     <ul>
-      {#each userGroupMembers.slice(0, 6) as user}
+      {#each userGroupMemberUsersList.slice(0, 6) as user}
         <div class="flex items-center gap-1 py-1">
           <Avatar
             avatarSize="h-4 w-4"
@@ -51,8 +51,8 @@
           <li>{user.userName}</li>
         </div>
       {/each}
-      {#if userGroupMembers.length > 6}
-        <li>and {userGroupMembers.length - 6} more</li>
+      {#if userGroupMemberUsersList.length > 6}
+        <li>and {userGroupMemberUsersList.length - 6} more</li>
       {/if}
     </ul>
   </TooltipContent>
