@@ -18,6 +18,10 @@ describe("expression", () => {
   describe("positive cases", () => {
     const Cases = [
       {
+        expr: "country IN ('US','IN')",
+        expected_expression: createInExpression("country", ["US", "IN"]),
+      },
+      {
         expr: "country IN ('US','IN') and state = 'ABC'",
         expected_expression: createAndExpression([
           createInExpression("country", ["US", "IN"]),

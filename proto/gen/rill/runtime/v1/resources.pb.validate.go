@@ -4866,9 +4866,35 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	// no validation rules for TimeRange
 
+	// no validation rules for Timezone
+
+	// no validation rules for TimeGrain
+
 	// no validation rules for ComparisonMode
 
 	// no validation rules for ComparisonDimension
+
+	// no validation rules for View
+
+	// no validation rules for OverviewSortBy
+
+	// no validation rules for OverviewSortAsc
+
+	// no validation rules for OverviewExpandedDimension
+
+	// no validation rules for TimeDimensionMeasure
+
+	// no validation rules for TimeDimensionChartType
+
+	// no validation rules for TimeDimensionPin
+
+	// no validation rules for PivotSortBy
+
+	// no validation rules for PivotSortAsc
+
+	if m.CompareTimeRange != nil {
+		// no validation rules for CompareTimeRange
+	}
 
 	if len(errors) > 0 {
 		return ExplorePresetMultiError(errors)
