@@ -2,6 +2,8 @@ package file
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/fs"
@@ -99,6 +101,24 @@ func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.RepoOb
 		LastUpdated: info.ModTime(),
 		IsDir:       info.IsDir(),
 	}, nil
+}
+
+func (c *connection) FileHash(ctx context.Context, paths []string) (string, error) {
+	hasher := md5.New()
+	for _, path := range paths {
+		path = filepath.Join(c.root, path)
+		file, err := os.Open(path)
+		if err != nil {
+			return "", err
+		}
+
+		if _, err := io.Copy(hasher, file); err != nil {
+			file.Close()
+			return "", err
+		}
+		file.Close()
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 // Put implements drivers.RepoStore.

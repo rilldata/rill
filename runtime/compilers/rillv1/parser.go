@@ -185,9 +185,9 @@ type Parser struct {
 	Errors    []*runtimev1.ParseError
 
 	// Internal state
-	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths
-	resourcesForUnspecifiedRef map[string][]*Resource // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
-	resourceNamesForDataPaths map[string][]ResourceName // Index of local data files to resources that depend on them
+	resourcesForPath           map[string][]*Resource    // Reverse index of Resource.Paths
+	resourcesForUnspecifiedRef map[string][]*Resource    // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
+	resourceNamesForDataPaths  map[string][]ResourceName // Index of local data files to resources that depend on them
 	insertedResources          []*Resource
 	updatedResources           []*Resource
 	deletedResources           []*Resource
@@ -279,7 +279,7 @@ func (p *Parser) IsSkippable(path string) bool {
 	if pathIsIgnored(path) {
 		return true
 	}
-	_, ok := p.localDataToResourcepath[path]
+	_, ok := p.resourceNamesForDataPaths[path]
 	if ok {
 		return false
 	}
@@ -309,7 +309,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.DotEnv = nil
 	p.Resources = make(map[ResourceName]*Resource)
 	p.Errors = nil
-	p.localDataToResourcepath = make(map[string]map[string]any)
+	p.resourceNamesForDataPaths = make(map[string][]ResourceName)
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
 	p.insertedResources = nil
@@ -389,11 +389,12 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			continue
 		}
 
-		// add paths corresponding to local data files
-		resources, ok := p.localDataToResourcepath[path]
+		// add resources corresponding to local data files
+		resources, ok := p.resourceNamesForDataPaths[path]
 		if ok {
-			for res := range resources {
-				checkPaths = append(checkPaths, res)
+			for _, resource := range resources {
+				res := p.Resources[resource]
+				checkPaths = append(checkPaths, res.Paths...)
 			}
 			continue
 		}

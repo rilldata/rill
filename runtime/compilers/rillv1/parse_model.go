@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -114,39 +114,9 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	// special handling to mark model as updated when local file changes
 	if inputConnector == "local_file" {
-		c, ok := inputProps["invalidate_on_change"].(bool)
-		invalidateModelOnUpdate := ok && c
-		path, ok := inputProps["path"].(string)
-		if ok && invalidateModelOnUpdate {
-			entries, err := p.Repo.ListRecursive(ctx, path, true)
-			if err == nil && len(entries) > 0 {
-				var localPaths []string
-				root, err := p.Repo.Root(ctx)
-				if err != nil {
-					return err
-				}
-
-				// Update parser's localDataToResourcepath map to track which resources depend on the local file
-				for _, entry := range entries {
-					localPaths = append(localPaths, filepath.Join(root, entry.Path))
-					resources, ok := p.localDataToResourcepath[entry.Path]
-					if !ok {
-						resources = make(map[string]any)
-						p.localDataToResourcepath[entry.Path] = resources
-					}
-					for _, resPath := range node.Paths {
-						resources[resPath] = nil
-					}
-				}
-
-				// Calculate hash of local files
-				hash, err := fileHash(localPaths)
-				if err != nil {
-					return err
-				}
-				// Add hash to input properties so that the model spec is considered updated when the local file changes
-				inputProps["local_files_hash"] = hash
-			}
+		err = p.trackResourceNamesForDataPaths(ctx, ResourceName{Name: node.Name, Kind: ResourceKindModel}, inputProps)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -271,6 +241,43 @@ func (p *Parser) inferSQLRefs(node *Node) ([]ResourceName, error) {
 	}
 
 	return refs, nil
+}
+
+func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name ResourceName, inputProps map[string]any) error {
+	c, ok := inputProps["invalidate_on_change"].(bool)
+	if ok && !c {
+		return nil
+	}
+	path, ok := inputProps["path"].(string)
+	if !ok {
+		return nil
+	}
+	entries, err := p.Repo.ListRecursive(ctx, path, true)
+	if err != nil || len(entries) == 0 {
+		// The actual error will be returned by the model reconciler
+		return nil
+	}
+
+	var localPaths []string
+
+	// Update parser's resourceNamesForDataPaths map to track which resources depend on the local file
+	for _, entry := range entries {
+		localPaths = append(localPaths, entry.Path)
+		resources := p.resourceNamesForDataPaths[entry.Path]
+		if !slices.Contains(resources, name) {
+			resources = append(resources, name)
+		}
+		p.resourceNamesForDataPaths[entry.Path] = resources
+	}
+
+	// Calculate hash of local files
+	hash, err := p.Repo.FileHash(ctx, localPaths)
+	if err != nil {
+		return err
+	}
+	// Add hash to input properties so that the model spec is considered updated when the local file changes
+	inputProps["local_files_hash"] = hash
+	return nil
 }
 
 // findLineNumber returns the line number of the pos in the given text.
