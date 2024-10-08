@@ -25,7 +25,7 @@ test.describe("explores", () => {
     await createExploreFromSource(page);
     await waitForFileNavEntry(
       page,
-      "/explore-dashboards/AdBids_metrics_explore.yaml",
+      "/dashboards/AdBids_metrics_explore.yaml",
       true,
     );
     await page.getByRole("button", { name: "Preview" }).click();
