@@ -12,7 +12,7 @@
   <Avatar
     size="h-7 w-7"
     alt={pendingAcceptance ? null : name}
-    bgColor={getRandomColor()}
+    bgColor={getRandomColor(email)}
   />
   <div class="flex flex-col text-left">
     <span class="text-sm font-medium text-gray-900">
