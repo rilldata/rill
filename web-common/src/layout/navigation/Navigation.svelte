@@ -11,7 +11,6 @@
 
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
   import { writable } from "svelte/store";
   import ConnectorExplorer from "../../features/connectors/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
@@ -61,9 +60,7 @@
     side="right"
   />
   <div class="inner" style:width="{width}px">
-    <ProjectTitle {unsavedFileCount} />
-
-    <div class="p-2 pt-1 w-full">
+    <div class="p-2 w-full pr-10">
       <AddAssetButton />
     </div>
     <div class="scroll-container">

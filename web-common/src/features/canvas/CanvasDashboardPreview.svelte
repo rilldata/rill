@@ -176,42 +176,44 @@
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
 
-<DashboardWrapper
-  bind:contentRect
-  {changing}
-  {gapSize}
-  {gridCell}
-  {scrollOffset}
-  {radius}
-  {scale}
-  {showGrid}
-  height={maxBottom * gridCell * scale}
-  width={defaults.DASHBOARD_WIDTH}
-  on:click={deselect}
-  on:scroll={handleScroll}
->
-  {#each items as component, i (i)}
-    {@const selected = i === selectedIndex}
-    {@const interacting = selected && changing}
-    <PreviewElement
-      {instanceId}
-      {i}
-      {scale}
-      {component}
-      {radius}
-      {selected}
-      {interacting}
-      {gapSize}
-      width={interacting
-        ? finalResize[0]
-        : Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
-      height={interacting
-        ? finalResize[1]
-        : Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
-      top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
-      left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
-      on:change={handleChange}
-      on:delete
-    />
-  {/each}
-</DashboardWrapper>
+<div class="size-full rounded-[2px] overflow-hidden border border-gray-300">
+  <DashboardWrapper
+    bind:contentRect
+    {changing}
+    {gapSize}
+    {gridCell}
+    {scrollOffset}
+    {radius}
+    {scale}
+    {showGrid}
+    height={maxBottom * gridCell * scale}
+    width={defaults.DASHBOARD_WIDTH}
+    on:click={deselect}
+    on:scroll={handleScroll}
+  >
+    {#each items as component, i (i)}
+      {@const selected = i === selectedIndex}
+      {@const interacting = selected && changing}
+      <PreviewElement
+        {instanceId}
+        {i}
+        {scale}
+        {component}
+        {radius}
+        {selected}
+        {interacting}
+        {gapSize}
+        width={interacting
+          ? finalResize[0]
+          : Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
+        height={interacting
+          ? finalResize[1]
+          : Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
+        top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
+        left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
+        on:change={handleChange}
+        on:delete
+      />
+    {/each}
+  </DashboardWrapper>
+</div>

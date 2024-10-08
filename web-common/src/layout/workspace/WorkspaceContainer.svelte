@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Inspector from "./Inspector.svelte";
-
   export let inspector = true;
   export let bgClass = "bg-gray-100";
   export let width = 0;
@@ -18,14 +16,12 @@
     </header>
   {/if}
 
-  <div class="h-full {bgClass} w-full flex overflow-hidden">
+  <div class="h-full {bgClass} w-full flex overflow-hidden p-4 pt-0">
     <div class="w-full h-full overflow-hidden">
       <slot name="body" />
     </div>
     {#if inspector}
-      <Inspector>
-        <slot name="inspector" />
-      </Inspector>
+      <slot name="inspector" />
     {/if}
   </div>
 </main>

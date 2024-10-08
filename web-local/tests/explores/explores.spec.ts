@@ -420,14 +420,21 @@ dimensions:
       page.getByText("No comparison dimension selected"),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "No comparison dimension" }).click();
+    await page
+      .getByRole("button", { name: "Select a comparison dimension" })
+      .first()
+      .click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.getByText("google.com", { exact: true }).click({ force: true });
-    await page.getByText("instagram.com").click({ force: true });
-    await page.getByText("msn.com").click({ force: true });
+    await page.waitForTimeout(1000);
 
-    await expect(page.getByText(" Total rows 43.7k")).toBeVisible();
+    await page.getByRole("cell", { name: "google.com", exact: true }).click();
+    await page
+      .getByRole("cell", { name: "instagram.com", exact: true })
+      .click();
+    await page.getByRole("cell", { name: "msn.com", exact: true }).click();
+
+    await expect(page.getByText("Total rows 43.7k")).toBeVisible();
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
@@ -440,7 +447,10 @@ dimensions:
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
 
-    await page.getByRole("button", { name: "Domain name" }).click();
+    await page
+      .getByRole("button", { name: "Select a comparison dimension" })
+      .first()
+      .click();
     await page
       .getByRole("menuitem", { name: "No comparison dimension" })
       .click();

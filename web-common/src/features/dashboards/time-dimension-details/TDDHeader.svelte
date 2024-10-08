@@ -160,7 +160,7 @@
         <Row size="16px" /> Rows
       </div>
 
-      <ComparisonSelector chipStyle {exploreName} />
+      <ComparisonSelector {exploreName} />
     </div>
 
     <div class="flex items-center gap-x-4 pl-2">

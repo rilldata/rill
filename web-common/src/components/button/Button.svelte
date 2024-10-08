@@ -2,6 +2,8 @@
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { createEventDispatcher } from "svelte";
 
+  const dispatch = createEventDispatcher();
+
   type ButtonType =
     | "primary"
     | "secondary"
@@ -39,7 +41,8 @@
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
 
-  const dispatch = createEventDispatcher();
+  let className: string | undefined = undefined;
+  export { className as class };
 
   const handleClick = (event: MouseEvent) => {
     if (!disabled) {
@@ -53,7 +56,7 @@
   role="button"
   tabindex={disabled ? -1 : 0}
   {href}
-  class="{$$props.class} {type}"
+  class="{className} {type}"
   {disabled}
   class:square
   class:circle
@@ -115,7 +118,7 @@
 <style lang="postcss">
   button,
   a {
-    @apply flex text-center items-center justify-center;
+    @apply flex flex-none text-center items-center justify-center;
     @apply text-xs leading-snug font-normal;
     @apply select-none  cursor-pointer;
     @apply rounded-[2px];
@@ -190,6 +193,15 @@
 
   .ghost:disabled {
     @apply bg-transparent text-slate-400;
+  }
+
+  .secondary:active:hover,
+  .secondary.selected:hover,
+  .ghost:active:hover,
+  .ghost.selected:hover,
+  .dashed:active:hover,
+  .dashed.selected:hover {
+    @apply bg-primary-200;
   }
 
   /* PLAIN STYLES */
@@ -333,7 +345,7 @@
   /* TWEAKS */
 
   .small {
-    @apply h-6 text-[11px];
+    @apply text-[11px] h-6 min-h-6;
   }
 
   .large {

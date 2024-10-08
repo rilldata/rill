@@ -16,13 +16,13 @@ import type { ErrorType } from "../../runtime-client/http-client";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
+  Alert = "rill.runtime.v1.Alert",
+  Report = "rill.runtime.v1.Report",
   Source = "rill.runtime.v1.Source",
   Connector = "rill.runtime.v1.Connector",
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
   Explore = "rill.runtime.v1.Explore",
-  Report = "rill.runtime.v1.Report",
-  Alert = "rill.runtime.v1.Alert",
   Theme = "rill.runtime.v1.Theme",
   Component = "rill.runtime.v1.Component",
   Canvas = "rill.runtime.v1.Canvas",
