@@ -155,7 +155,7 @@
             {#each $listUsergroupMemberUsers.data?.members as member}
               <div class="flex flex-row justify-between gap-2 items-center">
                 <div class="flex items-center gap-2">
-                  <Avatar size="h-7 w-7" alt={member.userName} />
+                  <Avatar avatarSize="h-7 w-7" alt={member.userName} />
                   <div class="flex flex-col text-left">
                     <span class="text-sm font-medium text-gray-900">
                       {member.userName}
