@@ -6,6 +6,7 @@
   export let src: string | null = null;
   export let alt: string | null = null;
   export let size: string = "h-12 w-12";
+  export let fontSize: string = "text-xs";
   export let bgColor: string = "bg-blue-500";
 
   function getInitials(name: string) {
@@ -36,11 +37,11 @@
     {#if src}
       <Avatar.Image {src} {alt} />
     {:else if alt}
-      <Avatar.Fallback class="text-xs text-white">
+      <Avatar.Fallback class={cn(fontSize, "text-white")}>
         {getInitials(alt)}
       </Avatar.Fallback>
     {:else}
-      <Avatar.Fallback class="text-xs text-slate-400">
+      <Avatar.Fallback class={cn(fontSize, "text-slate-400")}>
         <svg
           class="mt-[6px]"
           width="24"

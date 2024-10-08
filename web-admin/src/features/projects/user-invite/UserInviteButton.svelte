@@ -13,11 +13,9 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
   import AvatarCircleList from "../../organizations/users/AvatarCircleList.svelte";
-  import UserInviteGroup from "./UserInviteGroup.svelte";
   import UserInviteOrganization from "./UserInviteOrganization.svelte";
-
+  import UserInviteGroup from "./UserInviteGroup.svelte";
   import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
-  import UserInviteGroupSetRole from "./UserInviteGroupSetRole.svelte";
 
   export let organization: string;
   export let project: string;
@@ -87,10 +85,7 @@
         <!-- 52 * 4 = 208px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[208px]">
           {#each userGroupsList as group}
-            <div class="flex flex-row items-center gap-x-2 justify-between">
-              <UserInviteGroup {organization} usergroup={group.groupName} />
-              <UserInviteGroupSetRole {organization} {project} {group} />
-            </div>
+            <UserInviteGroup {organization} {project} {group} />
           {/each}
         </div>
       </div>
