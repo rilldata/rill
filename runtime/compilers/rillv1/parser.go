@@ -185,8 +185,9 @@ type Parser struct {
 	Errors    []*runtimev1.ParseError
 
 	// Internal state
-	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths
-	resourcesForUnspecifiedRef map[string][]*Resource // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
+	resourcesForPath           map[string][]*Resource    // Reverse index of Resource.Paths
+	resourcesForUnspecifiedRef map[string][]*Resource    // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
+	resourceNamesForDataPaths  map[string][]ResourceName // Index of local data files to resources that depend on them
 	insertedResources          []*Resource
 	updatedResources           []*Resource
 	deletedResources           []*Resource
@@ -275,7 +276,14 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 // IsSkippable returns true if the path will be skipped by Reparse.
 // It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
 func (p *Parser) IsSkippable(path string) bool {
-	return pathIsIgnored(path) || !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+	if pathIsIgnored(path) {
+		return true
+	}
+	_, ok := p.resourceNamesForDataPaths[path]
+	if ok {
+		return false
+	}
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
 }
 
 // TrackedPathsInDir returns the paths under the given directory that the parser currently has cached results for.
@@ -301,6 +309,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.DotEnv = nil
 	p.Resources = make(map[ResourceName]*Resource)
 	p.Errors = nil
+	p.resourceNamesForDataPaths = make(map[string][]ResourceName)
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
 	p.insertedResources = nil
@@ -377,6 +386,16 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 
 		// Skip ignored paths
 		if pathIsIgnored(path) {
+			continue
+		}
+
+		// add resources corresponding to local data files
+		resources, ok := p.resourceNamesForDataPaths[path]
+		if ok {
+			for _, resource := range resources {
+				res := p.Resources[resource]
+				checkPaths = append(checkPaths, res.Paths...)
+			}
 			continue
 		}
 
@@ -673,7 +692,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
 	node, err := p.parseStem(paths, yamlPath, yaml, sqlPath, sql)
 	if err == nil {
-		err = p.parseNode(node)
+		err = p.parseNode(ctx, node)
 	}
 
 	// Spread error across the node's paths (YAML and/or SQL files)

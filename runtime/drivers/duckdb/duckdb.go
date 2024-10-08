@@ -446,6 +446,9 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		if w, ok := opts.InputHandle.AsWarehouse(); ok {
 			return &warehouseToSelfExecutor{c, w}, true
 		}
+		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
+			return &localFileToSelfExecutor{c, f}, true
+		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
