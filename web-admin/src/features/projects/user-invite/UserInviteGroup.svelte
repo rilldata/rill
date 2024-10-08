@@ -43,7 +43,7 @@
       {#each userGroupMembers.slice(0, 6) as user}
         <div class="flex items-center gap-1 py-1">
           <Avatar
-            size="h-4 w-4"
+            avatarSize="h-4 w-4"
             fontSize="text-[10px]"
             alt={user.userName}
             bgColor={getRandomBgColor()}

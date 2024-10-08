@@ -5,7 +5,7 @@
   export let loadingStatus: Avatar.Props["loadingStatus"] = undefined;
   export let src: string | null = null;
   export let alt: string | null = null;
-  export let size: string = "h-12 w-12";
+  export let avatarSize: string = "h-12 w-12";
   export let fontSize: string = "text-xs";
   export let bgColor: string = "bg-blue-500";
 
@@ -17,7 +17,7 @@
 <Avatar.Root
   bind:loadingStatus
   class={cn(
-    size,
+    avatarSize,
     "rounded-full",
     loadingStatus === "loaded" ? "border-foreground" : "border-transparent",
     "text-[17px]",
