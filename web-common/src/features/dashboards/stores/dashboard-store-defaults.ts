@@ -72,14 +72,14 @@ function setDefaultComparison(
     case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION:
       metricsExplorer.selectedComparisonDimension =
         normaliseName(
-          explorePreset.comparisonDimension,
+          exploreSpec?.defaultPreset?.comparisonDimension,
           metricsViewSpec.dimensions,
         ) || exploreSpec.dimensions?.[0];
       break;
 
     case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME:
       setDefaultComparisonTimeRange(
-        explorePreset,
+        exploreSpec?.defaultPreset,
         metricsExplorer,
         fullTimeRange,
       );

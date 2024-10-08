@@ -391,7 +391,7 @@ describe("time-control-store", () => {
       AD_BIDS_METRICS_INIT_WITH_TIME,
       {
         ...AD_BIDS_EXPLORE_INIT,
-        defaults: { timeRange: "P2W" },
+        defaultPreset: { timeRange: "P2W" },
       },
     );
     await queryClient.refetchQueries({
