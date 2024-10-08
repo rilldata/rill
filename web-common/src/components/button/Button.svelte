@@ -13,7 +13,6 @@
     | "dashed"
     | "link"
     | "text"
-    | "danger-text"
     | "add";
 
   export let type: ButtonType = "plain";
@@ -39,6 +38,7 @@
   export let fit = false;
   export let noWrap = false;
   export let gray = false;
+  export let danger = false;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
 
@@ -71,7 +71,7 @@
   class:rounded
   class:!w-fit={fit}
   class:whitespace-nowrap={noWrap}
-  class:danger={status === "error"}
+  class:danger={status === "error" || danger}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
@@ -273,17 +273,12 @@
 
   /* TEXT STYLES */
 
-  .text,
-  .danger-text {
+  .text {
     @apply text-slate-600 p-0;
   }
 
   .text:hover {
     @apply text-primary-700;
-  }
-
-  .danger-text:hover {
-    @apply text-red-500;
   }
 
   .text:active,
@@ -333,6 +328,14 @@
     @apply text-slate-400;
     @apply bg-slate-50;
     @apply border-slate-300;
+  }
+
+  .danger.text {
+    @apply text-slate-600 p-0;
+  }
+
+  .danger.text:hover {
+    @apply text-red-600;
   }
 
   /* SHAPE STYLES */

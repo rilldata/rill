@@ -168,7 +168,8 @@
                   </div>
                 </div>
                 <Button
-                  type="danger-text"
+                  type="text"
+                  danger
                   on:click={() => {
                     onRemoveUser(groupName, member.userEmail);
                   }}
