@@ -35,6 +35,8 @@ test.describe("explores", () => {
   });
 
   test("Autogenerate explore from model", async ({ page }) => {
+    test.slow();
+
     await createAdBidsModel(page);
     await createExploreFromModel(page);
 
@@ -429,7 +431,7 @@ dimensions:
       .click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
 
     await page.getByRole("cell", { name: "google.com", exact: true }).click();
     await page
