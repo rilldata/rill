@@ -101,7 +101,8 @@
       await $removeOrganizationMemberUser.mutateAsync({
         organization: organization,
         email: email,
-        // TODO: what is the default value for keepProjectRoles?
+        // Uncomment if `keepProjectRoles` is needed
+        // See: https://github.com/rilldata/rill/pull/2231
         // params: {
         //   keepProjectRoles: false,
         // },
