@@ -1,8 +1,6 @@
 import type { DashboardMutables } from "./types";
 import { getPersistentDashboardStore } from "../../stores/persistent-dashboard-state";
 
-const persistentDashboardStore = getPersistentDashboardStore();
-
 export const toggleMeasureVisibility = (
   { dashboard }: DashboardMutables,
 
@@ -14,6 +12,8 @@ export const toggleMeasureVisibility = (
     dashboard.visibleMeasureKeys.add(measureName);
   }
 
+  const persistentDashboardStore = getPersistentDashboardStore();
+
   persistentDashboardStore.updateVisibleMeasures(
     Array.from(dashboard.visibleMeasureKeys),
   );
@@ -24,6 +24,8 @@ export const setVisibleMeasures = (
   measureNames: string[],
 ) => {
   dashboard.visibleMeasureKeys = new Set(measureNames);
+
+  const persistentDashboardStore = getPersistentDashboardStore();
 
   persistentDashboardStore.updateVisibleMeasures(
     Array.from(dashboard.visibleMeasureKeys),
