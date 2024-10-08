@@ -230,6 +230,7 @@ metrics_view: AdBids_model_metrics
 dimensions: '*'
 measures: '*'
 `;
+    await page.getByLabel("code").click();
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column
@@ -277,6 +278,8 @@ measures: '*'
         description: ""
 
         `;
+
+    await page.getByLabel("code").click();
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
     await page.getByRole("button", { name: "Go to dashboard" }).click();
     await page
@@ -423,9 +426,13 @@ dimensions:
     await page.getByRole("button", { name: "No comparison dimension" }).click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.getByText("google.com", { exact: true }).click({ force: true });
-    await page.getByText("instagram.com").click({ force: true });
-    await page.getByText("msn.com").click({ force: true });
+    await page.waitForTimeout(500);
+
+    await page.getByRole("cell", { name: "google.com", exact: true }).click();
+    await page
+      .getByRole("cell", { name: "instagram.com", exact: true })
+      .click();
+    await page.getByRole("cell", { name: "msn.com", exact: true }).click();
 
     await expect(page.getByText(" Total rows 43.7k")).toBeVisible();
 

@@ -4,7 +4,6 @@ import { test } from "../utils/test";
 
 export function useDashboardFlowTestSetup() {
   test.beforeEach(async ({ page }) => {
-    test.setTimeout(45000);
     await createAdBidsModel(page);
     await createExploreFromModel(page);
   });
