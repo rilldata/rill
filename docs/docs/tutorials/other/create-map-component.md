@@ -1,5 +1,5 @@
 ---
-title: "How to create a map Component in Rill?"
+title: "How to create a map Component in Rill for Canvas Dashboards"
 sidebar_label: "Visualize Maps in Rill"
 sidebar_position: 10
 hide_table_of_contents: false

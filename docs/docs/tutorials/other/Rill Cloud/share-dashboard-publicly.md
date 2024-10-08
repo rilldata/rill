@@ -25,23 +25,15 @@ When sharing to your end-user, it is likely that you will want to specific a spe
 
 Once your dashboard is ready, you can create the public URL via the `Share` button.
 
-
-<img src = '/img/tutorials/205/public-url.gif' class='rounded-gif' />
-<br />
+![img](/img/tutorials/other/public-url/share-public-url.png)
 
 
 ### Managing Public URLS in Rill Cloud
 
 **via UI** 
 
-import ComingSoon from '@site/src/components/ComingSoon';
+Public URL can also be managed via the Settings page in Rill Cloud. Please refer to the [administrators guide](https://docs.rilldata.com/tutorials/administration/project-maintanence)!
 
-
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-Settings UI Should be out soon to add this
-</div>
 
 
 **via CLI**

@@ -1,5 +1,5 @@
 ---
-title: "Using Natural lanugage to Create Components"
+title: "Using Natural lanugage to Create Components for Canvas Dashboards"
 sidebar_label: "Using Natural lanugage to create Components"
 sidebar_position: 10
 hide_table_of_contents: false

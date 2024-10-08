@@ -173,11 +173,6 @@ const sidebars = {
           type: 'category',
           label: "Other Concepts and How-to's",
           description: 'For guides that are not quite Rill related but needs consideration',
-          link: {
-            type: 'doc',
-            id: 'tutorials/other/other',
-
-          },
           items: [
       //      'tutorials/other/add-column-dimension',
             'tutorials/other/custom-charts',
