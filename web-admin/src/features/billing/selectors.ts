@@ -1,7 +1,7 @@
 import {
   createAdminServiceGetBillingSubscription,
   createAdminServiceListOrganizationBillingIssues,
-  V1BillingIssue,
+  type V1BillingIssue,
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
 import {
@@ -52,23 +52,23 @@ export function useCategorisedOrganizationBillingIssues(org: string) {
 export function getOrgBlockerIssues(org: string) {
   return createAdminServiceListOrganizationBillingIssues(org, {
     query: {
-      select: (data) =>
-        data.issues
-          ?.map((i) => {
-            switch (i.type) {
-              case V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED:
-                return trialHasPastGracePeriod(i) ? "Trial has ended." : "";
-              case V1BillingIssueType.BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
-                return cancelledSubscriptionHasEnded(i)
-                  ? "Subscription cancelled."
-                  : "";
-              default:
-                return i.type in PaymentBillingIssueTypes
-                  ? "Invoice payment failed"
-                  : "";
-            }
-          })
-          .filter(Boolean)?.[0],
+      select: (data) => {
+        const issues = data.issues ?? [];
+        const trialIssue = getTrialIssue(issues);
+        if (
+          trialIssue?.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED
+        ) {
+          return "Trial has ended.";
+        }
+
+        const subCancelled = getCancelledIssue(issues);
+        if (subCancelled) return "Subscription cancelled.";
+
+        const payment = getPaymentIssues(issues);
+        if (payment.length) return "Invoice payment failed.";
+
+        return "";
+      },
     },
   });
 }

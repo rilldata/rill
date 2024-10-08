@@ -28,7 +28,11 @@ export function mergedQueryStatusStatus(
   }>[],
 ) {
   return derived(queriesOrMutations, (queriesOrMutations) => {
-    const isLoading = queriesOrMutations.some((q) => q.isLoading);
+    const isLoading = queriesOrMutations
+      // access 'isLoading' of all queries. this seems to be necessary to get the correct status.
+      // TODO: figure out why this is the case.
+      .map((q) => q.isLoading)
+      .some((loading) => loading);
     const isError = queriesOrMutations.some((q) => q.isError);
     const errors = queriesOrMutations
       .map((q) => q.error)

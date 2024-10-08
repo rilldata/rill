@@ -17,13 +17,12 @@
   <CtaContentContainer>
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
+        <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
         {#if $orgBlockerIssues.data}
-          <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
           <p class="text-base text-red-600 text-center">
-            {$orgBlockerIssues.data}
+            {$orgBlockerIssues.data} (TODO)
           </p>
         {:else}
-          <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
           <CtaMessage>
             To redeploy the project, run the following command in the Rill CLI:
           </CtaMessage>
