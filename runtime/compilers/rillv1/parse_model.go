@@ -2,12 +2,8 @@ package rillv1
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"slices"
 	"strings"
 	"time"
@@ -298,21 +294,4 @@ func findLineNumber(text string, pos int) int {
 	}
 
 	return lineNumber
-}
-
-func fileHash(paths []string) (string, error) {
-	hasher := md5.New()
-	for _, path := range paths {
-		file, err := os.Open(path)
-		if err != nil {
-			return "", err
-		}
-
-		if _, err := io.Copy(hasher, file); err != nil {
-			file.Close()
-			return "", err
-		}
-		file.Close()
-	}
-	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
