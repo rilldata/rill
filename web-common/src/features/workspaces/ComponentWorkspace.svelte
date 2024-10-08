@@ -54,37 +54,38 @@
     {filePath}
     hasUnsavedChanges={$hasUnsavedChanges}
   />
-  <div slot="body" class="flex size-full gap-2">
-    <div style:width="{editorPercentage * 100}%" class="relative flex-none">
-      <Resizer
-        direction="EW"
-        side="right"
-        dimension={editorWidth}
-        min={300}
-        max={0.65 * containerWidth}
-        onUpdate={(width) => (editorPercentage = width / containerWidth)}
-      />
+  <div slot="body" class="flex size-full">
+    <section style:width="{editorPercentage * 100}%">
       <ComponentsEditor {filePath} />
-    </div>
+    </section>
 
-    <div class="size-full flex-col flex overflow-hidden gap-y-[1px]">
-      <div class="size-full overflow-y-auto">
+    <Resizer
+      absolute={false}
+      direction="EW"
+      side="right"
+      dimension={editorWidth}
+      min={300}
+      max={0.65 * containerWidth}
+      onUpdate={(width) => (editorPercentage = width / containerWidth)}
+    />
+
+    <section class="size-full flex-col flex overflow-hidden">
+      <div
+        class="size-full overflow-hidden border border-gray-300 rounded-[2px]"
+      >
         <ComponentStatusDisplay {isFetching} {componentName}>
-          <div
-            class="size-full rounded-[2px] overflow-hidden border border-gray-300"
-          >
-            <CanvasDashboardEmbed
-              {canvasName}
-              chartView
-              gap={8}
-              columns={10}
-              items={[
-                { width: 10, height: 10, x: 0, y: 0, component: componentName },
-              ]}
-            />
-          </div>
+          <CanvasDashboardEmbed
+            {canvasName}
+            chartView
+            gap={8}
+            columns={10}
+            items={[
+              { width: 10, height: 10, x: 0, y: 0, component: componentName },
+            ]}
+          />
         </ComponentStatusDisplay>
       </div>
+
       <Resizer
         absolute={false}
         direction="NS"
@@ -100,6 +101,6 @@
         {input}
         {resolverProperties}
       />
-    </div>
+    </section>
   </div>
 </WorkspaceContainer>
