@@ -89,6 +89,7 @@ dimensions:
       ["interval_ms", "5 m", "5m 576ms"],
       ["d3 fixed", "300.6k", "300576.840"],
     ]) {
+      await page.getByLabel(name + " chart").scrollIntoViewIfNeeded();
       // check bignum with correct format exists/is visible
       await expect(
         page.getByRole("button", { name: `${name} ${bignum}` }),

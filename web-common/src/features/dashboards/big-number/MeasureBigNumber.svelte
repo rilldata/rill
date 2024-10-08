@@ -11,7 +11,6 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import {
     type CrossfadeParams,
     type FlyParams,
@@ -22,7 +21,7 @@
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
-
+  export let onExpandMeasure: () => void = () => {};
   export let comparisonValue: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
@@ -34,8 +33,6 @@
     comparisonValue && value !== undefined && value !== null
       ? (value - comparisonValue) / comparisonValue
       : undefined;
-
-  const dispatch = createEventDispatcher();
 
   $: measureValueFormatter = createMeasureValueFormatter<null>(
     measure,
@@ -88,7 +85,7 @@
   const handleExpandMeasure = () => {
     if (!isMeasureExpanded) {
       isMeasureExpanded = true;
-      dispatch("expand-measure");
+      onExpandMeasure();
     }
   };
 </script>

@@ -26,15 +26,15 @@
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
   import TDDExportButton from "./TDDExportButton.svelte";
-  import type { TDDComparison } from "./types";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
 
   export let exploreName: string;
-  export let dimensionName: string;
+  export let dimensionName: string | undefined;
   export let isFetching = false;
-  export let comparing: TDDComparison | undefined;
+  export let excludeMode: boolean;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = false;
+  export let expandedMeasureName: string;
 
   const dispatch = createEventDispatcher();
   const { adminServer, exports } = featureFlags;
@@ -49,8 +49,6 @@
     },
     dashboardStore,
   } = getStateManagers();
-
-  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
 
   $: selectableMeasures = $allMeasures
     .filter((m) => m.name !== undefined || m.label !== undefined)
@@ -69,9 +67,6 @@
     $allMeasures.find((m) => m.name === expandedMeasureName)?.label ??
     expandedMeasureName ??
     "";
-
-  $: excludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
@@ -97,7 +92,7 @@
   }
 
   function toggleFilterMode() {
-    toggleDimensionFilterMode(dimensionName);
+    if (dimensionName) toggleDimensionFilterMode(dimensionName);
   }
 
   function switchMeasure(event) {
@@ -188,7 +183,7 @@
     {/if}
   </div>
 
-  {#if comparing === "dimension"}
+  {#if dimensionName}
     <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
       {#if !isRowsEmpty}
         <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
