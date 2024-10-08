@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
-  import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
@@ -62,18 +61,6 @@
     );
   };
 
-  const editMetrics = async () => {
-    const previousScreenName = getScreenNameFromPage();
-    await goto(`/files${filePath}`);
-    await behaviourEvent.fireNavigationEvent(
-      ($resourceQuery.data?.meta?.name as string) ?? "",
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      previousScreenName,
-      MetricsEventScreenName.MetricsDefinition,
-    );
-  };
-
   async function createExploreDashboard() {
     const newExploreFilePath = await handleEntityCreate(
       ResourceKind.Explore,
@@ -91,10 +78,6 @@
     Edit model
   </NavigationMenuItem>
 {/if}
-<NavigationMenuItem on:click={editMetrics}>
-  <MetricsViewIcon slot="icon" />
-  Edit metrics
-</NavigationMenuItem>
 <NavigationMenuItem on:click={createExploreDashboard}>
   <ExploreIcon slot="icon" />
   Generate dashboard
