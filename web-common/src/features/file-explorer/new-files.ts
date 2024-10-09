@@ -15,7 +15,9 @@ export async function handleEntityCreate(
   kind: ResourceKind,
   baseResource?: V1Resource,
 ) {
-  if (!(kind in ResourceKindMap)) return;
+  if (!(kind in ResourceKindMap)) {
+    throw new Error(`Unknown resource kind: ${kind}`);
+  }
 
   const newPath = getPathForNewResourceFile(kind, baseResource);
   const instanceId = get(runtime).instanceId;

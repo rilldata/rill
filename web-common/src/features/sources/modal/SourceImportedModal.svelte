@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
@@ -70,16 +69,11 @@
 
 <AlertDialog.Root open={sourcePath !== null}>
   <AlertDialog.Content>
-    <AlertDialog.Title>
-      <div class="flex gap-x-2.5 items-center">
-        <CheckCircleNew className="fill-primary-500" size="24px" />
-        Source imported successfully
-      </div>
-    </AlertDialog.Title>
+    <AlertDialog.Title>Source imported successfully</AlertDialog.Title>
 
     <AlertDialog.Description>
-      <span class="font-mono text-slate-800 break-all ml-9">{sourceName}</span> has
-      been ingested. What would you like to do next?
+      <span class="font-mono text-slate-800 break-all">{sourceName}</span> has been
+      ingested. What would you like to do next?
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
