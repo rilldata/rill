@@ -10,13 +10,17 @@
   import UserInviteAllowlist from "@rilldata/web-admin/features/projects/user-invite/UserInviteAllowlist.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
   import AvatarCircleList from "../../organizations/users/AvatarCircleList.svelte";
   import UserInviteOrganization from "./UserInviteOrganization.svelte";
   import UserInviteGroup from "./UserInviteGroup.svelte";
   import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
   import UserInviteMultipleAccessTooltip from "./UserInviteMultipleAccessTooltip.svelte";
+  import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+  } from "@rilldata/web-common/components/popover";
 
   export let organization: string;
   export let project: string;
@@ -57,11 +61,11 @@
   ];
 </script>
 
-<DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild let:builder>
+<Popover bind:open>
+  <PopoverTrigger asChild let:builder>
     <Button builders={[builder]} type="secondary">Share</Button>
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content class="w-[520px] p-4" side="bottom" align="end">
+  </PopoverTrigger>
+  <PopoverContent align="end" class="w-[520px] p-4">
     <div class="flex flex-col">
       <div class="flex flex-row items-center mb-4">
         <div class="text-sm font-medium">{project}</div>
@@ -127,5 +131,5 @@
         </div>
       </div>
     </div>
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+  </PopoverContent>
+</Popover>
