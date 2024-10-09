@@ -3,14 +3,15 @@ import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/
 import type { PivotDataRow } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { clamp } from "@rilldata/web-common/lib/clamp";
 
-export const MIN_COL_WIDTH = 150;
-export const MAX_COL_WIDTH = 600;
-export const MAX_INIT_COL_WIDTH = 400;
-
-export const MIN_MEASURE_WIDTH = 70;
-export const MAX_MEASURE_WIDTH = 300;
-export const INIT_MEASURE_WIDTH = 100;
-export const MEASURE_PADDING = 24;
+export const COLUMN_WIDTH_CONSTANTS = {
+  MIN_COL_WIDTH: 150,
+  MAX_COL_WIDTH: 600,
+  MAX_INIT_COL_WIDTH: 400,
+  MIN_MEASURE_WIDTH: 70,
+  MAX_MEASURE_WIDTH: 300,
+  INIT_MEASURE_WIDTH: 100,
+  MEASURE_PADDING: 24,
+};
 
 export function calculateFirstColumnWidth(
   firstColumnName: string,
@@ -18,7 +19,8 @@ export function calculateFirstColumnWidth(
   dataRows: PivotDataRow[],
 ) {
   // Dates are displayed as shorter values
-  if (isTimeDimension(firstColumnName, timeDimension)) return MIN_COL_WIDTH;
+  if (isTimeDimension(firstColumnName, timeDimension))
+    return COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH;
 
   const samples = extractSamples(
     dataRows.map((row) => row[firstColumnName]),
@@ -30,7 +32,11 @@ export function calculateFirstColumnWidth(
 
   const finalBasis = Math.max(firstColumnName.length, maxValueLength);
   const pixelLength = finalBasis * 8;
-  const final = clamp(MIN_COL_WIDTH, pixelLength + 16, MAX_INIT_COL_WIDTH);
+  const final = clamp(
+    COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH,
+    pixelLength + 16,
+    COLUMN_WIDTH_CONSTANTS.MAX_INIT_COL_WIDTH,
+  );
 
   return final;
 }
@@ -75,8 +81,8 @@ export function calculateMeasureWidth(
   const finalBasis = Math.max(label.length, maxValueLength);
   const pixelLength = finalBasis * 7;
   return clamp(
-    MIN_MEASURE_WIDTH,
-    pixelLength + MEASURE_PADDING,
-    MAX_MEASURE_WIDTH,
+    COLUMN_WIDTH_CONSTANTS.MIN_MEASURE_WIDTH,
+    pixelLength + COLUMN_WIDTH_CONSTANTS.MEASURE_PADDING,
+    COLUMN_WIDTH_CONSTANTS.MAX_MEASURE_WIDTH,
   );
 }

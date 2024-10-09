@@ -10,6 +10,7 @@
   import {
     calculateFirstColumnWidth,
     calculateMeasureWidth,
+    COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -43,13 +44,6 @@
   const OVERSCAN = 60;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
-  const MEASURE_PADDING = 20;
-  const MIN_COL_WIDTH = 150;
-  const MAX_COL_WIDTH = 600;
-  const MAX_INIT_COL_WIDTH = 400;
-  const MIN_MEASURE_WIDTH = 70;
-  const MAX_MEAUSRE_WIDTH = 300;
-  const INIT_MEASURE_WIDTH = 100;
 
   export let pivotDataStore: PivotDataStore;
 
@@ -367,8 +361,8 @@
       <Resizer
         side="right"
         direction="EW"
-        min={MIN_COL_WIDTH}
-        max={MAX_COL_WIDTH}
+        min={WIDTHS.MIN_COL_WIDTH}
+        max={WIDTHS.MAX_COL_WIDTH}
         dimension={firstColumnWidth}
         onUpdate={(d) => (firstColumnWidth = d)}
         onMouseDown={(e) => {
@@ -388,7 +382,8 @@
     {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
       <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
         {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
-          {@const length = $measureLengths.get(name) ?? INIT_MEASURE_WIDTH}
+          {@const length =
+            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
           {@const last =
             i === subHeaders.length - 1 &&
             groupIndex === measureGroups.length - 1}
@@ -396,8 +391,8 @@
             <Resizer
               side="right"
               direction="EW"
-              min={MIN_MEASURE_WIDTH}
-              max={MAX_MEAUSRE_WIDTH}
+              min={WIDTHS.MIN_MEASURE_WIDTH}
+              max={WIDTHS.MAX_MEASURE_WIDTH}
               dimension={length}
               justify={last ? "end" : "center"}
               hang={!last}
@@ -440,7 +435,8 @@
 
       {#each measureGroups as { subHeaders }, i (i)}
         {#each subHeaders as { column: { columnDef: { name } } } (name)}
-          {@const length = $measureLengths.get(name) ?? INIT_MEASURE_WIDTH}
+          {@const length =
+            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
           <col style:width="{length}px" style:max-width="{length}px" />
         {/each}
       {/each}
