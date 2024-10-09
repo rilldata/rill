@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetBillingSubscription,
+    createAdminServiceGetOrganization,
+  } from "@rilldata/web-admin/client";
   import { handleBillingIssues } from "@rilldata/web-admin/features/billing/banner/handleBillingIssues";
   import StartTeamPlanDialog, {
     type TeamPlanDialogTypes,
@@ -8,7 +11,12 @@
 
   export let organization: string;
 
-  $: subscription = createAdminServiceGetBillingSubscription(organization);
+  $: org = createAdminServiceGetOrganization(organization);
+  $: subscription = createAdminServiceGetBillingSubscription(organization, {
+    query: {
+      enabled: !!$org.data?.permissions?.manageOrg,
+    },
+  });
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
 
   let showStartTeamPlanDialog = false;
@@ -18,7 +26,7 @@
   $: if (!$subscription.isLoading && $categorisedIssues.data) {
     handleBillingIssues(
       organization,
-      $subscription.data.subscription,
+      $subscription.data?.subscription,
       $categorisedIssues.data,
       (type, endDate) => {
         showStartTeamPlanDialog = true;

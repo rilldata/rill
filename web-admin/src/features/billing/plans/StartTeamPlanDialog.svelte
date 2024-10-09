@@ -85,6 +85,8 @@
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
 
+  let loading = false;
+
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
   $: allStatus = mergedQueryStatusStatus([
@@ -93,6 +95,7 @@
     planRenewer,
   ]);
   async function handleUpgradePlan() {
+    loading = true;
     // only fetch when needed to avoid hitting orb for list of plans too often
     const teamPlan = await fetchTeamPlan();
     if (paymentIssues?.length) {
@@ -105,6 +108,7 @@
       );
       return;
     }
+    loading = false;
 
     if (type === "renew") {
       await $planRenewer.mutateAsync({
@@ -156,7 +160,7 @@
       <Button
         type="primary"
         on:click={handleUpgradePlan}
-        loading={$allStatus.isLoading}
+        loading={loading || $allStatus.isLoading}
       >
         {buttonText}
       </Button>

@@ -1,5 +1,6 @@
 import {
   createAdminServiceGetBillingSubscription,
+  createAdminServiceGetOrganization,
   createAdminServiceListOrganizationBillingIssues,
   type V1BillingIssue,
   V1BillingIssueType,
@@ -10,14 +11,19 @@ import {
   getNeverSubscribedIssue,
 } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues";
 import { getTrialIssue } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { derived } from "svelte/store";
 
 export function getPlanForOrg(org: string, enabled = true) {
-  return createAdminServiceGetBillingSubscription(org, {
-    query: {
-      enabled: enabled && !!org,
-      select: (data) => data.subscription?.plan,
-    },
-  });
+  return derived([createAdminServiceGetOrganization(org)], ([orgResp], set) =>
+    createAdminServiceGetBillingSubscription(org, {
+      query: {
+        enabled: enabled && !!orgResp.data?.permissions?.manageOrg && !!org,
+        select: (data) => data.subscription?.plan,
+        queryClient,
+      },
+    }).subscribe(set),
+  );
 }
 
 export type CategorisedOrganizationBillingIssues = {

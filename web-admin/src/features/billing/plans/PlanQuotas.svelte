@@ -39,15 +39,15 @@
           max={Number(quotas.storageLimitBytesPerDeployment)}
         />
       {:else}
-        <!-- We do not have a way to isolate the data -->
-        <!--        <Button-->
-        <!--          type="link"-->
-        <!--          compact-->
-        <!--          href="/#todo"-->
-        <!--          forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"-->
-        <!--        >-->
-        <!--          See project size breakdown-->
-        <!--        </Button>-->
+        <!-- TODO: We do not have a way to isolate the data just yet -->
+        <!-- <Button-->
+        <!--   type="link"-->
+        <!--   compact-->
+        <!--   href="/#todo"-->
+        <!--   forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"-->
+        <!-- >-->
+        <!--   See project size breakdown-->
+        <!-- </Button>-->
       {/if}
     </div>
   </div>
