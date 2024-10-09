@@ -1,5 +1,5 @@
 <div
-  class="p-5 size-full flex-shrink-1 overflow-hidden"
+  class="size-full flex-shrink-1 overflow-hidden border rounded-[2px]"
   style:min-height="150px"
 >
   <slot />

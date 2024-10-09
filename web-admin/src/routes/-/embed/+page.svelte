@@ -54,17 +54,19 @@
 
   {#if !activeResource}
     <ContentContainer>
-      <div class="flex flex-col items-center">
+      <div class="flex flex-col items-center gap-y-4">
         <DashboardsTable isEmbedded on:select-resource={handleSelectResource} />
       </div>
     </ContentContainer>
   {/if}
 {/if}
 
-{#if activeResource?.kind === ResourceKind.Explore.toString()}
-  <ExploreEmbed {instanceId} exploreName={activeResource.name} />
-{:else if activeResource?.kind === ResourceKind.Canvas.toString()}
-  <CanvasEmbed {instanceId} canvasName={activeResource.name} />
-{:else}
-  <UnsupportedKind />
+{#if activeResource}
+  {#if activeResource?.kind === ResourceKind.Explore.toString()}
+    <ExploreEmbed {instanceId} exploreName={activeResource.name} />
+  {:else if activeResource?.kind === ResourceKind.Canvas.toString()}
+    <CanvasEmbed {instanceId} canvasName={activeResource.name} />
+  {:else}
+    <UnsupportedKind />
+  {/if}
 {/if}

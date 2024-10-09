@@ -1,23 +1,16 @@
 <script lang="ts">
-  import {
-    Button,
-    IconSpaceFixer,
-  } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { createEventDispatcher } from "svelte";
-  import EnterIcon from "../../../components/icons/EnterIcon.svelte";
-  import ButtonContent from "./ButtonContent.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
 
   const dispatch = createEventDispatcher();
 
   export let hasErrors: boolean;
   export let hasUnsavedChanges: boolean;
   export let isLocalFileConnector: boolean;
-  export let collapse: boolean;
-
-  $: label = hasUnsavedChanges ? "Save and refresh" : "Refresh";
 
   $: type = (
     hasUnsavedChanges ? "primary" : "secondary"
@@ -25,26 +18,41 @@
 </script>
 
 {#if !isLocalFileConnector || hasUnsavedChanges}
-  <Button
-    on:click={() => {
-      if (isLocalFileConnector && !hasUnsavedChanges) return;
-      if (hasUnsavedChanges) {
-        dispatch("save-source");
-      } else {
-        dispatch("refresh-source");
-      }
-    }}
-    {label}
-    {type}
-  >
-    <ButtonContent {collapse} {hasUnsavedChanges} {isLocalFileConnector} />
-  </Button>
+  <Tooltip distance={8}>
+    <Button
+      square
+      on:click={() => {
+        if (isLocalFileConnector && !hasUnsavedChanges) return;
+        if (hasUnsavedChanges) {
+          dispatch("save-source");
+        } else {
+          dispatch("refresh-source");
+        }
+      }}
+      label="Refresh"
+      type="secondary"
+      disabled={hasUnsavedChanges}
+    >
+      <RefreshIcon size="14px" />
+    </Button>
+
+    <TooltipContent slot="tooltip-content">
+      {#if hasUnsavedChanges}
+        Save your changes to refresh
+      {:else}
+        Refresh source
+      {/if}
+    </TooltipContent>
+  </Tooltip>
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button builders={[builder]} {label} {type}>
-        <ButtonContent {collapse} {hasUnsavedChanges} {isLocalFileConnector} />
-      </Button>
+      <Tooltip distance={8}>
+        <Button builders={[builder]} label="Refresh" {type}>
+          <RefreshIcon size="14px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">Refresh source</TooltipContent>
+      </Tooltip>
     </DropdownMenu.Trigger>
 
     <DropdownMenu.Content>
@@ -65,12 +73,7 @@
 <Button
   disabled={hasUnsavedChanges || hasErrors}
   on:click={() => dispatch("create-model")}
-  type="primary"
+  type="secondary"
 >
-  <ResponsiveButtonText {collapse}>Create model</ResponsiveButtonText>
-  <IconSpaceFixer pullLeft pullRight={collapse}>
-    <EnterIcon size="14px" />
-  </IconSpaceFixer>
+  Create model
 </Button>
-
-<LocalAvatarButton />

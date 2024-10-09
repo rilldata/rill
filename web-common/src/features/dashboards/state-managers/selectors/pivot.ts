@@ -16,6 +16,7 @@ export const pivotSelectors = {
         id: measure.name || "Unknown",
         title: measure.label || measure.name || "Unknown",
         type: PivotChipType.Measure,
+        description: measure.description,
       }));
   },
   dimensions: ({ validMetricsView, dashboard }: DashboardDataSources) => {
@@ -37,6 +38,7 @@ export const pivotSelectors = {
           title:
             dimension.label || dimension.name || dimension.column || "Unknown",
           type: PivotChipType.Dimension,
+          description: dimension.description,
         }));
     }
   },

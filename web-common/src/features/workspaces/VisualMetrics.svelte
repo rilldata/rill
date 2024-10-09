@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createQueryServiceTableColumns,
+    type MetricsViewSpecDimensionV2,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -79,24 +80,7 @@
   $: timeDimension = stringGuard(rawTimeDimension);
   $: databaseSchema = stringGuard(rawDatabaseSchema);
   $: model = stringGuard(rawModel) || stringGuard(rawTable);
-
-  $: itemGroups = {
-    measures:
-      raw.measures instanceof YAMLSeq
-        ? raw.measures.items.map((item) => new YAMLMeasure(item))
-        : [],
-    dimensions:
-      raw.dimensions instanceof YAMLSeq
-        ? raw.dimensions.items.map(
-            (item, i) => new YAMLDimension(item, dimensions[i]),
-          )
-        : [],
-  };
-
-  $: smallestTimeGrain =
-    rawSmallestTimeGrain && typeof rawSmallestTimeGrain === "string"
-      ? rawSmallestTimeGrain
-      : undefined;
+  $: smallestTimeGrain = stringGuard(rawSmallestTimeGrain);
 
   // Queries
   $: modelsQuery = useModels(instanceId);
@@ -127,6 +111,53 @@
 
   /** display the main error (the first in this array) at the bottom */
   $: mainError = errors?.at(0);
+
+  $: itemGroups = {
+    measures:
+      raw.measures instanceof YAMLSeq
+        ? raw.measures.items.map((item) => new YAMLMeasure(item))
+        : [],
+    dimensions:
+      raw.dimensions instanceof YAMLSeq
+        ? createDimensions(raw.dimensions, dimensions)
+        : [],
+  };
+
+  $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
+    (acc, { name, label, resourceName }) => {
+      acc.name = Math.max(acc.name, name.length || resourceName?.length || 0);
+      acc.label = Math.max(acc.label, label.length);
+      return acc;
+    },
+    { name: 0, label: 0 },
+  );
+
+  $: measureNamesAndLabels = itemGroups.measures.reduce(
+    (acc, { name, label }) => {
+      acc.name = Math.max(acc.name, name.length);
+      acc.label = Math.max(acc.label, label.length);
+      return acc;
+    },
+    { name: 0, label: 0 },
+  );
+
+  $: longestName = Math.max(
+    dimensionNamesAndLabels.name,
+    measureNamesAndLabels.name,
+  );
+  $: longestLabel = Math.max(
+    dimensionNamesAndLabels.label,
+    measureNamesAndLabels.label,
+  );
+
+  function createDimensions(
+    rawDimensions: YAMLSeq<YAMLMap<string, string>>,
+    metricsViewDimensions: MetricsViewSpecDimensionV2[],
+  ) {
+    return rawDimensions.items.map(
+      (item, i) => new YAMLDimension(item, metricsViewDimensions[i]),
+    );
+  }
 
   function stringGuard(value: unknown | undefined): string {
     return value && typeof value === "string" ? value : "";
@@ -329,38 +360,11 @@
       type: "success",
     });
   }
-
-  $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
-    (acc, { name, label }) => {
-      acc.name = Math.max(acc.name, name.length);
-      acc.label = Math.max(acc.label, label.length);
-      return acc;
-    },
-    { name: 0, label: 0 },
-  );
-
-  $: measureNamesAndLabels = itemGroups.measures.reduce(
-    (acc, { name, label }) => {
-      acc.name = Math.max(acc.name, name.length);
-      acc.label = Math.max(acc.label, label.length);
-      return acc;
-    },
-    { name: 0, label: 0 },
-  );
-
-  $: longestName = Math.max(
-    dimensionNamesAndLabels.name,
-    measureNamesAndLabels.name,
-  );
-  $: longestLabel = Math.max(
-    dimensionNamesAndLabels.label,
-    measureNamesAndLabels.label,
-  );
 </script>
 
 <div class="wrapper">
   <div class="main-area">
-    <div class="flex gap-x-4">
+    <div class="flex gap-x-4 border-b pb-4">
       {#key confirmation}
         <Input
           sameWidth
@@ -368,6 +372,7 @@
           truncate
           value={model}
           options={[...modelNames, ...sourceNames]}
+          placeholder="Select a model"
           label="Model or source referenced"
           onChange={(newModelName) => {
             confirmation = {
@@ -384,7 +389,9 @@
         truncate
         value={timeDimension}
         options={timeOptions}
+        placeholder="Select time column"
         label="Time column"
+        noOptionsMessage="No timeseries columns in model"
         hint="Column from model that will be used as primary time dimension in dashboards"
         onChange={async (value) => {
           await updateProperty("timeseries", value);
@@ -400,6 +407,7 @@
           value: label,
           label,
         }))}
+        placeholder="Select time grain"
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {
@@ -407,8 +415,6 @@
         }}
       />
     </div>
-
-    <span class="h-[1px] w-full bg-gray-200" />
 
     <div class="grid grid-cols-3 gap-4 relative">
       <div class="col-span-3 sm:col-span-2 lg:col-span-1">
@@ -464,7 +470,7 @@
       {#each types as type (type)}
         {@const items = itemGroups[type]}
         <div class="section">
-          <header class="flex gap-x-1 items-center">
+          <header class="flex gap-x-1 items-center flex-none">
             <Button
               type="ghost"
               square
@@ -481,7 +487,11 @@
                 <CaretDownIcon size="16px" className="!fill-gray-700" />
               </span>
             </Button>
-            <h1 class="capitalize font-medium">{type}</h1>
+
+            <h1 class="capitalize font-medium select-none pointer-events-none">
+              {type}
+            </h1>
+
             <Button
               type="ghost"
               square
@@ -501,6 +511,7 @@
               <PlusIcon size="16px" />
             </Button>
           </header>
+
           {#if !collapsed[type]}
             <MetricsTable
               selected={selected[type]}
@@ -686,7 +697,7 @@
   .wrapper {
     @apply size-full max-w-full max-h-full flex-none;
     @apply overflow-hidden;
-    @apply flex gap-x-3 p-4;
+    @apply flex gap-x-2;
   }
 
   h1 {
@@ -699,7 +710,7 @@
   }
 
   .section {
-    @apply flex flex-col gap-y-2 justify-start w-full h-fit max-w-full;
+    @apply flex flex-none flex-col gap-y-2 justify-start w-full h-fit max-w-full;
   }
 
   h2 {

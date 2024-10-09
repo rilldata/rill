@@ -12,7 +12,6 @@
 
 <div
   id={item.id}
-  title={item.title}
   data-type={item.type === PivotChipType.Measure ? "measure" : "dimension"}
   data-index={index}
   class="drag-item"

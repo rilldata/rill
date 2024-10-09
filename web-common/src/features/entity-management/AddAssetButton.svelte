@@ -4,7 +4,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { Folder, PlusCircleIcon } from "lucide-svelte";
+  import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import File from "../../components/icons/File.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
@@ -29,7 +29,10 @@
     useFileNamesInDirectory,
   } from "./file-selectors";
   import { getName } from "./name-utils";
-  import { resourceIconMapping } from "./resource-icon-mapping";
+  import {
+    resourceColorMapping,
+    resourceIconMapping,
+  } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
 
   let active = false;
@@ -232,11 +235,7 @@
         class="flex gap-x-2"
         on:click={handleAddSource}
       >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Source]}
-          className="text-gray-900"
-          size="16px"
-        />
+        <svelte:component this={Database} color="#C026D3" size="16px" />
         Data
       </DropdownMenu.Item>
       <DropdownMenu.Item
@@ -246,7 +245,7 @@
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
-          className="text-gray-900"
+          color={resourceColorMapping[ResourceKind.Model]}
           size="16px"
         />
         Model
@@ -259,11 +258,12 @@
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
-        className="text-gray-900"
+        color={resourceColorMapping[ResourceKind.MetricsView]}
         size="16px"
       />
-      Metrics
+      Metrics view
     </DropdownMenu.Item>
+    <DropdownMenu.Separator />
     <DropdownMenu.Item
       aria-label="Add Explore Dashboard"
       class="flex gap-x-2"
@@ -271,11 +271,12 @@
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Explore]}
-        className="text-gray-900"
+        color={resourceColorMapping[ResourceKind.Explore]}
         size="16px"
       />
-      Explore Dashboard
+      Explore dashboard
     </DropdownMenu.Item>
+    <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
@@ -289,37 +290,39 @@
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
-            className="text-gray-900"
+            color={resourceColorMapping[ResourceKind.API]}
             size="16px"
           />
           API
           <DropdownMenu.Separator />
         </DropdownMenu.Item>
         {#if $customDashboards}
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddComponent}>
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Component]}
+              color={resourceColorMapping[ResourceKind.Component]}
+              size="16px"
+            />
+            Component
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             class="flex gap-x-2"
             on:click={handleAddCanvasDashboard}
           >
             <svelte:component
               this={resourceIconMapping[ResourceKind.Canvas]}
-              className="text-gray-900"
+              color={resourceColorMapping[ResourceKind.Canvas]}
               size="16px"
             />
-            Canvas Dashboard
+            Canvas dashboard
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddComponent}>
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Component]}
-              className="text-gray-900"
-              size="16px"
-            />
-            Component
-          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
         {/if}
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
-            className="text-gray-900"
+            color={resourceColorMapping[ResourceKind.Theme]}
             size="16px"
           />
           Theme

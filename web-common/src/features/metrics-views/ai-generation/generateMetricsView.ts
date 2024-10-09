@@ -87,7 +87,7 @@ export function useCreateMetricsViewFromTableUIAction(
     const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
 
     try {
-      // First, request an AI-generated dashboard
+      // First, request an AI-generated metrics view
       void runtimeServiceGenerateMetricsViewFileWithSignal(
         instanceId,
         {
@@ -130,43 +130,8 @@ export function useCreateMetricsViewFromTableUIAction(
 
       const previousScreenName = getScreenNameFromPage();
 
-      if (createExplore) {
-        // Get the Metrics View to use as a base for the Explore
-        const metricsViewResource = fileArtifacts
-          .getFileArtifact(newMetricsViewFilePath)
-          .getResource(queryClient, instanceId);
-
-        // Create the Explore file
-        const newExploreFilePath = await handleEntityCreate(
-          ResourceKind.Explore,
-          get(metricsViewResource)?.data,
-        );
-        if (!newExploreFilePath) {
-          throw new Error("Failed to create an Explore file");
-        }
-
-        // Wait until the Explore is ready
-        const exploreResource = fileArtifacts
-          .getFileArtifact(newExploreFilePath)
-          .getResource(queryClient, instanceId);
-        await waitUntil(
-          () => get(exploreResource)?.data?.meta?.name?.name !== undefined,
-        );
-
-        // Navigate to the Explore Preview
-        const newExploreName = get(exploreResource)?.data?.meta?.name?.name;
-        if (!newExploreName) {
-          throw new Error("Failed to create an Explore resource");
-        }
-        await goto(`/explore/${newExploreName}`);
-        void behaviourEvent.fireNavigationEvent(
-          newExploreName,
-          behaviourEventMedium,
-          metricsEventSpace,
-          previousScreenName,
-          MetricsEventScreenName.Dashboard,
-        );
-      } else {
+      // If we're not creating an Explore, navigate to the Metrics View file
+      if (!createExplore) {
         await goto(`/files${newMetricsViewFilePath}`);
         void behaviourEvent.fireNavigationEvent(
           newMetricsViewName,
@@ -175,7 +140,59 @@ export function useCreateMetricsViewFromTableUIAction(
           previousScreenName,
           MetricsEventScreenName.MetricsDefinition,
         );
+        overlay.set(null);
+        return;
       }
+
+      // If we are creating an Explore...
+
+      // Get the Metrics View to use as a base for the Explore
+      const metricsViewResource = fileArtifacts
+        .getFileArtifact(newMetricsViewFilePath)
+        .getResource(queryClient, instanceId);
+      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
+
+      // Create the Explore file
+      const newExploreFilePath = await handleEntityCreate(
+        ResourceKind.Explore,
+        get(metricsViewResource).data,
+      );
+      if (!newExploreFilePath) {
+        throw new Error("Failed to create an Explore file");
+      }
+
+      // Wait until the Explore is ready
+      const exploreFileArtifact =
+        fileArtifacts.getFileArtifact(newExploreFilePath);
+      const exploreResource = exploreFileArtifact.getResource(
+        queryClient,
+        instanceId,
+      );
+      await waitUntil(() => get(exploreResource).data !== undefined, 5000);
+      const newExploreName = get(exploreResource).data?.meta?.name?.name;
+      if (!newExploreName) {
+        throw new Error("Failed to create an Explore resource");
+      }
+
+      // Check if the Explore has errors
+      const hasErrors = exploreFileArtifact.getHasErrors(
+        queryClient,
+        instanceId,
+      );
+
+      // Navigate to the Explore workspace or to the Explore Preview
+      if (get(hasErrors)) {
+        await goto(`/files${newExploreFilePath}`);
+      } else {
+        await goto(`/explore/${newExploreName}`);
+      }
+      void behaviourEvent.fireNavigationEvent(
+        newExploreName,
+        behaviourEventMedium,
+        metricsEventSpace,
+        previousScreenName,
+        MetricsEventScreenName.Explore,
+      );
     } catch (err) {
       eventBus.emit("notification", {
         message:

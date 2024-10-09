@@ -7,6 +7,7 @@
   export let columnNames: VirtualizedTableColumns[];
   export let name: string;
   export let rowHeight = 36;
+  export let rightBorder = false;
 </script>
 
 <VirtualTable
@@ -14,7 +15,7 @@
   resizableColumns
   cellBorders
   stickyBorders
-  rightBorder
+  {rightBorder}
   {name}
   {rows}
   {rowHeight}

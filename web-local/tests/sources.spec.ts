@@ -71,7 +71,7 @@ test.describe("sources", () => {
     const nonExistentSource = `connector: local_file
 path: ${TestDataPath}/non_existent_file.csv`;
     await updateCodeEditor(page, nonExistentSource);
-    await page.getByRole("button", { name: "Save and refresh" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
     // Observe error message "file does not exist"
     await expect(page.getByText("file does not exist")).toBeVisible();
@@ -80,7 +80,7 @@ path: ${TestDataPath}/non_existent_file.csv`;
     const adImpressionsSource = `connector: local_file
 path: ${TestDataPath}/AdImpressions.tsv`;
     await updateCodeEditor(page, adImpressionsSource);
-    await page.getByRole("button", { name: "Save and refresh" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
     // Check that the source data is updated
     // (The column "user_id" exists in AdImpressions, but not in AdBids)

@@ -2131,12 +2131,11 @@ export class ExploreSpec extends Message<ExploreSpec> {
   timeZones: string[] = [];
 
   /**
-   * List of preconfigured UI states that can be toggled between.
-   * If the list is not empty, the first item should be selected by default.
+   * Preset UI state to show by default.
    *
-   * @generated from field: repeated rill.runtime.v1.ExplorePreset presets = 11;
+   * @generated from field: rill.runtime.v1.ExplorePreset default_preset = 15;
    */
-  presets: ExplorePreset[] = [];
+  defaultPreset?: ExplorePreset;
 
   /**
    * Security for the explore dashboard.
@@ -2164,7 +2163,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 8, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "presets", kind: "message", T: ExplorePreset, repeated: true },
+    { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
@@ -2322,13 +2321,6 @@ export class ExploreComparisonTimeRange extends Message<ExploreComparisonTimeRan
  */
 export class ExplorePreset extends Message<ExplorePreset> {
   /**
-   * Display name of the preset
-   *
-   * @generated from field: string label = 1;
-   */
-  label = "";
-
-  /**
    * Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
    *
    * @generated from field: repeated string dimensions = 2;
@@ -2387,7 +2379,6 @@ export class ExplorePreset extends Message<ExplorePreset> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ExplorePreset";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 9, name: "dimensions_selector", kind: "message", T: FieldSelector },
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

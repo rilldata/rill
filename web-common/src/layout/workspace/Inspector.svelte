@@ -1,56 +1,52 @@
 <script lang="ts">
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
-  import { page } from "$app/stores";
+  import { slide } from "svelte/transition";
+
+  export let filePath: string;
 
   let resizing = false;
 
-  $: context = $page.url.pathname;
-  $: workspace = workspaces.get(context);
+  $: workspace = workspaces.get(filePath);
   $: width = workspace.inspector.width;
   $: visible = workspace.inspector.visible;
 </script>
 
-<aside
-  class="inspector-wrapper"
-  class:closed={!$visible}
-  class:resizing
-  style:width="{$width}px"
->
-  <Resizer
-    direction="EW"
-    side="left"
-    min={300}
-    max={500}
-    bind:dimension={$width}
-    bind:resizing
-  />
+{#if $visible}
+  <aside
+    class="inspector-wrapper"
+    style:width="{$width + 8}px"
+    transition:slide={{ axis: "x", duration: 500 }}
+  >
+    <Resizer
+      absolute={false}
+      direction="EW"
+      side="left"
+      min={300}
+      max={500}
+      dimension={$width}
+      onUpdate={(newWidth) => {
+        width.set(newWidth);
+      }}
+      bind:resizing
+    />
 
-  <div class="inner" style:width="{$width}px">
-    <slot />
-  </div>
-</aside>
+    <div class="inner" style:width="{$width}px">
+      <slot />
+    </div>
+  </aside>
+{/if}
 
 <style lang="postcss">
   .inspector-wrapper {
     will-change: width;
-    @apply h-full flex-none relative;
-    @apply border-l border-gray-200 bg-white;
-    @apply overflow-y-auto overflow-x-hidden;
+    @apply h-full flex-none flex relative;
   }
 
   .inner {
     will-change: width;
-    @apply h-fit;
-  }
-
-  .inspector-wrapper:not(.resizing) {
-    transition-property: width;
-    transition-duration: 600ms;
-    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .closed {
-    width: 0px !important;
+    @apply h-full flex-none;
+    @apply border border-gray-200 bg-white;
+    @apply overflow-y-auto overflow-x-hidden rounded-[2px];
   }
 </style>

@@ -22,6 +22,8 @@
   import type { AxiosError } from "axios";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
+  import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
+  import { page } from "$app/stores";
 
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
@@ -61,6 +63,10 @@
   });
 
   $: ({ host, instanceId } = $runtime);
+
+  $: ({ route } = $page);
+
+  $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
 </script>
 
 <RillTheme>
@@ -69,8 +75,12 @@
       <div
         class="body h-screen w-screen overflow-hidden absolute flex flex-col"
       >
-        <BannerCenter />
-        <RepresentingUserBanner />
+        {#if !route.id?.includes("/welcome")}
+          <BannerCenter />
+          <RepresentingUserBanner />
+          <ApplicationHeader {mode} />
+        {/if}
+
         <slot />
       </div>
     </ResourceWatcher>

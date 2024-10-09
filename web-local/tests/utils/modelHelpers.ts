@@ -13,7 +13,7 @@ export async function createModel(page: Page, modelFileName: string) {
   await waitForFileNavEntry(page, "/models/model.sql", true);
 
   // Rename model
-  await renameFileUsingTitle(page, modelFileName);
+  await renameFileUsingTitle(page, "model.sql", modelFileName);
   await waitForFileNavEntry(page, `/models/${modelFileName}`, true);
 }
 

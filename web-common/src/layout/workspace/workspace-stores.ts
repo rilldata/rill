@@ -22,7 +22,7 @@ class WorkspaceLayoutStore {
   private inspectorWidth = writable<number>(DEFAULT_INSPECTOR_WIDTH);
   private tableVisible = writable<boolean>(true);
   private tableHeight = writable<number>(DEFAULT_PREVIEW_TABLE_HEIGHT);
-  public view = writable<"code" | "split" | "viz">("code");
+  public view = writable<"code" | "split" | "viz">("viz");
 
   constructor(key: string) {
     const history = localStorage.getItem(key);
@@ -37,7 +37,7 @@ class WorkspaceLayoutStore {
         parsed?.table?.height ?? DEFAULT_PREVIEW_TABLE_HEIGHT,
       );
       this.tableVisible.set(parsed?.table?.visible ?? true);
-      this.view.set(parsed?.view ?? "code");
+      if (parsed?.view) this.view.set(parsed.view);
     }
 
     const debouncer = debounce(

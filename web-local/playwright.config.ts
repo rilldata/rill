@@ -24,6 +24,7 @@ export default defineConfig({
       slowMo: parseInt(process.env.PLAYWRIGHT_SLOW_MO || "0"),
     },
   },
+  timeout: 45 * 1000,
   /* Configure projects for major browsers */
   projects: [
     {

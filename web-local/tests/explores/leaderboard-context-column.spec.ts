@@ -48,6 +48,8 @@ test.describe("leaderboard context column", () => {
       column: domain
       description: ""
       `;
+
+    await page.getByLabel("code").click();
     await watcher.updateAndWaitForDashboard(metricsWithValidPercentOfTotal);
     await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
 

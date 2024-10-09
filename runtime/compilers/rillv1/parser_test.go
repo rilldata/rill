@@ -173,8 +173,8 @@ time_ranges:
       - P1M
       - offset: P4M
         range: P2M
-presets:
-  - time_range: P4W
+defaults:
+  time_range: P4W
 `,
 		// migration c1
 		`custom/c1.yml`: `
@@ -303,8 +303,8 @@ schema: default
 						},
 					},
 				},
-				Presets: []*runtimev1.ExplorePreset{
-					{TimeRange: "P4W"},
+				DefaultPreset: &runtimev1.ExplorePreset{
+					TimeRange: "P4W",
 				},
 			},
 		},
