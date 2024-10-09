@@ -72,11 +72,7 @@
         <div class="grow"></div>
         <CopyInviteLinkButton {copyLink} />
       </div>
-      <UserInviteForm
-        {organization}
-        {project}
-        onInvite={() => (open = false)}
-      />
+      <UserInviteForm {organization} {project} />
       <UserInviteAllowlist {organization} {project} />
       <div class="mt-4">
         <div class="text-xs text-gray-500 font-semibold uppercase">
@@ -88,8 +84,8 @@
       </div>
       <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
-        <!-- 52 * 4 = 208px -->
-        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[208px]">
+        <!-- 52 * 5 = 260px -->
+        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
           {#each projectMemberUserGroupsList as group}
             <UserInviteGroup {organization} {project} {group} />
           {/each}
@@ -97,8 +93,8 @@
       </div>
       <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
-        <!-- 52 * 4 = 208px -->
-        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[208px]">
+        <!-- 52 * 5 = 260px -->
+        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
           {#each usersWithPendingInvites as user}
             <div class="flex flex-row items-center gap-x-2 justify-between">
               <AvatarCircleList
