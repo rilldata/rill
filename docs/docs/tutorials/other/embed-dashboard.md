@@ -26,7 +26,7 @@ rill service create <service_name>
 We will be using the [demo dashboard](https://ui.rilldata.com/demo/rill-openrtb-prog-ad) that contains three dashboards. However, you will need to use your own dashboard as the token you created is specifically for your organization. Note the dashboard ID will be used, not the title.
 
 
-- Canvas Dashboard (canvas)
+- Spend vs Request Canvas Dashboard (spend-request-canvas-dashboard)
 - Progammatic Ads Auction (auction)
 - Programmtic Ads Bids (bids)
 
@@ -71,3 +71,46 @@ Once you can confirm that all the dashboards are working as designed, you can em
 Please refer to the examples in the documents for different ways to generate the iframe URL.
 https://docs.rilldata.com/integrate/embedding#backend-build-an-iframe-url
 
+
+### Sample JavaScript Code: [Click me for source!](https://github.com/rilldata/rill-embedding-example/blob/main/pages/api/iframe.js)
+Taken from our example repository, you can create a js file that retrieves the iframe URL. Note that the service token will be retrieved from an environmental variable, but all the other components are defined before fetching the URL.
+
+```js
+// Get the secret Rill service token from an environment variable.
+const rillServiceToken = process.env.RILL_SERVICE_TOKEN;
+
+// Configure the dashboard to request an iframe URL for.
+// Note that the organization must be the same as the one the service token is associated with.
+const rillOrg = "demo";
+const rillProject = "rill-openrtb-prog-ads";
+const rillDashboard = "bids";
+
+// This is a serverless function that makes an authenticated request to the Rill API to get an iframe URL for a dashboard.
+// The iframe URL is then returned to the client.
+// Iframe URLs must be requested from the backend to prevent exposing the Rill service token to the browser.
+export default async function handler(req, res) {
+    try {
+        const url = `https://admin.rilldata.com/v1/organizations/${rillOrg}/projects/${rillProject}/iframe`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${rillServiceToken}`,
+            },
+            body: JSON.stringify({
+                resource: rillDashboard,
+                // You can pass additional parameters for row-level security policies here.
+                // For details, see: https://docs.rilldata.com/integrate/embedding
+            }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+            res.json(data);
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+```

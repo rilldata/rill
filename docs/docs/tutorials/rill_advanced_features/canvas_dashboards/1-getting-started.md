@@ -4,6 +4,9 @@ description: Creating Canvas Dashboards in Rill
 sidebar_label: "Getting Started"
 sidebar_position: 6
 ---
+:::note
+Canvas Dashboards are still not released yet and is hidden behind a feature flag. Breaking changes may be pushed at any time and may cause your dashboards to no longer function. Please proceed with that in mind!
+:::
 
 ## Creating Canvas Dashboards in Rill 
 

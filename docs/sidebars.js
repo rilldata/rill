@@ -128,20 +128,18 @@ const sidebars = {
               type: 'category',
               label: 'User Management',
               items: [
-                'tutorials/administration/user-management',
-                'tutorials/administration/user-group-management',
+                'tutorials/administration/user/user-management',
+                'tutorials/administration/user/user-group-management',
               ]
             },
             {
               type: 'category',
               label: 'Project Management',
               items: [
-                'tutorials/administration/project-maintanence',
-                'tutorials/administration/alerts',
-                'tutorials/administration/credential-envvariable-mangement',
-                'tutorials/administration/github',
-
-
+                'tutorials/administration/project/project-maintanence',
+                'tutorials/administration/project/alerts',
+                'tutorials/administration/project/credential-envvariable-mangement',
+                'tutorials/administration/project/github',
               ]
             },
 
@@ -174,13 +172,13 @@ const sidebars = {
           label: "Other Concepts and How-to's",
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
-      //      'tutorials/other/add-column-dimension',
+            'tutorials/other/add-column-dimension',
+            'tutorials/other/dashboard-row-policies',
             'tutorials/other/custom-charts',
             'tutorials/other/create-map-component',
             'tutorials/other/embed-dashboard',
       //      'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
-            
             'tutorials/other/Rill Cloud/views',
       //      'tutorials/other/Rill Cloud/visual-metric-editor-rc',
        //     'tutorials/other/yaml-vs-ui',
