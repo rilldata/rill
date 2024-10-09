@@ -109,11 +109,13 @@
     sorting,
     rowPage,
     rows: rowPills,
+    columns: columnPills,
     activeCell,
   } = $pivotDashboardStore);
 
   $: timeDimension = $config.time.timeDimension;
   $: hasDimension = rowPills.dimension.length > 0;
+  $: hasColumnDimension = columnPills.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
 
@@ -359,6 +361,7 @@
 <div
   class="table-wrapper relative"
   class:with-row-dimension={hasDimension}
+  class:with-col-dimension={hasColumnDimension}
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + headerGroups.length}px"
@@ -649,7 +652,10 @@
   }
 
   .totals-column {
-    @apply bg-slate-50 font-semibold;
+    @apply bg-slate-50;
+  }
+  .with-col-dimension .totals-column {
+    @apply font-semibold;
   }
   .interactive-cell {
     @apply cursor-pointer;
