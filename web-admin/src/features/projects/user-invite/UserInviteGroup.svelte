@@ -14,7 +14,7 @@
   export let project: string;
   export let group: V1MemberUsergroup;
 
-  let isGroupHovered = false;
+  let isHovered = false;
 
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
@@ -28,11 +28,11 @@
     role="button"
     tabindex="0"
     class="flex flex-row items-center gap-x-2 justify-between data-[hovered=true]:bg-slate-50 rounded-sm"
-    data-hovered={isGroupHovered}
-    on:mouseover={() => (isGroupHovered = true)}
-    on:mouseleave={() => (isGroupHovered = false)}
-    on:focus={() => (isGroupHovered = true)}
-    on:blur={() => (isGroupHovered = false)}
+    data-hovered={isHovered}
+    on:mouseover={() => (isHovered = true)}
+    on:mouseleave={() => (isHovered = false)}
+    on:focus={() => (isHovered = true)}
+    on:blur={() => (isHovered = false)}
   >
     <UserInviteGroupAvatar {organization} usergroup={group.groupName} />
     <UserInviteGroupSetRole {organization} {project} {group} />
