@@ -20,7 +20,7 @@ export async function createExploreFromModel(
   page: Page,
   modelPath = "/models/AdBids_model.sql",
   metricsViewPath = "/metrics/AdBids_model_metrics.yaml",
-  explorePath = "/explore-dashboards/AdBids_model_metrics_explore.yaml",
+  explorePath = "/dashboards/AdBids_model_metrics_explore.yaml",
 ) {
   await openFileNavEntryContextMenu(page, modelPath);
   await clickMenuButton(page, "Generate metrics");
