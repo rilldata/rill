@@ -122,7 +122,7 @@
     @apply flex items-center;
     @apply p-0 bg-transparent;
     @apply size-full;
-    @apply outline-none border-0 select-none;
+    @apply outline-none border-0;
     @apply cursor-default min-w-fit;
     vertical-align: middle;
   }

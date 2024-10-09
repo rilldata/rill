@@ -150,12 +150,12 @@ export function useCreateMetricsViewFromTableUIAction(
       const metricsViewResource = fileArtifacts
         .getFileArtifact(newMetricsViewFilePath)
         .getResource(queryClient, instanceId);
-      await waitUntil(() => get(metricsViewResource).data !== undefined);
+      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
       // Create the Explore file
       const newExploreFilePath = await handleEntityCreate(
         ResourceKind.Explore,
-        undefined,
+        get(metricsViewResource).data,
       );
       if (!newExploreFilePath) {
         throw new Error("Failed to create an Explore file");
@@ -168,7 +168,7 @@ export function useCreateMetricsViewFromTableUIAction(
         queryClient,
         instanceId,
       );
-      await waitUntil(() => get(exploreResource).data !== undefined);
+      await waitUntil(() => get(exploreResource).data !== undefined, 5000);
       const newExploreName = get(exploreResource).data?.meta?.name?.name;
       if (!newExploreName) {
         throw new Error("Failed to create an Explore resource");
@@ -181,7 +181,7 @@ export function useCreateMetricsViewFromTableUIAction(
       );
 
       // Navigate to the Explore workspace or to the Explore Preview
-      if (hasErrors) {
+      if (get(hasErrors)) {
         await goto(`/files${newExploreFilePath}`);
       } else {
         await goto(`/explore/${newExploreName}`);

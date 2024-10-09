@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
@@ -19,6 +19,9 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
+  import { get } from "svelte/store";
+  import { waitUntil } from "../../lib/waitUtils";
+  import { handleEntityCreate } from "../file-explorer/new-files";
 
   export let filePath: string;
 
@@ -30,7 +33,7 @@
   const { customDashboards, ai } = featureFlags;
 
   $: instanceId = $runtime.instanceId;
-  $: dashboardQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   /**
@@ -38,7 +41,7 @@
    * Note that not all dashboards have an underlying model. Some dashboards are
    * underpinned by a source/table.
    */
-  $: referenceModelName = $dashboardQuery?.data?.meta?.refs?.filter(
+  $: referenceModelName = $resourceQuery?.data?.meta?.refs?.filter(
     (ref) => ref.kind === ResourceKind.Model,
   )?.[0]?.name;
 
@@ -60,17 +63,29 @@
     );
   };
 
-  const editMetrics = async () => {
-    const previousScreenName = getScreenNameFromPage();
-    await goto(`/files${filePath}`);
-    await behaviourEvent.fireNavigationEvent(
-      ($dashboardQuery.data?.meta?.name as string) ?? "",
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      previousScreenName,
-      MetricsEventScreenName.MetricsDefinition,
+  async function createExploreDashboard() {
+    // Create the Explore file
+    const newExploreFilePath = await handleEntityCreate(
+      ResourceKind.Explore,
+      $resourceQuery.data,
     );
-  };
+
+    // Wait until the Explore resource is ready
+    const exploreFileArtifact =
+      fileArtifacts.getFileArtifact(newExploreFilePath);
+    const exploreResource = exploreFileArtifact.getResource(
+      queryClient,
+      instanceId,
+    );
+    await waitUntil(() => get(exploreResource).data !== undefined);
+    const newExploreName = get(exploreResource).data?.meta?.name?.name;
+    if (!newExploreName) {
+      throw new Error("Failed to create an Explore resource");
+    }
+
+    // Navigate to the Explore Preview
+    await goto(`/explore/${newExploreName}`);
+  }
 </script>
 
 {#if referenceModelName}
@@ -79,9 +94,9 @@
     Edit model
   </NavigationMenuItem>
 {/if}
-<NavigationMenuItem on:click={editMetrics}>
-  <MetricsViewIcon slot="icon" />
-  Edit metrics
+<NavigationMenuItem on:click={createExploreDashboard}>
+  <ExploreIcon slot="icon" />
+  Generate dashboard
 </NavigationMenuItem>
 {#if $customDashboards}
   <NavigationMenuItem

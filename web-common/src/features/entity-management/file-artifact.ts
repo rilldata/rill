@@ -111,8 +111,9 @@ export class FileArtifact {
   }
 
   updateRemoteContent = (newContent: string, alert = true) => {
+    const hasNewContent = newContent !== get(this.remoteContent);
     this.remoteContent.set(newContent);
-    if (alert && newContent !== get(this.remoteContent)) {
+    if (alert && hasNewContent) {
       for (const callback of this.remoteCallbacks) {
         callback(newContent);
       }
@@ -313,6 +314,12 @@ export class FileArtifact {
       kind === ResourceKind.MetricsView &&
       resource.meta?.name?.kind === ResourceKind.Explore
     ) {
+      if (!get(this.remoteContent)) {
+        // inferred incorrectly since we didnt check contents
+        // we do not need to fetch content in other cases, so it is only pre-fetched here
+        // also fetchContent updates the resource name, so we do not need to wait here to update the name
+        void this.fetchContent();
+      }
       return;
     }
 
