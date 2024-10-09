@@ -17,22 +17,39 @@ func (e *Executor) rewriteDruidGroups(ast *AST) error {
 }
 
 func (e *Executor) rewriteDruidGroupsWalk(n *SelectNode) error {
-	// Skip if already grouped
-	if n.Group {
-		return nil
-	}
+	var hasJoins bool
 
-	// Recurse over FromSelect as it may contain sub queries with joins
+	// Recurse
 	if n.FromSelect != nil {
 		err := e.rewriteDruidGroupsWalk(n.FromSelect)
 		if err != nil {
 			return err
 		}
 	}
+	if n.SpineSelect != nil {
+		err := e.rewriteDruidGroupsWalk(n.SpineSelect)
+		if err != nil {
+			return err
+		}
+		hasJoins = true
+	}
+	for _, ljs := range n.LeftJoinSelects {
+		err := e.rewriteDruidGroupsWalk(ljs)
+		if err != nil {
+			return err
+		}
+		hasJoins = true
+	}
+	if n.JoinComparisonSelect != nil {
+		err := e.rewriteDruidGroupsWalk(n.JoinComparisonSelect)
+		if err != nil {
+			return err
+		}
+		hasJoins = true
+	}
 
-	// Skip if there is no sub query with JOIN
-	// Druid requires GROUP BY and ANY_VALUE aggregate for measure if there is a subquery with JOIN
-	if n.SpineSelect == nil && len(n.LeftJoinSelects) == 0 && n.JoinComparisonSelect == nil {
+	if !hasJoins {
+		// Skip if there is no sub query with JOIN, Druid requires GROUP BY and ANY_VALUE aggregate for measures if there is a subquery with JOIN
 		return nil
 	}
 
@@ -41,26 +58,6 @@ func (e *Executor) rewriteDruidGroupsWalk(n *SelectNode) error {
 	for i, f := range n.MeasureFields {
 		f.Expr = fmt.Sprintf("ANY_VALUE(%s)", f.Expr)
 		n.MeasureFields[i] = f
-	}
-
-	// Recurse
-	if n.SpineSelect != nil {
-		err := e.rewriteDruidGroupsWalk(n.SpineSelect)
-		if err != nil {
-			return err
-		}
-	}
-	for _, ljs := range n.LeftJoinSelects {
-		err := e.rewriteDruidGroupsWalk(ljs)
-		if err != nil {
-			return err
-		}
-	}
-	if n.JoinComparisonSelect != nil {
-		err := e.rewriteDruidGroupsWalk(n.JoinComparisonSelect)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
