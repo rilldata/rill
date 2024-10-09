@@ -22,7 +22,7 @@ import {
 import httpClient from "../../../runtime-client/http-client";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
-import { handleEntityCreate } from "../../file-explorer/new-files";
+import { createResourceFile } from "../../file-explorer/new-files";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
 /**
@@ -153,7 +153,7 @@ export function useCreateMetricsViewFromTableUIAction(
       await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
       // Create the Explore file
-      const newExploreFilePath = await handleEntityCreate(
+      const newExploreFilePath = await createResourceFile(
         ResourceKind.Explore,
         get(metricsViewResource).data,
       );

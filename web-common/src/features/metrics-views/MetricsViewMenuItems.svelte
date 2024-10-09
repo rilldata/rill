@@ -21,7 +21,7 @@
   import { createEventDispatcher } from "svelte";
   import { get } from "svelte/store";
   import { waitUntil } from "../../lib/waitUtils";
-  import { handleEntityCreate } from "../file-explorer/new-files";
+  import { createResourceFile } from "../file-explorer/new-files";
 
   export let filePath: string;
 
@@ -65,7 +65,7 @@
 
   async function createExploreDashboard() {
     // Create the Explore file
-    const newExploreFilePath = await handleEntityCreate(
+    const newExploreFilePath = await createResourceFile(
       ResourceKind.Explore,
       $resourceQuery.data,
     );

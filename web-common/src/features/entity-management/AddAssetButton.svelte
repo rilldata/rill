@@ -21,7 +21,7 @@
   import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
   import { featureFlags } from "../feature-flags";
   import { directoryState } from "../file-explorer/directory-store";
-  import { handleEntityCreate } from "../file-explorer/new-files";
+  import { createResourceFile } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -89,7 +89,7 @@
    * Put an example Model file in the `models` directory
    */
   async function handleAddModel() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Model);
+    const newFilePath = await createResourceFile(ResourceKind.Model);
     await wrapNavigation(newFilePath);
   }
 
@@ -97,7 +97,7 @@
    * Put an example Metrics View file in the `metrics_views` directory
    */
   async function handleAddMetricsView() {
-    const newFilePath = await handleEntityCreate(ResourceKind.MetricsView);
+    const newFilePath = await createResourceFile(ResourceKind.MetricsView);
     await wrapNavigation(newFilePath);
   }
 
@@ -105,7 +105,7 @@
    * Put an example Explore file in the `explores` directory
    */
   async function handleAddExplore() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Explore);
+    const newFilePath = await createResourceFile(ResourceKind.Explore);
     await wrapNavigation(newFilePath);
   }
 
@@ -165,7 +165,7 @@
    * Put an example API file in the `apis` directory
    */
   async function handleAddAPI() {
-    const newFilePath = await handleEntityCreate(ResourceKind.API);
+    const newFilePath = await createResourceFile(ResourceKind.API);
     await wrapNavigation(newFilePath);
   }
 
@@ -173,7 +173,7 @@
    * Put an example Chart file in the `charts` directory
    */
   async function handleAddComponent() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Component);
+    const newFilePath = await createResourceFile(ResourceKind.Component);
     await wrapNavigation(newFilePath);
   }
 
@@ -181,7 +181,7 @@
    * Put an example Canvas file in the `canvas` directory
    */
   async function handleAddCanvasDashboard() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Canvas);
+    const newFilePath = await createResourceFile(ResourceKind.Canvas);
     await wrapNavigation(newFilePath);
   }
 
@@ -189,7 +189,7 @@
    * Put an example Theme file in the `themes` directory
    */
   async function handleAddTheme() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Theme);
+    const newFilePath = await createResourceFile(ResourceKind.Theme);
     await wrapNavigation(newFilePath);
   }
 
@@ -197,7 +197,7 @@
    * Put an example Report file in the `reports` directory
    */
   // async function handleAddReport() {
-  //   const newFilePath = await handleEntityCreate(ResourceKind.Report);
+  //   const newFilePath = await createResourceFile(ResourceKind.Report);
   //   if (newFilePath) await goto(newFilePath);
   // }
 
@@ -205,7 +205,7 @@
    * Put an example Alert file in the `alerts` directory
    */
   // async function handleAddAlert() {
-  //   const newFilePath = await handleEntityCreate(ResourceKind.Alert);
+  //   const newFilePath = await createResourceFile(ResourceKind.Alert);
   //   if (newFilePath) await goto(newFilePath);
   // }
 </script>

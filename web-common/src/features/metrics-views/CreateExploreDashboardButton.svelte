@@ -1,14 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { get } from "svelte/store";
   import { Button } from "../../components/button";
-  import { waitUntil } from "../../lib/waitUtils";
   import { type V1Resource } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { fileArtifacts } from "../entity-management/file-artifacts";
   import { ResourceKind } from "../entity-management/resource-selectors";
-  import { handleEntityCreate } from "../file-explorer/new-files";
+  import { createResourceFile } from "../file-explorer/new-files";
 
   const queryClient = useQueryClient();
 
@@ -18,7 +15,7 @@
 
   async function handleCreateDashboard() {
     // Create the Explore file
-    const newExploreFilePath = await handleEntityCreate(
+    const newExploreFilePath = await createResourceFile(
       ResourceKind.Explore,
       metricsViewResource,
     );

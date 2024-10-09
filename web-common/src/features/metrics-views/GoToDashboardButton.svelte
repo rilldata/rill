@@ -15,7 +15,7 @@
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
-  import { handleEntityCreate } from "../file-explorer/new-files";
+  import { createResourceFile } from "../file-explorer/new-files";
   import CreateExploreDashboardButton from "./CreateExploreDashboardButton.svelte";
 
   const queryClient = useQueryClient();
@@ -31,7 +31,7 @@
 
   async function handleCreateDashboard() {
     // Create the Explore file
-    const newExploreFilePath = await handleEntityCreate(
+    const newExploreFilePath = await createResourceFile(
       ResourceKind.Explore,
       resource,
     );
