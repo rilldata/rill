@@ -136,7 +136,7 @@
           handleRemove(user.userEmail);
         }}
       >
-        <span class="ml-6">Remove</span>
+        <span class="ml-6 text-red-600">Remove</span>
       </DropdownMenu.Item>
     {/if}
   </DropdownMenu.Content>
