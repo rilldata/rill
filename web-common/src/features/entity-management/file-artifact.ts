@@ -111,12 +111,12 @@ export class FileArtifact {
   }
 
   updateRemoteContent = (newContent: string, alert = true) => {
-    this.remoteContent.set(newContent);
     if (alert && newContent !== get(this.remoteContent)) {
       for (const callback of this.remoteCallbacks) {
         callback(newContent);
       }
     }
+    this.remoteContent.set(newContent);
   };
 
   async fetchContent(invalidate = false) {
@@ -313,6 +313,10 @@ export class FileArtifact {
       kind === ResourceKind.MetricsView &&
       resource.meta?.name?.kind === ResourceKind.Explore
     ) {
+      if (!get(this.remoteContent)) {
+        // inferred incorrectly since we didnt check contents
+        void this.fetchContent();
+      }
       return;
     }
 
