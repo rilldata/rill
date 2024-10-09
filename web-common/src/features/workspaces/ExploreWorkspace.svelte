@@ -54,7 +54,7 @@
     resourceKind={ResourceKind.Explore}
   >
     <PreviewButton
-      slot="workspace-controls"
+      slot="cta"
       href="/explore/{exploreName}"
       disabled={allErrors.length > 0}
     />
