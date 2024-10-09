@@ -22,7 +22,7 @@
 
 <style lang="postcss">
   .nav-items {
-    @apply flex flex-col gap-y-1;
+    @apply flex flex-col gap-y-2;
     @apply min-w-[150px];
   }
 </style>

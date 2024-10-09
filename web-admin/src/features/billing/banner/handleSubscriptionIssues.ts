@@ -27,13 +27,16 @@ export function handleSubscriptionIssues(
       new Date(cancelledSubIssue.metadata.subscriptionCancelled?.endDate),
     );
     if (endDate.isValid && endDate.toMillis() > Date.now()) {
-      accessTimeout = ` but you still have access through ${endDate.toLocaleString(DateTime.DATE_MED)}`;
+      accessTimeout = `but you still have access through ${endDate.toLocaleString(DateTime.DATE_MED)}`;
     }
+  }
+  if (!accessTimeout) {
+    accessTimeout = "and your subscription has ended";
   }
 
   return <BannerMessage>{
     type: "warning",
-    message: `Your plan was canceled${accessTimeout}. To maintain access, renew your plan.`,
+    message: `Your plan was canceled ${accessTimeout}. To maintain access, renew your plan.`,
     iconType: "alert",
     cta: {
       text: "Renew ->",

@@ -8,13 +8,7 @@
   export let organization: string;
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
-
-  $: showPaymentBlock =
-    !$categorisedIssues.isLoading &&
-    // fresh orgs do not need payment
-    !$categorisedIssues.data.neverSubscribed &&
-    // orgs on trial do not need payment either
-    !$categorisedIssues.data.trial;
+  $: paymentIssues = $categorisedIssues.data?.payment;
 
   async function handleManagePayment() {
     window.open(
@@ -24,15 +18,14 @@
   }
 </script>
 
-{#if showPaymentBlock}
+{#if !$categorisedIssues.isLoading}
   <SettingsContainer
     title="Payment Method"
-    titleIcon={$categorisedIssues.data?.payment?.length ? "error" : "none"}
+    titleIcon={paymentIssues?.length ? "error" : "none"}
   >
     <div slot="body">
-      {#if $categorisedIssues.data?.payment?.length}
-        {getPaymentIssueErrorText($categorisedIssues.data.payment)} Please click
-        <b>Manage</b> below to correct.
+      {#if paymentIssues?.length}
+        {getPaymentIssueErrorText(paymentIssues)} Please click Manage below to correct.
       {:else}
         Your payment method is valid and good to go.
       {/if}

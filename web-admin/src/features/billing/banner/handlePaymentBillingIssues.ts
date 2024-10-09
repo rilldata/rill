@@ -1,5 +1,4 @@
 import {
-  createAdminServiceListOrganizationBillingIssues,
   type V1BillingIssue,
   V1BillingIssueType,
   type V1Subscription,
@@ -23,14 +22,6 @@ export const PaymentBillingIssueTypes: Partial<
     short: "billing address",
   },
 };
-
-export function usePaymentIssues(organization: string) {
-  return createAdminServiceListOrganizationBillingIssues(organization, {
-    query: {
-      select: (data) => getPaymentIssues(data.issues ?? []),
-    },
-  });
-}
 
 export function getPaymentIssues(issues: V1BillingIssue[]) {
   return issues?.filter((i) => i.type in PaymentBillingIssueTypes);

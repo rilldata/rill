@@ -56,7 +56,7 @@
         <span>{selected?.label}</span>
       </a>
       {#if selected?.pill}
-        <Chip type="dimension" label={selected.pill} readOnly>
+        <Chip type="dimension" label={selected.pill} readOnly compact>
           <svelte:fragment slot="body">{selected.pill}</svelte:fragment>
         </Chip>
       {/if}

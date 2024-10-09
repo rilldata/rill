@@ -38,7 +38,7 @@
   }
 
   .settings-title {
-    @apply flex flex-row gap-x-2 items-center;
+    @apply flex flex-row gap-x-2 items-center mb-2;
     @apply text-lg font-semibold;
   }
 

@@ -15,7 +15,6 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import { buildUpgradeUrl } from "@rilldata/web-admin/client/redirect-utils";
   import { mergedQueryStatusStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
@@ -23,6 +22,7 @@
     fetchTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { getSubscriptionResumedText } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -38,7 +38,6 @@
     createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
   } from "@rilldata/web-admin/client/index.js";
-  import { usePaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
 
   export let organization: string;
   export let open = false;
@@ -83,19 +82,20 @@
   }
   $: setCopyBasedOnType(type);
 
-  $: paymentIssues = usePaymentIssues(organization);
+  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
+  $: paymentIssues = $categorisedIssues.data?.payment;
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
   $: allStatus = mergedQueryStatusStatus([
-    paymentIssues,
+    categorisedIssues,
     planUpdater,
     planRenewer,
   ]);
   async function handleUpgradePlan() {
     // only fetch when needed to avoid hitting orb for list of plans too often
     const teamPlan = await fetchTeamPlan();
-    if ($paymentIssues.data?.length) {
+    if (paymentIssues?.length) {
       window.open(
         await fetchPaymentsPortalURL(
           organization,

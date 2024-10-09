@@ -140,6 +140,6 @@
 
 <style lang="postcss">
   .update-org-form {
-    @apply flex flex-col gap-y-5 w-full mt-2;
+    @apply flex flex-col gap-y-5 w-full;
   }
 </style>

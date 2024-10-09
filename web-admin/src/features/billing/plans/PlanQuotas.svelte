@@ -4,7 +4,6 @@
     type V1Quotas,
   } from "@rilldata/web-admin/client";
   import { formatDataSizeQuota } from "@rilldata/web-admin/features/billing/plans/utils";
-  import { Button } from "@rilldata/web-common/components/button";
   import { Progress } from "@rilldata/web-common/components/progress";
 
   export let organization: string;
@@ -40,14 +39,15 @@
           max={Number(quotas.storageLimitBytesPerDeployment)}
         />
       {:else}
-        <Button
-          type="link"
-          compact
-          href="/#todo"
-          forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"
-        >
-          See project size breakdown
-        </Button>
+        <!-- We do not have a way to isolate the data -->
+        <!--        <Button-->
+        <!--          type="link"-->
+        <!--          compact-->
+        <!--          href="/#todo"-->
+        <!--          forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"-->
+        <!--        >-->
+        <!--          See project size breakdown-->
+        <!--        </Button>-->
       {/if}
     </div>
   </div>

@@ -14,6 +14,7 @@
   export let type: "measure" | "dimension" | "time" | "special" = "dimension";
   export let exclude = false;
   export let grab = false;
+  export let compact = false;
   export let builders: Builder[] = [];
   export let caret = builders.length > 0;
   export let slideDuration = 150;
@@ -28,10 +29,10 @@
   );
 
   function focusOnRemove() {
-    if (tooltipSuppression) tooltipSuppression.set(true);
+    if ($tooltipSuppression) tooltipSuppression.set(true);
   }
   function blurOnRemove() {
-    if (tooltipSuppression) tooltipSuppression.set(false);
+    if ($tooltipSuppression) tooltipSuppression.set(false);
   }
 </script>
 
@@ -41,6 +42,7 @@
     class:active
     class:grab
     class:exclude
+    class:compact
     class:pointer-events-none={readOnly}
     aria-label={label}
     {...getAttrs(builders)}
@@ -161,5 +163,9 @@
   .time.active,
   .time:active {
     @apply border-slate-400;
+  }
+
+  .compact {
+    @apply py-0;
   }
 </style>

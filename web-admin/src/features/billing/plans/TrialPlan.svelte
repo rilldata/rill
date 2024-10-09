@@ -1,16 +1,13 @@
 <script lang="ts">
   import {
-    createAdminServiceListOrganizationBillingIssues,
     V1BillingIssueType,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
-  import {
-    getTrialIssue,
-    getTrialMessageForDays,
-  } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
+  import { getTrialMessageForDays } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { DateTime } from "luxon";
@@ -20,8 +17,8 @@
 
   $: plan = subscription?.plan;
 
-  $: issues = createAdminServiceListOrganizationBillingIssues(organization);
-  $: trialIssue = getTrialIssue($issues.data?.issues ?? []);
+  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
+  $: trialIssue = $categorisedIssues.data?.trial;
   // prefer using end date from BillingIssues since we use that to hibernate projects and take other actions
   $: subscriptionEndDate =
     trialIssue?.metadata?.onTrial?.endDate ?? subscription?.trialEndDate;

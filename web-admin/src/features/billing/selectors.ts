@@ -4,19 +4,12 @@ import {
   type V1BillingIssue,
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
+import { getPaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
 import {
-  getPaymentIssues,
-  PaymentBillingIssueTypes,
-} from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
-import {
-  cancelledSubscriptionHasEnded,
   getCancelledIssue,
   getNeverSubscribedIssue,
 } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues";
-import {
-  getTrialIssue,
-  trialHasPastGracePeriod,
-} from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
+import { getTrialIssue } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
 
 export function getPlanForOrg(org: string, enabled = true) {
   return createAdminServiceGetBillingSubscription(org, {
