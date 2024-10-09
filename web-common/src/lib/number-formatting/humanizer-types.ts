@@ -5,6 +5,11 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
  * used in the `format_preset` field of a measure definition.
  */
 export enum FormatPreset {
+  /**
+   * The default format preset is only for internal use and is applied
+   * when there is no preset or d3 format string defined
+   */
+  DEFAULT = "default",
   HUMANIZE = "humanize",
   NONE = "none",
   CURRENCY_USD = "currency_usd",
@@ -96,6 +101,7 @@ export const formatPresetToNumberKind = (type: FormatPreset) => {
       return NumberKind.INTERVAL;
 
     case FormatPreset.NONE:
+    case FormatPreset.DEFAULT:
     case FormatPreset.HUMANIZE:
       return NumberKind.ANY;
     default:
@@ -133,6 +139,7 @@ export type NumberParts = {
   dot: "" | ".";
   frac: string;
   suffix: string;
+  prefix?: string;
   percent?: "%";
   approxZero?: boolean;
 };
@@ -244,6 +251,12 @@ export type RangeFormatSpec = {
    * will be formatted as just "123", with no decimal point.
    */
   useTrailingDot?: boolean;
+
+  /**
+   * If set, all numbers within the range use the number parts provided
+   * ignoring all other spec instructions
+   */
+  overrideValue?: NumberParts;
 };
 
 /**
