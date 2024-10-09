@@ -82,7 +82,7 @@ const ResourceKindMap: Record<
     extension: ".yaml",
   },
   [ResourceKind.Explore]: {
-    folderName: "explore-dashboards",
+    folderName: "dashboards",
     baseName: "explore",
     extension: ".yaml",
   },
@@ -97,7 +97,7 @@ const ResourceKindMap: Record<
     extension: ".yaml",
   },
   [ResourceKind.Canvas]: {
-    folderName: "canvas-dashboards",
+    folderName: "dashboards",
     baseName: "canvas",
     extension: ".yaml",
   },
