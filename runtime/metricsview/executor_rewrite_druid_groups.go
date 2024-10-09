@@ -17,8 +17,9 @@ func (e *Executor) rewriteDruidGroups(ast *AST) error {
 }
 
 func (e *Executor) rewriteDruidGroupsWalk(n *SelectNode) error {
-	// Skip if already grouped
-	if n.Group {
+	// Skip if already grouped or if there is no sub query with JOIN
+	// Druid requires GROUP BY and ANY_VALUE aggregate for measure if there is a subquery with JOIN
+	if n.Group || (n.SpineSelect == nil && len(n.LeftJoinSelects) == 0 && n.JoinComparisonSelect == nil) {
 		return nil
 	}
 
@@ -30,12 +31,6 @@ func (e *Executor) rewriteDruidGroupsWalk(n *SelectNode) error {
 	}
 
 	// Recurse
-	if n.FromSelect != nil {
-		err := e.rewriteDruidGroupsWalk(n.FromSelect)
-		if err != nil {
-			return err
-		}
-	}
 	if n.SpineSelect != nil {
 		err := e.rewriteDruidGroupsWalk(n.SpineSelect)
 		if err != nil {
