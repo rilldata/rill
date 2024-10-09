@@ -31,7 +31,7 @@ export function calculateFirstColumnWidth(
   }, 0);
 
   const finalBasis = Math.max(firstColumnName.length, maxValueLength);
-  const pixelLength = finalBasis * 8;
+  const pixelLength = finalBasis * 7;
   const final = clamp(
     COLUMN_WIDTH_CONSTANTS.MIN_COL_WIDTH,
     pixelLength + 16,
