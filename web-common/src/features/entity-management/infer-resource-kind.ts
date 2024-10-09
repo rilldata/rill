@@ -39,12 +39,6 @@ export function inferResourceKind(
   return null;
 }
 
-const resourceNameRegex = /name\s*:\s*(\w+)/i;
-export function findResourceNameInYAML(text: string) {
-  const match = text.match(resourceNameRegex);
-  return match?.length === 2 ? match[1].toLowerCase() : null;
-}
-
 const resourceKindRegex = /type\s*:\s*(\w+)/i;
 function findResourceKindInYAML(text: string): ResourceKind | null {
   const match = text.match(resourceKindRegex);

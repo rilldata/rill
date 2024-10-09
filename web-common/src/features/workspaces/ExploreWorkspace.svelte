@@ -19,11 +19,11 @@
     hasUnsavedChanges,
     autoSave,
     path: filePath,
-
+    resourceName,
     fileName,
   } = fileArtifact);
 
-  $: exploreName = getNameFromFile(filePath);
+  $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
   $: initLocalUserPreferenceStore(exploreName);
 
