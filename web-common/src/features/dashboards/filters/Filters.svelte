@@ -20,7 +20,7 @@
   export let readOnly = false;
 
   /** the height of a row of chips */
-  const ROW_HEIGHT = "28px";
+  const ROW_HEIGHT = "26px";
 
   const StateManagers = getStateManagers();
   const {
@@ -30,13 +30,18 @@
       dimensionsFilter: {
         toggleDimensionValueSelection,
         removeDimensionFilter,
+        toggleDimensionFilterMode,
       },
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
       filters: { clearAllFilters },
     },
     selectors: {
       dimensions: { allDimensions },
-      dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
+      dimensionFilters: {
+        getDimensionFilterItems,
+        getAllDimensionFilterItems,
+        isFilterExcludeMode,
+      },
       measures: { allMeasures },
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
       pivot: { showPivot },
@@ -136,12 +141,15 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName}
               <DimensionFilter
+                {readOnly}
                 {name}
                 {label}
                 {selectedValues}
-                on:remove={() => removeDimensionFilter(name)}
-                on:apply={(event) =>
-                  toggleDimensionValueSelection(name, event.detail, true)}
+                excludeMode={$isFilterExcludeMode(name)}
+                onRemove={() => removeDimensionFilter(name)}
+                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
+                onSelect={(value) =>
+                  toggleDimensionValueSelection(name, value, true)}
               />
             {/if}
           </div>

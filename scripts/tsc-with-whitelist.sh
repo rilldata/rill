@@ -54,8 +54,6 @@ web-common/src/features/dashboards/selectors.ts: error TS18048
 web-common/src/features/dashboards/selectors.ts: error TS2322
 web-common/src/features/dashboards/selectors.ts: error TS2345
 web-common/src/features/dashboards/selectors/index.ts: error TS2345
-web-common/src/features/dashboards/show-hide-selectors.spec.ts: error TS2345
-web-common/src/features/dashboards/show-hide-selectors.ts: error TS2322
 web-common/src/features/dashboards/state-managers/selectors/dashboard-queries.ts: error TS2322
 web-common/src/features/dashboards/state-managers/state-managers.ts: error TS2345
 web-common/src/features/dashboards/stores/dashboard-store-defaults.ts: error TS18048
