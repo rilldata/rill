@@ -1,6 +1,6 @@
 import {
   extractFileExtension,
-  splitFolderAndName,
+  splitFolderAndFileName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ResourceKind,
@@ -84,7 +84,7 @@ export class FileArtifact {
   lastStateUpdatedOn: string | undefined;
 
   constructor(filePath: string) {
-    const [folderName, fileName] = splitFolderAndName(filePath);
+    const [folderName, fileName] = splitFolderAndFileName(filePath);
 
     this.path = filePath;
     this.folderName = folderName;
