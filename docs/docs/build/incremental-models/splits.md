@@ -1,33 +1,62 @@
 ---
 title: Splits, a special state
 description: C
-sidebar_label: Splits
+sidebar_label: Split your Model
 sidebar_position: 05
 ---
 
 ## What are Splits?
 
-In Rill, splits < insert explanation>
+In Rill, splits are a special type of state in which you can explicitly split the model into parts. Depending on if your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. 
 
 
-## How to define a split
-
+## How to Define a Split
+Under the `split:` parameter, you will define the pattern in which your data is stored.
 
 ### SQL
-
+```yaml
+splits:
+  sql: SELECT range AS num FROM range(0,10)
+  ```
 
 
 ### glob
-by default its file?
+
+When defining the glob pattern, you will need to consider whether you'd partition the data by folder or file.
+In the first example, we are paritioning by each file with the suffix data.csv.
 ```yaml
 splits:
-  glob: gs://rendo-test/*/*/*/*/*/*/rilldata-incremental-model.csv
+  glob: gs://rendo-test/**/*data.csv
   ```
 
- glob emits one split per directory
+If you'd prefer to partition it by folder your can add the partition parameter and define it as `directory`.
 ```yaml
 glob:
-  path: gs://rendo-test/**/*.csv
+  path: gs://rendo-test/**/*data.csv
   partition: directory #hive
 ```
 
+
+## Viewing Splits in Rill Developer
+
+
+Once `splits:` is defined in your model, a new button will appear in the right hand panel, `View splits`.
+
+![splits-ui](/img/build/incremental-models/splits-ui.png)
+
+When selecting this, a new UI will appear with all of your splits and more information on each. Note that these can be sorted on all, pending, and errors.
+
+![splits-ui](/img/build/incremental-models/splits-overview-ui.png)
+
+
+
+### Refreshing Split Models
+
+For split models that are not incremented, you only have the option to refresh the full data. 
+
+
+
+### Refreshing Incremental Split models
+If both `incremental` and `splits` are enabled, you have the ability to refresh a split individually.
+
+![refresh-split](/img/build/incremental-models/splits-refresh-ui.png)
