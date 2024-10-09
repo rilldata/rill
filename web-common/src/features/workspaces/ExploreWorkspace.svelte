@@ -11,6 +11,7 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import PreviewButton from "../explores/PreviewButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -51,7 +52,13 @@
     titleInput={fileName}
     {filePath}
     resourceKind={ResourceKind.Explore}
-  />
+  >
+    <PreviewButton
+      slot="workspace-controls"
+      href="/explore/{exploreName}"
+      disabled={allErrors.length > 0}
+    />
+  </WorkspaceHeader>
 
   <ExploreEditor
     slot="body"
