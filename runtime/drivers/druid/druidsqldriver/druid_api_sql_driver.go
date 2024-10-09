@@ -49,7 +49,10 @@ type sqlConnection struct {
 	dsn    string
 }
 
-var _ driver.QueryerContext = &sqlConnection{}
+var (
+	_ driver.QueryerContext = &sqlConnection{}
+	_ driver.Pinger         = &sqlConnection{}
+)
 
 func (c *sqlConnection) Prepare(query string) (driver.Stmt, error) {
 	return &stmt{
@@ -255,6 +258,15 @@ func createTransformer(columnType string) func(any) (any, error) {
 	default:
 		return identityTransformer
 	}
+}
+
+func (c *sqlConnection) Ping(ctx context.Context) error {
+	rows, err := c.QueryContext(ctx, "SELECT 1", nil)
+	if err != nil {
+		return err
+	}
+	rows.Close()
+	return nil
 }
 
 type druidRows struct {

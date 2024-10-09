@@ -62,6 +62,8 @@ type Options struct {
 	HangingFunc func(cfg any, open bool)
 	// Metrics are optional instruments for observability.
 	Metrics Metrics
+	// The maximum time the error stays in cache
+	ErrorTTL time.Duration
 }
 
 // Metrics are optional instruments for observability. If an instrument is nil, it will not be collected.
@@ -149,6 +151,8 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 	}
 
 	e, ok := c.entries[k]
+	reopen := ok && e.status == entryStatusOpen && e.err != nil && time.Since(e.since) > c.opts.ErrorTTL
+
 	if !ok {
 		e = &entry{cfg: cfg, since: time.Now()}
 		c.entries[k] = e
@@ -159,7 +163,7 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 
 	c.retainEntry(k, e)
 
-	if e.status == entryStatusOpen {
+	if e.status == entryStatusOpen && !reopen {
 		defer c.mu.Unlock()
 		if e.err != nil {
 			c.releaseEntry(k, e)
@@ -207,37 +211,37 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 		ch = make(chan struct{})
 		c.singleflight[k] = ch
 
-		e.status = entryStatusOpening
-		e.since = time.Now()
-		e.handle = nil
-		e.err = nil
+		if !reopen {
+			e.status = entryStatusOpening
+			e.since = time.Now()
+			e.handle = nil
+			e.err = nil
+		}
 
 		go func() {
-			start := time.Now()
-			var handle Connection
-			var err error
-			if c.opts.OpenTimeout == 0 {
-				handle, err = c.opts.OpenFunc(c.ctx, cfg)
-			} else {
-				ctx, cancel := context.WithTimeout(c.ctx, c.opts.OpenTimeout)
-				handle, err = c.opts.OpenFunc(ctx, cfg)
-				cancel()
+			var closeErr, err error
+			handle := e.handle
+			if reopen {
+				closeErr = c.closeConnection(e)
 			}
-
-			if c.opts.Metrics.Opens != nil {
-				c.opts.Metrics.Opens.Add(c.ctx, 1)
-			}
-			if c.opts.Metrics.OpenLatencyMS != nil {
-				c.opts.Metrics.OpenLatencyMS.Record(c.ctx, time.Since(start).Milliseconds())
+			if closeErr != nil || !reopen {
+				handle, err = c.openConnection(cfg)
 			}
 
 			c.mu.Lock()
 			defer c.mu.Unlock()
 
-			e.status = entryStatusOpen
-			e.since = time.Now()
-			e.handle = handle
-			e.err = err
+			if closeErr != nil {
+				e.status = entryStatusClosed
+				e.since = time.Now()
+				e.handle = nil
+				e.err = closeErr
+			} else {
+				e.status = entryStatusOpen
+				e.since = time.Now()
+				e.handle = handle
+				e.err = err
+			}
 
 			delete(c.singleflight, k)
 			close(ch)
@@ -276,6 +280,28 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 	}
 
 	return e.handle, c.releaseFunc(k, e), nil
+}
+
+func (c *cacheImpl) openConnection(cfg any) (Connection, error) {
+	start := time.Now()
+	var handle Connection
+	var err error
+	if c.opts.OpenTimeout == 0 {
+		handle, err = c.opts.OpenFunc(c.ctx, cfg)
+	} else {
+		ctx, cancel := context.WithTimeout(c.ctx, c.opts.OpenTimeout)
+		handle, err = c.opts.OpenFunc(ctx, cfg)
+		cancel()
+	}
+
+	if c.opts.Metrics.Opens != nil {
+		c.opts.Metrics.Opens.Add(c.ctx, 1)
+	}
+	if c.opts.Metrics.OpenLatencyMS != nil {
+		c.opts.Metrics.OpenLatencyMS.Record(c.ctx, time.Since(start).Milliseconds())
+	}
+
+	return handle, err
 }
 
 func (c *cacheImpl) EvictWhere(predicate func(cfg any) bool) {
@@ -358,21 +384,7 @@ func (c *cacheImpl) beginClose(k string, e *entry) {
 	e.since = time.Now()
 
 	go func() {
-		start := time.Now()
-		var err error
-		if e.handle != nil {
-			err = e.handle.Close()
-		}
-		if err == nil {
-			err = errors.New("conncache: connection closed")
-		}
-
-		if c.opts.Metrics.Closes != nil {
-			c.opts.Metrics.Closes.Add(c.ctx, 1)
-		}
-		if c.opts.Metrics.CloseLatencyMS != nil {
-			c.opts.Metrics.CloseLatencyMS.Record(c.ctx, time.Since(start).Milliseconds())
-		}
+		err := c.closeConnection(e)
 
 		c.mu.Lock()
 		defer c.mu.Unlock()
@@ -387,6 +399,25 @@ func (c *cacheImpl) beginClose(k string, e *entry) {
 
 		c.releaseEntry(k, e)
 	}()
+}
+
+func (c *cacheImpl) closeConnection(e *entry) error {
+	start := time.Now()
+	var err error
+	if e.handle != nil {
+		err = e.handle.Close()
+	}
+	if err == nil {
+		err = errors.New("conncache: connection closed")
+	}
+
+	if c.opts.Metrics.Closes != nil {
+		c.opts.Metrics.Closes.Add(c.ctx, 1)
+	}
+	if c.opts.Metrics.CloseLatencyMS != nil {
+		c.opts.Metrics.CloseLatencyMS.Record(c.ctx, time.Since(start).Milliseconds())
+	}
+	return err
 }
 
 func (c *cacheImpl) lruEvictionHandler(key, value any) {

@@ -201,6 +201,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,
+				ConnectionCacheErrorTTL:      time.Minute,
 				MetastoreConnector:           "metastore",
 				QueryCacheSizeBytes:          conf.QueryCacheSizeBytes,
 				SecurityEngineCacheSize:      conf.SecurityEngineCacheSize,

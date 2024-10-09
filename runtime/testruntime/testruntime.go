@@ -9,6 +9,7 @@ import (
 	goruntime "runtime"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/joho/godotenv"
@@ -60,6 +61,7 @@ func New(t TestingT) *runtime.Runtime {
 			},
 		},
 		ConnectionCacheSize:          100,
+		ConnectionCacheErrorTTL:      time.Minute,
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		SecurityEngineCacheSize:      100,
 		ControllerLogBufferCapacity:  10000,
