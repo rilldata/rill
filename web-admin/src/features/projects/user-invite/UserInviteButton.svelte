@@ -15,7 +15,6 @@
   import UserInviteOrganization from "./UserInviteOrganization.svelte";
   import UserInviteGroup from "./UserInviteGroup.svelte";
   import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
-  import UserInviteMultipleAccessTooltip from "./UserInviteMultipleAccessTooltip.svelte";
   import {
     Popover,
     PopoverContent,
@@ -103,25 +102,12 @@
                 isCurrentUser={user.userEmail === $currentUser.data?.user.email}
                 pendingAcceptance={!user.userName}
               />
-              {#if user.roleName === "viewer"}
-                <UserInviteMultipleAccessTooltip>
-                  <UserInviteUserSetRole
-                    {organization}
-                    {project}
-                    {user}
-                    isCurrentUser={user.userEmail ===
-                      $currentUser.data?.user.email}
-                  />
-                </UserInviteMultipleAccessTooltip>
-              {:else}
-                <UserInviteUserSetRole
-                  {organization}
-                  {project}
-                  {user}
-                  isCurrentUser={user.userEmail ===
-                    $currentUser.data?.user.email}
-                />
-              {/if}
+              <UserInviteUserSetRole
+                {organization}
+                {project}
+                {user}
+                isCurrentUser={user.userEmail === $currentUser.data?.user.email}
+              />
             </div>
           {/each}
         </div>
