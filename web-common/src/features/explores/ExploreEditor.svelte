@@ -5,6 +5,7 @@
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { findResourceNameInYAML } from "@rilldata/web-common/features/entity-management/infer-resource-kind";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { yaml } from "../../components/editor/presets/yaml";
@@ -35,10 +36,12 @@
     bind:autoSave
     bind:editor
     onSave={(content) => {
+      const name = findResourceNameInYAML(content) ?? exploreName;
+      console.log(name);
       // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
-      metricsExplorerStore.remove(exploreName);
+      metricsExplorerStore.remove(name);
       // Reset local persisted dashboard state for the metrics view
-      createPersistentDashboardStore(exploreName).reset();
+      createPersistentDashboardStore(name).reset();
 
       if (!content?.length) {
         setLineStatuses([], editor);
