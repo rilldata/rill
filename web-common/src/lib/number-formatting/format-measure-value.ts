@@ -177,7 +177,11 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       ? (measureSpec.formatPreset as FormatPreset)
       : FormatPreset.DEFAULT;
 
-  if (isBigNumber && formatPreset === FormatPreset.NONE) {
+  if (
+    isBigNumber &&
+    (formatPreset === FormatPreset.NONE ||
+      formatPreset === FormatPreset.DEFAULT)
+  ) {
     formatPreset = FormatPreset.HUMANIZE;
   }
   return (value: number | T) =>
