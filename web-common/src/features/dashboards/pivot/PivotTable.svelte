@@ -6,8 +6,11 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
-  import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
+  import {
+    calculateFirstColumnWidth,
+    calculateMeasureWidth,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -15,7 +18,6 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
     type Cell,
     type ExpandedState,
@@ -34,7 +36,6 @@
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import { getPivotConfig } from "./pivot-data-store";
-  import { isTimeDimension } from "./pivot-utils";
   import type { PivotDataRow, PivotDataStore } from "./types";
 
   // Distance threshold (in pixels) for triggering data fetch
@@ -118,16 +119,22 @@
   $: hasColumnDimension = columnPills.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
+  $: dataRows = $pivotDataStore.data;
+  $: totalsRow = $pivotDataStore.totalsRowData;
 
   $: measures = getMeasureColumnProps($config);
   $: measureCount = measures.length;
-  $: measures.forEach(({ name, label }) => {
+  $: measures.forEach(({ name, label, formatter }) => {
     if (!$measureLengths.has(name)) {
+      const estimatedWidth = calculateMeasureWidth(
+        name,
+        label,
+        formatter,
+        totalsRow,
+        dataRows,
+      );
       measureLengths.update((measureLengths) => {
-        return measureLengths.set(
-          name,
-          Math.max(MIN_MEASURE_WIDTH, label.length * 7 + MEASURE_PADDING),
-        );
+        return measureLengths.set(name, estimatedWidth);
       });
     }
   });
@@ -163,7 +170,7 @@
     : null;
   $: firstColumnWidth =
     hasDimension && firstColumnName
-      ? calculateFirstColumnWidth(firstColumnName)
+      ? calculateFirstColumnWidth(firstColumnName, timeDimension, dataRows)
       : 0;
 
   $: rows = $table.getRowModel().rows;
@@ -244,27 +251,6 @@
       }
     }
   };
-
-  function calculateFirstColumnWidth(firstColumnName: string) {
-    const rows = $pivotDataStore.data;
-
-    // Dates are displayed as shorter values
-    if (isTimeDimension(firstColumnName, timeDimension)) return MIN_COL_WIDTH;
-
-    const samples = extractSamples(
-      rows.map((row) => row[firstColumnName]),
-    ).filter((v): v is string => typeof v === "string");
-
-    const maxValueLength = samples.reduce((max, value) => {
-      return Math.max(max, value.length);
-    }, 0);
-
-    const finalBasis = Math.max(firstColumnName.length, maxValueLength);
-    const pixelLength = finalBasis * 7;
-    const final = clamp(MIN_COL_WIDTH, pixelLength + 16, MAX_INIT_COL_WIDTH);
-
-    return final;
-  }
 
   function onResizeStart(e: MouseEvent) {
     initLengthOnResize = totalLength;
