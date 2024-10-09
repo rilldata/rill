@@ -1,16 +1,16 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+  import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
-    useAllFileNames,
     useDirectoryNamesInDirectory,
+    useFileNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { defaults, superForm, setError } from "sveltekit-superforms";
+  import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -21,7 +21,6 @@
     VALID_NAME_PATTERN,
     isDuplicateName,
   } from "./name-utils";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let closeModal: () => void;
   export let filePath: string;
@@ -29,7 +28,7 @@
 
   let error: string;
 
-  const [folder, assetName] = splitFolderAndName(filePath);
+  const [folderName, fileName] = splitFolderAndFileName(filePath);
 
   const validationSchema = object({
     newName: string()
@@ -38,7 +37,7 @@
   });
 
   const initialValues = {
-    newName: assetName,
+    newName: fileName,
   };
 
   const {
@@ -55,7 +54,7 @@
 
       const values = form.data;
 
-      if (values.newName === assetName) {
+      if (values.newName === fileName) {
         closeModal();
         return;
       }
@@ -64,7 +63,7 @@
         isDir &&
         isDuplicateName(
           values?.newName,
-          assetName,
+          fileName,
           $existingDirectories?.data ?? [],
         )
       ) {
@@ -74,14 +73,18 @@
 
       if (
         !isDir &&
-        isDuplicateName(values?.newName, assetName, $allNamesQuery?.data ?? [])
+        isDuplicateName(
+          values?.newName,
+          fileName,
+          $fileNamesInDirectory?.data ?? [],
+        )
       ) {
         error = `Name ${values.newName} is already in use`;
 
         return setError(form, "newName", error);
       }
       try {
-        const newPath = (folder ? `${folder}/` : "") + values.newName;
+        const newPath = (folderName ? `${folderName}/` : "") + values.newName;
         await renameFileArtifact(runtimeInstanceId, filePath, newPath);
         if (isDir) {
           if (
@@ -110,11 +113,13 @@
   });
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: allNamesQuery = useAllFileNames(queryClient, runtimeInstanceId);
-
   $: existingDirectories = useDirectoryNamesInDirectory(
     runtimeInstanceId,
-    folder,
+    folderName,
+  );
+  $: fileNamesInDirectory = useFileNamesInDirectory(
+    runtimeInstanceId,
+    folderName,
   );
 </script>
 

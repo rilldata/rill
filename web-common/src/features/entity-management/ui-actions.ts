@@ -2,7 +2,7 @@ import { renameFileArtifact } from "@rilldata/web-common/features/entity-managem
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import {
   extractFileName,
-  splitFolderAndName,
+  splitFolderAndFileName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   INVALID_NAME_MESSAGE,
@@ -18,7 +18,7 @@ export async function handleEntityRename(
   existingName: string,
   allNames: string[],
 ) {
-  const [folder] = splitFolderAndName(existingPath);
+  const [folder] = splitFolderAndFileName(existingPath);
 
   if (!newName.match(VALID_NAME_PATTERN)) {
     eventBus.emit("notification", {
