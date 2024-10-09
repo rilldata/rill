@@ -21,6 +21,7 @@
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import VisualMetrics from "./VisualMetrics.svelte";
+  import PreviewButton from "../explores/PreviewButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -88,7 +89,12 @@
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if !isOldMetricsView}
+      {#if isOldMetricsView}
+        <PreviewButton
+          href="/explore/{metricsViewName}"
+          disabled={errors.length > 0}
+        />
+      {:else}
         <GoToDashboardButton {resource} />
       {/if}
 

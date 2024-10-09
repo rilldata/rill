@@ -25,7 +25,7 @@
         type="radio"
         id={view}
         name="view"
-        class="sr-only"
+        class="screenreader-only"
         value={view}
         checked={view === selectedView}
         bind:group={selectedView}
@@ -74,7 +74,7 @@
     @apply flex items-center justify-center;
   }
 
-  .sr-only {
+  .screenreader-only {
     position: absolute;
     clip: rect(1px, 1px, 1px, 1px);
     padding: 0;
@@ -97,6 +97,6 @@
   }
 
   .radio {
-    @apply flex border-primary-300 rounded-sm border w-fit h-7 items-center justify-center overflow-hidden;
+    @apply flex border-primary-300 rounded-[2px] border w-fit h-7 items-center justify-center overflow-hidden;
   }
 </style>

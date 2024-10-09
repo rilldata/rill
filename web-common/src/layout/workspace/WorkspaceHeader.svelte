@@ -108,8 +108,8 @@
 
 <style lang="postcss">
   header {
-    @apply bg-gray-100 px-4 w-full;
+    @apply px-4 w-full;
     @apply justify-between;
-    @apply flex flex-none gap-x-2  py-2;
+    @apply flex flex-none py-2;
   }
 </style>
