@@ -348,6 +348,11 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 		return nil, status.Error(codes.FailedPrecondition, "payment customer not initialized yet for the organization")
 	}
 
+	// returnUrl is mandatory so if not passed default to home page
+	if req.ReturnUrl == "" {
+		req.ReturnUrl = s.admin.URLs.Frontend()
+	}
+
 	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -565,11 +570,11 @@ func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 	return &adminv1.Subscription{
 		Id:                           sub.ID,
 		Plan:                         billingPlanToDTO(sub.Plan),
-		StartDate:                    timestamppb.New(sub.StartDate),
-		EndDate:                      timestamppb.New(sub.EndDate),
-		CurrentBillingCycleStartDate: timestamppb.New(sub.CurrentBillingCycleStartDate),
-		CurrentBillingCycleEndDate:   timestamppb.New(sub.CurrentBillingCycleEndDate),
-		TrialEndDate:                 timestamppb.New(sub.TrialEndDate),
+		StartDate:                    valOrNullTime(sub.StartDate),
+		EndDate:                      valOrNullTime(sub.EndDate),
+		CurrentBillingCycleStartDate: valOrNullTime(sub.CurrentBillingCycleStartDate),
+		CurrentBillingCycleEndDate:   valOrNullTime(sub.CurrentBillingCycleEndDate),
+		TrialEndDate:                 valOrNullTime(sub.TrialEndDate),
 	}
 }
 
@@ -590,6 +595,13 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 			StorageLimitBytesPerDeployment: val64OrEmptyString(plan.Quotas.StorageLimitBytesPerDeployment),
 		},
 	}
+}
+
+func valOrNullTime(v time.Time) *timestamppb.Timestamp {
+	if v.IsZero() {
+		return nil
+	}
+	return timestamppb.New(v)
 }
 
 func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType {
@@ -651,7 +663,7 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_OnTrial{
 				OnTrial: &adminv1.BillingIssueMetadataOnTrial{
-					EndDate: timestamppb.New(m.(*database.BillingIssueMetadataOnTrial).EndDate),
+					EndDate: valOrNullTime(m.(*database.BillingIssueMetadataOnTrial).EndDate),
 				},
 			},
 		}
@@ -659,7 +671,7 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_TrialEnded{
 				TrialEnded: &adminv1.BillingIssueMetadataTrialEnded{
-					GracePeriodEndDate: timestamppb.New(m.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate),
+					GracePeriodEndDate: valOrNullTime(m.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate),
 				},
 			},
 		}
@@ -680,12 +692,13 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		invoices := make([]*adminv1.BillingIssueMetadataPaymentFailedMeta, 0)
 		for k := range paymentFailed.Invoices {
 			invoices = append(invoices, &adminv1.BillingIssueMetadataPaymentFailedMeta{
-				InvoiceId:     paymentFailed.Invoices[k].ID,
-				InvoiceNumber: paymentFailed.Invoices[k].Number,
-				InvoiceUrl:    paymentFailed.Invoices[k].URL,
-				AmountDue:     paymentFailed.Invoices[k].Amount,
-				Currency:      paymentFailed.Invoices[k].Currency,
-				DueDate:       timestamppb.New(paymentFailed.Invoices[k].DueDate),
+				InvoiceId:          paymentFailed.Invoices[k].ID,
+				InvoiceNumber:      paymentFailed.Invoices[k].Number,
+				InvoiceUrl:         paymentFailed.Invoices[k].URL,
+				AmountDue:          paymentFailed.Invoices[k].Amount,
+				Currency:           paymentFailed.Invoices[k].Currency,
+				DueDate:            valOrNullTime(paymentFailed.Invoices[k].DueDate),
+				GracePeriodEndDate: valOrNullTime(paymentFailed.Invoices[k].GracePeriodEndDate),
 			})
 		}
 		return &adminv1.BillingIssueMetadata{
@@ -699,7 +712,7 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_SubscriptionCancelled{
 				SubscriptionCancelled: &adminv1.BillingIssueMetadataSubscriptionCancelled{
-					EndDate: timestamppb.New(m.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate),
+					EndDate: valOrNullTime(m.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate),
 				},
 			},
 		}

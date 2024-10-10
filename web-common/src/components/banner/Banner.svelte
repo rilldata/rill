@@ -14,7 +14,13 @@
     loading: LoadingCircleOutline,
   };
 
-  function dummyClickHandler() {}
+  let loading = false;
+  async function clickHandler() {
+    if (!banner?.cta?.onClick) return;
+    loading = true;
+    await banner.cta.onClick();
+    loading = false;
+  }
 </script>
 
 <header class="{banner.type} app-banner">
@@ -33,10 +39,7 @@
           {banner.cta.text}
         </a>
       {:else if banner.cta.type === "button"}
-        <button
-          on:click={banner.cta.onClick ?? dummyClickHandler}
-          class="banner-cta"
-        >
+        <button on:click={clickHandler} class="banner-cta" disabled={loading}>
           {banner.cta.text}
         </button>
       {/if}

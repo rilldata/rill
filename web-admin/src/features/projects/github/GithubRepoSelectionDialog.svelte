@@ -182,7 +182,7 @@
       <!-- temporarily show this only during edit. in the long run we will not have edit -->
       {#if $githubUrl}
         <Button
-          outline={false}
+          noStroke
           type="link"
           on:click={() => githubData.reselectRepos()}
         >
