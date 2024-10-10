@@ -10,9 +10,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
-  import { goto } from "$app/navigation";
-  import { Code2Icon } from "lucide-svelte";
-  import { ResourceKind } from "../../entity-management/resource-selectors";
   import {
     resourceColorMapping,
     resourceIconMapping,
