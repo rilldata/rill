@@ -6,7 +6,6 @@
   } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -20,6 +19,7 @@
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
   import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
 
   export let resource: V1Resource | undefined;
   export let modelName: string;
@@ -28,8 +28,6 @@
   export let hasUnsavedChanges: boolean;
 
   const exportModelMutation = createExportTableMutation();
-
-  let open = false;
 
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -54,38 +52,12 @@
 
 <ModelRefreshButton {resource} {hasUnsavedChanges} />
 
-<DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger asChild let:builder>
-    <Tooltip distance={8} suppress={open}>
-      <Button
-        disabled={modelHasError || !isModelIdle}
-        type="secondary"
-        builders={[builder]}
-        square
-      >
-        <Export size="15px" />
-      </Button>
-      <TooltipContent slot="tooltip-content">Export model</TooltipContent>
-    </Tooltip>
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start">
-    <DropdownMenu.Item
-      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
-    >
-      Export as Parquet
-    </DropdownMenu.Item>
-    <DropdownMenu.Item
-      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_CSV)}
-    >
-      Export as CSV
-    </DropdownMenu.Item>
-    <DropdownMenu.Item
-      on:click={() => onExport(V1ExportFormat.EXPORT_FORMAT_XLSX)}
-    >
-      Export as XLSX
-    </DropdownMenu.Item>
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+<ExportMenu
+  label="Export model data"
+  disabled={modelHasError || !isModelIdle}
+  {onExport}
+  workspace
+/>
 
 {#if availableMetricsViews?.length === 0}
   <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />

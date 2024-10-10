@@ -25,9 +25,15 @@
   import { fly } from "svelte/transition";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
-  import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
+  import exportTDD from "./export-tdd";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import {
+    createQueryServiceExport,
+    V1ExportFormat,
+  } from "@rilldata/web-common/runtime-client";
+  import { getTDDExportArgs } from "./getTDDExportArgs";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -38,6 +44,8 @@
 
   const dispatch = createEventDispatcher();
   const { adminServer, exports } = featureFlags;
+  const exportDash = createQueryServiceExport();
+  const stateManagers = getStateManagers();
 
   const {
     selectors: {
@@ -48,9 +56,14 @@
       dimensionsFilter: { toggleDimensionFilterMode },
     },
     dashboardStore,
-  } = getStateManagers();
+    validSpecStore,
+  } = stateManagers;
+
+  const scheduledReportsQueryArgs = getTDDExportArgs(stateManagers);
 
   $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
+
+  $: metricsViewProto = $dashboardStore.proto;
 
   $: selectableMeasures = $allMeasures
     .filter((m) => m.name !== undefined || m.label !== undefined)
@@ -155,6 +168,15 @@
       },
     );
   }
+
+  const handleExportTDD = async (format: V1ExportFormat) => {
+    await exportTDD({
+      ctx: stateManagers,
+      query: exportDash,
+      format,
+      timeDimension: $validSpecStore.data?.metricsView?.timeDimension as string,
+    });
+  };
 </script>
 
 <div class="tdd-header">
@@ -244,7 +266,14 @@
       </Tooltip>
 
       {#if $exports}
-        <TDDExportButton includeScheduledReport={$adminServer} />
+        <ExportMenu
+          label="Export table data"
+          onExport={handleExportTDD}
+          includeScheduledReport={$adminServer}
+          queryArgs={$scheduledReportsQueryArgs}
+          {metricsViewProto}
+          {exploreName}
+        />
       {/if}
       <Button
         compact
