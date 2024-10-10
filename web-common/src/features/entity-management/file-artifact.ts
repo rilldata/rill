@@ -106,7 +106,9 @@ export class FileArtifact {
     );
 
     this.onRemoteContentChange((content) => {
-      this.inferredResourceKind.set(inferResourceKind(this.path, content));
+      const inferred = inferResourceKind(filePath, content);
+
+      if (inferred) this.inferredResourceKind.set(inferred);
     });
   }
 
@@ -230,9 +232,17 @@ export class FileArtifact {
 
   hardDeleteResource() {
     // To avoid a workspace flicker, first infer the *intended* resource kind
-    this.inferredResourceKind.set(
-      inferResourceKind(this.path, get(this.remoteContent) ?? ""),
+    const inferred = inferResourceKind(
+      this.path,
+      get(this.remoteContent) ?? "",
     );
+
+    const curName = get(this.resourceName);
+    if (inferred) {
+      this.inferredResourceKind.set(inferred);
+    } else if (curName && curName.kind) {
+      this.inferredResourceKind.set(curName.kind as ResourceKind);
+    }
 
     this.resourceName.set(undefined);
     this.reconciling.set(false);

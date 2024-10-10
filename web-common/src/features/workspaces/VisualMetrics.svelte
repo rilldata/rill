@@ -115,7 +115,11 @@
   $: itemGroups = {
     measures:
       raw.measures instanceof YAMLSeq
-        ? raw.measures.items.map((item) => new YAMLMeasure(item))
+        ? raw.measures.items
+            .map((item) => {
+              if (item instanceof YAMLMap) return new YAMLMeasure(item);
+            })
+            .filter(is<YAMLMeasure>)
         : [],
     dimensions:
       raw.dimensions instanceof YAMLSeq
@@ -154,9 +158,12 @@
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
     metricsViewDimensions: MetricsViewSpecDimensionV2[],
   ) {
-    return rawDimensions.items.map(
-      (item, i) => new YAMLDimension(item, metricsViewDimensions[i]),
-    );
+    return rawDimensions.items
+      .map((item, i) => {
+        if (item instanceof YAMLMap)
+          return new YAMLDimension(item, metricsViewDimensions[i]);
+      })
+      .filter(is<YAMLDimension>);
   }
 
   function stringGuard(value: unknown | undefined): string {
@@ -213,6 +220,10 @@
       value,
       label: value,
     };
+  }
+
+  function is<T>(value: unknown): value is T {
+    return Boolean(value);
   }
 
   async function reorderList(
