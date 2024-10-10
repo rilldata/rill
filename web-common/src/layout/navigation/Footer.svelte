@@ -28,7 +28,7 @@
 <div
   class="flex flex-col pt-3 pb-3 gap-y-1 bg-gray-50 border-t border-gray-200 sticky bottom-0"
 >
-  {#each lineItems as lineItem}
+  {#each lineItems as lineItem, i (i)}
     <a href={lineItem.href} target="_blank" rel="noreferrer noopener"
       ><div
         class="flex flex-row items-center px-4 py-1 gap-x-2 text-gray-700 font-normal hover:bg-gray-200"
@@ -50,7 +50,7 @@
     >
   {/each}
   <div
-    class="px-4 py-1 text-gray-600 flex flex-row gap-x-2"
+    class="px-4 py-1 text-gray-600 flex flex-row w-full gap-x-2 truncate line-clamp-1"
     style:font-size="10px"
   >
     <span class="text-gray-400">
@@ -79,10 +79,12 @@
         </div>
       </Tooltip>
     </span>
-    version {$appBuildMetaStore.version
-      ? $appBuildMetaStore.version
-      : "unknown (built from source)"}{$appBuildMetaStore.commitHash
-      ? ` – ${$appBuildMetaStore.commitHash}`
-      : ""}
+    <span class="truncate">
+      version {$appBuildMetaStore.version
+        ? $appBuildMetaStore.version
+        : "unknown (built from source)"}{$appBuildMetaStore.commitHash
+        ? ` – ${$appBuildMetaStore.commitHash}`
+        : ""}
+    </span>
   </div>
 </div>

@@ -42,15 +42,16 @@
 </script>
 
 <li aria-label={tableId} class="table-entry group" class:open>
-  <div class="table-entry-header {database ? 'pl-[58px]' : 'pl-[40px]'}">
-    <button on:click={() => (showSchema = !showSchema)}>
-      <CaretDownIcon
-        className="transform transition-transform text-gray-400 {showSchema
-          ? 'rotate-0'
-          : '-rotate-90'}"
-        size="14px"
-      />
-    </button>
+  <button
+    on:click={() => (showSchema = !showSchema)}
+    class="table-entry-header {database ? 'pl-[58px]' : 'pl-[40px]'}"
+  >
+    <CaretDownIcon
+      className="flex-none transform transition-transform text-gray-400 {!showSchema &&
+        '-rotate-90'}"
+      size="14px"
+    />
+
     <a class="clickable-text" {href}>
       <TableIcon size="14px" className="shrink-0 text-gray-400" />
       <span class="truncate">
@@ -87,7 +88,7 @@
         <TableMenuItems {connector} {database} {databaseSchema} {table} />
       </DropdownMenu.Content>
     </DropdownMenu.Root>
-  </div>
+  </button>
 
   {#if showSchema}
     <TableSchema {connector} {database} {databaseSchema} {table} />
