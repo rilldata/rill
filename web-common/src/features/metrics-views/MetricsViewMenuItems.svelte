@@ -19,9 +19,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
-  import { get } from "svelte/store";
-  import { waitUntil } from "../../lib/waitUtils";
-  import { handleEntityCreate } from "../file-explorer/new-files";
+  import { createAndPreviewExplore } from "./create-and-preview-explore";
 
   export let filePath: string;
 
@@ -34,6 +32,7 @@
 
   $: instanceId = $runtime.instanceId;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resource = $resourceQuery.data;
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   /**
@@ -62,30 +61,6 @@
       MetricsEventScreenName.Model,
     );
   };
-
-  async function createExploreDashboard() {
-    // Create the Explore file
-    const newExploreFilePath = await handleEntityCreate(
-      ResourceKind.Explore,
-      $resourceQuery.data,
-    );
-
-    // Wait until the Explore resource is ready
-    const exploreFileArtifact =
-      fileArtifacts.getFileArtifact(newExploreFilePath);
-    const exploreResource = exploreFileArtifact.getResource(
-      queryClient,
-      instanceId,
-    );
-    await waitUntil(() => get(exploreResource).data !== undefined);
-    const newExploreName = get(exploreResource).data?.meta?.name?.name;
-    if (!newExploreName) {
-      throw new Error("Failed to create an Explore resource");
-    }
-
-    // Navigate to the Explore Preview
-    await goto(`/explore/${newExploreName}`);
-  }
 </script>
 
 {#if referenceModelName}
@@ -94,10 +69,14 @@
     Edit model
   </NavigationMenuItem>
 {/if}
-<NavigationMenuItem on:click={createExploreDashboard}>
-  <ExploreIcon slot="icon" />
-  Generate dashboard
-</NavigationMenuItem>
+{#if resource}
+  <NavigationMenuItem
+    on:click={() => createAndPreviewExplore(queryClient, instanceId, resource)}
+  >
+    <ExploreIcon slot="icon" />
+    Generate dashboard
+  </NavigationMenuItem>
+{/if}
 {#if $customDashboards}
   <NavigationMenuItem
     on:click={() => {

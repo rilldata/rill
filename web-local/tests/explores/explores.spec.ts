@@ -17,18 +17,12 @@ import {
 } from "../utils/dataSpecifcHelpers";
 import { createSource } from "../utils/sourceHelpers";
 import { test } from "../utils/test";
-import { gotoNavEntry, waitForFileNavEntry } from "../utils/waitHelpers";
+import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
   test("Autogenerate explore from source", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
     await createExploreFromSource(page);
-    await waitForFileNavEntry(
-      page,
-      "/dashboards/AdBids_metrics_explore.yaml",
-      true,
-    );
-    await page.getByRole("button", { name: "Preview" }).click();
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
@@ -36,9 +30,7 @@ test.describe("explores", () => {
 
   test("Autogenerate explore from model", async ({ page }) => {
     await createAdBidsModel(page);
-    await createExploreFromModel(page);
-
-    await page.getByRole("button", { name: "Preview" }).click();
+    await createExploreFromModel(page, false);
     await assertAdBidsDashboard(page);
 
     // click on publisher=Facebook leaderboard value
@@ -70,8 +62,7 @@ test.describe("explores", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createExploreFromModel(page);
-    await page.getByRole("button", { name: "Preview" }).click();
+    await createExploreFromModel(page, false);
 
     // Check the total records are 100k
     await expect(page.getByText("Total records 100.0k")).toBeVisible();
