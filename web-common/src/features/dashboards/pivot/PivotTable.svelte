@@ -167,6 +167,11 @@
       ? calculateFirstColumnWidth(firstColumnName, timeDimension, dataRows)
       : 0;
 
+  $: firstDimension = headers.length > 1 ? headers[1] : null;
+  $: if (headerGroups.length === 1 && firstDimension && sorting.length === 0) {
+    onSortingChange([{ id: firstDimension.id, desc: true }]);
+  }
+
   $: rows = $table.getRowModel().rows;
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
