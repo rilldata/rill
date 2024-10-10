@@ -137,6 +137,7 @@
             }}
           >
             <MetricsViewIcon
+              size="16"
               color={resourceColorMapping[ResourceKind.MetricsView]}
             />
             {resource?.meta?.name?.name ?? "Loading..."}
