@@ -19,15 +19,17 @@
         ];
 
         if (data.permissions.manageOrgMembers) {
-          // TODO: users page
+          tabs.push({
+            route: `/${organization}/-/users`,
+            label: "Users",
+          });
         }
 
         if (data.permissions.manageOrg) {
-          // TODO: once settings page is filled in we add these
-          // tabs.push({
-          //   route: `/${organization}/-/settings`,
-          //   label: "Settings",
-          // });
+          tabs.push({
+            route: `/${organization}/-/settings`,
+            label: "Settings",
+          });
         }
 
         return tabs;

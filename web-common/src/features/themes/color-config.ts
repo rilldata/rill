@@ -403,3 +403,37 @@ export const mutedColors = {
   900: "220.9 39.3% 11%",
   950: "224 71.4% 4.1%;",
 };
+
+export function getRandomColor(name: string): string {
+  const colorList = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-red-500",
+    "bg-orange-500",
+    "bg-yellow-500",
+    "bg-amber-500",
+    "bg-pink-500",
+    "bg-lime-500",
+    "bg-emerald-500",
+    "bg-teal-500",
+    "bg-cyan-500",
+    "bg-sky-500",
+    "bg-indigo-500",
+    "bg-violet-500",
+    "bg-purple-500",
+    "bg-fuchsia-500",
+    "bg-rose-500",
+  ];
+
+  if (!name) {
+    return colorList[Math.floor(Math.random() * colorList.length)];
+  }
+
+  const hash = Array.from(name).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
+  const index = hash % colorList.length;
+
+  return colorList[index];
+}

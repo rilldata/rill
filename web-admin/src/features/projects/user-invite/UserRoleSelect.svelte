@@ -13,8 +13,8 @@
   let open = false;
 
   const Options = [
-    { value: "viewer", label: "Viewer" },
     { value: "admin", label: "Admin" },
+    { value: "viewer", label: "Viewer" },
   ];
   function onSelect(val: string) {
     value = val;
