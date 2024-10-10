@@ -219,7 +219,7 @@ export class FileArtifact {
     }
   };
 
-  updateAll(resource: V1Resource) {
+  updateResource(resource: V1Resource) {
     this.updateResourceNameIfChanged(resource);
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
     this.reconciling.set(
@@ -308,26 +308,23 @@ export class FileArtifact {
     const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;
 
-    // Temporary fix to avoid associating V1MetricsView and V1Explore to same file
-    const kind = inferResourceKind(this.path, get(this.remoteContent) ?? "");
+    const curName = get(this.resourceName);
+
+    // Much code currently assumes that a file is associated with 0 or 1 resource.
+    // However, files for legacy Metrics Views generate 2 resources: a Metrics View and an Explore.
+    // HACK: for files for legacy Metrics Views, ignore the Explore resource.
     if (
-      kind === ResourceKind.MetricsView &&
+      curName?.kind === ResourceKind.MetricsView &&
       resource.meta?.name?.kind === ResourceKind.Explore
     ) {
-      if (!get(this.remoteContent)) {
-        // inferred incorrectly since we didnt check contents
-        // we do not need to fetch content in other cases, so it is only pre-fetched here
-        // also fetchContent updates the resource name, so we do not need to wait here to update the name
-        void this.fetchContent();
-      }
       return;
     }
 
-    const curName = get(this.resourceName);
-    if (
+    const didResourceNameChange =
       curName?.name !== resource.meta?.name?.name ||
-      curName?.kind !== resource.meta?.name?.kind
-    ) {
+      curName?.kind !== resource.meta?.name?.kind;
+
+    if (didResourceNameChange) {
       this.resourceName.set({
         kind: resource.meta?.name?.kind,
         name: resource.meta?.name?.name,
