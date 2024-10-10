@@ -471,7 +471,7 @@
           {#each headerGroup.headers as header, i (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
 
-            <th colSpan={header.colSpan}>
+            <th colSpan={header.colSpan} data-id={header.id}>
               <button
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}

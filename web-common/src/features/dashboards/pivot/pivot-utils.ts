@@ -375,6 +375,7 @@ export function getSortForAccessor(
 
   // Return un-changed filter if no sorting is applied
   if (config.pivot?.sorting?.length === 0) {
+    // console.log("5", sortPivotBy);
     return {
       sortPivotBy,
       timeRange: defaultTimeRange,
@@ -382,14 +383,21 @@ export function getSortForAccessor(
   }
 
   const { rowDimensionNames, measureNames } = config;
+  // TODO: WHERE IS THE CODE THAT SETS THE ACCESSOR HERE?
   const accessor = config.pivot.sorting[0].id;
+  const measureIndex = accessor.split("m")[1];
+  const sortDesc = config.pivot.sorting[0].desc;
+
+  console.log("measureNames: ", measureNames);
+  console.log("accessor: ", accessor);
 
   // For the first column, the accessor is the row dimension name
   const firstDimension = rowDimensionNames?.[0];
   if (firstDimension === accessor) {
+    // console.log("1 —", anchorDimension);
     sortPivotBy = [
       {
-        desc: config.pivot.sorting[0].desc,
+        desc: sortDesc,
         name: anchorDimension,
       },
     ];
@@ -401,9 +409,11 @@ export function getSortForAccessor(
 
   // For the row totals, the accessor is the measure name
   if (measureNames.includes(accessor)) {
+    // NOTE: when a column is manually selected (sorted)
+    // console.log("2 —", accessor);
     sortPivotBy = [
       {
-        desc: config.pivot.sorting[0].desc,
+        desc: sortDesc,
         name: accessor,
       },
     ];
@@ -413,19 +423,37 @@ export function getSortForAccessor(
     };
   }
 
-  const measureIndex = accessor.split("m")[1];
+  // Problem: accessor is not correct when there are dimension in columns
+  const hasDimensionColumn = config.pivot.columns.dimension.length > 0;
+  if (hasDimensionColumn) {
+    // console.log("4 —", measureNames[parseInt(measureIndex)]);
+    sortPivotBy = [
+      {
+        desc: sortDesc,
+        name: measureNames[parseInt(measureIndex)],
+      },
+    ];
+    return {
+      sortPivotBy,
+      timeRange: defaultTimeRange,
+    };
+  }
+
   const { filters, timeRange } = getColumnFiltersFromMinimizedAccessor(
     config,
     accessor,
     columnDimensionAxes,
   );
 
+  // console.log("3 —", measureNames[parseInt(measureIndex)]);
   sortPivotBy = [
     {
-      desc: config.pivot.sorting[0].desc,
+      desc: sortDesc,
       name: measureNames[parseInt(measureIndex)],
     },
   ];
+
+  // console.log("sortPivotBy: ", sortPivotBy);
 
   return {
     where: filters,

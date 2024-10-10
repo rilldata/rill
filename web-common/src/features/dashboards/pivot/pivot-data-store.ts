@@ -237,6 +237,8 @@ export function createTableCellQuery(
     mergeFilters(filterForInitialTable, config.whereFilter) ??
     createAndExpression([]);
 
+  console.log("fired", anchorDimension, config.measureNames[0]);
+
   const sortBy = [
     {
       desc: false,
