@@ -7,11 +7,14 @@
   import StartTeamPlanDialog, {
     type TeamPlanDialogTypes,
   } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
+  import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let organization: string;
 
   $: billingIssueMessage = useBillingIssueMessage(organization);
+  $: allProjectsHibernating = areAllProjectsHibernating(organization);
 
   let showStartTeamPlanDialog = false;
   let startTeamPlanType: TeamPlanDialogTypes = "base";
@@ -32,8 +35,12 @@
         );
         break;
 
+      case "contact":
+        window.Pylon("show");
+        break;
+
       case "wake-projects":
-        // TODO
+        void wakeAllProjects(organization);
         break;
     }
   }
@@ -57,6 +64,20 @@
             },
           }
         : {}),
+    });
+  } else if ($allProjectsHibernating.data) {
+    eventBus.emit("banner", {
+      type: "default",
+      message:
+        "You haven’t logged in for a while so this org’s projects are hibernating.",
+      iconType: "sleep",
+      cta: {
+        text: "Wake projects ->",
+        type: "button",
+        onClick: () => {
+          void wakeAllProjects(organization);
+        },
+      },
     });
   } else {
     // when switching orgs we need to make sure we clear previous org's banner.

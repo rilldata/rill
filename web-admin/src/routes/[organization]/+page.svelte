@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hivernating/OrganizationHibernating.svelte";
+  import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernating.svelte";
   import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
   import {
     createAdminServiceGetOrganization,

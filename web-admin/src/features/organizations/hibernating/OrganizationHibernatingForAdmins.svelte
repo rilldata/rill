@@ -7,6 +7,7 @@
   import StartTeamPlanDialog, {
     type TeamPlanDialogTypes,
   } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
   import { Button } from "@rilldata/web-common/components/button";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
@@ -38,8 +39,12 @@
         );
         break;
 
+      case "contact":
+        window.Pylon("show");
+        break;
+
       case "wake-projects":
-        // TODO
+        void wakeAllProjects(organization);
         break;
     }
   }
