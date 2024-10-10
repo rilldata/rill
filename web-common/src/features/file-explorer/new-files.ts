@@ -148,7 +148,7 @@ export function generateBlobForNewResourceFile(
 SELECT 'Hello, World!' AS Greeting`;
     case ResourceKind.MetricsView:
       return `# Metrics View YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
 version: 1
 type: metrics_view
