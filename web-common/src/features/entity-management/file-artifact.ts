@@ -236,7 +236,13 @@ export class FileArtifact {
       this.path,
       get(this.remoteContent) ?? "",
     );
-    if (inferred) this.inferredResourceKind.set(inferred);
+
+    const curName = get(this.resourceName);
+    if (inferred) {
+      this.inferredResourceKind.set(inferred);
+    } else if (curName && curName.kind) {
+      this.inferredResourceKind.set(curName.kind as ResourceKind);
+    }
 
     this.resourceName.set(undefined);
     this.reconciling.set(false);
