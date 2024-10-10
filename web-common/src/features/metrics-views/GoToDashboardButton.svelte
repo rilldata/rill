@@ -7,13 +7,12 @@
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
-
-  const queryClient = useQueryClient();
+  import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
 
   export let resource: V1Resource | undefined;
 
@@ -27,7 +26,7 @@
 
 {#if dashboards?.length === 0}
   <Button
-    type="primary"
+    type={$allowPrimary ? "primary" : "secondary"}
     disabled={!resource}
     on:click={async () => {
       if (resource)

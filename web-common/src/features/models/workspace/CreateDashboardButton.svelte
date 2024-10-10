@@ -12,6 +12,7 @@
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel } from "../selectors";
   import { Wand } from "lucide-svelte";
+  import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
 
   export let modelName: string;
   export let hasError = false;
@@ -41,7 +42,7 @@
   <Button
     disabled={!modelIsIdle || hasError}
     on:click={createMetricsViewFromModel}
-    type="primary"
+    type={$allowPrimary ? "primary" : "secondary"}
   >
     <IconSpaceFixer pullLeft pullRight={collapse}>
       <Wand size="14px" />
