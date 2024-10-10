@@ -41,7 +41,7 @@
       refetchOnWindowFocus: true,
     },
   });
-  $: isDeployed = true || !!$currentProject.data?.project;
+  $: isDeployed = !!$currentProject.data?.project;
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
