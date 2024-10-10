@@ -25090,8 +25090,6 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Annotations
-
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {
 		case interface{ ValidateAll() error }:
@@ -25224,11 +25222,11 @@ func (m *GetReportMetaResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetInternalUsersUrls()).(type) {
+		switch v := interface{}(m.GetBaseUrls()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, GetReportMetaResponseValidationError{
-					field:  "InternalUsersUrls",
+					field:  "BaseUrls",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -25236,16 +25234,16 @@ func (m *GetReportMetaResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, GetReportMetaResponseValidationError{
-					field:  "InternalUsersUrls",
+					field:  "BaseUrls",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetInternalUsersUrls()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetBaseUrls()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return GetReportMetaResponseValidationError{
-				field:  "InternalUsersUrls",
+				field:  "BaseUrls",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -25253,25 +25251,25 @@ func (m *GetReportMetaResponse) validate(all bool) error {
 	}
 
 	{
-		sorted_keys := make([]string, len(m.GetExternalUsersUrls()))
+		sorted_keys := make([]string, len(m.GetRecipientUrls()))
 		i := 0
-		for key := range m.GetExternalUsersUrls() {
+		for key := range m.GetRecipientUrls() {
 			sorted_keys[i] = key
 			i++
 		}
 		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
 		for _, key := range sorted_keys {
-			val := m.GetExternalUsersUrls()[key]
+			val := m.GetRecipientUrls()[key]
 			_ = val
 
-			// no validation rules for ExternalUsersUrls[key]
+			// no validation rules for RecipientUrls[key]
 
 			if all {
 				switch v := interface{}(val).(type) {
 				case interface{ ValidateAll() error }:
 					if err := v.ValidateAll(); err != nil {
 						errors = append(errors, GetReportMetaResponseValidationError{
-							field:  fmt.Sprintf("ExternalUsersUrls[%v]", key),
+							field:  fmt.Sprintf("RecipientUrls[%v]", key),
 							reason: "embedded message failed validation",
 							cause:  err,
 						})
@@ -25279,7 +25277,7 @@ func (m *GetReportMetaResponse) validate(all bool) error {
 				case interface{ Validate() error }:
 					if err := v.Validate(); err != nil {
 						errors = append(errors, GetReportMetaResponseValidationError{
-							field:  fmt.Sprintf("ExternalUsersUrls[%v]", key),
+							field:  fmt.Sprintf("RecipientUrls[%v]", key),
 							reason: "embedded message failed validation",
 							cause:  err,
 						})
@@ -25288,7 +25286,7 @@ func (m *GetReportMetaResponse) validate(all bool) error {
 			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
 				if err := v.Validate(); err != nil {
 					return GetReportMetaResponseValidationError{
-						field:  fmt.Sprintf("ExternalUsersUrls[%v]", key),
+						field:  fmt.Sprintf("RecipientUrls[%v]", key),
 						reason: "embedded message failed validation",
 						cause:  err,
 					}

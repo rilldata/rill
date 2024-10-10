@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -23,65 +22,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func BakeQuery(qry *runtimev1.Query) (string, error) {
-	if qry == nil {
-		return "", errors.New("cannot bake nil query")
-	}
-
-	data, err := proto.Marshal(qry)
-	if err != nil {
-		return "", err
-	}
-
-	data, err = gzipCompress(data)
-	if err != nil {
-		return "", err
-	}
-
-	return base64.URLEncoding.EncodeToString(data), nil
-}
-
-func UnbakeQuery(bakedQry string) (*runtimev1.Query, error) {
-	data, err := base64.URLEncoding.DecodeString(bakedQry)
-	if err != nil {
-		return nil, err
-	}
-
-	uncompressed, err := gzipDecompress(data)
-	if err != nil {
-		// NOTE (2023-11-29): Backwards compatibility for when we didn't gzip baked queries. We can remove this in a few months.
-		uncompressed = data
-	}
-
-	qry := &runtimev1.Query{}
-	if err := proto.Unmarshal(uncompressed, qry); err != nil {
-		return nil, err
-	}
-
-	return qry, nil
-}
-
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	if req.BakedQuery != "" {
-		qry, err := UnbakeQuery(req.BakedQuery)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to parse baked query: %s", err.Error())
-		}
-
-		req.Query = qry
-		req.BakedQuery = ""
-	}
-
-	tkn, err := s.generateDownloadToken(&runtimev1.DownloadReportRequest{
-		InstanceId: req.InstanceId,
-		Limit:      req.Limit,
-		Format:     req.Format,
-		Query:      req.Query,
-	}, auth.GetClaims(ctx).SecurityClaims())
+	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).SecurityClaims())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
 	}
@@ -94,18 +40,22 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 }
 
 func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRequest) (*runtimev1.ExportReportResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) { // currently all reports are served by mv
-		return nil, ErrForbidden
-	}
-
 	c, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get controller: %s", err.Error())
 	}
 
-	r, err := c.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: req.Name}, false)
+	res, err := c.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: req.Report}, false)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get report: %s", err.Error())
+	}
+
+	r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, res)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "resource not found")
 	}
 
 	if r.GetReport() == nil {
@@ -115,17 +65,18 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 	rep := r.GetReport()
 	t := req.ExecutionTime.AsTime()
 
-	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t, false)
+	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build export request: %w", err)
 	}
 
-	tkn, err := s.generateDownloadToken(&runtimev1.DownloadReportRequest{
+	// Note - We are passing caller's user attributes to generateDownloadToken which may not always be the creator's attributes in case of external user's magic token. This is different from the alerts use case.
+	tkn, err := s.generateDownloadToken(&runtimev1.ExportRequest{
 		InstanceId: req.InstanceId,
 		Limit:      req.Limit,
 		Format:     req.Format,
 		Query:      qry,
-	}, auth.GetClaims(ctx).SecurityClaims())
+	}, &runtime.SecurityClaims{UserAttributes: auth.GetClaims(ctx).SecurityClaims().UserAttributes})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
 	}
@@ -335,7 +286,7 @@ func init() {
 }
 
 // generateDownloadToken generates and encrypts a download token for the given request and attributes.
-func (s *Server) generateDownloadToken(req *runtimev1.DownloadReportRequest, claims *runtime.SecurityClaims) (string, error) {
+func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *runtime.SecurityClaims) (string, error) {
 	r, err := proto.Marshal(req)
 	if err != nil {
 		return "", err
@@ -366,7 +317,7 @@ func (s *Server) generateDownloadToken(req *runtimev1.DownloadReportRequest, cla
 }
 
 // parseDownloadToken decrypts and parses a download token and returns the request and attributes.
-func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.DownloadReportRequest, *runtime.SecurityClaims, error) {
+func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, *runtime.SecurityClaims, error) {
 	tkn := downloadToken{}
 	err := s.codec.Decode(tknStr, &tkn)
 	if err != nil {
@@ -388,7 +339,7 @@ func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.DownloadReportReq
 		return nil, nil, err
 	}
 
-	req := &runtimev1.DownloadReportRequest{}
+	req := &runtimev1.ExportRequest{}
 	err = proto.Unmarshal(r, req)
 	if err != nil {
 		return nil, nil, err

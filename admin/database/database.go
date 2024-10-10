@@ -642,6 +642,7 @@ type MagicAuthToken struct {
 	Fields                []string       `db:"fields"`
 	State                 string         `db:"state"`
 	Title                 string         `db:"title"`
+	Internal              bool           `db:"internal"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -665,6 +666,7 @@ type InsertMagicAuthTokenOptions struct {
 	Fields          []string
 	State           string
 	Title           string
+	Internal        bool
 }
 
 type ReportToken struct {

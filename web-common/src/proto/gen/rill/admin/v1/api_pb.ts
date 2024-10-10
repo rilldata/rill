@@ -8922,12 +8922,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   spec?: ReportSpec;
 
   /**
-   * @generated from field: map<string, string> annotations = 4 [deprecated = true];
-   * @deprecated
-   */
-  annotations: { [key: string]: string } = {};
-
-  /**
    * @generated from field: google.protobuf.Timestamp execution_time = 5;
    */
   executionTime?: Timestamp;
@@ -8944,7 +8938,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "spec", kind: "message", T: ReportSpec },
-    { no: 4, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 5, name: "execution_time", kind: "message", T: Timestamp },
   ]);
 
@@ -8970,14 +8963,14 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
  */
 export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   /**
-   * @generated from field: rill.admin.v1.GetReportMetaResponse.Urls internal_users_urls = 1;
+   * @generated from field: rill.admin.v1.GetReportMetaResponse.Urls base_urls = 1;
    */
-  internalUsersUrls?: GetReportMetaResponse_Urls;
+  baseUrls?: GetReportMetaResponse_Urls;
 
   /**
-   * @generated from field: map<string, rill.admin.v1.GetReportMetaResponse.Urls> external_users_urls = 2;
+   * @generated from field: map<string, rill.admin.v1.GetReportMetaResponse.Urls> recipient_urls = 2;
    */
-  externalUsersUrls: { [key: string]: GetReportMetaResponse_Urls } = {};
+  recipientUrls: { [key: string]: GetReportMetaResponse_Urls } = {};
 
   constructor(data?: PartialMessage<GetReportMetaResponse>) {
     super();
@@ -8987,8 +8980,8 @@ export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetReportMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "internal_users_urls", kind: "message", T: GetReportMetaResponse_Urls },
-    { no: 2, name: "external_users_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetReportMetaResponse_Urls} },
+    { no: 1, name: "base_urls", kind: "message", T: GetReportMetaResponse_Urls },
+    { no: 2, name: "recipient_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetReportMetaResponse_Urls} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse {

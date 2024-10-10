@@ -33,15 +33,10 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetReportMetaBodyAnnotations = {
-  [key: string]: string;
-};
-
 export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
   spec?: V1ReportSpec;
-  annotations?: AdminServiceGetReportMetaBodyAnnotations;
   executionTime?: string;
 };
 
@@ -1010,13 +1005,13 @@ export interface V1GetUserResponse {
   user?: V1User;
 }
 
-export type V1GetReportMetaResponseExternalUsersUrls = {
+export type V1GetReportMetaResponseRecipientUrls = {
   [key: string]: GetReportMetaResponseUrls;
 };
 
 export interface V1GetReportMetaResponse {
-  internalUsersUrls?: GetReportMetaResponseUrls;
-  externalUsersUrls?: V1GetReportMetaResponseExternalUsersUrls;
+  baseUrls?: GetReportMetaResponseUrls;
+  recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
 export interface V1GetRepoMetaResponse {

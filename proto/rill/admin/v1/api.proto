@@ -1841,7 +1841,6 @@ message GetReportMetaRequest {
   string branch = 2;
   string report = 3;
   rill.runtime.v1.ReportSpec spec = 6;
-  map<string, string> annotations = 4 [deprecated = true];
   google.protobuf.Timestamp execution_time = 5;
 }
 
@@ -1851,8 +1850,8 @@ message GetReportMetaResponse {
     string export_url = 2;
     string edit_url = 3;
   }
-  Urls internal_users_urls = 1;
-  map<string, Urls> external_users_urls = 2;
+  Urls base_urls = 1;
+  map<string, Urls> recipient_urls = 2;
 }
 
 message GetAlertMetaRequest {

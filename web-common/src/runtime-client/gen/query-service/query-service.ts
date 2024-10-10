@@ -2200,11 +2200,11 @@ export const createQueryServiceQueryBatch = <
  */
 export const queryServiceExportReport = (
   instanceId: string,
-  name: string,
+  report: string,
   queryServiceExportReportBody: QueryServiceExportReportBody,
 ) => {
   return httpClient<V1ExportReportResponse>({
-    url: `/v1/instances/${instanceId}/reports/${name}/export`,
+    url: `/v1/instances/${instanceId}/reports/${report}/export`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceExportReportBody,
@@ -2226,7 +2226,7 @@ export const createQueryServiceExportReport = <
     TError,
     {
       instanceId: string;
-      name: string;
+      report: string;
       data: QueryServiceExportReportBody;
     },
     TContext
@@ -2238,13 +2238,13 @@ export const createQueryServiceExportReport = <
     Awaited<ReturnType<typeof queryServiceExportReport>>,
     {
       instanceId: string;
-      name: string;
+      report: string;
       data: QueryServiceExportReportBody;
     }
   > = (props) => {
-    const { instanceId, name, data } = props ?? {};
+    const { instanceId, report, data } = props ?? {};
 
-    return queryServiceExportReport(instanceId, name, data);
+    return queryServiceExportReport(instanceId, report, data);
   };
 
   return createMutation<
@@ -2252,7 +2252,7 @@ export const createQueryServiceExportReport = <
     TError,
     {
       instanceId: string;
-      name: string;
+      report: string;
       data: QueryServiceExportReportBody;
     },
     TContext

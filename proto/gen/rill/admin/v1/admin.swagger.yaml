@@ -2935,10 +2935,6 @@ paths:
                 type: string
               spec:
                 $ref: '#/definitions/v1ReportSpec'
-              annotations:
-                type: object
-                additionalProperties:
-                  type: string
               executionTime:
                 type: string
                 format: date-time
@@ -4128,9 +4124,9 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      internalUsersUrls:
+      baseUrls:
         $ref: '#/definitions/GetReportMetaResponseUrls'
-      externalUsersUrls:
+      recipientUrls:
         type: object
         additionalProperties:
           $ref: '#/definitions/GetReportMetaResponseUrls'

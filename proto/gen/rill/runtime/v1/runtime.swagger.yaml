@@ -2386,7 +2386,7 @@ paths:
                   $ref: '#/definitions/v1Query'
       tags:
         - QueryService
-  /v1/instances/{instanceId}/reports/{name}/export:
+  /v1/instances/{instanceId}/reports/{report}/export:
     post:
       summary: ExportReport builds a URL to download the results of a query as a file.
       operationId: QueryService_ExportReport
@@ -2404,7 +2404,7 @@ paths:
           in: path
           required: true
           type: string
-        - name: name
+        - name: report
           in: path
           required: true
           type: string

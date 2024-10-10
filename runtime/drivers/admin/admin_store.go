@@ -22,9 +22,9 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName string, repor
 		return nil, err
 	}
 
-	externalUsersURL := make(map[string]drivers.ReportURLs, len(res.ExternalUsersUrls))
-	for k, v := range res.ExternalUsersUrls {
-		externalUsersURL[k] = drivers.ReportURLs{
+	recipientURLs := make(map[string]drivers.ReportURLs, len(res.RecipientUrls))
+	for k, v := range res.RecipientUrls {
+		recipientURLs[k] = drivers.ReportURLs{
 			OpenURL:   v.OpenUrl,
 			ExportURL: v.ExportUrl,
 			EditURL:   v.EditUrl,
@@ -32,12 +32,12 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName string, repor
 	}
 
 	return &drivers.ReportMetadata{
-		InternalUsersURL: drivers.ReportURLs{
-			OpenURL:   res.InternalUsersUrls.OpenUrl,
-			ExportURL: res.InternalUsersUrls.ExportUrl,
-			EditURL:   res.InternalUsersUrls.EditUrl,
+		BaseURLs: drivers.ReportURLs{
+			OpenURL:   res.BaseUrls.OpenUrl,
+			ExportURL: res.BaseUrls.ExportUrl,
+			EditURL:   res.BaseUrls.EditUrl,
 		},
-		ExternalUsersURL: externalUsersURL,
+		RecipientURLs: recipientURLs,
 	}, nil
 }
 

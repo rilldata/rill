@@ -13,8 +13,8 @@ type AdminService interface {
 }
 
 type ReportMetadata struct {
-	InternalUsersURL ReportURLs
-	ExternalUsersURL map[string]ReportURLs
+	BaseURLs      ReportURLs
+	RecipientURLs map[string]ReportURLs
 }
 
 type ReportURLs struct {

@@ -55,6 +55,16 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	if req.Spec == nil {
+		return &adminv1.GetReportMetaResponse{
+			BaseUrls: &adminv1.GetReportMetaResponse_Urls{
+				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
+				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
+				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+			},
+		}, nil
+	}
+
 	opts, err := recreateReportOptionsFromSpec(req.Spec)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -74,39 +84,31 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		}
 	}
 
-	externalUsersUrls := make(map[string]*adminv1.GetReportMetaResponse_Urls, len(externalEmails))
-	if len(externalEmails) > 0 {
-		// issue magic tokens for external emails
-		var ownerID *string
-		if annotations.AdminOwnerUserID != "" {
-			ownerID = &annotations.AdminOwnerUserID
-		}
-		emailTokens, err := s.issueMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Report, ownerID, opts, externalEmails)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to issue magic auth tokens: %s", err.Error())
-		}
+	externalUrls := make(map[string]*adminv1.GetReportMetaResponse_Urls, len(externalEmails))
+	// issue magic tokens for external emails
+	var ownerID *string
+	if annotations.AdminOwnerUserID != "" {
+		ownerID = &annotations.AdminOwnerUserID
+	}
+	emailTokens, err := s.issueMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Report, ownerID, opts, externalEmails)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to issue magic auth tokens: %s", err.Error())
+	}
 
-		for email, token := range emailTokens {
-			externalUsersUrls[email] = &adminv1.GetReportMetaResponse_Urls{
-				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpenExternal(org.Name, proj.Name, req.Report, token, req.ExecutionTime.AsTime()),
-				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExportExternal(org.Name, proj.Name, req.Report, token),
-			}
-		}
-	} else {
-		// cleanup all report tokens if no external emails if found
-		err = s.cleanUpAllReportTokens(ctx, req.Report)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to clean up report tokens: %s", err.Error())
+	for email, token := range emailTokens {
+		externalUrls[email] = &adminv1.GetReportMetaResponse_Urls{
+			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpenExternal(org.Name, proj.Name, req.Report, token, req.ExecutionTime.AsTime()),
+			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExportExternal(org.Name, proj.Name, req.Report, token),
 		}
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		InternalUsersUrls: &adminv1.GetReportMetaResponse_Urls{
+		BaseUrls: &adminv1.GetReportMetaResponse_Urls{
 			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
 			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 		},
-		ExternalUsersUrls: externalUsersUrls,
+		RecipientUrls: externalUrls,
 	}, nil
 }
 
@@ -564,7 +566,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, projectID, reportName string, ownerID *string, opts *adminv1.ReportOptions, emails []string) (map[string]string, error) {
 	emailSet := make(map[string]struct{}, len(emails))
 	for _, email := range emails {
-		emailSet[email] = struct{}{}
+		emailSet[strings.ToLower(email)] = struct{}{}
 	}
 
 	emailTokens := make(map[string]string, len(emails))
@@ -577,7 +579,7 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 
 	var unusedTknIDs []string
 	for _, tkn := range tkns {
-		if _, ok := emailSet[tkn.RecipientEmail]; ok {
+		if _, ok := emailSet[strings.ToLower(tkn.RecipientEmail)]; ok {
 			id, err := uuid.Parse(tkn.MagicAuthTokenID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse token ID: %w", err)
@@ -586,7 +588,7 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 			if err != nil {
 				return nil, fmt.Errorf("failed to create magic auth token from parts: %w", err)
 			}
-			emailTokens[tkn.RecipientEmail] = token.String()
+			emailTokens[strings.ToLower(tkn.RecipientEmail)] = token.String()
 			delete(emailSet, tkn.RecipientEmail)
 		} else {
 			unusedTknIDs = append(unusedTknIDs, tkn.MagicAuthTokenID)
@@ -601,12 +603,9 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 		}
 	}
 
-	var args map[string]interface{}
-	if opts.QueryArgsJson != "" {
-		err := json.Unmarshal([]byte(opts.QueryArgsJson), &args)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
-		}
+	// return early after cleaning up unused tokens if no external emails
+	if len(emailSet) == 0 {
+		return emailTokens, nil
 	}
 
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
@@ -616,6 +615,7 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 		ResourceName:    reportName,
 		State:           opts.WebOpenState,
 		Title:           opts.Title,
+		Internal:        true,
 	}
 
 	if ownerID != nil {

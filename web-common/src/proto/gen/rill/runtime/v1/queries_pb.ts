@@ -373,7 +373,8 @@ export class ExportRequest extends Message<ExportRequest> {
   query?: Query;
 
   /**
-   * @generated from field: string baked_query = 5;
+   * @generated from field: string baked_query = 5 [deprecated = true];
+   * @deprecated
    */
   bakedQuery = "";
 
@@ -456,9 +457,9 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: string name = 2;
+   * @generated from field: string report = 2;
    */
-  name = "";
+  report = "";
 
   /**
    * @generated from field: int64 limit = 3;
@@ -484,7 +485,7 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
   static readonly typeName = "rill.runtime.v1.ExportReportRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 4, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 5, name: "execution_time", kind: "message", T: Timestamp },
@@ -541,61 +542,6 @@ export class ExportReportResponse extends Message<ExportReportResponse> {
 
   static equals(a: ExportReportResponse | PlainMessage<ExportReportResponse> | undefined, b: ExportReportResponse | PlainMessage<ExportReportResponse> | undefined): boolean {
     return proto3.util.equals(ExportReportResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.DownloadReportRequest
- */
-export class DownloadReportRequest extends Message<DownloadReportRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: int64 limit = 2;
-   */
-  limit = protoInt64.zero;
-
-  /**
-   * @generated from field: rill.runtime.v1.ExportFormat format = 3;
-   */
-  format = ExportFormat.UNSPECIFIED;
-
-  /**
-   * @generated from field: rill.runtime.v1.Query query = 4;
-   */
-  query?: Query;
-
-  constructor(data?: PartialMessage<DownloadReportRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.DownloadReportRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 4, name: "query", kind: "message", T: Query },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadReportRequest {
-    return new DownloadReportRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadReportRequest {
-    return new DownloadReportRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadReportRequest {
-    return new DownloadReportRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: DownloadReportRequest | PlainMessage<DownloadReportRequest> | undefined, b: DownloadReportRequest | PlainMessage<DownloadReportRequest> | undefined): boolean {
-    return proto3.util.equals(DownloadReportRequest, a, b);
   }
 }
 

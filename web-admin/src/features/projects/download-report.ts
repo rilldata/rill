@@ -1,7 +1,7 @@
 // TODO: move this file once other parts are merged
 
 import {
-  createQueryServiceExport,
+  createQueryServiceExportReport,
   type RpcStatus,
   V1ExportFormat,
 } from "@rilldata/web-common/runtime-client";
@@ -15,8 +15,9 @@ import { get } from "svelte/store";
 
 export type DownloadReportRequest = {
   instanceId: string;
+  reportId: string;
   format: V1ExportFormat;
-  bakedQuery: string;
+  executionTime: string;
   limit?: string;
 };
 
@@ -32,7 +33,7 @@ export function createDownloadReportMutation<
   >;
 }) {
   const { mutation: mutationOptions } = options ?? {};
-  const exporter = createQueryServiceExport();
+  const exporter = createQueryServiceExportReport();
 
   const mutationFn: MutationFunction<
     Awaited<Promise<void>>,
@@ -43,9 +44,10 @@ export function createDownloadReportMutation<
 
     const exportResp = await get(exporter).mutateAsync({
       instanceId: data.instanceId,
+      report: data.reportId,
       data: {
         format: data.format,
-        bakedQuery: data.bakedQuery,
+        executionTime: data.executionTime,
         limit: data.limit,
       },
     });

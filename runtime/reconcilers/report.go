@@ -398,7 +398,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
-	internalUsersExportURL, err := createExportURL(meta.InternalUsersURL.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+	internalUsersExportURL, err := createExportURL(meta.BaseURLs.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
 	if err != nil {
 		return false, err
 	}
@@ -409,10 +409,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
-				openURL := meta.InternalUsersURL.OpenURL
+				openURL := meta.BaseURLs.OpenURL
 				exportURL := internalUsersExportURL.String()
-				editURL := meta.InternalUsersURL.EditURL
-				if urls, ok := meta.ExternalUsersURL[recipient]; ok {
+				editURL := meta.BaseURLs.EditURL
+				if urls, ok := meta.RecipientURLs[recipient]; ok {
 					openURL = urls.OpenURL
 					editURL = urls.EditURL
 					u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
@@ -451,9 +451,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					Title:          rep.Spec.Title,
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:       meta.InternalUsersURL.OpenURL,
+					OpenLink:       meta.BaseURLs.OpenURL,
 					DownloadLink:   internalUsersExportURL.String(),
-					EditLink:       meta.InternalUsersURL.EditURL,
+					EditLink:       meta.BaseURLs.EditURL,
 				}
 				start := time.Now()
 				defer func() {

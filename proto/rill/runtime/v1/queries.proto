@@ -38,7 +38,7 @@ service QueryService {
   // ExportReport builds a URL to download the results of a query as a file.
   rpc ExportReport(ExportReportRequest) returns (ExportReportResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/reports/{name}/export",
+      post: "/v1/instances/{instance_id}/reports/{report}/export",
       body: "*"
     };
   }
@@ -277,7 +277,7 @@ message ExportRequest {
   int64 limit = 2;
   ExportFormat format = 3;
   Query query = 4;
-  string baked_query = 5;
+  string baked_query = 5 [deprecated = true];
 }
 
 message ExportResponse {
@@ -286,7 +286,7 @@ message ExportResponse {
 
 message ExportReportRequest {
   string instance_id = 1;
-  string name = 2;
+  string report = 2;
   int64 limit = 3;
   ExportFormat format = 4;
   google.protobuf.Timestamp execution_time = 5;
@@ -294,13 +294,6 @@ message ExportReportRequest {
 
 message ExportReportResponse {
   string download_url_path = 1;
-}
-
-message DownloadReportRequest {
-  string instance_id = 1;
-  int64 limit = 2;
-  ExportFormat format = 3;
-  Query query = 4;
 }
 
 // **********
