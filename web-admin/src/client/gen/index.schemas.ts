@@ -33,14 +33,10 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetReportMetaBodyAnnotations = {
-  [key: string]: string;
-};
-
 export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
-  annotations?: AdminServiceGetReportMetaBodyAnnotations;
+  spec?: V1ReportSpec;
   executionTime?: string;
 };
 
@@ -411,6 +407,16 @@ export interface V1UpdateBookmarkRequest {
   shared?: boolean;
 }
 
+export interface V1Subscription {
+  id?: string;
+  plan?: V1BillingPlan;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
+}
+
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
@@ -523,16 +529,6 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: any;
 }
 
-export interface V1Subscription {
-  id?: string;
-  plan?: V1BillingPlan;
-  startDate?: string;
-  endDate?: string;
-  currentBillingCycleStartDate?: string;
-  currentBillingCycleEndDate?: string;
-  trialEndDate?: string;
-}
-
 export interface V1Subquery {
   dimension?: string;
   measures?: string[];
@@ -595,6 +591,14 @@ export interface V1SearchProjectNamesResponse {
   nextPageToken?: string;
 }
 
+export interface V1Schedule {
+  refUpdate?: boolean;
+  disable?: boolean;
+  cron?: string;
+  tickerSeconds?: number;
+  timeZone?: string;
+}
+
 export interface V1RevokeServiceAuthTokenResponse {
   [key: string]: any;
 }
@@ -609,6 +613,26 @@ export interface V1RevokeCurrentAuthTokenResponse {
 
 export interface V1RequestProjectAccessResponse {
   [key: string]: any;
+}
+
+export type V1ReportSpecAnnotations = { [key: string]: string };
+
+export interface V1ReportSpec {
+  trigger?: boolean;
+  title?: string;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
+  exportLimit?: string;
+  exportFormat?: V1ExportFormat;
+  notifiers?: V1Notifier[];
+  annotations?: V1ReportSpecAnnotations;
+  /** If true, will use the lowest watermark of its refs instead of the trigger time. */
+  watermarkInherit?: boolean;
+  intervalsIsoDuration?: string;
+  intervalsLimit?: number;
+  intervalsCheckUnclosed?: boolean;
 }
 
 export interface V1ReportOptions {
@@ -805,6 +829,13 @@ export const V1Operation = {
   OPERATION_NLIKE: "OPERATION_NLIKE",
 } as const;
 
+export type V1NotifierProperties = { [key: string]: any };
+
+export interface V1Notifier {
+  connector?: string;
+  properties?: V1NotifierProperties;
+}
+
 export interface V1MemberUsergroup {
   groupId?: string;
   groupName?: string;
@@ -974,10 +1005,13 @@ export interface V1GetUserResponse {
   user?: V1User;
 }
 
+export type V1GetReportMetaResponseRecipientUrls = {
+  [key: string]: GetReportMetaResponseUrls;
+};
+
 export interface V1GetReportMetaResponse {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
+  baseUrls?: GetReportMetaResponseUrls;
+  recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
 export interface V1GetRepoMetaResponse {
@@ -1464,4 +1498,10 @@ export interface ListGithubUserReposResponseRepo {
   description?: string;
   url?: string;
   defaultBranch?: string;
+}
+
+export interface GetReportMetaResponseUrls {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
 }

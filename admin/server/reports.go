@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -53,10 +55,60 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	if req.Spec == nil {
+		return &adminv1.GetReportMetaResponse{
+			BaseUrls: &adminv1.GetReportMetaResponse_Urls{
+				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
+				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
+				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+			},
+		}, nil
+	}
+
+	opts, err := recreateReportOptionsFromSpec(req.Spec)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	annotations := parseReportAnnotations(req.Spec.Annotations)
+
+	var externalEmails []string
+	for _, email := range opts.EmailRecipients {
+		_, err := s.admin.DB.FindUserByEmail(ctx, email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				externalEmails = append(externalEmails, email)
+			} else {
+				return nil, status.Errorf(codes.Internal, "failed to find user by email: %s", err.Error())
+			}
+		}
+	}
+
+	externalUrls := make(map[string]*adminv1.GetReportMetaResponse_Urls, len(externalEmails))
+	// issue magic tokens for external emails
+	var ownerID *string
+	if annotations.AdminOwnerUserID != "" {
+		ownerID = &annotations.AdminOwnerUserID
+	}
+	emailTokens, err := s.issueMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Report, ownerID, opts, externalEmails)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to issue magic auth tokens: %s", err.Error())
+	}
+
+	for email, token := range emailTokens {
+		externalUrls[email] = &adminv1.GetReportMetaResponse_Urls{
+			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpenExternal(org.Name, proj.Name, req.Report, token, req.ExecutionTime.AsTime()),
+			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExportExternal(org.Name, proj.Name, req.Report, token),
+		}
+	}
+
 	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
-		ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
-		EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+		BaseUrls: &adminv1.GetReportMetaResponse_Urls{
+			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
+			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
+			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+		},
+		RecipientUrls: externalUrls,
 	}, nil
 }
 
@@ -266,6 +318,10 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
+		err = s.cleanUpAllReportTokens(ctx, req.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to clean up report tokens: %s", err.Error())
+		}
 	} else {
 		data, err := s.yamlForManagedReport(opts, annotations.AdminOwnerUserID)
 		if err != nil {
@@ -339,6 +395,11 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
+	}
+
+	err = s.cleanUpAllReportTokens(ctx, req.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to clean up report tokens: %s", err.Error())
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
@@ -500,6 +561,152 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 
 	// Fail-safe in case all names we tried were taken
 	return uuid.New().String(), nil
+}
+
+func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, projectID, reportName string, ownerID *string, opts *adminv1.ReportOptions, emails []string) (map[string]string, error) {
+	emailSet := make(map[string]struct{}, len(emails))
+	for _, email := range emails {
+		emailSet[strings.ToLower(email)] = struct{}{}
+	}
+
+	emailTokens := make(map[string]string, len(emails))
+
+	// check if magic token already exists for the recipient, recipient list might have changed
+	tkns, err := s.admin.DB.FindReportTokensWithSecret(ctx, reportName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find report tokens: %w", err)
+	}
+
+	var unusedTknIDs []string
+	for _, tkn := range tkns {
+		if _, ok := emailSet[strings.ToLower(tkn.RecipientEmail)]; ok {
+			id, err := uuid.Parse(tkn.MagicAuthTokenID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse token ID: %w", err)
+			}
+			token, err := authtoken.FromParts(authtoken.TypeMagic, id, tkn.MagicAuthTokenSecret)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create magic auth token from parts: %w", err)
+			}
+			emailTokens[strings.ToLower(tkn.RecipientEmail)] = token.String()
+			delete(emailSet, tkn.RecipientEmail)
+		} else {
+			unusedTknIDs = append(unusedTknIDs, tkn.MagicAuthTokenID)
+		}
+	}
+
+	// cleanup unused tokens
+	if len(unusedTknIDs) > 0 {
+		err = s.admin.DB.DeleteMagicAuthTokens(ctx, unusedTknIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to delete unused report tokens: %w", err)
+		}
+	}
+
+	// return early after cleaning up unused tokens if no external emails
+	if len(emailSet) == 0 {
+		return emailTokens, nil
+	}
+
+	mgcOpts := &admin.IssueMagicAuthTokenOptions{
+		ProjectID:       projectID,
+		CreatedByUserID: ownerID,
+		ResourceType:    runtime.ResourceKindReport,
+		ResourceName:    reportName,
+		State:           opts.WebOpenState,
+		Title:           opts.Title,
+		Internal:        true,
+	}
+
+	if ownerID != nil {
+		// Get the project-level permissions for the creating user.
+		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, *ownerID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, projectID, *ownerID, orgPerms)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Generate JWT attributes based on the creating user's, but with limited project-level permissions.
+		// We store these attributes with the magic token, so it can simulate the creating user (even if the creating user is later deleted or their permissions change).
+		//
+		// NOTE: A problem with this approach is that if we change the built-in format of JWT attributes, these will remain as they were when captured.
+		// NOTE: Another problem is that if the creator is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
+		attrs, err := s.jwtAttributesForUser(ctx, *ownerID, orgID, projectPermissions)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		mgcOpts.Attributes = attrs
+	}
+
+	// issue magic tokens for new external emails
+	cctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	for email := range emailSet {
+		if ownerID == nil {
+			// set user attrs as per the email
+			mgcOpts.Attributes = map[string]interface{}{
+				"name":   "",
+				"email":  email,
+				"domain": email[strings.LastIndex(email, "@")+1:],
+				"groups": []string{},
+				"admin":  false,
+			}
+		}
+
+		tkn, err := s.admin.IssueMagicAuthToken(cctx, mgcOpts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
+		}
+
+		emailTokens[email] = tkn.Token().String()
+
+		_, err = s.admin.DB.InsertReportToken(cctx, &database.InsertReportTokenOptions{
+			ReportName:       reportName,
+			RecipientEmail:   email,
+			MagicAuthTokenID: tkn.Token().ID.String(),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert report token for email %s: %w", email, err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return emailTokens, nil
+}
+
+func (s *Server) cleanUpAllReportTokens(ctx context.Context, reportName string) error {
+	tkns, err := s.admin.DB.FindReportTokensWithSecret(ctx, reportName)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil
+		}
+		return fmt.Errorf("failed to find report tokens: %w", err)
+	}
+
+	var unusedTknIDs []string
+	for _, tkn := range tkns {
+		unusedTknIDs = append(unusedTknIDs, tkn.MagicAuthTokenID)
+	}
+
+	if len(unusedTknIDs) > 0 {
+		err = s.admin.DB.DeleteMagicAuthTokens(ctx, unusedTknIDs)
+		if err != nil {
+			return fmt.Errorf("failed to delete unused report tokens: %w", err)
+		}
+	}
+
+	return nil
 }
 
 var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)

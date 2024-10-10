@@ -186,9 +186,11 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				return nil, status.Errorf(codes.Internal, "could not get resource for magic token: %s", err.Error())
 			}
 
-			spec := resp.Resource.GetExplore().State.ValidSpec
-			if spec != nil {
-				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+			if mdl.ResourceType == runtime.ResourceKindExplore {
+				spec := resp.Resource.GetExplore().State.ValidSpec
+				if spec != nil {
+					condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+				}
 			}
 		}
 

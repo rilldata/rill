@@ -12,8 +12,8 @@
   $: project = $page.params.project;
   $: reportId = $page.params.report;
   $: format = $page.url.searchParams.get("format");
-  $: bakedQuery = $page.url.searchParams.get("query");
   $: limit = $page.url.searchParams.get("limit");
+  $: executionTime = $page.url.searchParams.get("execution_time");
 
   const downloadReportMutation = createDownloadReportMutation();
   let downloadOnce = false;
@@ -24,14 +24,15 @@
     $downloadReportMutation.mutateAsync({
       data: {
         instanceId: $runtime.instanceId,
+        reportId,
         format: format as V1ExportFormat,
-        bakedQuery,
+        executionTime,
         limit,
       },
     });
   }
 
-  $: if (reportId && format && bakedQuery && $runtime) {
+  $: if (reportId && format && $runtime) {
     triggerDownload();
   }
 
@@ -39,8 +40,6 @@
   $: {
     if (!format) {
       error = "format is required";
-    } else if (!bakedQuery) {
-      error = "query is required";
     } else if ($downloadReportMutation.error) {
       error =
         $downloadReportMutation.error.response?.data?.message ??
