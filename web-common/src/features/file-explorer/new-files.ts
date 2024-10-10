@@ -11,10 +11,10 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
-export async function handleEntityCreate(
+export async function createResourceFile(
   kind: ResourceKind,
   baseResource?: V1Resource,
-) {
+): Promise<string> {
   if (!(kind in ResourceKindMap)) {
     throw new Error(`Unknown resource kind: ${kind}`);
   }
