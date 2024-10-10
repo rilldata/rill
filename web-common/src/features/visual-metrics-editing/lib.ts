@@ -70,9 +70,8 @@ export class YAMLMeasure {
         : Boolean(item?.get("valid_percent_of_total"));
     this.format_d3 = item?.get("format_d3") ?? "";
     this.format_preset =
-      (item?.get("format_preset") as unknown as FormatPreset) ?? this.format_d3
-        ? ""
-        : FormatPreset.HUMANIZE;
+      (item?.get("format_preset") as unknown as FormatPreset) ??
+      (this.format_d3 ? "" : FormatPreset.HUMANIZE);
   }
 }
 
