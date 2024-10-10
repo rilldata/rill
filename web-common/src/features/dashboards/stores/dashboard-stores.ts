@@ -279,7 +279,13 @@ const metricsViewReducers = {
       if (metricsExplorer.pivot.sorting.length) {
         const accessor = metricsExplorer.pivot.sorting[0].id;
         const anchorDimension = metricsExplorer.pivot.rows.dimension?.[0].id;
+        const measureNames = metricsExplorer.pivot.columns.measure.map(
+          (measure) => measure.id,
+        );
+        const measureIndex = accessor.split("m")[1];
+
         if (accessor !== anchorDimension) {
+          console.log("resetting sorting fired", measureNames[measureIndex]);
           metricsExplorer.pivot.sorting = [];
         }
       }

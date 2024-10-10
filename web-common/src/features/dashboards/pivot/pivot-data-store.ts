@@ -237,8 +237,6 @@ export function createTableCellQuery(
     mergeFilters(filterForInitialTable, config.whereFilter) ??
     createAndExpression([]);
 
-  console.log("fired", anchorDimension, config.measureNames[0]);
-
   const sortBy = [
     {
       desc: false,
@@ -366,6 +364,8 @@ export function createPivotDataStore(
 
         const { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor } =
           getSortFilteredMeasureBody(measureBody, sortPivotBy, measureWhere);
+
+        console.log("sortPivotBy: ", sortPivotBy);
 
         const rowPage = config.pivot.rowPage;
         const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;

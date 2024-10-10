@@ -73,6 +73,25 @@
       if (pivotData.totalsRowData) {
         tableData = [pivotData.totalsRowData, ...pivotData.data];
       }
+
+      // The accessor should not be "m0" when there are dimensions in columns
+      // Expected
+      // {
+      //     "desc": true,
+      //     "name": "measure_7"
+      // }
+
+      // In reality, the sorting is set like this:
+      // {
+      //     "id": "m0",
+      //     "desc": true
+      // }
+
+      // When a dimension gets added to the columns, pivotConfig.sorting is set to []
+      // Meanwhile, sortPivotBy is set correctly to the correct measure.
+
+      // Check table options sorting state
+      console.log("options pivotConfig.sorting: ", pivotConfig.sorting);
       return {
         data: tableData,
         columns: pivotData.columnDef,
