@@ -44,6 +44,7 @@ incremental: true
 
 
 ### Types of Incremental Models
+
 There are two main types of incremental models. 
 
 1. Incremental Model with explicit `state:` defined
@@ -53,7 +54,9 @@ There are two main types of incremental models.
     
     2b. glob splits
 
-
+:::tip
+Incremental models with neither `state` nor `split` defined will append data per incremental refresh from the source table. This will result in duplicate data and is not recommended.
+:::
 ### Incremental Models with State defined
 
 If your data is not using [splits](splits.md), you can define the incremental model with a predefined `state` parameter.

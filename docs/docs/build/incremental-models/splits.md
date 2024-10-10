@@ -14,9 +14,13 @@ In Rill, splits are a special type of state in which you can explicitly split th
 Under the `split:` parameter, you will define the pattern in which your data is stored.
 
 ### SQL
+When defining your SQL, it is important to understand the data that you are querying and creating a split that makes sense. For example, possibly selecting a distinct customer_name per split, or possibly split the SQL by a chronological split, such as month.
+
 ```yaml
 splits:
-  sql: SELECT range AS num FROM range(0,10)
+  sql: SELECT range AS num FROM range(0,10) #num is the split variable and can be referenced as {{split.num}}
+  #sql: SELECT DISTINCT customer_name as cust_name from table #results in {{split.cust_name}}
+  
   ```
 
 

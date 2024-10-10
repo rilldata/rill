@@ -10,6 +10,8 @@ sidebar_position: 31
 
 **`sql`** - Sets the SQL query to extract data from source
 
+**`incremental`** - Refers to the model if it is incremental and must be `true` if using increments _(required)_.
+
 **`state`** - explicitly defines a state in which your model to increment, *should be used with **incremental: true***
   - **`sql`** - Sets the SQL query for the state
 
@@ -25,7 +27,6 @@ sidebar_position: 31
 
 **`timeout`** - defines the timeout (in seconds) to read source data, defaults to *3600 seconds, 60 minutes*
 
-**`incremental`** - Refers to the model if it is incremental and must be `true` if using increments _(required)_.
 
 **`refresh`** - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying source data _(optional)_.
   - **`cron`** - a cron schedule expression, which should be encapsulated in single quotes, e.g. `'* * * * *'` _(optional)_
