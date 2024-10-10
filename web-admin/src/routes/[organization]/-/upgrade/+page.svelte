@@ -9,8 +9,8 @@
   import {
     getPaymentIssueErrorText,
     getPaymentIssues,
-  } from "@rilldata/web-admin/features/billing/issues/handlePaymentBillingIssues";
-  import { getCancelledIssue } from "@rilldata/web-admin/features/billing/issues/handleSubscriptionIssues.js";
+  } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+  import { getCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue.js";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
     fetchPaymentsPortalURL,
@@ -60,24 +60,27 @@
     isRenew = !!getCancelledIssue($issuesQuery.data?.issues ?? []);
     const teamPlan = await fetchTeamPlan();
 
-    if (isRenew) {
-      await $planRenewer.mutateAsync({
-        organization,
-        data: {
-          planName: teamPlan.name,
-        },
-      });
-      // TODO: show welcome to rill
-    } else {
-      await $planUpdater.mutateAsync({
-        organization,
-        data: {
-          planName: teamPlan.name,
-        },
-      });
+    try {
+      if (isRenew) {
+        await $planRenewer.mutateAsync({
+          organization,
+          data: {
+            planName: teamPlan.name,
+          },
+        });
+        // TODO: show welcome to rill
+      } else {
+        await $planUpdater.mutateAsync({
+          organization,
+          data: {
+            planName: teamPlan.name,
+          },
+        });
+      }
+      void invalidateBillingInfo(organization);
+    } catch {
+      // TODO
     }
-
-    void invalidateBillingInfo(organization);
     return goto(`/${organization}`);
   }
 </script>

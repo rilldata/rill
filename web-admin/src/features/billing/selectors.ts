@@ -7,16 +7,16 @@ import {
   V1BillingIssueType,
   type V1GetBillingSubscriptionResponse,
 } from "@rilldata/web-admin/client";
-import { getPaymentIssues } from "@rilldata/web-admin/features/billing/issues/handlePaymentBillingIssues";
+import { getPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import {
   cancelledSubscriptionHasEnded,
   getCancelledIssue,
   getNeverSubscribedIssue,
-} from "@rilldata/web-admin/features/billing/issues/handleSubscriptionIssues";
+} from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
 import {
   getTrialIssue,
   trialHasPastGracePeriod,
-} from "@rilldata/web-admin/features/billing/issues/handleTrialPlan";
+} from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { RpcStatus } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";

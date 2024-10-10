@@ -15,7 +15,7 @@ export function getCancelledIssue(issues: V1BillingIssue[]) {
   );
 }
 
-export function handleSubscriptionIssues(cancelledSubIssue: V1BillingIssue) {
+export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
   let accessTimeout = "";
 
   if (cancelledSubIssue.metadata.subscriptionCancelled?.endDate) {
@@ -32,7 +32,7 @@ export function handleSubscriptionIssues(cancelledSubIssue: V1BillingIssue) {
 
   return <BillingIssueMessage>{
     type: "warning",
-    title: `Your plan was canceled ${accessTimeout}`,
+    title: `Your plan was canceled ${accessTimeout}.`,
     description: "To maintain access, renew your plan.",
     iconType: "alert",
     cta: {

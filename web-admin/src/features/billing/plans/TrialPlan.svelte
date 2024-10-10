@@ -3,7 +3,7 @@
     V1BillingIssueType,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
-  import { getTrialMessageForDays } from "@rilldata/web-admin/features/billing/issues/handleTrialPlan";
+  import { getTrialMessageForDays } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";

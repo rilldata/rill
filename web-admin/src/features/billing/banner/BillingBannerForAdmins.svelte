@@ -50,7 +50,7 @@
         ? {
             cta: {
               type: "button",
-              text: $billingIssueMessage.data.cta.text,
+              text: $billingIssueMessage.data.cta.text + "->",
               onClick() {
                 void handleBannerCTAClick($billingIssueMessage.data);
               },

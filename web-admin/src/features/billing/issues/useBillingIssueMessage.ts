@@ -1,8 +1,9 @@
 import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
-import { handlePaymentIssues } from "@rilldata/web-admin/features/billing/issues/handlePaymentBillingIssues";
-import { handleSubscriptionIssues } from "@rilldata/web-admin/features/billing/issues/handleSubscriptionIssues";
-import { handleTrialPlan } from "@rilldata/web-admin/features/billing/issues/handleTrialPlan";
+import { getMessageForPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+import { getMessageForCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
+import { getMessageForTrialPlan } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import {
   getSubscriptionForOrg,
   useCategorisedOrganizationBillingIssues,
@@ -19,7 +20,7 @@ export type BillingIssueMessage = {
   cta?: BillingIssueMessageCTA;
 };
 export type BillingIssueMessageCTA = {
-  type: "upgrade" | "payment" | "wake-projects";
+  type: "upgrade" | "payment" | "contact" | "wake-projects";
   text: string;
 
   teamPlanDialogType?: TeamPlanDialogTypes;
@@ -63,14 +64,16 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data.cancelled) {
         return {
           isFetching: false,
-          data: handleSubscriptionIssues(categorisedIssuesResp.data.cancelled),
+          data: getMessageForCancelledIssue(
+            categorisedIssuesResp.data.cancelled,
+          ),
         };
       }
 
       if (categorisedIssuesResp.data.trial) {
         return {
           isFetching: false,
-          data: handleTrialPlan(categorisedIssuesResp.data.trial),
+          data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
         };
       }
 
@@ -80,8 +83,10 @@ export function useBillingIssueMessage(
       ) {
         return {
           isFetching: false,
-          data: handlePaymentIssues(
+          data: getMessageForPaymentIssues(
             organization,
+            !!subscriptionResp.data.subscription.plan &&
+              !isTeamPlan(subscriptionResp.data.subscription.plan),
             categorisedIssuesResp.data.payment,
           ),
         };

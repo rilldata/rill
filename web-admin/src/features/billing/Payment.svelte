@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/handlePaymentBillingIssues";
+  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";

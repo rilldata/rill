@@ -16,7 +16,7 @@ export function getTrialIssue(issues: V1BillingIssue[]) {
   );
 }
 
-export function handleTrialPlan(
+export function getMessageForTrialPlan(
   trialIssue: V1BillingIssue,
 ): BillingIssueMessage {
   const endDateStr =
@@ -63,7 +63,7 @@ export function handleTrialPlan(
       message.type = "warning";
     } else {
       message.title =
-        "Your trial has expired and this org’s projects are now hibernating";
+        "Your trial has expired and this org’s projects are now hibernating.";
       message.description = "Upgrade to wake projects and regain full access.";
       message.type = "error";
     }
