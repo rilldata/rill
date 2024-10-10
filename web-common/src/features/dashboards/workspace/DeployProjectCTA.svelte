@@ -1,3 +1,7 @@
+<script lang="ts" context="module">
+  export const allowPrimary = writable(false);
+</script>
+
 <script lang="ts">
   import { page } from "$app/stores";
   import {
@@ -21,8 +25,16 @@
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
-  import { get } from "svelte/store";
+  import { get, writable } from "svelte/store";
   import { Button } from "../../../components/button";
+  import Rocket from "svelte-radix/Rocket.svelte";
+  import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
+
+  export let hasValidDashboard: boolean;
+
+  let pushThroughGitOpen = false;
+  let deployConfirmOpen = false;
+  let deployCTAUrl: string;
 
   $: currentProject = createLocalServiceGetCurrentProject({
     query: {
@@ -31,18 +43,19 @@
   });
   $: isDeployed = !!$currentProject.data?.project;
 
+  $: allowPrimary.set(isDeployed || !hasValidDashboard);
+
   $: user = createLocalServiceGetCurrentUser();
   $: metadata = createLocalServiceGetMetadata();
 
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
-  let deployCTAUrl: string;
+
   $: if (!$user.data?.user && $metadata.data) {
     deployCTAUrl = `${$metadata.data.loginUrl}?redirect=${deployPageUrl}`;
   } else {
     deployCTAUrl = deployPageUrl;
   }
 
-  let pushThroughGitOpen = false;
   async function onShowRedeploy() {
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
 
@@ -55,7 +68,6 @@
     window.open(deployCTAUrl, "_target");
   }
 
-  let deployConfirmOpen = false;
   function onShowDeploy() {
     deployConfirmOpen = true;
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
@@ -67,8 +79,9 @@
     <Button
       loading={$currentProject.isLoading}
       on:click={onShowRedeploy}
-      type="primary"
+      type="secondary"
     >
+      <CloudIcon size="16px" />
       Update
     </Button>
     <TooltipContent slot="tooltip-content">
@@ -80,12 +93,14 @@
     <Button
       loading={$currentProject.isLoading}
       on:click={onShowDeploy}
-      type="primary"
+      type={hasValidDashboard ? "primary" : "secondary"}
     >
-      Deploy to share
+      <Rocket size="16px" />
+
+      Deploy
     </Button>
     <TooltipContent slot="tooltip-content">
-      Deploy this dashboard to Rill Cloud
+      Deploy this project to Rill Cloud
     </TooltipContent>
   </Tooltip>
 {/if}

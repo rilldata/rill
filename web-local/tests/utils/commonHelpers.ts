@@ -104,7 +104,14 @@ export async function renameFileUsingMenu(
   ]);
 }
 
-export async function renameFileUsingTitle(page: Page, toName: string) {
+export async function renameFileUsingTitle(
+  page: Page,
+  originalName: string,
+  toName: string,
+) {
+  await page.getByRole("heading", { name: originalName, exact: true }).hover();
+  await page.getByRole("button", { name: "File title actions" }).click();
+  await page.getByRole("menuitem", { name: "Rename" }).click();
   await page.locator("#model-title-input").fill(toName);
   await page.keyboard.press("Enter");
 }
@@ -123,7 +130,7 @@ export async function deleteFile(page: Page, filePath: string) {
 }
 
 export async function updateCodeEditor(page: Page, code: string) {
-  await page.locator(".cm-line").first().click();
+  await page.getByRole("textbox", { name: "Code editor" }).click();
   if (process.platform === "darwin") {
     await page.keyboard.press("Meta+A");
   } else {

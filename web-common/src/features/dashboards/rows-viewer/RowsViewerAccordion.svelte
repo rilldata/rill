@@ -8,15 +8,20 @@
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
   import {
+    V1ExportFormat,
     type V1Expression,
     type V1MetricsViewAggregationResponseDataItem,
+    createQueryServiceExport,
     createQueryServiceMetricsViewAggregation,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "../../feature-flags";
-  import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import RowsViewer from "./RowsViewer.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import exportMetrics from "./export-metrics";
+
+  const exportDash = createQueryServiceExport();
 
   const { exports } = featureFlags;
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -125,6 +130,14 @@
     manualClose = true;
     isOpen = !isOpen;
   }
+
+  const handleExportMetrics = async (format: V1ExportFormat) => {
+    await exportMetrics({
+      ctx: stateManagers,
+      query: exportDash,
+      format,
+    });
+  };
 </script>
 
 <div
@@ -153,7 +166,7 @@
     </button>
     {#if $exports}
       <div class="ml-auto">
-        <ExportModelDataButton />
+        <ExportMenu onExport={handleExportMetrics} label="Export model data" />
       </div>
     {/if}
   </div>

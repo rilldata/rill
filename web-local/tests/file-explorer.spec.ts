@@ -12,7 +12,7 @@ test.describe("File Explorer", () => {
         page.getByRole("link", { name: "untitled_file" }),
       ).toBeVisible();
       await expect(
-        page.getByLabel("untitled_file", { exact: true }),
+        page.getByRole("heading", { name: "untitled_file", exact: true }),
       ).toBeVisible();
 
       // Rename the file

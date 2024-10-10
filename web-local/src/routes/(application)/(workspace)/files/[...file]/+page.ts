@@ -25,7 +25,6 @@ export const load = async ({ params: { file } }) => {
     await fileArtifact.fetchContent();
 
     return {
-      filePath: path,
       fileArtifact,
     };
   } catch (e) {

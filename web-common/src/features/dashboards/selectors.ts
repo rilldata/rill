@@ -10,8 +10,8 @@ import type {
   V1Expression,
   V1GetResourceResponse,
   V1MetricsViewSpec,
-  V1Resource,
   V1MetricsViewTimeRangeResponse,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
   createQueryServiceMetricsViewTimeRange,
@@ -54,16 +54,17 @@ export function useValidCanvases(instanceId: string) {
   );
 }
 
-export function useValidVisualizations(instanceId: string) {
+export function useValidDashboards(instanceId: string) {
   return createRuntimeServiceListResources(
     instanceId,
     undefined, // TODO: it'd be nice if we could provide multiple kinds here
     {
       query: {
         select: (data) => {
-          // Filter for valid Metrics Explorers and all Custom Dashboards (which don't yet have a valid/invalid state)
+          // Filter for valid Explores and Canvases
           return data?.resources?.filter(
-            (res) => !!res.metricsView?.state?.validSpec || res.canvas,
+            (res) =>
+              !!res.explore?.state?.validSpec || !!res.canvas?.state?.validSpec,
           );
         },
       },
@@ -156,7 +157,9 @@ export const useGetMetricsViewsForModel = (
   return useClientFilteredResources(
     instanceId,
     ResourceKind.MetricsView,
-    (res) => res.metricsView?.spec?.table === modelName,
+    (res) =>
+      res.metricsView?.spec?.model === modelName ||
+      res.metricsView?.spec?.table === modelName,
   );
 };
 

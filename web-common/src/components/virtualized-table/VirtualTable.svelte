@@ -399,7 +399,6 @@
 
   .table-wrapper {
     @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-white;
-    @apply border-b;
   }
 
   .has-selection tbody {

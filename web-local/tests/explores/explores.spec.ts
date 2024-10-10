@@ -17,18 +17,12 @@ import {
 } from "../utils/dataSpecifcHelpers";
 import { createSource } from "../utils/sourceHelpers";
 import { test } from "../utils/test";
-import { gotoNavEntry, waitForFileNavEntry } from "../utils/waitHelpers";
+import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
   test("Autogenerate explore from source", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
     await createExploreFromSource(page);
-    await waitForFileNavEntry(
-      page,
-      "/explore-dashboards/AdBids_metrics_explore.yaml",
-      true,
-    );
-    await page.getByRole("button", { name: "Preview" }).click();
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
@@ -36,9 +30,7 @@ test.describe("explores", () => {
 
   test("Autogenerate explore from model", async ({ page }) => {
     await createAdBidsModel(page);
-    await createExploreFromModel(page);
-
-    await page.getByRole("button", { name: "Preview" }).click();
+    await createExploreFromModel(page, false);
     await assertAdBidsDashboard(page);
 
     // click on publisher=Facebook leaderboard value
@@ -70,8 +62,7 @@ test.describe("explores", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createExploreFromModel(page);
-    await page.getByRole("button", { name: "Preview" }).click();
+    await createExploreFromModel(page, false);
 
     // Check the total records are 100k
     await expect(page.getByText("Total records 100.0k")).toBeVisible();
@@ -114,8 +105,8 @@ test.describe("explores", () => {
     // Download the data as CSV
     // Start waiting for download before clicking. Note no await.
     const downloadCSVPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as CSV").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as CSV" }).click();
     const downloadCSV = await downloadCSVPromise;
     await downloadCSV.saveAs("temp/" + downloadCSV.suggestedFilename());
     const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
@@ -124,8 +115,8 @@ test.describe("explores", () => {
     // Download the data as XLSX
     // Start waiting for download before clicking. Note no await.
     const downloadXLSXPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as XLSX").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as XLSX" }).click();
     const downloadXLSX = await downloadXLSXPromise;
     await downloadXLSX.saveAs("temp/" + downloadXLSX.suggestedFilename());
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
@@ -134,8 +125,8 @@ test.describe("explores", () => {
     // Download the data as Parquet
     // Start waiting for download before clicking. Note no await.
     const downloadParquetPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as Parquet").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as Parquet" }).click();
     const downloadParquet = await downloadParquetPromise;
     await downloadParquet.saveAs("temp/" + downloadParquet.suggestedFilename());
 
@@ -230,6 +221,7 @@ metrics_view: AdBids_model_metrics
 dimensions: '*'
 measures: '*'
 `;
+    await page.getByLabel("code").click();
     await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
 
     // Remove timestamp column
@@ -277,6 +269,8 @@ measures: '*'
         description: ""
 
         `;
+
+    await page.getByLabel("code").click();
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
     await page.getByRole("button", { name: "Go to dashboard" }).click();
     await page
@@ -420,14 +414,21 @@ dimensions:
       page.getByText("No comparison dimension selected"),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "No comparison dimension" }).click();
+    await page
+      .getByRole("button", { name: "Select a comparison dimension" })
+      .first()
+      .click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.getByText("google.com", { exact: true }).click({ force: true });
-    await page.getByText("instagram.com").click({ force: true });
-    await page.getByText("msn.com").click({ force: true });
+    await page.waitForTimeout(500);
 
-    await expect(page.getByText(" Total rows 43.7k")).toBeVisible();
+    await page.getByRole("cell", { name: "google.com", exact: true }).click();
+    await page
+      .getByRole("cell", { name: "instagram.com", exact: true })
+      .click();
+    await page.getByRole("cell", { name: "msn.com", exact: true }).click();
+
+    await expect(page.getByText("Total rows 43.7k")).toBeVisible();
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
@@ -440,7 +441,10 @@ dimensions:
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
 
-    await page.getByRole("button", { name: "Domain name" }).click();
+    await page
+      .getByRole("button", { name: "Select a comparison dimension" })
+      .first()
+      .click();
     await page
       .getByRole("menuitem", { name: "No comparison dimension" })
       .click();

@@ -258,7 +258,7 @@
     {#each properties[type] as { fields, selected, label, optional, fontFamily } (label)}
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
       {#if boolean}
-        <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
+        <div class="flex gap-x-2 items-center h-full bg-white rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
           <Label class="font-medium text-sm" for="auto-save">{label}</Label>
           {#if hint}

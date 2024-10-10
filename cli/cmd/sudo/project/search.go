@@ -174,7 +174,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		}, nil
 	}
 
-	var parser *runtimev1.ProjectParser
+	var parser *runtimev1.Resource
 	var parseErrorsCount int
 	var idleCount int
 	var reconcileErrorsCount int
@@ -183,7 +183,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 
 	for _, r := range res.Resources {
 		if r.Meta.Name.Kind == runtime.ResourceKindProjectParser {
-			parser = r.GetProjectParser()
+			parser = r
 		}
 		if r.Meta.Hidden {
 			continue
@@ -210,8 +210,11 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 			DeploymentStatus: "Parser not found (corrupted)",
 		}, nil
 	}
-	if parser.State != nil {
-		parseErrorsCount = len(parser.State.ParseErrors)
+	if parser.GetProjectParser().State != nil {
+		parseErrorsCount = len(parser.GetProjectParser().State.ParseErrors)
+	}
+	if parser.Meta.ReconcileError != "" {
+		parseErrorsCount++
 	}
 
 	return &projectStatusTableRow{

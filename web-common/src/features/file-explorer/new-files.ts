@@ -11,11 +11,13 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
-export async function handleEntityCreate(
+export async function createResourceFile(
   kind: ResourceKind,
   baseResource?: V1Resource,
-) {
-  if (!(kind in ResourceKindMap)) return;
+): Promise<string> {
+  if (!(kind in ResourceKindMap)) {
+    throw new Error(`Unknown resource kind: ${kind}`);
+  }
 
   const newPath = getPathForNewResourceFile(kind, baseResource);
   const instanceId = get(runtime).instanceId;
@@ -80,7 +82,7 @@ const ResourceKindMap: Record<
     extension: ".yaml",
   },
   [ResourceKind.Explore]: {
-    folderName: "explore-dashboards",
+    folderName: "dashboards",
     baseName: "explore",
     extension: ".yaml",
   },
@@ -95,7 +97,7 @@ const ResourceKindMap: Record<
     extension: ".yaml",
   },
   [ResourceKind.Canvas]: {
-    folderName: "canvas-dashboards",
+    folderName: "dashboards",
     baseName: "canvas",
     extension: ".yaml",
   },
@@ -146,7 +148,7 @@ export function generateBlobForNewResourceFile(
 SELECT 'Hello, World!' AS Greeting`;
     case ResourceKind.MetricsView:
       return `# Metrics View YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
 version: 1
 type: metrics_view

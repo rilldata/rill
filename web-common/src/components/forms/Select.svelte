@@ -18,7 +18,6 @@
   export let width: number | null = null;
   export let selectElement: HTMLButtonElement | undefined = undefined;
   export let full = false;
-
   export let fontSize = 12;
   export let sameWidth = false;
   export let ringFocus = true;

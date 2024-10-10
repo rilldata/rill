@@ -5,13 +5,11 @@ import {
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import {
-  PREVIOUS_COMPLETE_DATE_RANGES,
-  type TimeRangeMetaSet,
-} from "@rilldata/web-common/lib/time/config";
-import {
   DEFAULT_TIME_RANGES,
   LATEST_WINDOW_TIME_RANGES,
   PERIOD_TO_DATE_RANGES,
+  PREVIOUS_COMPLETE_DATE_RANGES,
+  type TimeRangeMetaSet,
 } from "@rilldata/web-common/lib/time/config";
 import { getChildTimeRanges } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToTimeRangeMeta } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -72,7 +70,7 @@ export function timeRangeSelectionsSelector([
   let previousCompleteDateRanges: TimeRangeMetaSet = {};
   let hasDefaultInRanges = false;
 
-  const defaultTimeRange = explore.presets?.[0]?.timeRange;
+  const defaultTimeRange = explore?.defaultPreset?.timeRange;
   if (explore.timeRanges?.length) {
     for (const availableTimeRange of explore.timeRanges) {
       if (!availableTimeRange.range) continue;
