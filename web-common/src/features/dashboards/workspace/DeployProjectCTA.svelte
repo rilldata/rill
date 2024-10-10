@@ -1,3 +1,7 @@
+<script lang="ts" context="module">
+  export const allowPrimary = writable(false);
+</script>
+
 <script lang="ts">
   import { page } from "$app/stores";
   import {
@@ -21,7 +25,7 @@
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
-  import { get } from "svelte/store";
+  import { get, writable } from "svelte/store";
   import { Button } from "../../../components/button";
   import Rocket from "svelte-radix/Rocket.svelte";
   import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
@@ -37,7 +41,9 @@
       refetchOnWindowFocus: true,
     },
   });
-  $: isDeployed = !!$currentProject.data?.project;
+  $: isDeployed = true || !!$currentProject.data?.project;
+
+  $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
   $: user = createLocalServiceGetCurrentUser();
   $: metadata = createLocalServiceGetMetadata();

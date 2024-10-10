@@ -5,6 +5,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
+  import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -73,7 +74,7 @@
 <Button
   disabled={hasUnsavedChanges || hasErrors}
   on:click={() => dispatch("create-model")}
-  type="secondary"
+  type={$allowPrimary ? "primary" : "secondary"}
 >
   Create model
 </Button>
