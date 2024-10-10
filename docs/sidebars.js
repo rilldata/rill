@@ -69,7 +69,7 @@ const sidebars = {
 
               ]
             },
-            {
+ /*           {
               type: 'category',
               label: 'Rill Canvas Dashboards',
               items: [
@@ -81,8 +81,8 @@ const sidebars = {
                 'tutorials/rill_advanced_features/canvas_dashboards/filters'
 
               ]
-            },
-
+          },
+*/  
             {
               type: 'category',
               label: 'Incremental Models',
@@ -174,12 +174,12 @@ const sidebars = {
           items: [
             'tutorials/other/add-column-dimension',
             'tutorials/other/dashboard-row-policies',
-            'tutorials/other/custom-charts',
-            'tutorials/other/create-map-component',
+   //         'tutorials/other/custom-charts',
+   //         'tutorials/other/create-map-component',
             'tutorials/other/embed-dashboard',
       //      'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
-            'tutorials/other/Rill Cloud/views',
+      //      'tutorials/other/Rill Cloud/views',
       //      'tutorials/other/Rill Cloud/visual-metric-editor-rc',
        //     'tutorials/other/yaml-vs-ui',
        //     'tutorials/other/trial-check',
