@@ -144,8 +144,8 @@ With both components ready, your dashboard should look something like this:
 ![img](/img/tutorials/301/normalized.png)
 
 ```yaml
-# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+# Component YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/components
     
 type: component
 

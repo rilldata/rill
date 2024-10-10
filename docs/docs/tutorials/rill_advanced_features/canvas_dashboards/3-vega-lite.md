@@ -18,7 +18,7 @@ Let's start by creating a chart for our Canvas dashboard.
 
 ![project-view](/img/tutorials/301/add-custom-dashboard.png)
 
-### Creating a bar graph that calculates the top contributors to the Repository
+### Creating a bar graph that calculates the top 5 contributors to the Repository
 
 Let's use the `advanced_commits__model` table to obtain our data.
 
@@ -48,6 +48,7 @@ WITH commit_file_stats AS (
 )
 SELECT
     author_date,
+    cast(author_date as date) as date,
     author_name,
     directory_path,
     filename,
@@ -69,7 +70,7 @@ GROUP BY
     --directory_path, filename, author_name, author_date
     ALL
 ORDER BY
-    directory_path DESC 
+    author_date DESC 
 ```
 </details>
 :::
@@ -88,10 +89,11 @@ data:
       author_name,
       sum(net_line_changes) as net_lines
     from advanced_commits___model
-    where author_date > '2024-07-21 00:00:00 Z'
+    where author_date > '2024-07-21 00:00:00'
+    {{ if .args.author }} AND author_name = '{{ .args.author }}' {{ end }}
+
     group by author_name
     order by net_lines desc
-    limit 5 net_lines desc
     limit 5
 ```
 </details>
@@ -133,14 +135,16 @@ vega_lite: |
 ```
 </details>
 
+If you are unfamiliar with creating vega-lite specs, you can use natural language to create components. Please see the following how-to for more information! [Using Natural Language to create Components](https://docs.rilldata.com/tutorials/other/custom-charts)
+
 **Custom Component Complete**
 
 With everything completed, you should have a YAML file with the following contents and a custom component that looks something like the following. 
 ![img](/img/tutorials/301/top-contributors.png)
 
 ```yaml
-# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+# Component YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/components
     
 type: component
 

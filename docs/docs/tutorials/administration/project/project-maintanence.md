@@ -126,20 +126,12 @@ rill project refresh --source <your_source> [--model <your-model>]
 
 
 ## Settings
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
-
-
+An additional page for administrators to manage objects in Rill Cloud.
 
 ### Public URL Management
-<ComingSoon />
 
-<div class='contents_to_overlay'>
-Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
-
-</div>
+Along with the CLI, you can also view and manage the public URLs from the Settings page. As an administrator, you can re-copy the URL or delete the public URL.
+![img](/img/tutorials/admin/settings-public-url.png)
 
 ### Environmental Variable Management
 <ComingSoon />
@@ -147,5 +139,4 @@ Historically (pre 0.48), user management was only possible via the CLI. Now, it 
 <div class='contents_to_overlay'>
 Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
 
-</div>
 </div>

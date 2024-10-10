@@ -42,7 +42,7 @@ Finally, using some of the Rill template KPI charts, we can finish off the Canva
 <details>
   <summary>If you had any issues building the Canvas dashboard, please refer to the YAML below.</summary>
 ```yaml
-type: dashboard
+type: canvas
 columns: 13
 gap: 2
 
@@ -100,6 +100,8 @@ items:
 </details>
 
 These are just two simple custom graphs that can be built using Vega Lite. Please refer to Vega Lite [documentation](https://vega.github.io/vega-lite/docs/) and [examples](https://vega.github.io/vega-lite/examples/) for further inspiration on how you can build your very own Canvas dashboard.
+
+The current canvas dashboard is nice but it lacks the ability to filter based on different dimenions. Let's add that.
 
 import DocsRating from '@site/src/components/DocsRating';
 
