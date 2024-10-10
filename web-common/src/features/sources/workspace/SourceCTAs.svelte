@@ -6,16 +6,37 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
+  import { useModels } from "../../models/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { removeLeadingSlash } from "../../entity-management/entity-mappers";
+  import { goto } from "$app/navigation";
+  import { Code2Icon } from "lucide-svelte";
+  import { ResourceKind } from "../../entity-management/resource-selectors";
+  import {
+    resourceColorMapping,
+    resourceIconMapping,
+  } from "../../entity-management/resource-icon-mapping";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
 
   const dispatch = createEventDispatcher();
 
   export let hasErrors: boolean;
   export let hasUnsavedChanges: boolean;
   export let isLocalFileConnector: boolean;
+  export let sourceName: string;
+
+  $: ({ instanceId } = $runtime);
 
   $: type = (
     hasUnsavedChanges ? "primary" : "secondary"
   ) as Button["$$prop_def"]["type"];
+
+  $: modelsQuery = useModels(instanceId);
+
+  $: modelsForSource = ($modelsQuery.data ?? []).filter((model) =>
+    model.meta?.refs?.some((ref) => ref.name === sourceName),
+  );
 </script>
 
 {#if !isLocalFileConnector || hasUnsavedChanges}
@@ -71,10 +92,43 @@
   </DropdownMenu.Root>
 {/if}
 
-<Button
-  disabled={hasUnsavedChanges || hasErrors}
-  on:click={() => dispatch("create-model")}
-  type={$allowPrimary ? "primary" : "secondary"}
->
-  Create model
-</Button>
+{#if modelsForSource.length === 0}
+  <Button
+    disabled={hasUnsavedChanges || hasErrors}
+    on:click={() => dispatch("create-model")}
+    type={$allowPrimary ? "primary" : "secondary"}
+  >
+    Create model
+  </Button>
+{:else}
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger asChild let:builder>
+      <Button builders={[builder]} type="secondary">
+        Go to
+        <CaretDownIcon />
+      </Button>
+    </DropdownMenu.Trigger>
+
+    <DropdownMenu.Content align="end">
+      {#each modelsForSource as resource (resource?.meta?.name?.name)}
+        {@const filePath = resource?.meta?.filePaths?.[0]}
+        {@const resourceKind = resource?.meta?.name?.kind}
+        {#if filePath && resourceKind}
+          <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
+            <svelte:component
+              this={resourceIconMapping[resourceKind]}
+              color={resourceColorMapping[resourceKind]}
+              size="14px"
+            />
+            {resource?.meta?.name?.name ?? "Loading..."}
+          </DropdownMenu.Item>
+        {/if}
+      {/each}
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item on:click={() => dispatch("create-model")}>
+        <Add />
+        Create model
+      </DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+{/if}

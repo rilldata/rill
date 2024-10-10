@@ -155,6 +155,7 @@
     <svelte:fragment slot="cta">
       <div class="flex gap-x-2 items-center">
         <SourceCTAs
+          sourceName={assetName}
           hasUnsavedChanges={$hasUnsavedChanges}
           hasErrors={$hasErrors}
           {isLocalFileConnector}
