@@ -9,8 +9,8 @@
   import {
     getPaymentIssueErrorText,
     getPaymentIssues,
-  } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
-  import { getCancelledIssue } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues.js";
+  } from "@rilldata/web-admin/features/billing/issues/handlePaymentBillingIssues";
+  import { getCancelledIssue } from "@rilldata/web-admin/features/billing/issues/handleSubscriptionIssues.js";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
     fetchPaymentsPortalURL,

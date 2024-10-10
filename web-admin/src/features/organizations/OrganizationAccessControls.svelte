@@ -19,4 +19,9 @@
   {#if $orgPermissions.data.manageOrgMembers}
     <slot name="manage-org-members" />
   {/if}
+  {#if $orgPermissions.data.manageOrg}
+    <slot name="manage-org" />
+  {:else if $orgPermissions.data.readProjects}
+    <slot name="read-projects" />
+  {/if}
 {/if}

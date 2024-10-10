@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hivernating/OrganizationHibernating.svelte";
+  import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
   import {
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
@@ -15,6 +17,7 @@
   $: projs = createAdminServiceListProjectsForOrganization(orgName, undefined, {
     query: { enabled: !!$org.data?.organization },
   });
+  $: allProjectsHibernating = areAllProjectsHibernating(orgName);
 
   $: title = $org.data?.organization?.displayName || orgName;
 </script>
@@ -27,19 +30,23 @@
   <section
     class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto flex flex-col gap-y-4"
   >
-    <OrganizationHero organization={orgName} {title} />
-    {#if $projs.data.projects?.length === 0}
-      <span
-        >This organization has no projects yet. <a
-          href="https://docs.rilldata.com/home/get-started"
-          target="_blank"
-          rel="noreferrer noopener">See docs</a
-        ></span
-      >
+    {#if $allProjectsHibernating.data}
+      <OrganizationHibernating organization={orgName} />
     {:else}
-      <div class="py-2 px-1.5">
-        <ProjectCards organization={orgName} />
-      </div>
+      <OrganizationHero organization={orgName} {title} />
+      {#if $projs.data.projects?.length === 0}
+        <span
+          >This organization has no projects yet. <a
+            href="https://docs.rilldata.com/home/get-started"
+            target="_blank"
+            rel="noreferrer noopener">See docs</a
+          ></span
+        >
+      {:else}
+        <div class="py-2 px-1.5">
+          <ProjectCards organization={orgName} />
+        </div>
+      {/if}
     {/if}
   </section>
 {/if}

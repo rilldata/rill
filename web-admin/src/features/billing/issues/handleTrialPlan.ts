@@ -2,8 +2,7 @@ import {
   type V1BillingIssue,
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
-import type { ShowTeamPlanDialogCallback } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
-import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
+import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
 
@@ -19,47 +18,39 @@ export function getTrialIssue(issues: V1BillingIssue[]) {
 
 export function handleTrialPlan(
   trialIssue: V1BillingIssue,
-  onShowStartTeamPlan: ShowTeamPlanDialogCallback,
-): BannerMessage {
-  const cta: BannerMessage["cta"] = {
-    text: "Upgrade ->",
-    type: "button",
-    onClick: () => {
-      onShowStartTeamPlan("base", "");
-    },
-  };
-
+): BillingIssueMessage {
   const endDateStr =
     trialIssue.metadata.onTrial?.endDate ??
     trialIssue.metadata.trialEnded?.gracePeriodEndDate ??
     "";
 
+  const message: BillingIssueMessage = {
+    type: "info",
+    title: "Your trial has expired.",
+    description: "Upgrade to maintain access.",
+    iconType: "alert",
+    cta: {
+      text: "Upgrade",
+      type: "upgrade",
+      teamPlanDialogType: "base",
+    },
+  };
+
   const today = DateTime.now();
   const endDate = DateTime.fromJSDate(new Date(endDateStr));
   if (!endDate.isValid) {
-    return {
-      type: "warning",
-      message: "Your trial has expired. Upgrade to maintain access.",
-      iconType: "alert",
-      cta,
-    };
+    message.type = "warning";
+    return message;
   }
 
-  const bannerMessage: BannerMessage = {
-    type: "info",
-    message: "",
-    iconType: "alert",
-    cta,
-  };
   const diff = endDate.diff(today);
   if (
     diff.milliseconds > 0 &&
     trialIssue.type !== V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED
   ) {
     const daysDiff = diff.shiftTo("days");
-    bannerMessage.message += `${getTrialMessageForDays(diff)} Upgrade to maintain access.`;
-    bannerMessage.type =
-      daysDiff.days < WarningPeriodInDays ? "warning" : "info";
+    message.title = getTrialMessageForDays(diff);
+    message.type = daysDiff.days < WarningPeriodInDays ? "warning" : "info";
   } else {
     const gracePeriodDate = DateTime.fromJSDate(
       new Date(trialIssue.metadata?.trialEnded?.gracePeriodEndDate),
@@ -68,19 +59,21 @@ export function handleTrialPlan(
       ? gracePeriodDate.diff(today)
       : null;
     if (gracePeriodDiff && gracePeriodDiff.milliseconds > 0) {
-      bannerMessage.message = `Your trial has expired. Upgrade within ${humanizeDuration(gracePeriodDiff)} to maintain access.`;
-      bannerMessage.type = "warning";
+      message.description = `Upgrade within ${humanizeDuration(gracePeriodDiff)} to maintain access.`;
+      message.type = "warning";
     } else {
-      bannerMessage.message = `Your trial has expired and this org’s projects are now hibernating. Upgrade to wake projects and regain full access.`;
-      bannerMessage.type = "error";
+      message.title =
+        "Your trial has expired and this org’s projects are now hibernating";
+      message.description = "Upgrade to wake projects and regain full access.";
+      message.type = "error";
     }
   }
 
-  return bannerMessage;
+  return message;
 }
 
 export function getTrialMessageForDays(diff: Duration) {
-  if (diff.milliseconds < 0) return "Your trial has ended.";
+  if (diff.milliseconds < 0) return "Your trial has expired.";
   return `Your trial expires in ${humanizeDuration(diff)}.`;
 }
 

@@ -1,7 +1,7 @@
 import type { V1Subscription } from "@rilldata/web-admin/client";
-import { handlePaymentIssues } from "@rilldata/web-admin/features/billing/banner/handlePaymentBillingIssues";
-import { handleSubscriptionIssues } from "@rilldata/web-admin/features/billing/banner/handleSubscriptionIssues";
-import { handleTrialPlan } from "@rilldata/web-admin/features/billing/banner/handleTrialPlan";
+import { handlePaymentIssues } from "@rilldata/web-admin/features/billing/issues/handlePaymentBillingIssues";
+import { handleSubscriptionIssues } from "@rilldata/web-admin/features/billing/issues/handleSubscriptionIssues";
+import { handleTrialPlan } from "@rilldata/web-admin/features/billing/issues/handleTrialPlan";
 import type { ShowTeamPlanDialogCallback } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
 import type { CategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";

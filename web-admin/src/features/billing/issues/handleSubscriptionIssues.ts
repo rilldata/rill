@@ -1,7 +1,6 @@
 import { V1BillingIssueType } from "@rilldata/web-admin/client";
 import type { V1BillingIssue } from "@rilldata/web-admin/client";
-import type { ShowTeamPlanDialogCallback } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
-import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
+import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { DateTime } from "luxon";
 
 export function getNeverSubscribedIssue(issues: V1BillingIssue[]) {
@@ -16,10 +15,7 @@ export function getCancelledIssue(issues: V1BillingIssue[]) {
   );
 }
 
-export function handleSubscriptionIssues(
-  cancelledSubIssue: V1BillingIssue,
-  onShowStartTeamPlan: ShowTeamPlanDialogCallback,
-) {
+export function handleSubscriptionIssues(cancelledSubIssue: V1BillingIssue) {
   let accessTimeout = "";
 
   if (cancelledSubIssue.metadata.subscriptionCancelled?.endDate) {
@@ -34,19 +30,17 @@ export function handleSubscriptionIssues(
     accessTimeout = "and your subscription has ended";
   }
 
-  return <BannerMessage>{
+  return <BillingIssueMessage>{
     type: "warning",
-    message: `Your plan was canceled ${accessTimeout}. To maintain access, renew your plan.`,
+    title: `Your plan was canceled ${accessTimeout}`,
+    description: "To maintain access, renew your plan.",
     iconType: "alert",
     cta: {
-      text: "Renew ->",
-      type: "button",
-      onClick: () => {
-        onShowStartTeamPlan(
-          "renew",
-          cancelledSubIssue.metadata.subscriptionCancelled?.endDate ?? "",
-        );
-      },
+      text: "Renew",
+      type: "upgrade",
+      teamPlanDialogType: "renew",
+      teamPlanEndDate:
+        cancelledSubIssue.metadata.subscriptionCancelled?.endDate,
     },
   };
 }

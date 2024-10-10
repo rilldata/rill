@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { getOrgBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
+  import { goto } from "$app/navigation";
+  import { orgHasBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -10,7 +11,11 @@
   export let organization: string;
   export let project: string;
 
-  $: orgBlockerIssues = getOrgBlockerIssues(organization);
+  $: orgBlockerIssues = orgHasBlockerIssues(organization);
+  $: if ($orgBlockerIssues.data) {
+    // if projects were hibernated due to a blocker issue on org then take the user to projects page
+    void goto(`/${organization}`);
+  }
 </script>
 
 <CtaLayoutContainer>
@@ -18,18 +23,12 @@
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
         <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
-        {#if $orgBlockerIssues.data}
-          <p class="text-base text-red-600 text-center">
-            {$orgBlockerIssues.data} (TODO)
-          </p>
-        {:else}
-          <CtaMessage>
-            To redeploy the project, run the following command in the Rill CLI:
-          </CtaMessage>
-          <CLICommandDisplay
-            command="rill project hibernate {project} --redeploy"
-          />
-        {/if}
+        <CtaMessage>
+          To redeploy the project, run the following command in the Rill CLI:
+        </CtaMessage>
+        <CLICommandDisplay
+          command="rill project hibernate {project} --redeploy"
+        />
       </svelte:fragment>
       <svelte:fragment slot="read-project">
         <CtaHeader variant="bold">This project is hibernating</CtaHeader>
