@@ -25,10 +25,6 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: type = (
-    hasUnsavedChanges ? "primary" : "secondary"
-  ) as Button["$$prop_def"]["type"];
-
   $: modelsQuery = useModels(instanceId);
 
   $: modelsForSource = ($modelsQuery.data ?? []).filter((model) =>
@@ -67,7 +63,11 @@
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
       <Tooltip distance={8}>
-        <Button builders={[builder]} label="Refresh" {type}>
+        <Button
+          builders={[builder]}
+          label="Refresh"
+          type={hasUnsavedChanges ? "primary" : "secondary"}
+        >
           <RefreshIcon size="14px" />
         </Button>
         <TooltipContent slot="tooltip-content">Refresh source</TooltipContent>
