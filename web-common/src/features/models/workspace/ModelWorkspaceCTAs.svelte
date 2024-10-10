@@ -32,8 +32,6 @@
 
   const exportModelMutation = createExportTableMutation();
 
-  let open = false;
-
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
@@ -78,7 +76,7 @@
 {#if availableMetricsViews?.length === 0}
   <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
 {:else}
-  <DropdownMenu.Root bind:open>
+  <DropdownMenu.Root>
     <DropdownMenu.Trigger
       asChild
       let:builder
