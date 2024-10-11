@@ -39,8 +39,8 @@ display:contents. This is useful when nesting a floating element within a toolti
   let innerWidth: number;
   let scrollY: number;
   let scrollX: number;
-  let child: HTMLElement | undefined;
-  let firstParentElement: HTMLElement | undefined;
+  let child: Element | undefined;
+  let firstParentElement: Element | undefined;
 
   $: if (firstParentElement && child) {
     if (relationship === "parent") {
