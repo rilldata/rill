@@ -14,7 +14,7 @@
   <div
     class={cn(
       "h-7 w-7 rounded-sm flex items-center justify-center",
-      getRandomBgColor(),
+      getRandomBgColor(name),
     )}
   >
     <span class="text-sm text-white font-semibold">{getInitials(name)}</span>
