@@ -13,11 +13,12 @@ display:contents. This is useful when nesting a floating element within a toolti
     mouseLocationToBoundingRect,
     placeElement,
   } from "../../lib/place-element";
+  import type {
+    Location,
+    Alignment,
+    FloatingElementRelationship,
+  } from "../../lib/place-element";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
-
-  type Location = "left" | "right" | "top" | "bottom";
-  type Alignment = "start" | "middle" | "end";
-  type FloatingElementRelationship = "parent" | "direct" | "mouse";
 
   export let target: HTMLElement;
   export let relationship: FloatingElementRelationship = "parent"; // parent, mouse {x, y}
