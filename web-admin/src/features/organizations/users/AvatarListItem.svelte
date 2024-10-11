@@ -8,7 +8,7 @@
   export let isCurrentUser: boolean = false;
   export let pendingAcceptance: boolean = false;
   export let shape: "circle" | "square" = "circle";
-  export let count: number;
+  export let count: number = 0;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -44,7 +44,7 @@
         {pendingAcceptance ? "Pending invitation" : email}
       </span>
     {/if}
-    {#if count}
+    {#if count && count > 0}
       <span class="text-xs text-gray-500">
         {count} user{count > 1 ? "s" : ""}
       </span>
