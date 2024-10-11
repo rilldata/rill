@@ -1,19 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceAddOrganizationMemberUsergroup,
-    createAdminServiceDeleteUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
     createAdminServiceListOrganizationMemberUsers,
-    createAdminServiceRemoveOrganizationMemberUsergroup,
-    createAdminServiceSetOrganizationMemberUsergroupRole,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgGroupsTable from "@rilldata/web-admin/features/organizations/users/OrgGroupsTable.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Plus } from "lucide-svelte";
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
@@ -29,109 +22,11 @@
   $: listOrganizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
 
-  const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
-
-  const deleteUserGroup = createAdminServiceDeleteUsergroup();
-  const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
-  const setUserGroupRole =
-    createAdminServiceSetOrganizationMemberUsergroupRole();
-  const revokeUserGroupRole =
-    createAdminServiceRemoveOrganizationMemberUsergroup();
 
   $: filteredGroups = $listOrganizationMemberUsergroups.data?.members.filter(
     (group) => group.groupName.toLowerCase().includes(searchText.toLowerCase()),
   );
-
-  async function handleDelete(deletedUserGroupName: string) {
-    try {
-      await $deleteUserGroup.mutateAsync({
-        organization: organization,
-        usergroup: deletedUserGroupName,
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
-
-      eventBus.emit("notification", { message: "User group deleted" });
-    } catch (error) {
-      console.error("Error deleting user group", error);
-      eventBus.emit("notification", {
-        message: "Error deleting user group",
-        type: "error",
-      });
-    }
-  }
-
-  async function handleAddRole(groupName: string, role: string) {
-    try {
-      await $addUserGroupRole.mutateAsync({
-        organization: organization,
-        usergroup: groupName,
-        data: {
-          role: role,
-        },
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
-
-      eventBus.emit("notification", { message: "User group role added" });
-    } catch (error) {
-      console.error("Error adding role to user group", error);
-      eventBus.emit("notification", {
-        message: "Error adding role to user group",
-        type: "error",
-      });
-    }
-  }
-
-  async function handleSetRole(groupName: string, role: string) {
-    try {
-      await $setUserGroupRole.mutateAsync({
-        organization: organization,
-        usergroup: groupName,
-        data: {
-          role: role,
-        },
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
-
-      eventBus.emit("notification", { message: "User group role updated" });
-    } catch (error) {
-      console.error("Error updating user group role", error);
-      eventBus.emit("notification", {
-        message: "Error updating user group role",
-        type: "error",
-      });
-    }
-  }
-
-  async function handleRevokeRole(groupName: string) {
-    try {
-      await $revokeUserGroupRole.mutateAsync({
-        organization: organization,
-        usergroup: groupName,
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
-
-      eventBus.emit("notification", { message: "User group role revoked" });
-    } catch (error) {
-      console.error("Error revoking user group role", error);
-      eventBus.emit("notification", {
-        message: "Error revoking user group role",
-        type: "error",
-      });
-    }
-  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -167,10 +62,6 @@
         data={filteredGroups}
         currentUserEmail={$currentUser.data?.user.email}
         searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
-        onDelete={handleDelete}
-        onAddRole={handleAddRole}
-        onSetRole={handleSetRole}
-        onRevokeRole={handleRevokeRole}
       />
     </div>
   {/if}

@@ -4,25 +4,97 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { page } from "$app/stores";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import {
+    createAdminServiceAddOrganizationMemberUsergroup,
+    createAdminServiceRemoveOrganizationMemberUsergroup,
+    createAdminServiceSetOrganizationMemberUsergroupRole,
+    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let name: string;
   export let role: string | undefined = undefined;
-  export let onAddRole: (groupName: string, role: string) => void;
-  export let onSetRole: (groupName: string, role: string) => void;
-  export let onRevokeRole: (groupName: string) => void;
 
   let isDropdownOpen = false;
 
-  function handleAddRole(role: string) {
-    onAddRole(name, role);
+  $: organization = $page.params.organization;
+
+  const queryClient = useQueryClient();
+  const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
+  const setUserGroupRole =
+    createAdminServiceSetOrganizationMemberUsergroupRole();
+  const revokeUserGroupRole =
+    createAdminServiceRemoveOrganizationMemberUsergroup();
+
+  async function handleAddRole(role: string) {
+    try {
+      await $addUserGroupRole.mutateAsync({
+        organization: organization,
+        usergroup: name,
+        data: {
+          role: role,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group role added" });
+    } catch (error) {
+      console.error("Error adding role to user group", error);
+      eventBus.emit("notification", {
+        message: "Error adding role to user group",
+        type: "error",
+      });
+    }
   }
 
-  function handleUpdateRole(role: string) {
-    onSetRole(name, role);
+  async function handleSetRole(role: string) {
+    try {
+      await $setUserGroupRole.mutateAsync({
+        organization: organization,
+        usergroup: name,
+        data: {
+          role: role,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group role updated" });
+    } catch (error) {
+      console.error("Error updating user group role", error);
+      eventBus.emit("notification", {
+        message: "Error updating user group role",
+        type: "error",
+      });
+    }
   }
 
-  function handleRevokeRole() {
-    onRevokeRole(name);
+  async function handleRevokeRole() {
+    try {
+      await $revokeUserGroupRole.mutateAsync({
+        organization: organization,
+        usergroup: name,
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group role revoked" });
+    } catch (error) {
+      console.error("Error revoking user group role", error);
+      eventBus.emit("notification", {
+        message: "Error revoking user group role",
+        type: "error",
+      });
+    }
   }
 </script>
 
@@ -47,7 +119,7 @@
         checked={role === "admin"}
         on:click={() => {
           if (role) {
-            handleUpdateRole("admin");
+            handleSetRole("admin");
           } else {
             handleAddRole("admin");
           }
@@ -60,7 +132,7 @@
         checked={role === "viewer"}
         on:click={() => {
           if (role) {
-            handleUpdateRole("viewer");
+            handleSetRole("viewer");
           } else {
             handleAddRole("viewer");
           }

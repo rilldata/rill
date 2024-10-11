@@ -10,7 +10,6 @@
   export let name: string;
   export let currentUserEmail: string;
   export let searchUsersList: V1MemberUser[];
-  export let onDelete: (deletedGroupName: string) => void;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
@@ -52,7 +51,6 @@
 <DeleteUserGroupConfirmDialog
   bind:open={isDeleteConfirmOpen}
   groupName={name}
-  {onDelete}
 />
 
 <EditUserGroupDialog

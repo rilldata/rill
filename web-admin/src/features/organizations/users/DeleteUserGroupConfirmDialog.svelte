@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import {
+    createAdminServiceDeleteUsergroup,
+    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+  } from "@rilldata/web-admin/client";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -9,10 +14,37 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let open = false;
   export let groupName: string;
-  export let onDelete: (groupName: string) => void;
+
+  $: organization = $page.params.organization;
+
+  const queryClient = useQueryClient();
+  const deleteUserGroup = createAdminServiceDeleteUsergroup();
+
+  async function onDelete(deletedUserGroupName: string) {
+    try {
+      await $deleteUserGroup.mutateAsync({
+        organization: organization,
+        usergroup: deletedUserGroupName,
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group deleted" });
+    } catch (error) {
+      console.error("Error deleting user group", error);
+      eventBus.emit("notification", {
+        message: "Error deleting user group",
+        type: "error",
+      });
+    }
+  }
 
   async function handleDelete() {
     try {
