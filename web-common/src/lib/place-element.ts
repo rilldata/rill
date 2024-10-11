@@ -17,32 +17,7 @@ export function mouseLocationToBoundingRect({
   width?: number;
   height?: number;
 }) {
-  return {
-    width,
-    height,
-    left: x,
-    right: x + width,
-    top: y,
-    bottom: y + height,
-  };
-  // return {
-  //   parentPosition: {
-  //     width,
-  //     height,
-  //     left: x,
-  //     right: x + width,
-  //     top: y,
-  //     bottom: y + height,
-  //   },
-  //   elementPosition: {
-  //     width,
-  //     height,
-  //     left: x,
-  //     right: x + width,
-  //     top: y,
-  //     bottom: y + height,
-  //   },
-  // };
+  return new DOMRect(x, y, width, height);
 }
 
 export function placeElement({

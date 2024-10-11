@@ -30,24 +30,97 @@ display:contents. This is useful when nesting a floating element within a toolti
   // whether to flip the element's location (from bottom to top) or (from top to bottom)
   // if it overflows the window
   export let overflowFlipY = true;
-
   // mouse position to be used when relationship is `mouse`
   export let mousePos = { x: 0, y: 0 };
 
   let top = 0;
   let left = 0;
-  let innerHeight;
-  let innerWidth;
-  let scrollY;
-  let scrollX;
+  let innerHeight: number;
+  let innerWidth: number;
+  let scrollY: number;
+  let scrollX: number;
+  let child: HTMLElement | undefined;
+  let firstParentElement: HTMLElement | undefined;
+
+  $: if (firstParentElement && child) {
+    if (relationship === "parent") {
+      setLocation(
+        firstParentElement.getBoundingClientRect(),
+        child.getBoundingClientRect(),
+        scrollX,
+        scrollY,
+        innerWidth,
+        innerHeight,
+        overflowFlipY,
+      );
+    } else if (relationship === "direct") {
+      setLocation(
+        target.getBoundingClientRect(),
+        child.getBoundingClientRect(),
+        scrollX,
+        scrollY,
+        innerWidth,
+        innerHeight,
+        overflowFlipY,
+      );
+    } else {
+      setLocation(
+        mouseLocationToBoundingRect({ x: mousePos.x, y: mousePos.y }),
+        child?.getBoundingClientRect(),
+        scrollX,
+        scrollY,
+        innerWidth,
+        innerHeight,
+        overflowFlipY,
+      );
+    }
+  }
+  $: getFirstValidChildElement(target);
+
+  onMount(() => {
+    // we listen to the parent.
+    // actually, we listen to the first chidl element!
+    if (relationship === "parent") {
+      firstParentElement = getFirstValidChildElement(target); // target?.children[0];
+      const config = { attributes: true };
+      const observer = new MutationObserver(() => {
+        if (child && firstParentElement)
+          setLocation(
+            firstParentElement?.getBoundingClientRect(),
+            child?.getBoundingClientRect(),
+            scrollX,
+            scrollY,
+            innerWidth,
+            innerHeight,
+            overflowFlipY,
+          );
+      });
+      if (firstParentElement) {
+        observer.observe(firstParentElement, config);
+      }
+    }
+  });
+
+  function getFirstValidChildElement(element: HTMLElement) {
+    // get this child.
+    let possibleChild = element?.children[0];
+    if (!(possibleChild instanceof HTMLElement)) return;
+    // check for display: contents, which may indicate
+    // another wrapped object.
+    if (getComputedStyle(possibleChild).display === "contents") {
+      return getFirstValidChildElement(possibleChild);
+    } else {
+      return possibleChild;
+    }
+  }
 
   function setLocation(
-    parentBoundingClientRect,
-    elementBoundingClientRect,
-    scrollXValue,
-    scrollYvalue,
-    windowWidth,
-    windowHeight,
+    parentBoundingClientRect: DOMRect,
+    elementBoundingClientRect: DOMRect,
+    scrollXValue: number,
+    scrollYvalue: number,
+    windowWidth: number,
+    windowHeight: number,
     overflowFlipY: boolean,
   ) {
     if (!(parentBoundingClientRect && elementBoundingClientRect)) return;
@@ -67,78 +140,6 @@ display:contents. This is useful when nesting a floating element within a toolti
     top = topPos;
     left = leftPos;
   }
-  let child;
-
-  let firstParentElement;
-
-  function getFirstValidChildElement(element) {
-    // get this child.
-    let possibleChild = element?.children[0];
-    // check for display: contents, which may indicate
-    // another wrapped object.
-    if (getComputedStyle(possibleChild).display === "contents") {
-      return getFirstValidChildElement(possibleChild);
-    } else {
-      return possibleChild;
-    }
-  }
-
-  $: if (relationship === "parent") {
-    if (firstParentElement)
-      setLocation(
-        firstParentElement.getBoundingClientRect(),
-        child?.getBoundingClientRect(),
-        scrollX,
-        scrollY,
-        innerWidth,
-        innerHeight,
-        overflowFlipY,
-      );
-  } else if (relationship === "direct") {
-    setLocation(
-      target.getBoundingClientRect(),
-      child?.getBoundingClientRect(),
-      scrollX,
-      scrollY,
-      innerWidth,
-      innerHeight,
-      overflowFlipY,
-    );
-  } else {
-    setLocation(
-      mouseLocationToBoundingRect({ x: mousePos.x, y: mousePos.y }),
-      child?.getBoundingClientRect(),
-      scrollX,
-      scrollY,
-      innerWidth,
-      innerHeight,
-      overflowFlipY,
-    );
-  }
-  $: getFirstValidChildElement(target);
-
-  onMount(() => {
-    // we listen to the parent.
-    // actually, we listen to the first chidl element!
-    if (relationship === "parent") {
-      firstParentElement = getFirstValidChildElement(target); // target?.children[0];
-      const config = { attributes: true };
-      const observer = new MutationObserver(() => {
-        setLocation(
-          firstParentElement.getBoundingClientRect(),
-          child?.getBoundingClientRect(),
-          scrollX,
-          scrollY,
-          innerWidth,
-          innerHeight,
-          overflowFlipY,
-        );
-      });
-      if (firstParentElement) {
-        observer.observe(firstParentElement, config);
-      }
-    }
-  });
 </script>
 
 <svelte:window bind:scrollX bind:scrollY bind:innerHeight bind:innerWidth />
