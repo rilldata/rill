@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createAdminServiceListOrganizationMemberUsers } from "@rilldata/web-admin/client";
-  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
+  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";

@@ -11,7 +11,6 @@
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
-  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
   import UserInviteOrganization from "./UserInviteOrganization.svelte";
   import UserInviteGroup from "./UserInviteGroup.svelte";
   import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
@@ -20,6 +19,7 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
+  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
 
   export let organization: string;
   export let project: string;

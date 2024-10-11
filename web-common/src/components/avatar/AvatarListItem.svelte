@@ -4,7 +4,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let name: string;
-  export let email: string;
+  export let email: string | null = null;
   export let isCurrentUser: boolean = false;
   export let pendingAcceptance: boolean = false;
   export let shape: "circle" | "square" = "circle";
