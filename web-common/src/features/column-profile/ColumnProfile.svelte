@@ -17,6 +17,8 @@
   export let containerWidth = 0;
   export let indentLevel = 0;
 
+  $: console.log({ connector, database, databaseSchema, objectName });
+
   let mode = "summaries";
 
   let container;

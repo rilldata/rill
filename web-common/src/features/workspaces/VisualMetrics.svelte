@@ -79,31 +79,55 @@
 
   $: timeDimension = stringGuard(rawTimeDimension);
   $: databaseSchema = stringGuard(rawDatabaseSchema);
-  $: model = stringGuard(rawModel) || stringGuard(rawTable);
+  $: modelOrSourceName = stringGuard(rawModel) || stringGuard(rawTable);
   $: smallestTimeGrain = stringGuard(rawSmallestTimeGrain);
 
-  // Queries
   $: modelsQuery = useModels(instanceId);
   $: sourcesQuery = useSources(instanceId);
   $: metricsViewQuery = getResource(queryClient, instanceId);
-  $: resourceQuery = useResource(instanceId, model, ResourceKind.Model);
 
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
   $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
-  $: connector = $resourceQuery?.data?.model?.spec?.outputConnector;
+  $: hasSourceSelected = sourceNames.some(
+    ({ value }) => value === modelOrSourceName,
+  );
+  $: hasModelSelected = modelNames.some(
+    ({ value }) => value === modelOrSourceName,
+  );
 
-  $: columnsQuery = createQueryServiceTableColumns(instanceId, model, {
-    connector,
-    database: "", // models use the default database
-    databaseSchema,
-  });
+  $: modelAndSourceOptions = [...modelNames, ...sourceNames];
+
+  $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
+
+  $: resourceQuery = useResource(
+    instanceId,
+    modelOrSourceName,
+    hasSourceSelected ? ResourceKind.Source : ResourceKind.Model,
+  );
+
+  $: connector = hasModelSelected
+    ? $resourceQuery?.data?.model?.spec?.outputConnector
+    : $resourceQuery?.data?.source?.spec?.sinkConnector;
+
+  $: columnsQuery = createQueryServiceTableColumns(
+    instanceId,
+    modelOrSourceName,
+    {
+      connector,
+      database: "", // models use the default database
+      databaseSchema,
+    },
+    {
+      query: {
+        enabled: Boolean(connector) && hasValidModelOrSourceSelection,
+      },
+    },
+  );
 
   $: ({ data: columnsResponse } = $columnsQuery);
 
-  $: columns = columnsResponse?.profileColumns ?? [
-    { name: timeDimension, type: "TIMESTAMP" },
-  ];
+  $: columns = columnsResponse?.profileColumns ?? [];
 
   $: timeOptions = columns
     .filter(({ type }) => type === "TIMESTAMP")
@@ -298,6 +322,10 @@
       const sequence = raw[type];
 
       if (!(sequence instanceof YAMLSeq)) {
+        eventBus.emit("notification", {
+          message: "Error deleting items",
+          type: "error",
+        });
         return;
       }
       const items = sequence.items as Array<YAMLMap>;
@@ -307,10 +335,9 @@
           indices.has($editingIndex) && type === $editingItem?.type;
       }
 
-      parsedDocument.set(
-        type,
-        items.filter((_, i) => !indices.has(i)),
-      );
+      const filtered = items.filter((_, i) => !indices.has(i));
+
+      parsedDocument.set(type, filtered);
 
       indices.forEach((i) => {
         selected[type].delete(i);
@@ -381,15 +408,19 @@
           sameWidth
           full
           truncate
-          value={model}
-          options={[...modelNames, ...sourceNames]}
+          value={modelOrSourceName}
+          options={modelAndSourceOptions}
           placeholder="Select a model"
           label="Model or source referenced"
-          onChange={(newModelName) => {
-            confirmation = {
-              action: "switch",
-              model: newModelName,
-            };
+          onChange={async (newModelOrSourceName) => {
+            if (!modelOrSourceName) {
+              await updateProperty("model", newModelOrSourceName, "table");
+            } else {
+              confirmation = {
+                action: "switch",
+                model: newModelOrSourceName,
+              };
+            }
           }}
         />
       {/key}
@@ -402,7 +433,10 @@
         options={timeOptions}
         placeholder="Select time column"
         label="Time column"
-        noOptionsMessage="No timeseries columns in model"
+        disabled={!hasValidModelOrSourceSelection || !timeOptions.length}
+        disabledMessage={!hasValidModelOrSourceSelection
+          ? "No model selected"
+          : "No timestamp columns in model"}
         hint="Column from model that will be used as primary time dimension in dashboards"
         onChange={async (value) => {
           await updateProperty("timeseries", value);
