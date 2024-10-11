@@ -41,7 +41,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 ### Metrics Panel
 
-- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/dashboards.md)). You can add or remove any metric from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](https://docs.rilldata.com/explore/filters/tdd).
+- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards.md)). You can add or remove any metric from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](https://docs.rilldata.com/explore/filters/tdd).
 
 ### Dimensions Leaderboard Panel
 

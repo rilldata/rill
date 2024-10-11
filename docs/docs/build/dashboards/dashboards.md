@@ -7,6 +7,8 @@ sidebar_position: 00
 
 In Rill, dashboards are one of many components that access the metrics layer. Currently, it is possible to create an explore dashboard but more features are on the way!
 
+![img](/img/build/dashboard/explore-dashboard.png)
+
 * _**metrics_view**_ - A metrics view that powers the dashboard
 * _**measures**_ - `*` or regex to filter the measures to display on the dashboard
 * _**dimensions**_ -  `*` or regex to filter the dimensions to display on the dashboard, categorical columns from your metrics view whose values are shown in _leaderboards_ and allows 
@@ -19,10 +21,13 @@ For migration steps, see [Migrations](/manage/migration#v049---v050).
 
 
 :::note Dashboard Properties
-For more details about available configurations and properties, check our [Dashboard YAML](/reference/project-files/dashboards) reference page.
+For more details about available configurations and properties, check our [Dashboard YAML](/reference/project-files/explore-dashboards) reference page.
 :::
 
+### Preview a Dashboard in Rill Developer
+Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard/), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/manage/security), it is recommended to preview and test the dashboard before deploying.
 
+![preview](/img/build/dashboard/preview-dashboard.png)
 
 
 ### Multi-editor and external IDE support

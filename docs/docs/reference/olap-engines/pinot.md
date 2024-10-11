@@ -84,7 +84,7 @@ Multi-Valued dimensions needed to be defined in the dashboard yaml as expression
   name: RandomAirports
   description: "Random Airports"
 ```
-Refer to the [Dashboard YAML](../project-files/dashboards) reference page for all dimension properties detail. 
+Refer to the [Dashboard YAML](../project-files/explore-dashboards) reference page for all dimension properties detail. 
 
 :::note
 

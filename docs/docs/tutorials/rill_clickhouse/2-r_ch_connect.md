@@ -13,7 +13,7 @@ import TabItem from '@theme/TabItem';
 
 ## Default OLAP connection and Connect to ClickHouse
 
-Within Rill you can set the default OLAP connection on the [project level](https://docs.rilldata.com/reference/project-files/rill-yaml) or the [dashboard level](https://docs.rilldata.com/reference/project-files/dashboards). 
+Within Rill you can set the default OLAP connection on the [project level](https://docs.rilldata.com/reference/project-files/rill-yaml) or the [dashboard level](https://docs.rilldata.com/reference/project-files/explore-dashboards). 
 For this course, we will set it up on the project level so all of our dashboards will be based on our ClickHouse table.
 
 :::tip

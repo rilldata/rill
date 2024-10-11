@@ -177,7 +177,7 @@ From our dataset, we can add more dimensions to allow more filtering and explora
 		- sum(deleted_lines)
 
 
-You may need to reference the <a href='https://docs.rilldata.com/reference/project-files/dashboards' target="_blank">metrics view YAML </a> reference guide to figure out the above. Your final output should look something like this! 
+You may need to reference the <a href='https://docs.rilldata.com/reference/project-files/explore-dashboards' target="_blank">metrics view YAML </a> reference guide to figure out the above. Your final output should look something like this! 
 
 ![finished](/img/tutorials/103/Completed-100-dashboard.png)
 

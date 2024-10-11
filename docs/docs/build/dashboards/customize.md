@@ -11,7 +11,7 @@ You will find below some common customizations and dashboard configurations that
 
 :::info Dashboard properties
 
-For a full list of available dashboard properties and configurations, please see our [Dashboard YAML](/reference/project-files/dashboards.md) reference page.
+For a full list of available dashboard properties and configurations, please see our [Dashboard YAML](/reference/project-files/explore-dashboards.md) reference page.
 
 :::
 

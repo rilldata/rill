@@ -13,7 +13,7 @@ Please refer to the changes below and recommended migration steps.
 
 Due to the [separation of dashboards to metrics layer and dashboards]/concepts/metrics-layer), you will need to review your current dashboards and make the following changes:
 
-**[Sample Legacy Dashboard Contents](https://docs.rilldata.com/reference/project-files/dashboards):**
+**[Sample Legacy Dashboard Contents](https://docs.rilldata.com/reference/project-files/explore-dashboards):**
 
 ```yaml
 title: #needs to be defined on metrics-view and dashboard
@@ -91,7 +91,7 @@ measures: #your measures, can be copied from dashboard.yaml
 security: #your security policies can be copied from dashboard.yaml
 ```
 
-**[Explore dashboard YAML](/reference/project-files/dashboards):**
+**[Explore dashboard YAML](/reference/project-files/explore-dashboards):**
 ```yaml
 type: explore
 

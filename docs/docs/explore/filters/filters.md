@@ -76,7 +76,7 @@ Time comparison is a key feature of Rill and recommended to find insights quicke
 <img src = '/img/explore/alerts/time-series.gif' class='rounded-gif' />
 <br />
 :::note
-Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](/reference/project-files/dashboards) for more details
+Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](/reference/project-files/explore-dashboards) for more details
 :::
 
 

@@ -28,7 +28,7 @@ This is our metrics-view, where we can define measures and dimensions to be used
 
 ```yaml
 # Metrics view YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
 # This file was generated using AI.
 
 version: 1

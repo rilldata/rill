@@ -14,9 +14,6 @@ You will find below some common customizations and metrics-view configurations t
 For a full list of available dashboard properties and configurations, please see our [Metrics View YAML](/reference/project-files/metrics-view.md) reference page.
 :::
 
-**`watermark`** 
-
-#not sure what this is used for.
 
 **`smallest_time_grain`**
 
