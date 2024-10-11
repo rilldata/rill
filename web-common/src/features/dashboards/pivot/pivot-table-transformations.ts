@@ -128,7 +128,7 @@ export function getTotalsRowSkeleton(
     totalsRow = totalsRowTable[0] || {};
 
     if (anchorDimensionName) {
-      totalsRow[anchorDimensionName] = "Total";
+      totalsRow[anchorDimensionName] = "Overall";
     }
   }
 
@@ -162,7 +162,7 @@ export function getTotalsRow(
     });
 
     if (anchorDimensionName) {
-      totalsRow[anchorDimensionName] = "Total";
+      totalsRow[anchorDimensionName] = "Overall";
     }
   }
 

@@ -138,7 +138,7 @@ function prepareDimensionData(
   const rowCount = data?.length + 1;
 
   const totalsRow = [
-    { value: "Total" },
+    { value: "Overall" },
     {
       value: total?.toString(),
       spark: createSparkline(totalsTableData, (v) =>
@@ -228,7 +228,7 @@ function prepareTimeData(
 
   let rowHeaderData: HeaderData<string>[][] = [];
   rowHeaderData.push([
-    { value: "Total" },
+    { value: "Overall" },
     {
       value: total?.toString() ?? "",
       spark: createSparkline(tableData, (v) =>

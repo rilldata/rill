@@ -147,7 +147,7 @@ function formatRowDimensionValue(
 ) {
   const dimension = rowDimensionNames?.[depth];
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
-    if (value === "Total") return "Total";
+    if (value === "Total") return "Overall";
     const timeGrain = getTimeGrainFromDimension(dimension);
     const dt = addZoneOffset(
       removeLocalTimezoneOffset(new Date(value)),
