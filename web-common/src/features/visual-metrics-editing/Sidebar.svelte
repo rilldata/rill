@@ -218,7 +218,18 @@
 
   async function saveChanges() {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const items = (parsedDocument.get(type) as YAMLSeq).items as Array<YAMLMap>;
+    let sequence = parsedDocument.get(type);
+
+    if (!(sequence instanceof YAMLSeq) || sequence.items.length === 0) {
+      sequence = new YAMLSeq();
+      parsedDocument.set(type, sequence);
+    }
+
+    if (!(sequence instanceof YAMLSeq)) {
+      throw new Error("Invalid YAML document");
+    }
+
+    const items = sequence.items as YAMLMap[];
 
     const newItem = new YAMLMap();
 
@@ -330,7 +341,11 @@
         >
           Cancel
         </Button>
-        <Tooltip location="top" distance={8}>
+        <Tooltip
+          location="top"
+          distance={8}
+          suppress={!requiredPropertiesUnfilled.length}
+        >
           <Button
             type="primary"
             on:click={saveChanges}
