@@ -1,31 +1,26 @@
 import type { DashboardMutables } from "./types";
-import { getPersistentDashboardStore } from "../../stores/persistent-dashboard-state";
 
 export const toggleMeasureVisibility = (
-  { dashboard }: DashboardMutables,
-
-  measureName: string,
+  { dashboard, persistentDashboardStore }: DashboardMutables,
+  allMeasures: string[],
+  measureName?: string,
 ) => {
-  const deleted = dashboard.visibleMeasureKeys.delete(measureName);
+  if (measureName) {
+    const deleted = dashboard.visibleMeasureKeys.delete(measureName);
+    if (!deleted) {
+      dashboard.visibleMeasureKeys.add(measureName);
+    }
+  } else {
+    const allSelected =
+      dashboard.visibleMeasureKeys.size === allMeasures.length;
 
-  if (!deleted) {
-    dashboard.visibleMeasureKeys.add(measureName);
+    dashboard.visibleMeasureKeys = new Set(
+      allSelected ? allMeasures.slice(0, 1) : allMeasures,
+    );
   }
 
-  const persistentDashboardStore = getPersistentDashboardStore();
-
-  persistentDashboardStore.updateVisibleMeasures(
-    Array.from(dashboard.visibleMeasureKeys),
-  );
-};
-
-export const setVisibleMeasures = (
-  { dashboard }: DashboardMutables,
-  measureNames: string[],
-) => {
-  dashboard.visibleMeasureKeys = new Set(measureNames);
-
-  const persistentDashboardStore = getPersistentDashboardStore();
+  dashboard.allMeasuresVisible =
+    dashboard.visibleMeasureKeys.size === allMeasures.length;
 
   persistentDashboardStore.updateVisibleMeasures(
     Array.from(dashboard.visibleMeasureKeys),
@@ -33,6 +28,5 @@ export const setVisibleMeasures = (
 };
 
 export const measureActions = {
-  setVisibleMeasures,
   toggleMeasureVisibility,
 };

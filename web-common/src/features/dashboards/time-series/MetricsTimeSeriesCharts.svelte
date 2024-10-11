@@ -60,7 +60,7 @@
       dimensionFilters: { includedDimensionValues },
     },
     actions: {
-      measures: { toggleMeasureVisibility, setVisibleMeasures },
+      measures: { toggleMeasureVisibility },
     },
     validSpecStore,
   } = getStateManagers();
@@ -301,18 +301,14 @@
       <DashboardVisibilityDropdown
         category="Measures"
         tooltipText="Choose measures to display"
-        onSelect={(name) => toggleMeasureVisibility(name)}
+        onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
         selectableItems={$allMeasures.map(({ name, label }) => ({
           name: name ?? "",
           label: label ?? name ?? "",
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {
-          const deselectAll =
-            visibleMeasureNames.length === allMeasureNames.length;
-          setVisibleMeasures(
-            allMeasureNames.slice(0, deselectAll ? 1 : undefined),
-          );
+          toggleMeasureVisibility(allMeasureNames);
         }}
       />
 

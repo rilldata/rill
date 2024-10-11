@@ -18,7 +18,7 @@
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
-      dimensions: { toggleDimensionVisibility, setVisibleDimensions },
+      dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
@@ -66,18 +66,14 @@
       <DashboardVisibilityDropdown
         category="Dimensions"
         tooltipText="Choose dimensions to display"
-        onSelect={(name) => toggleDimensionVisibility(name)}
+        onSelect={(name) => toggleDimensionVisibility(allDimensionNames, name)}
         selectableItems={$allDimensions.map(({ name, label }) => ({
           name: name ?? "",
           label: label ?? name ?? "",
         }))}
         selectedItems={visibleDimensionsNames}
         onToggleSelectAll={() => {
-          const deselectAll =
-            visibleDimensionsNames.length === allDimensionNames.length;
-          setVisibleDimensions(
-            allDimensionNames.slice(0, deselectAll ? 1 : undefined),
-          );
+          toggleDimensionVisibility(allDimensionNames);
         }}
       />
 
