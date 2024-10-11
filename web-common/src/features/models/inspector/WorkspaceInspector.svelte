@@ -148,7 +148,6 @@
 
   $: sourceProfileColumns =
     referencedThings?.map(([resource]) => {
-      console.log("resource", resource);
       return createQueryServiceTableColumns(
         instanceId,
         resource.meta?.name?.name ?? "",
@@ -180,8 +179,6 @@
 
     0,
   );
-
-  $: console.log("sourceColumns", $sourceColumns);
 
   $: rollup = cardinality / $inputCardinalities;
 
