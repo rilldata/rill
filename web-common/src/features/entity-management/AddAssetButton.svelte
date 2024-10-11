@@ -21,7 +21,7 @@
   import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
   import { featureFlags } from "../feature-flags";
   import { directoryState } from "../file-explorer/directory-store";
-  import { handleEntityCreate } from "../file-explorer/new-files";
+  import { createResourceFile } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -85,27 +85,8 @@
     );
   }
 
-  /**
-   * Put an example Model file in the `models` directory
-   */
-  async function handleAddModel() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Model);
-    await wrapNavigation(newFilePath);
-  }
-
-  /**
-   * Put an example Metrics View file in the `metrics_views` directory
-   */
-  async function handleAddMetricsView() {
-    const newFilePath = await handleEntityCreate(ResourceKind.MetricsView);
-    await wrapNavigation(newFilePath);
-  }
-
-  /**
-   * Put an example Explore file in the `explores` directory
-   */
-  async function handleAddExplore() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Explore);
+  async function handleAddResource(resourceKind: ResourceKind) {
+    const newFilePath = await createResourceFile(resourceKind);
     await wrapNavigation(newFilePath);
   }
 
@@ -160,54 +141,6 @@
 
     await goto(`/files/${path}`);
   }
-
-  /**
-   * Put an example API file in the `apis` directory
-   */
-  async function handleAddAPI() {
-    const newFilePath = await handleEntityCreate(ResourceKind.API);
-    await wrapNavigation(newFilePath);
-  }
-
-  /**
-   * Put an example Chart file in the `charts` directory
-   */
-  async function handleAddComponent() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Component);
-    await wrapNavigation(newFilePath);
-  }
-
-  /**
-   * Put an example Canvas file in the `canvas` directory
-   */
-  async function handleAddCanvasDashboard() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Canvas);
-    await wrapNavigation(newFilePath);
-  }
-
-  /**
-   * Put an example Theme file in the `themes` directory
-   */
-  async function handleAddTheme() {
-    const newFilePath = await handleEntityCreate(ResourceKind.Theme);
-    await wrapNavigation(newFilePath);
-  }
-
-  /**
-   * Put an example Report file in the `reports` directory
-   */
-  // async function handleAddReport() {
-  //   const newFilePath = await handleEntityCreate(ResourceKind.Report);
-  //   if (newFilePath) await goto(newFilePath);
-  // }
-
-  /**
-   * Put an example Alert file in the `alerts` directory
-   */
-  // async function handleAddAlert() {
-  //   const newFilePath = await handleEntityCreate(ResourceKind.Alert);
-  //   if (newFilePath) await goto(newFilePath);
-  // }
 </script>
 
 <DropdownMenu.Root bind:open={active}>
@@ -241,7 +174,7 @@
       <DropdownMenu.Item
         aria-label="Add Model"
         class="flex gap-x-2"
-        on:click={handleAddModel}
+        on:click={() => handleAddResource(ResourceKind.Model)}
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
@@ -254,27 +187,29 @@
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
-      on:click={handleAddMetricsView}
+      on:click={() => handleAddResource(ResourceKind.MetricsView)}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
         color={resourceColorMapping[ResourceKind.MetricsView]}
         size="16px"
       />
-      Metrics
+      Metrics view
     </DropdownMenu.Item>
+    <DropdownMenu.Separator />
     <DropdownMenu.Item
       aria-label="Add Explore Dashboard"
       class="flex gap-x-2"
-      on:click={handleAddExplore}
+      on:click={() => handleAddResource(ResourceKind.Explore)}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Explore]}
         color={resourceColorMapping[ResourceKind.Explore]}
         size="16px"
       />
-      Explore Dashboard
+      Explore dashboard
     </DropdownMenu.Item>
+    <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
@@ -285,7 +220,10 @@
           <File size="16px" /> Blank file
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => handleAddResource(ResourceKind.API)}
+        >
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
             color={resourceColorMapping[ResourceKind.API]}
@@ -295,18 +233,11 @@
           <DropdownMenu.Separator />
         </DropdownMenu.Item>
         {#if $customDashboards}
+          <DropdownMenu.Separator />
           <DropdownMenu.Item
             class="flex gap-x-2"
-            on:click={handleAddCanvasDashboard}
+            on:click={() => handleAddResource(ResourceKind.Component)}
           >
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Canvas]}
-              color={resourceColorMapping[ResourceKind.Canvas]}
-              size="16px"
-            />
-            Canvas Dashboard
-          </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddComponent}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Component]}
               color={resourceColorMapping[ResourceKind.Component]}
@@ -314,8 +245,23 @@
             />
             Component
           </DropdownMenu.Item>
+          <DropdownMenu.Item
+            class="flex gap-x-2"
+            on:click={() => handleAddResource(ResourceKind.Canvas)}
+          >
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Canvas]}
+              color={resourceColorMapping[ResourceKind.Canvas]}
+              size="16px"
+            />
+            Canvas dashboard
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
         {/if}
-        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => handleAddResource(ResourceKind.Theme)}
+        >
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
             color={resourceColorMapping[ResourceKind.Theme]}
@@ -324,7 +270,7 @@
           Theme
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
-        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
+        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-gray-900"
@@ -332,7 +278,7 @@
             />
             Report
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAlert}>
+          <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
               className="text-gray-900"

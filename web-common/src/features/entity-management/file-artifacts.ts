@@ -58,7 +58,7 @@ export class FileArtifacts {
 
   updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateAll(resource);
+      this.getFileArtifact(filePath)?.updateResource(resource);
     });
   }
 

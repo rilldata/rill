@@ -140,7 +140,9 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	spec.MeasuresSelector = nil
 
 	// Validate and rewrite presets, now in the context of the explore's dimensions and measures resolved above.
-	for _, p := range spec.Presets {
+	if spec.DefaultPreset != nil {
+		p := spec.DefaultPreset
+
 		dims, err := r.resolveFields(p.Dimensions, p.DimensionsSelector, spec.Dimensions)
 		if err != nil {
 			return nil, err

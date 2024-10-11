@@ -6,8 +6,8 @@
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import {
-    type PivotChipData,
     PivotChipType,
+    type PivotChipData,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
@@ -21,15 +21,15 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
   import {
-    type TimeSeriesDatum,
     useTimeSeriesDataStore,
+    type TimeSeriesDatum,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
-    type AvailableTimeGrain,
     TimeRangePreset,
+    type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -192,7 +192,7 @@
       $exploreStore?.selectedTimezone,
       interval,
       $timeControlsStore.selectedTimeRange?.name,
-      $validSpecStore.data?.explore?.presets?.[0]?.timeRange,
+      $validSpecStore.data?.explore?.defaultPreset?.timeRange,
       $exploreStore?.tdd.chartType,
     );
 

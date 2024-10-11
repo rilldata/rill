@@ -1,6 +1,6 @@
 import {
   extractFileExtension,
-  splitFolderAndName,
+  splitFolderAndFileName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ResourceKind,
@@ -84,7 +84,7 @@ export class FileArtifact {
   lastStateUpdatedOn: string | undefined;
 
   constructor(filePath: string) {
-    const [folderName, fileName] = splitFolderAndName(filePath);
+    const [folderName, fileName] = splitFolderAndFileName(filePath);
 
     this.path = filePath;
     this.folderName = folderName;
@@ -106,13 +106,16 @@ export class FileArtifact {
     );
 
     this.onRemoteContentChange((content) => {
-      this.inferredResourceKind.set(inferResourceKind(this.path, content));
+      const inferred = inferResourceKind(filePath, content);
+
+      if (inferred) this.inferredResourceKind.set(inferred);
     });
   }
 
   updateRemoteContent = (newContent: string, alert = true) => {
+    const hasNewContent = newContent !== get(this.remoteContent);
     this.remoteContent.set(newContent);
-    if (alert && newContent !== get(this.remoteContent)) {
+    if (alert && hasNewContent) {
       for (const callback of this.remoteCallbacks) {
         callback(newContent);
       }
@@ -218,7 +221,7 @@ export class FileArtifact {
     }
   };
 
-  updateAll(resource: V1Resource) {
+  updateResource(resource: V1Resource) {
     this.updateResourceNameIfChanged(resource);
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
     this.reconciling.set(
@@ -229,9 +232,17 @@ export class FileArtifact {
 
   hardDeleteResource() {
     // To avoid a workspace flicker, first infer the *intended* resource kind
-    this.inferredResourceKind.set(
-      inferResourceKind(this.path, get(this.remoteContent) ?? ""),
+    const inferred = inferResourceKind(
+      this.path,
+      get(this.remoteContent) ?? "",
     );
+
+    const curName = get(this.resourceName);
+    if (inferred) {
+      this.inferredResourceKind.set(inferred);
+    } else if (curName && curName.kind) {
+      this.inferredResourceKind.set(curName.kind as ResourceKind);
+    }
 
     this.resourceName.set(undefined);
     this.reconciling.set(false);
@@ -307,20 +318,23 @@ export class FileArtifact {
     const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;
 
-    // Temporary fix to avoid associating V1MetricsView and V1Explore to same file
-    const kind = inferResourceKind(this.path, get(this.remoteContent) ?? "");
+    const curName = get(this.resourceName);
+
+    // Much code currently assumes that a file is associated with 0 or 1 resource.
+    // However, files for legacy Metrics Views generate 2 resources: a Metrics View and an Explore.
+    // HACK: for files for legacy Metrics Views, ignore the Explore resource.
     if (
-      kind === ResourceKind.MetricsView &&
+      curName?.kind === ResourceKind.MetricsView &&
       resource.meta?.name?.kind === ResourceKind.Explore
     ) {
       return;
     }
 
-    const curName = get(this.resourceName);
-    if (
+    const didResourceNameChange =
       curName?.name !== resource.meta?.name?.name ||
-      curName?.kind !== resource.meta?.name?.kind
-    ) {
+      curName?.kind !== resource.meta?.name?.kind;
+
+    if (didResourceNameChange) {
       this.resourceName.set({
         kind: resource.meta?.name?.kind,
         name: resource.meta?.name?.name,

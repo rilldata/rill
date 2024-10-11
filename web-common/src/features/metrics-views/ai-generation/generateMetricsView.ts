@@ -22,7 +22,7 @@ import {
 import httpClient from "../../../runtime-client/http-client";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
-import { handleEntityCreate } from "../../file-explorer/new-files";
+import { createAndPreviewExplore } from "../create-and-preview-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
 /**
@@ -150,49 +150,15 @@ export function useCreateMetricsViewFromTableUIAction(
       const metricsViewResource = fileArtifacts
         .getFileArtifact(newMetricsViewFilePath)
         .getResource(queryClient, instanceId);
-      await waitUntil(() => get(metricsViewResource).data !== undefined);
+      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
-      // Create the Explore file
-      const newExploreFilePath = await handleEntityCreate(
-        ResourceKind.Explore,
-        undefined,
-      );
-      if (!newExploreFilePath) {
-        throw new Error("Failed to create an Explore file");
+      const resource = get(metricsViewResource).data;
+      if (!resource) {
+        throw new Error("Failed to create a Metrics View resource");
       }
 
-      // Wait until the Explore is ready
-      const exploreFileArtifact =
-        fileArtifacts.getFileArtifact(newExploreFilePath);
-      const exploreResource = exploreFileArtifact.getResource(
-        queryClient,
-        instanceId,
-      );
-      await waitUntil(() => get(exploreResource).data !== undefined);
-      const newExploreName = get(exploreResource).data?.meta?.name?.name;
-      if (!newExploreName) {
-        throw new Error("Failed to create an Explore resource");
-      }
-
-      // Check if the Explore has errors
-      const hasErrors = exploreFileArtifact.getHasErrors(
-        queryClient,
-        instanceId,
-      );
-
-      // Navigate to the Explore workspace or to the Explore Preview
-      if (hasErrors) {
-        await goto(`/files${newExploreFilePath}`);
-      } else {
-        await goto(`/explore/${newExploreName}`);
-      }
-      void behaviourEvent.fireNavigationEvent(
-        newExploreName,
-        behaviourEventMedium,
-        metricsEventSpace,
-        previousScreenName,
-        MetricsEventScreenName.Explore,
-      );
+      // Create the Explore file, and navigate to it
+      await createAndPreviewExplore(queryClient, instanceId, resource);
     } catch (err) {
       eventBus.emit("notification", {
         message:

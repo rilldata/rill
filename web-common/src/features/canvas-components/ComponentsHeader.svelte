@@ -6,7 +6,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     extractFileName,
-    splitFolderAndName,
+    splitFolderAndFileName,
   } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -17,7 +17,7 @@
   export let hasUnsavedChanges: boolean;
 
   let fileName: string;
-  $: [, fileName] = splitFolderAndName(filePath);
+  $: [, fileName] = splitFolderAndFileName(filePath);
   $: runtimeInstanceId = $runtime.instanceId;
   $: componentName = extractFileName(filePath);
 
