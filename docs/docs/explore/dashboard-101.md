@@ -36,7 +36,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 - _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](https://docs.rilldata.com/explore/filters/pivot) by selecting either from the UI (see `pink` box)
 
-- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](./alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](bookmarks.md), or share the dashboard ([internally](/manage/user-management#step-1---admin-invites-user) or [externally](./public-url.md)) by clicking the `Share` button.
+- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](./alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](bookmarks.md), or share the dashboard ([internally](/manage/user-management#option-1---admin-invites-user) or [externally](./public-url.md)) by clicking the `Share` button.
 
 
 ### Metrics Panel
@@ -58,7 +58,7 @@ After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ 
 
 
 :::tip Don't have a Rill project or dashboard deployed yet?
-If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/home/get-started#example-projects) are also available on Github and can be deployed locally using Rill Developer.
+If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/home/get-started#example-projects-repository) are also available on Github and can be deployed locally using Rill Developer.
 :::
 
 

@@ -16,7 +16,7 @@ Depending on whether your dashboard was created directly from your source or via
 
 You need to check that the new column is being ingested into Rill. If you have a select * statement, go ahead and select the `refresh` button and confirm that the new column is listed. If not, add the new column into your select statement and select `refresh`.
 
-If your dashboard is created directly from the source, navigate to [adding the new dimension to the Dashboard](#adding-the-new-dimension-to-the-dashboard). If not, continue to the model to make changes.
+If your dashboard is created directly from the source, navigate to [adding the new dimension to the Dashboard](/tutorials/other/add-column-dimension#adding-the-new-dimension-to-the-dashboard). If not, continue to the model to make changes.
 
 ![source](/img/tutorials/other/new-dimension/source-new-dimension.png)
 

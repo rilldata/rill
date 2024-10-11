@@ -32,7 +32,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 **`table`** — Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards create from [external OLAP tables](../../concepts/OLAP.md#external-olap-tables) _(either **table** or **model** is required)_. *deprecated soon*
 
 
-**`dimensions`** — Relates to exploring segments or [dimensions](/build/dashboards/dashboards.md#dimensions) of your data and filtering the dashboard _(required)_.
+**`dimensions`** — Relates to exploring segments or [dimensions](/build/metrics-view/metrics-view.md#dimensions) of your data and filtering the dashboard _(required)_.
   - **`column`** — a categorical column _(required)_ 
   - **`expression`** a non-aggregate expression such as `string_split(domain, '.')`. One of `column` and `expression` is required but cannot have both at the same time _(required)_
   - **`name`** — a stable identifier for the dimension _(optional)_
@@ -40,7 +40,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
   - **`description`** — a freeform text description of the dimension  _(optional)_
   - **`unnest`** - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match _(optional)_
 
-**`measures`** — Used to define the numeric [aggregates](/build/dashboards/dashboards.md#measures) of columns from your data model  _(required)_.
+**`measures`** — Used to define the numeric [aggregates](/build/metrics-view/metrics-view.md#measures) of columns from your data model  _(required)_.
   - **`expression`** — a combination of operators and functions for aggregations _(required)_ 
   - **`name`** — a stable identifier for the measure _(required)_
   - **`label`** — a label for your measure _(optional)_ 

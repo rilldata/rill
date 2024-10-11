@@ -92,7 +92,7 @@ measures: #your measures, can be copied from dashboard.yaml
 security: #your security policies can be copied from dashboard.yaml
 ```
 
-**[Explore dashboard YAML](/reference/project-files/dashboard):**
+**[Explore dashboard YAML](/reference/project-files/dashboards):**
 ```yaml
 type: explore
 
