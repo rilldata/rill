@@ -12,7 +12,7 @@
   export let placeholder = "Search";
   export let border = true;
   export let background = true;
-
+  export let large = false;
   /* Reference of input DOM element */
   let ref: HTMLInputElement;
 
@@ -40,7 +40,7 @@
       ref?.focus();
     }}
   >
-    <Search />
+    <Search size={large ? "18px" : "16px"} />
   </button>
   <input
     bind:this={ref}
@@ -50,7 +50,9 @@
     class:bg-slate-50={background}
     class:border
     class:border-gray-200={border}
-    class="outline-none rounded-sm block w-full pl-8 p-1"
+    class="outline-none rounded-sm block w-full pl-8 p-1 {large
+      ? 'h-full'
+      : ''}"
     {placeholder}
     bind:value
     on:input
