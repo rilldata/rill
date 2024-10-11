@@ -22,6 +22,7 @@
   import type { TDDComparison, TableData } from "./types";
 
   export let exploreName: string;
+  export let expandedMeasureName: string;
 
   const stateManagers = getStateManagers();
   const {
@@ -45,7 +46,6 @@
   const timeControlStore = useTimeControlStore(stateManagers);
 
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
-  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
   $: comparing = $timeDimensionDataStore?.comparing;
 
   $: pinIndex = $dashboardStore?.tdd.pinIndex;
@@ -193,6 +193,7 @@
   <TDDHeader
     {areAllTableRowsSelected}
     {comparing}
+    {expandedMeasureName}
     {dimensionName}
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
     isRowsEmpty={!rowHeaderLabels.length}
