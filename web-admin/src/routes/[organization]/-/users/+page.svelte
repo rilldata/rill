@@ -2,12 +2,8 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceListOrganizationMemberUsers,
-    createAdminServiceAddOrganizationMemberUser,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
-    createAdminServiceSetOrganizationMemberUserRole,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationInvites,
-    getAdminServiceListOrganizationInvitesQueryKey,
   } from "@rilldata/web-admin/client";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -15,8 +11,6 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Plus } from "lucide-svelte";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { Search } from "@rilldata/web-common/components/search";
 
   let userEmail = "";
@@ -48,81 +42,7 @@
     user.userEmail.toLowerCase().includes(searchText.toLowerCase()),
   );
 
-  const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
-  const addOrganizationMemberUser =
-    createAdminServiceAddOrganizationMemberUser();
-
-  const setOrganizationMemberUserRole =
-    createAdminServiceSetOrganizationMemberUserRole();
-
-  async function handleCreate(
-    newEmail: string,
-    newRole: string,
-    isSuperUser: boolean = false,
-  ) {
-    try {
-      await $addOrganizationMemberUser.mutateAsync({
-        organization: organization,
-        data: {
-          email: newEmail,
-          role: newRole,
-          superuserForceAccess: isSuperUser,
-        },
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      );
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationInvitesQueryKey(organization),
-      );
-
-      userEmail = "";
-      userRole = "";
-      isSuperUser = false;
-      isAddUserDialogOpen = false;
-
-      eventBus.emit("notification", { message: "User added to organization" });
-    } catch (error) {
-      console.error("Error adding user to organization", error);
-      eventBus.emit("notification", {
-        message: "Error adding user to organization",
-        type: "error",
-      });
-    }
-  }
-
-  async function handleSetRole(email: string, role: string) {
-    try {
-      await $setOrganizationMemberUserRole.mutateAsync({
-        organization: organization,
-        email: email,
-        data: {
-          role: role,
-        },
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      );
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationInvitesQueryKey(organization),
-      );
-
-      eventBus.emit("notification", {
-        message: "User role updated",
-      });
-    } catch (error) {
-      console.error("Error updating user role", error);
-      eventBus.emit("notification", {
-        message: "Error updating user role",
-        type: "error",
-      });
-    }
-  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -157,7 +77,6 @@
       <OrgUsersTable
         data={filteredUsers}
         currentUserEmail={$currentUser.data?.user.email}
-        onSetRole={handleSetRole}
       />
     </div>
   {/if}
@@ -168,5 +87,4 @@
   email={userEmail}
   role={userRole}
   {isSuperUser}
-  onCreate={handleCreate}
 />

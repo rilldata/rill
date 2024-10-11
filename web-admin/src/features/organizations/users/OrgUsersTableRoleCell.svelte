@@ -2,16 +2,55 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import {
+    createAdminServiceSetOrganizationMemberUserRole,
+    getAdminServiceListOrganizationInvitesQueryKey,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { page } from "$app/stores";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let email: string;
   export let role: string;
   export let isCurrentUser: boolean;
-  export let onSetRole: (email: string, role: string) => void;
 
   let isDropdownOpen = false;
 
-  function handleUpdateRole(role: string) {
-    onSetRole(email, role);
+  $: organization = $page.params.organization;
+
+  const queryClient = useQueryClient();
+  const setOrganizationMemberUserRole =
+    createAdminServiceSetOrganizationMemberUserRole();
+
+  async function handleSetRole(role: string) {
+    try {
+      await $setOrganizationMemberUserRole.mutateAsync({
+        organization: organization,
+        email: email,
+        data: {
+          role: role,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationInvitesQueryKey(organization),
+      );
+
+      eventBus.emit("notification", {
+        message: "User role updated",
+      });
+    } catch (error) {
+      console.error("Error updating user role", error);
+      eventBus.emit("notification", {
+        message: "Error updating user role",
+        type: "error",
+      });
+    }
   }
 </script>
 
@@ -34,7 +73,7 @@
         class="font-normal flex items-center"
         checked={role === "admin"}
         on:click={() => {
-          handleUpdateRole("admin");
+          handleSetRole("admin");
         }}
       >
         <span>Admin</span>
@@ -43,7 +82,7 @@
         class="font-normal flex items-center"
         checked={role === "viewer"}
         on:click={() => {
-          handleUpdateRole("viewer");
+          handleSetRole("viewer");
         }}
       >
         <span>Viewer</span>

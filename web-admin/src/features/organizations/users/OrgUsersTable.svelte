@@ -13,7 +13,6 @@
 
   export let data: OrgUser[];
   export let currentUserEmail: string;
-  export let onSetRole: (email: string, role: string) => void;
 
   const columns: ColumnDef<OrgUser, any>[] = [
     {
@@ -40,7 +39,6 @@
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
-          onSetRole: onSetRole,
         }),
       meta: {
         widthPercent: 5,

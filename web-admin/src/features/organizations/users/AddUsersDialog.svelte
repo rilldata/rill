@@ -14,16 +14,62 @@
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-invite/UserRoleSelect.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import {
+    createAdminServiceAddOrganizationMemberUser,
+    getAdminServiceListOrganizationInvitesQueryKey,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { page } from "$app/stores";
 
   export let open = false;
   export let email: string;
   export let role: string;
   export let isSuperUser: boolean;
-  export let onCreate: (
+
+  $: organization = $page.params.organization;
+
+  const queryClient = useQueryClient();
+  const addOrganizationMemberUser =
+    createAdminServiceAddOrganizationMemberUser();
+
+  async function handleCreate(
     newEmail: string,
     newRole: string,
-    isSuperUser: boolean,
-  ) => void;
+    isSuperUser: boolean = false,
+  ) {
+    try {
+      await $addOrganizationMemberUser.mutateAsync({
+        organization: organization,
+        data: {
+          email: newEmail,
+          role: newRole,
+          superuserForceAccess: isSuperUser,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationInvitesQueryKey(organization),
+      );
+
+      email = "";
+      role = "";
+      isSuperUser = false;
+      open = false;
+
+      eventBus.emit("notification", { message: "User added to organization" });
+    } catch (error) {
+      console.error("Error adding user to organization", error);
+      eventBus.emit("notification", {
+        message: "Error adding user to organization",
+        type: "error",
+      });
+    }
+  }
 
   const formId = "add-user-form";
 
@@ -62,7 +108,7 @@
         await Promise.all(
           emails.map(async (email) => {
             try {
-              await onCreate(email, values.role, isSuperUser);
+              await handleCreate(email, values.role, isSuperUser);
               succeeded.push(email);
             } catch (error) {
               console.error("Error adding user to organization", error);
@@ -93,7 +139,6 @@
   );
 </script>
 
-<!-- TODO: revisit superuser -->
 <Dialog
   bind:open
   onOutsideClick={(e) => {

@@ -50,7 +50,9 @@
     class:bg-slate-50={background}
     class:border
     class:border-gray-200={border}
-    class="outline-none rounded-sm block w-full pl-8 p-1 h-full"
+    class="outline-none rounded-sm block w-full pl-8 p-1 {large
+      ? 'h-full'
+      : ''}"
     {placeholder}
     bind:value
     on:input
