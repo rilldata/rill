@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
@@ -8,17 +7,12 @@
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { get } from "svelte/store";
-  import { waitUntil } from "../../lib/waitUtils";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
-  import { fileArtifacts } from "../entity-management/file-artifacts";
   import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
-  import { handleEntityCreate } from "../file-explorer/new-files";
-  import CreateExploreDashboardButton from "./CreateExploreDashboardButton.svelte";
-
-  const queryClient = useQueryClient();
+  import { createAndPreviewExplore } from "./create-and-preview-explore";
+  import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
 
   export let resource: V1Resource | undefined;
 
@@ -28,34 +22,19 @@
     resource?.meta?.name?.name ?? "",
   );
   $: dashboards = $dashboardsQuery.data ?? [];
-
-  async function handleCreateDashboard() {
-    // Create the Explore file
-    const newExploreFilePath = await handleEntityCreate(
-      ResourceKind.Explore,
-      resource,
-    );
-
-    // Wait until the Explore resource is ready
-    const exploreFileArtifact =
-      fileArtifacts.getFileArtifact(newExploreFilePath);
-    const exploreResource = exploreFileArtifact.getResource(
-      queryClient,
-      instanceId,
-    );
-    await waitUntil(() => get(exploreResource).data !== undefined);
-    const newExploreName = get(exploreResource).data?.meta?.name?.name;
-    if (!newExploreName) {
-      throw new Error("Failed to create an Explore resource");
-    }
-
-    // Navigate to the Explore Preview
-    await goto(`/explore/${newExploreName}`);
-  }
 </script>
 
 {#if dashboards?.length === 0}
-  <CreateExploreDashboardButton metricsViewResource={resource} />
+  <Button
+    type={$allowPrimary ? "primary" : "secondary"}
+    disabled={!resource}
+    on:click={async () => {
+      if (resource)
+        await createAndPreviewExplore(queryClient, instanceId, resource);
+    }}
+  >
+    Create Explore dashboard
+  </Button>
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
@@ -79,7 +58,12 @@
           {/if}
         {/each}
         <DropdownMenu.Separator />
-        <DropdownMenu.Item on:click={handleCreateDashboard}>
+        <DropdownMenu.Item
+          on:click={async () => {
+            if (resource)
+              await createAndPreviewExplore(queryClient, instanceId, resource);
+          }}
+        >
           <Add />
           Create dashboard
         </DropdownMenu.Item>

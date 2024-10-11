@@ -20,16 +20,20 @@
   $: metricsViewFilePath =
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";
 
-  $: dashboardPolicyCheck = useDashboardPolicyCheck(
+  $: explorePolicyCheck = useDashboardPolicyCheck(
     $runtime.instanceId,
     exploreFilePath,
+  );
+  $: metricsPolicyCheck = useDashboardPolicyCheck(
+    $runtime.instanceId,
+    metricsViewFilePath,
   );
 
   const { readOnly } = featureFlags;
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
-  {#if $dashboardPolicyCheck.data}
+  {#if $explorePolicyCheck.data || $metricsPolicyCheck.data}
     <ViewAsButton />
   {/if}
   <GlobalDimensionSearch />

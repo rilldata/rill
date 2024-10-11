@@ -118,6 +118,7 @@
       <div class="flex gap-x-2 items-center">
         <ModelWorkspaceCtAs
           {resource}
+          {connector}
           {collapse}
           modelHasError={$hasErrors}
           modelName={assetName}

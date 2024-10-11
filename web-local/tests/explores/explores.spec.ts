@@ -17,18 +17,12 @@ import {
 } from "../utils/dataSpecifcHelpers";
 import { createSource } from "../utils/sourceHelpers";
 import { test } from "../utils/test";
-import { gotoNavEntry, waitForFileNavEntry } from "../utils/waitHelpers";
+import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
   test("Autogenerate explore from source", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
     await createExploreFromSource(page);
-    await waitForFileNavEntry(
-      page,
-      "/explore-dashboards/AdBids_metrics_explore.yaml",
-      true,
-    );
-    await page.getByRole("button", { name: "Preview" }).click();
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
@@ -36,9 +30,7 @@ test.describe("explores", () => {
 
   test("Autogenerate explore from model", async ({ page }) => {
     await createAdBidsModel(page);
-    await createExploreFromModel(page);
-
-    await page.getByRole("button", { name: "Preview" }).click();
+    await createExploreFromModel(page, false);
     await assertAdBidsDashboard(page);
 
     // click on publisher=Facebook leaderboard value
@@ -70,8 +62,7 @@ test.describe("explores", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createExploreFromModel(page);
-    await page.getByRole("button", { name: "Preview" }).click();
+    await createExploreFromModel(page, false);
 
     // Check the total records are 100k
     await expect(page.getByText("Total records 100.0k")).toBeVisible();
@@ -114,8 +105,8 @@ test.describe("explores", () => {
     // Download the data as CSV
     // Start waiting for download before clicking. Note no await.
     const downloadCSVPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as CSV").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as CSV" }).click();
     const downloadCSV = await downloadCSVPromise;
     await downloadCSV.saveAs("temp/" + downloadCSV.suggestedFilename());
     const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
@@ -124,8 +115,8 @@ test.describe("explores", () => {
     // Download the data as XLSX
     // Start waiting for download before clicking. Note no await.
     const downloadXLSXPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as XLSX").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as XLSX" }).click();
     const downloadXLSX = await downloadXLSXPromise;
     await downloadXLSX.saveAs("temp/" + downloadXLSX.suggestedFilename());
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
@@ -134,8 +125,8 @@ test.describe("explores", () => {
     // Download the data as Parquet
     // Start waiting for download before clicking. Note no await.
     const downloadParquetPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export model data" }).click();
-    await page.getByText("Export as Parquet").click();
+    await page.getByLabel("Export model data").click();
+    await page.getByRole("menuitem", { name: "Export as Parquet" }).click();
     const downloadParquet = await downloadParquetPromise;
     await downloadParquet.saveAs("temp/" + downloadParquet.suggestedFilename());
 

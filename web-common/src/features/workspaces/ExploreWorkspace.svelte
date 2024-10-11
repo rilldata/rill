@@ -20,11 +20,11 @@
     hasUnsavedChanges,
     autoSave,
     path: filePath,
-
+    resourceName,
     fileName,
   } = fileArtifact);
 
-  $: exploreName = getNameFromFile(filePath);
+  $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
   $: initLocalUserPreferenceStore(exploreName);
 
@@ -54,7 +54,7 @@
     resourceKind={ResourceKind.Explore}
   >
     <PreviewButton
-      slot="workspace-controls"
+      slot="cta"
       href="/explore/{exploreName}"
       disabled={allErrors.length > 0}
     />
