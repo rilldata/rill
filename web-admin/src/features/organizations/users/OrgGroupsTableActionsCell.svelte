@@ -10,10 +10,7 @@
   export let name: string;
   export let currentUserEmail: string;
   export let searchUsersList: V1MemberUser[];
-  export let onRename: (groupName: string, newName: string) => void;
   export let onDelete: (deletedGroupName: string) => void;
-  export let onRemoveUser: (groupName: string, email: string) => void;
-  export let onAddUser: (groupName: string, email: string) => void;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
@@ -63,7 +60,4 @@
   groupName={name}
   {currentUserEmail}
   {searchUsersList}
-  {onRename}
-  {onRemoveUser}
-  {onAddUser}
 />
