@@ -153,18 +153,11 @@ SELECT 'Hello, World!' AS Greeting`;
 version: 1
 type: metrics_view
 
-table: example_table # Choose a table to underpin your metrics
-timeseries: timestamp_column # Choose a timestamp column (if any) from your table
+model: # Choose a model to underpin your metrics
+timeseries: # Choose a timestamp column (if any) from your model
 
 dimensions:
-  - column: category
-    label: "Category"
-    description: "Description of the dimension"
-
 measures:
-  - expression: "SUM(revenue)"
-    label: "Total Revenue"
-    description: "Total revenue generated"
 `;
     case ResourceKind.Explore:
       if (baseResource) {
