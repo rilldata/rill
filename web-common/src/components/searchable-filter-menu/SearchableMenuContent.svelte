@@ -125,7 +125,7 @@
 
   {#if allowMultiSelect}
     <footer>
-      <Button on:click={onToggleSelectAll} type="text">
+      <Button on:click={onToggleSelectAll} type="plain">
         {#if allSelected}
           Deselect all
         {:else}
@@ -146,10 +146,9 @@
 <style lang="postcss">
   footer {
     height: 42px;
-    @apply flex flex-row mt-auto items-center justify-end;
-    @apply bg-slate-100;
     @apply border-t border-slate-300;
-    @apply bottom-0 sticky;
+    @apply bg-slate-100;
+    @apply flex flex-row flex-none items-center justify-end;
     @apply gap-x-2 p-2 px-3.5;
   }
 

@@ -62,13 +62,13 @@
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent
-    allowMultiSelect
-    showHiddenSelectionsCount
     fadeUnselected
+    allowMultiSelect
     requireSelection
+    showHiddenSelectionsCount
+    selectedItems={[selectedItems]}
+    selectableGroups={[{ name: "", items: selectableItems }]}
     {onSelect}
     {onToggleSelectAll}
-    selectableGroups={[{ name: "", items: selectableItems }]}
-    selectedItems={[selectedItems]}
   />
 </DropdownMenu.Root>
