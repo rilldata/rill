@@ -18,7 +18,7 @@
   $: ({ message, link, type, detail, options } = notification);
 
   onMount(() => {
-    if (!options?.persisted || link) {
+    if (!options?.persisted && !link) {
       setTimeout(onClose, NOTIFICATION_TIMEOUT);
     }
   });

@@ -1,5 +1,5 @@
 import type { RpcStatus } from "@rilldata/web-admin/client/gen/index.schemas";
-import type { Query } from "@tanstack/svelte-query";
+import type { CreateBaseMutationResult, Query } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { derived, type Readable } from "svelte/store";
 
@@ -43,4 +43,13 @@ export function mergedQueryStatusStatus(
       errors: errors.map((e) => e.response?.data?.message ?? e.message),
     };
   });
+}
+
+export function getErrorForMutation<T>(
+  mutation: CreateBaseMutationResult<T, RpcStatus>,
+) {
+  return (
+    (mutation.error as AxiosError<RpcStatus>)?.response?.data?.message ??
+    mutation.error?.message
+  );
 }

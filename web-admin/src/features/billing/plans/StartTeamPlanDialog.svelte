@@ -7,10 +7,6 @@
    * 5. renew - After user cancels a subscription and wants to renew.
    */
   export type TeamPlanDialogTypes = "base" | "size" | "org" | "proj" | "renew";
-  export type ShowTeamPlanDialogCallback = (
-    type: TeamPlanDialogTypes,
-    endDate: string,
-  ) => void;
 </script>
 
 <script lang="ts">
@@ -22,6 +18,7 @@
     fetchTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { getSubscriptionResumedText } from "@rilldata/web-admin/features/billing/plans/utils";
+  import WelcomeToRillCloudDialog from "@rilldata/web-admin/features/billing/plans/WelcomeToRillCloudDialog.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import {
     AlertDialog,
@@ -38,6 +35,7 @@
     createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
   } from "@rilldata/web-admin/client/index.js";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let organization: string;
   export let open = false;
@@ -86,6 +84,7 @@
   $: paymentIssues = $categorisedIssues.data?.payment;
 
   let loading = false;
+  let welcomeDialogOpen = false;
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
@@ -117,6 +116,10 @@
           planName: teamPlan.name,
         },
       });
+      eventBus.emit("notification", {
+        type: "success",
+        message: "Your Team plan was renewed",
+      });
     } else {
       await $planUpdater.mutateAsync({
         organization,
@@ -124,6 +127,7 @@
           planName: teamPlan.name,
         },
       });
+      welcomeDialogOpen = true;
     }
     void invalidateBillingInfo(organization);
     open = false;
@@ -167,3 +171,5 @@
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
+
+<WelcomeToRillCloudDialog bind:open={welcomeDialogOpen} />

@@ -3,6 +3,7 @@
     createAdminServiceCancelBillingSubscription,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
+  import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
@@ -18,6 +19,7 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let organization: string;
   export let subscription: V1Subscription;
@@ -29,11 +31,17 @@
     await $planCanceller.mutateAsync({
       organization,
     });
+    eventBus.emit("notification", {
+      type: "success",
+      message: "Your Team plan was canceled",
+    });
     void invalidateBillingInfo(organization);
     open = false;
   }
 
   let open = false;
+
+  $: error = getErrorForMutation($planCanceller);
 </script>
 
 <SettingsContainer title={plan.displayName ?? plan.name}>
@@ -65,9 +73,9 @@
           through <end of paid period>. </end>
         </AlertDialogDescription>
 
-        {#if $planCanceller.error}
+        {#if error}
           <div class="text-red-500 text-sm py-px">
-            {$planCanceller.error.message}
+            {error}
           </div>
         {/if}
       </AlertDialogHeader>

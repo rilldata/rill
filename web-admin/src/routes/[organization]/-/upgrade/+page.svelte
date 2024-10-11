@@ -16,6 +16,7 @@
     fetchPaymentsPortalURL,
     fetchTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import WelcomeToRillCloudDialog from "@rilldata/web-admin/features/billing/plans/WelcomeToRillCloudDialog.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -28,6 +29,7 @@
 
   let upgrading = false;
   let isRenew = false;
+  let welcomeDialogOpen = false;
   $: issuesQuery =
     createAdminServiceListOrganizationBillingIssues(organization);
   $: if (!$issuesQuery.isLoading && !upgrading) {
@@ -50,9 +52,6 @@
             window.location.href,
           ),
         },
-        options: {
-          persisted: true, // TODO: this is not honoured when link is added
-        },
       });
       return goto(`/${organization}`);
     }
@@ -68,7 +67,10 @@
             planName: teamPlan.name,
           },
         });
-        // TODO: show welcome to rill
+        eventBus.emit("notification", {
+          type: "success",
+          message: "Your Team plan was renewed",
+        });
       } else {
         await $planUpdater.mutateAsync({
           organization,
@@ -76,6 +78,7 @@
             planName: teamPlan.name,
           },
         });
+        welcomeDialogOpen = true;
       }
       void invalidateBillingInfo(organization);
     } catch {
@@ -102,3 +105,5 @@
     <CtaNeedHelp />
   </CtaContentContainer>
 </CtaLayoutContainer>
+
+<WelcomeToRillCloudDialog bind:open={welcomeDialogOpen} />
