@@ -13,6 +13,7 @@
 
   export let data: OrgUser[];
   export let currentUserEmail: string;
+  export let currentUserPhotoUrl: string;
 
   const columns: ColumnDef<OrgUser, any>[] = [
     {
@@ -25,6 +26,7 @@
           email: row.original.userEmail,
           pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          photoUrl: row.original.photoUrl ?? currentUserPhotoUrl,
         }),
       meta: {
         widthPercent: 5,
