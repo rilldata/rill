@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
-  import AvatarSquareList from "../../organizations/users/AvatarSquareList.svelte";
+  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
 
   export let organization: string;
   export let usergroup: string;
@@ -13,6 +13,6 @@
     $listUsergroupMemberUsers.data?.members?.length ?? 0;
 </script>
 
-<AvatarSquareList name={usergroup} count={userGroupMembersCount}>
+<AvatarListItem shape="square" name={usergroup} count={userGroupMembersCount}>
   {@html `Everyone from <span class="font-bold">${usergroup}</span>`}
-</AvatarSquareList>
+</AvatarListItem>

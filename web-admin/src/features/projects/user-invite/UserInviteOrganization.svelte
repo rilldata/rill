@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createAdminServiceListOrganizationMemberUsers } from "@rilldata/web-admin/client";
-  import AvatarSquareList from "../../organizations/users/AvatarSquareList.svelte";
+  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
@@ -28,9 +28,13 @@
     on:focus={() => (isHovered = true)}
     on:blur={() => (isHovered = false)}
   >
-    <AvatarSquareList name={organization} count={organizationUsersCount}>
+    <AvatarListItem
+      shape="square"
+      name={organization}
+      count={organizationUsersCount}
+    >
       {@html `Everyone from <span class="font-bold">${organization}</span>`}
-    </AvatarSquareList>
+    </AvatarListItem>
   </div>
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">

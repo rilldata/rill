@@ -11,7 +11,7 @@
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
-  import AvatarCircleList from "../../organizations/users/AvatarCircleList.svelte";
+  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
   import UserInviteOrganization from "./UserInviteOrganization.svelte";
   import UserInviteGroup from "./UserInviteGroup.svelte";
   import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
@@ -96,7 +96,7 @@
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
           {#each usersWithPendingInvites as user}
             <div class="flex flex-row items-center gap-x-2 justify-between">
-              <AvatarCircleList
+              <AvatarListItem
                 name={user.userName ?? user.userEmail}
                 email={user.userEmail}
                 isCurrentUser={user.userEmail === $currentUser.data?.user.email}

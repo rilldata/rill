@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AvatarCircleList from "./AvatarCircleList.svelte";
+  import AvatarListItem from "./AvatarListItem.svelte";
 
   export let name: string;
   export let email: string;
@@ -8,10 +8,4 @@
   export let photoUrl: string | null;
 </script>
 
-<AvatarCircleList
-  {name}
-  {email}
-  {isCurrentUser}
-  {pendingAcceptance}
-  {photoUrl}
-/>
+<AvatarListItem {name} {email} {isCurrentUser} {pendingAcceptance} {photoUrl} />
