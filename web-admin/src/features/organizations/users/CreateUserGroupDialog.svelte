@@ -13,8 +13,13 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import { page } from "$app/stores";
-  import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceCreateUsergroup,
+    createAdminServiceListUsergroupMemberUsers,
+    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+  } from "@rilldata/web-admin/client";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let open = false;
   export let groupName: string;
@@ -25,6 +30,7 @@
     groupName,
   );
 
+  const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
 
   async function handleCreate(newName: string) {
