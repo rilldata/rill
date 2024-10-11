@@ -1,7 +1,5 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
-  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModels } from "@rilldata/web-common/features/models/selectors";
   import {
@@ -11,6 +9,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
   import { createDashboardFromTableInMetricsEditor } from "../ai-generation/generateMetricsView";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
 
   export let metricsName: string;
   export let filePath: string;
@@ -60,39 +59,34 @@
 
 <div class="whitespace-normal">
   {#if $isModelingSupportedForDefaultOlapDriver}
-    Auto-generate a <WithTogglableFloatingElement
-      distance={8}
-      inline
-      let:toggleFloatingElement
-    >
-      <button
-        class={buttonClasses}
-        disabled={!$models?.data?.length}
-        on:click={toggleFloatingElement}
-        >metrics configuration from an existing model</button
-      >,
-      <Menu
-        dark
-        on:click-outside={toggleFloatingElement}
-        on:escape={toggleFloatingElement}
-        slot="floating-element"
-        let:toggleFloatingElement
-      >
-        {#each $models?.data ?? [] as model}
+    Auto-generate a
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild let:builder>
+        <button
+          use:builder.action
+          {...builder}
+          class={buttonClasses}
+          disabled={!$models?.data?.length}
+        >
+          metrics configuration from an existing model
+        </button>
+      </DropdownMenu.Trigger>,
+      <DropdownMenu.Content align="start" sameWidth>
+        {#each $models?.data ?? [] as model, i (i)}
           {#if model?.model?.state?.resultTable}
-            <MenuItem
-              on:select={() => {
+            <DropdownMenu.Item
+              on:click={() => {
                 void onAutogenerateConfigFromModel(model);
-                toggleFloatingElement();
               }}
             >
               {model?.model?.state?.resultTable}
-            </MenuItem>
+            </DropdownMenu.Item>
           {/if}
         {/each}
-      </Menu>
-    </WithTogglableFloatingElement>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   {/if}
+
   <button
     class={buttonClasses}
     on:click={async () => {

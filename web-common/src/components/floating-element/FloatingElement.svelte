@@ -14,12 +14,15 @@ display:contents. This is useful when nesting a floating element within a toolti
     placeElement,
   } from "../../lib/place-element";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
-  import type { FloatingElementRelationship } from "./types";
+
+  type Location = "left" | "right" | "top" | "bottom";
+  type Alignment = "start" | "middle" | "end";
+  type FloatingElementRelationship = "parent" | "direct" | "mouse";
 
   export let target: HTMLElement;
   export let relationship: FloatingElementRelationship = "parent"; // parent, mouse {x, y}
-  export let location = "bottom";
-  export let alignment = "middle";
+  export let location: Location = "bottom";
+  export let alignment: Alignment = "middle";
   export let distance = 0;
   // edge padding
   export let pad = 8;
