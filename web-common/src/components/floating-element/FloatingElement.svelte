@@ -101,10 +101,10 @@ display:contents. This is useful when nesting a floating element within a toolti
     }
   });
 
-  function getFirstValidChildElement(element: HTMLElement) {
+  function getFirstValidChildElement(element: Element) {
     // get this child.
     let possibleChild = element?.children[0];
-    if (!(possibleChild instanceof HTMLElement)) return;
+    if (!(possibleChild instanceof Element)) return;
     // check for display: contents, which may indicate
     // another wrapped object.
     if (getComputedStyle(possibleChild).display === "contents") {
