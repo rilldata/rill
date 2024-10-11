@@ -166,7 +166,7 @@ measures:
           baseResource.metricsView?.state?.validSpec?.title;
 
         return `# Explore YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
 
 type: explore
 
@@ -178,7 +178,7 @@ measures: '*'
 `;
       }
       return `# Explore YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
 
 type: explore
 
