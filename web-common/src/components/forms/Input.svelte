@@ -146,6 +146,7 @@
           {id}
           contenteditable
           class="multiline-input"
+          class:pointer-events-none={disabled}
           {placeholder}
           role="textbox"
           tabindex="0"
@@ -163,6 +164,7 @@
           {placeholder}
           name={id}
           class={size}
+          {disabled}
           value={value ?? ""}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
