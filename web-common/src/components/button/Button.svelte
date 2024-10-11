@@ -330,11 +330,11 @@
     @apply border-slate-300;
   }
 
-  .danger.text {
+  .danger {
     @apply text-slate-600 p-0;
   }
 
-  .danger.text:hover {
+  .danger:hover {
     @apply text-red-600;
   }
 
