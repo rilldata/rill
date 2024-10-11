@@ -20,13 +20,13 @@
     <Avatar
       avatarSize="h-7 w-7"
       alt={pendingAcceptance ? null : name}
-      bgColor={getRandomBgColor(email)}
+      bgColor={getRandomBgColor(email ?? name)}
     />
   {:else if shape === "square"}
     <div
       class={cn(
         "h-7 w-7 rounded-sm flex items-center justify-center",
-        getRandomBgColor(name),
+        getRandomBgColor(email ?? name),
       )}
     >
       <span class="text-sm text-white font-semibold">{getInitials(name)}</span>
