@@ -50,7 +50,6 @@ database / database_schema: #not sure what this is used for.
 
 timeseries: your timeseries column
 
-watermark: #not sure what this is used for.
 smallest_time_grain: #defines the smallest time grain 
 
 first_day_of_week: #defines first day of week

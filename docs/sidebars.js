@@ -69,7 +69,7 @@ const sidebars = {
 
               ]
             },
- /*           {
+ /*           {　waiting for canvas dashboard release
               type: 'category',
               label: 'Rill Canvas Dashboards',
               items: [
@@ -83,7 +83,8 @@ const sidebars = {
               ]
           },
 */  
-            {
+/*
+            { some changes to syntax and adding 'tasks'
               type: 'category',
               label: 'Incremental Models',
               
@@ -103,6 +104,7 @@ const sidebars = {
 
               ]
             },
+            */
             {
               type: 'category',
               label: 'Custom APIs',
@@ -176,6 +178,7 @@ const sidebars = {
             'tutorials/other/dashboard-row-policies',
    //         'tutorials/other/custom-charts',
    //         'tutorials/other/create-map-component',
+   //         'tutorials/other/component-variable-freedom',
             'tutorials/other/embed-dashboard',
       //      'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',

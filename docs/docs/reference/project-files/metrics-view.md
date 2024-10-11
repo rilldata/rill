@@ -10,12 +10,11 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 ## Properties
 
-**`version`** - Refers to the version of the metrics_view _(required)_. 
+**`version`** - Refers to the version of the metrics view _(required)_. 
 
 **`type`** — Refers to the resource type and must be `metrics_view` _(required)_. 
 
-**`title`** — Refers to the display name for the dashboard _(required)_.
-
+**`title`** — Refers to the display name for the metrics view _(required)_.
 
 **`description`** - A description for the project. _(optional)_.
 
@@ -23,13 +22,15 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 **`database_schema`** — Refers to the schema to use in the OLAP engine (to be used in conjunction with `table`). Otherwise, will use the default database or schema if not specified _(optional)_.
 
+**`watermark`** - A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten, _(optional)_.
+
 **`timeseries`** — Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear _(optional)_.
 
-**`connector`** — Refers to the OLAP engine, if using [multiple OLAP engines](../olap-engines/multiple-olap.md). _(optional)_.
+**`connector`** — Refers to the OLAP engine, if you are not using DuckDB, IE: [ClickHouse OLAP engine](../olap-engines/multiple-olap.md). _(optional)_.
 
 **`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models.md) _(either **model** or **table** is required)_.
 
-**`table`** — Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards create from [external OLAP tables](../../concepts/OLAP.md#external-olap-tables) _(either **table** or **model** is required)_. *deprecated soon*
+**`table`** — Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards create from [external OLAP tables](../../concepts/OLAP.md#external-olap-tables) _(either **table** or **model** is required)_. 
 
 
 **`dimensions`** — Relates to exploring segments or [dimensions](/build/metrics-view/metrics-view.md#dimensions) of your data and filtering the dashboard _(required)_.

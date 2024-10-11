@@ -5,8 +5,8 @@ sidebar_label: Create Metrics Views
 sidebar_position: 00
 ---
 
-![visual-metric-editor](/img/build/metrics-view/visual-metrics-editor.png)
->> bug
+<img src = '/img/build/metrics-view/visual-metrics-editor.gif' class='rounded-gif' />
+<br />
 
 In Rill, your metrics view is defined by _metric definitions_. Metric definitions are composed of:
 * _**model**_ - A data model creating a One Big Table that will power the metrics view.
