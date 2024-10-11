@@ -109,6 +109,8 @@ security:
         - win_rate
 ```
 
+
+
 In this case, if the user is not part of the Rill Data, they will not be able to view the listed dimension and measures. This is especially the case if your dashboard has customer sensitive information that should not be viewable. 
 
 

@@ -1,7 +1,7 @@
 ---
 title: User Management
 sidebar_label: Users
-sidebar_position: 20
+sidebar_position: 22
 ---
 
 In Rill Cloud, access can be granted at the organization, project, or group level using the Rill CLI. 

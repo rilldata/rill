@@ -7,7 +7,7 @@ sidebar_position: 20
 
 ## Overview
 
-Within the dashboard yaml, you can apply aggregate sql expressions to create derived metrics or non-aggregate expressions to adjust dimension settings. SQL expressions are specific to the underlying OLAP engine so keep that in mind when editing directly in the yaml. 
+Within the metrcs view yaml, you can apply aggregate sql expressions to create derived metrics or non-aggregate expressions to adjust dimension settings. SQL expressions are specific to the underlying OLAP engine so keep that in mind when editing directly in the yaml. 
 
 We continually get questions about common metric definitions and other tricks so will update this page frequently. [Please let us know](../../contact.md) if you have questions or are stuck on an expression so we can add more examples.
 
@@ -19,11 +19,11 @@ Rill's modeling layer provides open-ended SQL compatibility for complex SQL quer
 
 ## Measure Expressions
 
-Measure expressions can take any sql numeric function, a set of aggregates and apply filters to create derived metrics. Reminder on basic expressions are available in the [create dashboard definition](dashboards.md).
+Measure expressions can take any SQL numeric function, a set of aggregates and apply filters to create derived metrics. Reminder on basic expressions are available in the [create metrics-view definition](metrics-view.md#measures).
 
 ### Metric Formatting
 
-In addition to standard presents, you can also use `format_d3` to control the formatting of a measure in the dashboard using a [d3-format string](https://d3js.org/d3-format). If an invalid format string is supplied, measures will be formatted with `format_preset: humanize`. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
+In addition to standard presents, you can also use `format_d3` to control the formatting of a measure in the metrics view using a [d3-format string](https://d3js.org/d3-format). If an invalid format string is supplied, measures will be formatted with `format_preset: humanize`. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
 
     - **Example**: to show a measure using fixed point formatting with 2 digits after the decimal point, your measure specification would include: `format_d3: ".2f"`.
     - **Example**: to show a measure using grouped thousands with two significant digits, your measure specification would include: `format_d3: ",.2r"`.

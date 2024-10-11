@@ -17,7 +17,7 @@ Cloud datastores will typically require service keys to access data. Make sure t
 
 The flow diagram below shows two options for deploying an existing project. 
 
-**Deploy via the UI or CLI using `rill project upload`**: 
+**Deploy via the UI or CLI using `rill project deploy`**: 
 ```mermaid
 graph LR;
     A(Local code files);
@@ -40,7 +40,7 @@ graph LR;
 ```
     
 ## Deploying a project via the UI
-Starting from **v0.48**, we have introduced the possibility to push dashboards _directly from Rill Developer's UI to Rill Cloud_. On the dashboard page, you can select the `deploy to share` button and follow the steps to deploy to Rill Cloud.
+Starting from **v0.48**, we have introduced the possibility to push dashboards _directly from Rill Developer's UI to Rill Cloud_. On the dashboard page, you can select the `Deploy` button and follow the steps to deploy to Rill Cloud.
 
 <img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br />

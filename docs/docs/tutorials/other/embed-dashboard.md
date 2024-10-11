@@ -1,6 +1,6 @@
 ---
-title: "How to embed a Dashboard"
-sidebar_label: "How to embed your Rill Dashboards"
+title: "How to Embed a Dashboard"
+sidebar_label: "How to Embed your Rill Dashboards"
 sidebar_position: 10
 hide_table_of_contents: false
 ---
@@ -114,3 +114,4 @@ export default async function handler(req, res) {
     }
 }
 ```
+
