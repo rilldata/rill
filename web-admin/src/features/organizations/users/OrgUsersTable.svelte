@@ -26,7 +26,10 @@
           email: row.original.userEmail,
           pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
-          photoUrl: currentUserPhotoUrl,
+          photoUrl:
+            row.original.userEmail === currentUserEmail
+              ? currentUserPhotoUrl
+              : null,
         }),
       meta: {
         widthPercent: 5,
