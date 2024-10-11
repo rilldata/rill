@@ -1,20 +1,17 @@
 <script lang="ts">
-  import { createAdminServiceListOrganizationMemberUsers } from "@rilldata/web-admin/client";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
+  import type { V1MemberUser } from "@rilldata/web-admin/client";
 
   export let organization: string;
+  export let memberUsers: V1MemberUser[];
 
   let isHovered = false;
 
-  $: listOrganizationMemberUsers =
-    createAdminServiceListOrganizationMemberUsers(organization);
-  $: organizationUsersCount =
-    $listOrganizationMemberUsers.data?.members?.length ?? 0;
-  $: organizationUsersList = $listOrganizationMemberUsers.data?.members ?? [];
+  $: organizationUsersCount = memberUsers?.length ?? 0;
 </script>
 
 <Tooltip location="right" alignment="middle" distance={8}>
@@ -39,7 +36,7 @@
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">
     <ul>
-      {#each organizationUsersList.slice(0, 6) as user}
+      {#each memberUsers.slice(0, 6) as user}
         <div class="flex items-center gap-1 py-1">
           <Avatar
             avatarSize="h-4 w-4"
@@ -50,8 +47,8 @@
           <li>{user.userName}</li>
         </div>
       {/each}
-      {#if organizationUsersList.length > 6}
-        <li>and {organizationUsersList.length - 6} more</li>
+      {#if memberUsers.length > 6}
+        <li>and {memberUsers.length - 6} more</li>
       {/if}
     </ul>
   </TooltipContent>

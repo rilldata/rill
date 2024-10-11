@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
+    createAdminServiceListOrganizationMemberUsers,
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
@@ -39,11 +40,14 @@
     organization,
     project,
   );
+  $: listOrganizationMemberUsers =
+    createAdminServiceListOrganizationMemberUsers(organization);
 
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
+  $: organizationUsersList = $listOrganizationMemberUsers.data?.members ?? [];
 
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
@@ -73,23 +77,32 @@
       </div>
       <UserInviteForm {organization} {project} />
       <UserInviteAllowlist {organization} {project} />
-      <div class="mt-4">
-        <div class="text-xs text-gray-500 font-semibold uppercase">
-          Organization
+      {#if organizationUsersList.length > 0}
+        <div class="mt-4">
+          <div class="text-xs text-gray-500 font-semibold uppercase">
+            Organization
+          </div>
+          <div class="flex flex-col gap-y-1">
+            <UserInviteOrganization
+              {organization}
+              memberUsers={organizationUsersList}
+            />
+          </div>
         </div>
-        <div class="flex flex-col gap-y-1">
-          <UserInviteOrganization {organization} />
+      {/if}
+      {#if projectMemberUserGroupsList.length > 0}
+        <div class="mt-2">
+          <div class="text-xs text-gray-500 font-semibold uppercase">
+            Groups
+          </div>
+          <!-- 52 * 5 = 260px -->
+          <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
+            {#each projectMemberUserGroupsList as group}
+              <UserInviteGroup {organization} {project} {group} />
+            {/each}
+          </div>
         </div>
-      </div>
-      <div class="mt-2">
-        <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
-        <!-- 52 * 5 = 260px -->
-        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
-          {#each projectMemberUserGroupsList as group}
-            <UserInviteGroup {organization} {project} {group} />
-          {/each}
-        </div>
-      </div>
+      {/if}
       <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
         <!-- 52 * 5 = 260px -->
