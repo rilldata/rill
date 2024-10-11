@@ -4,7 +4,6 @@
     createAdminServiceListOrganizationMemberUsers,
     createAdminServiceAddOrganizationMemberUser,
     getAdminServiceListOrganizationMemberUsersQueryKey,
-    createAdminServiceRemoveOrganizationMemberUser,
     createAdminServiceSetOrganizationMemberUserRole,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationInvites,
@@ -53,8 +52,7 @@
   const currentUser = createAdminServiceGetCurrentUser();
   const addOrganizationMemberUser =
     createAdminServiceAddOrganizationMemberUser();
-  const removeOrganizationMemberUser =
-    createAdminServiceRemoveOrganizationMemberUser();
+
   const setOrganizationMemberUserRole =
     createAdminServiceSetOrganizationMemberUserRole();
 
@@ -91,38 +89,6 @@
       console.error("Error adding user to organization", error);
       eventBus.emit("notification", {
         message: "Error adding user to organization",
-        type: "error",
-      });
-    }
-  }
-
-  async function handleRemove(email: string) {
-    try {
-      await $removeOrganizationMemberUser.mutateAsync({
-        organization: organization,
-        email: email,
-        // Uncomment if `keepProjectRoles` is needed
-        // See: https://github.com/rilldata/rill/pull/2231
-        // params: {
-        //   keepProjectRoles: false,
-        // },
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      );
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationInvitesQueryKey(organization),
-      );
-
-      eventBus.emit("notification", {
-        message: "User removed from organization",
-      });
-    } catch (error) {
-      console.error("Error removing user from organization", error);
-      eventBus.emit("notification", {
-        message: "Error removing user from organization",
         type: "error",
       });
     }
@@ -191,7 +157,6 @@
       <OrgUsersTable
         data={filteredUsers}
         currentUserEmail={$currentUser.data?.user.email}
-        onRemove={handleRemove}
         onSetRole={handleSetRole}
       />
     </div>

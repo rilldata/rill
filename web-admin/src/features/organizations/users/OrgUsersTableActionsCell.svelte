@@ -4,16 +4,57 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { Trash2Icon } from "lucide-svelte";
   import RemoveUserFromOrgConfirmDialog from "./RemoveUserFromOrgConfirmDialog.svelte";
+  import {
+    createAdminServiceRemoveOrganizationMemberUser,
+    getAdminServiceListOrganizationInvitesQueryKey,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { page } from "$app/stores";
 
   export let email: string;
   export let isCurrentUser: boolean;
-  export let onRemove: (email: string) => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
 
-  function handleRemove() {
-    onRemove(email);
+  $: organization = $page.params.organization;
+
+  const queryClient = useQueryClient();
+  const removeOrganizationMemberUser =
+    createAdminServiceRemoveOrganizationMemberUser();
+
+  async function handleRemove(email: string) {
+    try {
+      await $removeOrganizationMemberUser.mutateAsync({
+        organization: organization,
+        email: email,
+        // Uncomment if `keepProjectRoles` is needed
+        // See: https://github.com/rilldata/rill/pull/2231
+        // params: {
+        //   keepProjectRoles: false,
+        // },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationInvitesQueryKey(organization),
+      );
+
+      eventBus.emit("notification", {
+        message: "User removed from organization",
+      });
+    } catch (error) {
+      console.error("Error removing user from organization", error);
+      eventBus.emit("notification", {
+        message: "Error removing user from organization",
+        type: "error",
+      });
+    }
   }
 </script>
 
