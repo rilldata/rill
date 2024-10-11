@@ -46,7 +46,7 @@
             avatarSize="h-4 w-4"
             fontSize="text-[10px]"
             alt={user.userName}
-            bgColor={getRandomBgColor()}
+            bgColor={getRandomBgColor(user.userEmail)}
           />
           <li>{user.userName}</li>
         </div>
