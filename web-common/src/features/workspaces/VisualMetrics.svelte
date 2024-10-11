@@ -40,6 +40,7 @@
     types,
   } from "../visual-metrics-editing/lib";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
 
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
@@ -130,7 +131,7 @@
   $: columns = columnsResponse?.profileColumns ?? [];
 
   $: timeOptions = columns
-    .filter(({ type }) => type === "TIMESTAMP")
+    .filter(({ type }) => type && TIMESTAMPS.has(type))
     .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
 
   /** display the main error (the first in this array) at the bottom */
