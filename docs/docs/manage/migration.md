@@ -11,7 +11,7 @@ Please refer to the changes below and recommended migration steps.
 
 ### v0.49 -> v0.50
 
-Due to the [separation of dashboards to metrics layer and dashboards]/concepts/metrics-layer), you will need to review your current dashboards and make the following changes:
+Due to the [separation of dashboards to metrics layer and dashboards](/concepts/metrics-layer), you will need to review your current dashboards and make the following changes (note: Legacy dashboards will continue to function.):
 
 **[Sample Legacy Dashboard Contents](https://docs.rilldata.com/reference/project-files/explore-dashboards):**
 
