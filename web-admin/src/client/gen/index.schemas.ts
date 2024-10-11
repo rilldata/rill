@@ -36,8 +36,9 @@ export type AdminServiceSearchProjectNamesParams = {
 export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
-  spec?: V1ReportSpec;
+  ownerID?: string;
   executionTime?: string;
+  emailRecipients?: string[];
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -407,16 +408,6 @@ export interface V1UpdateBookmarkRequest {
   shared?: boolean;
 }
 
-export interface V1Subscription {
-  id?: string;
-  plan?: V1BillingPlan;
-  startDate?: string;
-  endDate?: string;
-  currentBillingCycleStartDate?: string;
-  currentBillingCycleEndDate?: string;
-  trialEndDate?: string;
-}
-
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
@@ -529,6 +520,16 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: any;
 }
 
+export interface V1Subscription {
+  id?: string;
+  plan?: V1BillingPlan;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
+}
+
 export interface V1Subquery {
   dimension?: string;
   measures?: string[];
@@ -591,14 +592,6 @@ export interface V1SearchProjectNamesResponse {
   nextPageToken?: string;
 }
 
-export interface V1Schedule {
-  refUpdate?: boolean;
-  disable?: boolean;
-  cron?: string;
-  tickerSeconds?: number;
-  timeZone?: string;
-}
-
 export interface V1RevokeServiceAuthTokenResponse {
   [key: string]: any;
 }
@@ -613,26 +606,6 @@ export interface V1RevokeCurrentAuthTokenResponse {
 
 export interface V1RequestProjectAccessResponse {
   [key: string]: any;
-}
-
-export type V1ReportSpecAnnotations = { [key: string]: string };
-
-export interface V1ReportSpec {
-  trigger?: boolean;
-  title?: string;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  queryName?: string;
-  queryArgsJson?: string;
-  exportLimit?: string;
-  exportFormat?: V1ExportFormat;
-  notifiers?: V1Notifier[];
-  annotations?: V1ReportSpecAnnotations;
-  /** If true, will use the lowest watermark of its refs instead of the trigger time. */
-  watermarkInherit?: boolean;
-  intervalsIsoDuration?: string;
-  intervalsLimit?: number;
-  intervalsCheckUnclosed?: boolean;
 }
 
 export interface V1ReportOptions {
@@ -828,13 +801,6 @@ export const V1Operation = {
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
 } as const;
-
-export type V1NotifierProperties = { [key: string]: any };
-
-export interface V1Notifier {
-  connector?: string;
-  properties?: V1NotifierProperties;
-}
 
 export interface V1MemberUsergroup {
   groupId?: string;

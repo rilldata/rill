@@ -5,18 +5,18 @@ import (
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName string, reportSpec *runtimev1.ReportSpec, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID string, emailRecipients []string, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
-		ProjectId:     h.config.ProjectID,
-		Branch:        h.config.Branch,
-		Report:        reportName,
-		Spec:          reportSpec,
-		ExecutionTime: timestamppb.New(executionTime),
+		ProjectId:       h.config.ProjectID,
+		Branch:          h.config.Branch,
+		Report:          reportName,
+		OwnerID:         ownerID,
+		EmailRecipients: emailRecipients,
+		ExecutionTime:   timestamppb.New(executionTime),
 	})
 	if err != nil {
 		return nil, err

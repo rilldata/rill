@@ -6,7 +6,6 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 import { Expression } from "../../runtime/v1/expression_pb.js";
-import { ReportSpec } from "../../runtime/v1/resources_pb.js";
 import { ExportFormat } from "../../runtime/v1/export_format_pb.js";
 
 /**
@@ -8917,14 +8916,21 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   report = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ReportSpec spec = 6;
+   * 4 was previously used for annotations
+   *
+   * @generated from field: string ownerID = 5;
    */
-  spec?: ReportSpec;
+  ownerID = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp execution_time = 5;
+   * @generated from field: google.protobuf.Timestamp execution_time = 6;
    */
   executionTime?: Timestamp;
+
+  /**
+   * @generated from field: repeated string email_recipients = 7;
+   */
+  emailRecipients: string[] = [];
 
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
@@ -8937,8 +8943,9 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "spec", kind: "message", T: ReportSpec },
-    { no: 5, name: "execution_time", kind: "message", T: Timestamp },
+    { no: 5, name: "ownerID", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "execution_time", kind: "message", T: Timestamp },
+    { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {

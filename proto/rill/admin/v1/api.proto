@@ -6,7 +6,6 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
-import "rill/runtime/v1/resources.proto";
 import "validate/validate.proto";
 
 service AdminService {
@@ -1840,8 +1839,10 @@ message GetReportMetaRequest {
   string project_id = 1;
   string branch = 2;
   string report = 3;
-  rill.runtime.v1.ReportSpec spec = 6;
-  google.protobuf.Timestamp execution_time = 5;
+  // 4 was previously used for annotations
+  string ownerID = 5;
+  google.protobuf.Timestamp execution_time = 6;
+  repeated string email_recipients = 7;
 }
 
 message GetReportMetaResponse {

@@ -34,6 +34,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.String("args.project_id", req.ProjectId),
 		attribute.String("args.branch", req.Branch),
 		attribute.String("args.report", req.Report),
+		attribute.StringSlice("args.email_recipients", req.EmailRecipients),
+		attribute.String("args.execution_time", req.ExecutionTime.String()),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -55,7 +57,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if req.Spec == nil {
+	if len(req.EmailRecipients) == 0 {
 		return &adminv1.GetReportMetaResponse{
 			BaseUrls: &adminv1.GetReportMetaResponse_Urls{
 				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
@@ -65,15 +67,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		}, nil
 	}
 
-	opts, err := recreateReportOptionsFromSpec(req.Spec)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	annotations := parseReportAnnotations(req.Spec.Annotations)
-
 	var externalEmails []string
-	for _, email := range opts.EmailRecipients {
+	for _, email := range req.EmailRecipients {
 		_, err := s.admin.DB.FindUserByEmail(ctx, email)
 		if err != nil {
 			if errors.Is(err, database.ErrNotFound) {
@@ -85,12 +80,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	externalUrls := make(map[string]*adminv1.GetReportMetaResponse_Urls, len(externalEmails))
-	// issue magic tokens for external emails
-	var ownerID *string
-	if annotations.AdminOwnerUserID != "" {
-		ownerID = &annotations.AdminOwnerUserID
-	}
-	emailTokens, err := s.issueMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Report, ownerID, opts, externalEmails)
+	emailTokens, err := s.issueMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerID, externalEmails)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to issue magic auth tokens: %s", err.Error())
 	}
@@ -563,7 +553,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, projectID, reportName string, ownerID *string, opts *adminv1.ReportOptions, emails []string) (map[string]string, error) {
+func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string) (map[string]string, error) {
 	emailSet := make(map[string]struct{}, len(emails))
 	for _, email := range emails {
 		emailSet[strings.ToLower(email)] = struct{}{}
@@ -608,23 +598,25 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 		return emailTokens, nil
 	}
 
+	var createdByUserID *string
+	if ownerID != "" {
+		createdByUserID = &ownerID
+	}
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
 		ProjectID:       projectID,
-		CreatedByUserID: ownerID,
+		CreatedByUserID: createdByUserID,
 		ResourceType:    runtime.ResourceKindReport,
 		ResourceName:    reportName,
-		State:           opts.WebOpenState,
-		Title:           opts.Title,
 		Internal:        true,
 	}
 
-	if ownerID != nil {
+	if ownerID != "" {
 		// Get the project-level permissions for the creating user.
-		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, *ownerID)
+		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, ownerID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, projectID, *ownerID, orgPerms)
+		projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, projectID, ownerID, orgPerms)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -634,7 +626,7 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 		//
 		// NOTE: A problem with this approach is that if we change the built-in format of JWT attributes, these will remain as they were when captured.
 		// NOTE: Another problem is that if the creator is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
-		attrs, err := s.jwtAttributesForUser(ctx, *ownerID, orgID, projectPermissions)
+		attrs, err := s.jwtAttributesForUser(ctx, ownerID, orgID, projectPermissions)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -649,7 +641,7 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 	defer func() { _ = tx.Rollback() }()
 
 	for email := range emailSet {
-		if ownerID == nil {
+		if ownerID == "" {
 			// set user attrs as per the email
 			mgcOpts.Attributes = map[string]interface{}{
 				"name":   "",

@@ -393,7 +393,19 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec, t)
+	var ownerID string
+	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
+		ownerID = id
+	}
+
+	var emailRecipients []string
+	for _, notifier := range rep.Spec.Notifiers {
+		if notifier.Connector == "email" {
+			emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+		}
+	}
+
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
