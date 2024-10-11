@@ -1,9 +1,8 @@
-<!-- <script lang="ts">
+<script lang="ts">
   import { page } from "$app/stores";
   import {
     createAdminServiceAddOrganizationMemberUsergroup,
     createAdminServiceAddUsergroupMemberUser,
-    createAdminServiceCreateUsergroup,
     createAdminServiceDeleteUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
@@ -30,7 +29,6 @@
   let searchText = "";
 
   $: organization = $page.params.organization;
-  // FIXME: Ideally, we have membersCount in this response
   $: listOrganizationMemberUsergroups =
     createAdminServiceListOrganizationMemberUsergroups(organization);
   $: listOrganizationMemberUsers =
@@ -38,7 +36,7 @@
 
   const queryClient = useQueryClient();
   const currentUser = createAdminServiceGetCurrentUser();
-  const createUserGroup = createAdminServiceCreateUsergroup();
+
   const renameUserGroup = createAdminServiceRenameUsergroup();
   const deleteUserGroup = createAdminServiceDeleteUsergroup();
   const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
@@ -52,32 +50,6 @@
   $: filteredGroups = $listOrganizationMemberUsergroups.data?.members.filter(
     (group) => group.groupName.toLowerCase().includes(searchText.toLowerCase()),
   );
-
-  async function handleCreate(newName: string) {
-    try {
-      await $createUserGroup.mutateAsync({
-        organization: organization,
-        data: {
-          name: newName,
-        },
-      });
-
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      );
-
-      userGroupName = "";
-      isCreateUserGroupDialogOpen = false;
-
-      eventBus.emit("notification", { message: "User group created" });
-    } catch (error) {
-      console.error("Error creating user group", error);
-      eventBus.emit("notification", {
-        message: "Error creating user group",
-        type: "error",
-      });
-    }
-  }
 
   async function handleRename(groupName: string, newName: string) {
     try {
@@ -304,5 +276,4 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
-  onCreate={handleCreate}
-/> -->
+/>
