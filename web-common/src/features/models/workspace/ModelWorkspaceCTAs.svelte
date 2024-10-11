@@ -2,9 +2,13 @@
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     V1ExportFormat,
     V1ReconcileStatus,
@@ -12,16 +16,12 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
-  import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
-  import CreateDashboardButton from "./CreateDashboardButton.svelte";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
-  import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { resourceColorMapping } from "../../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../../entity-management/resource-selectors";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
+  import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   export let resource: V1Resource | undefined;
   export let modelName: string;
@@ -44,7 +44,7 @@
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
-    connector as string,
+    connector,
     "",
     "",
     modelName,
@@ -107,6 +107,7 @@
             }}
           >
             <MetricsViewIcon
+              size="16"
               color={resourceColorMapping[ResourceKind.MetricsView]}
             />
             {resource?.meta?.name?.name ?? "Loading..."}
