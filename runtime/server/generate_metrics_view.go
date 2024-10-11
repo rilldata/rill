@@ -212,13 +212,19 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		if !isDefaultConnector {
 			doc.Connector = connector
 		}
-		doc.Table = tbl.Name
+		doc.Model = tbl.Name // Note: We also reference externally managed tables with `model:`. This is supported in the metrics view YAML.
 		if tbl.Database != "" && !tbl.IsDefaultDatabase {
 			doc.Database = tbl.Database
 		}
 		if tbl.DatabaseSchema != "" && !tbl.IsDefaultDatabaseSchema {
 			doc.DatabaseSchema = tbl.DatabaseSchema
 		}
+	}
+
+	// Create a map of column names, which are used to ensure the generated measure names do not collide with column names.
+	columns := make(map[string]struct{})
+	for _, f := range tbl.Schema.Fields {
+		columns[f.Name] = struct{}{}
 	}
 
 	// Validate the generated measures (not validating other parts since those are not AI-generated)
@@ -229,6 +235,11 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		Table:          tbl.Name,
 	}
 	for _, measure := range doc.Measures {
+		// Prevent measure name collisions with column names
+		if _, ok := columns[measure.Name]; !ok {
+			measure.Name += "_measure"
+		}
+
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       measure.Name,
 			Label:      measure.Label,
@@ -341,7 +352,7 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefau
 		if tbl.DatabaseSchema != "" && !tbl.IsDefaultDatabaseSchema {
 			doc.DatabaseSchema = tbl.DatabaseSchema
 		}
-		doc.Table = tbl.Name
+		doc.Model = tbl.Name // Note: We also reference externally managed tables with `model:`. This is supported in the metrics view YAML.
 	}
 
 	return marshalMetricsViewYAML(doc, false)
@@ -374,18 +385,18 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metricsViewMeasureYAML {
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
+		Name:        "total_records",
 		Label:       "Total records",
 		Expression:  "COUNT(*)",
-		Name:        "total_records",
 		Description: "",
 	})
 	for _, f := range schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
 			measures = append(measures, &metricsViewMeasureYAML{
+				Name:        fmt.Sprintf("%s_sum", f.Name),
 				Label:       fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
 				Expression:  fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
-				Name:        f.Name,
 				Description: "",
 			})
 		}
@@ -402,7 +413,6 @@ type metricsViewYAML struct {
 	Connector      string                      `yaml:"connector,omitempty"`
 	Database       string                      `yaml:"database,omitempty"`
 	DatabaseSchema string                      `yaml:"database_schema,omitempty"`
-	Table          string                      `yaml:"table,omitempty"`
 	Model          string                      `yaml:"model,omitempty"`
 	TimeDimension  string                      `yaml:"timeseries,omitempty"`
 	Dimensions     []*metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
