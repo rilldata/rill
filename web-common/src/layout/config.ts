@@ -7,6 +7,8 @@ import { cubicOut as easing } from "svelte/easing";
 
 export const DEFAULT_INSPECTOR_WIDTH = 360;
 export const DEFAULT_NAV_WIDTH = 240;
+export const MIN_NAV_WIDTH = 180;
+export const MAX_NAV_WIDTH = 360;
 export const DEFAULT_PREVIEW_TABLE_HEIGHT = 400;
 
 /** parameters used in the column profile view & elsewhere */

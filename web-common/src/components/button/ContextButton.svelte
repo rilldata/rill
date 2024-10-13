@@ -18,8 +18,8 @@
   <button
     {...getAttrs(builders)}
     aria-label={label}
-    class="group-hover:opacity-100"
-    class:!group-hover:opacity-100={suppressTooltip}
+    class="group-hover:block"
+    class:!group-hover:block={suppressTooltip}
     {id}
     on:click|preventDefault|stopPropagation
     use:builderActions={{ builders }}
@@ -35,7 +35,7 @@
   button {
     @apply h-full aspect-square p-1.5;
     @apply flex justify-center items-center;
-    @apply text-gray-500 opacity-0;
+    @apply text-gray-500 hidden;
     @apply transition-transform duration-100;
   }
 
