@@ -17,7 +17,7 @@
 </script>
 
 {#if data}
-  <Tooltip location="right" alignment="center" distance={8}>
+  <Tooltip location="right" distance={8}>
     <SimpleDataGraphic
       xType={ScaleType.NUMBER}
       yType={ScaleType.NUMBER}

@@ -20,7 +20,7 @@
 </script>
 
 {#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage) && percentage <= 1}
-  <Tooltip location="right" alignment="center" distance={8}>
+  <Tooltip location="right" distance={8}>
     <BarAndLabel
       compact
       showBackground={nullCount !== 0}
