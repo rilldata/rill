@@ -1,98 +1,55 @@
 <script lang="ts">
+  import { BannerCTAHandler } from "@rilldata/web-admin/features/billing/banner/BannerCTAHandler";
   import {
     type BillingIssueMessage,
     useBillingIssueMessage,
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
-  import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import StartTeamPlanDialog, {
-    type TeamPlanDialogTypes,
-  } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
-  import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
-  import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
+  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let organization: string;
 
   $: billingIssueMessage = useBillingIssueMessage(organization);
-  $: allProjectsHibernating = areAllProjectsHibernating(organization);
+  $: bannerCTAHandler = new BannerCTAHandler(organization);
+  $: ({ showStartTeamPlanDialog, startTeamPlanType, teamPlanEndDate } =
+    bannerCTAHandler);
 
-  let showStartTeamPlanDialog = false;
-  let startTeamPlanType: TeamPlanDialogTypes = "base";
-  let teamPlanEndDate = "";
-  async function handleBannerCTAClick(issueMessage: BillingIssueMessage) {
-    if (!issueMessage.cta) return;
-    switch (issueMessage.cta.type) {
-      case "upgrade":
-        showStartTeamPlanDialog = true;
-        startTeamPlanType = issueMessage.cta.teamPlanDialogType;
-        teamPlanEndDate = issueMessage.cta.teamPlanEndDate ?? "";
-        break;
-
-      case "payment":
-        window.open(
-          await fetchPaymentsPortalURL(organization, window.location.href),
-          "_self",
-        );
-        break;
-
-      case "contact":
-        window.Pylon("show");
-        break;
-
-      case "wake-projects":
-        void wakeAllProjects(organization);
-        break;
-    }
-  }
-
-  $: if ($billingIssueMessage.data) {
+  function showBillingIssueBanner(message: BillingIssueMessage) {
     eventBus.emit("banner", {
-      type: $billingIssueMessage.data.type,
-      message:
-        $billingIssueMessage.data.title +
-        " " +
-        $billingIssueMessage.data.description,
-      iconType: $billingIssueMessage.data.iconType,
-      ...($billingIssueMessage.data.cta
+      type: message.type,
+      message: message.title + " " + message.description,
+      iconType: message.iconType,
+      ...(message.cta
         ? {
             cta: {
               type: "button",
-              text: $billingIssueMessage.data.cta.text + "->",
+              text: message.cta.text + "->",
               onClick() {
-                void handleBannerCTAClick($billingIssueMessage.data);
+                return bannerCTAHandler.handle(message);
               },
             },
           }
         : {}),
     });
-  } else if ($allProjectsHibernating.data) {
-    eventBus.emit("banner", {
-      type: "default",
-      message:
-        "You haven’t logged in for a while so this org’s projects are hibernating.",
-      iconType: "sleep",
-      cta: {
-        text: "Wake projects ->",
-        type: "button",
-        onClick: () => {
-          void wakeAllProjects(organization);
-        },
-      },
-    });
-  } else {
-    // when switching orgs we need to make sure we clear previous org's banner.
-    // TODO: could this interfere with other banners?
-    eventBus.emit("banner", {
-      type: "clear",
-      message: "",
-      iconType: "none",
-    });
   }
+
+  $: if (!$billingIssueMessage.isFetching)
+    if ($billingIssueMessage.data) {
+      showBillingIssueBanner($billingIssueMessage.data);
+    } else {
+      // when switching orgs we need to make sure we clear previous org's banner.
+      // TODO: could this interfere with other banners?
+      eventBus.emit("banner", {
+        type: "clear",
+        message: "",
+        iconType: "none",
+      });
+    }
 </script>
 
 <StartTeamPlanDialog
-  bind:open={showStartTeamPlanDialog}
-  type={startTeamPlanType}
-  endDate={teamPlanEndDate}
+  bind:open={$showStartTeamPlanDialog}
+  type={$startTeamPlanType}
+  endDate={$teamPlanEndDate}
   {organization}
 />

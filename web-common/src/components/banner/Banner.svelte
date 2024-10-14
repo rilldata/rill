@@ -35,7 +35,12 @@
     {/if}
     {#if banner.cta}
       {#if banner.cta.type === "link"}
-        <a href={banner.cta.url} target={banner.cta.target} class="banner-cta">
+        <a
+          href={banner.cta.url}
+          target={banner.cta.target}
+          on:click={clickHandler}
+          class="banner-cta"
+        >
           {banner.cta.text}
         </a>
       {:else if banner.cta.type === "button"}

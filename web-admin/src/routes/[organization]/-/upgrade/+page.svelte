@@ -2,21 +2,17 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    createAdminServiceListOrganizationBillingIssues,
     createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
   } from "@rilldata/web-admin/client";
-  import {
-    getPaymentIssueErrorText,
-    getPaymentIssues,
-  } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
-  import { getCancelledIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue.js";
+  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
     fetchPaymentsPortalURL,
     fetchTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import WelcomeToRillCloudDialog from "@rilldata/web-admin/features/billing/plans/WelcomeToRillCloudDialog.svelte";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -30,21 +26,19 @@
   let upgrading = false;
   let isRenew = false;
   let welcomeDialogOpen = false;
-  $: issuesQuery =
-    createAdminServiceListOrganizationBillingIssues(organization);
-  $: if (!$issuesQuery.isLoading && !upgrading) {
+  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
+  $: if (!$categorisedIssues.isLoading && !upgrading) {
     upgrade();
   }
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
   async function upgrade() {
-    const paymentIssues = getPaymentIssues($issuesQuery.data?.issues ?? []);
     // if there are still payment issues then do not upgrade
-    if (paymentIssues.length) {
+    if ($categorisedIssues.data?.payment?.length) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Please fix payment issues: ${getPaymentIssueErrorText(paymentIssues)}`,
+        message: `Please fix payment issues: ${getPaymentIssueErrorText($categorisedIssues.data.payment)}`,
         link: {
           text: "Update payment",
           href: await fetchPaymentsPortalURL(
@@ -56,7 +50,7 @@
       return goto(`/${organization}`);
     }
 
-    isRenew = !!getCancelledIssue($issuesQuery.data?.issues ?? []);
+    isRenew = !!$categorisedIssues.data?.cancelled;
     const teamPlan = await fetchTeamPlan();
 
     try {
@@ -93,7 +87,7 @@
     <div class="h-36">
       <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
     </div>
-    {#if !$issuesQuery.isLoading}
+    {#if !$categorisedIssues.isLoading}
       <CtaHeader variant="bold">
         {#if isRenew}
           Renewing team plan...

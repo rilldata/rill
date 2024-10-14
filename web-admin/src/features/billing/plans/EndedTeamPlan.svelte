@@ -32,10 +32,11 @@
 <SettingsContainer {title} titleIcon="info">
   <div slot="body">
     <div>
+      Your plan is cancelled
       {#if willEndOnText}
-        Your subscription ends on {willEndOnText}
+        but you still have access until {willEndOnText}.
       {:else}
-        Your subscription has ended.
+        and your subscription has ended.
       {/if}
       <PricingDetails />
     </div>

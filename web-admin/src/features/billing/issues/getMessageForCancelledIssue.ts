@@ -23,7 +23,7 @@ export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
       new Date(cancelledSubIssue.metadata.subscriptionCancelled?.endDate),
     );
     if (endDate.isValid && endDate.toMillis() > Date.now()) {
-      accessTimeout = `but you still have access through ${endDate.toLocaleString(DateTime.DATE_MED)}`;
+      accessTimeout = `but you still have access until ${endDate.toLocaleString(DateTime.DATE_MED)}`;
     }
   }
   if (!accessTimeout) {
@@ -31,8 +31,8 @@ export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
   }
 
   return <BillingIssueMessage>{
-    type: "warning",
-    title: `Your plan was canceled ${accessTimeout}.`,
+    type: accessTimeout ? "warning" : "error",
+    title: `Your plan is canceled ${accessTimeout}.`,
     description: "To maintain access, renew your plan.",
     iconType: "alert",
     cta: {

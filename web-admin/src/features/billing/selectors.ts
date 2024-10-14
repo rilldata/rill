@@ -77,6 +77,7 @@ export function useCategorisedOrganizationBillingIssues(org: string) {
           payment: getPaymentIssues(issues),
         };
       },
+      refetchOnWindowFocus: true,
     },
   });
 }
@@ -101,6 +102,7 @@ export function orgHasBlockerIssues(org: string) {
         const payment = getPaymentIssues(issues);
         return !!payment.length;
       },
+      refetchOnWindowFocus: true,
     },
   });
 }

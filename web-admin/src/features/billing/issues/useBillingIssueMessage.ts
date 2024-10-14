@@ -8,6 +8,7 @@ import {
   getSubscriptionForOrg,
   useCategorisedOrganizationBillingIssues,
 } from "@rilldata/web-admin/features/billing/selectors";
+import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { BannerMessage } from "@rilldata/web-common/lib/event-bus/events";
 import { derived } from "svelte/store";
@@ -35,13 +36,20 @@ export function useBillingIssueMessage(
       createAdminServiceGetOrganization(organization),
       getSubscriptionForOrg(organization),
       useCategorisedOrganizationBillingIssues(organization),
+      areAllProjectsHibernating(organization),
     ],
-    ([orgResp, subscriptionResp, categorisedIssuesResp]) => {
+    ([
+      orgResp,
+      subscriptionResp,
+      categorisedIssuesResp,
+      allProjectsHibernatingResp,
+    ]) => {
       if (
         orgResp.isFetching ||
         (!orgResp.data?.permissions?.manageOrg &&
           subscriptionResp.isFetching) ||
-        categorisedIssuesResp.isFetching
+        categorisedIssuesResp.isFetching ||
+        allProjectsHibernatingResp.isFetching
       ) {
         return {
           isFetching: true,
@@ -50,14 +58,16 @@ export function useBillingIssueMessage(
       if (
         orgResp.error ||
         subscriptionResp.error ||
-        categorisedIssuesResp.error
+        categorisedIssuesResp.error ||
+        allProjectsHibernatingResp.error
       ) {
         return {
           isFetching: false,
           error:
             orgResp.error ??
             subscriptionResp.error ??
-            categorisedIssuesResp.error,
+            categorisedIssuesResp.error ??
+            allProjectsHibernatingResp.error,
         };
       }
 
@@ -89,6 +99,22 @@ export function useBillingIssueMessage(
               !isTeamPlan(subscriptionResp.data.subscription.plan),
             categorisedIssuesResp.data.payment,
           ),
+        };
+      }
+
+      if (allProjectsHibernatingResp.data) {
+        return {
+          isFetching: false,
+          data: {
+            type: "default",
+            title:
+              "You haven’t logged in for a while so this org’s projects are hibernating.",
+            description: "",
+            cta: {
+              type: "wake-projects",
+              text: "Wake projects",
+            },
+          },
         };
       }
 
