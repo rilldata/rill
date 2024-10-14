@@ -264,8 +264,8 @@
     aspect-ratio: 2/1;
     @apply basis-40 p-2;
     @apply border border-gray-300 rounded;
-    @apply justify-center items-center inline-flex;
-    @apply cursor-pointer;
+    @apply grid place-content-center;
+    @apply cursor-pointer overflow-hidden;
   }
 
   .connector-tile-button:hover {
