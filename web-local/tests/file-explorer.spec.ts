@@ -16,6 +16,7 @@ test.describe("File Explorer", () => {
       ).toBeVisible();
 
       // Rename the file
+      await page.getByRole("listitem", { name: "/untitled_file" }).hover();
       await page.getByLabel("/untitled_file actions menu").click();
       await page.getByRole("menuitem", { name: "Rename..." }).click();
       await page.getByLabel("File name").click();
@@ -39,6 +40,7 @@ test.describe("File Explorer", () => {
       ).toBeVisible();
 
       // Delete the file
+      await page.getByRole("listitem", { name: "/README.md" }).hover();
       await page.getByLabel("/README.md actions menu").click();
       await page.getByRole("menuitem", { name: "Delete" }).click();
       await expect(
@@ -91,7 +93,11 @@ test.describe("File Explorer", () => {
         }),
       ).toBeVisible();
 
+      await page.waitForTimeout(2000);
       // Delete the folder
+      await page
+        .getByRole("button", { name: "my-directory", exact: true })
+        .hover();
       await page.getByLabel("my-directory actions menu").click();
       await page.getByRole("menuitem", { name: "Delete" }).click();
       await page.getByRole("button", { name: "Delete" }).click();

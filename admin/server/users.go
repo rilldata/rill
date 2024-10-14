@@ -383,12 +383,13 @@ func userToPB(u *database.User) *adminv1.User {
 
 func memberUserToPB(m *database.MemberUser) *adminv1.MemberUser {
 	return &adminv1.MemberUser{
-		UserId:    m.ID,
-		UserEmail: m.Email,
-		UserName:  m.DisplayName,
-		RoleName:  m.RoleName,
-		CreatedOn: timestamppb.New(m.CreatedOn),
-		UpdatedOn: timestamppb.New(m.UpdatedOn),
+		UserId:       m.ID,
+		UserEmail:    m.Email,
+		UserName:     m.DisplayName,
+		UserPhotoUrl: m.PhotoURL,
+		RoleName:     m.RoleName,
+		CreatedOn:    timestamppb.New(m.CreatedOn),
+		UpdatedOn:    timestamppb.New(m.UpdatedOn),
 	}
 }
 

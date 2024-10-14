@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
@@ -19,6 +19,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
+  import { createAndPreviewExplore } from "./create-and-preview-explore";
 
   export let filePath: string;
 
@@ -30,7 +31,8 @@
   const { customDashboards, ai } = featureFlags;
 
   $: instanceId = $runtime.instanceId;
-  $: dashboardQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resource = $resourceQuery.data;
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   /**
@@ -38,7 +40,7 @@
    * Note that not all dashboards have an underlying model. Some dashboards are
    * underpinned by a source/table.
    */
-  $: referenceModelName = $dashboardQuery?.data?.meta?.refs?.filter(
+  $: referenceModelName = $resourceQuery?.data?.meta?.refs?.filter(
     (ref) => ref.kind === ResourceKind.Model,
   )?.[0]?.name;
 
@@ -59,18 +61,6 @@
       MetricsEventScreenName.Model,
     );
   };
-
-  const editMetrics = async () => {
-    const previousScreenName = getScreenNameFromPage();
-    await goto(`/files${filePath}`);
-    await behaviourEvent.fireNavigationEvent(
-      ($dashboardQuery.data?.meta?.name as string) ?? "",
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      previousScreenName,
-      MetricsEventScreenName.MetricsDefinition,
-    );
-  };
 </script>
 
 {#if referenceModelName}
@@ -79,10 +69,14 @@
     Edit model
   </NavigationMenuItem>
 {/if}
-<NavigationMenuItem on:click={editMetrics}>
-  <MetricsViewIcon slot="icon" />
-  Edit metrics
-</NavigationMenuItem>
+{#if resource}
+  <NavigationMenuItem
+    on:click={() => createAndPreviewExplore(queryClient, instanceId, resource)}
+  >
+    <ExploreIcon slot="icon" />
+    Generate dashboard
+  </NavigationMenuItem>
+{/if}
 {#if $customDashboards}
   <NavigationMenuItem
     on:click={() => {

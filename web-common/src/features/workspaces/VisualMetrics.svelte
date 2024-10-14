@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createQueryServiceTableColumns,
+    type MetricsViewSpecDimensionV2,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -39,6 +40,7 @@
     types,
   } from "../visual-metrics-editing/lib";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
 
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
@@ -78,55 +80,116 @@
 
   $: timeDimension = stringGuard(rawTimeDimension);
   $: databaseSchema = stringGuard(rawDatabaseSchema);
-  $: model = stringGuard(rawModel) || stringGuard(rawTable);
+  $: modelOrSourceName = stringGuard(rawModel) || stringGuard(rawTable);
+  $: smallestTimeGrain = stringGuard(rawSmallestTimeGrain);
 
-  $: itemGroups = {
-    measures:
-      raw.measures instanceof YAMLSeq
-        ? raw.measures.items.map((item) => new YAMLMeasure(item))
-        : [],
-    dimensions:
-      raw.dimensions instanceof YAMLSeq
-        ? raw.dimensions.items.map(
-            (item, i) => new YAMLDimension(item, dimensions[i]),
-          )
-        : [],
-  };
-
-  $: smallestTimeGrain =
-    rawSmallestTimeGrain && typeof rawSmallestTimeGrain === "string"
-      ? rawSmallestTimeGrain
-      : undefined;
-
-  // Queries
   $: modelsQuery = useModels(instanceId);
   $: sourcesQuery = useSources(instanceId);
   $: metricsViewQuery = getResource(queryClient, instanceId);
-  $: resourceQuery = useResource(instanceId, model, ResourceKind.Model);
 
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
   $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
-  $: connector = $resourceQuery?.data?.model?.spec?.outputConnector;
+  $: hasSourceSelected = sourceNames.some(
+    ({ value }) => value === modelOrSourceName,
+  );
+  $: hasModelSelected = modelNames.some(
+    ({ value }) => value === modelOrSourceName,
+  );
 
-  $: columnsQuery = createQueryServiceTableColumns(instanceId, model, {
-    connector,
-    database: "", // models use the default database
-    databaseSchema,
-  });
+  $: modelAndSourceOptions = [...modelNames, ...sourceNames];
+
+  $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
+
+  $: resourceQuery = useResource(
+    instanceId,
+    modelOrSourceName,
+    hasSourceSelected ? ResourceKind.Source : ResourceKind.Model,
+  );
+
+  $: connector = hasModelSelected
+    ? $resourceQuery?.data?.model?.spec?.outputConnector
+    : $resourceQuery?.data?.source?.spec?.sinkConnector;
+
+  $: columnsQuery = createQueryServiceTableColumns(
+    instanceId,
+    modelOrSourceName,
+    {
+      connector,
+      database: "", // models use the default database
+      databaseSchema,
+    },
+    {
+      query: {
+        enabled: Boolean(connector) && hasValidModelOrSourceSelection,
+      },
+    },
+  );
 
   $: ({ data: columnsResponse } = $columnsQuery);
 
-  $: columns = columnsResponse?.profileColumns ?? [
-    { name: timeDimension, type: "TIMESTAMP" },
-  ];
+  $: columns = columnsResponse?.profileColumns ?? [];
 
   $: timeOptions = columns
-    .filter(({ type }) => type === "TIMESTAMP")
+    .filter(({ type }) => type && TIMESTAMPS.has(type))
     .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
 
   /** display the main error (the first in this array) at the bottom */
   $: mainError = errors?.at(0);
+
+  $: itemGroups = {
+    measures:
+      raw.measures instanceof YAMLSeq
+        ? raw.measures.items
+            .map((item) => {
+              if (item instanceof YAMLMap) return new YAMLMeasure(item);
+            })
+            .filter(is<YAMLMeasure>)
+        : [],
+    dimensions:
+      raw.dimensions instanceof YAMLSeq
+        ? createDimensions(raw.dimensions, dimensions)
+        : [],
+  };
+
+  $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
+    (acc, { name, label, resourceName }) => {
+      acc.name = Math.max(acc.name, name.length || resourceName?.length || 0);
+      acc.label = Math.max(acc.label, label.length);
+      return acc;
+    },
+    { name: 0, label: 0 },
+  );
+
+  $: measureNamesAndLabels = itemGroups.measures.reduce(
+    (acc, { name, label }) => {
+      acc.name = Math.max(acc.name, name.length);
+      acc.label = Math.max(acc.label, label.length);
+      return acc;
+    },
+    { name: 0, label: 0 },
+  );
+
+  $: longestName = Math.max(
+    dimensionNamesAndLabels.name,
+    measureNamesAndLabels.name,
+  );
+  $: longestLabel = Math.max(
+    dimensionNamesAndLabels.label,
+    measureNamesAndLabels.label,
+  );
+
+  function createDimensions(
+    rawDimensions: YAMLSeq<YAMLMap<string, string>>,
+    metricsViewDimensions: MetricsViewSpecDimensionV2[],
+  ) {
+    return rawDimensions.items
+      .map((item, i) => {
+        if (item instanceof YAMLMap)
+          return new YAMLDimension(item, metricsViewDimensions[i]);
+      })
+      .filter(is<YAMLDimension>);
+  }
 
   function stringGuard(value: unknown | undefined): string {
     return value && typeof value === "string" ? value : "";
@@ -182,6 +245,10 @@
       value,
       label: value,
     };
+  }
+
+  function is<T>(value: unknown): value is T {
+    return Boolean(value);
   }
 
   async function reorderList(
@@ -256,6 +323,10 @@
       const sequence = raw[type];
 
       if (!(sequence instanceof YAMLSeq)) {
+        eventBus.emit("notification", {
+          message: "Error deleting items",
+          type: "error",
+        });
         return;
       }
       const items = sequence.items as Array<YAMLMap>;
@@ -265,10 +336,9 @@
           indices.has($editingIndex) && type === $editingItem?.type;
       }
 
-      parsedDocument.set(
-        type,
-        items.filter((_, i) => !indices.has(i)),
-      );
+      const filtered = items.filter((_, i) => !indices.has(i));
+
+      parsedDocument.set(type, filtered);
 
       indices.forEach((i) => {
         selected[type].delete(i);
@@ -329,33 +399,6 @@
       type: "success",
     });
   }
-
-  $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
-    (acc, { name, label }) => {
-      acc.name = Math.max(acc.name, name.length);
-      acc.label = Math.max(acc.label, label.length);
-      return acc;
-    },
-    { name: 0, label: 0 },
-  );
-
-  $: measureNamesAndLabels = itemGroups.measures.reduce(
-    (acc, { name, label }) => {
-      acc.name = Math.max(acc.name, name.length);
-      acc.label = Math.max(acc.label, label.length);
-      return acc;
-    },
-    { name: 0, label: 0 },
-  );
-
-  $: longestName = Math.max(
-    dimensionNamesAndLabels.name,
-    measureNamesAndLabels.name,
-  );
-  $: longestLabel = Math.max(
-    dimensionNamesAndLabels.label,
-    measureNamesAndLabels.label,
-  );
 </script>
 
 <div class="wrapper">
@@ -366,14 +409,19 @@
           sameWidth
           full
           truncate
-          value={model}
-          options={[...modelNames, ...sourceNames]}
+          value={modelOrSourceName}
+          options={modelAndSourceOptions}
+          placeholder="Select a model"
           label="Model or source referenced"
-          onChange={(newModelName) => {
-            confirmation = {
-              action: "switch",
-              model: newModelName,
-            };
+          onChange={async (newModelOrSourceName) => {
+            if (!modelOrSourceName) {
+              await updateProperty("model", newModelOrSourceName, "table");
+            } else {
+              confirmation = {
+                action: "switch",
+                model: newModelOrSourceName,
+              };
+            }
           }}
         />
       {/key}
@@ -384,7 +432,12 @@
         truncate
         value={timeDimension}
         options={timeOptions}
+        placeholder="Select time column"
         label="Time column"
+        disabled={!hasValidModelOrSourceSelection || !timeOptions.length}
+        disabledMessage={!hasValidModelOrSourceSelection
+          ? "No model selected"
+          : "No timestamp columns in model"}
         hint="Column from model that will be used as primary time dimension in dashboards"
         onChange={async (value) => {
           await updateProperty("timeseries", value);
@@ -400,6 +453,7 @@
           value: label,
           label,
         }))}
+        placeholder="Select time grain"
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {

@@ -147,6 +147,7 @@
     /** no op for now */
   }}
   role="textbox"
+  aria-label="Code editor"
   tabindex="0"
 />
 

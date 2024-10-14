@@ -21,14 +21,13 @@ type ExploreYAML struct {
 	Theme       string                 `yaml:"theme"`
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
-	Presets     []*struct {
-		Label               string             `yaml:"label"`
+	Defaults    *struct {
 		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
 		Measures            *FieldSelectorYAML `yaml:"measures"`
 		TimeRange           string             `yaml:"time_range"`
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
-	} `yaml:"presets"`
+	} `yaml:"defaults"`
 	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
@@ -182,53 +181,48 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 
 	// Build and validate presets
-	var presets []*runtimev1.ExplorePreset
-	for _, p := range tmp.Presets {
-		if p == nil {
-			continue
-		}
-
-		if p.TimeRange != "" {
-			if err := validateISO8601(p.TimeRange, false, false); err != nil {
-				return fmt.Errorf("invalid time range %q: %w", p.TimeRange, err)
+	var defaultPreset *runtimev1.ExplorePreset
+	if tmp.Defaults != nil {
+		if tmp.Defaults.TimeRange != "" {
+			if err := validateISO8601(tmp.Defaults.TimeRange, false, false); err != nil {
+				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
 			}
 		}
 
 		mode := runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
-		if p.ComparisonMode != "" {
+		if tmp.Defaults.ComparisonMode != "" {
 			var ok bool
-			mode, ok = exploreComparisonModes[p.ComparisonMode]
+			mode, ok = exploreComparisonModes[tmp.Defaults.ComparisonMode]
 			if !ok {
-				return fmt.Errorf("invalid comparison mode %q (options: %s)", p.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
+				return fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
 			}
 		}
 
-		if p.ComparisonDimension != "" && mode != runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION {
+		if tmp.Defaults.ComparisonDimension != "" && mode != runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
 		var presetDimensionsSelector *runtimev1.FieldSelector
-		presetDimensions, ok := p.Dimensions.TryResolve()
+		presetDimensions, ok := tmp.Defaults.Dimensions.TryResolve()
 		if !ok {
-			presetDimensionsSelector = p.Dimensions.Proto()
+			presetDimensionsSelector = tmp.Defaults.Dimensions.Proto()
 		}
 
 		var presetMeasuresSelector *runtimev1.FieldSelector
-		presetMeasures, ok := p.Measures.TryResolve()
+		presetMeasures, ok := tmp.Defaults.Measures.TryResolve()
 		if !ok {
-			presetMeasuresSelector = p.Measures.Proto()
+			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
 		}
 
-		presets = append(presets, &runtimev1.ExplorePreset{
-			Label:               p.Label,
+		defaultPreset = &runtimev1.ExplorePreset{
 			Dimensions:          presetDimensions,
 			DimensionsSelector:  presetDimensionsSelector,
 			Measures:            presetMeasures,
 			MeasuresSelector:    presetMeasuresSelector,
-			TimeRange:           p.TimeRange,
+			TimeRange:           tmp.Defaults.TimeRange,
 			ComparisonMode:      mode,
-			ComparisonDimension: p.ComparisonDimension,
-		})
+			ComparisonDimension: tmp.Defaults.ComparisonDimension,
+		}
 	}
 
 	// Build security rules
@@ -259,7 +253,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.Theme = tmp.Theme
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
-	r.ExploreSpec.Presets = presets
+	r.ExploreSpec.DefaultPreset = defaultPreset
 	r.ExploreSpec.SecurityRules = rules
 
 	return nil

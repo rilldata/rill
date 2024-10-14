@@ -155,6 +155,7 @@ export type PivotChipData = {
   id: string;
   title: string;
   type: PivotChipType;
+  description?: string;
 };
 
 export enum PivotChipType {

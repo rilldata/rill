@@ -69,6 +69,7 @@ dimensions:
   description: ""
 `;
 
+    await page.getByLabel("code").click();
     // update the code editor with the new spec
     await watcher.updateAndWaitForDashboard(formatterFlowDashboard);
     await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);

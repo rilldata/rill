@@ -11,6 +11,7 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import PreviewButton from "../explores/PreviewButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -19,11 +20,11 @@
     hasUnsavedChanges,
     autoSave,
     path: filePath,
-
+    resourceName,
     fileName,
   } = fileArtifact);
 
-  $: exploreName = getNameFromFile(filePath);
+  $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
   $: initLocalUserPreferenceStore(exploreName);
 
@@ -51,7 +52,13 @@
     titleInput={fileName}
     {filePath}
     resourceKind={ResourceKind.Explore}
-  />
+  >
+    <PreviewButton
+      slot="cta"
+      href="/explore/{exploreName}"
+      disabled={allErrors.length > 0}
+    />
+  </WorkspaceHeader>
 
   <ExploreEditor
     slot="body"

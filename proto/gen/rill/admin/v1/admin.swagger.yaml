@@ -4392,6 +4392,8 @@ definitions:
         type: string
       userName:
         type: string
+      userPhotoUrl:
+        type: string
       roleName:
         type: string
       createdOn:

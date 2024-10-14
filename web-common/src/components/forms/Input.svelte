@@ -32,9 +32,11 @@
   export let textClass = "text-xs";
   export let enableSearch = false;
   export let fields: string[] | undefined = [];
+  export let disabled = false;
+  export let disabledMessage = "No valid options";
   export let options:
     | { value: string; label: string; type?: string }[]
-    | undefined = [];
+    | undefined = undefined;
   export let onInput: (
     newValue: string,
     e: Event & {
@@ -127,7 +129,7 @@
     </div>
   {/if}
 
-  {#if !options?.length}
+  {#if !options}
     <div
       class="input-wrapper {textClass}"
       style:width
@@ -144,6 +146,7 @@
           {id}
           contenteditable
           class="multiline-input"
+          class:pointer-events-none={disabled}
           {placeholder}
           role="textbox"
           tabindex="0"
@@ -161,6 +164,7 @@
           {placeholder}
           name={id}
           class={size}
+          {disabled}
           value={value ?? ""}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
@@ -190,8 +194,9 @@
         </button>
       {/if}
     </div>
-  {:else if options.length}
+  {:else}
     <Select
+      {disabled}
       {enableSearch}
       ringFocus
       {sameWidth}
@@ -202,7 +207,7 @@
       {onChange}
       fontSize={14}
       {truncate}
-      {placeholder}
+      placeholder={disabled ? disabledMessage : placeholder}
     />
   {/if}
 

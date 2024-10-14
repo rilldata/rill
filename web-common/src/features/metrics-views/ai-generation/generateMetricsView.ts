@@ -22,7 +22,7 @@ import {
 import httpClient from "../../../runtime-client/http-client";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
-import { handleEntityCreate } from "../../file-explorer/new-files";
+import { createAndPreviewExplore } from "../create-and-preview-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
 /**
@@ -87,7 +87,7 @@ export function useCreateMetricsViewFromTableUIAction(
     const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
 
     try {
-      // First, request an AI-generated dashboard
+      // First, request an AI-generated metrics view
       void runtimeServiceGenerateMetricsViewFileWithSignal(
         instanceId,
         {
@@ -130,43 +130,8 @@ export function useCreateMetricsViewFromTableUIAction(
 
       const previousScreenName = getScreenNameFromPage();
 
-      if (createExplore) {
-        // Get the Metrics View to use as a base for the Explore
-        const metricsViewResource = fileArtifacts
-          .getFileArtifact(newMetricsViewFilePath)
-          .getResource(queryClient, instanceId);
-
-        // Create the Explore file
-        const newExploreFilePath = await handleEntityCreate(
-          ResourceKind.Explore,
-          get(metricsViewResource)?.data,
-        );
-        if (!newExploreFilePath) {
-          throw new Error("Failed to create an Explore file");
-        }
-
-        // Wait until the Explore is ready
-        const exploreResource = fileArtifacts
-          .getFileArtifact(newExploreFilePath)
-          .getResource(queryClient, instanceId);
-        await waitUntil(
-          () => get(exploreResource)?.data?.meta?.name?.name !== undefined,
-        );
-
-        // Navigate to the Explore Preview
-        const newExploreName = get(exploreResource)?.data?.meta?.name?.name;
-        if (!newExploreName) {
-          throw new Error("Failed to create an Explore resource");
-        }
-        await goto(`/explore/${newExploreName}`);
-        void behaviourEvent.fireNavigationEvent(
-          newExploreName,
-          behaviourEventMedium,
-          metricsEventSpace,
-          previousScreenName,
-          MetricsEventScreenName.Dashboard,
-        );
-      } else {
+      // If we're not creating an Explore, navigate to the Metrics View file
+      if (!createExplore) {
         await goto(`/files${newMetricsViewFilePath}`);
         void behaviourEvent.fireNavigationEvent(
           newMetricsViewName,
@@ -175,7 +140,25 @@ export function useCreateMetricsViewFromTableUIAction(
           previousScreenName,
           MetricsEventScreenName.MetricsDefinition,
         );
+        overlay.set(null);
+        return;
       }
+
+      // If we are creating an Explore...
+
+      // Get the Metrics View to use as a base for the Explore
+      const metricsViewResource = fileArtifacts
+        .getFileArtifact(newMetricsViewFilePath)
+        .getResource(queryClient, instanceId);
+      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
+
+      const resource = get(metricsViewResource).data;
+      if (!resource) {
+        throw new Error("Failed to create a Metrics View resource");
+      }
+
+      // Create the Explore file, and navigate to it
+      await createAndPreviewExplore(queryClient, instanceId, resource);
     } catch (err) {
       eventBus.emit("notification", {
         message:

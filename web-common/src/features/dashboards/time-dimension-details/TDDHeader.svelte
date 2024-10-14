@@ -25,9 +25,15 @@
   import { fly } from "svelte/transition";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
-  import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
+  import exportTDD from "./export-tdd";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import {
+    createQueryServiceExport,
+    V1ExportFormat,
+  } from "@rilldata/web-common/runtime-client";
+  import { getTDDExportArgs } from "./getTDDExportArgs";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -35,9 +41,12 @@
   export let comparing: TDDComparison | undefined;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = false;
+  export let expandedMeasureName: string;
 
   const dispatch = createEventDispatcher();
   const { adminServer, exports } = featureFlags;
+  const exportDash = createQueryServiceExport();
+  const stateManagers = getStateManagers();
 
   const {
     selectors: {
@@ -48,9 +57,12 @@
       dimensionsFilter: { toggleDimensionFilterMode },
     },
     dashboardStore,
-  } = getStateManagers();
+    validSpecStore,
+  } = stateManagers;
 
-  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
+  const scheduledReportsQueryArgs = getTDDExportArgs(stateManagers);
+
+  $: metricsViewProto = $dashboardStore.proto;
 
   $: selectableMeasures = $allMeasures
     .filter((m) => m.name !== undefined || m.label !== undefined)
@@ -63,12 +75,9 @@
       }),
     );
 
-  $: selectedItems = $allMeasures.map((m) => m.name === expandedMeasureName);
-
   $: selectedMeasureLabel =
     $allMeasures.find((m) => m.name === expandedMeasureName)?.label ??
-    expandedMeasureName ??
-    "";
+    expandedMeasureName;
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
@@ -100,8 +109,8 @@
     toggleDimensionFilterMode(dimensionName);
   }
 
-  function switchMeasure(event) {
-    metricsExplorerStore.setExpandedMeasureName(exploreName, event.detail);
+  function switchMeasure(measureName: string) {
+    metricsExplorerStore.setExpandedMeasureName(exploreName, measureName);
   }
 
   let showReplacePivotModal = false;
@@ -155,6 +164,15 @@
       },
     );
   }
+
+  const handleExportTDD = async (format: V1ExportFormat) => {
+    await exportTDD({
+      ctx: stateManagers,
+      query: exportDash,
+      format,
+      timeDimension: $validSpecStore.data?.metricsView?.timeDimension as string,
+    });
+  };
 </script>
 
 <div class="tdd-header">
@@ -164,7 +182,7 @@
         <Row size="16px" /> Rows
       </div>
 
-      <ComparisonSelector chipStyle {exploreName} />
+      <ComparisonSelector {exploreName} />
     </div>
 
     <div class="flex items-center gap-x-4 pl-2">
@@ -175,9 +193,9 @@
         <TimeGrainSelector {exploreName} tdd />
         <SearchableFilterChip
           label={selectedMeasureLabel}
-          on:item-clicked={switchMeasure}
+          onSelect={switchMeasure}
           selectableItems={selectableMeasures}
-          {selectedItems}
+          selectedItems={[expandedMeasureName]}
           tooltipText="Choose a measure to display"
         />
       </div>
@@ -244,7 +262,14 @@
       </Tooltip>
 
       {#if $exports}
-        <TDDExportButton includeScheduledReport={$adminServer} />
+        <ExportMenu
+          label="Export table data"
+          onExport={handleExportTDD}
+          includeScheduledReport={$adminServer}
+          queryArgs={$scheduledReportsQueryArgs}
+          {metricsViewProto}
+          {exploreName}
+        />
       {/if}
       <Button
         compact

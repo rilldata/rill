@@ -230,7 +230,7 @@ ${extras}
 measures: '*'
 dimensions: '*'
 
-presets:
-- ${defaults}
+defaults:
+  ${defaults}
   `;
 }

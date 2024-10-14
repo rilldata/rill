@@ -25,9 +25,9 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
+  type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
-  type V1ExploreSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -104,7 +104,7 @@ export const timeControlStateSelector = ([
     (metricsView.smallestTimeGrain as V1TimeGrain) ||
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   const defaultTimeRange = isoDurationToFullTimeRange(
-    explore.presets?.[0]?.timeRange,
+    explore?.defaultPreset?.timeRange,
     allTimeRange.start,
     allTimeRange.end,
     metricsExplorer.selectedTimezone,
@@ -429,7 +429,7 @@ export function selectedTimeRangeSelector([
     end: new Date(timeRangeResponse.data.timeRangeSummary.max),
   };
   const defaultTimeRange = isoDurationToFullTimeRange(
-    exploreSpec.presets?.[0]?.timeRange,
+    exploreSpec?.defaultPreset?.timeRange,
     allTimeRange.start,
     allTimeRange.end,
     explorer.selectedTimezone,

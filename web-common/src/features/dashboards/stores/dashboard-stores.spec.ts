@@ -1,10 +1,21 @@
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  getPersistentDashboardStore,
+  initPersistentDashboardStore,
+} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import {
   AD_BIDS_BASE_FILTER,
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_CLEARED_FILTER,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXCLUDE_FILTER,
+  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_NAME,
+  AD_BIDS_EXPLORE_WITH_DELETED_DIMENSION,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_INIT,
   AD_BIDS_MIRROR_NAME,
@@ -14,18 +25,7 @@ import {
   LAST_6_HOURS_TEST_CONTROLS,
   LAST_6_HOURS_TEST_PARSED_CONTROLS,
   TestTimeConstants,
-  AD_BIDS_EXPLORE_INIT,
-  AD_BIDS_EXPLORE_NAME,
-  AD_BIDS_EXPLORE_WITH_DELETED_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import {
-  createAndExpression,
-  createInExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
-  getPersistentDashboardStore,
-  initPersistentDashboardStore,
-} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
   assertMetricsView,
   assertMetricsViewRaw,
@@ -233,13 +233,11 @@ describe("dashboard-stores", () => {
       AD_BIDS_METRICS_INIT,
       {
         ...AD_BIDS_EXPLORE_INIT,
-        presets: [
-          {
-            timeRange: "PT6H",
-            comparisonMode:
-              V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_UNSPECIFIED,
-          },
-        ],
+        defaultPreset: {
+          timeRange: "PT6H",
+          comparisonMode:
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_UNSPECIFIED,
+        },
       },
       {
         timeRangeSummary: {
@@ -262,13 +260,11 @@ describe("dashboard-stores", () => {
       AD_BIDS_METRICS_INIT,
       {
         ...AD_BIDS_EXPLORE_INIT,
-        presets: [
-          {
-            timeRange: "PT6H",
-            comparisonMode:
-              V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
-          },
-        ],
+        defaultPreset: {
+          timeRange: "PT6H",
+          comparisonMode:
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
+        },
       },
       {
         timeRangeSummary: {
@@ -291,14 +287,12 @@ describe("dashboard-stores", () => {
       AD_BIDS_METRICS_INIT,
       {
         ...AD_BIDS_EXPLORE_INIT,
-        presets: [
-          {
-            timeRange: "PT6H",
-            comparisonMode:
-              V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
-            comparisonDimension: AD_BIDS_DOMAIN_DIMENSION,
-          },
-        ],
+        defaultPreset: {
+          timeRange: "PT6H",
+          comparisonMode:
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
+          comparisonDimension: AD_BIDS_DOMAIN_DIMENSION,
+        },
       },
       {
         timeRangeSummary: {

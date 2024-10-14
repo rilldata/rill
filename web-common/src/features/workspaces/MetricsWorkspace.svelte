@@ -18,12 +18,10 @@
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
-  import { featureFlags } from "../feature-flags";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import VisualMetrics from "./VisualMetrics.svelte";
-
-  const { visualEditing } = featureFlags;
+  import PreviewButton from "../explores/PreviewButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -91,13 +89,16 @@
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if !isOldMetricsView}
+      {#if isOldMetricsView}
+        <PreviewButton
+          href="/explore/{metricsViewName}"
+          disabled={errors.length > 0}
+        />
+      {:else}
         <GoToDashboardButton {resource} />
       {/if}
 
-      {#if $visualEditing}
-        <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
-      {/if}
+      <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
     </div>
   </WorkspaceHeader>
 
@@ -111,13 +112,15 @@
         {metricsViewName}
       />
     {:else}
-      <VisualMetrics
-        {errors}
-        {fileArtifact}
-        switchView={() => {
-          $selectedView = "code";
-        }}
-      />
+      {#key fileArtifact}
+        <VisualMetrics
+          {errors}
+          {fileArtifact}
+          switchView={() => {
+            $selectedView = "code";
+          }}
+        />
+      {/key}
     {/if}
   </svelte:fragment>
 

@@ -14,6 +14,8 @@ test.describe("Metrics editor", () => {
   test("Metrics editor", async ({ page }) => {
     await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
+    await page.getByLabel("code").click();
+
     await updateCodeEditor(page, "");
 
     // inspector should point to the documentation
