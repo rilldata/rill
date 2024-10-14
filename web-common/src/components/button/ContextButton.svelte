@@ -18,8 +18,9 @@
   <button
     {...getAttrs(builders)}
     aria-label={label}
+    class:block={suppressTooltip}
     class="group-hover:block"
-    class:!group-hover:block={suppressTooltip}
+    class:!block={suppressTooltip}
     {id}
     on:click|preventDefault|stopPropagation
     use:builderActions={{ builders }}
