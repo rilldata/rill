@@ -38,7 +38,7 @@
   );
 </script>
 
-<Tooltip alignment="right" distance={8} location="bottom">
+<Tooltip distance={8} location="bottom">
   <Button
     disabled={!modelIsIdle || hasError}
     on:click={createMetricsViewFromModel}

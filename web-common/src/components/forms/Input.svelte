@@ -32,7 +32,8 @@
   export let textClass = "text-xs";
   export let enableSearch = false;
   export let fields: string[] | undefined = [];
-  export let noOptionsMessage = "No valid options";
+  export let disabled = false;
+  export let disabledMessage = "No valid options";
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
@@ -145,6 +146,7 @@
           {id}
           contenteditable
           class="multiline-input"
+          class:pointer-events-none={disabled}
           {placeholder}
           role="textbox"
           tabindex="0"
@@ -162,6 +164,7 @@
           {placeholder}
           name={id}
           class={size}
+          {disabled}
           value={value ?? ""}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
@@ -191,8 +194,9 @@
         </button>
       {/if}
     </div>
-  {:else if options.length}
+  {:else}
     <Select
+      {disabled}
       {enableSearch}
       ringFocus
       {sameWidth}
@@ -203,12 +207,8 @@
       {onChange}
       fontSize={14}
       {truncate}
-      {placeholder}
+      placeholder={disabled ? disabledMessage : placeholder}
     />
-  {:else}
-    <div class="text-sm h-8 items-center flex text-gray-500 italic">
-      {noOptionsMessage}
-    </div>
   {/if}
 
   {#if errors && (alwaysShowError || (!focus && value))}

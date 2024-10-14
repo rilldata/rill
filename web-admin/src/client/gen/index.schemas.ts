@@ -814,6 +814,7 @@ export interface V1MemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
+  userPhotoUrl?: string;
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;

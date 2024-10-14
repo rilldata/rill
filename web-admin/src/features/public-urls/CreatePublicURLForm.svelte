@@ -9,7 +9,6 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { Divider } from "@rilldata/web-common/components/menu";
   import {
     Popover,
     PopoverContent,
@@ -223,7 +222,7 @@
     </div> -->
 
     {#if hasWhereFilter || hasDimensionThresholdFilter}
-      <Divider marginTop={4} marginBottom={4} />
+      <hr class="border-gray-200 mt-4 mb-4" />
 
       <div class="flex flex-col gap-y-1">
         <p class="text-xs text-gray-800 font-normal">

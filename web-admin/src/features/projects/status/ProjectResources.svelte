@@ -32,6 +32,6 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.data}
-    <ProjectResourcesTable resources={$resources.data} />
+    <ProjectResourcesTable data={$resources.data} />
   {/if}
 </section>

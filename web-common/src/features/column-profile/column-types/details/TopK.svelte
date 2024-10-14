@@ -22,6 +22,7 @@
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import TopKListItem from "./TopKListItem.svelte";
+  import type { Location } from "@rilldata/web-common/lib/place-element";
 
   export let colorClass = "bg-primary-200";
   export let topK: TopKEntry[] | undefined;
@@ -59,7 +60,10 @@
     return isNested(type) ? formatDataType(value, type) : value;
   }
 
-  let tooltipProps = { location: "right", distance: 16 };
+  let tooltipProps: { location: Location; distance: number } = {
+    location: "right",
+    distance: 16,
+  };
 
   function handleFocus(value: TopKEntry) {
     return () => dispatch("focus-top-k", value);

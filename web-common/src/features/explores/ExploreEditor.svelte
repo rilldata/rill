@@ -7,7 +7,7 @@
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
-  import { yaml } from "../../components/editor/presets/yaml";
+  import { yaml } from "@codemirror/lang-yaml";
   import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
 
   export let exploreName: string;
