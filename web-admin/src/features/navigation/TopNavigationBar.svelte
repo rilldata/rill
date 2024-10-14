@@ -31,7 +31,6 @@
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
-    isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
@@ -58,7 +57,6 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: onOrgPage = isOrganizationPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -172,10 +170,7 @@
 {#if organization}
   <BillingBanner {organization} />
 {/if}
-<div
-  class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage && !onOrgPage}
->
+<div class="flex items-center w-full pr-4 pl-2 py-1">
   <!-- Left side -->
   <a
     href={rillLogoHref}

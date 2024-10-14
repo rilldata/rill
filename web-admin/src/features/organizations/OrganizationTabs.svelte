@@ -19,7 +19,10 @@
         ];
 
         if (data.permissions.manageOrgMembers) {
-          // TODO: users page
+          tabs.push({
+            route: `/${organization}/-/users`,
+            label: "Users",
+          });
         }
 
         if (data.permissions.manageOrg) {

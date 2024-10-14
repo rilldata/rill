@@ -41,6 +41,7 @@
   export let comparing: TDDComparison | undefined;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = false;
+  export let expandedMeasureName: string;
 
   const dispatch = createEventDispatcher();
   const { adminServer, exports } = featureFlags;
@@ -61,8 +62,6 @@
 
   const scheduledReportsQueryArgs = getTDDExportArgs(stateManagers);
 
-  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
-
   $: metricsViewProto = $dashboardStore.proto;
 
   $: selectableMeasures = $allMeasures
@@ -76,12 +75,9 @@
       }),
     );
 
-  $: selectedItems = $allMeasures.map((m) => m.name === expandedMeasureName);
-
   $: selectedMeasureLabel =
     $allMeasures.find((m) => m.name === expandedMeasureName)?.label ??
-    expandedMeasureName ??
-    "";
+    expandedMeasureName;
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
@@ -113,8 +109,8 @@
     toggleDimensionFilterMode(dimensionName);
   }
 
-  function switchMeasure(event) {
-    metricsExplorerStore.setExpandedMeasureName(exploreName, event.detail);
+  function switchMeasure(measureName: string) {
+    metricsExplorerStore.setExpandedMeasureName(exploreName, measureName);
   }
 
   let showReplacePivotModal = false;
@@ -197,9 +193,9 @@
         <TimeGrainSelector {exploreName} tdd />
         <SearchableFilterChip
           label={selectedMeasureLabel}
-          on:item-clicked={switchMeasure}
+          onSelect={switchMeasure}
           selectableItems={selectableMeasures}
-          {selectedItems}
+          selectedItems={[expandedMeasureName]}
           tooltipText="Choose a measure to display"
         />
       </div>
