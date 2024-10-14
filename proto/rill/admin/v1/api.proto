@@ -1839,20 +1839,20 @@ message GetReportMetaRequest {
   string project_id = 1;
   string branch = 2;
   string report = 3;
-  // 4 was previously used for annotations
-  string ownerID = 5;
+  string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
+  reserved 4;
 }
 
 message GetReportMetaResponse {
-  message Urls {
+  message URLs {
     string open_url = 1;
     string export_url = 2;
     string edit_url = 3;
   }
-  Urls base_urls = 1;
-  map<string, Urls> recipient_urls = 2;
+  URLs base_urls = 1;
+  map<string, URLs> recipient_urls = 2;
 }
 
 message GetAlertMetaRequest {

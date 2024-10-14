@@ -36,7 +36,7 @@ export type AdminServiceSearchProjectNamesParams = {
 export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
-  ownerID?: string;
+  ownerId?: string;
   executionTime?: string;
   emailRecipients?: string[];
 };
@@ -972,11 +972,11 @@ export interface V1GetUserResponse {
 }
 
 export type V1GetReportMetaResponseRecipientUrls = {
-  [key: string]: GetReportMetaResponseUrls;
+  [key: string]: GetReportMetaResponseURLs;
 };
 
 export interface V1GetReportMetaResponse {
-  baseUrls?: GetReportMetaResponseUrls;
+  baseUrls?: GetReportMetaResponseURLs;
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
@@ -1466,7 +1466,7 @@ export interface ListGithubUserReposResponseRepo {
   defaultBranch?: string;
 }
 
-export interface GetReportMetaResponseUrls {
+export interface GetReportMetaResponseURLs {
   openUrl?: string;
   exportUrl?: string;
   editUrl?: string;

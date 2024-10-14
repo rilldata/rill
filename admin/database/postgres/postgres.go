@@ -1212,7 +1212,7 @@ func (c *connection) FindReportTokens(ctx context.Context, reportName string) ([
 
 func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*database.ReportTokenWithSecret, error) {
 	var res []*reportTokenWithSecretDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret, m.secret_encryption_key_id FROM report_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.report_name=$1`, reportName)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM report_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.report_name=$1`, reportName)
 	if err != nil {
 		return nil, parseErr("report tokens", err)
 	}

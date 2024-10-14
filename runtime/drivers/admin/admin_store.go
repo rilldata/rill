@@ -14,7 +14,7 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID stri
 		ProjectId:       h.config.ProjectID,
 		Branch:          h.config.Branch,
 		Report:          reportName,
-		OwnerID:         ownerID,
+		OwnerId:         ownerID,
 		EmailRecipients: emailRecipients,
 		ExecutionTime:   timestamppb.New(executionTime),
 	})

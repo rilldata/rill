@@ -59,9 +59,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	if len(req.EmailRecipients) == 0 {
 		return &adminv1.GetReportMetaResponse{
-			BaseUrls: &adminv1.GetReportMetaResponse_Urls{
-				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
-				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
+			BaseUrls: &adminv1.GetReportMetaResponse_URLs{
+				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime(), ""),
+				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 			},
 		}, nil
@@ -79,23 +79,23 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		}
 	}
 
-	externalUrls := make(map[string]*adminv1.GetReportMetaResponse_Urls, len(externalEmails))
-	emailTokens, err := s.issueMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerID, externalEmails)
+	externalUrls := make(map[string]*adminv1.GetReportMetaResponse_URLs, len(externalEmails))
+	emailTokens, err := s.reconcileMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, externalEmails)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to issue magic auth tokens: %s", err.Error())
 	}
 
 	for email, token := range emailTokens {
-		externalUrls[email] = &adminv1.GetReportMetaResponse_Urls{
-			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpenExternal(org.Name, proj.Name, req.Report, token, req.ExecutionTime.AsTime()),
-			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExportExternal(org.Name, proj.Name, req.Report, token),
+		externalUrls[email] = &adminv1.GetReportMetaResponse_URLs{
+			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime(), token),
+			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, token),
 		}
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		BaseUrls: &adminv1.GetReportMetaResponse_Urls{
-			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
-			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report),
+		BaseUrls: &adminv1.GetReportMetaResponse_URLs{
+			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime(), ""),
+			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 		},
 		RecipientUrls: externalUrls,
@@ -308,7 +308,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
-		err = s.cleanUpAllReportTokens(ctx, req.Name)
+		_, err = s.reconcileMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Name, annotations.AdminOwnerUserID, nil)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to clean up report tokens: %s", err.Error())
 		}
@@ -387,7 +387,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
 	}
 
-	err = s.cleanUpAllReportTokens(ctx, req.Name)
+	_, err = s.reconcileMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Name, annotations.AdminOwnerUserID, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to clean up report tokens: %s", err.Error())
 	}
@@ -553,7 +553,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string) (map[string]string, error) {
+func (s *Server) reconcileMagicTokensForExternalEmails(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string) (map[string]string, error) {
 	emailSet := make(map[string]struct{}, len(emails))
 	for _, email := range emails {
 		emailSet[strings.ToLower(email)] = struct{}{}
@@ -564,7 +564,9 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 	// check if magic token already exists for the recipient, recipient list might have changed
 	tkns, err := s.admin.DB.FindReportTokensWithSecret(ctx, reportName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find report tokens: %w", err)
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, fmt.Errorf("failed to find report tokens: %w", err)
+		}
 	}
 
 	var unusedTknIDs []string
@@ -675,30 +677,6 @@ func (s *Server) issueMagicTokensForExternalEmails(ctx context.Context, orgID, p
 	}
 
 	return emailTokens, nil
-}
-
-func (s *Server) cleanUpAllReportTokens(ctx context.Context, reportName string) error {
-	tkns, err := s.admin.DB.FindReportTokensWithSecret(ctx, reportName)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil
-		}
-		return fmt.Errorf("failed to find report tokens: %w", err)
-	}
-
-	var unusedTknIDs []string
-	for _, tkn := range tkns {
-		unusedTknIDs = append(unusedTknIDs, tkn.MagicAuthTokenID)
-	}
-
-	if len(unusedTknIDs) > 0 {
-		err = s.admin.DB.DeleteMagicAuthTokens(ctx, unusedTknIDs)
-		if err != nil {
-			return fmt.Errorf("failed to delete unused report tokens: %w", err)
-		}
-	}
-
-	return nil
 }
 
 var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)

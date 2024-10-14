@@ -681,7 +681,7 @@ type ReportTokenWithSecret struct {
 	ReportName           string `db:"report_name"`
 	RecipientEmail       string `db:"recipient_email"`
 	MagicAuthTokenID     string `db:"magic_auth_token_id"`
-	MagicAuthTokenSecret []byte `db:"secret"`
+	MagicAuthTokenSecret []byte `db:"magic_auth_token_secret"`
 }
 
 type InsertReportTokenOptions struct {

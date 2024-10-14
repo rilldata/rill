@@ -304,32 +304,27 @@ func (u *URLs) DenyProjectAccess(org, project, id string) string {
 }
 
 // ReportOpen returns the URL for opening a report in the frontend.
-func (u *URLs) ReportOpen(org, project, report string, executionTime time.Time) string {
+func (u *URLs) ReportOpen(org, project, report string, executionTime time.Time, token string) string {
 	reportURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "open")
 	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
+	if token != "" {
+		reportURL += fmt.Sprintf("&token=%s", token)
+	}
 	return reportURL
 }
 
 // ReportExport returns the URL for exporting a report in the frontend.
-func (u *URLs) ReportExport(org, project, report string) string {
-	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
+func (u *URLs) ReportExport(org, project, report, token string) string {
+	exportURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
+	if token != "" {
+		exportURL += fmt.Sprintf("?token=%s", token)
+	}
+	return exportURL
 }
 
 // ReportEdit returns the URL for editing a report in the frontend.
 func (u *URLs) ReportEdit(org, project, report string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report)
-}
-
-// ReportOpenExternal returns the URL for opening a report in the frontend for an external user.
-func (u *URLs) ReportOpenExternal(org, project, report, token string, executionTime time.Time) string {
-	reportURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "open", token)
-	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
-	return reportURL
-}
-
-// ReportExportExternal returns the URL for exporting a report in the frontend for an external user.
-func (u *URLs) ReportExportExternal(org, project, report, token string) string {
-	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export", token)
 }
 
 // AlertOpen returns the URL for opening an alert in the frontend.

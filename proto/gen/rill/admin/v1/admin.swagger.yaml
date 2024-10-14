@@ -2933,9 +2933,8 @@ paths:
                 type: string
               report:
                 type: string
-              ownerID:
+              ownerId:
                 type: string
-                title: 4 was previously used for annotations
               executionTime:
                 type: string
                 format: date-time
@@ -3484,7 +3483,7 @@ paths:
       tags:
         - AdminService
 definitions:
-  GetReportMetaResponseUrls:
+  GetReportMetaResponseURLs:
     type: object
     properties:
       openUrl:
@@ -4130,11 +4129,11 @@ definitions:
     type: object
     properties:
       baseUrls:
-        $ref: '#/definitions/GetReportMetaResponseUrls'
+        $ref: '#/definitions/GetReportMetaResponseURLs'
       recipientUrls:
         type: object
         additionalProperties:
-          $ref: '#/definitions/GetReportMetaResponseUrls'
+          $ref: '#/definitions/GetReportMetaResponseURLs'
   v1GetUserResponse:
     type: object
     properties:
