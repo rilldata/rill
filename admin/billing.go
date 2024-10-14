@@ -363,7 +363,7 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 			}
 		}
 
-		if earliestGracePeriodEndDate.AddDate(0, 0, 1).After(time.Now()) || earliestGracePeriodEndDate.IsZero() {
+		if earliestGracePeriodEndDate.After(time.Now()) || earliestGracePeriodEndDate.IsZero() {
 			return fmt.Errorf("payment overdue")
 		}
 	}
@@ -375,7 +375,7 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 		}
 	}
 
-	if be != nil && be.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate.AddDate(0, 0, 1).Before(time.Now()) {
+	if be != nil && be.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate.Before(time.Now()) {
 		return fmt.Errorf("subscription cancelled")
 	}
 

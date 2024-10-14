@@ -597,13 +597,6 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 	}
 }
 
-func valOrNullTime(v time.Time) *timestamppb.Timestamp {
-	if v.IsZero() {
-		return nil
-	}
-	return timestamppb.New(v)
-}
-
 func billingIssueTypeToDTO(t database.BillingIssueType) adminv1.BillingIssueType {
 	switch t {
 	case database.BillingIssueTypeOnTrial:
@@ -762,4 +755,11 @@ func comparableInt64(v *int64) int64 {
 		return math.MaxInt64
 	}
 	return *v
+}
+
+func valOrNullTime(v time.Time) *timestamppb.Timestamp {
+	if v.IsZero() {
+		return nil
+	}
+	return timestamppb.New(v)
 }
