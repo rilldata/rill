@@ -2,20 +2,22 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
   ResourceKind,
-  UserFacingResourceKinds,
+  type UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   runtimeServicePutFile,
-  V1Resource,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
-export async function handleEntityCreate(
+export async function createResourceFile(
   kind: ResourceKind,
   baseResource?: V1Resource,
-) {
-  if (!(kind in ResourceKindMap)) return;
+): Promise<string> {
+  if (!(kind in ResourceKindMap)) {
+    throw new Error(`Unknown resource kind: ${kind}`);
+  }
 
   const newPath = getPathForNewResourceFile(kind, baseResource);
   const instanceId = get(runtime).instanceId;
@@ -28,7 +30,7 @@ export async function handleEntityCreate(
   });
 
   // Return the path to the new file, so we can navigate the user to it
-  return `/files/${newPath}`;
+  return `/${newPath}`;
 }
 
 export function getPathForNewResourceFile(
@@ -80,7 +82,7 @@ const ResourceKindMap: Record<
     extension: ".yaml",
   },
   [ResourceKind.Explore]: {
-    folderName: "explore-dashboards",
+    folderName: "dashboards",
     baseName: "explore",
     extension: ".yaml",
   },
@@ -95,7 +97,7 @@ const ResourceKindMap: Record<
     extension: ".yaml",
   },
   [ResourceKind.Canvas]: {
-    folderName: "canvas-dashboards",
+    folderName: "dashboards",
     baseName: "canvas",
     extension: ".yaml",
   },
@@ -146,23 +148,16 @@ export function generateBlobForNewResourceFile(
 SELECT 'Hello, World!' AS Greeting`;
     case ResourceKind.MetricsView:
       return `# Metrics View YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
 version: 1
 type: metrics_view
 
-table: example_table # Choose a table to underpin your metrics
-timeseries: timestamp_column # Choose a timestamp column (if any) from your table
+model: # Choose a model to underpin your metrics
+timeseries: # Choose a timestamp column (if any) from your model
 
 dimensions:
-  - column: category
-    label: "Category"
-    description: "Description of the dimension"
-
 measures:
-  - expression: "SUM(revenue)"
-    label: "Total Revenue"
-    description: "Total revenue generated"
 `;
     case ResourceKind.Explore:
       if (baseResource) {
@@ -171,7 +166,7 @@ measures:
           baseResource.metricsView?.state?.validSpec?.title;
 
         return `# Explore YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
 
 type: explore
 
@@ -183,7 +178,7 @@ measures: '*'
 `;
       }
       return `# Explore YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
 
 type: explore
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Select from "@rilldata/web-common/components/select";
-  import { Selected } from "bits-ui";
+  import type { Selected } from "bits-ui";
   import Button from "../../../components/button/Button.svelte";
 
   export let selectedFilter: string;
@@ -32,7 +32,7 @@
       <Select.Item
         value={option.value}
         label={option.label}
-        class={`text-xs flex flex-col items-start ${
+        class={`text-xs flex items-start ${
           selectedFilter === option.value ? "font-bold" : ""
         }`}
       />

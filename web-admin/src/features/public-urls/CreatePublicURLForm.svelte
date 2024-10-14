@@ -9,7 +9,6 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { Divider } from "@rilldata/web-common/components/menu";
   import {
     Popover,
     PopoverContent,
@@ -142,8 +141,8 @@
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
     <div class="flex flex-col gap-y-4">
-      <h3 class="text-sm text-gray-800 font-semibold">
-        Create a shareable public URL for this view
+      <h3 class="text-xs text-gray-800 font-normal">
+        Create a shareable public URL for this view.
       </h3>
 
       <div class="flex flex-col gap-y-1">
@@ -223,7 +222,7 @@
     </div> -->
 
     {#if hasWhereFilter || hasDimensionThresholdFilter}
-      <Divider marginTop={4} marginBottom={4} />
+      <hr class="border-gray-200 mt-4 mb-4" />
 
       <div class="flex flex-col gap-y-1">
         <p class="text-xs text-gray-800 font-normal">

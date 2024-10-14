@@ -15,9 +15,9 @@ import {
   AD_BIDS_SCHEMA,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
-import { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import {
+import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type {
   V1ExploreSpec,
   V1Expression,
   V1MetricsViewSpec,

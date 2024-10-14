@@ -1,11 +1,11 @@
-import { CreateQueryResult } from "@rilldata/svelte-query";
+import type { CreateQueryResult } from "@rilldata/svelte-query";
 import {
   AD_BIDS_INIT_DIMENSIONS,
   AD_BIDS_INIT_MEASURES,
   AD_BIDS_NAME,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
-import {
+import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
+import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   RpcStatus,

@@ -3,7 +3,7 @@
   import { slide } from "svelte/transition";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
-  import { V1AnalyzedConnector } from "../../../runtime-client";
+  import type { V1AnalyzedConnector } from "../../../runtime-client";
   import { connectorExplorerStore } from "../connector-explorer-store";
   import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
   import { useDatabaseSchemas } from "./selectors";

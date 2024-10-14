@@ -7,9 +7,9 @@ import {
   getRuntimeServiceGetModelSplitsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  V1Resource,
+  type V1Resource,
   V1ResourceEvent,
-  V1WatchResourcesResponse,
+  type V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateComponentData,

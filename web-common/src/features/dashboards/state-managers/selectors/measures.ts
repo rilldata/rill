@@ -1,8 +1,8 @@
 import {
-  MetricsViewSpecDimensionSelector,
+  type MetricsViewSpecDimensionSelector,
   MetricsViewSpecMeasureType,
-  MetricsViewSpecMeasureV2,
-  V1MetricsViewSpec,
+  type MetricsViewSpecMeasureV2,
+  type V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
@@ -38,8 +38,8 @@ export const visibleMeasures = ({
 
 export const getMeasureByName = (
   dashData: DashboardDataSources,
-): ((name: string) => MetricsViewSpecMeasureV2 | undefined) => {
-  return (name: string) => {
+): ((name: string | undefined) => MetricsViewSpecMeasureV2 | undefined) => {
+  return (name: string | undefined) => {
     return allMeasures(dashData)?.find((measure) => measure.name === name);
   };
 };

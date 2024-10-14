@@ -3,7 +3,7 @@ import { writable } from "svelte/store";
 import { debounce } from "../lib/create-debouncer";
 import {
   createRuntimeServiceGetInstance,
-  V1InstanceFeatureFlags,
+  type V1InstanceFeatureFlags,
 } from "../runtime-client";
 import { runtime } from "../runtime-client/runtime-store";
 
@@ -37,7 +37,6 @@ class FeatureFlags {
   customDashboards = new FeatureFlag("user", false);
   dimensionSearch = new FeatureFlag("user", false);
   clickhouseModeling = new FeatureFlag("user", false);
-  visualEditing = new FeatureFlag("user", false);
 
   constructor() {
     const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {

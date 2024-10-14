@@ -9,7 +9,7 @@ import {
 } from "../../../metrics/service/BehaviourEventTypes";
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
-  V1ConnectorDriver,
+  type V1ConnectorDriver,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
@@ -30,7 +30,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
-import { AddDataFormType } from "./types";
+import type { AddDataFormType } from "./types";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
 interface AddDataFormValues {

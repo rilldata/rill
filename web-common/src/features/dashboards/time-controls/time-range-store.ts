@@ -5,13 +5,11 @@ import {
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import {
-  PREVIOUS_COMPLETE_DATE_RANGES,
-  type TimeRangeMetaSet,
-} from "@rilldata/web-common/lib/time/config";
-import {
   DEFAULT_TIME_RANGES,
   LATEST_WINDOW_TIME_RANGES,
   PERIOD_TO_DATE_RANGES,
+  PREVIOUS_COMPLETE_DATE_RANGES,
+  type TimeRangeMetaSet,
 } from "@rilldata/web-common/lib/time/config";
 import { getChildTimeRanges } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToTimeRangeMeta } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -21,13 +19,13 @@ import type {
 } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
-  TimeRange,
+  type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  V1ExploreSpec,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
+  type V1ExploreSpec,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -72,7 +70,7 @@ export function timeRangeSelectionsSelector([
   let previousCompleteDateRanges: TimeRangeMetaSet = {};
   let hasDefaultInRanges = false;
 
-  const defaultTimeRange = explore.presets?.[0]?.timeRange;
+  const defaultTimeRange = explore?.defaultPreset?.timeRange;
   if (explore.timeRanges?.length) {
     for (const availableTimeRange of explore.timeRanges) {
       if (!availableTimeRange.range) continue;

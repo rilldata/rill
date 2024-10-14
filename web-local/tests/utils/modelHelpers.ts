@@ -13,7 +13,7 @@ export async function createModel(page: Page, modelFileName: string) {
   await waitForFileNavEntry(page, "/models/model.sql", true);
 
   // Rename model
-  await renameFileUsingTitle(page, modelFileName);
+  await renameFileUsingTitle(page, "model.sql", modelFileName);
   await waitForFileNavEntry(page, `/models/${modelFileName}`, true);
 }
 
@@ -23,7 +23,7 @@ export async function modelHasError(page: Page, hasError: boolean, error = "") {
     await errorLocator.waitFor({
       timeout: 100,
     });
-  } catch (err) {
+  } catch {
     // assertions not needed
   }
 

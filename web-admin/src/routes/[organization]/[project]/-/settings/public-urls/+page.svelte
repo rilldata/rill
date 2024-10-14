@@ -65,7 +65,7 @@
       );
 
       eventBus.emit("notification", { message: "Public URL deleted" });
-    } catch (error) {
+    } catch {
       eventBus.emit("notification", {
         message: "Error deleting public URL",
         type: "error",

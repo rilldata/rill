@@ -3983,9 +3983,6 @@ definitions:
   v1ExplorePreset:
     type: object
     properties:
-      label:
-        type: string
-        title: Display name of the preset
       dimensions:
         type: array
         items:
@@ -4093,14 +4090,9 @@ definitions:
           List of selectable time zones.
           If the list is empty, a default list should be shown.
           The values should be valid IANA location identifiers.
-      presets:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ExplorePreset'
-        description: |-
-          List of preconfigured UI states that can be toggled between.
-          If the list is not empty, the first item should be selected by default.
+      defaultPreset:
+        $ref: '#/definitions/v1ExplorePreset'
+        description: Preset UI state to show by default.
       securityRules:
         type: array
         items:

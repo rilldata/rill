@@ -1,5 +1,5 @@
-import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { defineConfig } from "vitest/config";
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig, type Plugin } from "vitest/config";
 import type { Alias } from "vite";
 
 const alias: Alias[] = [
@@ -32,13 +32,14 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias,
     },
-    plugins: [svelte()],
+    // Temporary casting to `Plugin[]` to avoid TS error.
+    plugins: [sveltekit() as unknown as Plugin[]],
     test: {
       // This alias fixes `onMount` not getting called during vitest unit tests.
       // See: https://stackoverflow.com/questions/76577665/vitest-and-svelte-components-onmount
       alias: [{ find: /^svelte$/, replacement: "svelte/internal" }],
       coverage: {
-        provider: "c8",
+        provider: "v8",
         src: ["./src"],
         all: true,
       },

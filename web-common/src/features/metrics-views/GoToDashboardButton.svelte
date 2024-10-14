@@ -1,48 +1,50 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { V1Resource } from "@rilldata/web-common/runtime-client";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
+  import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
-  import { handleEntityCreate } from "../file-explorer/new-files";
-  import CreateExploreDashboardButton from "./CreateExploreDashboardButton.svelte";
+  import { createAndPreviewExplore } from "./create-and-preview-explore";
+  import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
 
   export let resource: V1Resource | undefined;
 
+  $: instanceId = $runtime.instanceId;
   $: dashboardsQuery = useGetExploresForMetricsView(
-    $runtime.instanceId,
+    instanceId,
     resource?.meta?.name?.name ?? "",
   );
-
   $: dashboards = $dashboardsQuery.data ?? [];
-
-  async function handleCreateDashboard() {
-    const newRoute = await handleEntityCreate(ResourceKind.Explore, resource);
-    if (newRoute) {
-      await goto(newRoute);
-    }
-  }
 </script>
 
 {#if dashboards?.length === 0}
-  <CreateExploreDashboardButton metricsViewResource={resource} />
+  <Button
+    type={$allowPrimary ? "primary" : "secondary"}
+    disabled={!resource}
+    on:click={async () => {
+      if (resource)
+        await createAndPreviewExplore(queryClient, instanceId, resource);
+    }}
+  >
+    Create Explore dashboard
+  </Button>
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button type="primary" builders={[builder]}>
+      <Button type="secondary" builders={[builder]}>
         Go to dashboard
         <CaretDownIcon />
       </Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Group>
-        <DropdownMenu.Label>Explore dashboards</DropdownMenu.Label>
         {#each dashboards as resource (resource?.meta?.name?.name)}
           {@const label =
             resource?.explore?.state?.validSpec?.title ??
@@ -50,15 +52,20 @@
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
             <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
-              <ExploreIcon />
+              <ExploreIcon color={resourceColorMapping[ResourceKind.Explore]} />
               {label}
             </DropdownMenu.Item>
           {/if}
         {/each}
         <DropdownMenu.Separator />
-        <DropdownMenu.Item on:click={handleCreateDashboard}>
+        <DropdownMenu.Item
+          on:click={async () => {
+            if (resource)
+              await createAndPreviewExplore(queryClient, instanceId, resource);
+          }}
+        >
           <Add />
-          Create explore
+          Create dashboard
         </DropdownMenu.Item>
       </DropdownMenu.Group>
     </DropdownMenu.Content>

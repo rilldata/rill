@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
-    V1CanvasItem,
-    V1ComponentVariable,
+    type V1CanvasItem,
+    type V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { setContext } from "svelte";
@@ -46,7 +46,7 @@
   bind:contentRect
   {scale}
   height={maxBottom * gridCell * scale}
-  width={defaults.DASHBOARD_WIDTH}
+  width={dashboardWidth}
 >
   {#each items as component, i (i)}
     {@const componentName = component.component}

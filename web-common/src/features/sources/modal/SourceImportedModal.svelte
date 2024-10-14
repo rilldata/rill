@@ -2,13 +2,12 @@
   import { goto } from "$app/navigation";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { CreateQueryResult } from "@tanstack/svelte-query";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
@@ -35,7 +34,7 @@
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
-  $: createMetricsViewFromTable =
+  $: createExploreFromTable =
     sourcePath !== null
       ? useCreateMetricsViewFromTableUIAction(
           $runtime.instanceId,
@@ -43,7 +42,7 @@
           "",
           "",
           sourceName,
-          "metrics",
+          true,
           BehaviourEventMedium.Button,
           MetricsEventSpace.Modal,
         )
@@ -62,24 +61,19 @@
     // This should never happen, because the button is
     // disabled when this is null, but adding this check
     // for type narrowing and just in case.
-    if (createMetricsViewFromTable === null) return;
+    if (createExploreFromTable === null) return;
     close();
-    await createMetricsViewFromTable();
+    await createExploreFromTable();
   }
 </script>
 
 <AlertDialog.Root open={sourcePath !== null}>
   <AlertDialog.Content>
-    <AlertDialog.Title>
-      <div class="flex gap-x-2.5 items-center">
-        <CheckCircleNew className="fill-primary-500" size="24px" />
-        Source imported successfully
-      </div>
-    </AlertDialog.Title>
+    <AlertDialog.Title>Source imported successfully</AlertDialog.Title>
 
     <AlertDialog.Description>
-      <span class="font-mono text-slate-800 break-all ml-9">{sourceName}</span> has
-      been ingested. What would you like to do next?
+      <span class="font-mono text-slate-800 break-all">{sourceName}</span> has been
+      ingested. What would you like to do next?
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
@@ -92,11 +86,11 @@
 
         <Button
           builders={[builder]}
-          disabled={createMetricsViewFromTable === null}
+          disabled={createExploreFromTable === null}
           on:click={generateMetrics}
           type="primary"
         >
-          Generate metrics
+          Generate dashboard
 
           {#if $ai}
             with AI

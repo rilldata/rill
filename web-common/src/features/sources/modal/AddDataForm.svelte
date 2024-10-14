@@ -6,13 +6,13 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import {
     ConnectorDriverPropertyType,
-    RpcStatus,
-    V1ConnectorDriver,
+    type RpcStatus,
+    type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
   import { submitAddDataForm } from "./submitAddDataForm";
-  import { AddDataFormType } from "./types";
+  import type { AddDataFormType } from "./types";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -28,8 +28,8 @@
   $: isSourceForm = formType === "source";
   $: isConnectorForm = formType === "connector";
   $: properties = isConnectorForm
-    ? connector.configProperties ?? []
-    : connector.sourceProperties ?? [];
+    ? (connector.configProperties ?? [])
+    : (connector.sourceProperties ?? []);
 
   let rpcError: RpcStatus | null = null;
 

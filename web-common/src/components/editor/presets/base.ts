@@ -1,5 +1,5 @@
 import { acceptCompletion } from "@codemirror/autocomplete";
-import { indentWithTab, insertNewline } from "@codemirror/commands";
+import { indentWithTab } from "@codemirror/commands";
 import { lineStatus } from "../line-status";
 import { editorTheme } from "../theme";
 import { indentationMarkers } from "@replit/codemirror-indentation-markers";
@@ -38,6 +38,7 @@ import { lintKeymap } from "@codemirror/lint";
  */
 
 export const base = () => [
+  // BASE EXTENSIONS
   // lineNumbers(),
   highlightActiveLineGutter(),
   highlightSpecialChars(),
@@ -64,18 +65,11 @@ export const base = () => [
     ...completionKeymap,
     ...lintKeymap,
   ]),
+
   // ADDITIONAL EXTENSIONS
   editorTheme(),
   lineStatus(),
   indentationMarkers(),
-  Prec.high(
-    keymap.of([
-      {
-        key: "Enter",
-        run: insertNewline,
-      },
-    ]),
-  ),
   Prec.highest(
     keymap.of([
       {

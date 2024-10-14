@@ -2,7 +2,7 @@
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { createEventDispatcher, getContext } from "svelte";
   import { slideRight } from "../../../lib/transitions";
-  import { Writable } from "svelte/store";
+  import type { Writable } from "svelte/store";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import CancelCircle from "../../icons/CancelCircle.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";

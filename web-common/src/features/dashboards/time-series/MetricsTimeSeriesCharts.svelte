@@ -3,14 +3,12 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import {
-    PivotChipData,
     PivotChipType,
+    type PivotChipData,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
@@ -23,17 +21,17 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
   import {
-    TimeSeriesDatum,
     useTimeSeriesDataStore,
+    type TimeSeriesDatum,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
-    AvailableTimeGrain,
     TimeRangePreset,
+    type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -46,6 +44,7 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -54,10 +53,14 @@
     selectors: {
       measures: {
         allMeasures,
+        visibleMeasures,
         isMeasureValidPercentOfTotal,
-        getFilteredMeasuresAndDimensions,
+        getMeasureByName,
       },
       dimensionFilters: { includedDimensionValues },
+    },
+    actions: {
+      measures: { toggleMeasureVisibility },
     },
     validSpecStore,
   } = getStateManagers();
@@ -76,11 +79,6 @@
   let dimensionDataCopy: DimensionDataItem[] = [];
 
   $: exploreStore = useExploreStore(exploreName);
-
-  $: showHideMeasures = createShowHideMeasuresStore(
-    exploreName,
-    validSpecStore,
-  );
 
   $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
@@ -103,21 +101,12 @@
   );
   $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
+  $: expandedMeasure = $getMeasureByName(expandedMeasureName);
+  // List of measures which will be shown on the dashboard
   // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasureV2[];
   $: {
-    renderedMeasures = $allMeasures.filter(
-      expandedMeasureName
-        ? (measure) => measure.name === expandedMeasureName
-        : (_, i) => $showHideMeasures.selectedItems[i],
-    );
-    const { measures } = $getFilteredMeasuresAndDimensions(
-      $validSpecStore.data?.metricsView ?? {},
-      renderedMeasures.map((m) => m.name ?? ""),
-    );
-    renderedMeasures = renderedMeasures.filter((rm) =>
-      measures.includes(rm.name ?? ""),
-    );
+    renderedMeasures = expandedMeasure ? [expandedMeasure] : $visibleMeasures;
   }
 
   $: totals = $timeSeriesDataStore.total;
@@ -203,7 +192,7 @@
       $exploreStore?.selectedTimezone,
       interval,
       $timeControlsStore.selectedTimeRange?.name,
-      $validSpecStore.data?.explore?.presets?.[0]?.timeRange,
+      $validSpecStore.data?.explore?.defaultPreset?.timeRange,
       $exploreStore?.tdd.chartType,
     );
 
@@ -229,15 +218,13 @@
     );
   }
 
-  const toggleMeasureVisibility = (e) => {
-    showHideMeasures.toggleVisibility(e.detail.name);
-  };
-  const setAllMeasuresNotVisible = () => {
-    showHideMeasures.setAllToNotVisible();
-  };
-  const setAllMeasuresVisible = () => {
-    showHideMeasures.setAllToVisible();
-  };
+  $: visibleMeasureNames = $visibleMeasures
+    .map(({ name }) => name)
+    .filter(isDefined);
+  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
+  function isDefined(value: string | undefined): value is string {
+    return value !== undefined;
+  }
 
   $: hasTotalsError = Object.hasOwn($timeSeriesDataStore?.error, "totals");
   $: hasTimeseriesError = Object.hasOwn(
@@ -311,14 +298,18 @@
         chartType={tddChartType}
       />
     {:else}
-      <SearchableFilterButton
-        label="Measures"
-        on:deselect-all={setAllMeasuresNotVisible}
-        on:item-clicked={toggleMeasureVisibility}
-        on:select-all={setAllMeasuresVisible}
-        selectableItems={$showHideMeasures.selectableItems}
-        selectedItems={$showHideMeasures.selectedItems}
+      <DashboardVisibilityDropdown
+        category="Measures"
         tooltipText="Choose measures to display"
+        onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
+        selectableItems={$allMeasures.map(({ name, label }) => ({
+          name: name ?? "",
+          label: label ?? name ?? "",
+        }))}
+        selectedItems={visibleMeasureNames}
+        onToggleSelectAll={() => {
+          toggleMeasureVisibility(allMeasureNames);
+        }}
       />
 
       <button

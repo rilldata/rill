@@ -3,10 +3,10 @@
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
-    DashboardTimeControls,
     TimeComparisonOption,
-    TimeRange,
     TimeRangePreset,
+    type DashboardTimeControls,
+    type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
@@ -19,10 +19,10 @@
   import {
     ALL_TIME_RANGE_ALIAS,
     CUSTOM_TIME_RANGE_ALIAS,
-    ISODurationString,
-    NamedRange,
-    RangeBuckets,
     deriveInterval,
+    type ISODurationString,
+    type NamedRange,
+    type RangeBuckets,
   } from "../new-time-controls";
   import * as Elements from "./components";
 
@@ -48,7 +48,7 @@
   $: selectedRange =
     $exploreStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
-  $: defaultTimeRange = exploreSpec.presets?.[0]?.timeRange;
+  $: defaultTimeRange = exploreSpec?.defaultPreset?.timeRange;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(

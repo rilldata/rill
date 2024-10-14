@@ -6,10 +6,10 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
-  AvailableTimeGrain,
+  type AvailableTimeGrain,
   Period,
   TimeOffsetType,
-  TimeRangeString,
+  type TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
@@ -21,8 +21,8 @@ import { mergeFilters } from "./pivot-merge-filters";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  PivotFilter,
-  PivotState,
+  type PivotFilter,
+  type PivotState,
   type PivotDataRow,
   type PivotDataStoreConfig,
   type PivotTimeConfig,
@@ -478,8 +478,8 @@ export function canEnablePivotComparison(
   pivotState: PivotState,
   comparisonStart: string | Date | undefined,
 ) {
-  // Disable if more than 5 measures
-  if (pivotState.columns.measure.length >= 5) {
+  // Disable if more than 10 measures
+  if (pivotState.columns.measure.length > 10) {
     return false;
   }
   // Disable if time comparison is not present

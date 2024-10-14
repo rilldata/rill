@@ -27,10 +27,10 @@
     "eslint-plugin-vitest": "^0.5.3",
     "husky": "^8.0.0",
     "lint-staged": "^15.2.7",
-    "prettier": "^3.1.1",
-    "prettier-plugin-svelte": "^3.1.2",
-    "typescript": "^5.3.3",
-    "typescript-eslint": "^7.7.0"
+    "prettier": "^3.3.3",
+    "prettier-plugin-svelte": "^3.2.7",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.8.0"
   },
   "lint-staged": {
     "*.{svelte,ts}": [

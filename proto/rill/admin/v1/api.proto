@@ -768,6 +768,14 @@ service AdminService {
     };
   }
 
+  // RenewBillingSubscription renews the billing plan for the organization once cancelled
+  rpc RenewBillingSubscription(RenewBillingSubscriptionRequest) returns (RenewBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/billing/subscriptions/renew",
+      body: "*"
+    };
+  }
+
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/billing/payments/portal-url"};
@@ -1257,7 +1265,7 @@ message SudoUpdateOrganizationBillingCustomerRequest {
 
 message SudoUpdateOrganizationBillingCustomerResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
@@ -1272,6 +1280,7 @@ message SudoUpdateOrganizationCustomDomainResponse {
 message SudoUpdateUserQuotasRequest {
   string email = 1;
   optional int32 singleuser_orgs = 2;
+  optional int32 trial_orgs = 3;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1970,7 +1979,7 @@ message GetAlertYAMLResponse {
 }
 
 message GetBillingSubscriptionRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 message GetBillingSubscriptionResponse {
@@ -1980,24 +1989,36 @@ message GetBillingSubscriptionResponse {
 }
 
 message UpdateBillingSubscriptionRequest {
-  string organization = 1;
-  string plan_name = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string plan_name = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
+}
+
+message UpdateBillingSubscriptionResponse {
+  Organization organization = 1;
+  Subscription subscription = 2;
 }
 
 message CancelBillingSubscriptionRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 message CancelBillingSubscriptionResponse {}
 
-message UpdateBillingSubscriptionResponse {
+message RenewBillingSubscriptionRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string plan_name = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
+}
+
+message RenewBillingSubscriptionResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
 }
 
 message GetPaymentsPortalURLRequest {
-  string organization = 1;
-  string return_url = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string return_url = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetPaymentsPortalURLResponse {
@@ -2092,18 +2113,17 @@ message Organization {
 
 message Subscription {
   string id = 1;
-  string plan_id = 2;
-  string plan_name = 3;
-  string plan_display_name = 4;
-  google.protobuf.Timestamp start_date = 5;
-  google.protobuf.Timestamp end_date = 6;
-  google.protobuf.Timestamp current_billing_cycle_start_date = 7;
-  google.protobuf.Timestamp current_billing_cycle_end_date = 8;
-  google.protobuf.Timestamp trial_end_date = 9;
+  BillingPlan plan = 2;
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp end_date = 4;
+  google.protobuf.Timestamp current_billing_cycle_start_date = 5;
+  google.protobuf.Timestamp current_billing_cycle_end_date = 6;
+  google.protobuf.Timestamp trial_end_date = 7;
 }
 
 message UserQuotas {
   int32 singleuser_orgs = 1;
+  int32 trial_orgs = 2;
 }
 
 message OrganizationQuotas {
@@ -2339,6 +2359,7 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS = 4;
   BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
 }
 
 enum BillingIssueLevel {
@@ -2364,6 +2385,7 @@ message BillingIssueMetadata {
     BillingIssueMetadataNoBillableAddress no_billable_address = 4;
     BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
+    BillingIssueMetadataNeverSubscribed never_subscribed = 7;
   }
 }
 
@@ -2397,3 +2419,5 @@ message BillingIssueMetadataPaymentFailedMeta {
 message BillingIssueMetadataSubscriptionCancelled {
   google.protobuf.Timestamp end_date = 1;
 }
+
+message BillingIssueMetadataNeverSubscribed {}

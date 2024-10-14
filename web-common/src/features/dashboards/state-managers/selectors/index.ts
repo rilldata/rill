@@ -1,6 +1,6 @@
 import { chartSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
 import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
-import { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
+import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type {
   RpcStatus,
   V1MetricsViewTimeRangeResponse,

@@ -10,8 +10,8 @@ import {
 import { initStateManagers } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
 import {
-  TimeControlState,
-  TimeControlStore,
+  type TimeControlState,
+  type TimeControlStore,
   createTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
@@ -371,11 +371,9 @@ describe("time-control-store", () => {
       AD_BIDS_METRICS_INIT_WITH_TIME,
       {
         ...AD_BIDS_EXPLORE_INIT,
-        presets: [
-          {
-            timeRange: "P4W",
-          },
-        ],
+        defaultPreset: {
+          timeRange: "P4W",
+        },
       },
     );
     await queryClient.refetchQueries({
@@ -393,7 +391,7 @@ describe("time-control-store", () => {
       AD_BIDS_METRICS_INIT_WITH_TIME,
       {
         ...AD_BIDS_EXPLORE_INIT,
-        presets: [{ timeRange: "P2W" }],
+        defaultPreset: { timeRange: "P2W" },
       },
     );
     await queryClient.refetchQueries({

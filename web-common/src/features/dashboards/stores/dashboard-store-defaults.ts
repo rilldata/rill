@@ -18,15 +18,15 @@ import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import {
+import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
-  V1ExploreComparisonMode,
   V1ExplorePreset,
   V1ExploreSpec,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
+import { V1ExploreComparisonMode } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
 export function setDefaultTimeRange(
@@ -68,20 +68,18 @@ function setDefaultComparison(
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
-  const explorePreset = exploreSpec.presets?.[0];
-
-  switch (explorePreset?.comparisonMode) {
+  switch (exploreSpec?.defaultPreset?.comparisonMode) {
     case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION:
       metricsExplorer.selectedComparisonDimension =
         normaliseName(
-          explorePreset.comparisonDimension,
+          exploreSpec?.defaultPreset?.comparisonDimension,
           metricsViewSpec.dimensions,
         ) || exploreSpec.dimensions?.[0];
       break;
 
     case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME:
       setDefaultComparisonTimeRange(
-        explorePreset,
+        exploreSpec?.defaultPreset,
         metricsExplorer,
         fullTimeRange,
       );
@@ -142,11 +140,11 @@ export function getDefaultMetricsExplorerEntity(
   explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ): MetricsExplorerEntity {
-  const preset = explore.presets?.[0];
+  const defaultMeasureNames =
+    explore?.defaultPreset?.measures ?? explore?.measures ?? [];
 
-  const defaultMeasureNames = preset?.measures ?? explore?.measures ?? [];
-
-  const defaultDimNames = preset?.dimensions ?? explore?.dimensions ?? [];
+  const defaultDimNames =
+    explore?.defaultPreset?.dimensions ?? explore?.dimensions ?? [];
 
   const metricsExplorer: MetricsExplorerEntity = {
     name,
@@ -205,7 +203,7 @@ export function getDefaultMetricsExplorerEntity(
     contextColumnWidths: { ...contextColWidthDefaults },
   };
   // set time range related stuff
-  setDefaultTimeRange(explore.presets?.[0], metricsExplorer, fullTimeRange);
+  setDefaultTimeRange(explore?.defaultPreset, metricsExplorer, fullTimeRange);
   setDefaultComparison(metricsView, explore, metricsExplorer, fullTimeRange);
   return metricsExplorer;
 }

@@ -33,7 +33,7 @@ import {
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
-import { Readable, derived, writable } from "svelte/store";
+import { type Readable, derived, writable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import type { PivotColumns, PivotRows } from "../pivot/types";
 import { PivotChipType, type PivotChipData } from "../pivot/types";

@@ -14,6 +14,33 @@ export const setPrimaryDimension = (
   }
 };
 
+export const toggleDimensionVisibility = (
+  { dashboard, persistentDashboardStore }: DashboardMutables,
+  allDimensions: string[],
+  dimensionName?: string,
+) => {
+  if (dimensionName) {
+    const deleted = dashboard.visibleDimensionKeys.delete(dimensionName);
+    if (!deleted) {
+      dashboard.visibleDimensionKeys.add(dimensionName);
+    }
+  } else {
+    const allSelected =
+      dashboard.visibleDimensionKeys.size === allDimensions.length;
+
+    dashboard.visibleDimensionKeys = new Set(
+      allSelected ? allDimensions.slice(0, 1) : allDimensions,
+    );
+  }
+
+  dashboard.allDimensionsVisible =
+    dashboard.visibleDimensionKeys.size === allDimensions.length;
+
+  persistentDashboardStore.updateVisibleDimensions(
+    Array.from(dashboard.visibleDimensionKeys),
+  );
+};
+
 export const dimensionActions = {
   /**
    * Sets the primary dimension for the dashboard, which
@@ -21,4 +48,5 @@ export const dimensionActions = {
    * to undefined closes the dimension table.
    */
   setPrimaryDimension,
+  toggleDimensionVisibility,
 };
