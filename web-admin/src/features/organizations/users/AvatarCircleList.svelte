@@ -4,7 +4,7 @@
 
   export let name: string;
   export let email: string;
-  export let photoUrl: string | null;
+  export let photoUrl: string | null = null;
   export let isCurrentUser: boolean = false;
   export let pendingAcceptance: boolean = false;
 </script>
