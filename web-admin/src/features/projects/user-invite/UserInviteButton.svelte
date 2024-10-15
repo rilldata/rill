@@ -54,6 +54,7 @@
       ...invite,
       userName: null,
       userEmail: invite.email,
+      userPhotoUrl: null,
       roleName: invite.role,
     }));
   }
@@ -116,10 +117,10 @@
             <div
               class="flex flex-row items-center gap-x-2 justify-between cursor-auto"
             >
-              <!-- TODO: apply user.userPhotoUrl -->
               <AvatarListItem
                 name={user.userName ?? user.userEmail}
                 email={user.userEmail}
+                photoUrl={user.userPhotoUrl}
                 isCurrentUser={user.userEmail === $currentUser.data?.user.email}
                 pendingAcceptance={!user.userName}
               />
