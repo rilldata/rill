@@ -24,6 +24,7 @@
 
   export let organization: string;
   export let project: string;
+  export let manageOrgMembers: boolean;
 
   let open = false;
 
@@ -62,6 +63,11 @@
     ...projectMemberUsersList,
     ...coerceInvitesToUsers(projectInvitesList),
   ];
+
+  $: showGroupsSection =
+    projectMemberUserGroupsList.length > 0 &&
+    projectMemberUserGroupsList.length === 1 &&
+    projectMemberUserGroupsList[0].groupName !== "all-users";
 </script>
 
 <Popover bind:open>
@@ -90,7 +96,7 @@
           </div>
         </div>
       {/if}
-      {#if projectMemberUserGroupsList.length > 0}
+      {#if showGroupsSection}
         <div class="mt-2">
           <div class="text-xs text-gray-500 font-semibold uppercase">
             Groups
