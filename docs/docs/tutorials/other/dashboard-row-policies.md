@@ -37,7 +37,7 @@ From this SQL file, we create a table that will map the `rilldata.com` domain to
 ### Creating the Row level Dashboard Policy
 Now that this is created, you have a few options on which level you want to create the security level policy. Some questions to ask yourself is:
 1. Am I using the metrics view on other components other than the dashboard? IE: APIs, canvas dashboards
-2. If I am using the metrics view in other locations, how strict do I want the metrics layer to be? '
+2. If I am using the metrics view in other locations, how strict do I want the metrics layer to be? 
 
 For most situations, you would define the dashboard policies at the metrics-view level. So let's do that. Let's create a new metrics view, `auction_data_model_metrics_row_policies.yaml`, and copy the contents of `auction_data_model_metrics.yaml` into it.
 
@@ -54,7 +54,7 @@ From our created model `mapping`, we are running the following SQL statement.
 SELECT PubName FROM mapping WHERE domain = '{{ .user.domain }}'
 ```
 
-Using the login information from our current user account, .user.domain will extract the domain from your email. In my case, riilldata.com is being extracted. Since the row `rilldata.com` matches, it returns the value in column PubName, 'Disney'. 
+Using the login information from our current user account, .user.domain will extract the domain from your email. In my case, rilldata.com is being extracted. Since the row `rilldata.com` matches, it returns the value in column PubName, 'Disney'. 
 
 This translated back into the query, runs:
 
