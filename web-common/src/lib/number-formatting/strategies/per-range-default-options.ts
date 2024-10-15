@@ -35,7 +35,7 @@ export const defaultNoFormattingOptions: FormatterOptionsCommon &
       maxDigitsRight: 0,
       maxDigitsLeft: 12,
       baseMagnitude: 0,
-      useTrailingDot: true,
+      useTrailingDot: false,
       padWithInsignificantZeros: false,
     },
   ],
