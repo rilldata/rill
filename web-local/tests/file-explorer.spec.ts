@@ -96,7 +96,7 @@ test.describe("File Explorer", () => {
       await page.waitForTimeout(2000);
       // Delete the folder
       await page
-        .getByRole("button", { name: "my-directory", exact: true })
+        .getByRole("button", { name: "my-directory my-directory" })
         .hover();
       await page.getByLabel("my-directory actions menu").click();
       await page.getByRole("menuitem", { name: "Delete" }).click();
