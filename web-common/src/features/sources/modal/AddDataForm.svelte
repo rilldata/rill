@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -46,7 +45,6 @@
         if (isSourceForm) {
           try {
             await submitAddDataForm(queryClient, formType, connector, values);
-            await goto(`/files/sources/${values.name}.yaml`);
             onClose();
           } catch (e) {
             rpcError = e?.response?.data;
