@@ -15,18 +15,26 @@ type Health struct {
 	InstancesHealth map[string]*InstanceHealth
 }
 
+// InstanceHealth contains health information for a single instance.
+// The information about OLAP and metrics views is cached in the catalog.
+// We want to avoid hitting the underlying OLAP engine when OLAP engine can scale to zero when no queries are generated within TTL.
+// We do not want to keep it running just to check health. In such cases, we use the cached health information.
 type InstanceHealth struct {
-	// always recomputed
-	Controller        string
-	Repo              string
-	ParseErrCount     int
-	ReconcileErrCount int
+	// always recomputed on every health check
+	Controller        string `json:"-"`
+	Repo              string `json:"-"`
+	ParseErrCount     int    `json:"-"`
+	ReconcileErrCount int    `json:"-"`
 
-	// cached
-	OLAP         string
-	MetricsViews map[string]metricsViewHealth
+	// cached health check information can be used if controller version is same and metrics view spec is same
+	OLAP              string                                    `json:"olap"`
+	MetricsViews      map[string]InstanceHealthMetricsViewError `json:"metrics_views"`
+	ControllerVersion int64                                     `json:"controller_version"`
+}
 
-	ControllerVersion int64
+type InstanceHealthMetricsViewError struct {
+	Err     string `json:"err"`
+	Version int64  `json:"version"`
 }
 
 func (r *Runtime) Health(ctx context.Context) (*Health, error) {
@@ -91,22 +99,26 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		release()
 	}
 
-	// run queries against metrics views
-	resources, err := ctrl.List(ctx, ResourceKindMetricsView, "", false)
+	// check resources with reconcile errors
+	resources, err := ctrl.List(ctx, "", "", false)
 	if err != nil {
 		return nil, err
 	}
-	res.MetricsViews = make(map[string]metricsViewHealth, len(resources))
+	for _, r := range resources {
+		if r.Meta.ReconcileError != "" {
+			res.ReconcileErrCount++
+		}
+	}
+
+	// run queries against metrics views
+	res.MetricsViews = make(map[string]InstanceHealthMetricsViewError, len(resources))
 	for _, mv := range resources {
-		if mv.GetMetricsView().State.ValidSpec == nil {
-			if mv.Meta.ReconcileError != "" {
-				res.ReconcileErrCount++
-			}
+		if mv.GetMetricsView() == nil || mv.GetMetricsView().State.ValidSpec == nil {
 			continue
 		}
 		olap, release, err := r.OLAP(ctx, instanceID, mv.GetMetricsView().State.ValidSpec.Connector)
 		if err != nil {
-			res.MetricsViews[mv.Meta.Name.Name] = metricsViewHealth{err: err.Error()}
+			res.MetricsViews[mv.Meta.Name.Name] = InstanceHealthMetricsViewError{Err: err.Error()}
 			release()
 			continue
 		}
@@ -130,15 +142,13 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 			Claims:             &SecurityClaims{SkipChecks: true},
 		})
 
-		mvHealth := metricsViewHealth{Version: mv.Meta.StateVersion}
+		mvHealth := InstanceHealthMetricsViewError{
+			Version: mv.Meta.StateVersion,
+		}
 		if err != nil {
-			mvHealth.err = err.Error()
+			mvHealth.Err = err.Error()
 		}
 		res.MetricsViews[mv.Meta.Name.Name] = mvHealth
-	}
-
-	if !canScaleToZero {
-		return res, nil
 	}
 
 	// save to cache
@@ -156,7 +166,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 
 	err = catalog.UpsertInstanceHealth(ctx, &drivers.InstanceHealth{
 		InstanceID: instanceID,
-		Health:     bytes,
+		HealthJSON: bytes,
 	})
 	if err != nil {
 		return nil, err
@@ -178,7 +188,7 @@ func (r *Runtime) cachedInstanceHealth(ctx context.Context, instanceID string, c
 	}
 
 	c := &InstanceHealth{}
-	err = json.Unmarshal(cached.Health, c)
+	err = json.Unmarshal(cached.HealthJSON, c)
 	if err != nil || ctrlVersion != c.ControllerVersion {
 		return nil, false
 	}
@@ -219,14 +229,9 @@ func (h *InstanceHealth) To() *runtimev1.InstanceHealth {
 	}
 	r.MetricsViewErrors = make(map[string]string, len(h.MetricsViews))
 	for k, v := range h.MetricsViews {
-		if v.err != "" {
-			r.MetricsViewErrors[k] = v.err
+		if v.Err != "" {
+			r.MetricsViewErrors[k] = v.Err
 		}
 	}
 	return r
-}
-
-type metricsViewHealth struct {
-	err     string
-	Version int64
 }

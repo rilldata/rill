@@ -183,26 +183,26 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 		// log metrics view errors
 		logger := w.logger.WithLazy(f...)
 		if health.ParseErrorCount > 0 || health.ReconcileErrorCount > 0 {
-			logger.Error("deployment health check: project has parse/reconcile errors", zap.Int32("parse_errors", health.ParseErrorCount), zap.Int32("reconcile_errors", health.ReconcileErrorCount))
+			logger.Warn("deployment health check: project has parse/reconcile errors", zap.Int32("parse_errors", health.ParseErrorCount), zap.Int32("reconcile_errors", health.ReconcileErrorCount))
 		}
 		for d, err := range health.MetricsViewErrors {
-			logger.Error("deployment health check: dashboard error", zap.String("dashboard", d), zap.String("error", err))
+			logger.Warn("deployment health check: metrics view error", zap.String("metrics_view", d), zap.String("error", err))
 		}
 
-		onlyUnhealthyDash := true
+		logError := false
 		if health.OlapError != "" {
-			onlyUnhealthyDash = false
+			logError = true
 			f = append(f, zap.String("olap_error", health.OlapError))
 		}
 		if health.ControllerError != "" {
-			onlyUnhealthyDash = false
+			logError = true
 			f = append(f, zap.String("controller_error", health.ControllerError))
 		}
 		if health.RepoError != "" {
-			onlyUnhealthyDash = false
+			logError = true
 			f = append(f, zap.String("repo_error", health.RepoError))
 		}
-		if onlyUnhealthyDash {
+		if !logError {
 			continue
 		}
 		w.logger.Error("deployment health check: runtime instance is unhealthy", f...)
