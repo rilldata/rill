@@ -5,6 +5,7 @@
 
   export let name: string;
   export let email: string | null = null;
+  export let photoUrl: string | null;
   export let isCurrentUser: boolean = false;
   export let pendingAcceptance: boolean = false;
   export let shape: "circle" | "square" = "circle";
@@ -20,6 +21,7 @@
   {#if shape === "circle"}
     <Avatar
       avatarSize="h-7 w-7"
+      src={photoUrl}
       alt={pendingAcceptance ? null : name}
       bgColor={getRandomBgColor(email ?? name)}
     />
