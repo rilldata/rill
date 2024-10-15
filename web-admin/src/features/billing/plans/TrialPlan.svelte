@@ -45,6 +45,7 @@
     (trialEnded ? " expired" : "");
 
   let open = false;
+  $: type = trialEnded ? "trial-expired" : "base";
 </script>
 
 <SettingsContainer {title}>
@@ -73,4 +74,4 @@
   </Button>
 </SettingsContainer>
 
-<StartTeamPlanDialog bind:open {organization} type="base" />
+<StartTeamPlanDialog bind:open {organization} {type} />

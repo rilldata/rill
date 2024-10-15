@@ -33,7 +33,7 @@
     });
   }
 
-  $: if (!$billingIssueMessage.isFetching)
+  $: if (!$billingIssueMessage.isFetching) {
     if ($billingIssueMessage.data) {
       showBillingIssueBanner($billingIssueMessage.data);
     } else {
@@ -45,6 +45,7 @@
         iconType: "none",
       });
     }
+  }
 </script>
 
 <StartTeamPlanDialog

@@ -363,7 +363,7 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 			}
 		}
 
-		if earliestGracePeriodEndDate.After(time.Now()) || earliestGracePeriodEndDate.IsZero() {
+		if earliestGracePeriodEndDate.Before(time.Now()) || earliestGracePeriodEndDate.IsZero() {
 			return fmt.Errorf("payment overdue")
 		}
 	}

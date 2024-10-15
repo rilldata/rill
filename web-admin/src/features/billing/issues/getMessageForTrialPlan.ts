@@ -66,6 +66,7 @@ export function getMessageForTrialPlan(
         "Your trial has expired and this org’s projects are now hibernating.";
       message.description = "Upgrade to wake projects and regain full access.";
       message.type = "error";
+      message.cta.teamPlanDialogType = "trial-expired";
     }
   }
 

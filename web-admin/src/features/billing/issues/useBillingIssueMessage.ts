@@ -53,6 +53,7 @@ export function useBillingIssueMessage(
       ) {
         return {
           isFetching: true,
+          error: undefined,
         };
       }
       if (
@@ -74,6 +75,7 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data.cancelled) {
         return {
           isFetching: false,
+          error: undefined,
           data: getMessageForCancelledIssue(
             categorisedIssuesResp.data.cancelled,
           ),
@@ -83,6 +85,7 @@ export function useBillingIssueMessage(
       if (categorisedIssuesResp.data.trial) {
         return {
           isFetching: false,
+          error: undefined,
           data: getMessageForTrialPlan(categorisedIssuesResp.data.trial),
         };
       }
@@ -93,6 +96,7 @@ export function useBillingIssueMessage(
       ) {
         return {
           isFetching: false,
+          error: undefined,
           data: getMessageForPaymentIssues(
             organization,
             !!subscriptionResp.data.subscription.plan &&
@@ -105,11 +109,13 @@ export function useBillingIssueMessage(
       if (allProjectsHibernatingResp.data) {
         return {
           isFetching: false,
-          data: {
+          error: undefined,
+          data: <BillingIssueMessage>{
             type: "default",
             title:
               "You haven’t logged in for a while so this org’s projects are hibernating.",
             description: "",
+            iconType: "sleep",
             cta: {
               type: "wake-projects",
               text: "Wake projects",
@@ -120,6 +126,7 @@ export function useBillingIssueMessage(
 
       return {
         isFetching: false,
+        error: undefined,
       };
     },
   );

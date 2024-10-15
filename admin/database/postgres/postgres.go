@@ -1869,15 +1869,6 @@ func (c *connection) FindAsset(ctx context.Context, id string) (*database.Asset,
 	return res, nil
 }
 
-func (c *connection) FindAssetsForOrg(ctx context.Context, orgID string, limit int) ([]*database.Asset, error) {
-	var res []*database.Asset
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM assets WHERE org_id=$1 LIMIT $2`, orgID, limit)
-	if err != nil {
-		return nil, parseErr("assets", err)
-	}
-	return res, nil
-}
-
 func (c *connection) InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*database.Asset, error) {
 	res := &database.Asset{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `

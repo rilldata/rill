@@ -7,7 +7,9 @@ export function areAllProjectsHibernating(organization: string) {
     {
       query: {
         enabled: !!organization,
-        select: (data) => data.projects.every((p) => !p.prodDeploymentId),
+        select: (data) =>
+          data.projects?.length &&
+          data.projects.every((p) => !p.prodDeploymentId),
       },
     },
   );

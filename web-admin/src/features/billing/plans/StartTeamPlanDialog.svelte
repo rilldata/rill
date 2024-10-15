@@ -5,8 +5,15 @@
    * 3. org   - When user hits the organization limit and wants to upgrade.
    * 4. proj  - When user hits the project limit and wants to upgrade.
    * 5. renew - After user cancels a subscription and wants to renew.
+   * 6. trial-expired - After a trial has expired with grace period also ended.
    */
-  export type TeamPlanDialogTypes = "base" | "size" | "org" | "proj" | "renew";
+  export type TeamPlanDialogTypes =
+    | "base"
+    | "size"
+    | "org"
+    | "proj"
+    | "renew"
+    | "trial-expired";
 </script>
 
 <script lang="ts">
@@ -73,6 +80,14 @@
         title = "Renew Team plan";
         description =
           `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}. ` +
+          "Pricing is based on amount of data ingested (and compressed) into Rill";
+        buttonText = "Continue";
+        break;
+
+      case "trial-expired":
+        title = "Start Team plan";
+        description =
+          "Starting Team plan will wake your projects and start your billing cycle today. " +
           "Pricing is based on amount of data ingested (and compressed) into Rill";
         buttonText = "Continue";
         break;
