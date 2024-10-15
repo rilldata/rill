@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metricsview_time_range", newMetricsViewTimeRangeResolver)
+	runtime.RegisterResolverInitializer("metrics_time_range", newMetricsViewTimeRangeResolver)
 }
 
 type metricsViewTimeRangeResolver struct {
