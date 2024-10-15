@@ -40,6 +40,8 @@
   $: ({ data: componentResource, isFetching } = $resourceQuery);
 
   $: ({ resolverProperties, input } = componentResource?.component?.spec ?? {});
+
+  $: tableHeight = tablePercentage * containerHeight;
 </script>
 
 <WorkspaceContainer
@@ -53,40 +55,52 @@
     hasUnsavedChanges={$hasUnsavedChanges}
   />
   <div slot="body" class="flex size-full">
-    <div
-      style:width="{editorPercentage * 100}%"
-      class="relative flex-none border-r"
-    >
-      <Resizer
-        direction="EW"
-        side="right"
-        dimension={editorWidth}
-        min={300}
-        max={0.65 * containerWidth}
-        onUpdate={(width) => (editorPercentage = width / containerWidth)}
-      />
+    <section style:width="{editorPercentage * 100}%">
       <ComponentsEditor {filePath} />
-    </div>
-    <div class="size-full flex-col flex overflow-hidden">
-      <ComponentStatusDisplay {isFetching} {componentName}>
-        <CanvasDashboardEmbed
-          {canvasName}
-          chartView
-          gap={8}
-          columns={10}
-          items={[
-            { width: 10, height: 10, x: 0, y: 0, component: componentName },
-          ]}
-        />
-      </ComponentStatusDisplay>
+    </section>
+
+    <Resizer
+      absolute={false}
+      direction="EW"
+      side="right"
+      dimension={editorWidth}
+      min={300}
+      max={0.65 * containerWidth}
+      onUpdate={(width) => (editorPercentage = width / containerWidth)}
+    />
+
+    <section class="size-full flex-col flex overflow-hidden">
+      <div
+        class="size-full overflow-hidden border border-gray-300 rounded-[2px]"
+      >
+        <ComponentStatusDisplay {isFetching} {componentName}>
+          <CanvasDashboardEmbed
+            {canvasName}
+            chartView
+            gap={8}
+            columns={10}
+            items={[
+              { width: 10, height: 10, x: 0, y: 0, component: componentName },
+            ]}
+          />
+        </ComponentStatusDisplay>
+      </div>
+
+      <Resizer
+        absolute={false}
+        direction="NS"
+        dimension={tableHeight}
+        min={100}
+        max={0.65 * containerHeight}
+        onUpdate={(height) => (tablePercentage = height / containerHeight)}
+      />
 
       <ComponentDataDisplay
         {componentName}
         {tablePercentage}
-        {containerHeight}
         {input}
         {resolverProperties}
       />
-    </div>
+    </section>
   </div>
 </WorkspaceContainer>

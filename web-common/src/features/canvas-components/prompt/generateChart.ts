@@ -11,7 +11,7 @@ import { useComponent } from "@rilldata/web-common/features/canvas-components/se
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
-  V1ComponentSpec,
+  type V1ComponentSpec,
   createRuntimeServiceGenerateRenderer,
   createRuntimeServiceGenerateResolver,
   createRuntimeServiceGetFile,
@@ -153,7 +153,7 @@ function tryParseChart(
   if (!chartSpec?.resolver && chartContent) {
     try {
       chartSpec = parseChartYaml(chartContent);
-    } catch (err) {
+    } catch {
       throw new Error(
         "Failed to parse yaml. Please fix it before trying to generate chart spec.",
       );

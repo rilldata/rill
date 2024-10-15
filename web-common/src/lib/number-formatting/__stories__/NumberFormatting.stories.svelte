@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Meta, Story } from "@storybook/addon-svelte-csf";
+  import { Story, type MetaProps } from "@storybook/addon-svelte-csf";
 
   import {
     formatMsInterval,
@@ -13,6 +13,13 @@
   const DAY = 24 * HOUR;
   const MONTH = 30 * DAY; //eslint-disable-line
   const YEAR = 365 * DAY; //eslint-disable-line
+
+  export const meta: MetaProps = {
+    title: "Data formatting/Intervals",
+    argTypes: {
+      clickAction: { action: "subbutton-click" },
+    },
+  };
 
   const time_formulas = [
     "-2234 * YEAR",
@@ -62,13 +69,6 @@
 
   const ms_values = time_formulas.map((f) => ({ string: f, num: eval(f) }));
 </script>
-
-<Meta
-  title="Data formatting/Intervals"
-  argTypes={{
-    clickAction: { action: "subbutton-click" },
-  }}
-/>
 
 <Story name="Intervals (compact)">
   <table>

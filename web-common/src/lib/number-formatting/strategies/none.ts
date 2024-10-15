@@ -1,9 +1,9 @@
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 import {
-  NumberParts,
-  Formatter,
+  type NumberParts,
+  type Formatter,
   NumberKind,
-  FormatterOptionsNoneStrategy,
+  type FormatterOptionsNoneStrategy,
 } from "../humanizer-types";
 import { numStrToParts } from "../utils/number-parts-utils";
 

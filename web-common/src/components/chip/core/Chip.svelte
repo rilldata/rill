@@ -2,7 +2,7 @@
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { createEventDispatcher, getContext } from "svelte";
   import { slideRight } from "../../../lib/transitions";
-  import { Writable } from "svelte/store";
+  import type { Writable } from "svelte/store";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import CancelCircle from "../../icons/CancelCircle.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
@@ -97,7 +97,7 @@
   .chip {
     @apply flex flex-none gap-x-1;
     @apply items-center justify-center;
-    @apply px-2 py-[3px] border;
+    @apply px-2 py-[3px] border w-fit;
   }
 
   .dimension {

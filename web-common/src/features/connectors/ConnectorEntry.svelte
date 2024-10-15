@@ -2,7 +2,7 @@
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { Tag } from "../../components/tag";
   import {
-    V1AnalyzedConnector,
+    type V1AnalyzedConnector,
     createRuntimeServiceGetInstance,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -65,7 +65,7 @@
 
   .connector-entry-header {
     @apply flex gap-x-1 items-center;
-    @apply w-full p-1;
+    @apply w-full px-2 py-1;
     @apply sticky top-0 z-10 bg-white;
   }
 

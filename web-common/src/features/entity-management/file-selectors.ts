@@ -1,6 +1,6 @@
 import {
   createRuntimeServiceListFiles,
-  V1ListFilesResponse,
+  type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 

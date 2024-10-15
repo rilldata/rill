@@ -1,21 +1,18 @@
 <script lang="ts">
-  import {
-    Button,
-    IconSpaceFixer,
-  } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import {
     V1ReconcileStatus,
-    V1Resource,
+    type V1Resource,
     createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let resource: V1Resource | undefined;
-  export let collapse = false;
+  export let hasUnsavedChanges: boolean;
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
@@ -36,15 +33,23 @@
 {#if isIncrementalModel}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button type="secondary" builders={[builder]} disabled={!isModelIdle}>
-        <IconSpaceFixer pullLeft pullRight={collapse}>
+      <Tooltip distance={8}>
+        <Button
+          square
+          type="secondary"
+          builders={[builder]}
+          disabled={!isModelIdle || hasUnsavedChanges}
+        >
           <RefreshIcon size="14px" />
-        </IconSpaceFixer>
-        <ResponsiveButtonText {collapse}>Refresh</ResponsiveButtonText>
-        <IconSpaceFixer pullLeft pullRight={collapse}>
-          <CaretDownIcon />
-        </IconSpaceFixer>
-      </Button>
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          {#if hasUnsavedChanges}
+            Save your changes to refresh
+          {:else}
+            Refresh source
+          {/if}
+        </TooltipContent>
+      </Tooltip>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
       <DropdownMenu.Item on:click={() => refreshModel(false)}>
@@ -56,10 +61,21 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}
-  <Button type="secondary" on:click={() => refreshModel(true)}>
-    <IconSpaceFixer pullLeft pullRight={collapse}>
+  <Tooltip distance={8}>
+    <Button
+      square
+      disabled={hasUnsavedChanges}
+      type="secondary"
+      on:click={() => refreshModel(true)}
+    >
       <RefreshIcon size="14px" />
-    </IconSpaceFixer>
-    <ResponsiveButtonText {collapse}>Refresh</ResponsiveButtonText>
-  </Button>
+    </Button>
+    <TooltipContent slot="tooltip-content">
+      {#if hasUnsavedChanges}
+        Save your changes to refresh
+      {:else}
+        Refresh source
+      {/if}
+    </TooltipContent>
+  </Tooltip>
 {/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Database, Folder } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { V1AnalyzedConnector } from "../../../runtime-client";
+  import type { V1AnalyzedConnector } from "../../../runtime-client";
   import { connectorExplorerStore } from "../connector-explorer-store";
   import TableEntry from "./TableEntry.svelte";
   import { useTables } from "./selectors";

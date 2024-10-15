@@ -5,6 +5,7 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceEditReport,
   } from "@rilldata/web-admin/client";
+  import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../components/button";
@@ -13,9 +14,9 @@
   import {
     V1ExportFormat,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReportSpec,
+    type V1ReportSpec,
     getRuntimeServiceGetResourceQueryKey,
-    V1ReportSpecAnnotations,
+    type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
@@ -30,19 +31,20 @@
   } from "./time-utils";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-
-  import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { ResourceKind } from "../entity-management/resource-selectors";
 
   export let open: boolean;
   export let queryArgs: any | undefined = undefined;
   export let metricsViewProto: string | undefined = undefined;
+  export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: metricsViewName =
-    getDashboardNameFromReport(reportSpec) ?? queryArgs.metricsViewName;
+  $: if (!exploreName) {
+    exploreName =
+      getDashboardNameFromReport(reportSpec) ?? queryArgs.metricsViewName;
+  }
 
   $: ({ organization, project, report: reportName } = $page.params);
 
@@ -93,6 +95,7 @@
                     "web_open_state"
                   ]
                 : metricsViewProto,
+              webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
             },
           },
         });
@@ -122,7 +125,7 @@
               },
           type: "success",
         });
-      } catch (e) {
+      } catch {
         // showing error below
       }
     },
@@ -150,7 +153,7 @@
         : getTimeIn24FormatFromDateTime(getNextQuarterHour()),
       timeZone: reportSpec?.refreshSchedule?.timeZone ?? getLocalIANA(),
       exportFormat: reportSpec
-        ? reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED
+        ? (reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED)
         : V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: reportSpec
         ? reportSpec.exportLimit === "0"
@@ -176,7 +179,7 @@
     <BaseScheduledReportForm
       formId="scheduled-report-form"
       {formState}
-      {metricsViewName}
+      exploreName={exploreName ?? ""}
     />
 
     <div class="flex items-center gap-x-2 mt-5">

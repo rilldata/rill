@@ -5,7 +5,7 @@
  * 2. an action that updates the readable store when the mouse moves over the attached DOM element
  */
 import { getContext } from "svelte";
-import { get, Readable, writable } from "svelte/store";
+import { get, type Readable, writable } from "svelte/store";
 import { DEFAULT_COORDINATES } from "../constants";
 
 import type { Action, ActionReturn } from "svelte/action";

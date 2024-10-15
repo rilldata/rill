@@ -42,7 +42,7 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 		return fmt.Errorf("failed to find organization of billing customer id %q: %w", job.Args.BillingCustomerID, err)
 	}
 
-	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypePaymentFailed)
+	be, err := w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -120,7 +120,7 @@ func (w *PaymentSuccessWorker) Work(ctx context.Context, job *river.Job[PaymentS
 	}
 
 	// check for existing billing error and delete it
-	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypePaymentFailed)
+	be, err := w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no billing error, ignore
@@ -191,7 +191,7 @@ func (w *PaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, job *riv
 }
 
 func (w *PaymentFailedGracePeriodCheckWorker) paymentFailedGracePeriodCheck(ctx context.Context) error {
-	failures, err := w.admin.DB.FindBillingIssueByTypeNotOverdueProcessed(ctx, database.BillingIssueTypePaymentFailed)
+	failures, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypePaymentFailed, false)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no orgs have this billing error
