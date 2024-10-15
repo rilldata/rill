@@ -77,7 +77,7 @@ describe("expression", () => {
         // assert that there is only match. this ensures unambiguous grammar.
         expect(parser.results).length(1);
 
-        expect(convertFilterParamToExpression(expr)).toEqual(
+        expect(convertFilterParamToExpression(expr)).to.deep.eq(
           expected_expression,
         );
       });

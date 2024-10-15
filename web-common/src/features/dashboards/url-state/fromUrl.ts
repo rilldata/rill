@@ -1,8 +1,8 @@
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
-  PivotChipData,
+  type PivotChipData,
   PivotChipType,
-  PivotState,
+  type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -12,7 +12,7 @@ import type {
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   TDDChart,
-  TDDState,
+  type TDDState,
 } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import {
   URLStateDefaultSortDirection,
@@ -27,15 +27,16 @@ import {
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimensionV2,
+  type MetricsViewSpecMeasureV2,
   type V1ExplorePreset,
-  V1ExploreSpec,
+  type V1ExploreSpec,
   V1ExploreWebView,
-  V1Expression,
-  V1MetricsViewSpec,
+  type V1Expression,
+  type V1MetricsViewSpec,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 
@@ -61,12 +62,10 @@ export function getMetricsExplorerFromUrl(
     (d) => d.name!,
   );
 
-  if (searchParams.has("vw")) {
-    entity.activePage = Number(
-      ToActivePageViewMap[
-        FromURLParamViewMap[searchParams.get("vw") as string]
-      ] ?? "0",
-    );
+  const view =
+    FromURLParamViewMap[searchParams.get("vw") as string] || preset.view;
+  if (view) {
+    entity.activePage = Number(ToActivePageViewMap[view] ?? "0");
   }
 
   if (searchParams.has("f")) {
@@ -109,14 +108,14 @@ function fromTimeRangesParams(
   const entity: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
 
-  const timeRange = preset.timeRange || searchParams.get("tr");
+  const timeRange = searchParams.get("tr") || preset.timeRange;
   if (timeRange) {
     const { timeRange: selectedTimeRange, error } =
       fromTimeRangeUrlParam(timeRange);
     if (error) errors.push(error);
     entity.selectedTimeRange = selectedTimeRange;
   }
-  const timeZone = preset.timezone || searchParams.get("tz");
+  const timeZone = searchParams.get("tz") || preset.timezone;
   if (timeZone) {
     entity.selectedTimezone = timeZone;
   } else {
@@ -124,17 +123,19 @@ function fromTimeRangesParams(
   }
 
   const comparisonTimeRange =
-    preset.compareTimeRange || searchParams.get("ctr");
+    searchParams.get("ctr") || preset.compareTimeRange;
   if (comparisonTimeRange) {
     const { timeRange, error } = fromTimeRangeUrlParam(comparisonTimeRange);
     if (error) errors.push(error);
     entity.selectedComparisonTimeRange = timeRange;
   }
   const comparisonDimension =
-    preset.comparisonDimension || searchParams.get("cd");
+    searchParams.get("cd") || preset.comparisonDimension;
   if (comparisonDimension && dimensions.has(comparisonDimension)) {
     entity.selectedComparisonDimension = comparisonDimension;
   }
+
+  // TODO: grain
 
   return { entity, errors };
 }
@@ -189,6 +190,8 @@ function fromOverviewUrlParams(
     const mes = searchParams.get("o.m") as string;
     if (mes !== "*") {
       selectedMeasures = mes.split(",").filter((m) => measures.has(m));
+    } else if (explore.measures) {
+      selectedMeasures = explore.measures;
     }
   }
   entity.allMeasuresVisible =
@@ -200,6 +203,8 @@ function fromOverviewUrlParams(
     const dims = searchParams.get("o.d") as string;
     if (dims !== "*") {
       selectedDimensions = dims.split(",").filter((d) => dimensions.has(d));
+    } else if (explore.dimensions) {
+      selectedDimensions = explore.dimensions;
     }
   }
   entity.allDimensionsVisible =
@@ -228,12 +233,26 @@ function fromOverviewUrlParams(
       sortDir === "ASC" ? SortDirection.ASCENDING : SortDirection.DESCENDING;
   }
 
-  entity.selectedDimensionName = preset.overviewExpandedDimension ?? "";
   if (searchParams.has("o.ed")) {
     const dim = searchParams.get("o.ed") as string;
-    if (dimensions.has(dim)) {
+    if (
+      dimensions.has(dim) ||
+      // we are unsetting from a default preset
+      dim === ""
+    ) {
       entity.selectedDimensionName = dim;
+      if (dim) {
+        entity.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else {
+        // we are un-setting the dimension, so change active page as well
+        entity.activePage = DashboardState_ActivePage.DEFAULT;
+      }
     }
+  } else if (preset.overviewExpandedDimension) {
+    entity.selectedDimensionName = preset.overviewExpandedDimension;
+    entity.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+  } else {
+    entity.selectedDimensionName = "";
   }
 
   return entity;
@@ -250,7 +269,11 @@ function fromTimeDimensionUrlParams(
 
   if (searchParams.has("tdd.m")) {
     const mes = searchParams.get("tdd.m") as string;
-    if (measures.has(mes)) {
+    if (
+      measures.has(mes) ||
+      // we are unsetting from a default preset
+      mes === ""
+    ) {
       ttdMeasure = mes;
     }
   }
@@ -344,8 +367,9 @@ function fromPivotUrlParams(
 
   return {
     active:
-      searchParams.get("vw") === "pivot" ||
-      preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+      (searchParams.has("vw") && searchParams.get("vw") === "pivot") ||
+      (!searchParams.has("vw") &&
+        preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT),
     rows: {
       dimension: rowDimensions,
     },

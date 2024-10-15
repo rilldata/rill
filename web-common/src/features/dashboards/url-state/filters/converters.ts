@@ -1,5 +1,8 @@
 import { BinaryOperationReverseMap } from "@rilldata/web-common/features/dashboards/url-state/filters/post-processors";
-import { V1Expression, V1Operation } from "@rilldata/web-common/runtime-client";
+import {
+  type V1Expression,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 import grammar from "./expression.cjs";
 import nearley from "nearley";
 

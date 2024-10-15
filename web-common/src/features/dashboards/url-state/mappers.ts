@@ -27,6 +27,8 @@ export const FromActivePageMap: Record<
     V1ExploreWebView.EXPLORE_ACTIVE_PAGE_TIME_DIMENSION,
 };
 export const ToActivePageViewMap = reverseMap(FromActivePageMap);
+ToActivePageViewMap[V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW] =
+  DashboardState_ActivePage.DEFAULT;
 
 export const FromURLParamTimeDimensionMap: Record<string, V1TimeGrain> = {
   "time.hour": V1TimeGrain.TIME_GRAIN_HOUR,

@@ -20,96 +20,304 @@ import { getMetricsExplorerFromUrl } from "@rilldata/web-common/features/dashboa
 import { getUrlFromMetricsExplorer } from "@rilldata/web-common/features/dashboards/url-state/toUrl";
 import { URLStateTestMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/url-state/url-state-test-data";
 import {
-  DashboardTimeControls,
+  type DashboardTimeControls,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  type V1ExplorePreset,
+  type V1ExploreSpec,
+  V1ExploreWebView,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
-const NoPresetTestCases: {
-  title: string;
-  url: string;
-  entity: Partial<MetricsExplorerEntity>;
-}[] = [
-  {
-    title: "filter",
-    url: "http://localhost/?f=%28publisher+IN+%28%27Yahoo%27%29%29",
-    entity: {
-      whereFilter: createAndExpression([
-        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Yahoo"]),
-      ]),
-      dimensionThresholdFilters: [],
-    },
-  },
-  {
-    title: "time ranges",
-    url: "http://localhost/?tr=P4W&tz=Asia%2FKathmandu",
-    entity: {
-      selectedTimeRange: {
-        name: TimeRangePreset.LAST_4_WEEKS,
-      } as DashboardTimeControls,
-      selectedTimezone: "Asia/Kathmandu",
-    },
-  },
-  {
-    title: "partially visible measures/dimensions",
-    url: "http://localhost/?o.m=impressions&o.d=publisher",
-    entity: {
-      visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
-      allMeasuresVisible: false,
-      visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
-      allDimensionsVisible: false,
-    },
-  },
-  {
-    title: "all measures/dimensions visible",
-    url: "http://localhost/",
-    entity: {
-      visibleMeasureKeys: new Set([
-        AD_BIDS_IMPRESSIONS_MEASURE,
-        AD_BIDS_BID_PRICE_MEASURE,
-      ]),
-      allMeasuresVisible: true,
-      visibleDimensionKeys: new Set([
-        AD_BIDS_PUBLISHER_DIMENSION,
-        AD_BIDS_DOMAIN_DIMENSION,
-      ]),
-      allDimensionsVisible: true,
-    },
-  },
-  {
-    title: "leaderboard sort measure different than default",
-    url: "http://localhost/?o.sb=bid_price&o.sd=ASC",
-    entity: {
-      leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-      sortDirection: SortDirection.ASCENDING,
-    },
-  },
-  {
-    title: "leaderboard sort measure same as default",
-    url: "http://localhost/",
-    entity: {
-      leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-      sortDirection: SortDirection.DESCENDING,
-    },
-  },
-  {
-    title: "time dimensional details",
-    url: "http://localhost/?vw=time_dimension&tdd.m=impressions&tdd.ct=stacked_bar",
-    entity: {
-      activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
-      tdd: {
-        expandedMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-        chartType: TDDChart.STACKED_BAR,
-        pinIndex: -1,
+describe("Human readable URL state", () => {
+  it("filter", () => {
+    testEntity(
+      {
+        whereFilter: createAndExpression([
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Yahoo"]),
+        ]),
+        dimensionThresholdFilters: [],
       },
-    },
-  },
-  {
-    title: "pivot",
-    url: "http://localhost/?vw=pivot&p.r=publisher%2Ctime.hour&p.c=domain%2Ctime.day%2Cimpressions",
-    entity: {
+      "http://localhost/?f=%28publisher+IN+%28%27Yahoo%27%29%29",
+    );
+  });
+
+  describe("Time ranges", () => {
+    it("no preset", () => {
+      testEntity(
+        {
+          selectedTimeRange: {
+            name: TimeRangePreset.LAST_4_WEEKS,
+          } as DashboardTimeControls,
+          selectedTimezone: "Asia/Kathmandu",
+        },
+        "http://localhost/?tr=P4W&tz=Asia%2FKathmandu",
+      );
+    });
+
+    it("with preset and matching preset", () => {
+      testEntity(
+        {
+          selectedTimeRange: {
+            name: TimeRangePreset.LAST_7_DAYS,
+          } as DashboardTimeControls,
+          selectedTimezone: "Asia/Kathmandu",
+        },
+        "http://localhost/",
+        {
+          timeRange: "P7D",
+          timezone: "Asia/Kathmandu",
+        },
+      );
+    });
+
+    it("with preset and not matching preset", () => {
+      testEntity(
+        {
+          selectedTimeRange: {
+            name: TimeRangePreset.LAST_4_WEEKS,
+          } as DashboardTimeControls,
+          selectedTimezone: "America/Los_Angeles",
+        },
+        "http://localhost/?tr=P4W&tz=America%2FLos_Angeles",
+        {
+          timeRange: "P7D",
+          timezone: "Asia/Kathmandu",
+        },
+      );
+    });
+  });
+
+  describe("measures/dimensions visibility", () => {
+    it("no preset and partially visible measures/dimensions", () => {
+      testEntity(
+        {
+          visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+          allMeasuresVisible: false,
+          visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+          allDimensionsVisible: false,
+        },
+        "http://localhost/?o.m=impressions&o.d=publisher",
+      );
+    });
+
+    it("no preset and all measures/dimensions visible", () => {
+      testEntity(
+        {
+          visibleMeasureKeys: new Set([
+            AD_BIDS_IMPRESSIONS_MEASURE,
+            AD_BIDS_BID_PRICE_MEASURE,
+          ]),
+          allMeasuresVisible: true,
+          visibleDimensionKeys: new Set([
+            AD_BIDS_PUBLISHER_DIMENSION,
+            AD_BIDS_DOMAIN_DIMENSION,
+          ]),
+          allDimensionsVisible: true,
+        },
+        "http://localhost/",
+      );
+    });
+
+    it("with preset and partially visible measures/dimensions, matching preset", () => {
+      testEntity(
+        {
+          visibleMeasureKeys: new Set([AD_BIDS_IMPRESSIONS_MEASURE]),
+          allMeasuresVisible: false,
+          visibleDimensionKeys: new Set([AD_BIDS_PUBLISHER_DIMENSION]),
+          allDimensionsVisible: false,
+        },
+        "http://localhost/",
+        {
+          measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+          dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+        },
+      );
+    });
+
+    it("with preset and all measures/dimensions visible, not matching preset", () => {
+      testEntity(
+        {
+          visibleMeasureKeys: new Set([
+            AD_BIDS_IMPRESSIONS_MEASURE,
+            AD_BIDS_BID_PRICE_MEASURE,
+          ]),
+          allMeasuresVisible: true,
+          visibleDimensionKeys: new Set([
+            AD_BIDS_PUBLISHER_DIMENSION,
+            AD_BIDS_DOMAIN_DIMENSION,
+          ]),
+          allDimensionsVisible: true,
+        },
+        "http://localhost/?o.m=*&o.d=*",
+        {
+          measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+          dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+        },
+      );
+    });
+  });
+
+  describe("leaderboard configs", () => {
+    it("no preset and leaderboard sort measure different than default", () => {
+      testEntity(
+        {
+          leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+          sortDirection: SortDirection.ASCENDING,
+        },
+        "http://localhost/?o.sb=bid_price&o.sd=ASC",
+      );
+    });
+
+    it("no preset and leaderboard sort measure same as default", () => {
+      testEntity(
+        {
+          leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+          sortDirection: SortDirection.DESCENDING,
+        },
+        "http://localhost/",
+      );
+    });
+
+    it("with preset and leaderboard sort measure same as preset", () => {
+      testEntity(
+        {
+          leaderboardMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+          sortDirection: SortDirection.ASCENDING,
+        },
+        "http://localhost/",
+        {
+          overviewSortBy: AD_BIDS_BID_PRICE_MEASURE,
+          overviewSortAsc: true,
+        },
+      );
+    });
+
+    it("with preset and leaderboard sort measure different than preset", () => {
+      testEntity(
+        {
+          leaderboardMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+          sortDirection: SortDirection.DESCENDING,
+        },
+        "http://localhost/?o.sb=impressions&o.sd=DESC",
+        {
+          overviewSortBy: AD_BIDS_BID_PRICE_MEASURE,
+          overviewSortAsc: true,
+        },
+      );
+    });
+  });
+
+  describe("dimension table", () => {
+    it("no preset and with dimension table active", () => {
+      testEntity(
+        {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          selectedDimensionName: AD_BIDS_PUBLISHER_DIMENSION,
+        },
+        "http://localhost/?o.ed=publisher",
+      );
+    });
+
+    it("with preset and with dimension table same as preset", () => {
+      testEntity(
+        {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          selectedDimensionName: AD_BIDS_DOMAIN_DIMENSION,
+        },
+        "http://localhost/",
+        {
+          overviewExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
+        },
+      );
+    });
+
+    it("with preset and with dimension table different than preset", () => {
+      testEntity(
+        {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          selectedDimensionName: AD_BIDS_PUBLISHER_DIMENSION,
+        },
+        "http://localhost/?o.ed=publisher",
+        {
+          overviewExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
+        },
+      );
+    });
+
+    it("with preset and with no dimension table different than preset", () => {
+      testEntity(
+        {
+          activePage: DashboardState_ActivePage.DEFAULT,
+          selectedDimensionName: "",
+        },
+        "http://localhost/?o.ed=",
+        {
+          overviewExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
+        },
+      );
+    });
+  });
+
+  describe("time dimensional details", () => {
+    it("no preset and has time dimensional details", () => {
+      testEntity(
+        {
+          activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+          tdd: {
+            expandedMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+            chartType: TDDChart.STACKED_BAR,
+            pinIndex: -1,
+          },
+        },
+        "http://localhost/?vw=time_dimension&tdd.m=impressions&tdd.ct=stacked_bar",
+      );
+    });
+
+    it("with preset and has time dimensional details same as presets", () => {
+      testEntity(
+        {
+          activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+          tdd: {
+            expandedMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+            chartType: TDDChart.STACKED_BAR,
+            pinIndex: -1,
+          },
+        },
+        "http://localhost/",
+        {
+          view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_TIME_DIMENSION,
+          timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
+          timeDimensionChartType: "stacked_bar",
+        },
+      );
+    });
+
+    it("with preset and has time dimensional details different than presets", () => {
+      testEntity(
+        {
+          activePage: DashboardState_ActivePage.DEFAULT,
+          tdd: {
+            expandedMeasureName: "",
+            chartType: TDDChart.DEFAULT,
+            pinIndex: -1,
+          },
+        },
+        "http://localhost/?vw=overview&tdd.m=&tdd.ct=timeseries",
+        {
+          view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_TIME_DIMENSION,
+          timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
+          timeDimensionChartType: "stacked_bar",
+        },
+      );
+    });
+  });
+
+  describe("pivot", () => {
+    const PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
       activePage: DashboardState_ActivePage.PIVOT,
       pivot: {
         active: true,
@@ -156,44 +364,104 @@ const NoPresetTestCases: {
         activeCell: null,
         rowJoinType: "nest",
       },
-    },
-  },
-];
+    };
 
-describe("Human readable URL state", () => {
-  describe("No preset", () => {
-    for (const { title, url, entity } of NoPresetTestCases) {
-      it(title, () => {
-        const u = new URL("http://localhost");
-        const defaultEntity = {
-          ...getDefaultMetricsExplorerEntity(
-            AD_BIDS_NAME,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-            AD_BIDS_EXPLORE_INIT,
-            undefined,
-          ),
-          ...entity,
-        };
-        getUrlFromMetricsExplorer(
-          defaultEntity,
-          u.searchParams,
-          AD_BIDS_EXPLORE_INIT,
-          {},
-        );
+    it("no preset with pivot", () => {
+      testEntity(
+        PIVOT_ENTITY,
+        "http://localhost/?vw=pivot&p.r=publisher%2Ctime.hour&p.c=domain%2Ctime.day%2Cimpressions",
+      );
+    });
 
-        expect(u.toString()).toEqual(url);
-
-        const { entity: actualEntity } = getMetricsExplorerFromUrl(
-          u.searchParams,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          AD_BIDS_EXPLORE_INIT,
-          {},
-        );
-        expect(actualEntity).toEqual({
-          ...URLStateTestMetricsExplorerEntity,
-          ...entity,
-        });
+    it("with preset and pivot same as preset", () => {
+      testEntity(PIVOT_ENTITY, "http://localhost/", {
+        view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+        pivotRows: ["publisher", "time.hour"],
+        pivotCols: ["domain", "time.day", "impressions"],
       });
-    }
+    });
+
+    it("with preset and pivot different as preset", () => {
+      testEntity(
+        PIVOT_ENTITY,
+        "http://localhost/?p.r=publisher%2Ctime.hour&p.c=domain%2Ctime.day%2Cimpressions",
+        {
+          view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+          pivotRows: ["domain", "time.day"],
+          pivotCols: ["impressions"],
+        },
+      );
+    });
+
+    it("with preset and no pivot, different as preset", () => {
+      testEntity(
+        {
+          activePage: DashboardState_ActivePage.DEFAULT,
+          pivot: {
+            active: false,
+            rows: {
+              dimension: [],
+            },
+            columns: {
+              measure: [],
+              dimension: [],
+            },
+            expanded: {},
+            sorting: [],
+            columnPage: 1,
+            rowPage: 1,
+            enableComparison: false,
+            activeCell: null,
+            rowJoinType: "nest",
+          },
+        },
+        "http://localhost/?vw=overview&p.r=&p.c=",
+        {
+          view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+          pivotRows: ["domain", "time.day"],
+          pivotCols: ["impressions"],
+        },
+      );
+    });
   });
 });
+
+function testEntity(
+  entity: Partial<MetricsExplorerEntity>,
+  expectedUrl: string,
+  preset?: V1ExplorePreset,
+) {
+  const url = new URL("http://localhost");
+  const explore: V1ExploreSpec = {
+    ...AD_BIDS_EXPLORE_INIT,
+    ...(preset ? { defaultPreset: preset } : {}),
+  };
+  const defaultEntity = {
+    ...getDefaultMetricsExplorerEntity(
+      AD_BIDS_NAME,
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      explore,
+      undefined,
+    ),
+    ...entity,
+  };
+  getUrlFromMetricsExplorer(
+    defaultEntity,
+    url.searchParams,
+    explore,
+    preset ?? {},
+  );
+
+  expect(url.toString()).to.eq(expectedUrl);
+
+  const { entity: actualEntity } = getMetricsExplorerFromUrl(
+    url.searchParams,
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    explore,
+    preset ?? {},
+  );
+  expect(actualEntity).toEqual({
+    ...URLStateTestMetricsExplorerEntity,
+    ...entity,
+  });
+}

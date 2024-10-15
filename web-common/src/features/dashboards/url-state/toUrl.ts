@@ -1,6 +1,6 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
-  PivotChipData,
+  type PivotChipData,
   PivotChipType,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
@@ -22,8 +22,8 @@ import {
   arrayUnorderedEquals,
 } from "@rilldata/web-common/lib/arrayUtils";
 import {
-  V1ExplorePreset,
-  V1ExploreSpec,
+  type V1ExplorePreset,
+  type V1ExploreSpec,
   V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
 
@@ -38,7 +38,8 @@ export function getUrlFromMetricsExplorer(
   const currentView = FromActivePageMap[metrics.activePage];
   if (
     (preset.view !== undefined && preset.view !== currentView) ||
-    currentView !== V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW
+    (preset.view === undefined &&
+      currentView !== V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW)
   ) {
     searchParams.set("vw", ToURLParamViewMap[currentView] as string);
   }
@@ -69,9 +70,12 @@ function toTimeRangesUrl(
     searchParams.set("tr", metrics.selectedTimeRange.name);
   }
   if (
+    // if preset has timezone then only set if selected is not the same
     (preset.timezone !== undefined &&
       metrics.selectedTimezone !== preset.timezone) ||
-    metrics.selectedTimezone !== URLStateDefaultTimezone
+    // else if the timezone is not the default then set the param
+    (preset.timezone === undefined &&
+      metrics.selectedTimezone !== URLStateDefaultTimezone)
   ) {
     searchParams.set("tz", metrics.selectedTimezone);
   }
@@ -82,6 +86,8 @@ function toTimeRangesUrl(
   if (metrics.selectedComparisonDimension !== preset.comparisonDimension) {
     searchParams.set("cd", metrics.selectedComparisonDimension ?? "");
   }
+
+  // TODO: grain
 }
 
 function toOverviewUrl(
@@ -113,11 +119,12 @@ function toOverviewUrl(
   const defaultLeaderboardMeasure =
     preset.measures?.[0] ?? explore.measures?.[0];
   if (
-    // if sort by is defined then only set param if selected is not the same.
+    // if sort by is defined in preset then only set param if selected is not the same.
     (preset.overviewSortBy &&
       metrics.leaderboardMeasureName !== preset.overviewSortBy) ||
     // else the default is the 1st measure in preset or explore, so check that next
-    metrics.leaderboardMeasureName !== defaultLeaderboardMeasure
+    (!preset.overviewSortBy &&
+      metrics.leaderboardMeasureName !== defaultLeaderboardMeasure)
   ) {
     searchParams.set("o.sb", metrics.leaderboardMeasureName);
   }
@@ -128,16 +135,19 @@ function toOverviewUrl(
     (preset.overviewSortAsc !== undefined &&
       preset.overviewSortAsc !== sortAsc) ||
     // else if the direction is not the default then set the param
-    metrics.sortDirection !== URLStateDefaultSortDirection
+    (preset.overviewSortAsc === undefined &&
+      metrics.sortDirection !== URLStateDefaultSortDirection)
   ) {
     searchParams.set("o.sd", sortAsc ? "ASC" : "DESC");
   }
 
   if (
-    metrics.selectedDimensionName &&
-    metrics.selectedDimensionName !== preset.overviewExpandedDimension
+    (preset.overviewExpandedDimension !== undefined &&
+      metrics.selectedDimensionName !== preset.overviewExpandedDimension) ||
+    (preset.overviewExpandedDimension === undefined &&
+      metrics.selectedDimensionName)
   ) {
-    searchParams.set("o.ed", metrics.selectedDimensionName);
+    searchParams.set("o.ed", metrics.selectedDimensionName ?? "");
   }
 }
 
@@ -147,16 +157,20 @@ function toTimeDimensionUrlParams(
   preset: V1ExplorePreset,
 ) {
   if (
-    metrics.tdd.expandedMeasureName &&
-    metrics.tdd.expandedMeasureName !== preset.timeDimensionMeasure
+    (preset.timeDimensionMeasure !== undefined &&
+      metrics.tdd.expandedMeasureName !== preset.timeDimensionMeasure) ||
+    (preset.timeDimensionMeasure === undefined &&
+      metrics.tdd.expandedMeasureName)
   ) {
-    searchParams.set("tdd.m", metrics.tdd.expandedMeasureName);
+    searchParams.set("tdd.m", metrics.tdd.expandedMeasureName ?? "");
   }
 
   if (
     (preset.timeDimensionChartType !== undefined &&
-      metrics.tdd.chartType !== preset.timeDimensionChartType) ||
-    metrics.tdd.chartType !== URLStateDefaultTDDChartType
+      ToURLParamTDDChartMap[metrics.tdd.chartType] !==
+        preset.timeDimensionChartType) ||
+    (preset.timeDimensionChartType === undefined &&
+      metrics.tdd.chartType !== URLStateDefaultTDDChartType)
   ) {
     searchParams.set(
       "tdd.ct",
@@ -165,7 +179,7 @@ function toTimeDimensionUrlParams(
   }
 
   // TODO: pin
-  // TODO: what should be done when chartType is set but expandedMeasureName is not st
+  // TODO: what should be done when chartType is set but expandedMeasureName is not
 }
 
 function toPivotUrlParams(
@@ -173,8 +187,6 @@ function toPivotUrlParams(
   searchParams: URLSearchParams,
   preset: V1ExplorePreset,
 ) {
-  if (!metrics.pivot.active) return;
-
   const mapPivotEntry = (data: PivotChipData) => {
     if (data.type === PivotChipType.Time)
       return ToURLParamTimeDimensionMap[data.id] as string;
