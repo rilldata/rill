@@ -278,7 +278,7 @@ The API accepts the following parameters:
 | user_email | The email of the user to embed the dashboard for                                                                                                                                                | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
 | attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
 | ttl_seconds | The time to live for the iframe URL                                                                                                                                                | No (Default: 86400)              |
-
+| and more! | You can pass any attribute required to create your access policies                                                                                                                    | No                         |
 :::tip Embedding the project vs embedding an individual dashboard
 
 One of the most common differences between how developers may wish to iframe Rill is whether they wish to embed at the project level or individual dashboard level. This behavior can be controlled through the combination of the `resource` and `navigation` properties!
