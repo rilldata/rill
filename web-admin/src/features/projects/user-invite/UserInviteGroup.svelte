@@ -46,6 +46,7 @@
             avatarSize="h-4 w-4"
             fontSize="text-[10px]"
             alt={user.userName}
+            src={user.userPhotoUrl}
             bgColor={getRandomBgColor(user.userEmail)}
           />
           <li>{user.userName}</li>
