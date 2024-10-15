@@ -6,9 +6,7 @@
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
   import AuthContainer from "./AuthContainer.svelte";
-  import Disclaimer from "./Disclaimer.svelte";
   import EmailPassForm from "./EmailPassForm.svelte";
-  import SSOForm from "./SSOForm.svelte";
   import { getConnectionFromEmail } from "./utils";
 
   type InternalOptions = {
@@ -209,7 +207,19 @@
         </CtaButton>
       {/each}
 
-      <Disclaimer />
+      <div class="flex items-center justify-center h-6">
+        <hr class="flex-grow border-t border-slate-300" />
+        <span class="px-2 text-slate-500 text-sm">or</span>
+        <hr class="flex-grow border-t border-slate-300" />
+      </div>
+
+      <!-- TODO: re-enable SSO -->
+      <!-- <SSOForm
+        disabled={isSSODisabled}
+        on:ssoSubmit={(e) => {
+          handleSSOLogin(e.detail);
+        }}
+      /> -->
 
       <EmailPassForm
         disabled={isEmailDisabled}
@@ -228,6 +238,16 @@
       </div>
     {/if}
 
-    <Disclaimer />
+    <!-- REVISIT AFTER https://www.figma.com/design/Qt6EyotCBS3V6O31jVhMQ7?node-id=18329-561704#987505195 -->
+    <!-- <Disclaimer /> -->
+
+    <div class="mt-6 text-center">
+      <p class="text-sm text-gray-500">
+        Need help? Reach out to us on <a
+          href="http://bit.ly/3jg4IsF"
+          target="_blank">Discord</a
+        >
+      </p>
+    </div>
   </AuthContainer>
 </RillTheme>
