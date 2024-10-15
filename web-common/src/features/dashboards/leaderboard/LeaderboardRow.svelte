@@ -23,8 +23,13 @@
   export let borderTop = false;
   export let borderBottom = false;
   export let uri: string | undefined;
-  export let firstColumnWidth: number;
-  export let columnWidth: number;
+  export let columnWidths: {
+    dimension: number;
+    value: number;
+    percentOfTotal: number;
+    delta: number;
+    deltaPercent: number;
+  };
   export let gutterWidth: number;
 
   let hovered = false;
@@ -88,6 +93,8 @@
 
   $: percentOfTotal = $isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
 
+  // Question: Why is bar length calculated for full table but displayed only for
+  // first column
   $: barLength = (tableWidth - gutterWidth) * percentOfTotal;
 
   $: barColor = excluded
@@ -96,19 +103,22 @@
       ? "var(--color-primary-200)"
       : "var(--color-primary-100)";
 
-  // Bar gradient has to be split up across cells because of a bug in Safari
+  // FIXME: Bar gradient has to be split up across cells because of a bug in Safari
   // This is not necessary in other browsers, but doing it this way ensures consistency
-
-  $: secondCellBarLength = clamp(0, barLength - firstColumnWidth, columnWidth);
+  $: secondCellBarLength = clamp(
+    0,
+    barLength - columnWidths.dimension,
+    columnWidths.value,
+  );
   $: thirdCellBarLength = clamp(
     0,
-    barLength - (firstColumnWidth + columnWidth),
-    columnWidth,
+    barLength - (columnWidths.dimension + columnWidths.value),
+    columnWidths.percentOfTotal,
   );
   $: fourthCellBarLength = clamp(
     0,
-    Math.max(barLength - (firstColumnWidth + columnWidth * 2), 0),
-    columnWidth,
+    Math.max(barLength - (columnWidths.dimension + columnWidths.value * 2), 0),
+    columnWidths.value,
   );
 
   $: firstCellGradient = `linear-gradient(to right, ${barColor}

@@ -4,13 +4,25 @@ import {
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
-  type V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewComparisonMeasureType as ApiSortType,
+  type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
 
+import { clamp } from "@rilldata/web-common/lib/clamp";
 import { SortType } from "../proto-state/derived-types";
 
+const MIN_COL_WIDTH = 56;
+const DEFAULT_COL_WIDTH = 66;
+const MAX_COL_WIDTH = 108;
+
+export const LEADERBOARD_COLUMN_WIDTHS = {
+  dimension: 164,
+  value: DEFAULT_COL_WIDTH,
+  percentOfTotal: DEFAULT_COL_WIDTH,
+  delta: DEFAULT_COL_WIDTH,
+  deltaPercent: DEFAULT_COL_WIDTH,
+};
 export type LeaderboardItemData = {
   /**
    *The dimension value label to be shown in the leaderboard
@@ -275,4 +287,38 @@ export function compareLeaderboardValues(selected: string, value: any) {
     default:
       return selected === value;
   }
+}
+
+function estimateColumnWidth(values: unknown[]) {
+  const samples = values.filter(
+    (v): v is string | number => typeof v === "string" || typeof v === "number",
+  );
+  const maxValueLength = samples.reduce((max: number, value) => {
+    const stringLength = String(value).length;
+    return Math.max(max, stringLength);
+  }, 0) as number;
+
+  const pixelLength = maxValueLength * 7;
+  return clamp(MIN_COL_WIDTH, pixelLength, MAX_COL_WIDTH);
+}
+
+export function calculateLeaderboardColumnWidth(
+  firstColumnWidth: number,
+  aboveTheFold: LeaderboardItemData[],
+  selectedBelowTheFold: LeaderboardItemData[],
+  formatter: (
+    value: string | number | null | undefined,
+  ) => string | null | undefined,
+) {
+  const rows = aboveTheFold.concat(selectedBelowTheFold);
+
+  const columnWidths = {
+    dimension: firstColumnWidth,
+    value: estimateColumnWidth(rows.map((i) => formatter(i.value || 0))),
+    delta: estimateColumnWidth(rows.map((i) => formatter(i.deltaAbs || 0))),
+    // These are always formatted and can be contained in min width
+    percentOfTotal: MIN_COL_WIDTH,
+    deltaPercent: MIN_COL_WIDTH,
+  };
+  return columnWidths;
 }
