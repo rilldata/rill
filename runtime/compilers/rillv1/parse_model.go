@@ -262,8 +262,8 @@ func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name Resour
 		resources := p.resourceNamesForDataPaths[entry.Path]
 		if !slices.Contains(resources, name) {
 			resources = append(resources, name)
+			p.resourceNamesForDataPaths[entry.Path] = resources
 		}
-		p.resourceNamesForDataPaths[entry.Path] = resources
 	}
 
 	// Calculate hash of local files
