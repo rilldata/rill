@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
 import type { QueryClient } from "@tanstack/query-core";
@@ -130,8 +131,12 @@ export async function submitAddDataForm(
   );
 
   // Make a new `<connector>.yaml` file
+  const newConnectorFilePath = getFileAPIPathFromNameAndType(
+    newConnectorName,
+    EntityType.Connector,
+  );
   await runtimeServicePutFile(instanceId, {
-    path: getFileAPIPathFromNameAndType(newConnectorName, EntityType.Connector),
+    path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues),
     create: true,
     createOnly: false,
@@ -152,4 +157,7 @@ export async function submitAddDataForm(
     create: true,
     createOnly: false,
   });
+
+  // Go to the new connector file
+  await goto(`/files/${newConnectorFilePath}`);
 }
