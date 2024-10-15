@@ -399,6 +399,26 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		CreatedByUserID:                     org.CreatedByUserID,
 	}
 
+	var sub *billing.Subscription
+	if req.BillingCustomerId != nil {
+		// get active subscriptions if present
+		sub, err = s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+		if err != nil {
+			if !errors.Is(err, billing.ErrNotFound) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		if sub != nil {
+			opts.QuotaProjects = biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects)
+			opts.QuotaDeployments = biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments)
+			opts.QuotaSlotsTotal = biggerOfInt(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal)
+			opts.QuotaSlotsPerDeployment = biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
+			opts.QuotaOutstandingInvites = biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
+			opts.QuotaStorageLimitBytesPerDeployment = biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
+		}
+	}
+
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
 	if err != nil {
 		return nil, err
@@ -412,15 +432,10 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		}
 	}
 
-	// get active subscriptions if present
-	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
-	if err != nil {
-		if errors.Is(err, billing.ErrNotFound) {
-			return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-				Organization: organizationToDTO(org),
-			}, nil
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+	if sub == nil {
+		return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
+			Organization: organizationToDTO(org),
+		}, nil
 	}
 
 	return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
@@ -762,4 +777,36 @@ func comparableInt64(v *int64) int64 {
 		return math.MaxInt64
 	}
 	return *v
+}
+
+func biggerOfInt(ptr *int, def int) int {
+	if ptr == nil {
+		return def
+	}
+
+	if *ptr < 0 || def < 0 {
+		return -1
+	}
+
+	if *ptr > def {
+		return *ptr
+	}
+
+	return def
+}
+
+func biggerOfInt64(ptr *int64, def int64) int64 {
+	if ptr == nil {
+		return def
+	}
+
+	if *ptr < 0 || def < 0 {
+		return -1
+	}
+
+	if *ptr > def {
+		return *ptr
+	}
+
+	return def
 }
