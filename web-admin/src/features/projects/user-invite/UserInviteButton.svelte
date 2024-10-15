@@ -20,7 +20,7 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
+  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
 
   export let organization: string;
   export let project: string;

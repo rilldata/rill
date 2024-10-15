@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
+  import AvatarListItem from "./AvatarListItem.svelte";
 
   export let name: string;
   export let email: string;

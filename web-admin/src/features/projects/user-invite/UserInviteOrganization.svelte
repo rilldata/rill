@@ -1,10 +1,10 @@
 <script lang="ts">
-  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
 
   export let organization: string;
   export let memberUsers: V1MemberUser[];
