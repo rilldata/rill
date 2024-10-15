@@ -1,9 +1,9 @@
 <script lang="ts">
   import { createInfiniteQuery } from "@tanstack/svelte-query";
   import {
-    ColumnDef,
-    Row,
-    TableOptions,
+    type ColumnDef,
+    type Row,
+    type TableOptions,
     createSvelteTable,
     flexRender,
     getCoreRowModel,
@@ -12,10 +12,10 @@
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
   import {
-    RpcStatus,
-    V1GetModelSplitsResponse,
-    V1ModelSplit,
-    V1Resource,
+    type RpcStatus,
+    type V1GetModelSplitsResponse,
+    type V1ModelSplit,
+    type V1Resource,
     getRuntimeServiceGetModelSplitsQueryKey,
     runtimeServiceGetModelSplits,
   } from "../../../runtime-client";

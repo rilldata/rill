@@ -6,10 +6,10 @@
 
 <svg
   height={size}
-  viewBox="0 0 24 24"
+  viewBox="0.5 0.5 22 22"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
-  class={className}
+  class="{className} "
 >
   <path
     fill-rule="evenodd"

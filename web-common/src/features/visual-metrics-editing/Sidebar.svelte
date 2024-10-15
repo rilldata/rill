@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { YAMLDimension, YAMLMeasure, MenuOption } from "./lib";
+  import { YAMLDimension, YAMLMeasure, type MenuOption } from "./lib";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
+  import type { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
   import { FileArtifact } from "../entity-management/file-artifact";
   import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
@@ -218,7 +218,18 @@
 
   async function saveChanges() {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const items = (parsedDocument.get(type) as YAMLSeq).items as Array<YAMLMap>;
+    let sequence = parsedDocument.get(type);
+
+    if (!(sequence instanceof YAMLSeq) || sequence.items.length === 0) {
+      sequence = new YAMLSeq();
+      parsedDocument.set(type, sequence);
+    }
+
+    if (!(sequence instanceof YAMLSeq)) {
+      throw new Error("Invalid YAML document");
+    }
+
+    const items = sequence.items as YAMLMap[];
 
     const newItem = new YAMLMap();
 
@@ -258,7 +269,7 @@
     {#each properties[type] as { fields, selected, label, optional, fontFamily } (label)}
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
       {#if boolean}
-        <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
+        <div class="flex gap-x-2 items-center h-full bg-white rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
           <Label class="font-medium text-sm" for="auto-save">{label}</Label>
           {#if hint}
@@ -330,7 +341,11 @@
         >
           Cancel
         </Button>
-        <Tooltip location="top" distance={8}>
+        <Tooltip
+          location="top"
+          distance={8}
+          suppress={!requiredPropertiesUnfilled.length}
+        >
           <Button
             type="primary"
             on:click={saveChanges}

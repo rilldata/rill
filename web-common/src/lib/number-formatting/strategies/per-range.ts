@@ -1,10 +1,10 @@
 import {
-  Formatter,
-  FormatterOptionsCommon,
-  FormatterRangeSpecsStrategy,
+  type Formatter,
+  type FormatterOptionsCommon,
+  type FormatterRangeSpecsStrategy,
   NumberKind,
-  NumberParts,
-  RangeFormatSpec,
+  type NumberParts,
+  type RangeFormatSpec,
 } from "../humanizer-types";
 import { countDigits, countNonZeroDigits } from "../utils/count-digits";
 import {

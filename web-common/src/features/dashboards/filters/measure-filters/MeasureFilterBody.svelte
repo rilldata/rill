@@ -4,7 +4,7 @@
   - a short hand notation of the filter criteria
 -->
 <script lang="ts">
-  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
     AllMeasureFilterOperationOptions,
     AllMeasureFilterTypeOptions,

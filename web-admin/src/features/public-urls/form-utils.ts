@@ -18,7 +18,7 @@ export function hasDashboardDimensionThresholdFilter(
   return dashboardStore.dimensionThresholdFilters?.length;
 }
 
-export function getMetricsViewFields(
+export function getExploreFields(
   dashboardStore: MetricsExplorerEntity,
   visibleDimensions: MetricsViewSpecDimensionV2[],
   visibleMeasures: MetricsViewSpecMeasureV2[],

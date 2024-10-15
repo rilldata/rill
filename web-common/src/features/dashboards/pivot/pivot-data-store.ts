@@ -1,7 +1,8 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
+import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
+import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -13,7 +14,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
-import { Readable, derived, readable } from "svelte/store";
+import { type Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
   addExpandedDataToPivot,
@@ -52,7 +53,7 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
-  PivotFilter,
+  type PivotFilter,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
@@ -68,11 +69,11 @@ export function getPivotConfig(
   ctx: StateManagers,
 ): Readable<PivotDataStoreConfig> {
   return derived(
-    [useMetricsView(ctx), ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([metricsView, timeRangeSummary, dashboardStore]) => {
+    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
+    ([validSpec, timeRangeSummary, dashboardStore]) => {
       if (
-        !metricsView.data?.measures ||
-        !metricsView.data?.dimensions ||
+        !validSpec?.data?.metricsView ||
+        !validSpec?.data?.explore ||
         timeRangeSummary.isFetching
       ) {
         return {
@@ -89,9 +90,12 @@ export function getPivotConfig(
         };
       }
 
+      const { metricsView, explore } = validSpec.data;
+
       // This indirection makes sure only one update of dashboard store triggers this
       const timeControl = timeControlStateSelector([
         metricsView,
+        explore,
         timeRangeSummary,
         dashboardStore,
       ]);
@@ -100,7 +104,7 @@ export function getPivotConfig(
         timeStart: timeControl.timeStart,
         timeEnd: timeControl.timeEnd,
         timeZone: dashboardStore?.selectedTimezone || "UTC",
-        timeDimension: metricsView?.data?.timeDimension || "",
+        timeDimension: metricsView.timeDimension || "",
       };
 
       const enableComparison =
@@ -151,8 +155,14 @@ export function getPivotConfig(
         measureNames,
         rowDimensionNames,
         colDimensionNames,
-        allMeasures: metricsView.data?.measures || [],
-        allDimensions: metricsView.data?.dimensions || [],
+        allMeasures: allMeasures({
+          validMetricsView: metricsView,
+          validExplore: explore,
+        }),
+        allDimensions: allDimensions({
+          validMetricsView: metricsView,
+          validExplore: explore,
+        }),
         whereFilter: mergeMeasureFilters(dashboardStore),
         pivot: dashboardStore.pivot,
         enableComparison,

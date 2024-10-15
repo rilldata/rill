@@ -4,9 +4,8 @@
     canvasVariablesStore,
     useVariable,
   } from "@rilldata/web-common/features/canvas/variables-store";
-  import { SelectProperties } from "@rilldata/web-common/features/templates/types";
-
-  import {
+  import type { SelectProperties } from "@rilldata/web-common/features/templates/types";
+  import type {
     V1ComponentSpecRendererProperties,
     V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";

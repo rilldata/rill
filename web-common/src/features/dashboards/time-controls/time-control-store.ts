@@ -1,7 +1,3 @@
-import {
-  createTimeRangeSummary,
-  useMetricsView,
-} from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
@@ -25,13 +21,13 @@ import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
-  TimeRange,
+  type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  RpcStatus,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
+  type V1ExploreSpec,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -73,26 +69,28 @@ export type TimeControlStore = Readable<TimeControlState>;
 
 export const timeControlStateSelector = ([
   metricsView,
+  explore,
   timeRangeResponse,
   metricsExplorer,
 ]: [
-  QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
+  V1MetricsViewSpec | undefined,
+  V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
 ]): TimeControlState => {
-  const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
-  const timeDimension = metricsView.data?.timeDimension;
+  const hasTimeSeries = Boolean(metricsView?.timeDimension);
+  const timeDimension = metricsView?.timeDimension;
   if (
-    !metricsView.data ||
+    !metricsView ||
+    !explore ||
     !metricsExplorer ||
-    !metricsView.data ||
     !timeRangeResponse ||
     !timeRangeResponse.isSuccess ||
     !timeRangeResponse.data.timeRangeSummary?.min ||
     !timeRangeResponse.data.timeRangeSummary?.max
   ) {
     return {
-      isFetching: metricsView.isFetching || timeRangeResponse.isRefetching,
+      isFetching: timeRangeResponse.isRefetching,
       ready: !metricsExplorer || !hasTimeSeries,
     } as TimeControlState;
   }
@@ -103,10 +101,10 @@ export const timeControlStateSelector = ([
     end: new Date(timeRangeResponse.data.timeRangeSummary.max),
   };
   const minTimeGrain =
-    (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
+    (metricsView.smallestTimeGrain as V1TimeGrain) ||
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   const defaultTimeRange = isoDurationToFullTimeRange(
-    metricsView.data.defaultTimeRange,
+    explore?.defaultPreset?.timeRange,
     allTimeRange.start,
     allTimeRange.end,
     metricsExplorer.selectedTimezone,
@@ -126,7 +124,7 @@ export const timeControlStateSelector = ([
   }
 
   const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
-    metricsView.data,
+    explore,
     metricsExplorer,
     allTimeRange,
     timeRangeState,
@@ -148,8 +146,14 @@ export const timeControlStateSelector = ([
 
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(
-    [useMetricsView(ctx), createTimeRangeSummary(ctx), ctx.dashboardStore],
-    timeControlStateSelector,
+    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
+    ([validSpecResp, timeRangeSummaryResp, dashboardStore]) =>
+      timeControlStateSelector([
+        validSpecResp.data?.metricsView,
+        validSpecResp.data?.explore,
+        timeRangeSummaryResp,
+        dashboardStore,
+      ]),
   );
 }
 
@@ -216,14 +220,13 @@ function calculateTimeRangePartial(
  * Also adds start, end and their adjusted counterparts as strings ready to use in requests.
  */
 function calculateComparisonTimeRangePartial(
-  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
   timeRangeState: TimeRangeState,
 ): ComparisonTimeRangeState {
   const selectedComparisonTimeRange = getComparisonTimeRange(
-    metricsView,
-    metricsExplorer,
+    explore,
     allTimeRange,
     timeRangeState.selectedTimeRange,
     metricsExplorer.selectedComparisonTimeRange,
@@ -352,8 +355,7 @@ function getTimeGrain(
 }
 
 function getComparisonTimeRange(
-  metricsView: V1MetricsViewSpec,
-  metricsExplorer: MetricsExplorerEntity,
+  explore: V1ExploreSpec,
   allTimeRange: DashboardTimeControls | undefined,
   timeRange: DashboardTimeControls | undefined,
   comparisonTimeRange: DashboardTimeControls | undefined,
@@ -366,9 +368,8 @@ function getComparisonTimeRange(
     ]?.defaultComparison as TimeComparisonOption;
     const range = getTimeComparisonParametersForComponent(
       comparisonOption ??
-        metricsView.availableTimeRanges?.find(
-          (tr) => tr.range === timeRange.name,
-        )?.comparisonOffsets?.[0]?.offset ??
+        explore.timeRanges?.find((tr) => tr.range === timeRange.name)
+          ?.comparisonTimeRanges?.[0]?.offset ??
         TimeComparisonOption.CONTIGUOUS,
       allTimeRange.start,
       allTimeRange.end,
@@ -405,16 +406,16 @@ function getComparisonTimeRange(
  * Fills in start and end dates based on selected time range and all time range.
  */
 export function selectedTimeRangeSelector([
-  metricsView,
+  exploreSpec,
   timeRangeResponse,
   explorer,
 ]: [
-  QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
+  V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
 ]) {
   if (
-    !metricsView.data ||
+    !exploreSpec ||
     !timeRangeResponse.data?.timeRangeSummary ||
     !timeRangeResponse.data.timeRangeSummary.min ||
     !timeRangeResponse.data.timeRangeSummary.max
@@ -428,7 +429,7 @@ export function selectedTimeRangeSelector([
     end: new Date(timeRangeResponse.data.timeRangeSummary.max),
   };
   const defaultTimeRange = isoDurationToFullTimeRange(
-    metricsView.data.defaultTimeRange,
+    exploreSpec?.defaultPreset?.timeRange,
     allTimeRange.start,
     allTimeRange.end,
     explorer.selectedTimezone,

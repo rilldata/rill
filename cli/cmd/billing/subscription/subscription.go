@@ -17,6 +17,7 @@ func SubscriptionCmd(ch *cmdutil.Helper) *cobra.Command {
 	subsCmd.AddCommand(EditCmd(ch))
 	subsCmd.AddCommand(ListCmd(ch))
 	subsCmd.AddCommand(CancelCmd(ch))
+	subsCmd.AddCommand(RenewCmd(ch))
 
 	return subsCmd
 }

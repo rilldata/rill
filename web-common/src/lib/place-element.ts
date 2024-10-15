@@ -1,41 +1,23 @@
-/**
- * float-element
- */
+export type Location = "left" | "right" | "top" | "bottom";
+export type Alignment = "start" | "middle" | "end";
+export type FloatingElementRelationship = "parent" | "direct" | "mouse";
 
-// alignment: left, right, bottom, top
-// location: bottom top, left, right
-
-function minmax(v, min, max) {
+function minmax(v: number, min: number, max: number) {
   return Math.max(min, Math.min(v, max));
 }
 
-export function mouseLocationToBoundingRect({ x, y, width = 0, height = 0 }) {
-  return {
-    width,
-    height,
-    left: x,
-    right: x + width,
-    top: y,
-    bottom: y + height,
-  };
-  // return {
-  //   parentPosition: {
-  //     width,
-  //     height,
-  //     left: x,
-  //     right: x + width,
-  //     top: y,
-  //     bottom: y + height,
-  //   },
-  //   elementPosition: {
-  //     width,
-  //     height,
-  //     left: x,
-  //     right: x + width,
-  //     top: y,
-  //     bottom: y + height,
-  //   },
-  // };
+export function mouseLocationToBoundingRect({
+  x,
+  y,
+  width = 0,
+  height = 0,
+}: {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+}) {
+  return new DOMRect(x, y, width, height);
 }
 
 export function placeElement({
@@ -50,9 +32,21 @@ export function placeElement({
   windowHeight = window.innerHeight,
   pad = 16 * 2,
   overflowFlipY = true,
+}: {
+  location: Location;
+  alignment: Alignment;
+  parentPosition: DOMRect;
+  elementPosition: DOMRect;
+  distance?: number;
+  x?: number;
+  y?: number;
+  windowWidth?: number;
+  windowHeight?: number;
+  pad?: number;
+  overflowFlipY?: boolean;
 }) {
-  let left;
-  let top;
+  let left = 0;
+  let top = 0;
 
   const elementWidth = elementPosition.width;
   const elementHeight = elementPosition.height;
@@ -96,7 +90,7 @@ export function placeElement({
   }
 
   // OUR SECOND JOB IS RE-ALIGNMENT ALONG THE ALIGNMENT ACTION.
-  let alignmentValue;
+  let alignmentValue: number;
 
   const rightLeft = location === "right" || location === "left";
 

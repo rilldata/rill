@@ -1,16 +1,18 @@
-import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   MetricsViewSpecMeasureType,
-  MetricsViewSpecMeasureV2,
-  V1MetricsViewSpec,
+  type MetricsViewSpecMeasureV2,
+  type V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 
 /**
  * Single use class to correct incorrect use of advanced measures.
  * Reason to use a class here is to avoid too many arguments in methods (especially measureIsValidForComponent).
+ * NOTE: this doesnt have to deal with V1ExploreSpec since it is assumed measures/dimensions not present are already removed
+ * TODO: this should not be necessary once we use V1ExplorePreset for everything
  */
 export class AdvancedMeasureCorrector {
   private measuresMap: Map<string, MetricsViewSpecMeasureV2>;

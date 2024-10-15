@@ -1,4 +1,4 @@
-import { Writable, get, writable } from "svelte/store";
+import { type Writable, get, writable } from "svelte/store";
 
 export function previousValueStore<T extends number | string>(
   anotherStore: Writable<T>,

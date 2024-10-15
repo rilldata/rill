@@ -21,6 +21,7 @@
       To have warnings/errors of the Svelte compiler at the correct position,
       enable source maps by default.
     */
+    "verbatimModuleSyntax": true,
     "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

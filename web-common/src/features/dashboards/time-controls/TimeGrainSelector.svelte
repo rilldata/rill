@@ -9,30 +9,21 @@
     DashboardTimeControls,
     TimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "../stores/dashboard-stores";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-  import { useMetricsView } from "../selectors";
 
-  export let metricsViewName: string;
+  export let exploreName: string;
   export let tdd = false;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const ctx = getStateManagers();
+  const { dashboardStore, validSpecStore } = ctx;
+  const timeControlsStore = useTimeControlStore(ctx);
 
   let timeGrainOptions: TimeGrain[];
   let open = false;
-
-  $: ({ instanceId } = $runtime);
-
-  $: dashboardStore = useDashboardStore(metricsViewName);
-  $: metricsViewQuery = useMetricsView(instanceId, metricsViewName);
-  $: metricsView = $metricsViewQuery.data ?? {};
 
   $: ({ minTimeGrain, timeStart, timeEnd, selectedTimeRange } =
     $timeControlsStore);
@@ -91,11 +82,11 @@
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
     metricsExplorerStore.selectTimeRange(
-      metricsViewName,
+      exploreName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
-      metricsView,
+      $validSpecStore.data?.metricsView ?? {},
     );
   }
 </script>

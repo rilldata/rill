@@ -1,7 +1,7 @@
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ConnectorDriverPropertyType,
-  V1SourceV2,
+  type V1SourceV2,
   type V1ConnectorDriver,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";

@@ -1,5 +1,5 @@
 import { StateField, StateEffect } from "@codemirror/state";
-import { DecorationSet, Decoration } from "@codemirror/view";
+import { type DecorationSet, Decoration } from "@codemirror/view";
 import { EditorView } from "@codemirror/view";
 import type { Reference } from "../models/utils/get-table-references";
 

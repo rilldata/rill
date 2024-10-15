@@ -6,31 +6,38 @@ import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboar
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   AD_BIDS_ADVANCED_MEASURES,
+  AD_BIDS_EXPLORE_INIT,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_IMPRESSIONS_MEASURE_DAY_GRAIN,
   AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
   AD_BIDS_IMPRESSIONS_MEASURE_WINDOW,
-  AD_BIDS_INIT,
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIMESTAMP_DIMENSION,
-} from "@rilldata/web-common/features/dashboards/stores/test-data/dashboard-stores-test-data";
-import { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+} from "./test-data/data";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsViewSpec,
+  type V1MetricsViewSpec,
   V1TimeGrain,
+  type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
 describe("AdvancedMeasureCorrector", () => {
   const MetricsView = {
-    ...AD_BIDS_INIT,
+    ...AD_BIDS_METRICS_INIT,
     measures: AD_BIDS_ADVANCED_MEASURES,
   } as V1MetricsViewSpec;
+  const Explore = {
+    ...AD_BIDS_EXPLORE_INIT,
+    measures: AD_BIDS_ADVANCED_MEASURES.map((m) => m.name!),
+  } as V1ExploreSpec;
 
   it("changing grain while in TDD for measure based on timestamp", () => {
     const dashboard = getDefaultMetricsExplorerEntity(
       "AdBids",
       MetricsView,
+      Explore,
       undefined,
     );
     dashboard.tdd.expandedMeasureName = AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN;
@@ -67,6 +74,7 @@ describe("AdvancedMeasureCorrector", () => {
     const dashboard = getDefaultMetricsExplorerEntity(
       "AdBids",
       MetricsView,
+      Explore,
       undefined,
     );
     dashboard.leaderboardMeasureName = AD_BIDS_IMPRESSIONS_MEASURE;

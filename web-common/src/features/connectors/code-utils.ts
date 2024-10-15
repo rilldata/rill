@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
   ConnectorDriverPropertyType,
-  V1ConnectorDriver,
+  type V1ConnectorDriver,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
 } from "../../runtime-client";

@@ -4,7 +4,7 @@ import { createRuntimeServiceGetFile } from "../../runtime-client";
 export function useProjectTitle(instanceId: string) {
   return createRuntimeServiceGetFile(
     instanceId,
-    { path: "rill.yaml" },
+    { path: "/rill.yaml" },
     {
       query: {
         select: (data) => {
@@ -16,7 +16,7 @@ export function useProjectTitle(instanceId: string) {
               title?: string;
               name?: string;
             };
-          } catch (e) {
+          } catch {
             // Ignore
           }
 

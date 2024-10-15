@@ -16,9 +16,9 @@
   export let optional: boolean = false;
   export let tooltip: string = "";
   export let width: number | null = null;
+  export let disabled = false;
   export let selectElement: HTMLButtonElement | undefined = undefined;
   export let full = false;
-
   export let fontSize = 12;
   export let sameWidth = false;
   export let ringFocus = true;
@@ -59,6 +59,7 @@
   {/if}
 
   <Select.Root
+    {disabled}
     {selected}
     onSelectedChange={(newSelection) => {
       if (!newSelection) return;
