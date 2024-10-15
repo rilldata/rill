@@ -5,11 +5,13 @@
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
-    calculateLeaderboardColumnWidth,
-    LEADERBOARD_COLUMN_WIDTHS,
-    type LeaderboardItemData,
     prepareLeaderboardItemData,
+    type LeaderboardItemData,
   } from "./leaderboard-utils";
+  import {
+    LEADERBOARD_DEFAULT_COLUMN_WIDTHS,
+    type ColumnWidths,
+  } from "./leaderboard-widths";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import LoadingRows from "./LoadingRows.svelte";
@@ -17,10 +19,13 @@
   const slice = 7;
   const gutterWidth = 24;
 
-  let columnWidths = LEADERBOARD_COLUMN_WIDTHS;
-
   export let parentElement: HTMLElement;
   export let dimensionName: string;
+  export let columnWidths: ColumnWidths = LEADERBOARD_DEFAULT_COLUMN_WIDTHS;
+  export let calculateAllLeaderboardWidths: (
+    dimensionName: string,
+    leaderboardData,
+  ) => void;
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -61,7 +66,6 @@
         leaderboardDimensionTotalQueryBody,
         leaderboardDimensionTotalQueryOptions,
       },
-      numberFormat: { activeMeasureFormatter },
       sorting: { sortedAscending, sortType },
       timeRangeSelectors: { isTimeComparisonActive },
       comparison: { isBeingCompared: isBeingComparedReadable },
@@ -117,12 +121,8 @@
     noAvailableValues = leaderboardData.noAvailableValues;
     showExpandTable = leaderboardData.showExpandTable;
 
-    columnWidths = calculateLeaderboardColumnWidth(
-      firstColumnWidth,
-      aboveTheFold,
-      selectedBelowTheFold,
-      $activeMeasureFormatter,
-    );
+    // Calculate column widths for this leaderboard
+    calculateAllLeaderboardWidths(dimensionName, leaderboardData);
   }
 
   $: isBeingCompared = $isBeingComparedReadable(dimensionName);
@@ -134,10 +134,11 @@
   $: tableWidth =
     firstColumnWidth +
     columnWidths.value +
-    ($isValidPercentOfTotal ? columnWidths.percentOfTotal : 0) +
     ($isTimeComparisonActive
       ? columnWidths.delta + columnWidths.deltaPercent
-      : 0);
+      : $isValidPercentOfTotal
+        ? columnWidths.percentOfTotal
+        : 0);
 </script>
 
 <div

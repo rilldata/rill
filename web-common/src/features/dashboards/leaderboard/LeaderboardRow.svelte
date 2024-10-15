@@ -93,8 +93,6 @@
 
   $: percentOfTotal = $isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
 
-  // Question: Why is bar length calculated for full table but displayed only for
-  // first column
   $: barLength = (tableWidth - gutterWidth) * percentOfTotal;
 
   $: barColor = excluded
@@ -103,24 +101,36 @@
       ? "var(--color-primary-200)"
       : "var(--color-primary-100)";
 
-  // FIXME: Bar gradient has to be split up across cells because of a bug in Safari
-  // This is not necessary in other browsers, but doing it this way ensures consistency
   $: secondCellBarLength = clamp(
     0,
     barLength - columnWidths.dimension,
     columnWidths.value,
   );
-  $: thirdCellBarLength = clamp(
-    0,
-    barLength - (columnWidths.dimension + columnWidths.value),
-    columnWidths.percentOfTotal,
-  );
-  $: fourthCellBarLength = clamp(
-    0,
-    Math.max(barLength - (columnWidths.dimension + columnWidths.value * 2), 0),
-    columnWidths.value,
-  );
+  $: thirdCellBarLength = isTimeComparisonActive
+    ? clamp(
+        0,
+        barLength - columnWidths.dimension - columnWidths.value,
+        columnWidths.delta,
+      )
+    : isValidPercentOfTotal
+      ? clamp(
+          0,
+          barLength - columnWidths.dimension - columnWidths.value,
+          columnWidths.percentOfTotal,
+        )
+      : 0;
+  $: fourthCellBarLength = isTimeComparisonActive
+    ? clamp(
+        0,
+        barLength -
+          columnWidths.dimension -
+          columnWidths.value -
+          columnWidths.delta,
+        columnWidths.deltaPercent,
+      )
+    : 0;
 
+  // Update the gradients
   $: firstCellGradient = `linear-gradient(to right, ${barColor}
     ${barLength}px, transparent ${barLength}px)`;
 
@@ -139,7 +149,7 @@
     ${fourthCellBarLength}px, transparent ${fourthCellBarLength}px)`
     : undefined;
 
-  $: showZigZag = barLength > tableWidth;
+  $: showZigZag = barLength > tableWidth - gutterWidth;
 
   // uri template or "true" string literal or undefined
   function makeHref(uriTemplateOrBoolean: string | undefined) {
