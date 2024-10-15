@@ -6,36 +6,45 @@ type ConnectorExplorerState = {
   expandedItems: Record<string, boolean>;
 };
 
-type TableInfo = {
-  connector: string;
-  database?: string;
-  schema: string;
-  table: string;
-};
-
 export class ConnectorExplorerStore {
   allowNavigateToTable: boolean;
   allowContextMenu: boolean;
   allowSelectTable: boolean;
   allowShowSchema: boolean;
-  selectedTable: Writable<TableInfo | null>;
   store: Writable<ConnectorExplorerState>;
+  onToggleItem:
+    | undefined
+    | ((
+        connector: string,
+        database?: string,
+        schema?: string,
+        table?: string,
+      ) => void) = undefined;
 
-  constructor({
-    allowNavigateToTable = true,
-    allowContextMenu = true,
-    allowShowSchema = true,
-    allowSelectTable = false,
-    selectedTable = null,
-    showConnectors = true,
-    expandedItems = {},
-    localStorage = true,
-  } = {}) {
+  constructor(
+    {
+      allowNavigateToTable = true,
+      allowContextMenu = true,
+      allowShowSchema = true,
+      allowSelectTable = false,
+
+      showConnectors = true,
+      expandedItems = {},
+      localStorage = true,
+    } = {},
+    onToggleItem?: (
+      connector: string,
+      database?: string,
+      schema?: string,
+      table?: string,
+    ) => void,
+  ) {
     this.allowNavigateToTable = allowNavigateToTable;
     this.allowContextMenu = allowContextMenu;
     this.allowShowSchema = allowShowSchema;
     this.allowSelectTable = allowSelectTable;
-    this.selectedTable = writable(selectedTable);
+
+    if (onToggleItem) this.onToggleItem = onToggleItem;
 
     this.store = localStorage
       ? localStorageStore<ConnectorExplorerState>("connector-explorer-state", {
@@ -66,17 +75,27 @@ export class ConnectorExplorerStore {
     });
   }
 
-  duplicateStore() {
+  duplicateStore(
+    onToggleItem?: (
+      connector: string,
+      database?: string,
+      schema?: string,
+      table?: string,
+    ) => void | Promise<void>,
+  ) {
     const state = get(this.store);
-    return new ConnectorExplorerStore({
-      allowNavigateToTable: false,
-      allowContextMenu: false,
-      allowShowSchema: false,
-      allowSelectTable: true,
-      selectedTable: null,
-      showConnectors: state.showConnectors,
-      expandedItems: state.expandedItems,
-    });
+    return new ConnectorExplorerStore(
+      {
+        allowNavigateToTable: false,
+        allowContextMenu: false,
+        allowShowSchema: false,
+        allowSelectTable: true,
+        localStorage: false,
+        showConnectors: state.showConnectors,
+        expandedItems: {},
+      },
+      onToggleItem ?? this.onToggleItem,
+    );
   }
 
   toggleExplorer = () =>
@@ -100,20 +119,14 @@ export class ConnectorExplorerStore {
     });
   };
 
-  selectTable = (table: TableInfo) => {
-    this.selectedTable.set(table);
-  };
-
   toggleItem = (
     connector: string,
     database?: string,
     schema?: string,
     table?: string,
   ) => {
-    if (table && schema && this.allowSelectTable) {
-      this.selectTable({ connector, database, schema, table });
-      return;
-    }
+    if (this.onToggleItem)
+      this.onToggleItem(connector, database, schema, table);
 
     if (table && !this.allowShowSchema) return;
 
@@ -178,6 +191,7 @@ export class ConnectorExplorerStore {
 
 export const connectorExplorerStore = new ConnectorExplorerStore();
 
+// Helpers
 function getItemKey(
   connector: string,
   database?: string,

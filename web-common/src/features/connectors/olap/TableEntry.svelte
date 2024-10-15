@@ -24,17 +24,11 @@
   export let store: ConnectorExplorerStore;
 
   let contextMenuOpen = false;
-  // let showSchema = false;
 
   $: expandedStore = store.getItem(connector, database, databaseSchema, table);
   $: showSchema = $expandedStore;
 
-  const {
-    allowContextMenu,
-    allowNavigateToTable,
-    allowShowSchema,
-    selectedTable,
-  } = store;
+  const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
@@ -51,9 +45,6 @@
     table,
   );
 
-  $: selected =
-    $selectedTable?.table === table &&
-    $selectedTable?.schema === databaseSchema;
   $: open = $page.url.pathname === href;
 
   $: element = allowNavigateToTable ? "a" : "button";
@@ -61,9 +52,8 @@
 
 <li aria-label={tableId} class="table-entry group" class:open>
   <div
-    class:pl-[58px]={database}
+    class:pl-[58px]={database || !allowShowSchema}
     class="table-entry-header pl-10"
-    class:selected
   >
     {#if allowShowSchema}
       <button
@@ -157,10 +147,6 @@
   .clickable-text {
     @apply flex grow items-center gap-x-1;
     @apply text-gray-900 truncate;
-  }
-
-  .selected {
-    @apply bg-slate-200 font-medium;
   }
 
   .selected:hover {

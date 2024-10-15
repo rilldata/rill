@@ -6,17 +6,12 @@
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
 
-  // import * as DropdownMenu from "../dropdown-menu";
-
   const dispatch = createEventDispatcher();
 
   export let value: string = "";
   export let id: string;
   export let label: string = "";
   export let options: { value: string; label: string; type?: string }[];
-  export let fixedOptions:
-    | { value: string; label: string; type?: string }[]
-    | undefined = undefined;
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
@@ -29,11 +24,9 @@
   export let ringFocus = true;
   export let truncate = false;
   export let enableSearch = false;
-
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
-  let open = false;
 
   $: selected = options.find((option) => option.value === value);
   $: filteredOptions = enableSearch
@@ -70,7 +63,6 @@
     {selected}
     onSelectedChange={(newSelection) => {
       if (!newSelection) return;
-
       value = newSelection.value;
       dispatch("change", newSelection.value);
       onChange(newSelection.value);
@@ -80,7 +72,6 @@
         searchText = "";
       }
     }}
-    bind:open
     items={options}
   >
     <Select.Trigger
@@ -116,21 +107,6 @@
       {:else}
         <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
       {/each}
-      {#if fixedOptions}
-        <Select.Separator />
-        {#each fixedOptions as { value, label } (value)}
-          <button
-            on:click={() => {
-              dispatch("change", value);
-              onChange(value);
-              open = false;
-            }}
-            class="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-xs outline-none hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-          >
-            {label ?? value}
-          </button>
-        {/each}
-      {/if}
     </Select.Content>
   </Select.Root>
 </div>

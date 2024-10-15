@@ -1,6 +1,8 @@
 <script lang="ts">
   import {
+    createConnectorServiceOLAPListTables,
     createQueryServiceTableColumns,
+    createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
     type MetricsViewSpecDimensionV2,
     type V1Resource,
@@ -44,9 +46,19 @@
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
   import ConnectorExplorer from "../connectors/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
 
-  const store = connectorExplorerStore.duplicateStore();
-  const { selectedTable } = store;
+  const store = connectorExplorerStore.duplicateStore(
+    async (connector, database, schema, table) => {
+      if (!table || !schema) return;
+      console.log("store", connector, database, schema, table);
+      await updateProperty("model", table, ["table"]);
+      await updateProperty("database_schema", schema);
+      await updateProperty("database", database);
+      await updateProperty("connector", connector);
+    },
+  );
 
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
@@ -63,7 +75,6 @@
     measures: new Set<number>(),
     dimensions: new Set<number>(),
   };
-  let showTableExplorer = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -91,12 +102,16 @@
   $: rawModel = parsedDocument.get("model");
   $: rawTable = parsedDocument.get("table");
   $: rawDatabase = parsedDocument.get("database");
+  $: rawConnector = parsedDocument.get("connector");
 
   $: timeDimension = stringGuard(rawTimeDimension);
   $: databaseSchema = stringGuard(rawDatabaseSchema);
   $: database = stringGuard(rawDatabase);
+  $: yamlConnector = stringGuard(rawConnector);
   $: modelOrSourceOrTableName = stringGuard(rawModel) || stringGuard(rawTable);
   $: smallestTimeGrain = stringGuard(rawSmallestTimeGrain);
+
+  $: noTableProperties = !yamlConnector && !database && !databaseSchema;
 
   $: modelsQuery = useModels(instanceId);
   $: sourcesQuery = useSources(instanceId);
@@ -105,36 +120,52 @@
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
   $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
-  $: hasSourceSelected = sourceNames.some(
-    ({ value }) => value === modelOrSourceOrTableName,
-  );
-  $: hasModelSelected = modelNames.some(
-    ({ value }) => value === modelOrSourceOrTableName,
-  );
+  $: hasSourceSelected =
+    noTableProperties &&
+    sourceNames.some(({ value }) => value === modelOrSourceOrTableName);
+  $: hasModelSelected =
+    noTableProperties &&
+    modelNames.some(({ value }) => value === modelOrSourceOrTableName);
 
   $: modelAndSourceOptions = [...modelNames, ...sourceNames];
 
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
-  $: hasValidOLAPTableSelected =
-    connector === olapConnector &&
-    !hasValidModelOrSourceSelection &&
-    modelOrSourceOrTableName &&
-    $columnsQuery?.isSuccess;
+  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
+    query: {
+      select: (data) => {
+        if (!data?.connectors) return [];
+
+        const connectors = data.connectors.filter(
+          (connector) =>
+            connector.driver?.implementsOlap &&
+            connector.driver.name !== "duckdb",
+        );
+        return connectors;
+      },
+    },
+  });
+
+  $: resourceKind = hasSourceSelected
+    ? ResourceKind.Source
+    : hasModelSelected
+      ? ResourceKind.Model
+      : undefined;
+
+  $: hasNonDuckDBOLAPConnector = Boolean($connectorsQuery.data?.length);
 
   $: resourceQuery = useResource(
     instanceId,
     modelOrSourceOrTableName,
-    hasSourceSelected ? ResourceKind.Source : ResourceKind.Model,
-    {
-      enabled: hasValidModelOrSourceSelection,
-    },
+    resourceKind,
   );
 
   $: connector =
+    yamlConnector ||
     (hasModelSelected
       ? $resourceQuery?.data?.model?.spec?.outputConnector
-      : $resourceQuery?.data?.source?.spec?.sinkConnector) ?? olapConnector;
+      : $resourceQuery?.data?.source?.spec?.sinkConnector) ||
+    olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
     instanceId,
@@ -204,6 +235,33 @@
     measureNamesAndLabels.label,
   );
 
+  $: tablesQuery = createConnectorServiceOLAPListTables(
+    {
+      instanceId,
+      connector,
+    },
+    {
+      query: {
+        enabled: !!instanceId && !!connector && !hasValidModelOrSourceSelection,
+      },
+    },
+  );
+
+  $: tables = $tablesQuery.data?.tables ?? [];
+
+  $: hasValidOLAPTableSelected =
+    !hasValidModelOrSourceSelection &&
+    modelOrSourceOrTableName &&
+    tables.find(
+      (table) =>
+        table.name === modelOrSourceOrTableName &&
+        table.database === database &&
+        (table.databaseSchema === databaseSchema ||
+          (!databaseSchema && table.databaseSchema === "default")),
+    );
+
+  $: tableMode = Boolean(hasValidOLAPTableSelected);
+
   function createDimensions(
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
     metricsViewDimensions: MetricsViewSpecDimensionV2[],
@@ -253,16 +311,18 @@
   async function updateProperty(
     property: string,
     value: unknown,
-    removeProperty?: string,
+    removeProperties?: string[],
   ) {
     if (!value) {
-      parsedDocument.delete(value);
+      parsedDocument.delete(property);
     } else {
       parsedDocument.set(property, value);
     }
 
-    if (removeProperty) {
-      parsedDocument.delete(removeProperty);
+    if (removeProperties) {
+      removeProperties.forEach((prop) => {
+        parsedDocument.delete(prop);
+      });
     }
 
     await saveContent(parsedDocument.toString());
@@ -430,43 +490,92 @@
   }
 </script>
 
-{olapConnector}
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4 border-b pb-4">
-      {#key confirmation}
-        <Input
-          sameWidth
-          full
-          truncate
-          value={modelOrSourceOrTableName}
-          options={modelAndSourceOptions}
-          fixedOptions={[
-            {
-              value: "table",
-              label: `Or select a table from ${olapConnector}`,
-            },
-          ]}
-          placeholder={hasValidOLAPTableSelected
-            ? modelOrSourceOrTableName
-            : "Select a table"}
-          label="Model or source referenced"
-          onChange={async (newModelOrSourceName) => {
-            if (newModelOrSourceName === "table") {
-              showTableExplorer = true;
-              return;
-            }
-            if (!modelOrSourceOrTableName) {
-              await updateProperty("model", newModelOrSourceName, "table");
-            } else {
-              confirmation = {
-                action: "switch",
-                model: newModelOrSourceName,
-              };
-            }
-          }}
-        />
-      {/key}
+      {#if tableMode}
+        <div class="flex flex-col gap-y-1 w-full">
+          <InputLabel label="Table" id="table">
+            <button
+              on:click={() => (tableMode = !tableMode)}
+              slot="mode-switch"
+              class="ml-auto text-primary-600 font-medium text-xs"
+            >
+              Select model
+            </button>
+          </InputLabel>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild let:builder>
+              <button
+                use:builder.action
+                {...builder}
+                class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
+                focus:ring-2 focus:ring-primary-100 break-all overflow-hidden
+               "
+              >
+                {#if !hasValidOLAPTableSelected}
+                  <span class="text-gray-400 truncate">Select table</span>
+                {:else}
+                  <span class="text-gray-700 truncate">
+                    {modelOrSourceOrTableName}
+                  </span>
+                {/if}
+                <CaretDownIcon
+                  size="12px"
+                  className="!fill-gray-600 ml-auto flex-none"
+                />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content
+              sameWidth
+              align="start"
+              class="!min-w-64  overflow-hidden p-1"
+            >
+              <div class="size-full overflow-y-auto max-h-72">
+                <ConnectorExplorer {store} />
+              </div>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </div>
+      {:else}
+        {#key confirmation}
+          <Input
+            sameWidth
+            full
+            truncate
+            value={noTableProperties ? modelOrSourceOrTableName : undefined}
+            options={modelAndSourceOptions}
+            placeholder="Select a model"
+            label="Model"
+            onChange={async (newModelOrSourceName) => {
+              if (!modelOrSourceOrTableName) {
+                await updateProperty("model", newModelOrSourceName, [
+                  "table",
+                  "database",
+                  "connector",
+                  "database_schema",
+                ]);
+              } else {
+                confirmation = {
+                  action: "switch",
+                  model: newModelOrSourceName,
+                };
+              }
+            }}
+          >
+            <svelte:fragment slot="mode-switch">
+              {#if hasNonDuckDBOLAPConnector}
+                <button
+                  on:click={() => (tableMode = !tableMode)}
+                  class="ml-auto text-primary-600 font-medium text-xs"
+                >
+                  Select table
+                </button>
+              {/if}
+            </svelte:fragment>
+          </Input>
+        {/key}
+      {/if}
 
       <Input
         sameWidth
@@ -680,7 +789,7 @@
   {/if}
 </div>
 
-{#if showTableExplorer}
+<!-- {#if showTableExplorer}
   <AlertDialog.Root open>
     <AlertDialog.Content class="overflow-hidden max-w-fit">
       <AlertDialog.Header>
@@ -728,7 +837,7 @@
       </div>
     </AlertDialog.Content>
   </AlertDialog.Root>
-{/if}
+{/if} -->
 
 {#if confirmation}
   <AlertDialog.Root open>
@@ -794,7 +903,12 @@
 
                 resetEditing();
               } else if (confirmation?.action === "switch") {
-                await updateProperty("model", confirmation.model, "table");
+                await updateProperty("model", confirmation.model, [
+                  "table",
+                  "database",
+                  "connector",
+                  "database_schema",
+                ]);
                 resetEditing();
               } else if (confirmation?.action === "cancel") {
                 if (

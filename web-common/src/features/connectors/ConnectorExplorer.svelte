@@ -13,6 +13,7 @@
       // sort alphabetically
       select: (data) => {
         if (!data?.connectors) return;
+
         const connectors = data.connectors.sort((a, b) =>
           (a?.name as string).localeCompare(b?.name as string),
         );

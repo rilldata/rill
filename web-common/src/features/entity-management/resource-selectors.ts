@@ -44,7 +44,7 @@ export function prettyResourceKind(kind: string) {
 export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,
-  kind: ResourceKind,
+  kind: ResourceKind | undefined,
   queryOptions?: CreateQueryOptions<
     V1GetResourceResponse,
     ErrorType<RpcStatus>,
