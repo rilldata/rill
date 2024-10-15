@@ -15,7 +15,7 @@
     selectors: {
       dimensions: { visibleDimensions },
       activeMeasure: { activeMeasureName, isValidPercentOfTotal },
-      timeRangeSelectors: { isTimeComparisonActive },
+      timeRangeSelectors: { selectedTimeRangeState, isTimeComparisonActive },
       numberFormat: { activeMeasureFormatter },
     },
     exploreName,
@@ -51,6 +51,7 @@
     $activeMeasureName;
     $isTimeComparisonActive;
     $isValidPercentOfTotal;
+    $selectedTimeRangeState;
     resetColumnWidths();
   }
 </script>
