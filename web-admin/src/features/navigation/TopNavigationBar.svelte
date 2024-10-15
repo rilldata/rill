@@ -12,7 +12,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceGetOrganization,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
   } from "../../client";
@@ -74,13 +73,6 @@
       enabled: !!organization,
     },
   });
-
-  $: orgPermissions = createAdminServiceGetOrganization(organization, {
-    query: {
-      select: (data) => data.permissions,
-    },
-  });
-  $: manageOrgMembers = $orgPermissions?.data?.manageOrgMembers;
 
   $: visualizationsQuery = useDashboardsV2(instanceId);
 
@@ -186,7 +178,7 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage && manageProjectMembers}
-      <UserInviteButton {organization} {project} {manageOrgMembers} />
+      <UserInviteButton {organization} {project} />
     {/if}
     {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
       {#if exploreSpec}

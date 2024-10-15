@@ -5,7 +5,6 @@
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import type { V1MemberUser } from "@rilldata/web-admin/client";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
-
   export let organization: string;
   export let memberUsers: V1MemberUser[];
 

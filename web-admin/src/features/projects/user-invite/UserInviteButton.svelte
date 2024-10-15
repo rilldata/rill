@@ -24,7 +24,6 @@
 
   export let organization: string;
   export let project: string;
-  export let manageOrgMembers: boolean;
 
   let open = false;
 
@@ -92,7 +91,6 @@
             <UserInviteOrganization
               {organization}
               memberUsers={organizationUsersList}
-              {manageOrgMembers}
             />
           </div>
         </div>
@@ -118,6 +116,7 @@
             <div
               class="flex flex-row items-center gap-x-2 justify-between cursor-auto"
             >
+              <!-- TODO: apply user.userPhotoUrl -->
               <AvatarListItem
                 name={user.userName ?? user.userEmail}
                 email={user.userEmail}
