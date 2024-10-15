@@ -94,6 +94,6 @@ type FindModelSplitsOptions struct {
 // InstanceHealth represents the health of an instance.
 type InstanceHealth struct {
 	InstanceID string    `db:"instance_id"`
-	Health     []byte    `db:"health"`
-	CreatedOn  time.Time `db:"created_on"`
+	HealthJSON []byte    `db:"health_json"`
+	UpdatedOn  time.Time `db:"updated_on"`
 }
