@@ -20,6 +20,9 @@ export type Confirmation = {
   action: "cancel" | "delete" | "switch";
   type?: ItemType;
   model?: string;
+  database?: string;
+  connector?: string;
+  schema?: string;
   index?: number;
   field?: string;
 };

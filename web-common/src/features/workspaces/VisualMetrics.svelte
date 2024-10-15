@@ -17,7 +17,6 @@
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import {
     ResourceKind,
     useResource,
@@ -48,15 +47,24 @@
   import { connectorExplorerStore } from "../connectors/connector-explorer-store";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../connectors/olap/olap-config";
+  import { featureFlags } from "../feature-flags";
+  import AlertConfirmation from "../visual-metrics-editing/AlertConfirmation.svelte";
 
+  const { clickhouseModeling } = featureFlags;
   const store = connectorExplorerStore.duplicateStore(
-    async (connector, database, schema, table) => {
+    (connector, database, schema, table) => {
       if (!table || !schema) return;
-      console.log("store", connector, database, schema, table);
-      await updateProperty("model", table, ["table"]);
-      await updateProperty("database_schema", schema);
-      await updateProperty("database", database);
-      await updateProperty("connector", connector);
+
+      confirmation = {
+        action: "switch",
+        connector,
+        database,
+        schema,
+        model: table,
+      };
+
+      tableSelectionOpen = false;
     },
   );
 
@@ -67,6 +75,7 @@
   let searchValue = "";
   let unsavedChanges = false;
   let confirmation: Confirmation | null = null;
+  let tableSelectionOpen = false;
   let collapsed = {
     measures: false,
     dimensions: false,
@@ -95,6 +104,12 @@
     measures: parsedDocument.get("measures"),
     dimensions: parsedDocument.get("dimensions"),
   };
+
+  $: modelingDisabled =
+    olapConnector &&
+    OLAP_DRIVERS_WITHOUT_MODELING.filter(
+      (driver) => driver === "clickhouse" && $clickhouseModeling,
+    ).includes(olapConnector);
 
   $: rawSmallestTimeGrain = parsedDocument.get("smallest_time_grain");
   $: rawTimeDimension = parsedDocument.get("timeseries");
@@ -172,7 +187,7 @@
     modelOrSourceOrTableName,
     {
       connector,
-      database, // models use the default database
+      database,
       databaseSchema,
     },
     {
@@ -308,16 +323,17 @@
     unsavedChanges = false;
   }
 
-  async function updateProperty(
-    property: string,
-    value: unknown,
+  async function updateProperties(
+    newRecord: Record<string, unknown>,
     removeProperties?: string[],
   ) {
-    if (!value) {
-      parsedDocument.delete(property);
-    } else {
-      parsedDocument.set(property, value);
-    }
+    Object.entries(newRecord).forEach(([property, value]) => {
+      if (!value) {
+        parsedDocument.delete(property);
+      } else {
+        parsedDocument.set(property, value);
+      }
+    });
 
     if (removeProperties) {
       removeProperties.forEach((prop) => {
@@ -383,10 +399,7 @@
       selected[type] = new Set(newIndexes);
     }
 
-    await updateProperty(
-      type,
-      items.filter((i) => i !== null),
-    );
+    await updateProperties({ [type]: items.filter((i) => i !== null) });
 
     eventBus.emit("notification", { message: "Item moved", type: "success" });
   }
@@ -481,36 +494,51 @@
 
     items.splice(index + 1, 0, newItem);
 
-    await updateProperty(type, items);
+    await updateProperties({ [type]: items });
 
     eventBus.emit("notification", {
       message: "Item duplicated",
       type: "success",
     });
   }
+
+  async function switchTableMode() {
+    const mode = tableMode;
+    await updateProperties({}, [
+      "table",
+      "model",
+      "database",
+      "connector",
+      "database_schema",
+    ]);
+    tableMode = !mode;
+  }
 </script>
 
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4 border-b pb-4">
-      {#if tableMode}
+      {#if tableMode || modelingDisabled}
         <div class="flex flex-col gap-y-1 w-full">
           <InputLabel label="Table" id="table">
-            <button
-              on:click={() => (tableMode = !tableMode)}
-              slot="mode-switch"
-              class="ml-auto text-primary-600 font-medium text-xs"
-            >
-              Select model
-            </button>
+            <svelte:fragment slot="mode-switch">
+              {#if !modelingDisabled}
+                <button
+                  on:click={switchTableMode}
+                  class="ml-auto text-primary-600 font-medium text-xs"
+                >
+                  Select model
+                </button>
+              {/if}
+            </svelte:fragment>
           </InputLabel>
-          <DropdownMenu.Root>
+          <DropdownMenu.Root bind:open={tableSelectionOpen}>
             <DropdownMenu.Trigger asChild let:builder>
               <button
                 use:builder.action
                 {...builder}
                 class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
-                focus:ring-2 focus:ring-primary-100 break-all overflow-hidden
+                focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
                "
               >
                 {#if !hasValidOLAPTableSelected}
@@ -549,7 +577,7 @@
             label="Model"
             onChange={async (newModelOrSourceName) => {
               if (!modelOrSourceOrTableName) {
-                await updateProperty("model", newModelOrSourceName, [
+                await updateProperties({ model: newModelOrSourceName }, [
                   "table",
                   "database",
                   "connector",
@@ -566,7 +594,7 @@
             <svelte:fragment slot="mode-switch">
               {#if hasNonDuckDBOLAPConnector}
                 <button
-                  on:click={() => (tableMode = !tableMode)}
+                  on:click={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
                   Select table
@@ -591,7 +619,7 @@
           : "No timestamp columns in model"}
         hint="Column from model that will be used as primary time dimension in dashboards"
         onChange={async (value) => {
-          await updateProperty("timeseries", value);
+          await updateProperties({ timeseries: value });
         }}
       />
 
@@ -608,7 +636,7 @@
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {
-          await updateProperty("smallest_time_grain", value);
+          await updateProperties({ smallest_time_grain: value });
         }}
       />
     </div>
@@ -762,7 +790,14 @@
     {#key $editingItem}
       <Sidebar
         {item}
+        {type}
+        {index}
         {columns}
+        {fileArtifact}
+        editing={index !== -1}
+        bind:unsavedChanges
+        {switchView}
+        {resetEditing}
         onDelete={() => {
           triggerDelete(index, type);
         }}
@@ -777,172 +812,53 @@
             resetEditing();
           }
         }}
-        {index}
-        {type}
-        {resetEditing}
-        editing={index !== -1}
-        {fileArtifact}
-        {switchView}
-        bind:unsavedChanges
       />
     {/key}
   {/if}
 </div>
 
-<!-- {#if showTableExplorer}
-  <AlertDialog.Root open>
-    <AlertDialog.Content class="overflow-hidden max-w-fit">
-      <AlertDialog.Header>
-        <AlertDialog.Title>Select a table</AlertDialog.Title>
-      </AlertDialog.Header>
-
-      <div class="size-full overflow-y-auto w-72 h-fit max-h-48">
-        <ConnectorExplorer {store} />
-      </div>
-
-      <div class="ml-auto flex gap-x-2">
-        <AlertDialog.Cancel asChild let:builder>
-          <Button
-            builders={[builder]}
-            on:click={() => {
-              showTableExplorer = false;
-            }}
-            type="secondary"
-          >
-            Cancel
-          </Button>
-        </AlertDialog.Cancel>
-
-        <AlertDialog.Action asChild let:builder>
-          <Button
-            builders={[builder]}
-            on:click={async () => {
-              showTableExplorer = false;
-
-              const tableInfo = $selectedTable;
-
-              if (!tableInfo) {
-                return;
-              }
-
-              await updateProperty("model", tableInfo.table, "table");
-              await updateProperty("database_schema", tableInfo.schema);
-              await updateProperty("database", tableInfo.database);
-            }}
-            type="primary"
-          >
-            Select
-          </Button>
-        </AlertDialog.Action>
-      </div>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
-{/if} -->
-
 {#if confirmation}
-  <AlertDialog.Root open>
-    <AlertDialog.Content>
-      <AlertDialog.Header>
-        <AlertDialog.Title>
-          {#if confirmation.action === "delete"}
-            <h2>
-              Delete {confirmation.index === undefined
-                ? "selected items"
-                : "this " + confirmation.type?.slice(0, -1)}?
-            </h2>
-          {:else if confirmation.action === "cancel"}
-            <h2>Cancel changes to {confirmation.type?.slice(0, -1)}?</h2>
-          {:else if confirmation.action === "switch"}
-            <h2>Switch reference model?</h2>
-          {/if}
-        </AlertDialog.Title>
-        <AlertDialog.Description>
-          {#if confirmation.action === "cancel"}
-            You haven't saved changes to this {confirmation.type?.slice(0, -1)} yet,
-            so closing this window will lose your work.
-          {:else if confirmation.action === "delete"}
-            You will permanently remove {confirmation.index === undefined
-              ? "the selected items"
-              : "this " + confirmation.type?.slice(0, -1)} from all associated dashboards.
-          {:else if confirmation.action === "switch"}
-            Switching to a different model may break your measures and
-            dimensions unless the new model has similar data.
-          {/if}
-        </AlertDialog.Description>
-      </AlertDialog.Header>
-      <AlertDialog.Footer class="gap-y-2">
-        <AlertDialog.Cancel asChild let:builder>
-          <Button
-            builders={[builder]}
-            type="secondary"
-            large
-            gray={confirmation.action === "delete"}
-            on:click={() => {
-              confirmation = null;
-            }}
-          >
-            {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
-          </Button>
-        </AlertDialog.Cancel>
-
-        <AlertDialog.Action asChild let:builder>
-          <Button
-            large
-            builders={[builder]}
-            status={confirmation.action === "delete" ? "error" : "info"}
-            type="primary"
-            on:click={async () => {
-              if (confirmation?.action === "delete") {
-                await deleteItems(
-                  confirmation?.index !== undefined && confirmation.type
-                    ? {
-                        [confirmation.type]: new Set([confirmation.index]),
-                      }
-                    : selected,
-                );
-
-                resetEditing();
-              } else if (confirmation?.action === "switch") {
-                await updateProperty("model", confirmation.model, [
-                  "table",
-                  "database",
-                  "connector",
-                  "database_schema",
-                ]);
-                resetEditing();
-              } else if (confirmation?.action === "cancel") {
-                if (
-                  confirmation?.field &&
-                  confirmation?.index !== undefined &&
-                  confirmation?.type
-                ) {
-                  unsavedChanges = false;
-                  await setEditing(
-                    confirmation.index,
-                    confirmation.type,
-                    confirmation.field,
-                  );
-                } else {
-                  resetEditing();
-                }
+  <AlertConfirmation
+    {confirmation}
+    onCancel={() => (confirmation = null)}
+    onConfirm={async () => {
+      if (confirmation?.action === "delete") {
+        await deleteItems(
+          confirmation?.index !== undefined && confirmation.type
+            ? {
+                [confirmation.type]: new Set([confirmation.index]),
               }
-              confirmation = null;
-            }}
-          >
-            {#if confirmation.action === "delete"}
-              Yes, delete
-            {:else if confirmation.action === "switch"}
-              Switch model
-            {:else if confirmation.action === "cancel" && confirmation.field}
-              Switch items
-            {:else}
-              Close
-            {/if}
-          </Button>
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
+            : selected,
+        );
+      } else if (confirmation?.action === "switch") {
+        await updateProperties(
+          {
+            model: confirmation.model,
+            database: confirmation.database,
+            connector: confirmation.connector,
+            database_schema: confirmation.schema,
+          },
+          ["table"],
+        );
+      } else if (confirmation?.action === "cancel") {
+        if (
+          confirmation?.field &&
+          confirmation?.index !== undefined &&
+          confirmation?.type
+        ) {
+          unsavedChanges = false;
+          await setEditing(
+            confirmation.index,
+            confirmation.type,
+            confirmation.field,
+          );
+        }
+      }
+
+      resetEditing();
+      confirmation = null;
+    }}
+  />
 {/if}
 
 <style lang="postcss">
@@ -963,9 +879,5 @@
 
   .section {
     @apply flex flex-none flex-col gap-y-2 justify-start w-full h-fit max-w-full;
-  }
-
-  h2 {
-    @apply font-semibold text-lg;
   }
 </style>
