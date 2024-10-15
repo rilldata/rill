@@ -72,7 +72,7 @@
 
 <Popover bind:open>
   <PopoverTrigger asChild let:builder>
-    <Button builders={[builder]} type="secondary">Share</Button>
+    <Button builders={[builder]} type="secondary" selected={open}>Share</Button>
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[520px] p-4">
     <div class="flex flex-col">
@@ -92,6 +92,7 @@
             <UserInviteOrganization
               {organization}
               memberUsers={organizationUsersList}
+              {manageOrgMembers}
             />
           </div>
         </div>
