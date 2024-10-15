@@ -96,48 +96,54 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open={isOpen}>
-  <DropdownMenu.Trigger
-    class="w-18 flex flex-row gap-1 items-center rounded-sm {isOpen
-      ? 'bg-slate-200'
-      : 'hover:bg-slate-100'} px-2 py-1"
-  >
-    {capitalize(user.roleName)}
-    {#if isOpen}
-      <CaretUpIcon size="12px" />
-    {:else}
-      <CaretDownIcon size="12px" />
-    {/if}
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start">
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={user.roleName === "admin"}
-      on:click={() => {
-        handleSetRole(user.userEmail, "admin");
-      }}
+{#if !isCurrentUser}
+  <DropdownMenu.Root bind:open={isOpen}>
+    <DropdownMenu.Trigger
+      class="w-18 flex flex-row gap-1 items-center rounded-sm {isOpen
+        ? 'bg-slate-200'
+        : 'hover:bg-slate-100'} px-2 py-1"
     >
-      <span>Admin</span>
-    </DropdownMenu.CheckboxItem>
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={user.roleName === "viewer"}
-      on:click={() => {
-        handleSetRole(user.userEmail, "viewer");
-      }}
-    >
-      <span>Viewer</span>
-    </DropdownMenu.CheckboxItem>
-    {#if !isCurrentUser}
-      <DropdownMenu.Separator />
-      <DropdownMenu.Item
+      {capitalize(user.roleName)}
+      {#if isOpen}
+        <CaretUpIcon size="12px" />
+      {:else}
+        <CaretDownIcon size="12px" />
+      {/if}
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start">
+      <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
+        checked={user.roleName === "admin"}
         on:click={() => {
-          handleRemove(user.userEmail);
+          handleSetRole(user.userEmail, "admin");
         }}
       >
-        <span class="ml-6 text-red-600">Remove</span>
-      </DropdownMenu.Item>
-    {/if}
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+        <span>Admin</span>
+      </DropdownMenu.CheckboxItem>
+      <DropdownMenu.CheckboxItem
+        class="font-normal flex items-center"
+        checked={user.roleName === "viewer"}
+        on:click={() => {
+          handleSetRole(user.userEmail, "viewer");
+        }}
+      >
+        <span>Viewer</span>
+      </DropdownMenu.CheckboxItem>
+      {#if !isCurrentUser}
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={() => {
+            handleRemove(user.userEmail);
+          }}
+        >
+          <span class="ml-6 text-red-600">Remove</span>
+        </DropdownMenu.Item>
+      {/if}
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+{:else}
+  <div class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1">
+    <span>{capitalize(user.roleName)}</span>
+  </div>
+{/if}
