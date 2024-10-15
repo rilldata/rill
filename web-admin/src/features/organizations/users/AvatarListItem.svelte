@@ -9,6 +9,7 @@
   export let pendingAcceptance: boolean = false;
   export let shape: "circle" | "square" = "circle";
   export let count: number = 0;
+  export let isEveryFromText: boolean = false;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -34,7 +35,11 @@
   {/if}
   <div class="flex flex-col text-left">
     <span class="text-sm font-medium text-gray-900">
-      {name}
+      {#if isEveryFromText}
+        {@html `Everyone from <span class="font-bold">${name}</span>`}
+      {:else}
+        {name}
+      {/if}
       <span class="text-gray-500 font-normal">
         {isCurrentUser ? "(You)" : ""}
       </span>

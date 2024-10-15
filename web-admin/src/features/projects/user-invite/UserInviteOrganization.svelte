@@ -29,9 +29,8 @@
       shape="square"
       name={organization}
       count={organizationUsersCount}
-    >
-      {@html `Everyone from <span class="font-bold">${organization}</span>`}
-    </AvatarListItem>
+      isEveryFromText
+    />
   </div>
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">

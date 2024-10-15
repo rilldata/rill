@@ -13,6 +13,9 @@
     $listUsergroupMemberUsers.data?.members?.length ?? 0;
 </script>
 
-<AvatarListItem shape="square" name={usergroup} count={userGroupMembersCount}>
-  {@html `Everyone from <span class="font-bold">${usergroup}</span>`}
-</AvatarListItem>
+<AvatarListItem
+  shape="square"
+  name={usergroup}
+  count={userGroupMembersCount}
+  isEveryFromText
+/>
