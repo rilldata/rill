@@ -77,7 +77,6 @@
       <OrgUsersTable
         data={filteredUsers}
         currentUserEmail={$currentUser.data?.user.email}
-        currentUserPhotoUrl={$currentUser.data?.user.photoUrl}
       />
     </div>
   {/if}
