@@ -10,23 +10,24 @@ What is a metrics layer, and why did we decide to split the dashboard into two i
 
 ## What is a Metrics Layer?
 
-A metrics layer is a `centralized framework` used to define and organize `key metrics`. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboard, and data tools. 
+A metrics layer is a `centralized framework` used to define and organize **key metrics** for your organization. Having a centralized layer allows an organization to easily manage and re-use calculations across various reports, dashboard, and data tools. As Rill continues to grow, we decided to separate metrics layer from the dashboard configuration.
 
 
 ### Historically, in Rill...
 <img src = '/img/concepts/metrics-view/old-dashboard.png' class='rounded-gif' />
 <br />
 
-Historically in Rill, the metrics layer and dashboard were a single file. As seen above, the metrics would be defined inside a dashboard YAML file along with the dashboard components and dashboard customizations. However, as we continue to create more features, we found that this was not the best approach. In order to create a metrics layer in Rill as a first class resource and not a consequence of dashboards, we found it necessary to split the two resources into their own files. Thus, the metrics-view was born.
+Historically in Rill, the metrics layer and dashboard configuration were a single file. As seen above, the metrics would be defined **inside** a dashboard YAML file along with the dashboard components and dashboard customizations. However, as we continue to create more features, we found that this was not the best approach. In order to create a metrics layer in Rill as a first class resource and not a consequence of dashboards, we found it necessary to split the two resources into their own files. Thus, the metrics-view was born.
 
-:::note
-Starting from v50, the operation of creating a dashboard via AI will create a metrics-view and dashboard separately in their own respective folders and navigate you to a preview of your dashboard. If you find that some of the metrics need to be modified, you will need to navigate to your [metrics/metrics_view.yaml](/build/metrics-view/) file. 
+:::tip
+Starting from v50, the operation of creating a dashboard via AI will create a metrics-view and dashboard separately in their own respective folders and navigate you to a preview of your dashboard. If you find that some of the metrics need to be modified, you will need to navigate to your [metrics/model_name_metrics.yaml](/build/metrics-view/) file. 
 
-Any changes will automatically be changed on your [explore dashboard](/build/dashboards/).
+
+Assuming that you have the ' * ', select all, in your dashboard configurations, any changes will automatically be changed on your [explore dashboard](/build/dashboards/).
 :::
 
-## Splitting the Dashboard into two components
-Splitting the metrics view into its own component allows us more freedom to continue building Rill and adding new additional features. Instead of querying a dashboard for data, we would be querying the metrics-layer. Now, the dashboard will directly query the metrics-view along with many new components that are currently being developed.
+## Splitting the Dashboard into two components, Metrics-view and Dashboard Configuration
+Splitting the metrics view into its own component allows us more freedom to continue building Rill and adding new additional features. Instead of querying a dashboard for data, we would be querying the metrics-layer. The dashboard will directly query the metrics-view along with many new components that are currently being developed.
 
 ### New Metrics View as an independent object in Rill 
 
