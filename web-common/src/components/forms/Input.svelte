@@ -37,6 +37,9 @@
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
+  export let fixedOptions:
+    | { value: string; label: string; type?: string }[]
+    | undefined = undefined;
   export let onInput: (
     newValue: string,
     e: Event & {
@@ -203,7 +206,8 @@
       {id}
       bind:selectElement
       bind:value
-      options={options ?? []}
+      {options}
+      {fixedOptions}
       {onChange}
       fontSize={14}
       {truncate}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createQueryServiceTableColumns,
+    createRuntimeServiceGetInstance,
     type MetricsViewSpecDimensionV2,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
@@ -41,6 +42,11 @@
   } from "../visual-metrics-editing/lib";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import ConnectorExplorer from "../connectors/ConnectorExplorer.svelte";
+  import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+
+  const store = connectorExplorerStore.duplicateStore();
+  const { selectedTable } = store;
 
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
@@ -57,8 +63,15 @@
     measures: new Set<number>(),
     dimensions: new Set<number>(),
   };
+  let showTableExplorer = false;
 
   $: ({ instanceId } = $runtime);
+
+  $: instance = createRuntimeServiceGetInstance(instanceId, {
+    sensitive: true,
+  });
+
+  $: olapConnector = $instance.data?.instance?.olapConnector;
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
 
@@ -77,10 +90,12 @@
   $: rawDatabaseSchema = parsedDocument.get("database_schema");
   $: rawModel = parsedDocument.get("model");
   $: rawTable = parsedDocument.get("table");
+  $: rawDatabase = parsedDocument.get("database");
 
   $: timeDimension = stringGuard(rawTimeDimension);
   $: databaseSchema = stringGuard(rawDatabaseSchema);
-  $: modelOrSourceName = stringGuard(rawModel) || stringGuard(rawTable);
+  $: database = stringGuard(rawDatabase);
+  $: modelOrSourceOrTableName = stringGuard(rawModel) || stringGuard(rawTable);
   $: smallestTimeGrain = stringGuard(rawSmallestTimeGrain);
 
   $: modelsQuery = useModels(instanceId);
@@ -91,37 +106,47 @@
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
   $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
   $: hasSourceSelected = sourceNames.some(
-    ({ value }) => value === modelOrSourceName,
+    ({ value }) => value === modelOrSourceOrTableName,
   );
   $: hasModelSelected = modelNames.some(
-    ({ value }) => value === modelOrSourceName,
+    ({ value }) => value === modelOrSourceOrTableName,
   );
 
   $: modelAndSourceOptions = [...modelNames, ...sourceNames];
 
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
+  $: hasValidOLAPTableSelected =
+    connector === olapConnector &&
+    !hasValidModelOrSourceSelection &&
+    modelOrSourceOrTableName &&
+    $columnsQuery?.isSuccess;
+
   $: resourceQuery = useResource(
     instanceId,
-    modelOrSourceName,
+    modelOrSourceOrTableName,
     hasSourceSelected ? ResourceKind.Source : ResourceKind.Model,
+    {
+      enabled: hasValidModelOrSourceSelection,
+    },
   );
 
-  $: connector = hasModelSelected
-    ? $resourceQuery?.data?.model?.spec?.outputConnector
-    : $resourceQuery?.data?.source?.spec?.sinkConnector;
+  $: connector =
+    (hasModelSelected
+      ? $resourceQuery?.data?.model?.spec?.outputConnector
+      : $resourceQuery?.data?.source?.spec?.sinkConnector) ?? olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
     instanceId,
-    modelOrSourceName,
+    modelOrSourceOrTableName,
     {
       connector,
-      database: "", // models use the default database
+      database, // models use the default database
       databaseSchema,
     },
     {
       query: {
-        enabled: Boolean(connector) && hasValidModelOrSourceSelection,
+        enabled: Boolean(modelOrSourceOrTableName && connector),
       },
     },
   );
@@ -230,7 +255,11 @@
     value: unknown,
     removeProperty?: string,
   ) {
-    parsedDocument.set(property, value);
+    if (!value) {
+      parsedDocument.delete(value);
+    } else {
+      parsedDocument.set(property, value);
+    }
 
     if (removeProperty) {
       parsedDocument.delete(removeProperty);
@@ -401,6 +430,7 @@
   }
 </script>
 
+{olapConnector}
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4 border-b pb-4">
@@ -409,12 +439,24 @@
           sameWidth
           full
           truncate
-          value={modelOrSourceName}
+          value={modelOrSourceOrTableName}
           options={modelAndSourceOptions}
-          placeholder="Select a model"
+          fixedOptions={[
+            {
+              value: "table",
+              label: `Or select a table from ${olapConnector}`,
+            },
+          ]}
+          placeholder={hasValidOLAPTableSelected
+            ? modelOrSourceOrTableName
+            : "Select a table"}
           label="Model or source referenced"
           onChange={async (newModelOrSourceName) => {
-            if (!modelOrSourceName) {
+            if (newModelOrSourceName === "table") {
+              showTableExplorer = true;
+              return;
+            }
+            if (!modelOrSourceOrTableName) {
               await updateProperty("model", newModelOrSourceName, "table");
             } else {
               confirmation = {
@@ -429,12 +471,12 @@
       <Input
         sameWidth
         full
+        enableSearch
         truncate
         value={timeDimension}
         options={timeOptions}
         placeholder="Select time column"
         label="Time column"
-        disabled={!hasValidModelOrSourceSelection || !timeOptions.length}
         disabledMessage={!hasValidModelOrSourceSelection
           ? "No model selected"
           : "No timestamp columns in model"}
@@ -637,6 +679,56 @@
     {/key}
   {/if}
 </div>
+
+{#if showTableExplorer}
+  <AlertDialog.Root open>
+    <AlertDialog.Content class="overflow-hidden max-w-fit">
+      <AlertDialog.Header>
+        <AlertDialog.Title>Select a table</AlertDialog.Title>
+      </AlertDialog.Header>
+
+      <div class="size-full overflow-y-auto w-72 h-fit max-h-48">
+        <ConnectorExplorer {store} />
+      </div>
+
+      <div class="ml-auto flex gap-x-2">
+        <AlertDialog.Cancel asChild let:builder>
+          <Button
+            builders={[builder]}
+            on:click={() => {
+              showTableExplorer = false;
+            }}
+            type="secondary"
+          >
+            Cancel
+          </Button>
+        </AlertDialog.Cancel>
+
+        <AlertDialog.Action asChild let:builder>
+          <Button
+            builders={[builder]}
+            on:click={async () => {
+              showTableExplorer = false;
+
+              const tableInfo = $selectedTable;
+
+              if (!tableInfo) {
+                return;
+              }
+
+              await updateProperty("model", tableInfo.table, "table");
+              await updateProperty("database_schema", tableInfo.schema);
+              await updateProperty("database", tableInfo.database);
+            }}
+            type="primary"
+          >
+            Select
+          </Button>
+        </AlertDialog.Action>
+      </div>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
+{/if}
 
 {#if confirmation}
   <AlertDialog.Root open>
