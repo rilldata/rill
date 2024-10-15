@@ -11979,6 +11979,11 @@ export class MemberUser extends Message<MemberUser> {
   userName = "";
 
   /**
+   * @generated from field: string user_photo_url = 7;
+   */
+  userPhotoUrl = "";
+
+  /**
    * @generated from field: string role_name = 4;
    */
   roleName = "";
@@ -12004,6 +12009,7 @@ export class MemberUser extends Message<MemberUser> {
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
