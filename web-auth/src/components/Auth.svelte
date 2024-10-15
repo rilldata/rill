@@ -194,7 +194,7 @@
   <AuthContainer>
     <RillLogoSquareNegative size="84px" />
     <div class="text-xl my-6">Log in or sign up</div>
-    <div class="flex flex-col gap-y-4" style:width="400px">
+    <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
       {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
