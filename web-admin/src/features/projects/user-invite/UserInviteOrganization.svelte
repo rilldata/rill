@@ -18,7 +18,7 @@
   <div
     role="button"
     tabindex="0"
-    class="flex flex-row items-center gap-x-2 justify-between data-[hovered=true]:bg-slate-50 rounded-sm"
+    class="flex flex-row items-center gap-x-2 justify-between data-[hovered=true]:bg-slate-50 rounded-sm cursor-auto"
     data-hovered={isHovered}
     on:mouseover={() => (isHovered = true)}
     on:mouseleave={() => (isHovered = false)}

@@ -108,7 +108,9 @@
         <!-- 52 * 5 = 260px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
           {#each usersWithPendingInvites as user}
-            <div class="flex flex-row items-center gap-x-2 justify-between">
+            <div
+              class="flex flex-row items-center gap-x-2 justify-between cursor-auto"
+            >
               <AvatarListItem
                 name={user.userName ?? user.userEmail}
                 email={user.userEmail}
