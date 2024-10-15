@@ -164,7 +164,10 @@ export const getYupSchema = {
         /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
         "Do not prefix the host with `http(s)://`", // It will be added by the runtime
       ),
-    port: yup.number().required("Port is required"),
+    port: yup
+      .string() // Purposefully using a string input, not a numeric input
+      .matches(/^\d+$/, "Port must be a number")
+      .required("Port is required"),
     username: yup.string(),
     password: yup.string(),
     ssl: yup.boolean(),
@@ -184,7 +187,10 @@ export const getYupSchema = {
         /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
         "Do not prefix the host with `http(s)://`", // It will be added by the runtime
       ),
-    port: yup.number().required("Port is required"),
+    port: yup
+      .string() // Purposefully using a string input, not a numeric input
+      .matches(/^\d+$/, "Port must be a number")
+      .required("Port is required"),
     username: yup.string(),
     password: yup.string(),
     ssl: yup.boolean(),
@@ -204,7 +210,10 @@ export const getYupSchema = {
         /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
         "Do not prefix the host with `http(s)://`", // It will be added by the runtime
       ),
-    port: yup.number().required("Port is required"),
+    port: yup
+      .string() // Purposefully using a string input, not a numeric input
+      .matches(/^\d+$/, "Port must be a number")
+      .required("Port is required"),
     username: yup.string(),
     password: yup.string(),
     ssl: yup.boolean(),
