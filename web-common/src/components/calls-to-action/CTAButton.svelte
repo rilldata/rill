@@ -7,4 +7,6 @@
   export let disabled = false;
 </script>
 
-<Button type={variant} {href} {rel} {disabled} wide on:click><slot /></Button>
+<Button type={variant} {href} {rel} {disabled} wide on:click>
+  <slot />
+</Button>

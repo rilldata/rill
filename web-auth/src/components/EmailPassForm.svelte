@@ -121,7 +121,7 @@
   {/if}
 
   <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
-    <div class="flex justify-center font-medium w-[400px]">
+    <div class="flex justify-center font-medium">
       <div>Continue with Email</div>
     </div>
   </CtaButton>
