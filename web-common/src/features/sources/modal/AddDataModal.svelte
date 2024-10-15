@@ -262,9 +262,9 @@
 
   .connector-tile-button {
     aspect-ratio: 2/1;
-    @apply basis-40 p-2;
+    @apply basis-40 py-3 px-7;
     @apply border border-gray-300 rounded;
-    @apply grid place-content-center;
+    @apply grid place-content-center place-items-center;
     @apply cursor-pointer overflow-hidden;
   }
 
