@@ -1260,7 +1260,8 @@ message SudoUpdateOrganizationQuotasResponse {
 
 message SudoUpdateOrganizationBillingCustomerRequest {
   string organization = 1;
-  string billing_customer_id = 2;
+  optional string billing_customer_id = 2;
+  optional string payment_customer_id = 3;
 }
 
 message SudoUpdateOrganizationBillingCustomerResponse {

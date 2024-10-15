@@ -194,15 +194,19 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	if emailChanged {
-		err = s.admin.Biller.UpdateCustomerEmail(ctx, org.BillingCustomerID, org.BillingEmail)
-		if err != nil {
-			s.logger.Error("failed to update billing email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
-			return nil, status.Error(codes.Internal, err.Error())
+		if org.BillingCustomerID != "" {
+			err = s.admin.Biller.UpdateCustomerEmail(ctx, org.BillingCustomerID, org.BillingEmail)
+			if err != nil {
+				s.logger.Error("failed to update billing email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
-		err = s.admin.PaymentProvider.UpdateCustomerEmail(ctx, org.PaymentCustomerID, org.BillingEmail)
-		if err != nil {
-			s.logger.Error("failed to update billing email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
-			return nil, status.Error(codes.Internal, err.Error())
+		if org.PaymentCustomerID != "" {
+			err = s.admin.PaymentProvider.UpdateCustomerEmail(ctx, org.PaymentCustomerID, org.BillingEmail)
+			if err != nil {
+				s.logger.Error("failed to update billing email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
 	}
 

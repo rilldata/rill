@@ -10231,7 +10231,13 @@ func (m *SudoUpdateOrganizationBillingCustomerRequest) validate(all bool) error 
 
 	// no validation rules for Organization
 
-	// no validation rules for BillingCustomerId
+	if m.BillingCustomerId != nil {
+		// no validation rules for BillingCustomerId
+	}
+
+	if m.PaymentCustomerId != nil {
+		// no validation rules for PaymentCustomerId
+	}
 
 	if len(errors) > 0 {
 		return SudoUpdateOrganizationBillingCustomerRequestMultiError(errors)

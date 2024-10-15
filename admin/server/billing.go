@@ -360,16 +360,21 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingCustomerRequest) (*adminv1.SudoUpdateOrganizationBillingCustomerResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
-		attribute.String("args.billing_customer_id", req.BillingCustomerId),
 	)
+	if req.BillingCustomerId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.billing_customer_id", *req.BillingCustomerId))
+	}
+	if req.PaymentCustomerId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.payment_customer_id", *req.PaymentCustomerId))
+	}
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage billing customer")
 	}
 
-	if req.BillingCustomerId == "" {
-		return nil, status.Error(codes.InvalidArgument, "billing customer id is required")
+	if req.BillingCustomerId == nil && req.PaymentCustomerId == nil {
+		return nil, status.Error(codes.InvalidArgument, "either or both billing and payment customer id must be provided")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -388,8 +393,8 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-		BillingCustomerID:                   req.BillingCustomerId,
-		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingCustomerID:                   valOrDefault(req.BillingCustomerId, org.BillingCustomerID),
+		PaymentCustomerID:                   valOrDefault(req.PaymentCustomerId, org.PaymentCustomerID),
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
 	}
@@ -397,6 +402,14 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	if req.PaymentCustomerId != nil {
+		// link the payment customer to the billing customer
+		err = s.admin.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, billing.PaymentProviderStripe, *req.PaymentCustomerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	// get active subscriptions if present

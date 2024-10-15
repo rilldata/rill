@@ -487,6 +487,7 @@ export interface V1SudoUpdateOrganizationBillingCustomerResponse {
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   organization?: string;
   billingCustomerId?: string;
+  paymentCustomerId?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {

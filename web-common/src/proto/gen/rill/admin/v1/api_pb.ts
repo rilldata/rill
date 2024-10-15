@@ -3796,9 +3796,14 @@ export class SudoUpdateOrganizationBillingCustomerRequest extends Message<SudoUp
   organization = "";
 
   /**
-   * @generated from field: string billing_customer_id = 2;
+   * @generated from field: optional string billing_customer_id = 2;
    */
-  billingCustomerId = "";
+  billingCustomerId?: string;
+
+  /**
+   * @generated from field: optional string payment_customer_id = 3;
+   */
+  paymentCustomerId?: string;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationBillingCustomerRequest>) {
     super();
@@ -3809,7 +3814,8 @@ export class SudoUpdateOrganizationBillingCustomerRequest extends Message<SudoUp
   static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationBillingCustomerRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationBillingCustomerRequest {

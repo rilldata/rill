@@ -4873,6 +4873,8 @@ definitions:
         type: string
       billingCustomerId:
         type: string
+      paymentCustomerId:
+        type: string
   v1SudoUpdateOrganizationBillingCustomerResponse:
     type: object
     properties:
