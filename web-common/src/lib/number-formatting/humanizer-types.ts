@@ -305,3 +305,5 @@ export interface Formatter {
   stringFormat(x: number): string;
   partsFormat(x: number): NumberParts;
 }
+
+export type FormatterType = "default" | "unabridged" | "big-number" | "tooltip";
