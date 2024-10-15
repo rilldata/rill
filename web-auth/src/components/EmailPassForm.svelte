@@ -8,7 +8,6 @@
 
   const dispatch = createEventDispatcher();
 
-  export let isLoginPage = false;
   export let disabled = false;
 
   let email = "";
@@ -91,7 +90,7 @@
           {type}
           on:input={onPassInput}
           id="password"
-          placeholder={isLoginPage ? "Enter your password" : "Create password"}
+          placeholder="Enter your password"
         />
 
         <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -110,7 +109,7 @@
         </span>
       </div>
     </div>
-    {#if isLoginPage}
+    <!-- {#if isLoginPage}
       <div>
         <button
           on:click={() => handleForgotPass()}
@@ -118,7 +117,7 @@
           >Forgot password?</button
         >
       </div>
-    {/if}
+    {/if} -->
   {/if}
 
   <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
