@@ -27,16 +27,14 @@
     password = e.target.value;
   }
 
-  function handleContinue() {
+  function handleSubmit() {
     if (!showForm) {
       showForm = true;
       return;
     }
-  }
 
-  function handleSubmit() {
-    if (!email) {
-      errorText = "Please enter your email";
+    if (!email || !password) {
+      errorText = "Please enter your email and password";
       return;
     }
 
@@ -47,40 +45,22 @@
 
     errorText = "";
 
-    if (!showForm) {
-      showForm = true;
-      return;
-    }
-
-    if (!password) {
-      errorText = "Please enter your password";
-      return;
-    }
-
     dispatch("submit", {
       email,
       password,
     });
   }
 
-  // function handleForgotPass() {
-  //   if (!validateEmail(email)) {
-  //     errorText = "Please enter a valid email address";
-  //     return;
-  //   }
-
-  //   errorText = "";
-  //   dispatch("resetPass", {
-  //     email,
-  //   });
-  // }
-
-  $: {
-    if (validateEmail(email)) {
-      disabled = false;
-    } else {
-      disabled = true;
+  function handleForgotPass() {
+    if (!validateEmail(email)) {
+      errorText = "Please enter a valid email address";
+      return;
     }
+
+    errorText = "";
+    dispatch("resetPass", {
+      email,
+    });
   }
 </script>
 
@@ -117,7 +97,6 @@
         tabindex="0"
         style:right="10px"
         class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
-        on:click={() => (showPassword = !showPassword)}
       >
         {#if !showPassword}
           <Eye />
@@ -139,19 +118,5 @@
       </div>
     {/if} -->
 
-  <CtaButton
-    {disabled}
-    variant="secondary"
-    on:click={() => {
-      if (email) {
-        handleContinue();
-      } else {
-        handleSubmit();
-      }
-    }}
-  >
+  <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
     <div class="flex justify-center font-medium">
-      <div>{showForm ? "Continue with Email" : "Continue"}</div>
-    </div>
-  </CtaButton>
-</div>

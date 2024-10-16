@@ -39,6 +39,8 @@
   export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
 
+  const LOCAL_STORAGE_KEY = "last_used_connection";
+
   const connectionMapObj = JSON.parse(connectionMap);
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
@@ -48,16 +50,36 @@
 
   let isSSODisabled = false;
   let isEmailDisabled = false;
+  let lastUsedConnection: string | null = null;
 
   let email = "";
   let showSSOForm = false;
-  let showEmailPassForm = false;
   let emailSubmitted = false;
 
   const authManager = new AuthManager();
 
-  let webAuth: WebAuth;
-  const databaseConnection = "Username-Password-Authentication";
+  function getLastUsedConnection() {
+    return localStorage.getItem(LOCAL_STORAGE_KEY);
+  }
+
+  function setLastUsedConnection(connection: string | null) {
+    if (connection) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, connection);
+    } else {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+    lastUsedConnection = connection;
+  }
+
+  $: {
+    const storedConnection = getLastUsedConnection();
+    if (storedConnection) {
+      lastUsedConnection = storedConnection;
+      // console.log(`Last used connection: ${lastUsedConnection}`);
+    } else {
+      setLastUsedConnection(null);
+    }
+  }
 
   function initConfig() {
     const config = JSON.parse(
@@ -95,7 +117,7 @@
   }
 
   function authorize(connection: string) {
-    authManager.setLastUsedConnection(connection);
+    setLastUsedConnection(connection);
     webAuth.authorize({ connection });
   }
 
@@ -119,7 +141,7 @@
       prompt: "login",
     });
 
-    authManager.setLastUsedConnection(connectionName);
+    setLastUsedConnection(connectionName);
   }
 
   function handleEmailSubmit(email: string, password: string) {
@@ -138,7 +160,7 @@
         },
       );
 
-      authManager.setLastUsedConnection(databaseConnection);
+      setLastUsedConnection(databaseConnection);
 
       // TO BE REMOVED
       // TODO: should we check for `last_used_connection`
