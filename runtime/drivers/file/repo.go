@@ -109,6 +109,9 @@ func (c *connection) FileHash(ctx context.Context, paths []string) (string, erro
 		path = filepath.Join(c.root, path)
 		file, err := os.Open(path)
 		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
 			return "", err
 		}
 

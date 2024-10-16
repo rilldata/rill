@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -110,7 +111,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	// special handling to mark model as updated when local file changes
 	if inputConnector == "local_file" {
-		err = p.trackResourceNamesForDataPaths(ctx, ResourceName{Name: node.Name, Kind: ResourceKindModel}, inputProps)
+		err = p.trackResourceNamesForDataPaths(ctx, ResourceName{Name: node.Name, Kind: ResourceKindModel}.Normalized(), inputProps)
 		if err != nil {
 			return err
 		}
@@ -248,21 +249,28 @@ func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name Resour
 	if !ok {
 		return nil
 	}
-	entries, err := p.Repo.ListRecursive(ctx, path, true)
-	if err != nil || len(entries) == 0 {
-		// The actual error will be returned by the model reconciler
-		return nil
-	}
 
 	var localPaths []string
+	if fileutil.IsGlob(path) {
+		entries, err := p.Repo.ListRecursive(ctx, path, true)
+		if err != nil || len(entries) == 0 {
+			// The actual error will be returned by the model reconciler
+			return nil
+		}
+
+		for _, entry := range entries {
+			localPaths = append(localPaths, entry.Path)
+		}
+	} else {
+		localPaths = []string{normalizePath(path)}
+	}
 
 	// Update parser's resourceNamesForDataPaths map to track which resources depend on the local file
-	for _, entry := range entries {
-		localPaths = append(localPaths, entry.Path)
-		resources := p.resourceNamesForDataPaths[entry.Path]
+	for _, path := range localPaths {
+		resources := p.resourceNamesForDataPaths[path]
 		if !slices.Contains(resources, name) {
 			resources = append(resources, name)
-			p.resourceNamesForDataPaths[entry.Path] = resources
+			p.resourceNamesForDataPaths[path] = resources
 		}
 	}
 

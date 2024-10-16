@@ -393,8 +393,9 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		resources, ok := p.resourceNamesForDataPaths[path]
 		if ok {
 			for _, resource := range resources {
-				res := p.Resources[resource]
-				checkPaths = append(checkPaths, res.Paths...)
+				if res, ok := p.Resources[resource]; ok {
+					checkPaths = append(checkPaths, res.Paths...)
+				}
 			}
 			continue
 		}
@@ -925,6 +926,19 @@ func (p *Parser) deleteResource(r *Resource) {
 			delete(p.resourcesForUnspecifiedRef, n)
 		} else {
 			p.resourcesForUnspecifiedRef[n] = slices.Delete(rs, idx, idx+1)
+		}
+	}
+
+	// Remove from p.resourceNamesForDataPaths
+	for path, resources := range p.resourceNamesForDataPaths {
+		idx := slices.Index(resources, r.Name.Normalized())
+		if idx < 0 {
+			continue
+		}
+		if len(resources) == 1 {
+			delete(p.resourceNamesForDataPaths, path)
+		} else {
+			p.resourceNamesForDataPaths[path] = slices.Delete(resources, idx, idx+1)
 		}
 	}
 

@@ -150,6 +150,9 @@ func (h *Handle) FileHash(ctx context.Context, paths []string) (string, error) {
 		path = filepath.Join(h.projPath, path)
 		file, err := os.Open(path)
 		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
 			return "", err
 		}
 
