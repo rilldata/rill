@@ -87,7 +87,7 @@
 {#if group.groupName !== "all-users"}
   <DropdownMenu.Root bind:open={isOpen}>
     <DropdownMenu.Trigger
-      class="w-18 flex flex-row gap-1 items-center rounded-sm {isOpen
+      class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
         ? 'bg-slate-200'
         : 'hover:bg-slate-100'} px-2 py-1"
     >
