@@ -4,15 +4,16 @@
   import { createRuntimeServiceAnalyzeConnectors } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import ConnectorEntry from "./ConnectorEntry.svelte";
-  import { connectorExplorerStore } from "./connector-explorer-store";
+  import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
-  $: showConnectors = $connectorExplorerStore.showConnectors;
+  export let store: ConnectorExplorerStore;
 
   $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId, {
     query: {
       // sort alphabetically
       select: (data) => {
         if (!data?.connectors) return;
+
         const connectors = data.connectors.sort((a, b) =>
           (a?.name as string).localeCompare(b?.name as string),
         );
@@ -23,27 +24,25 @@
   $: ({ data, error } = $connectors);
 </script>
 
-{#if showConnectors}
-  <div class="wrapper">
-    {#if error}
+<div class="wrapper">
+  {#if error}
+    <span class="message">
+      {error.message}
+    </span>
+  {:else if data?.connectors}
+    {#if data.connectors.length === 0}
       <span class="message">
-        {error.message}
+        No connectors found. Add data to get started!
       </span>
-    {:else if data?.connectors}
-      {#if data.connectors.length === 0}
-        <span class="message">
-          No connectors found. Add data to get started!
-        </span>
-      {:else}
-        <ol transition:slide={{ duration }}>
-          {#each data.connectors as connector (connector.name)}
-            <ConnectorEntry {connector} />
-          {/each}
-        </ol>
-      {/if}
+    {:else}
+      <ol transition:slide={{ duration }}>
+        {#each data.connectors as connector (connector.name)}
+          <ConnectorEntry {connector} {store} />
+        {/each}
+      </ol>
     {/if}
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style lang="postcss">
   .wrapper {
@@ -52,7 +51,7 @@
 
   .message {
     @apply pl-2 pr-3.5 py-2;
-    @apply flex;
+    @apply flex flex-none;
     @apply text-gray-500;
   }
 </style>

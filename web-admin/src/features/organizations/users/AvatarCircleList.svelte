@@ -4,6 +4,7 @@
 
   export let name: string;
   export let email: string;
+  export let photoUrl: string | null = null;
   export let isCurrentUser: boolean = false;
   export let pendingAcceptance: boolean = false;
 </script>
@@ -11,6 +12,7 @@
 <div class="flex items-center gap-2">
   <Avatar
     size="h-7 w-7"
+    src={photoUrl}
     alt={pendingAcceptance ? null : name}
     bgColor={getRandomColor(email)}
   />
