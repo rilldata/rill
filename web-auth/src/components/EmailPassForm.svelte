@@ -28,14 +28,16 @@
     password = e.target.value;
   }
 
-  function handleSubmit() {
+  function handleContinue() {
     if (!showForm) {
       showForm = true;
       return;
     }
+  }
 
-    if (!email || !password) {
-      errorText = "Please enter your email and password";
+  function handleSubmit() {
+    if (!email) {
+      errorText = "Please enter your email";
       return;
     }
 
@@ -45,6 +47,16 @@
     }
 
     errorText = "";
+
+    if (!showForm) {
+      showForm = true;
+      return;
+    }
+
+    if (!password) {
+      errorText = "Please enter your password";
+      return;
+    }
 
     dispatch("submit", {
       email,
@@ -52,31 +64,30 @@
     });
   }
 
-  function handleForgotPass() {
-    if (!validateEmail(email)) {
-      errorText = "Please enter a valid email address";
-      return;
-    }
+  // function handleForgotPass() {
+  //   if (!validateEmail(email)) {
+  //     errorText = "Please enter a valid email address";
+  //     return;
+  //   }
 
-    errorText = "";
-    dispatch("resetPass", {
-      email,
-    });
+  //   errorText = "";
+  //   dispatch("resetPass", {
+  //     email,
+  //   });
+  // }
+
+  $: {
+    if (validateEmail(email)) {
+      disabled = false;
+    } else {
+      disabled = true;
+    }
   }
 </script>
 
 <div>
   {#if showForm}
-    <div class="mb-4 flex flex-col gap-y-4" transition:slide|global>
-      <input
-        class="{inputClasses} {focusClasses}"
-        style:width="400px"
-        type="email"
-        placeholder="Enter your email address"
-        id="email"
-        bind:value={email}
-      />
-
+    <div class="mb-4 flex flex-col gap-y-4">
       {#if errorText}
         <div class="text-red-500 text-sm -mt-2">
           {errorText}
@@ -109,6 +120,8 @@
         </span>
       </div>
     </div>
+
+    <!-- TODO: revisit -->
     <!-- {#if isLoginPage}
       <div>
         <button
@@ -118,11 +131,32 @@
         >
       </div>
     {/if} -->
+  {:else}
+    <div class="mb-4 flex flex-col gap-y-4">
+      <input
+        class="{inputClasses} {focusClasses}"
+        style:width="400px"
+        type="email"
+        placeholder="Enter your email address"
+        id="email"
+        bind:value={email}
+      />
+    </div>
   {/if}
 
-  <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
+  <CtaButton
+    {disabled}
+    variant="secondary"
+    on:click={() => {
+      if (email) {
+        handleContinue();
+      } else {
+        handleSubmit();
+      }
+    }}
+  >
     <div class="flex justify-center font-medium">
-      <div>Continue with Email</div>
+      <div>{showForm ? "Continue with Email" : "Continue"}</div>
     </div>
   </CtaButton>
 </div>
