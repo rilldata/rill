@@ -56,6 +56,9 @@
   let showEmailPassForm = false;
   let emailSubmitted = false;
 
+  let webAuth: WebAuth;
+  const databaseConnection = "Username-Password-Authentication";
+
   function getLastUsedConnection() {
     return localStorage.getItem(LOCAL_STORAGE_KEY);
   }
