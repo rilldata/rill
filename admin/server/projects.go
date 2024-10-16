@@ -489,7 +489,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			if u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
+			if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
 				return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
 			}
 		}
