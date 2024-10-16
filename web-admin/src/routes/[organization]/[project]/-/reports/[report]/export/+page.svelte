@@ -5,7 +5,7 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import type { V1ExportFormat } from "@rilldata/web-common/runtime-client";
+  import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: organization = $page.params.organization;
@@ -25,22 +25,23 @@
       data: {
         instanceId: $runtime.instanceId,
         reportId,
-        format: format as V1ExportFormat,
+        format: (format as V1ExportFormat) ?? V1ExportFormat.EXPORT_FORMAT_CSV,
         executionTime,
         limit,
       },
     });
   }
 
-  $: if (reportId && format && $runtime) {
+  $: if (reportId && $runtime) {
     triggerDownload();
   }
 
   let error: string;
   $: {
-    if (!format) {
-      error = "format is required";
-    } else if ($downloadReportMutation.error) {
+    // if (!format) {
+    //   error = "format is required";
+    // } else
+    if ($downloadReportMutation.error) {
       error =
         $downloadReportMutation.error.response?.data?.message ??
         "unknown error";
