@@ -421,6 +421,13 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
+				opts := &email.ScheduledReport{
+					ToEmail:        recipient,
+					ToName:         "",
+					Title:          rep.Spec.Title,
+					ReportTime:     t,
+					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+				}
 				openURL := meta.BaseURLs.OpenURL
 				exportURL := internalUsersExportURL.String()
 				editURL := meta.BaseURLs.EditURL
@@ -432,17 +439,12 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 						return false, err
 					}
 					exportURL = u.String()
+					opts.External = true
 				}
-				err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
-					ToEmail:        recipient,
-					ToName:         "",
-					Title:          rep.Spec.Title,
-					ReportTime:     t,
-					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:       openURL,
-					DownloadLink:   exportURL,
-					EditLink:       editURL,
-				})
+				opts.OpenLink = openURL
+				opts.DownloadLink = exportURL
+				opts.EditLink = editURL
+				err := r.C.Runtime.Email.SendScheduledReport(opts)
 				sent = true
 				if err != nil {
 					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)

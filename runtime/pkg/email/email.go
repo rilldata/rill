@@ -35,6 +35,7 @@ type ScheduledReport struct {
 	OpenLink       string
 	DownloadLink   string
 	EditLink       string
+	External       bool
 }
 
 type scheduledReportData struct {
@@ -60,9 +61,14 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Build subject
 	subject := fmt.Sprintf("%s (%s)", opts.Title, data.ReportTimeString)
 
+	var err error
 	// Resolve template
 	buf := new(bytes.Buffer)
-	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
+	if opts.External {
+		err = c.templates.Lookup("scheduled_report_external.html").Execute(buf, data)
+	} else {
+		err = c.templates.Lookup("scheduled_report.html").Execute(buf, data)
+	}
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}
