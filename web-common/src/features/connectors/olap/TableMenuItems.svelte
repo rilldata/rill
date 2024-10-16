@@ -9,7 +9,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
@@ -18,9 +17,9 @@
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "./createModel";
   import { useIsModelingSupportedForOlapDriver } from "./selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   const { ai } = featureFlags;
-  const queryClient = useQueryClient();
 
   export let connector: string;
   export let database: string = "";

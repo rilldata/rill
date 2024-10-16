@@ -4,9 +4,11 @@
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseEntry from "./DatabaseEntry.svelte";
   import { useDatabases } from "./selectors";
+  import type { ConnectorExplorerStore } from "../connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
+  export let store: ConnectorExplorerStore;
 
   $: connectorName = connector?.name as string;
 
@@ -26,7 +28,7 @@
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry {instanceId} {connector} {database} />
+          <DatabaseEntry {instanceId} {connector} {database} {store} />
         {/each}
       </ol>
     {/if}
