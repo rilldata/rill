@@ -72,7 +72,7 @@ type ModelExecuteOptions struct {
 	// PreviousResult is the result of a previous execution.
 	// For concurrent split execution, it may not be the most recent previous result.
 	PreviousResult *ModelResult
-	// TempDir is the temporary directory for storing intermediate data.
+	// TempDir is a temporary directory for storing intermediate data.
 	TempDir string
 }
 

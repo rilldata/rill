@@ -77,10 +77,12 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	if inputProps.Format == "" {
-		inputProps.Format = fileExtToFormat(fileutil.FullExt(localPaths[0]))
+		inputProps.Format, err = fileExtToFormat(fileutil.FullExt(localPaths[0]))
+		if err != nil {
+			return nil, fmt.Errorf("failed to infer format: %w", err)
+		}
 	}
 
-	// check if user specified the column types
 	if outputProps.Columns == "" {
 		outputProps.Columns, err = e.inferColumns(ctx, opts, inputProps.Format, localPaths)
 		if err != nil {
@@ -93,7 +95,6 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		outputProps.Table = opts.ModelName
 		usedModelName = true
 	}
-
 	tableName := outputProps.Table
 
 	// Prepare for ingesting into the staging view/table.
@@ -120,7 +121,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 			return nil, fmt.Errorf("failed to read file %q: %w", path, err)
 		}
 
-		query := fmt.Sprintf("INSERT INTO %s FORMAT %s\n", stagingTableName, inputProps.Format) + string(contents)
+		query := fmt.Sprintf("INSERT INTO %s FORMAT %s\n", safeSQLName(stagingTableName), inputProps.Format) + string(contents)
 		_, err = e.c.db.DB.ExecContext(ctx, query)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert data: %w", err)
@@ -155,7 +156,6 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 }
 
 func (e *localFileToSelfExecutor) inferColumns(ctx context.Context, opts *drivers.ModelExecuteOptions, format string, localPaths []string) (string, error) {
-	// no columns were specified, infer using  duckdb
 	tempDir, err := os.MkdirTemp(opts.TempDir, "duckdb")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir: %w", err)
@@ -194,7 +194,7 @@ func (e *localFileToSelfExecutor) inferColumns(ctx context.Context, opts *driver
 		if columns.Len() > 1 {
 			columns.WriteString(", ")
 		}
-		columns.WriteString(fmt.Sprintf("%s %s", name, typeFromDuckDBType(typ)))
+		columns.WriteString(fmt.Sprintf("%s %s", safeSQLName(name), typeFromDuckDBType(typ)))
 	}
 	if rows.Err() != nil {
 		return "", fmt.Errorf("failed to iterate rows: %w", rows.Err())
@@ -252,23 +252,22 @@ func typeFromDuckDBType(typ string) string {
 	}
 }
 
-func fileExtToFormat(ext string) string {
+func fileExtToFormat(ext string) (string, error) {
 	switch ext {
 	case ".csv":
-		return "CSV"
+		return "CSV", nil
 	case ".tsv":
-		return "TabSeparated"
+		return "TabSeparated", nil
 	case ".txt":
-		return "CSV"
+		return "CSV", nil
 	case ".parquet":
-		return "Parquet"
+		return "Parquet", nil
 	case ".json":
-		return "JSON"
+		return "JSON", nil
 	case ".ndjson":
-		return "JSONEachRow"
+		return "JSONEachRow", nil
 	default:
-		after, _ := strings.CutPrefix(ext, ".")
-		return after
+		return "", fmt.Errorf("unsupported file extension: %s, must be one of ['.csv', '.tsv', '.txt', '.parquet', '.json', '.ndjson'] for models that ingest from 'local_file' into 'clickhouse'", ext)
 	}
 }
 
