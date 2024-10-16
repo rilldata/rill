@@ -68,11 +68,8 @@
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onPublicReportPage = isPublicReportPage($page);
-  let effectiveToken: string;
   $: if ($page.url.searchParams.has("token")) {
-    effectiveToken = $page.url.searchParams.get("token");
-  } else {
-    effectiveToken = token;
+    token = $page.url.searchParams.get("token");
   }
 
   /**
@@ -96,7 +93,7 @@
   $: tokenProjectQuery = createAdminServiceGetProjectWithBearerToken(
     organization,
     project,
-    effectiveToken,
+    token,
     undefined,
     {
       query: baseGetProjectQueryOptions,

@@ -38,7 +38,6 @@ export const load = async ({ params, url }) => {
     Awaited<ReturnType<typeof adminServiceGetProject>>
   >;
 
-  console.log(organization, project, effectiveToken);
   if (effectiveToken) {
     queryKey = getAdminServiceGetProjectWithBearerTokenQueryKey(
       organization,

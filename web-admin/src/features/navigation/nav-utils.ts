@@ -68,8 +68,9 @@ export function isPublicURLPage(page: Page): boolean {
 
 export function isPublicReportPage(page: Page): boolean {
   return (
-    page.route.id?.startsWith("/[organization]/[project]/-/reports/[report]") &&
-    page.url.searchParams.has("token")
+    !!page.route.id?.startsWith(
+      "/[organization]/[project]/-/reports/[report]",
+    ) && page.url.searchParams.has("token")
   );
 }
 

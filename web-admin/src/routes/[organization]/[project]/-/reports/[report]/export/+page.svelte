@@ -37,15 +37,9 @@
   }
 
   let error: string;
-  $: {
-    // if (!format) {
-    //   error = "format is required";
-    // } else
-    if ($downloadReportMutation.error) {
-      error =
-        $downloadReportMutation.error.response?.data?.message ??
-        "unknown error";
-    }
+  $: if ($downloadReportMutation.error) {
+    error =
+      $downloadReportMutation.error.response?.data?.message ?? "unknown error";
   }
 </script>
 
