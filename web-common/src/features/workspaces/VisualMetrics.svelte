@@ -84,6 +84,7 @@
     measures: new Set<number>(),
     dimensions: new Set<number>(),
   };
+  let storedProperties: Record<string, unknown> = {};
 
   $: ({ instanceId } = $runtime);
 
@@ -169,11 +170,9 @@
 
   $: hasNonDuckDBOLAPConnector = Boolean($connectorsQuery.data?.length);
 
-  $: resourceQuery = useResource(
-    instanceId,
-    modelOrSourceOrTableName,
-    resourceKind,
-  );
+  $: resourceQuery =
+    resourceKind &&
+    useResource(instanceId, modelOrSourceOrTableName, resourceKind);
 
   $: connector =
     yamlConnector ||
@@ -504,13 +503,16 @@
 
   async function switchTableMode() {
     const mode = tableMode;
-    await updateProperties({}, [
-      "table",
-      "model",
-      "database",
-      "connector",
-      "database_schema",
-    ]);
+
+    const currentProperties = {
+      model: rawModel,
+      database: rawDatabase,
+      connector: rawConnector,
+      database_schema: rawDatabaseSchema,
+    };
+    await updateProperties(storedProperties);
+
+    storedProperties = currentProperties;
     tableMode = !mode;
   }
 </script>
