@@ -30,6 +30,12 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 		{"/nested/bar.sql", false},
 	}, files)
 
+	files, err = repo.ListRecursive(ctx, "/foo.sql", true)
+	require.NoError(t, err)
+	require.Equal(t, []drivers.DirEntry{
+		{"/foo.sql", false},
+	}, files)
+
 	files, err = repo.ListRecursive(ctx, "/**", true)
 	require.NoError(t, err)
 	require.Equal(t, []drivers.DirEntry{

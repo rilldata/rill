@@ -1,13 +1,16 @@
 package rillv1
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -34,7 +37,7 @@ type ModelYAML struct {
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseModel(node *Node) error {
+func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &ModelYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
@@ -104,6 +107,14 @@ func (p *Parser) parseModel(node *Node) error {
 		node.Refs = append(node.Refs, refs...)
 
 		inputProps["sql"] = sql
+	}
+
+	// special handling to mark model as updated when local file changes
+	if inputConnector == "local_file" {
+		err = p.trackResourceNamesForDataPaths(ctx, ResourceName{Name: node.Name, Kind: ResourceKindModel}.Normalized(), inputProps)
+		if err != nil {
+			return err
+		}
 	}
 
 	inputPropsPB, err := structpb.NewStruct(inputProps)
@@ -227,6 +238,50 @@ func (p *Parser) inferSQLRefs(node *Node) ([]ResourceName, error) {
 	}
 
 	return refs, nil
+}
+
+func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name ResourceName, inputProps map[string]any) error {
+	c, ok := inputProps["invalidate_on_change"].(bool)
+	if ok && !c {
+		return nil
+	}
+	path, ok := inputProps["path"].(string)
+	if !ok {
+		return nil
+	}
+
+	var localPaths []string
+	if fileutil.IsGlob(path) {
+		entries, err := p.Repo.ListRecursive(ctx, path, true)
+		if err != nil || len(entries) == 0 {
+			// The actual error will be returned by the model reconciler
+			return nil
+		}
+
+		for _, entry := range entries {
+			localPaths = append(localPaths, entry.Path)
+		}
+	} else {
+		localPaths = []string{normalizePath(path)}
+	}
+
+	// Update parser's resourceNamesForDataPaths map to track which resources depend on the local file
+	for _, path := range localPaths {
+		resources := p.resourceNamesForDataPaths[path]
+		if !slices.Contains(resources, name) {
+			resources = append(resources, name)
+			p.resourceNamesForDataPaths[path] = resources
+		}
+	}
+
+	// Calculate hash of local files
+	hash, err := p.Repo.FileHash(ctx, localPaths)
+	if err != nil {
+		return err
+	}
+	// Add hash to input properties so that the model spec is considered updated when the local file changes
+	inputProps["local_files_hash"] = hash
+	return nil
 }
 
 // findLineNumber returns the line number of the pos in the given text.
