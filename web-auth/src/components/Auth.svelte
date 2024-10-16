@@ -9,7 +9,7 @@
   import EmailPassForm from "./EmailPassForm.svelte";
   import { getConnectionFromEmail } from "./utils";
   import OrSeparator from "./OrSeparator.svelte";
-  import { AuthManager } from "./auth-manager";
+  // import { AuthManager } from "./auth-manager";
   import SSOForm from "./SSOForm.svelte";
   import EmailSubmission from "./EmailSubmission.svelte";
 
@@ -33,9 +33,10 @@
 
   let email = "";
   let showSSOForm = false;
+  let showEmailPassForm = false;
   let emailSubmitted = false;
 
-  const authManager = new AuthManager();
+  // const authManager = new AuthManager();
 
   function getLastUsedConnection() {
     return localStorage.getItem(LOCAL_STORAGE_KEY);
