@@ -9,10 +9,9 @@
   const dispatch = createEventDispatcher();
 
   export let disabled = false;
+  export let email = "";
 
-  let email = "";
   let password = "";
-
   let showForm = false;
   let showPassword = false;
   let errorText = "";
@@ -86,43 +85,51 @@
 </script>
 
 <div>
-  {#if showForm}
-    <div class="mb-4 flex flex-col gap-y-4">
-      {#if errorText}
-        <div class="text-red-500 text-sm -mt-2">
-          {errorText}
-        </div>
-      {/if}
+  <div class="mb-4 flex flex-col gap-y-4">
+    <input
+      class="{inputClasses} {focusClasses}"
+      style:width="400px"
+      type="email"
+      placeholder="Enter your email address"
+      id="email"
+      bind:value={email}
+    />
 
-      <div style="position: relative;">
-        <input
-          class="{inputClasses} {focusClasses}"
-          style:width="400px"
-          {type}
-          on:input={onPassInput}
-          id="password"
-          placeholder="Enter your password"
-        />
-
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <span
-          role="button"
-          tabindex="0"
-          style:right="10px"
-          class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
-          on:click={() => (showPassword = !showPassword)}
-        >
-          {#if !showPassword}
-            <Eye />
-          {:else}
-            <EyeInvisible />
-          {/if}
-        </span>
+    {#if errorText}
+      <div class="text-red-500 text-sm -mt-2">
+        {errorText}
       </div>
-    </div>
+    {/if}
 
-    <!-- TODO: revisit -->
-    <!-- {#if isLoginPage}
+    <div style="position: relative;">
+      <input
+        class="{inputClasses} {focusClasses}"
+        style:width="400px"
+        {type}
+        on:input={onPassInput}
+        id="password"
+        placeholder="Enter your password"
+      />
+
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <span
+        role="button"
+        tabindex="0"
+        style:right="10px"
+        class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
+        on:click={() => (showPassword = !showPassword)}
+      >
+        {#if !showPassword}
+          <Eye />
+        {:else}
+          <EyeInvisible />
+        {/if}
+      </span>
+    </div>
+  </div>
+
+  <!-- TODO: revisit -->
+  <!-- {#if isLoginPage}
       <div>
         <button
           on:click={() => handleForgotPass()}
@@ -131,18 +138,6 @@
         >
       </div>
     {/if} -->
-  {:else}
-    <div class="mb-4 flex flex-col gap-y-4">
-      <input
-        class="{inputClasses} {focusClasses}"
-        style:width="400px"
-        type="email"
-        placeholder="Enter your email address"
-        id="email"
-        bind:value={email}
-      />
-    </div>
-  {/if}
 
   <CtaButton
     {disabled}

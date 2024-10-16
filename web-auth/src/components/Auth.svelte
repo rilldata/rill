@@ -10,6 +10,8 @@
   import { getConnectionFromEmail } from "./utils";
   import OrSeparator from "./OrSeparator.svelte";
   import { AuthManager } from "./auth-manager";
+  import SSOForm from "./SSOForm.svelte";
+  import EmailSubmission from "./EmailSubmission.svelte";
 
   type InternalOptions = {
     protocol: string;
@@ -46,6 +48,11 @@
 
   let isSSODisabled = false;
   let isEmailDisabled = false;
+
+  let email = "";
+  let showSSOForm = false;
+  let showEmailPassForm = false;
+  let emailSubmitted = false;
 
   const authManager = new AuthManager();
 
@@ -189,6 +196,22 @@
     );
   }
 
+  function handleEmailSubmission(event) {
+    email = event.detail.email;
+    const connectionName = getConnectionFromEmail(email, connectionMapObj);
+    emailSubmitted = true;
+
+    console.log("connectionName", connectionName);
+
+    if (connectionName) {
+      showSSOForm = true;
+      showEmailPassForm = false;
+    } else {
+      showSSOForm = false;
+      showEmailPassForm = true;
+    }
+  }
+
   onMount(() => {
     initConfig();
   });
@@ -215,22 +238,34 @@
 
       <OrSeparator />
 
-      <!-- <SSOForm
-        disabled={isSSODisabled}
-        on:ssoSubmit={(e) => {
-          handleSSOLogin(e.detail);
-        }}
-      /> -->
+      {#if !emailSubmitted}
+        <EmailSubmission
+          disabled={isEmailDisabled}
+          on:emailSubmit={handleEmailSubmission}
+        />
+      {/if}
 
-      <EmailPassForm
-        disabled={isEmailDisabled}
-        on:submit={(e) => {
-          handleEmailSubmit(e.detail.email, e.detail.password);
-        }}
-        on:resetPass={(e) => {
-          handleResetPassword(e.detail.email);
-        }}
-      />
+      {#if showSSOForm}
+        <SSOForm
+          disabled={isSSODisabled}
+          on:ssoSubmit={(e) => {
+            handleSSOLogin(e.detail);
+          }}
+        />
+      {/if}
+
+      {#if showEmailPassForm}
+        <EmailPassForm
+          disabled={isEmailDisabled}
+          {email}
+          on:submit={(e) => {
+            handleEmailSubmit(e.detail.email, e.detail.password);
+          }}
+          on:resetPass={(e) => {
+            handleResetPassword(e.detail.email);
+          }}
+        />
+      {/if}
     </div>
 
     {#if errorText}
