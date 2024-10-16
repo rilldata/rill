@@ -137,7 +137,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		}
 		_, err = r.Resolve(ctx, &ResolveOptions{
 			InstanceID:         ctrl.InstanceID,
-			Resolver:           "metricsview_time_range",
+			Resolver:           "metrics_time_range",
 			ResolverProperties: map[string]any{"metrics_view": mv.Meta.Name.Name},
 			Args:               map[string]any{"priority": 10},
 			Claims:             &SecurityClaims{SkipChecks: true},
