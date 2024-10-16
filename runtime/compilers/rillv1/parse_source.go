@@ -1,6 +1,7 @@
 package rillv1
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ type SourceYAML struct {
 }
 
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseSource(node *Node) error {
+func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &SourceYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
@@ -43,7 +44,7 @@ func (p *Parser) parseSource(node *Node) error {
 
 	// If the source has SQL and hasn't specified a connector, we treat it as a model
 	if node.SQL != "" && node.ConnectorInferred {
-		return p.parseModel(node)
+		return p.parseModel(ctx, node)
 	}
 
 	// Add SQL as a property

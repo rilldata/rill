@@ -32883,6 +32883,8 @@ func (m *MemberUser) validate(all bool) error {
 
 	// no validation rules for UserName
 
+	// no validation rules for UserPhotoUrl
+
 	// no validation rules for RoleName
 
 	if all {

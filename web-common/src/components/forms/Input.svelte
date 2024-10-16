@@ -2,10 +2,8 @@
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import InfoCircle from "../icons/InfoCircle.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
   import Select from "./Select.svelte";
+  import InputLabel from "./InputLabel.svelte";
 
   const voidFunction = () => {};
 
@@ -93,24 +91,9 @@
 
 <div class="component-wrapper" class:w-full={full} style:width>
   {#if label}
-    <div class="label-wrapper">
-      <label for={id} class="line-clamp-1">
-        {label}
-        {#if optional}
-          <span class="text-gray-500 text-[12px] font-normal">(optional)</span>
-        {/if}
-      </label>
-      {#if hint}
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500">
-            <InfoCircle size="13px" />
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            {@html hint}
-          </TooltipContent>
-        </Tooltip>
-      {/if}
-    </div>
+    <InputLabel {label} {optional} {id} {hint}>
+      <slot name="mode-switch" slot="mode-switch" />
+    </InputLabel>
   {/if}
 
   {#if fields && fields?.length > 1}
@@ -203,7 +186,7 @@
       {id}
       bind:selectElement
       bind:value
-      options={options ?? []}
+      {options}
       {onChange}
       fontSize={14}
       {truncate}
@@ -233,14 +216,6 @@
 <style lang="postcss">
   .component-wrapper {
     @apply flex  flex-col gap-y-1 h-fit justify-center;
-  }
-
-  .label-wrapper {
-    @apply flex items-center gap-x-1;
-  }
-
-  label {
-    @apply text-sm font-medium text-gray-800;
   }
 
   .option-wrapper {

@@ -1,8 +1,8 @@
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ConnectorDriverPropertyType,
-  type V1SourceV2,
   type V1ConnectorDriver,
+  type V1SourceV2,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
@@ -33,6 +33,7 @@ export function compileSourceYAML(
 
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
+    .filter((key) => formValues[key] !== undefined)
     .filter((key) => key !== "name")
     .map((key) => {
       const value = formValues[key] as string;
