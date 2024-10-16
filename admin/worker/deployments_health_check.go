@@ -180,32 +180,38 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 			f = append(f, zap.String(k, v))
 		}
 
-		// log metrics view errors
-		logger := w.logger.WithLazy(f...)
-		if health.ParseErrorCount > 0 || health.ReconcileErrorCount > 0 {
-			logger.Warn("deployment health check: project has parse/reconcile errors", zap.Int32("parse_errors", health.ParseErrorCount), zap.Int32("reconcile_errors", health.ReconcileErrorCount))
-		}
+		// log metrics view errors separately
 		for d, err := range health.MetricsViewErrors {
-			logger.Warn("deployment health check: metrics view error", zap.String("metrics_view", d), zap.String("error", err))
+			w.logger.Warn("deployment health check: metrics view error", zap.String("metrics_view", d), zap.String("error", err))
 		}
 
-		logError := false
-		if health.OlapError != "" {
-			logError = true
-			f = append(f, zap.String("olap_error", health.OlapError))
-		}
+		logAtError := false
 		if health.ControllerError != "" {
-			logError = true
+			logAtError = true
 			f = append(f, zap.String("controller_error", health.ControllerError))
 		}
+		if health.OlapError != "" {
+			logAtError = true
+			f = append(f, zap.String("olap_error", health.OlapError))
+		}
 		if health.RepoError != "" {
-			logError = true
+			logAtError = true
 			f = append(f, zap.String("repo_error", health.RepoError))
 		}
-		if !logError {
-			continue
+		if len(health.MetricsViewErrors) > 0 {
+			f = append(f, zap.Int("metrics_view_errors", len(health.MetricsViewErrors)))
 		}
-		w.logger.Error("deployment health check: runtime instance is unhealthy", f...)
+		if health.ParseErrorCount > 0 {
+			f = append(f, zap.Int32("parse_errors", health.ParseErrorCount))
+		}
+		if health.ReconcileErrorCount > 0 {
+			f = append(f, zap.Int32("reconcile_errors", health.ReconcileErrorCount))
+		}
+		if logAtError {
+			w.logger.Error("deployment health check: instance is unhealthy", f...)
+		} else {
+			w.logger.Warn("deployment health check: instance is unhealthy", f...)
+		}
 	}
 	return instances, true
 }

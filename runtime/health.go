@@ -20,16 +20,17 @@ type Health struct {
 // We want to avoid hitting the underlying OLAP engine when OLAP engine can scale to zero when no queries are generated within TTL.
 // We do not want to keep it running just to check health. In such cases, we use the cached health information.
 type InstanceHealth struct {
-	// always recomputed on every health check
-	Controller        string `json:"-"`
-	Repo              string `json:"-"`
-	ParseErrCount     int    `json:"-"`
-	ReconcileErrCount int    `json:"-"`
+	Controller string `json:"controller"`
+	// OLAP error can be cached
+	OLAP string `json:"olap"`
+	Repo string `json:"repo"`
+	// MetricsViews errors can be cached
+	MetricsViews      map[string]InstanceHealthMetricsViewError `json:"metrics_views"`
+	ParseErrCount     int                                       `json:"parse_error_count"`
+	ReconcileErrCount int                                       `json:"reconcile_error_count"`
 
 	// cached health check information can be used if controller version is same and metrics view spec is same
-	OLAP              string                                    `json:"olap"`
-	MetricsViews      map[string]InstanceHealthMetricsViewError `json:"metrics_views"`
-	ControllerVersion int64                                     `json:"controller_version"`
+	ControllerVersion int64 `json:"controller_version"`
 }
 
 type InstanceHealthMetricsViewError struct {
