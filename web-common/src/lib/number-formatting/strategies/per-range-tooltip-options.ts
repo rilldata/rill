@@ -30,7 +30,7 @@ const tooltipRangeSpec: RangeFormatSpec[] = [
   {
     minMag: 3,
     supMag: 11,
-    maxDigitsRight: 0,
+    maxDigitsRight: 2,
     maxDigitsLeft: 12,
     baseMagnitude: 0,
     useTrailingDot: false,
@@ -48,15 +48,51 @@ export const tooltipNoFormattingOptions: FormatterOptionsCommon &
 
 export const tooltipPercentOptions: FormatterOptionsCommon &
   FormatterRangeSpecsStrategy = {
-  rangeSpecs: tooltipRangeSpec,
+  rangeSpecs: [
+    {
+      minMag: -2,
+      supMag: 3,
+      maxDigitsRight: 2,
+      baseMagnitude: 0,
+      padWithInsignificantZeros: false,
+    },
+    {
+      minMag: 3,
+      supMag: 11,
+      maxDigitsRight: 2,
+      maxDigitsLeft: 12,
+      baseMagnitude: 0,
+      useTrailingDot: false,
+      padWithInsignificantZeros: false,
+    },
+  ],
   defaultMaxDigitsRight: 2,
+  upperCaseEForExponent: true,
   numberKind: NumberKind.PERCENT,
 };
 
 export const tooltipCurrencyOptions = (
   numberKind: NumberKind,
 ): FormatterOptionsCommon & FormatterRangeSpecsStrategy => ({
-  rangeSpecs: tooltipRangeSpec,
+  rangeSpecs: [
+    {
+      minMag: -2,
+      supMag: 3,
+      maxDigitsRight: 2,
+      baseMagnitude: 0,
+      padWithInsignificantZeros: true,
+    },
+    {
+      minMag: 3,
+      supMag: 11,
+      maxDigitsRight: 2,
+      maxDigitsLeft: 12,
+      baseMagnitude: 0,
+      useTrailingDot: false,
+      padWithInsignificantZeros: false,
+    },
+  ],
   defaultMaxDigitsRight: 2,
+  upperCaseEForExponent: true,
   numberKind,
 });

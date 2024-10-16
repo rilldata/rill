@@ -131,25 +131,7 @@ function humanizeDataTypeForTooltip(
     return JSON.stringify(value);
   }
 
-  const numberKind = formatPresetToNumberKind(preset);
-
-  let options: FormatterFactoryOptions;
-
-  if (preset === FormatPreset.NONE) {
-    options = {
-      numberKind,
-      padWithInsignificantZeros: false,
-    };
-  } else {
-    options = {
-      numberKind,
-    };
-  }
-
   switch (preset) {
-    case FormatPreset.NONE:
-      return new NonFormatter(options).stringFormat(value);
-
     case FormatPreset.CURRENCY_USD:
       return new PerRangeFormatter(
         tooltipCurrencyOptions(NumberKind.DOLLAR),
@@ -168,6 +150,7 @@ function humanizeDataTypeForTooltip(
 
     case FormatPreset.HUMANIZE:
     case FormatPreset.DEFAULT:
+    case FormatPreset.NONE:
       return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
         value,
       );

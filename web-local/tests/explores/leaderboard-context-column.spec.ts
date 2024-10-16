@@ -33,6 +33,7 @@ test.describe("leaderboard context column", () => {
       expression: count(*)
       name: total_rows
       description: Total number of records present
+      format_preset: humanize
     - label: Total Bid Price
       expression: sum(bid_price)
       name: total_bid_price

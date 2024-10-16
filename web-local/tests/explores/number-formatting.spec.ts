@@ -82,13 +82,13 @@ dimensions:
      * check big nums
      ******************/
     for (const [name, bignum, tooltip_num] of [
-      ["default format", "100,000", "100000"],
-      ["USD", "$300.6k", "300576.83999999857"],
-      ["humanized chosen", "300.6k", "300576.83999999857"],
-      ["No Format", "300.6k", "300576.83999999857"],
-      ["percentage", "30.1M%", "300576.83999999857"],
+      ["default format", "100.0k", "100,000"],
+      ["USD", "$300.6k", "$300,576.84"],
+      ["humanized chosen", "300.6k", "300,576.84"],
+      ["No Format", "300.6k", "300,576.84"],
+      ["percentage", "30.1M%", "30.1M%"],
       ["interval_ms", "5 m", "5m 576ms"],
-      ["d3 fixed", "300.6k", "300576.840"],
+      ["d3 fixed", "300.6k", "300,576.84"],
     ]) {
       // check bignum with correct format exists/is visible
       await expect(
