@@ -67,7 +67,7 @@
 
 <div>
   {#if showForm}
-    <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide|global>
+    <div class="mb-4 flex flex-col gap-y-4" transition:slide|global>
       <input
         class="{inputClasses} {focusClasses}"
         style:width="400px"
