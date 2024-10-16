@@ -114,7 +114,7 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
     return JSON.stringify(value);
   }
   if (type === FormatPreset.INTERVAL) {
-    return formatMsToDuckDbIntervalString(value as number);
+    return formatMsToDuckDbIntervalString(value);
   }
   return value.toString();
 }
@@ -146,7 +146,7 @@ function humanizeDataTypeForTooltip(
       return new PerRangeFormatter(tooltipPercentOptions).stringFormat(value);
 
     case FormatPreset.INTERVAL:
-      return formatMsInterval(value);
+      return formatMsToDuckDbIntervalString(value);
 
     case FormatPreset.HUMANIZE:
     case FormatPreset.DEFAULT:
