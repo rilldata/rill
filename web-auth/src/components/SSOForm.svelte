@@ -3,6 +3,7 @@
   import { createEventDispatcher } from "svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import { validateEmail } from "./utils";
+  import { ArrowLeftIcon } from "lucide-svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -44,7 +45,6 @@
   }
 </script>
 
-<!-- "mb-6" -->
 <div class:mb-6={showForm}>
   {#if showForm}
     <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide|global>
@@ -60,11 +60,26 @@
     </div>
   {/if}
 
-  <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
-    <div class="flex justify-center font-medium">
-      <div>Continue with SAML SSO</div>
-    </div>
-  </CtaButton>
+  <div class="flex flex-col gap-y-4">
+    <CtaButton {disabled} variant="primary" on:click={() => handleSubmit()}>
+      <div class="flex justify-center font-medium">
+        <span>Continue with SAML SSO</span>
+      </div>
+    </CtaButton>
+    <CtaButton
+      {disabled}
+      variant="secondary"
+      on:click={() => {
+        dispatch("back", -1);
+      }}
+    >
+      <div class="flex justify-center items-center font-medium">
+        <ArrowLeftIcon class="mr-1" size={14} />
+        <span>Back</span>
+      </div>
+    </CtaButton>
+  </div>
+
   {#if errorText}
     <div class="mt-2 text-red-500 text-sm">{errorText}</div>
   {/if}

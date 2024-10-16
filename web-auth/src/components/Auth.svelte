@@ -11,6 +11,8 @@
   import OrSeparator from "./OrSeparator.svelte";
   import SSOForm from "./SSOForm.svelte";
   import EmailSubmission from "./EmailSubmission.svelte";
+  import DiscordCTA from "./DiscordCTA.svelte";
+  import Disclaimer from "./Disclaimer.svelte";
 
   type InternalOptions = {
     protocol: string;
@@ -52,9 +54,15 @@
   let lastUsedConnection: string | null = null;
 
   let email = "";
-  let showSSOForm = false;
-  let showEmailPassForm = false;
   let emailSubmitted = false;
+
+  enum AuthStep {
+    Base = 0,
+    SSO = 1,
+    EmailPassword = 2,
+  }
+
+  let step: AuthStep = AuthStep.Base;
 
   let webAuth: WebAuth;
   const databaseConnection = "Username-Password-Authentication";
@@ -225,11 +233,9 @@
     emailSubmitted = true;
 
     if (connectionName) {
-      showSSOForm = true;
-      showEmailPassForm = false;
+      step = AuthStep.SSO;
     } else {
-      showSSOForm = false;
-      showEmailPassForm = true;
+      step = AuthStep.EmailPassword;
     }
   }
 
@@ -243,39 +249,49 @@
     <RillLogoSquareNegative size="84px" />
     <div class="text-xl my-6">Log in or sign up</div>
     <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
-      {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
-        <CtaButton
-          variant={style === "primary" ? "primary" : "secondary"}
-          on:click={() => authorize(connection)}
-        >
-          <div class="flex justify-center items-center gap-x-2 font-medium">
-            {#if icon}
-              <svelte:component this={icon} />
-            {/if}
-            <div>{label}</div>
-          </div>
-        </CtaButton>
-      {/each}
+      {#if step === AuthStep.Base}
+        {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
+          <CtaButton
+            variant={style === "primary" ? "primary" : "secondary"}
+            on:click={() => authorize(connection)}
+          >
+            <div class="flex justify-center items-center gap-x-2 font-medium">
+              {#if icon}
+                <svelte:component this={icon} />
+              {/if}
+              <div>{label}</div>
+            </div>
+          </CtaButton>
+        {/each}
 
-      <OrSeparator />
+        <OrSeparator />
 
-      {#if !emailSubmitted}
         <EmailSubmission
           disabled={isEmailDisabled}
           on:emailSubmit={handleEmailSubmission}
         />
       {/if}
 
-      {#if showSSOForm}
+      {#if step === AuthStep.SSO}
         <SSOForm
           disabled={isSSODisabled}
           on:ssoSubmit={(e) => {
             handleSSOLogin(e.detail);
           }}
+          on:back={() => {
+            console.log("back");
+          }}
         />
       {/if}
 
-      {#if showEmailPassForm}
+      {#if step === AuthStep.EmailPassword}
+        <EmailSubmission
+          disabled={isEmailDisabled}
+          on:emailSubmit={handleEmailSubmission}
+        />
+      {/if}
+
+      {#if step === AuthStep.EmailPassword}
         <EmailPassForm
           disabled={isEmailDisabled}
           {email}
@@ -295,16 +311,10 @@
       </div>
     {/if}
 
-    <!-- REVISIT AFTER https://www.figma.com/design/Qt6EyotCBS3V6O31jVhMQ7?node-id=18329-561704#987505195 -->
-    <!-- <Disclaimer /> -->
+    <Disclaimer />
 
     <div class="mt-6 text-center">
-      <p class="text-sm text-gray-500">
-        Need help? Reach out to us on <a
-          href="http://bit.ly/3jg4IsF"
-          target="_blank">Discord</a
-        >
-      </p>
+      <DiscordCTA />
     </div>
   </AuthContainer>
 </RillTheme>
