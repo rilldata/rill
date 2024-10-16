@@ -6,8 +6,8 @@
   y="0"
   version="1.1"
   viewBox="0 0 1209.5 344.4"
-  width="120"
-  height="30"
+  width="100%"
+  height="100%"
   style="enable-background:new 0 0 1209.5 344.4"
   xml:space="preserve"
   ><style type="text/css">
