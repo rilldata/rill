@@ -3,20 +3,11 @@
     createAdminServiceListProjectsForOrganization,
     type V1Quotas,
   } from "@rilldata/web-admin/client";
-  import { formatDataSizeQuota } from "@rilldata/web-admin/features/billing/plans/utils";
-  import { Progress } from "@rilldata/web-common/components/progress";
 
   export let organization: string;
   export let quotas: V1Quotas;
 
   $: projects = createAdminServiceListProjectsForOrganization(organization);
-
-  $: singleProjectLimit = quotas.projects === "1";
-  $: dataSize = singleProjectLimit
-    ? ""
-    : quotas.storageLimitBytesPerDeployment
-      ? formatDataSizeQuota(quotas.storageLimitBytesPerDeployment)
-      : "";
 
   $: projectQuota =
     quotas.projects && quotas.projects !== "-1" ? quotas.projects : "Unlimited";
@@ -30,27 +21,27 @@
     </div>
   </div>
 
-  {#if singleProjectLimit}
-    <div class="quota-entry">
-      <div class="quota-entry-title">Data Size {dataSize}</div>
-      <div>
-        <Progress
-          value={0}
-          max={Number(quotas.storageLimitBytesPerDeployment)}
-        />
-      </div>
-    </div>
-  {:else}
-    <!-- TODO: We do not have a way to isolate the data just yet -->
-    <!-- <Button-->
-    <!--   type="link"-->
-    <!--   compact-->
-    <!--   href="/#todo"-->
-    <!--   forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"-->
-    <!-- >-->
-    <!--   See project size breakdown-->
-    <!-- </Button>-->
-  {/if}
+  <!-- TODO: we need backend support for these -->
+  <!--{#if singleProjectLimit}-->
+  <!--  <div class="quota-entry">-->
+  <!--    <div class="quota-entry-title">Data Size {dataSize}</div>-->
+  <!--    <div>-->
+  <!--      <Progress-->
+  <!--        value={0}-->
+  <!--        max={Number(quotas.storageLimitBytesPerDeployment)}-->
+  <!--      />-->
+  <!--    </div>-->
+  <!--  </div>-->
+  <!--{:else}-->
+  <!--   <Button-->
+  <!--     type="link"-->
+  <!--     compact-->
+  <!--     href="/#todo"-->
+  <!--     forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"-->
+  <!--   >-->
+  <!--     See project size breakdown-->
+  <!--   </Button>-->
+  <!--{/if}-->
 </div>
 
 <style lang="postcss">

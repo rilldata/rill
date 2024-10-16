@@ -1,5 +1,6 @@
 <script lang="ts">
   import { type V1Subscription } from "@rilldata/web-admin/client";
+  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
@@ -38,6 +39,9 @@
         and your subscription has ended.
       {/if}
       <PricingDetails />
+      {#if plan}
+        <PlanQuotas {organization} quotas={plan.quotas} />
+      {/if}
     </div>
   </div>
   <svelte:fragment slot="contact">

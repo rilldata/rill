@@ -4,6 +4,7 @@
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import { getTrialMessageForDays } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
+  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
@@ -52,6 +53,9 @@
     <div>
       {trialEndMessage} Ready to get started with Rill?
       <PricingDetails />
+      {#if plan}
+        <PlanQuotas {organization} quotas={plan.quotas} />
+      {/if}
     </div>
   </div>
   <svelte:fragment slot="contact">
