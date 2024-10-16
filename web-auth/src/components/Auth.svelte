@@ -180,8 +180,6 @@
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
     emailSubmitted = true;
 
-    console.log("connectionName", connectionName);
-
     if (connectionName) {
       showSSOForm = true;
       showEmailPassForm = false;

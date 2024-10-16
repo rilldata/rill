@@ -11,9 +11,9 @@
 
   const dispatch = createEventDispatcher();
 
-  let inputClasses =
+  const inputClasses =
     "h-10 px-4 py-2 border border-slate-300 rounded-sm text-base";
-  let focusClasses =
+  const focusClasses =
     "ring-offset-2 focus:ring-2 focus:ring-primary-ry-300 focus:outline-none";
 
   function handleContinue() {
@@ -34,6 +34,11 @@
     dispatch("emailSubmit", { email });
   }
 
+  function handleSubmit(event: Event) {
+    event.preventDefault();
+    handleContinue();
+  }
+
   $: {
     if (validateEmail(email)) {
       disabled = false;
@@ -43,7 +48,7 @@
   }
 </script>
 
-<div>
+<form on:submit={handleSubmit}>
   <div class="mb-4 flex flex-col gap-y-4">
     <input
       class="{inputClasses} {focusClasses}"
@@ -60,17 +65,9 @@
     {/if}
   </div>
 
-  <CtaButton
-    {disabled}
-    variant="secondary"
-    on:click={() => {
-      if (email) {
-        handleContinue();
-      }
-    }}
-  >
+  <CtaButton {disabled} variant="secondary">
     <div class="flex justify-center font-medium">
       <div>Continue</div>
     </div>
   </CtaButton>
-</div>
+</form>
