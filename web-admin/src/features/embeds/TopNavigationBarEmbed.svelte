@@ -1,6 +1,6 @@
 <script lang="ts">
   import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
-  import { useValidVisualizations } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type {
     V1Resource,
@@ -21,23 +21,23 @@
     activeResource.kind === ResourceKind.MetricsView.toString();
 
   // Dashboard breadcrumb
-  $: visualizationsQuery = useValidVisualizations(instanceId);
-  $: ({ data: visualizations } = $visualizationsQuery);
+  $: dashboardsQuery = useValidDashboards(instanceId);
+  $: ({ data: dashboards } = $dashboardsQuery);
   let currentResource: V1Resource;
-  $: currentResource = visualizations?.find(
+  $: currentResource = dashboards?.find(
     (listing) => listing.meta.name.name === activeResource?.name,
   );
   $: currentResourceName = currentResource?.meta?.name?.name;
 
-  $: breadcrumbOptions = visualizations?.reduce(
-    (map, { meta, metricsView, canvas }) => {
+  $: breadcrumbOptions = dashboards?.reduce(
+    (map, { meta, explore, canvas }) => {
       const name = meta.name.name;
-      const isMetricsExplorer = !!metricsView;
+      const isExplore = !!explore;
       return map.set(name.toLowerCase(), {
         label:
-          (isMetricsExplorer
-            ? metricsView?.state?.validSpec?.title
-            : canvas?.spec?.title) || name,
+          (isExplore
+            ? explore?.state?.validSpec?.title
+            : canvas?.state?.validSpec?.title) || name,
       });
     },
     new Map(),
@@ -45,9 +45,12 @@
 
   function onSelectResource(name: string) {
     // Because the breadcrumb only returns the identifying name, we need to look up the V1ResourceName (name + kind)
-    const resource = visualizations?.find(
-      (listing) => listing.meta.name.name === name,
+    const resource = dashboards?.find(
+      (listing) => listing.meta.name.name.toLowerCase() === name,
     );
+    if (!resource) {
+      throw new Error(`Resource not found: ${name}`);
+    }
     dispatch("select-resource", resource.meta.name);
   }
 </script>

@@ -12,7 +12,7 @@
   export let placeholder = "Search";
   export let border = true;
   export let background = true;
-
+  export let large = false;
   /* Reference of input DOM element */
   let ref: HTMLInputElement;
 
@@ -33,9 +33,15 @@
 </script>
 
 <form class="relative w-full">
-  <div class="flex absolute inset-y-0 items-center pl-2 ui-copy-icon">
-    <Search />
-  </div>
+  <button
+    type="button"
+    class="flex absolute inset-y-0 items-center pl-2 ui-copy-icon"
+    on:click={() => {
+      ref?.focus();
+    }}
+  >
+    <Search size={large ? "18px" : "16px"} />
+  </button>
   <input
     bind:this={ref}
     type="text"
@@ -44,7 +50,9 @@
     class:bg-slate-50={background}
     class:border
     class:border-gray-200={border}
-    class="outline-none rounded-sm block w-full pl-8 p-1"
+    class="outline-none rounded-sm block w-full pl-8 p-1 {large
+      ? 'h-full'
+      : ''}"
     {placeholder}
     bind:value
     on:input

@@ -1,15 +1,12 @@
 <script lang="ts">
-  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-  import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
   import * as Select from "@rilldata/web-common/components/select";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
 
-  export let metricViewName: string;
+  export let exploreName: string;
 
   const {
     selectors: {
@@ -18,8 +15,10 @@
         leaderboardMeasureName,
         getMeasureByName,
       },
+      dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
+      dimensions: { toggleDimensionVisibility },
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
     },
@@ -27,16 +26,21 @@
 
   let active = false;
 
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
-
   $: measures = $filteredSimpleMeasures();
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName($leaderboardMeasureName);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
+
+  $: visibleDimensionsNames = $visibleDimensions
+    .map(({ name }) => name)
+    .filter(isDefined);
+  $: allDimensionNames = $allDimensions
+    .map(({ name }) => name)
+    .filter(isDefined);
 
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
@@ -48,36 +52,29 @@
     setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
 
-  $: showHideDimensions = createShowHideDimensionsStore(
-    metricViewName,
-    metricsView,
-  );
-
-  const toggleDimensionVisibility = (e) => {
-    showHideDimensions.toggleVisibility(e.detail.name);
-  };
-  const setAllDimensionsNotVisible = () => {
-    showHideDimensions.setAllToNotVisible();
-  };
-  const setAllDimensionsVisible = () => {
-    showHideDimensions.setAllToVisible();
-  };
+  function isDefined(value: string | undefined): value is string {
+    return value !== undefined;
+  }
 </script>
 
 <div>
   {#if measures.length && activeLeaderboardMeasure}
     <div
-      class="flex flex-row items-center ui-copy-muted gap-x-0.5"
+      class="flex flex-row items-center ui-copy-muted gap-x-1"
       style:max-width="450px"
     >
-      <SearchableFilterButton
-        selectableItems={$showHideDimensions.selectableItems}
-        selectedItems={$showHideDimensions.selectedItems}
-        on:item-clicked={toggleDimensionVisibility}
-        on:deselect-all={setAllDimensionsNotVisible}
-        on:select-all={setAllDimensionsVisible}
-        label="Dimensions"
+      <DashboardVisibilityDropdown
+        category="Dimensions"
         tooltipText="Choose dimensions to display"
+        onSelect={(name) => toggleDimensionVisibility(allDimensionNames, name)}
+        selectableItems={$allDimensions.map(({ name, label }) => ({
+          name: name ?? "",
+          label: label ?? name ?? "",
+        }))}
+        selectedItems={visibleDimensionsNames}
+        onToggleSelectAll={() => {
+          toggleDimensionVisibility(allDimensionNames);
+        }}
       />
 
       <Select.Root

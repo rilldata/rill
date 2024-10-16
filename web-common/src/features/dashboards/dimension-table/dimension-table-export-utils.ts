@@ -6,10 +6,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   mapComparisonTimeRange,
@@ -22,7 +21,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
 
 export function getDimensionTableExportArgs(
   ctx: StateManagers,
@@ -32,12 +31,16 @@ export function getDimensionTableExportArgs(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      useMetricsView(ctx),
+      ctx.validSpecStore,
     ],
-    ([metricViewName, dashboardState, timeControlState, metricsView]) => {
-      if (!metricsView.data || !timeControlState.ready) return undefined;
+    ([metricsViewName, dashboardState, timeControlState, validSpecStore]) => {
+      if (!validSpecStore.data?.explore || !timeControlState.ready)
+        return undefined;
 
-      const timeRange = mapTimeRange(timeControlState, metricsView.data);
+      const timeRange = mapTimeRange(
+        timeControlState,
+        validSpecStore.data.explore,
+      );
       if (!timeRange) return undefined;
 
       const comparisonTimeRange = mapComparisonTimeRange(
@@ -47,7 +50,7 @@ export function getDimensionTableExportArgs(
       );
 
       return getDimensionTableAggregationRequestForTime(
-        metricViewName,
+        metricsViewName,
         dashboardState,
         timeRange,
         comparisonTimeRange,

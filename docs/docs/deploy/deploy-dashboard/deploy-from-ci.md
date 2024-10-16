@@ -31,7 +31,7 @@ deploy-rill-cloud:
   script:
     - curl -L -o $HOME/rill.zip https://cdn.rilldata.com/rill/latest/rill_linux_amd64.zip 
     - unzip -d $HOME $HOME/rill.zip 
-    - $HOME/rill project upload --org my-org-name --name my-project-name --interactive=false --api-token $RILL_SERVICE_TOKEN
+    - $HOME/rill project deploy --org my-org-name --name my-project-name --interactive=false --api-token $RILL_SERVICE_TOKEN
 ```
 
 Your Rill project should now automatically deploy to `ui.rilldata.com/my-org-name/my-project-name` each time changes are pushed to Gitlab!

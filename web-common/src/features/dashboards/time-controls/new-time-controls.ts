@@ -5,12 +5,12 @@ import { writable, type Writable, get } from "svelte/store";
 import {
   Interval,
   DateTime,
-  DurationObjectUnits,
-  DateTimeUnit,
+  type DurationObjectUnits,
+  type DateTimeUnit,
   Duration,
   IANAZone,
 } from "luxon";
-import { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
 
 // CONSTANTS -> time-control-constants.ts
 

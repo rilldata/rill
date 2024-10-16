@@ -835,11 +835,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	for _, dim := range spec.Dimensions {
 		e.ExploreSpec.Dimensions = append(e.ExploreSpec.Dimensions, dim.Name)
 	}
-	e.ExploreSpec.DimensionsExclude = false
+	e.ExploreSpec.DimensionsSelector = nil
 	for _, m := range spec.Measures {
 		e.ExploreSpec.Measures = append(e.ExploreSpec.Measures, m.Name)
 	}
-	e.ExploreSpec.MeasuresExclude = false
+	e.ExploreSpec.MeasuresSelector = nil
 	e.ExploreSpec.Theme = spec.DefaultTheme
 	for _, tr := range tmp.AvailableTimeRanges {
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
@@ -864,16 +864,23 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	case runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION:
 		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION
 	}
-	e.ExploreSpec.Presets = []*runtimev1.ExplorePreset{{
-		Label:               "Default",
+
+	var presetDimensionsSelector, presetMeasuresSelector *runtimev1.FieldSelector
+	if len(spec.DefaultDimensions) == 0 {
+		presetDimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
+	if len(spec.DefaultMeasures) == 0 {
+		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
+	e.ExploreSpec.DefaultPreset = &runtimev1.ExplorePreset{
 		Dimensions:          spec.DefaultDimensions,
-		DimensionsExclude:   len(spec.DefaultDimensions) == 0,
+		DimensionsSelector:  presetDimensionsSelector,
 		Measures:            spec.DefaultMeasures,
-		MeasuresExclude:     len(spec.DefaultMeasures) == 0,
+		MeasuresSelector:    presetMeasuresSelector,
 		TimeRange:           spec.DefaultTimeRange,
 		ComparisonMode:      exploreComparisonMode,
 		ComparisonDimension: spec.DefaultComparisonDimension,
-	}}
+	}
 
 	return nil
 }

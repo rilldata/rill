@@ -25,7 +25,7 @@
 </script>
 
 {#if cardinality && totalRows}
-  <Tooltip location="right" alignment="center" distance={8}>
+  <Tooltip location="right" distance={8}>
     <BarAndLabel
       compact
       color={DATA_TYPE_COLORS[innerType].bgClass}

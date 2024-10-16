@@ -1,6 +1,9 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { ButtonGroupContext, buttonGroupContext } from "./ButtonGroup.svelte";
+  import {
+    type ButtonGroupContext,
+    buttonGroupContext,
+  } from "./ButtonGroup.svelte";
 
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
@@ -58,7 +61,7 @@
 
 <!-- Note: this wrapper div is needed for the styles `divide-x divide-gray-400` in the parent container to work correctly-->
 <div>
-  <Tooltip distance={8} location={"bottom"} alignment={"center"}>
+  <Tooltip distance={8} location={"bottom"}>
     <button
       class={finalStyles}
       on:click={() => {

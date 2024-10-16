@@ -99,7 +99,7 @@ export class GithubData {
     try {
       // safeguard try catch
       this.userPromptWindow?.close();
-    } catch (e) {
+    } catch {
       // no-op
     }
     if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);

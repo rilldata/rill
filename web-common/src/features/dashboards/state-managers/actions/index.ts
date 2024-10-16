@@ -15,6 +15,7 @@ import type {
 import { dimensionActions } from "./dimensions";
 import { comparisonActions } from "./comparison";
 import { dimensionFilterActions } from "./dimension-filters";
+import { measureActions } from "./measures";
 
 export type StateManagerActions = ReturnType<typeof createStateManagerActions>;
 
@@ -54,6 +55,11 @@ export const createStateManagerActions = (
      * Actions related to dimensions.
      */
     dimensions: createDashboardUpdaters(actionArgs, dimensionActions),
+
+    /**
+     * Actions related to measures.
+     */
+    measures: createDashboardUpdaters(actionArgs, measureActions),
 
     /**
      * Common filter actions

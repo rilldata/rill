@@ -1317,10 +1317,9 @@ dimensions:
   exclude: ['internal']
 measures: '*'
 time_zones: ['UTC', 'America/Los_Angeles']
-presets:
-  - label: Default
-    measures: ['x']
-    comparison_mode: time
+defaults:
+  measures: ['x']
+  comparison_mode: time
 `,
 	})
 
@@ -1336,20 +1335,20 @@ presets:
 		Resource: &runtimev1.Resource_Explore{
 			Explore: &runtimev1.Explore{
 				Spec: &runtimev1.ExploreSpec{
-					Title:             "Hello",
-					MetricsView:       "mv1",
-					Dimensions:        []string{"internal"},
-					DimensionsExclude: true,
-					Measures:          nil,
-					MeasuresExclude:   true,
-					TimeZones:         []string{"UTC", "America/Los_Angeles"},
-					Presets: []*runtimev1.ExplorePreset{
-						{
-							Label:             "Default",
-							DimensionsExclude: true,
-							Measures:          []string{"x"},
-							ComparisonMode:    runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
-						},
+					Title:       "Hello",
+					MetricsView: "mv1",
+					Dimensions:  nil,
+					DimensionsSelector: &runtimev1.FieldSelector{
+						Invert:   true,
+						Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"internal"}}},
+					},
+					Measures:         nil,
+					MeasuresSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					TimeZones:        []string{"UTC", "America/Los_Angeles"},
+					DefaultPreset: &runtimev1.ExplorePreset{
+						DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+						Measures:           []string{"x"},
+						ComparisonMode:     runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
 					},
 				},
 				State: &runtimev1.ExploreState{
@@ -1359,13 +1358,10 @@ presets:
 						Dimensions:  []string{"foo", "bar"},
 						Measures:    []string{"x", "y"},
 						TimeZones:   []string{"UTC", "America/Los_Angeles"},
-						Presets: []*runtimev1.ExplorePreset{
-							{
-								Label:          "Default",
-								Dimensions:     []string{"foo", "bar"},
-								Measures:       []string{"x"},
-								ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
-							},
+						DefaultPreset: &runtimev1.ExplorePreset{
+							Dimensions:     []string{"foo", "bar"},
+							Measures:       []string{"x"},
+							ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
 						},
 						SecurityRules: []*runtimev1.SecurityRule{
 							{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{

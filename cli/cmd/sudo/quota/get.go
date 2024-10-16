@@ -50,6 +50,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				userQuotas := res.User.Quotas
 				fmt.Printf("User: %s\n", email)
 				fmt.Printf("Projects: %d\n", userQuotas.SingleuserOrgs)
+				fmt.Printf("Trial Orgs: %d\n", userQuotas.TrialOrgs)
 			} else {
 				return fmt.Errorf("Please set --org or --user")
 			}

@@ -2,7 +2,7 @@
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import AlertPreview from "@rilldata/web-common/features/alerts/criteria-tab/AlertPreview.svelte";
   import CriteriaGroup from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaGroup.svelte";
-  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { createForm } from "svelte-forms-lib";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;

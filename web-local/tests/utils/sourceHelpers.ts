@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import {
   extractFileName,
-  splitFolderAndName,
+  splitFolderAndFileName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import path from "node:path";
@@ -77,7 +77,7 @@ export async function waitForSource(
   filePath: string,
   columns: Array<string>,
 ) {
-  const [, fileName] = splitFolderAndName(filePath);
+  const [, fileName] = splitFolderAndFileName(filePath);
   const name = extractFileName(fileName);
 
   await Promise.all([

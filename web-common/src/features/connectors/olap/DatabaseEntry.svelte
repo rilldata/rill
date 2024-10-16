@@ -3,22 +3,25 @@
   import { slide } from "svelte/transition";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
-  import { V1AnalyzedConnector } from "../../../runtime-client";
-  import { connectorExplorerStore } from "../connector-explorer-store";
+  import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
   import { useDatabaseSchemas } from "./selectors";
+  import type { ConnectorExplorerStore } from "../connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
+  export let store: ConnectorExplorerStore;
 
   $: connectorName = connector?.name as string;
-  $: expanded = connectorExplorerStore.getItem(connectorName, database);
+  $: expandedStore = store.getItem(connectorName, database);
+  $: expanded = $expandedStore;
   $: databaseSchemasQuery = useDatabaseSchemas(
     instanceId,
     connector?.name as string,
     database,
   );
+
   $: ({ data, error, isLoading } = $databaseSchemasQuery);
 </script>
 
@@ -26,12 +29,11 @@
   {#if database}
     <button
       class="database-entry-header"
-      class:open={$expanded}
-      on:click={() =>
-        connectorExplorerStore.toggleItem(connectorName, database)}
+      class:open={expanded}
+      on:click={() => store.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
-        className="transform transition-transform text-gray-400 {$expanded
+        className="transform transition-transform text-gray-400 {expanded
           ? 'rotate-0'
           : '-rotate-90'}"
         size="14px"
@@ -44,7 +46,7 @@
   {/if}
 
   <ol transition:slide={{ duration }}>
-    {#if $expanded}
+    {#if expanded}
       {#if error}
         <span class="message">Error: {error.response.data?.message}</span>
       {:else if isLoading}
@@ -58,6 +60,7 @@
               {instanceId}
               {connector}
               {database}
+              {store}
               databaseSchema={schema ?? ""}
             />
           {/each}

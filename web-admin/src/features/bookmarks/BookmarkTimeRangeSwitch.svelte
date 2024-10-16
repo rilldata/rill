@@ -6,6 +6,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
 
   export let metricsViewName: string;
+  export let exploreName: string;
   export let checked: boolean;
 
   const queryClient = useQueryClient();
@@ -13,6 +14,7 @@
     queryClient,
     $runtime?.instanceId,
     metricsViewName,
+    exploreName,
   );
 </script>
 

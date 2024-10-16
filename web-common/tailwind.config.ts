@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 import {
-  LightnessMap,
-  ThemeColorKind,
+  type LightnessMap,
+  type ThemeColorKind,
   defaultPrimaryColors,
   defaultSecondaryColors,
   mutedColors,
@@ -24,8 +24,8 @@ function addThemeColorsAsVarRefs(
   return Object.fromEntries(
     Object.keys(colorMap).map((colorNum) => {
       return [
-        `${themeColorKind}-${colorNum}`,
-        `var(--color-${themeColorKind}-${colorNum})`,
+        `${colorNum}`,
+        `hsl(var(--hsl-${themeColorKind}-${colorNum}) / <alpha-value>)`,
       ];
     }),
   );
@@ -48,10 +48,16 @@ function initializeDefaultColorsVars(
   const colorVars: [string, string][] = Object.entries(colorMap).map(
     ([colorNum, colorCssString]) => [
       `--color-${colorName}-${colorNum}`,
+      `hsl(${colorCssString})`,
+    ],
+  );
+  const rawHSL: [string, string][] = Object.entries(colorMap).map(
+    ([colorNum, colorCssString]) => [
+      `--hsl-${colorName}-${colorNum}`,
       colorCssString,
     ],
   );
-  return Object.fromEntries(colorVars);
+  return Object.fromEntries([...colorVars, ...rawHSL]);
 }
 
 export default {
@@ -63,10 +69,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        ...addThemeColorsAsVarRefs(defaultPrimaryColors, "primary"),
-        ...addThemeColorsAsVarRefs(defaultSecondaryColors, "secondary"),
-        ...addThemeColorsAsVarRefs(mutedColors, "muted"),
-
         border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input) / <alpha-value>)",
         ring: "hsl(var(--ring) / <alpha-value>)",
@@ -75,10 +77,13 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+          ...addThemeColorsAsVarRefs(defaultPrimaryColors, "primary"),
         },
+
         secondary: {
           DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
           foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
+          ...addThemeColorsAsVarRefs(defaultSecondaryColors, "secondary"),
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
@@ -87,6 +92,7 @@ export default {
         muted: {
           DEFAULT: "hsl(var(--muted) / <alpha-value>)",
           foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
+          ...addThemeColorsAsVarRefs(mutedColors, "muted"),
         },
         accent: {
           DEFAULT: "hsl(var(--accent) / <alpha-value>)",

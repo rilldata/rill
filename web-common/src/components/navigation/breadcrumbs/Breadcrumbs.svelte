@@ -1,7 +1,7 @@
 <script context="module" lang="ts">
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import Slash from "./Slash.svelte";
-  import { PathOptions } from "./types";
+  import type { PathOptions } from "./types";
 </script>
 
 <script lang="ts">

@@ -2,10 +2,9 @@
   import { Progress } from "@rilldata/web-common/components/progress";
   import GlobalDimensionSearchResult from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearchResult.svelte";
   import {
-    DimensionSearchResult,
+    type DimensionSearchResult,
     useDimensionSearchResults,
   } from "@rilldata/web-common/features/dashboards/dimension-search/useDimensionSearchResults";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
@@ -14,7 +13,6 @@
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
 
-  export let metricsViewName: string;
   export let searchText: string;
   export let onSelect: () => void;
   export let open: boolean;
@@ -24,21 +22,22 @@
       dimensionsFilter: { toggleDimensionValueSelection },
     },
     timeRangeSummaryStore,
+    metricsViewName,
+    validSpecStore,
   } = getStateManagers();
 
   $: instanceId = $runtime.instanceId;
-  $: metricsViewQuery = useDashboard(instanceId, metricsViewName);
 
   let results: ReturnType<typeof useDimensionSearchResults>;
   $: if (
-    $metricsViewQuery.data?.metricsView?.state?.validSpec &&
+    $validSpecStore.data?.metricsView &&
     $timeRangeSummaryStore.data?.timeRangeSummary &&
     !!searchText
   ) {
     results = useDimensionSearchResults(
       instanceId,
-      metricsViewName,
-      $metricsViewQuery.data.metricsView.state.validSpec,
+      $metricsViewName,
+      $validSpecStore.data?.metricsView,
       $timeRangeSummaryStore.data.timeRangeSummary,
       searchText,
     );

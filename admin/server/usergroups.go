@@ -564,9 +564,10 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 	dtos := make([]*adminv1.MemberUser, len(members))
 	for i, member := range members {
 		dtos[i] = &adminv1.MemberUser{
-			UserId:    member.ID,
-			UserEmail: member.Email,
-			UserName:  member.DisplayName,
+			UserId:       member.ID,
+			UserEmail:    member.Email,
+			UserName:     member.DisplayName,
+			UserPhotoUrl: member.PhotoURL,
 		}
 	}
 

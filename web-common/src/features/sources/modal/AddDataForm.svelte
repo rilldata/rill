@@ -1,22 +1,21 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     ConnectorDriverPropertyType,
-    RpcStatus,
-    V1ConnectorDriver,
+    type RpcStatus,
+    type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
   import { submitAddDataForm } from "./submitAddDataForm";
-  import { AddDataFormType } from "./types";
+  import type { AddDataFormType } from "./types";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -28,8 +27,8 @@
   $: isSourceForm = formType === "source";
   $: isConnectorForm = formType === "connector";
   $: properties = isConnectorForm
-    ? connector.configProperties ?? []
-    : connector.sourceProperties ?? [];
+    ? (connector.configProperties ?? [])
+    : (connector.sourceProperties ?? []);
 
   let rpcError: RpcStatus | null = null;
 
@@ -46,7 +45,6 @@
         if (isSourceForm) {
           try {
             await submitAddDataForm(queryClient, formType, connector, values);
-            await goto(`/files/sources/${values.name}.yaml`);
             onClose();
           } catch (e) {
             rpcError = e?.response?.data;
@@ -57,7 +55,6 @@
         // Connectors
         try {
           await submitAddDataForm(queryClient, formType, connector, values);
-          await goto(`/files/connectors/${connector.name}.yaml`);
           onClose();
         } catch (e) {
           rpcError = e?.response?.data;
@@ -125,7 +122,7 @@
               hint={property.hint}
               errors={$errors[toYupFriendlyKey(property.key)]}
               bind:value={$form[toYupFriendlyKey(property.key)]}
-              onInput={onStringInputChange}
+              onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}

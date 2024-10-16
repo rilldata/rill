@@ -1,4 +1,4 @@
-import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -155,6 +155,7 @@ export type PivotChipData = {
   id: string;
   title: string;
   type: PivotChipType;
+  description?: string;
 };
 
 export enum PivotChipType {

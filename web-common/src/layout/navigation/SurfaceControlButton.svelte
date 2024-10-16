@@ -1,61 +1,59 @@
 <script lang="ts">
-  import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import HideSidebar from "@rilldata/web-common/components/icons/HideSidebar.svelte";
   import SurfaceView from "@rilldata/web-common/components/icons/SurfaceView.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let navWidth: number;
   export let navOpen: boolean;
   export let resizing: boolean;
   export let show = true;
-
-  let active = false;
+  export let onClick: () => void;
 
   $: label = navOpen ? "Close sidebar" : "Show sidebar";
 </script>
 
-<button
+<span
   class="text-gray-500"
   class:resizing
   class:opacity-0={!show}
   class:shift={!navOpen}
   style:left="{navWidth - 32}px"
   aria-label={label}
-  on:click
-  on:mousedown={() => {
-    active = false;
-  }}
+  title={label}
 >
-  <Tooltip location="bottom" alignment="start" distance={12} bind:active>
+  <Button
+    type={navOpen ? "secondary" : "ghost"}
+    gray={!navOpen}
+    selected={navOpen}
+    square
+    on:click={onClick}
+  >
     {#if navOpen}
-      <HideLeftSidebar size="18px" />
+      <HideSidebar side="left" open={navOpen} size="18px" />
     {:else}
       <SurfaceView size="16px" mode={"hamburger"} />
     {/if}
-    <TooltipContent slot="tooltip-content">
-      {label}
-    </TooltipContent>
-  </Tooltip>
-</button>
+  </Button>
+</span>
 
 <style lang="postcss">
-  button {
+  span {
     @apply rounded flex justify-center items-center absolute;
     @apply z-50;
     @apply w-6 h-6 mt-[10px];
     transition-property: left;
   }
 
-  button:hover {
+  span:hover {
     @apply bg-gray-300;
   }
 
-  button:not(.resizing) {
-    transition-duration: 400ms;
+  span:not(.resizing) {
+    transition-duration: 300ms;
     transition-timing-function: ease-in-out;
   }
 
   .shift {
-    left: 8px !important;
+    left: 12px !important;
   }
 </style>

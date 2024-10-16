@@ -10,7 +10,7 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { LeaderboardItemData } from "./leaderboard-utils";
+  import type { LeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
