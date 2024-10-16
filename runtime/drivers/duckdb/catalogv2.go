@@ -220,3 +220,11 @@ func (c *connection) UpdateModelSplitsPendingIfError(ctx context.Context, modelI
 func (c *connection) DeleteModelSplits(ctx context.Context, modelID string) error {
 	return drivers.ErrNotImplemented
 }
+
+func (c *connection) FindInstanceHealth(ctx context.Context, instanceID string) (*drivers.InstanceHealth, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (c *connection) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
+	return drivers.ErrNotImplemented
+}

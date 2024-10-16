@@ -792,6 +792,12 @@ func (m *InstanceHealth) validate(all bool) error {
 
 	// no validation rules for RepoError
 
+	// no validation rules for MetricsViewErrors
+
+	// no validation rules for ParseErrorCount
+
+	// no validation rules for ReconcileErrorCount
+
 	if len(errors) > 0 {
 		return InstanceHealthMultiError(errors)
 	}
