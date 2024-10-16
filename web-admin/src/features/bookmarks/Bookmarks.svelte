@@ -29,7 +29,11 @@
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
-  $: bookmarkApplier = createBookmarkApplier($runtime?.instanceId, exploreName);
+  $: bookmarkApplier = createBookmarkApplier(
+    $runtime?.instanceId,
+    metricsViewName,
+    exploreName,
+  );
 
   $: exploreStore = useExploreStore(exploreName);
   $: projectId = useProjectId($page.params.organization, $page.params.project);
@@ -71,8 +75,8 @@
     return queryClient.refetchQueries(
       getAdminServiceListBookmarksQueryKey({
         projectId: $projectId.data ?? "",
-        resourceKind: ResourceKind.MetricsView,
-        resourceName: metricsViewName,
+        resourceKind: ResourceKind.Explore,
+        resourceName: exploreName,
       }),
     );
   }
