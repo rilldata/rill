@@ -304,12 +304,9 @@ func (u *URLs) DenyProjectAccess(org, project, id string) string {
 }
 
 // ReportOpen returns the URL for opening a report in the frontend.
-func (u *URLs) ReportOpen(org, project, report string, executionTime time.Time, token string) string {
+func (u *URLs) ReportOpen(org, project, report string, executionTime time.Time) string {
 	reportURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "open")
 	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
-	if token != "" {
-		reportURL += fmt.Sprintf("&token=%s", token)
-	}
 	return reportURL
 }
 

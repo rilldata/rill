@@ -60,7 +60,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	if len(req.EmailRecipients) == 0 {
 		return &adminv1.GetReportMetaResponse{
 			BaseUrls: &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime(), ""),
+				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 			},
@@ -87,14 +87,13 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	for email, token := range emailTokens {
 		externalUrls[email] = &adminv1.GetReportMetaResponse_URLs{
-			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime(), token),
 			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, token),
 		}
 	}
 
 	return &adminv1.GetReportMetaResponse{
 		BaseUrls: &adminv1.GetReportMetaResponse_URLs{
-			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime(), ""),
+			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 		},
