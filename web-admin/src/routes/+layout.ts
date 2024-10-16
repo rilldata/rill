@@ -19,8 +19,9 @@ import {
   getAdminServiceGetProjectWithBearerTokenQueryKey,
 } from "../features/public-urls/get-project-with-bearer-token.js";
 
-export const load = async ({ params }) => {
+export const load = async ({ params, url }) => {
   const { organization, project, token } = params;
+  let effectiveToken = token;
 
   if (!organization || !project) {
     return {
@@ -28,16 +29,20 @@ export const load = async ({ params }) => {
     };
   }
 
+  if (url.searchParams.has("token")) {
+    effectiveToken = url.searchParams.get("token");
+  }
+
   let queryKey: QueryKey;
   let queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetProject>>
   >;
 
-  if (token) {
+  if (effectiveToken) {
     queryKey = getAdminServiceGetProjectWithBearerTokenQueryKey(
       organization,
       project,
-      token,
+      effectiveToken,
       {},
     );
 
@@ -45,7 +50,7 @@ export const load = async ({ params }) => {
       adminServiceGetProjectWithBearerToken(
         organization,
         project,
-        token,
+        effectiveToken,
         {},
         signal,
       );
