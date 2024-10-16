@@ -2325,6 +2325,7 @@ message BillingPlan {
   uint32 trial_period_days = 5;
   bool default = 6;
   Quotas quotas = 7;
+  bool public = 8;
   // TODO expose pricing information
 }
 

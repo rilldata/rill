@@ -12747,11 +12747,16 @@ export class BillingPlan extends Message<BillingPlan> {
   default = false;
 
   /**
-   * TODO expose pricing information
-   *
    * @generated from field: rill.admin.v1.Quotas quotas = 7;
    */
   quotas?: Quotas;
+
+  /**
+   * TODO expose pricing information
+   *
+   * @generated from field: bool public = 8;
+   */
+  public = false;
 
   constructor(data?: PartialMessage<BillingPlan>) {
     super();
@@ -12768,6 +12773,7 @@ export class BillingPlan extends Message<BillingPlan> {
     { no: 5, name: "trial_period_days", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 6, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "quotas", kind: "message", T: Quotas },
+    { no: 8, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingPlan {

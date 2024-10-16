@@ -1298,6 +1298,7 @@ export interface V1BillingPlan {
   trialPeriodDays?: number;
   default?: boolean;
   quotas?: V1Quotas;
+  public?: boolean;
 }
 
 export type V1BillingIssueType =

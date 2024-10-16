@@ -34305,6 +34305,8 @@ func (m *BillingPlan) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Public
+
 	if len(errors) > 0 {
 		return BillingPlanMultiError(errors)
 	}

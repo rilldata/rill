@@ -364,6 +364,7 @@ func toPlanRow(p *adminv1.BillingPlan) *plan {
 		Description:                         p.Description,
 		TrialDays:                           strconv.Itoa(int(p.TrialPeriodDays)),
 		Default:                             p.Default,
+		Public:                              p.Public,
 		QuotaNumProjects:                    p.Quotas.Projects,
 		QuotaNumDeployments:                 p.Quotas.Deployments,
 		QuotaNumSlotsTotal:                  p.Quotas.SlotsTotal,
@@ -380,6 +381,7 @@ type plan struct {
 	Description                         string `header:"description" json:"description"`
 	TrialDays                           string `header:"trial_days" json:"trial_days"`
 	Default                             bool   `header:"default" json:"default"`
+	Public                              bool   `header:"public" json:"public"`
 	QuotaNumProjects                    string `header:"quota_num_projects" json:"quota_num_projects"`
 	QuotaNumDeployments                 string `header:"quota_num_deployments" json:"quota_num_deployments"`
 	QuotaNumSlotsTotal                  string `header:"quota_num_slots_total" json:"quota_num_slots_total"`

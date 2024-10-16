@@ -609,6 +609,7 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 		Description:     plan.Description,
 		TrialPeriodDays: uint32(plan.TrialPeriodDays),
 		Default:         plan.Default,
+		Public:          plan.Public,
 		Quotas: &adminv1.Quotas{
 			Projects:                       valOrEmptyString(plan.Quotas.NumProjects),
 			Deployments:                    valOrEmptyString(plan.Quotas.NumDeployments),
