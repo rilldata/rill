@@ -21,6 +21,8 @@ rill start my-rill-project
   <a href="https://docs.rilldata.com/home/get-started#example-projects">Example Projects</a>
   <span> · </span>
   <a href="https://discord.gg/DJ5qcsxE2m">Community</a>
+  <span> · </span>
+  <a href="https://gurubase.io/g/rill">Ask Rill Guru</a>
 </h3>
 
 ![home-demo](https://github.com/rilldata/rill/assets/1181922/1430f272-3fa4-495a-8e45-1bd6fa56f5d2)
