@@ -44,6 +44,7 @@
   }
 </script>
 
+<!-- "mb-6" -->
 <div class:mb-6={showForm}>
   {#if showForm}
     <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide|global>
