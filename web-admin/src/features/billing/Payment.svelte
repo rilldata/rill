@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createAdminServiceGetOrganization } from "@rilldata/web-admin/client";
   import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
@@ -7,6 +8,7 @@
 
   export let organization: string;
 
+  $: org = createAdminServiceGetOrganization(organization);
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
 
@@ -18,7 +20,7 @@
   }
 </script>
 
-{#if !$categorisedIssues.isLoading}
+{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId}
   <SettingsContainer
     title="Payment Method"
     titleIcon={paymentIssues?.length ? "error" : "none"}

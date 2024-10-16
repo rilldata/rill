@@ -30,27 +30,27 @@
     </div>
   </div>
 
-  <div class="quota-entry">
-    <div class="quota-entry-title">Data Size {dataSize}</div>
-    <div>
-      {#if singleProjectLimit}
+  {#if singleProjectLimit}
+    <div class="quota-entry">
+      <div class="quota-entry-title">Data Size {dataSize}</div>
+      <div>
         <Progress
           value={0}
           max={Number(quotas.storageLimitBytesPerDeployment)}
         />
-      {:else}
-        <!-- TODO: We do not have a way to isolate the data just yet -->
-        <!-- <Button-->
-        <!--   type="link"-->
-        <!--   compact-->
-        <!--   href="/#todo"-->
-        <!--   forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"-->
-        <!-- >-->
-        <!--   See project size breakdown-->
-        <!-- </Button>-->
-      {/if}
+      </div>
     </div>
-  </div>
+  {:else}
+    <!-- TODO: We do not have a way to isolate the data just yet -->
+    <!-- <Button-->
+    <!--   type="link"-->
+    <!--   compact-->
+    <!--   href="/#todo"-->
+    <!--   forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"-->
+    <!-- >-->
+    <!--   See project size breakdown-->
+    <!-- </Button>-->
+  {/if}
 </div>
 
 <style lang="postcss">

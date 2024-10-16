@@ -10,6 +10,7 @@ export function areAllProjectsHibernating(organization: string) {
         select: (data) =>
           data.projects?.length &&
           data.projects.every((p) => !p.prodDeploymentId),
+        refetchOnWindowFocus: true,
       },
     },
   );

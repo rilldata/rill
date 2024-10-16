@@ -69,12 +69,15 @@
           this={IconMap[issueForHibernation.iconType]}
           size="104px"
           className="text-slate-300"
+          gradientEnd="slate-200"
         />
       {/if}
-      <CTAHeader variant="bold">{issueForHibernation.title}</CTAHeader>
+      <CTAHeader variant="bold">
+        {issueForHibernation.title.replace(/\.$/, "")}
+      </CTAHeader>
       {#if issueForHibernation.description}
         <CTAMessage>
-          {issueForHibernation.description}
+          {issueForHibernation.description.replace(/\.$/, "")}
         </CTAMessage>
       {/if}
     </div>

@@ -112,8 +112,7 @@ export function useBillingIssueMessage(
           error: undefined,
           data: <BillingIssueMessage>{
             type: "default",
-            title:
-              "You haven’t logged in for a while so this org’s projects are hibernating.",
+            title: "Your org’s projects are hibernating.",
             description: "",
             iconType: "sleep",
             cta: {
