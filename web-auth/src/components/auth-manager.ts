@@ -2,6 +2,7 @@ const LOCAL_STORAGE_KEY = "last_used_auth_connection";
 
 export class AuthManager {
   lastUsedConnection: string | null = null;
+  //   selectedConnection: string | null = null;
 
   constructor() {
     this.lastUsedConnection = this.getLastUsedConnection();
@@ -11,6 +12,14 @@ export class AuthManager {
       this.setLastUsedConnection(null);
     }
   }
+
+  //   setSelectedConnection(connection: string | null) {
+  //     this.selectedConnection = connection;
+  //   }
+
+  //   getSelectedConnection(): string | null {
+  //     return this.selectedConnection;
+  //   }
 
   setLastUsedConnection(connection: string | null) {
     if (connection) {

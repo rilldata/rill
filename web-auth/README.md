@@ -6,7 +6,7 @@ This folder contains the log in and sign up which is used for Rill Cloud and Ril
 
 ## Project Details
 
-The template is being used for both Rill Cloud and Rill Enterprise login. For cloud only two login options are activated, Google and windows. For Enterprise we additionally support Pingfed and Okta. The configuration of this is decided by the environment variables we pass in.
+The template is being used for both Rill Cloud and Rill Enterprise login. For cloud only two login options are activated, Google and Microsoft. For Enterprise we additionally support Pingfed and Okta. The configuration of this is decided by the environment variables we pass in.
 
 ## Development
 
