@@ -424,7 +424,7 @@ export type RuntimeServiceUnpackExampleBody = {
 };
 
 export type RuntimeServiceUnpackEmptyBody = {
-  title?: string;
+  displayName?: string;
   force?: boolean;
 };
 
@@ -820,6 +820,26 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
+}
+
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -835,11 +855,18 @@ If it resolves to false, the other fields are not set. */
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
+  displayName?: string;
   trigger?: boolean;
-  title?: string;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
   queryName?: string;
@@ -861,13 +888,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -894,26 +914,6 @@ If a model is specified, a normal incremental refresh is triggered. Use the "mod
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
@@ -1243,11 +1243,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewSort {
-  name?: string;
-  ascending?: boolean;
-}
-
 export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1300,7 +1295,7 @@ export interface V1MetricsViewSpec {
   table?: string;
   /** Name of the model the metrics view is based on. Either table or model should be set. */
   model?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
@@ -1342,6 +1337,11 @@ export interface V1MetricsViewState {
   /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
 It's set to true if the metrics view is based on an externally managed table. */
   streaming?: boolean;
+}
+
+export interface V1MetricsViewSort {
+  name?: string;
+  ascending?: boolean;
 }
 
 export interface V1MetricsViewSearchResponse {
@@ -1857,7 +1857,7 @@ If not found in `time_ranges`, it should be added to the list. */
 }
 
 export interface V1ExploreSpec {
-  title?: string;
+  displayName?: string;
   description?: string;
   metricsView?: string;
   /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
@@ -1890,7 +1890,7 @@ export interface V1Explore {
  */
 export interface V1Example {
   name?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
 }
 
@@ -2022,8 +2022,8 @@ export type V1ComponentSpecRendererProperties = { [key: string]: any };
 export type V1ComponentSpecResolverProperties = { [key: string]: any };
 
 export interface V1ComponentSpec {
-  title?: string;
-  subtitle?: string;
+  displayName?: string;
+  description?: string;
   resolver?: string;
   resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
@@ -2220,7 +2220,7 @@ export interface V1CanvasItem {
 }
 
 export interface V1CanvasSpec {
-  title?: string;
+  displayName?: string;
   columns?: number;
   gap?: number;
   variables?: V1ComponentVariable[];
@@ -2330,8 +2330,8 @@ export type V1AlertSpecQueryForAttributes = { [key: string]: any };
 export type V1AlertSpecResolverProperties = { [key: string]: any };
 
 export interface V1AlertSpec {
+  displayName?: string;
   trigger?: boolean;
-  title?: string;
   refreshSchedule?: V1Schedule;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
   watermarkInherit?: boolean;
@@ -2518,14 +2518,14 @@ export const MetricsViewSpecMeasureType = {
 
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
+  displayName?: string;
+  description?: string;
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
   perDimensions?: MetricsViewSpecDimensionSelector[];
   requiredDimensions?: MetricsViewSpecDimensionSelector[];
   referencedMeasures?: string[];
-  label?: string;
-  description?: string;
   formatPreset?: string;
   formatD3?: string;
   validPercentOfTotal?: boolean;
@@ -2533,10 +2533,10 @@ export interface MetricsViewSpecMeasureV2 {
 
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
+  displayName?: string;
+  description?: string;
   column?: string;
   expression?: string;
-  label?: string;
-  description?: string;
   unnest?: boolean;
   uri?: string;
 }

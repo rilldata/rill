@@ -30,8 +30,8 @@ func (a *AST) SQL() (string, []any, error) {
 	}
 
 	var err error
-	if a.query.Label {
-		err = b.writeSelectWithLabels(a.Root)
+	if a.query.UseDisplayNames {
+		err = b.writeSelectWithDisplayNames(a.Root)
 	} else {
 		err = b.writeSelect(a.Root)
 	}
@@ -48,13 +48,13 @@ type sqlBuilder struct {
 	args []any
 }
 
-func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
+func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 	b.out.WriteString("SELECT ")
 
 	for i, f := range n.DimFields {
-		label := f.Label
-		if label == "" {
-			label = f.Name
+		displayName := f.DisplayName
+		if displayName == "" {
+			displayName = f.Name
 		}
 
 		if i > 0 {
@@ -62,13 +62,13 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 		}
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 		b.out.WriteString(" AS ")
-		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
+		b.out.WriteString(b.ast.dialect.EscapeIdentifier(displayName))
 	}
 
 	for i, f := range n.MeasureFields {
-		label := f.Label
-		if label == "" {
-			label = f.Name
+		displayName := f.DisplayName
+		if displayName == "" {
+			displayName = f.Name
 		}
 
 		if i > 0 || len(n.DimFields) > 0 {
@@ -76,7 +76,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 		}
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 		b.out.WriteString(" AS ")
-		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
+		b.out.WriteString(b.ast.dialect.EscapeIdentifier(displayName))
 	}
 
 	b.out.WriteString(" FROM (")

@@ -17,7 +17,7 @@
         <mj-spacer height="35px" />
         
         <mj-text font-size="20px" font-weight="bold">
-          {{ .Title }}
+          {{ .DisplayName }}
         </mj-text>
 
         <mj-text padding-bottom="0px">

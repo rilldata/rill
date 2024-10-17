@@ -1,4 +1,4 @@
-*{{ .Title }}*
+*{{ .DisplayName }}*
 
 Your alert triggered for {{ .ExecutionTimeString }}.
 

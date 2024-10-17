@@ -2,25 +2,25 @@
 # Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
 
 type: metrics_view
-title: Ad Bids
+display_name: Ad Bids
 model: ad_bids
 timeseries: timestamp
 dimensions:
-  - label: Publisher
+  - display_name: Publisher
     column: publisher
     description: ""
-  - label: Domain
+  - display_name: Domain
     column: domain
     description: ""
 measures:
   - name: total_records
-    label: Total records
+    display_name: Total records
     expression: COUNT(*)
     description: ""
     format_preset: humanize
     valid_percent_of_total: true
   - name: bid_price
-    label: Sum of Bid Price
+    display_name: Sum of Bid Price
     expression: SUM(bid_price)
     description: ""
     format_preset: humanize

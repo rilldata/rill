@@ -20797,7 +20797,7 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 
 	// no validation rules for State
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	if len(errors) > 0 {
 		return IssueMagicAuthTokenRequestMultiError(errors)
@@ -33754,7 +33754,7 @@ func (m *MagicAuthToken) validate(all bool) error {
 
 	// no validation rules for State
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	if len(errors) > 0 {
 		return MagicAuthTokenMultiError(errors)
@@ -33990,7 +33990,7 @@ func (m *ReportOptions) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for RefreshCron
 
@@ -34110,7 +34110,7 @@ func (m *AlertOptions) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for IntervalDuration
 

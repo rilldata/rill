@@ -391,7 +391,7 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 		return nil, fmt.Errorf("error converting having clause: %w", err)
 	}
 
-	qry.Label = export
+	qry.UseDisplayNames = export
 
 	return qry, nil
 }

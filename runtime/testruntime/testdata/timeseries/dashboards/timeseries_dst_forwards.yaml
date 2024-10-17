@@ -1,11 +1,11 @@
 # Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-title: timeseries_dst
+display_name: timeseries_dst
 model: timeseries_dst_forwards_model
 timeseries: timestamp
 first_day_of_week: 7
 measures:
-  - label: Total records
+  - display_name: Total records
     expression: count(*)
     name: total_records
     description: Total number of records present

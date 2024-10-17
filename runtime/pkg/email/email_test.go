@@ -58,7 +58,7 @@ func TestAlertFail(t *testing.T) {
 	opts := &drivers.AlertStatus{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
-		Title:         "Foobar",
+		DisplayName:   "Foobar",
 		ExecutionTime: time.Date(2024, 01, 27, 0, 0, 0, 0, time.UTC),
 		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 		FailRow:       map[string]any{"hello": "world", "pi": 3.14},
@@ -71,7 +71,7 @@ func TestAlertFail(t *testing.T) {
 	require.Equal(t, opts.ToEmail, mock.toEmail)
 	require.Equal(t, opts.ToName, mock.toName)
 	require.NotEmpty(t, mock.subject)
-	require.Contains(t, mock.body, opts.Title)
+	require.Contains(t, mock.body, opts.DisplayName)
 	require.Contains(t, mock.body, opts.ExecutionTime.Format(time.RFC1123))
 	for k, v := range opts.FailRow {
 		require.Contains(t, mock.body, k)
@@ -86,7 +86,7 @@ func TestAlertRecover(t *testing.T) {
 	opts := &drivers.AlertStatus{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
-		Title:         "Foobar",
+		DisplayName:   "Foobar",
 		ExecutionTime: time.Date(2024, 01, 27, 0, 0, 0, 0, time.UTC),
 		Status:        runtimev1.AssertionStatus_ASSERTION_STATUS_PASS,
 		IsRecover:     true,
@@ -99,7 +99,7 @@ func TestAlertRecover(t *testing.T) {
 	require.Equal(t, opts.ToEmail, mock.toEmail)
 	require.Equal(t, opts.ToName, mock.toName)
 	require.NotEmpty(t, mock.subject)
-	require.Contains(t, mock.body, opts.Title)
+	require.Contains(t, mock.body, opts.DisplayName)
 	require.Contains(t, mock.body, opts.ExecutionTime.Format(time.RFC1123))
 	require.Contains(t, mock.body, "recovered")
 }
@@ -111,7 +111,7 @@ func TestAlertError(t *testing.T) {
 	opts := &drivers.AlertStatus{
 		ToEmail:        uuid.New().String(),
 		ToName:         uuid.New().String(),
-		Title:          "Foobar",
+		DisplayName:    "Foobar",
 		ExecutionTime:  time.Date(2024, 01, 27, 0, 0, 0, 0, time.UTC),
 		Status:         runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
 		ExecutionError: "hello error",
@@ -124,7 +124,7 @@ func TestAlertError(t *testing.T) {
 	require.Equal(t, opts.ToEmail, mock.toEmail)
 	require.Equal(t, opts.ToName, mock.toName)
 	require.NotEmpty(t, mock.subject)
-	require.Contains(t, mock.body, opts.Title)
+	require.Contains(t, mock.body, opts.DisplayName)
 	require.Contains(t, mock.body, opts.ExecutionTime.Format(time.RFC1123))
 	require.Contains(t, mock.body, "hello error")
 }

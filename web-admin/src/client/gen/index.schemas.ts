@@ -165,8 +165,8 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   fields?: string[];
   /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
   state?: string;
-  /** Optional public url title to store with the token. */
-  title?: string;
+  /** Optional display name to store with the token. */
+  displayName?: string;
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
@@ -612,7 +612,7 @@ export interface V1RequestProjectAccessResponse {
 }
 
 export interface V1ReportOptions {
-  title?: string;
+  displayName?: string;
   refreshCron?: string;
   refreshTimeZone?: string;
   intervalDuration?: string;
@@ -841,7 +841,7 @@ export interface V1MagicAuthToken {
   filter?: V1Expression;
   fields?: string[];
   state?: string;
-  title?: string;
+  displayName?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -1391,7 +1391,7 @@ export interface V1ApproveProjectAccessResponse {
 export type V1AlertOptionsResolverProperties = { [key: string]: any };
 
 export interface V1AlertOptions {
-  title?: string;
+  displayName?: string;
   intervalDuration?: string;
   resolver?: string;
   resolverProperties?: V1AlertOptionsResolverProperties;
