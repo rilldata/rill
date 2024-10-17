@@ -64,6 +64,10 @@
     ...coerceInvitesToUsers(projectInvitesList),
   ];
 
+  $: showOrganizationSection =
+    projectMemberUserGroupsList.length === 1 &&
+    projectMemberUserGroupsList[0].groupName === "all-users";
+
   $: showGroupsSection =
     projectMemberUserGroupsList.length > 0 &&
     projectMemberUserGroupsList.length === 1 &&
@@ -83,16 +87,20 @@
       </div>
       <UserInviteForm {organization} {project} />
       <UserInviteAllowlist {organization} {project} />
-      {#if organizationUsersList.length > 0}
+      {#if showOrganizationSection}
         <div class="mt-4">
           <div class="text-xs text-gray-500 font-semibold uppercase">
             Organization
           </div>
           <div class="flex flex-col gap-y-1">
-            <UserInviteOrganization
-              {organization}
-              memberUsers={organizationUsersList}
-            />
+            {#each projectMemberUserGroupsList as group}
+              <UserInviteOrganization
+                {organization}
+                {project}
+                {group}
+                memberUsers={organizationUsersList}
+              />
+            {/each}
           </div>
         </div>
       {/if}

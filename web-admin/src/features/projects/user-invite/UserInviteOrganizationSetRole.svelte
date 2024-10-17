@@ -83,48 +83,46 @@
   }
 </script>
 
-{#if group.groupName !== "all-users"}
-  <DropdownMenu.Root bind:open={isOpen}>
-    <DropdownMenu.Trigger
-      class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
-        ? 'bg-slate-200'
-        : 'hover:bg-slate-100'} px-2 py-1"
+<DropdownMenu.Root bind:open={isOpen}>
+  <DropdownMenu.Trigger
+    class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
+      ? 'bg-slate-200'
+      : 'hover:bg-slate-100'} px-2 py-1"
+  >
+    {capitalize(group.roleName)}
+    {#if isOpen}
+      <CaretUpIcon size="12px" />
+    {:else}
+      <CaretDownIcon size="12px" />
+    {/if}
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start">
+    <DropdownMenu.CheckboxItem
+      class="font-normal flex items-center"
+      checked={group.roleName === "admin"}
+      on:click={() => {
+        handleSetRole(group.groupName, "admin");
+      }}
     >
-      {capitalize(group.roleName)}
-      {#if isOpen}
-        <CaretUpIcon size="12px" />
-      {:else}
-        <CaretDownIcon size="12px" />
-      {/if}
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={group.roleName === "admin"}
-        on:click={() => {
-          handleSetRole(group.groupName, "admin");
-        }}
-      >
-        <span>Admin</span>
-      </DropdownMenu.CheckboxItem>
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={group.roleName === "viewer"}
-        on:click={() => {
-          handleSetRole(group.groupName, "viewer");
-        }}
-      >
-        <span>Viewer</span>
-      </DropdownMenu.CheckboxItem>
-      <DropdownMenu.Separator />
-      <DropdownMenu.Item
-        class="font-normal flex items-center"
-        on:click={() => {
-          handleRemove(group.groupName);
-        }}
-      >
-        <span class="ml-6">Remove</span>
-      </DropdownMenu.Item>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{/if}
+      <span>Admin</span>
+    </DropdownMenu.CheckboxItem>
+    <DropdownMenu.CheckboxItem
+      class="font-normal flex items-center"
+      checked={group.roleName === "viewer"}
+      on:click={() => {
+        handleSetRole(group.groupName, "viewer");
+      }}
+    >
+      <span>Viewer</span>
+    </DropdownMenu.CheckboxItem>
+    <DropdownMenu.Separator />
+    <DropdownMenu.Item
+      class="font-normal flex items-center"
+      on:click={() => {
+        handleRemove(group.groupName);
+      }}
+    >
+      <span class="ml-6">Remove</span>
+    </DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>

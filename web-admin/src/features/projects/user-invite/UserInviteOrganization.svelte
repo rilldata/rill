@@ -3,9 +3,16 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
-  import type { V1MemberUser } from "@rilldata/web-admin/client";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
+  import UserInviteOrganizationSetRole from "./UserInviteOrganizationSetRole.svelte";
+  import type {
+    V1MemberUsergroup,
+    V1MemberUser,
+  } from "@rilldata/web-admin/client";
+
   export let organization: string;
+  export let project: string;
+  export let group: V1MemberUsergroup;
   export let memberUsers: V1MemberUser[];
 
   let isHovered = false;
@@ -30,10 +37,12 @@
       count={organizationUsersCount}
       isEveryFromText
     />
+    <UserInviteOrganizationSetRole {organization} {project} {group} />
   </div>
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">
     <ul>
+      <!-- TODO: are these the members from 'all-users' group? -->
       {#each memberUsers.slice(0, 6) as user}
         <div class="flex items-center gap-1 py-1">
           <Avatar
