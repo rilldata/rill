@@ -3,7 +3,6 @@
   import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
   import { validateEmail } from "./utils";
   import { ArrowLeftIcon } from "lucide-svelte";
 
@@ -11,6 +10,7 @@
 
   export let disabled = false;
   export let email = "";
+  export let showForgetPassword = false;
 
   let password = "";
   let showForm = false;
@@ -96,18 +96,15 @@
       {/if}
     </span>
   </div>
+  {#if showForgetPassword}
+    <div>
+      <button
+        on:click={() => handleForgotPass()}
+        class="text-sm text-slate-500 pl-1 font-medium">Forgot password?</button
+      >
+    </div>
+  {/if}
 </div>
-
-<!-- TODO: AuthStep.EmailPassword -->
-<!-- {#if isLoginPage}
-      <div>
-        <button
-          on:click={() => handleForgotPass()}
-          class="text-sm mb-5 text-slate-500 pl-1 font-medium"
-          >Forgot password?</button
-        >
-      </div>
-    {/if} -->
 
 <div class="flex flex-col gap-y-4">
   <CtaButton {disabled} variant="primary" on:click={() => handleSubmit()}>
