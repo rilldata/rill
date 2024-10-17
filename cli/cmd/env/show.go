@@ -8,7 +8,7 @@ import (
 )
 
 func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName string
+	var projectPath, projectName, enviornment string
 
 	showCmd := &cobra.Command{
 		Use:   "show",
@@ -28,14 +28,20 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
+				Organization: ch.Org,
+				Project:      projectName,
+				Environment:  enviornment,
 			})
 			if err != nil {
 				return err
 			}
 
-			res, err := godotenv.Marshal(resp.Variables)
+			vars := make(map[string]string)
+			for _, v := range resp.Variables {
+				vars[v.Name] = v.Value
+			}
+
+			res, err := godotenv.Marshal(vars)
 			if err != nil {
 				return err
 			}
@@ -48,6 +54,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	showCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	showCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	showCmd.Flags().StringVar(&enviornment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
 
 	return showCmd
 }

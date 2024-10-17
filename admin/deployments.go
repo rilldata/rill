@@ -339,7 +339,6 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			ProdVersion:          proj.ProdVersion,
 			ProdBranch:           proj.ProdBranch,
 			Subpath:              proj.Subpath,
-			ProdVariables:        proj.ProdVariables,
 			ProdSlots:            proj.ProdSlots,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			ProdDeploymentID:     nil,

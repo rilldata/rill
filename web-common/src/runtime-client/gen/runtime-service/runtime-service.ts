@@ -73,6 +73,7 @@ import type {
   RuntimeServiceGetExploreParams,
   V1CreateTriggerResponse,
   RuntimeServiceCreateTriggerBody,
+  V1AnalyzeVariablesResponse,
   V1PingResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
@@ -2136,6 +2137,72 @@ export const createRuntimeServiceCreateTrigger = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+ */
+export const runtimeServiceAnalyzeVariables = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1AnalyzeVariablesResponse>({
+    url: `/v1/instances/${instanceId}/variables/analyze`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceAnalyzeVariablesQueryKey = (
+  instanceId: string,
+) => [`/v1/instances/${instanceId}/variables/analyze`];
+
+export type RuntimeServiceAnalyzeVariablesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>
+>;
+export type RuntimeServiceAnalyzeVariablesQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceAnalyzeVariables = <
+  TData = Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceAnalyzeVariablesQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>
+  > = ({ signal }) => runtimeServiceAnalyzeVariables(instanceId, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary Ping returns information about the runtime
  */

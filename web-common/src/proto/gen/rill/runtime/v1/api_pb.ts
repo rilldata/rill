@@ -4057,3 +4057,136 @@ export class IssueDevJWTResponse extends Message<IssueDevJWTResponse> {
   }
 }
 
+/**
+ * Request message for RuntimeService.AnalyzeVariables
+ *
+ * @generated from message rill.runtime.v1.AnalyzeVariablesRequest
+ */
+export class AnalyzeVariablesRequest extends Message<AnalyzeVariablesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<AnalyzeVariablesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AnalyzeVariablesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzeVariablesRequest {
+    return new AnalyzeVariablesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AnalyzeVariablesRequest {
+    return new AnalyzeVariablesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AnalyzeVariablesRequest {
+    return new AnalyzeVariablesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AnalyzeVariablesRequest | PlainMessage<AnalyzeVariablesRequest> | undefined, b: AnalyzeVariablesRequest | PlainMessage<AnalyzeVariablesRequest> | undefined): boolean {
+    return proto3.util.equals(AnalyzeVariablesRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.AnalyzeVariables
+ *
+ * @generated from message rill.runtime.v1.AnalyzeVariablesResponse
+ */
+export class AnalyzeVariablesResponse extends Message<AnalyzeVariablesResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.AnalyzedVariable variables = 1;
+   */
+  variables: AnalyzedVariable[] = [];
+
+  constructor(data?: PartialMessage<AnalyzeVariablesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AnalyzeVariablesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "variables", kind: "message", T: AnalyzedVariable, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzeVariablesResponse {
+    return new AnalyzeVariablesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AnalyzeVariablesResponse {
+    return new AnalyzeVariablesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AnalyzeVariablesResponse {
+    return new AnalyzeVariablesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AnalyzeVariablesResponse | PlainMessage<AnalyzeVariablesResponse> | undefined, b: AnalyzeVariablesResponse | PlainMessage<AnalyzeVariablesResponse> | undefined): boolean {
+    return proto3.util.equals(AnalyzeVariablesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AnalyzedVariable
+ */
+export class AnalyzedVariable extends Message<AnalyzedVariable> {
+  /**
+   * Name of the variable.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Default value set for the variable in rill.yaml, if any.
+   *
+   * @generated from field: string default_value = 2;
+   */
+  defaultValue = "";
+
+  /**
+   * List of resources that appear to use the connector.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName used_by = 8;
+   */
+  usedBy: ResourceName[] = [];
+
+  constructor(data?: PartialMessage<AnalyzedVariable>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AnalyzedVariable";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "default_value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "used_by", kind: "message", T: ResourceName, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzedVariable {
+    return new AnalyzedVariable().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AnalyzedVariable {
+    return new AnalyzedVariable().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AnalyzedVariable {
+    return new AnalyzedVariable().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AnalyzedVariable | PlainMessage<AnalyzedVariable> | undefined, b: AnalyzedVariable | PlainMessage<AnalyzedVariable> | undefined): boolean {
+    return proto3.util.equals(AnalyzedVariable, a, b);
+  }
+}
+

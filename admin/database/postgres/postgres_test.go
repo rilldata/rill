@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -33,11 +34,11 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestOrganizations", func(t *testing.T) { testOrganizations(t, db) })
 	t.Run("TestOrgsWithPagination", func(t *testing.T) { testOrgsWithPagination(t, db) })
 	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
-	t.Run("TestProjectsWithVariables", func(t *testing.T) { testProjectsWithVariables(t, db) })
 	t.Run("TestProjectsWithAnnotations", func(t *testing.T) { testProjectsWithAnnotations(t, db) })
 	t.Run("TestProjectsWithPagination", func(t *testing.T) { testProjectsWithPagination(t, db) })
 	t.Run("TestProjectsForUsersWithPagination", func(t *testing.T) { testProjectsForUserWithPagination(t, db) })
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
+	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	// Add new tests here
 
 	require.NoError(t, db.Close())
@@ -193,34 +194,6 @@ func testProjects(t *testing.T, db database.DB) {
 	org, err = db.FindOrganizationByName(ctx, "foo")
 	require.ErrorIs(t, err, database.ErrNotFound)
 	require.Nil(t, org)
-}
-
-func testProjectsWithVariables(t *testing.T, db database.DB) {
-	ctx := context.Background()
-
-	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "foo"})
-	require.NoError(t, err)
-	require.Equal(t, "foo", org.Name)
-
-	opts := &database.InsertProjectOptions{
-		OrganizationID: org.ID,
-		Name:           "bar",
-		Description:    "hello world",
-		ProdVariables:  map[string]string{"hello": "world"},
-	}
-	proj, err := db.InsertProject(ctx, opts)
-	require.NoError(t, err)
-	require.Equal(t, opts.ProdVariables, proj.ProdVariables)
-
-	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
-	require.NoError(t, err)
-	require.Equal(t, opts.ProdVariables, proj.ProdVariables)
-
-	err = db.DeleteProject(ctx, proj.ID)
-	require.NoError(t, err)
-
-	err = db.DeleteOrganization(ctx, org.Name)
-	require.NoError(t, err)
 }
 
 func testProjectsWithAnnotations(t *testing.T, db database.DB) {
@@ -424,4 +397,72 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 
 	//cleanup
 	require.NoError(t, db.DeleteOrganization(ctx, "alpha"))
+}
+
+func testUpsertProjectVariable(t *testing.T, db database.DB) {
+	_, projectID, userID := seed(t, db)
+
+	ctx := context.Background()
+	// create project variables
+	vars, err := db.UpsertProjectVariable(ctx, projectID, "", map[string]string{"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"}, userID)
+	require.NoError(t, err)
+
+	require.Equal(t, len(vars), 3)
+
+	// update some variables
+	vars, err = db.UpsertProjectVariable(ctx, projectID, "", map[string]string{"foo4": "bar1", "foo2": "baz2"}, userID)
+	require.NoError(t, err)
+
+	require.Equal(t, len(vars), 2)
+
+	// find project variables
+	vars, err = db.FindProjectVariablesByEnviornment(ctx, projectID, nil)
+	require.NoError(t, err)
+
+	require.Equal(t, len(vars), 4)
+	for _, v := range vars {
+		switch v.Name {
+		case "foo1":
+			require.Equal(t, "bar1", string(v.Value))
+		case "foo2":
+			require.Equal(t, "baz2", string(v.Value))
+		case "foo3":
+			require.Equal(t, "bar3", string(v.Value))
+		case "foo4":
+			require.Equal(t, "bar1", string(v.Value))
+		}
+	}
+
+	err = db.DeleteProjectVariables(ctx, projectID, "", []string{"foo1", "foo2", "foo3", "foo4"})
+	require.NoError(t, err)
+
+	// find project variables
+	vars, err = db.FindProjectVariablesByEnviornment(ctx, projectID, nil)
+	require.NoError(t, err)
+	require.Equal(t, len(vars), 0)
+
+	// cleanup
+	require.NoError(t, db.DeleteProject(ctx, projectID))
+	require.NoError(t, db.DeleteOrganization(ctx, "alpha"))
+	require.NoError(t, db.DeleteUser(ctx, userID))
+}
+
+func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
+	ctx := context.Background()
+
+	// create a user with random email id
+	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: fmt.Sprintf("user%d@rilldata.com", time.Now().UnixNano())})
+	require.NoError(t, err)
+
+	admin, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+
+	// add org and give user permission
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
+	require.NoError(t, err)
+	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID))
+
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "alpha", Public: true})
+	require.NoError(t, err)
+
+	return org.ID, proj.ID, adminUser.ID
 }
