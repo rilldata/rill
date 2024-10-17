@@ -55,7 +55,6 @@
       dimensionsFilter: { toggleDimensionFilterMode },
     },
     dashboardStore,
-    metricsViewName,
     exploreName,
   } = stateManagers;
 
@@ -141,7 +140,7 @@
       });
 
     metricsExplorerStore.createPivot(
-      $metricsViewName,
+      $exploreName,
       { dimension: rowDimensions },
       {
         dimension: [],
