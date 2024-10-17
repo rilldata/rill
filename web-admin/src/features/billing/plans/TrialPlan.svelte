@@ -5,7 +5,9 @@
   } from "@rilldata/web-admin/client";
   import { getTrialMessageForDays } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import StartTeamPlanDialog, {
+    type TeamPlanDialogTypes,
+  } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
@@ -40,12 +42,10 @@
     }
   }
 
-  $: title =
-    ((plan?.displayName || plan?.name) ?? "Trial plan") +
-    (trialEnded ? " expired" : "");
+  $: title = "Trial plan" + (trialEnded ? " expired" : "");
 
   let open = false;
-  $: type = trialEnded ? "trial-expired" : "base";
+  $: type = (trialEnded ? "trial-expired" : "base") as TeamPlanDialogTypes;
 </script>
 
 <SettingsContainer {title}>

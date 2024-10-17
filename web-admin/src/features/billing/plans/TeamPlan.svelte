@@ -44,7 +44,7 @@
   $: error = getErrorForMutation($planCanceller);
 </script>
 
-<SettingsContainer title={plan.displayName ?? plan.name}>
+<SettingsContainer title="Team plan">
   <div slot="body">
     <div>
       Next billing cycle will start on

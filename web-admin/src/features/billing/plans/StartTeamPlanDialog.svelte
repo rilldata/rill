@@ -24,8 +24,10 @@
     fetchPaymentsPortalURL,
     fetchTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import { getSubscriptionResumedText } from "@rilldata/web-admin/features/billing/plans/utils";
-  import WelcomeToRillCloudDialog from "@rilldata/web-admin/features/billing/plans/WelcomeToRillCloudDialog.svelte";
+  import {
+    getSubscriptionResumedText,
+    showWelcomeToRillDialog,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import {
     AlertDialog,
@@ -99,7 +101,6 @@
   $: paymentIssues = $categorisedIssues.data?.payment;
 
   let loading = false;
-  let welcomeDialogOpen = false;
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
@@ -142,7 +143,7 @@
           planName: teamPlan.name,
         },
       });
-      welcomeDialogOpen = true;
+      showWelcomeToRillDialog.set(true);
     }
     void invalidateBillingInfo(organization);
     open = false;
@@ -186,5 +187,3 @@
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
-
-<WelcomeToRillCloudDialog bind:open={welcomeDialogOpen} />

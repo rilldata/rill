@@ -2,7 +2,9 @@ import {
   adminServiceListOrganizationBillingIssues,
   getAdminServiceGetBillingSubscriptionQueryKey,
   getAdminServiceListOrganizationBillingIssuesQueryKey,
+  getAdminServiceListProjectsForOrganizationQueryKey,
 } from "@rilldata/web-admin/client";
+import { hasBlockerIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 
@@ -31,6 +33,8 @@ export async function waitForUpdatedBillingIssues(org: string) {
   });
   const currentBillingIssues = new Set(issuesResp.issues.map((i) => i.type));
 
+  const currentlyHasBlockerIssues = hasBlockerIssues(issuesResp.issues);
+
   while (tries < IssuesUpdateMaxTries) {
     await queryClient.refetchQueries(
       getAdminServiceListOrganizationBillingIssuesQueryKey(org),
@@ -46,6 +50,16 @@ export async function waitForUpdatedBillingIssues(org: string) {
       // some issue had a different type
       newIssuesResp.issues.some((i) => !currentBillingIssues.has(i.type))
     ) {
+      if (
+        currentlyHasBlockerIssues !== hasBlockerIssues(newIssuesResp.issues)
+      ) {
+        // when blocker issues are either added or removed projects hibernation status changes.
+        // so re-retch projects list to get updated hibernation status.
+        // NOTE: right now projects are not automatically woken up when blocker issues are removed.
+        void queryClient.refetchQueries(
+          getAdminServiceListProjectsForOrganizationQueryKey(org),
+        );
+      }
       break;
     }
 
@@ -54,4 +68,9 @@ export async function waitForUpdatedBillingIssues(org: string) {
     );
     tries++;
   }
+
+  // re-fetch project list at the end
+  return queryClient.refetchQueries(
+    getAdminServiceListProjectsForOrganizationQueryKey(org),
+  );
 }

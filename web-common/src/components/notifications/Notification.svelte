@@ -42,7 +42,9 @@
 
     {#if link}
       <div class="link-container">
-        <a href={link.href} on:click={onClose}>{link.text}</a>
+        <a href={link.href} on:click={onClose} class="text-secondary-400">
+          {link.text}
+        </a>
       </div>
     {/if}
 

@@ -85,24 +85,23 @@ export function useCategorisedOrganizationBillingIssues(org: string) {
 export function orgHasBlockerIssues(org: string) {
   return createAdminServiceListOrganizationBillingIssues(org, {
     query: {
-      select: (data) => {
-        const issues = data.issues ?? [];
-        const trialIssue = getTrialIssue(issues);
-        if (trialIssue) {
-          return (
-            trialIssue.type ===
-              V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED &&
-            trialHasPastGracePeriod(trialIssue)
-          );
-        }
-
-        const subCancelled = getCancelledIssue(issues);
-        if (subCancelled) return cancelledSubscriptionHasEnded(subCancelled);
-
-        const payment = getPaymentIssues(issues);
-        return !!payment.length;
-      },
+      select: (data) => hasBlockerIssues(data.issues ?? []),
       refetchOnWindowFocus: true,
     },
   });
+}
+export function hasBlockerIssues(issues: V1BillingIssue[]) {
+  const trialIssue = getTrialIssue(issues);
+  if (trialIssue) {
+    return (
+      trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED &&
+      trialHasPastGracePeriod(trialIssue)
+    );
+  }
+
+  const subCancelled = getCancelledIssue(issues);
+  if (subCancelled) return cancelledSubscriptionHasEnded(subCancelled);
+
+  const payment = getPaymentIssues(issues);
+  return !!payment.length;
 }

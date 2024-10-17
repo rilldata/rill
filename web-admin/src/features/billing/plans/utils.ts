@@ -1,6 +1,7 @@
 import type { V1BillingPlan } from "@rilldata/web-admin/client";
 import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
 import { DateTime } from "luxon";
+import { writable } from "svelte/store";
 
 export function formatDataSizeQuota(
   storageLimitBytesPerDeployment: string,
@@ -29,3 +30,17 @@ export function getSubscriptionResumedText(endDate: string) {
   const resumeDate = date.plus({ day: 1 });
   return "on " + resumeDate.toLocaleString(DateTime.DATE_MED);
 }
+
+export function getPlanDisplayName(plan: V1BillingPlan) {
+  if (isTrialPlan(plan)) {
+    return "Trial Plan";
+  }
+  if (isTeamPlan(plan)) {
+    return "Team Plan";
+  }
+  return "Enterprise Plan";
+}
+
+// Since this could be triggered in a route that could be navigated from,
+// we add a global and show it in org route's layout
+export const showWelcomeToRillDialog = writable(false);

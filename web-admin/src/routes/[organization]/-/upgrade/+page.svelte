@@ -11,7 +11,7 @@
     fetchPaymentsPortalURL,
     fetchTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import WelcomeToRillCloudDialog from "@rilldata/web-admin/features/billing/plans/WelcomeToRillCloudDialog.svelte";
+  import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -25,7 +25,6 @@
 
   let upgrading = false;
   let isRenew = false;
-  let welcomeDialogOpen = false;
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: if (!$categorisedIssues.isLoading && !upgrading) {
     upgrade();
@@ -72,7 +71,7 @@
             planName: teamPlan.name,
           },
         });
-        welcomeDialogOpen = true;
+        showWelcomeToRillDialog.set(true);
       }
       void invalidateBillingInfo(organization);
     } catch {
@@ -99,5 +98,3 @@
     <CtaNeedHelp />
   </CtaContentContainer>
 </CtaLayoutContainer>
-
-<WelcomeToRillCloudDialog bind:open={welcomeDialogOpen} />

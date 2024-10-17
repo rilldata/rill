@@ -25,11 +25,9 @@
   }
 
   let open = false;
-
-  $: title = (plan?.displayName || plan?.name) ?? "Team Plan"; // assume team plan to avoid fetching plans list
 </script>
 
-<SettingsContainer {title} titleIcon="info">
+<SettingsContainer title="Team Plan" titleIcon="info">
   <div slot="body">
     <div>
       Your plan is cancelled
