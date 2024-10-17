@@ -18,9 +18,13 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 **`description`** - A description for the project. _(optional)_.
 
-**`dimensions`** - Provides the list of dimensions to import from the metrics view, defaults to `*`, all. _(optional)_.
+**`dimensions`** - List of dimensions to include, defaults to `*`. _(optional)_.
 
-**`measures`** -  Provides the list of measures to import from the metrics view, defaults to `*`, all. _(optional)_.
+  - **`exclude`** - Inversely a list of dimensions to exclude. Will ignore include if exclude is specified. _(optional)_.
+
+**`measures`** -  List of measures to include, defaults to `*`. _(optional)_.
+
+  - **`exclude`** - Inversely a list of measures to exclude. Will ignore include if exclude is specified. _(optional)_.
 
 **`defaults`** - defines the defaults YAML struct
 

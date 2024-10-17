@@ -10,8 +10,19 @@ In Rill, dashboards are one of many components that access the metrics layer. Cu
 ![img](/img/build/dashboard/explore-dashboard.png)
 
 * _**metrics_view**_ - A metrics view that powers the dashboard
-* _**measures**_ - `*` or regex to filter the measures to display on the dashboard
-* _**dimensions**_ -  `*` or regex to filter the dimensions to display on the dashboard, categorical columns from your metrics view whose values are shown in _leaderboards_ and allows 
+* _**measures**_ - `*` Which measures to include or exclude from the metrics view, using a wildcard will include all.
+* _**dimensions**_ -  `*` Which dimensions to include or exclude from the metrics view, using a wildcard will include all.
+
+When including dimensions and measures only the named resources will be included. 
+Rill also supports the ability to exclude a set of named dimensions and measures.
+
+```yaml
+metrics_view: my_metrics_view
+
+dimensions: [country, region, product_category] # Only these three dimensions will be included
+measures:
+  exclude: [profit] # All measures except profit will be included
+```
 
 :::tip
 Starting in version 0.50, metrics view has been separated from dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
