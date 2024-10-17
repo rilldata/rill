@@ -49,13 +49,14 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Switching to the created org
-			err = dotrill.SetDefaultOrg(res.Organization.Name)
+			org := res.Organization
+			err = dotrill.SetDefaultOrg(org.Name)
 			if err != nil {
 				return err
 			}
 
 			ch.PrintfSuccess("Created organization\n")
-			ch.PrintOrgs([]*adminv1.Organization{res.Organization}, "")
+			ch.PrintOrgs([]*adminv1.Organization{org}, "")
 
 			ch.PrintfSuccess("\nSubscribing org to the plan %q, this might take few seconds\n", plan)
 
@@ -70,17 +71,17 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 					return cmd.Context().Err()
 				case <-timeout:
 					ch.PrintfError("\nTimed out waiting for billing to be initialized\n")
-					ch.PrintfWarn("\nDeleting organization %q\n", res.Organization.Name)
+					ch.PrintfWarn("\nDeleting organization %q\n", org.Name)
 					_, err = client.DeleteOrganization(cmd.Context(), &adminv1.DeleteOrganizationRequest{
 						Name: res.Organization.Name,
 					})
 					if err != nil {
-						ch.PrintfError("\nFailed to delete organization %q with error %v\n", res.Organization.Name, err)
+						ch.PrintfError("\nFailed to delete organization %q with error %v\n", org.Name, err)
 					}
 					return err
 				case <-ticker.C:
 					res, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{
-						Organization:         res.Organization.Name,
+						Organization:         org.Name,
 						PlanName:             plan,
 						SuperuserForceAccess: true,
 					})
@@ -92,12 +93,12 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 						fmt.Println("Waiting for billing to be initialized...")
 					} else {
 						ch.PrintfError(fmt.Sprintf("\nFailed to subscribe organization to plan %q with error %v\n", plan, err))
-						ch.PrintfWarn("\nDeleting organization %q\n", res.Organization.Name)
+						ch.PrintfWarn("\nDeleting organization %q\n", org.Name)
 						_, err = client.DeleteOrganization(cmd.Context(), &adminv1.DeleteOrganizationRequest{
-							Name: res.Organization.Name,
+							Name: org.Name,
 						})
 						if err != nil {
-							ch.PrintfError("\nFailed to delete organization %q with error %v\n", res.Organization.Name, err)
+							ch.PrintfError("\nFailed to delete organization %q with error %v\n", org.Name, err)
 						}
 						return err
 					}

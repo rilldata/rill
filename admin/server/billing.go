@@ -126,7 +126,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
 	if !plan.Public && !forceAccess {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %s", plan.Name)
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)
 	}
 
 	// check for validation errors
