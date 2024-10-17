@@ -263,6 +263,9 @@ message InstanceHealth {
   string controller_error = 1;
   string olap_error = 2;
   string repo_error = 3;
+  map<string, string> metrics_view_errors = 4;
+  int32 parse_error_count = 5;
+  int32 reconcile_error_count = 6;
 }
 
 // **********

@@ -47,6 +47,9 @@ type CatalogStore interface {
 	UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error
 	UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error
 	DeleteModelSplits(ctx context.Context, modelID string) error
+
+	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
+	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 }
 
 // Resource is an entry in a catalog store
@@ -86,4 +89,11 @@ type FindModelSplitsOptions struct {
 	WhereErrored bool
 	AfterIndex   int
 	AfterKey     string
+}
+
+// InstanceHealth represents the health of an instance.
+type InstanceHealth struct {
+	InstanceID string    `db:"instance_id"`
+	HealthJSON []byte    `db:"health_json"`
+	UpdatedOn  time.Time `db:"updated_on"`
 }

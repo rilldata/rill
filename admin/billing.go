@@ -49,7 +49,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress)
+	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress, org.BillingCustomerID == "") // noop biller will have customer id as "" so do not raise never subscribed billing error for them
 	if err != nil {
 		return nil, err
 	}
@@ -135,20 +135,20 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress)
+	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil {
+		if !errors.Is(err, billing.ErrNotFound) {
+			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
+		}
+	}
+
+	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress, sub != nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if !initSub {
 		return org, nil, nil
-	}
-
-	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
-	if err != nil {
-		if !errors.Is(err, billing.ErrNotFound) {
-			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
-		}
 	}
 
 	var updatedOrg *database.Organization
@@ -269,7 +269,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 }
 
 // RaiseNewOrgBillingIssues raises billing issues for a new organization
-func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, creationTime time.Time, hasPaymentMethod, hasBillableAddress bool) error {
+func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, creationTime time.Time, hasPaymentMethod, hasBillableAddress, hasSubscription bool) error {
 	if !hasPaymentMethod {
 		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     orgID,
@@ -287,6 +287,18 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, cr
 			OrgID:     orgID,
 			Type:      database.BillingIssueTypeNoBillableAddress,
 			Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
+			EventTime: creationTime,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to upsert billing error: %w", err)
+		}
+	}
+
+	if !hasSubscription {
+		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID:     orgID,
+			Type:      database.BillingIssueTypeNeverSubscribed,
+			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
 			EventTime: creationTime,
 		})
 		if err != nil {
