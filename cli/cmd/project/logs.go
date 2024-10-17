@@ -25,7 +25,6 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Show project logs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			client, err := ch.Client()
 			if err != nil {
 				return err
