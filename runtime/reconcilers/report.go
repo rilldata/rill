@@ -431,7 +431,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 					ToEmail:        recipient,
 					ToName:         "",
-					Title:          rep.Spec.Title,
+					DisplayName:    rep.Spec.DisplayName,
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
 					OpenLink:       meta.OpenURL,
@@ -455,7 +455,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					return err
 				}
 				msg := &drivers.ScheduledReport{
-					Title:          rep.Spec.Title,
+					DisplayName:    rep.Spec.DisplayName,
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
 					OpenLink:       meta.OpenURL,

@@ -22,7 +22,7 @@ type Query struct {
 	Limit               *int64      `mapstructure:"limit"`
 	Offset              *int64      `mapstructure:"offset"`
 	TimeZone            string      `mapstructure:"time_zone"`
-	Label               bool        `mapstructure:"label"`
+	UseDisplayNames     bool        `mapstructure:"use_display_names"`
 }
 
 type Dimension struct {

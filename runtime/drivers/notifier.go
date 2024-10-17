@@ -3,7 +3,7 @@ package drivers
 import (
 	"time"
 
-	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // Notifier sends notifications.
@@ -16,7 +16,7 @@ type AlertStatus struct {
 	// TODO: Remove ToEmail, ToName once email notifier is created
 	ToEmail        string
 	ToName         string
-	Title          string
+	DisplayName    string
 	ExecutionTime  time.Time
 	Status         runtimev1.AssertionStatus
 	IsRecover      bool
@@ -27,7 +27,7 @@ type AlertStatus struct {
 }
 
 type ScheduledReport struct {
-	Title          string
+	DisplayName    string
 	ReportTime     time.Time
 	DownloadFormat string
 	OpenLink       string

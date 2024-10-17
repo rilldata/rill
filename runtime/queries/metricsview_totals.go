@@ -132,7 +132,7 @@ func (q *MetricsViewTotals) rewriteToMetricsViewQuery(exporting bool) (*metricsv
 		return nil, fmt.Errorf("error converting where clause: %w", err)
 	}
 
-	qry.Label = exporting
+	qry.UseDisplayNames = exporting
 
 	return qry, nil
 }

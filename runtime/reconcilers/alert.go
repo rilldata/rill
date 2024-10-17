@@ -687,7 +687,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			}
 
 			msg = &drivers.AlertStatus{
-				Title:         a.Spec.Title,
+				DisplayName:   a.Spec.DisplayName,
 				ExecutionTime: executionTime,
 				Status:        current.Result.Status,
 				IsRecover:     true,
@@ -698,7 +698,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			}
 
 			msg = &drivers.AlertStatus{
-				Title:         a.Spec.Title,
+				DisplayName:   a.Spec.DisplayName,
 				ExecutionTime: executionTime,
 				Status:        current.Result.Status,
 				FailRow:       current.Result.FailRow.AsMap(),
@@ -709,7 +709,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			}
 
 			msg = &drivers.AlertStatus{
-				Title:          a.Spec.Title,
+				DisplayName:    a.Spec.DisplayName,
 				ExecutionTime:  executionTime,
 				Status:         current.Result.Status,
 				ExecutionError: current.Result.ErrorMessage,

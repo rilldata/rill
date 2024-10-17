@@ -44,7 +44,7 @@ sql: SELECT * FROM read_csv('s3://bucket/path.csv')
 `,
 		"/alerts/a1.yaml": `
 type: alert
-title: Test Alert
+display_name: Test Alert
 refs:
 - type: MetricsView
   name: mv1
@@ -151,7 +151,7 @@ func TestAnonSlackConnector(t *testing.T) {
 		`rill.yaml`: ``,
 		"/alerts/a1.yaml": `
 type: alert
-title: Test Alert
+display_name: Test Alert
 refs:
 - type: MetricsView
   name: mv1

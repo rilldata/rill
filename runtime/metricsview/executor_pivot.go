@@ -65,14 +65,14 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 
 	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query)
 	ast := &pivotAST{
-		keep:    nil, // Populated below
-		on:      qry.PivotOn,
-		using:   nil, // Populated below
-		orderBy: nil, // Populated below
-		limit:   qry.Limit,
-		offset:  qry.Offset,
-		label:   qry.Label,
-		dialect: dialect,
+		keep:            nil, // Populated below
+		on:              qry.PivotOn,
+		using:           nil, // Populated below
+		orderBy:         nil, // Populated below
+		limit:           qry.Limit,
+		offset:          qry.Offset,
+		useDisplayNames: qry.UseDisplayNames,
+		dialect:         dialect,
 	}
 	for _, d := range qry.Dimensions {
 		var found bool
@@ -98,7 +98,7 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 	qry.Sort = nil
 	qry.Limit = nil
 	qry.Offset = nil
-	qry.Label = false
+	qry.UseDisplayNames = false
 
 	return ast, true, nil
 }
@@ -204,8 +204,8 @@ type pivotAST struct {
 	limit   *int64
 	offset  *int64
 
-	label   bool
-	dialect drivers.Dialect
+	useDisplayNames bool
+	dialect         drivers.Dialect
 }
 
 // SQL generates a query that outputs a pivoted table based on the pivot config and data in the underlying query.
@@ -217,10 +217,10 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string) (string, erro
 
 	b := &strings.Builder{}
 
-	// If we need to label some fields (in practice, this will be non-pivoted dims during exports),
+	// If we need to alias display names for some fields (in practice, this will be non-pivoted dims during exports),
 	// we emit a query like: SELECT d1 AS "L1", d2 AS "L2", * EXCLUDE (d1, d2) FROM (PIVOT ...)
-	wrapWithLabels := a.label && len(a.keep) > 0
-	if wrapWithLabels {
+	wrapWithDisplayNames := a.useDisplayNames && len(a.keep) > 0
+	if wrapWithDisplayNames {
 		b.WriteString("SELECT ")
 		for _, fn := range a.keep {
 			f, ok := findField(fn, underlyingAST.Root.DimFields)
@@ -229,9 +229,9 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string) (string, erro
 			}
 
 			b.WriteString(a.dialect.EscapeIdentifier(f.Name))
-			if f.Label != "" {
+			if f.DisplayName != "" {
 				b.WriteString(" AS ")
-				b.WriteString(a.dialect.EscapeIdentifier(f.Label))
+				b.WriteString(a.dialect.EscapeIdentifier(f.DisplayName))
 			}
 			b.WriteString(", ")
 		}
@@ -278,8 +278,8 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string) (string, erro
 			b.WriteString(a.dialect.EscapeIdentifier(fn))
 			b.WriteString(")")
 			b.WriteString(" AS ")
-			if a.label && f.Label != "" {
-				b.WriteString(a.dialect.EscapeIdentifier(f.Label))
+			if a.useDisplayNames && f.DisplayName != "" {
+				b.WriteString(a.dialect.EscapeIdentifier(f.DisplayName))
 			} else {
 				b.WriteString(a.dialect.EscapeIdentifier(f.Name))
 			}
@@ -306,7 +306,7 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string) (string, erro
 		b.WriteString(strconv.FormatInt(*a.offset, 10))
 	}
 
-	if wrapWithLabels {
+	if wrapWithDisplayNames {
 		b.WriteString(")")
 	}
 

@@ -17,15 +17,17 @@ var componentTemplateSpec string
 var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
 
 type ComponentYAML struct {
-	commonYAML `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string                    `yaml:"title"`
-	Subtitle   string                    `yaml:"subtitle"`
-	Input      []*ComponentVariableYAML  `yaml:"input"`
-	Output     *ComponentVariableYAML    `yaml:"output"`
-	Data       *DataYAML                 `yaml:"data"`
-	Show       string                    `yaml:"show"`
-	VegaLite   *string                   `yaml:"vega_lite"`
-	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
+	commonYAML  `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	DisplayName string                    `yaml:"display_name"`
+	Title       string                    `yaml:"title"` // Deprecated: use display_name
+	Description string                    `yaml:"description"`
+	Subtitle    string                    `yaml:"subtitle"` // Deprecated: use description
+	Input       []*ComponentVariableYAML  `yaml:"input"`
+	Output      *ComponentVariableYAML    `yaml:"output"`
+	Data        *DataYAML                 `yaml:"data"`
+	Show        string                    `yaml:"show"`
+	VegaLite    *string                   `yaml:"vega_lite"`
+	Other       map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -66,6 +68,16 @@ func (p *Parser) parseComponent(node *Node) error {
 // parseComponentYAML parses and validates a ComponentYAML.
 // It is separated from parseComponent to allow inline creation of components from a canvas YAML file.
 func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpec, []ResourceName, error) {
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
+	// Description backwards compatibility
+	if tmp.Subtitle != "" && tmp.Description == "" {
+		tmp.Description = tmp.Subtitle
+	}
+
 	// Parse the data YAML
 	var refs []ResourceName
 	var resolver string
@@ -139,8 +151,8 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 
 	// Create the component spec
 	spec := &runtimev1.ComponentSpec{
-		Title:              tmp.Title,
-		Subtitle:           tmp.Subtitle,
+		DisplayName:        tmp.DisplayName,
+		Description:        tmp.Description,
 		Resolver:           resolver,
 		ResolverProperties: resolverProps,
 		Renderer:           renderer,

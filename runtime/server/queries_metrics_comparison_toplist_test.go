@@ -32,31 +32,31 @@ func getMetricsTestServer(t *testing.T, projectName string) (*server.Server, str
 |1  |2022-01-02T11:58:12.475Z|Yahoo    |yahoo.com|2        |4     |1          |cars    |1     |      |
 
 dimensions:
-  - label: Publisher
+  - display_name: Publisher
     property: publisher
     description: ""
-  - label: Domain
+  - display_name: Domain
     property: domain
     description: ""
-  - label: Id
+  - display_name: Id
     property: id
-  - label: Numeric Dim
+  - display_name: Numeric Dim
     property: numeric_dim
-  - label: Device
+  - display_name: Device
     property: device
 
 measures:
-  - label: "Number of bids"
+  - display_name: "Number of bids"
     expression: count(*)
     description: ""
     format_preset: ""
-  - label: "Total volume"
+  - display_name: "Total volume"
     expression: sum(volume)
     description: ""
     format_preset: ""
-  - label: "Total impressions"
+  - display_name: "Total impressions"
     expression: sum(impressions)
-  - label: "Total clicks"
+  - display_name: "Total clicks"
     expression: sum(clicks)
 */
 func TestServer_MetricsViewComparison(t *testing.T) {
@@ -977,17 +977,17 @@ Source:
 
 Measures:
 
-  - label: "Number of bids"
+  - display_name: "Number of bids"
     expression: count(*)
     description: ""
     format_preset: ""
-  - label: "Total volume"
+  - display_name: "Total volume"
     expression: sum(volume)
     description: ""
     format_preset: ""
-  - label: "Total impressions"
+  - display_name: "Total impressions"
     expression: sum(impressions)
-  - label: "Total clicks"
+  - display_name: "Total clicks"
     expression: sum(clicks)
 */
 func TestServer_MetricsViewComparison_no_comparison(t *testing.T) {

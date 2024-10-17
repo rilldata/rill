@@ -28,6 +28,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
+		attribute.String("args.display_name", req.DisplayName),
 		attribute.String("args.resource_type", req.ResourceType),
 		attribute.String("args.resource_name", req.ResourceName),
 	)
@@ -54,7 +55,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		ResourceName: req.ResourceName,
 		Fields:       req.Fields,
 		State:        req.State,
-		Title:        req.Title,
+		DisplayName:  req.DisplayName,
 	}
 
 	if req.TtlMinutes != 0 {
@@ -288,7 +289,7 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		Filter:             filter,
 		Fields:             tkn.Fields,
 		State:              tkn.State,
-		Title:              tkn.Title,
+		DisplayName:        tkn.DisplayName,
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)

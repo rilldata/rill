@@ -14,7 +14,7 @@ var ErrRillYAMLNotFound = errors.New("rill.yaml not found")
 
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {
-	Title         string
+	DisplayName   string
 	Description   string
 	OLAPConnector string
 	Connectors    []*ConnectorDef
@@ -40,7 +40,9 @@ type VariableDef struct {
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
 	// Title of the project
-	Title string `yaml:"title"`
+	DisplayName string `yaml:"display_name"`
+	// Title of the project
+	Title string `yaml:"title"` // Deprecated: use display_name
 	// Description of the project
 	Description string `yaml:"description"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
@@ -88,6 +90,11 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	tmp := &rillYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
 		return newYAMLError(err)
+	}
+
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
 	}
 
 	// Ugly backwards compatibility hack: we have renamed "env" to "vars", and now use "env" for environment-specific overrides.
@@ -195,7 +202,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	res := &RillYAML{
-		Title:         tmp.Title,
+		DisplayName:   tmp.DisplayName,
 		Description:   tmp.Description,
 		OLAPConnector: tmp.OLAPConnector,
 		Connectors:    make([]*ConnectorDef, len(tmp.Connectors)),

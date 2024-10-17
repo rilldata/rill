@@ -16,11 +16,12 @@ import (
 
 // AlertYAML is the raw structure of an Alert resource defined in YAML (does not include common fields)
 type AlertYAML struct {
-	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string           `yaml:"title"`
-	Refresh    *ScheduleYAML    `yaml:"refresh"`
-	Watermark  string           `yaml:"watermark"` // options: "trigger_time", "inherit"
-	Intervals  struct {
+	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	DisplayName string           `yaml:"display_name"`
+	Title       string           `yaml:"title"` // Deprecated: use display_name
+	Refresh     *ScheduleYAML    `yaml:"refresh"`
+	Watermark   string           `yaml:"watermark"` // options: "trigger_time", "inherit"
+	Intervals   struct {
 		Duration      string `yaml:"duration"`
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
@@ -84,6 +85,11 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 	if !node.ConnectorInferred && node.Connector != "" {
 		return fmt.Errorf("alerts cannot have a connector")
+	}
+
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
 	}
 
 	// Parse refresh schedule
@@ -269,7 +275,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.AlertSpec.Title = tmp.Title
+	r.AlertSpec.DisplayName = tmp.DisplayName
 	if schedule != nil {
 		r.AlertSpec.RefreshSchedule = schedule
 	}

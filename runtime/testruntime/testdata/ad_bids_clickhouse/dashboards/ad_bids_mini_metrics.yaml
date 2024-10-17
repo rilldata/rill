@@ -6,19 +6,19 @@ timeseries: timestamp
 smallest_time_grain: ""
 
 dimensions:
-  - label: Publisher
+  - display_name: Publisher
     property: publisher
     description: ""
-  - label: Domain
+  - display_name: Domain
     property: domain
     description: ""
 
 measures:
-  - label: "Number of bids"
+  - display_name: "Number of bids"
     expression: count(*)
-  - label: "Total volume"
+  - display_name: "Total volume"
     expression: sum(volume)
-  - label: "Total impressions"
+  - display_name: "Total impressions"
     expression: sum(impressions)
-  - label: "Total clicks"
+  - display_name: "Total clicks"
     expression: sum(clicks)
