@@ -11,7 +11,7 @@ Rill is part of the open source community and you can find the source code of ou
 
 ## Discord
 
-Curious to see if someone else has encountered an issue before, looking for help getting started, interested in tapping into the collective knowledge of others, or simply want to engage other members of the Rill community? Rill's community can be found on Discord and we'd love for you to be a part of it! Please click [here](https://discord.gg/DJ5qcsxE2m) to get access to our dedicated Discord channel.
+Curious to see if someone else has encountered an issue before, looking for help getting started, interested in tapping into the collective knowledge of others, or simply want to engage other members of the Rill community? Rill's community can be found on Discord and we'd love for you to be a part of it! Please click [here](https://bit.ly/3bbcSl9) to get access to our dedicated Discord channel.
 
 ## Contacting Support
 If you'd like to get in contact with the Rill team directly and/or contact Rill Support, there are a few different options available.

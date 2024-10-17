@@ -45,7 +45,7 @@ const sidebars = {
         },
 
 
-/**
+
         {
           type: 'category',
           label: "Rill's Advanced Features",
@@ -69,8 +69,7 @@ const sidebars = {
 
               ]
             },
-
-            {
+ /*           {　waiting for canvas dashboard release
               type: 'category',
               label: 'Rill Canvas Dashboards',
               items: [
@@ -79,20 +78,33 @@ const sidebars = {
                 'tutorials/rill_advanced_features/canvas_dashboards/vega-lite',
                 'tutorials/rill_advanced_features/canvas_dashboards/vega-lite2',
                 'tutorials/rill_advanced_features/canvas_dashboards/canvas-dashboards',
-              ]
-            },
+                'tutorials/rill_advanced_features/canvas_dashboards/filters'
 
-            {
+              ]
+          },
+*/  
+/*
+            { some changes to syntax and adding 'tasks'
               type: 'category',
               label: 'Incremental Models',
+              
               items: [
+                'tutorials/rill_advanced_features/incremental_models/introduction',
+                {
+                  type: 'category',
+                  label: 'Basic Incremental and Split Model Examples',
+                  items: [
+                    'tutorials/rill_advanced_features/incremental_models/simple-examples/incremental_now',
+                    'tutorials/rill_advanced_features/incremental_models/simple-examples/split_now',
+                  ]
+                },
                 'tutorials/rill_advanced_features/incremental_models/cloud-storage-splits',
                 'tutorials/rill_advanced_features/incremental_models/data-warehouse-splits',
                 'tutorials/rill_advanced_features/incremental_models/staging-connectors'
 
               ]
             },
-            
+            */
             {
               type: 'category',
               label: 'Custom APIs',
@@ -104,7 +116,6 @@ const sidebars = {
             },
           ]
         },
-         */
         {
           type: 'category',
           label: 'Administration Topics',
@@ -119,20 +130,18 @@ const sidebars = {
               type: 'category',
               label: 'User Management',
               items: [
-                'tutorials/administration/user-management',
-                'tutorials/administration/user-group-management',
+                'tutorials/administration/user/user-management',
+                'tutorials/administration/user/user-group-management',
               ]
             },
             {
               type: 'category',
               label: 'Project Management',
               items: [
-                'tutorials/administration/project-maintanence',
-                'tutorials/administration/alerts',
-                'tutorials/administration/credential-envvariable-mangement',
-                'tutorials/administration/github',
-
-
+                'tutorials/administration/project/project-maintanence',
+                'tutorials/administration/project/alerts',
+                'tutorials/administration/project/credential-envvariable-mangement',
+                'tutorials/administration/project/github',
               ]
             },
 
@@ -166,6 +175,17 @@ const sidebars = {
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
             'tutorials/other/add-column-dimension',
+            'tutorials/other/dashboard-row-policies',
+   //         'tutorials/other/custom-charts',
+   //         'tutorials/other/create-map-component',
+   //         'tutorials/other/component-variable-freedom',
+            'tutorials/other/embed-dashboard',
+      //      'tutorials/other/deep-dive-incremental-modeling',
+            'tutorials/other/Rill Cloud/share-dashboard-publicly',
+      //      'tutorials/other/Rill Cloud/views',
+      //      'tutorials/other/Rill Cloud/visual-metric-editor-rc',
+       //     'tutorials/other/yaml-vs-ui',
+       //     'tutorials/other/trial-check',
             'tutorials/other/avg_avg',
 
           ]

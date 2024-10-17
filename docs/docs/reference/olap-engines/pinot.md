@@ -84,7 +84,7 @@ Multi-Valued dimensions needed to be defined in the dashboard yaml as expression
   name: RandomAirports
   description: "Random Airports"
 ```
-Refer to the [Dashboard YAML](../project-files/dashboards) reference page for all dimension properties detail. 
+Refer to the [Dashboard YAML](../project-files/explore-dashboards) reference page for all dimension properties detail. 
 
 :::note
 
@@ -95,4 +95,4 @@ Pinot does not support unnest function so don't set `unnest` property to true in
 ## Additional Notes
 
 - At the moment, we do not support modeling with Pinot. If this is something you're interested in, please [contact us](../../contact.md).
-- For dashboards powered by Pinot, [measure definitions](../../build/dashboards/dashboards.md#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.
+- For dashboards powered by Pinot, [measure definitions](../../build/metrics-view/metrics-view.md#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.
