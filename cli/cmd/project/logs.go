@@ -2,6 +2,7 @@ package project
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -69,20 +70,21 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if follow {
-				logClient, err := rt.WatchLogs(cmd.Context(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: lvl})
-				if err != nil {
-					return fmt.Errorf("failed to watch logs: %w", err)
-				}
-
-				ctx, cancel := context.WithCancel(cmd.Context())
+				ctx, cancel := context.WithCancelCause(cmd.Context())
+				defer cancel(nil)
 
 				go func() {
+					logs, err := rt.WatchLogs(ctx, &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: lvl})
+					if err != nil {
+						cancel(fmt.Errorf("failed to watch logs: %w", err))
+						return
+					}
+
 					for {
-						res, err := logClient.Recv()
+						res, err := logs.Recv()
 						if err != nil {
-							fmt.Println("failed to receive logs: %w", err)
-							cancel()
-							break
+							cancel(fmt.Errorf("failed to receive logs: %w", err))
+							return
 						}
 
 						printLog(res.Log)
@@ -91,7 +93,12 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// keep on receiving logs util context is cancelled
 				<-ctx.Done()
-				return nil
+				err := context.Cause(ctx)
+				if errors.Is(err, context.Canceled) {
+					// Since user cancellation is expected for --follow, don't return an error if the cause was a context cancellation.
+					return nil
+				}
+				return context.Cause(ctx)
 			}
 
 			res, err := rt.GetLogs(cmd.Context(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
