@@ -67,8 +67,7 @@
   $: ({ organization, project, token } = $page.params);
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: onPublicReportPage = isPublicReportPage($page);
-  $: if ($page.url.searchParams.has("token")) {
+  $: if ($page.url.searchParams.has("token") && isPublicReportPage($page)) {
     token = $page.url.searchParams.get("token");
   }
 
@@ -193,6 +192,4 @@
       <slot />
     </RuntimeProvider>
   {/if}
-{:else if onPublicReportPage}
-  <slot />
 {/if}

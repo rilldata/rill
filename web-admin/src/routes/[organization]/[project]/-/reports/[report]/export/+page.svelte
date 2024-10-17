@@ -14,6 +14,7 @@
   $: format = $page.url.searchParams.get("format");
   $: limit = $page.url.searchParams.get("limit");
   $: executionTime = $page.url.searchParams.get("execution_time");
+  $: token = $page.url.searchParams.get("token");
 
   const downloadReportMutation = createDownloadReportMutation();
   let downloadOnce = false;
@@ -60,11 +61,13 @@
         </CtaMessage>
       </div>
     {/if}
-    <CtaButton
-      variant="secondary"
-      href={`/${organization}/${project}/-/reports/${reportId}`}
-    >
-      Go to report page
-    </CtaButton>
+    {#if !token}
+      <CtaButton
+        variant="secondary"
+        href={`/${organization}/${project}/-/reports/${reportId}`}
+      >
+        Go to report page
+      </CtaButton>
+    {/if}
   </CtaContentContainer>
 </CtaLayoutContainer>
