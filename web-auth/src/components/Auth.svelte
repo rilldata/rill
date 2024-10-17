@@ -245,8 +245,6 @@
   $: headingText = getHeadingText();
   $: subheadingText = getSubheadingText();
 
-  $: console.log("headingText: ", headingText);
-
   onMount(() => {
     initConfig();
   });
@@ -318,17 +316,16 @@
           on:back={() => {
             step = AuthStep.Base;
           }}
+          showForgetPassword={step === AuthStep.EmailPassword}
         />
       {/if}
-
-      <!-- TODO: AuthStep.SignUp -->
     </div>
 
-    {#if errorText}
+    <!-- {#if errorText}
       <div style:max-width="400px" class="text-red-500 text-sm mt-3">
         {errorText}
       </div>
-    {/if}
+    {/if} -->
 
     <Disclaimer />
 

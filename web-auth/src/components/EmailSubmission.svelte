@@ -16,9 +16,7 @@
   const focusClasses =
     "ring-offset-2 focus:ring-2 focus:ring-primary-ry-300 focus:outline-none";
 
-  function handleSubmit(event: Event) {
-    event.preventDefault();
-
+  function handleSubmit() {
     if (!email) {
       errorText = "Please enter your email";
       return;
@@ -31,9 +29,15 @@
     }
 
     errorText = "";
-
     haveValidEmail = true;
+
     dispatch("submitEmail", { email });
+  }
+
+  function handleKeydown(e) {
+    if (e.key === "Enter") {
+      handleSubmit();
+    }
   }
 
   $: {
@@ -45,7 +49,7 @@
   }
 </script>
 
-<form on:submit={handleSubmit}>
+<form on:submit|preventDefault={handleSubmit}>
   <div class="mb-4 flex flex-col gap-y-4">
     <input
       class="{inputClasses} {focusClasses}"
@@ -54,6 +58,7 @@
       placeholder="Enter your email address"
       id="email"
       bind:value={email}
+      on:keydown={handleKeydown}
     />
     {#if errorText}
       <div class="text-red-500 text-sm -mt-2">
