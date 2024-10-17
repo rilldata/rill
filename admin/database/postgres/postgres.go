@@ -1915,7 +1915,7 @@ func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]stri
 
 func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error) {
 	var res []string
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = '' OR payment_customer_id = ''`)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = ''`)
 	if err != nil {
 		return nil, parseErr("billing orgs without billing or payment info", err)
 	}
