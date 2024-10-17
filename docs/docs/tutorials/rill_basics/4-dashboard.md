@@ -9,7 +9,7 @@ tags:
 
 ### What is a Metrics View? 
 :::note
-Starting from v50, we have officially split the metrics-view and dashboard and rolled out [visual metric editor](#via-the-ui) What this means is that we have a separate file for the metrics layer and a dashboard built on top of this. For more reasoning behind this change, please refer to our documentation.
+Starting from version 0.50, we have officially split the metrics-view and dashboard and rolled out [visual metric editor](#via-the-ui) What this means is that we have a separate file for the metrics layer and a dashboard built on top of this. For more reasoning behind this change, please refer to our documentation.
 :::
 A metrics view is a layer in which you can create and define your measures and dimensions. Once you have defined your measures and dimensions, you can build the dashboard.
 
@@ -60,7 +60,7 @@ For now, you'll see a red box around the UI and the preview button grayed out. T
 
 ## Fixing the Metrics View
 From here, we have two options! 
-Starting from v50, we have introduced the [visual-metric-editor](/build/metrics-view/#using-the-visual-metrics-editor), in the top right corner, you can select whether you want to modify the YAML directly or use a UI tool.
+Starting from version 0.50, we have introduced the [visual-metric-editor](/build/metrics-view/#using-the-visual-metrics-editor), in the top right corner, you can select whether you want to modify the YAML directly or use a UI tool.
 
 ## Via the UI
 When navigating to the visual metric editor, you will see the following:

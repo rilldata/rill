@@ -50,7 +50,7 @@ Rill will automatically select several time zones that should be pinned to the t
 
 ### Setting Default Views for Dashboards
 :::tip
-Starting from v50, the default views have been consolidated into a single YAML struct, `defaults:`.
+Starting from version 0.50, the default views have been consolidated into a single YAML struct, `defaults:`.
 :::
 
 **`time_range`**

@@ -14,7 +14,7 @@ In Rill, dashboards are one of many components that access the metrics layer. Cu
 * _**dimensions**_ -  `*` or regex to filter the dimensions to display on the dashboard, categorical columns from your metrics view whose values are shown in _leaderboards_ and allows 
 
 :::tip
-Starting in v50, metrics view has been separated from dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
+Starting in version 0.50, metrics view has been separated from dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
 
 For migration steps, see [Migrations](/manage/migration#v049---v050).
 :::
