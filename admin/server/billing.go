@@ -569,7 +569,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 	}
 
 	if !pc.HasBillableAddress {
-		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
+		validationErrs = append(validationErrs, "no billing address found")
 	}
 
 	be, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
@@ -579,7 +579,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 		}
 	}
 	if be != nil {
-		validationErrs = append(validationErrs, "a previous payment is due, please pay the outstanding amount")
+		validationErrs = append(validationErrs, "a previous payment is due")
 	}
 
 	if len(validationErrs) > 0 && !forceAccess {
