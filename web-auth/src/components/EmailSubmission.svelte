@@ -16,7 +16,9 @@
   const focusClasses =
     "ring-offset-2 focus:ring-2 focus:ring-primary-ry-300 focus:outline-none";
 
-  function handleContinue() {
+  function handleSubmit(event: Event) {
+    event.preventDefault();
+
     if (!email) {
       errorText = "Please enter your email";
       return;
@@ -31,12 +33,7 @@
     errorText = "";
 
     haveValidEmail = true;
-    dispatch("emailSubmit", { email });
-  }
-
-  function handleSubmit(event: Event) {
-    event.preventDefault();
-    handleContinue();
+    dispatch("submitEmail", { email });
   }
 
   $: {
