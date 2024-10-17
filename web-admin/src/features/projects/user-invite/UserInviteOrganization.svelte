@@ -7,7 +7,6 @@
   import UserInviteOrganizationSetRole from "./UserInviteOrganizationSetRole.svelte";
   import {
     type V1MemberUsergroup,
-    type V1MemberUser,
     createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
 
