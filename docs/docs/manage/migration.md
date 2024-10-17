@@ -9,25 +9,25 @@ Please refer to the changes below and recommended migration steps.
 
 ## Migration
 
-### v0.49 -> v0.50
+### version 0.49 -> version 0.50
 
 Due to the [separation of dashboards to metrics layer and dashboards](/concepts/metrics-layer), you will need to review your current dashboards and make the following changes (note: Legacy dashboards will continue to function.):
 
 **[Sample Legacy Dashboard Contents](https://docs.rilldata.com/reference/project-files/explore-dashboards):**
 
 ```yaml
-title: #needs to be defined on metrics-view and dashboard
+title: #defined on metrics-view and dashboard
 model: #defined on metrics-view
 type: #defined on both, explore or metrics-view
 timeseries: #defined on metrics-view
 
 smallest_time_grain: #defined in metrics-view, 
 
-default_...: #defined in dashboard
-    dimensions:
-    measures:
-    comparison:
-    ...
+default_dimensions:  #separate default
+default_measures:    #values defined in
+default_comparisons: #dashboard config
+...
+
 
 
 measures: #defined in metrics-view, 
@@ -48,8 +48,10 @@ first_day_of_week: #defined in metrics-view,
 first_month_of_year: #defined in metrics-view,
 
 ```
-
+---
 **[Metrics_View YAML](/reference/project-files/metrics-view):**
+
+Please check the reference for the required parameters for a metrics view.
 ```yaml
 version: 1 #defines version 
 type: metrics_view # metrics_view
@@ -57,7 +59,7 @@ type: metrics_view # metrics_view
 title: The title of your metrics_view
 display_name: The display_name
 description: A description
-model / table: refernce the model or table, 
+model / table: reference to the model or table, 
 database / database_schema: #if using a different OLAP engine, refers to database and schema (usually not required)
 
 timeseries: your timeseries column
@@ -92,6 +94,9 @@ security: #your security policies can be copied from dashboard.yaml
 ```
 
 **[Explore dashboard YAML](/reference/project-files/explore-dashboards):**
+
+Please check the reference for the required parameters for an explore dashboard.
+
 ```yaml
 type: explore
 

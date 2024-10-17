@@ -1,7 +1,7 @@
 ---
-title: "Settings"
+title: "General Settings"
 description: For other Settings related to Rill Cloud
-sidebar_label: "Settings"
+sidebar_label: "General Settings"
 sidebar_position: 55
 ---
 

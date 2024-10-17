@@ -41,9 +41,6 @@ You can now manage public URLs via the UI. You will find a new "settings" tab in
 ![img](/img/explore/publicurl/public-url-settings.png)
 
 ### via the CLI
-:::tip
-Starting from v.0.48, `public-url` has been rebranded to `public-url`.
-:::
 ```
 rill public-url
 Manage public URLs
