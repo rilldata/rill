@@ -12,6 +12,7 @@ func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 		PersistentPreRunE: cmdutil.CheckAuth(ch),
 	}
 
+	cmd.AddCommand(CreateCmd(ch))
 	cmd.AddCommand(ShowCmd(ch))
 	cmd.AddCommand(JoinCmd(ch))
 	cmd.AddCommand(ListAdminsCmd(ch))
