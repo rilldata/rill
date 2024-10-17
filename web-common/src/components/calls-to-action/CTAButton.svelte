@@ -5,8 +5,9 @@
   export let href: string | null = null;
   export let rel: string | undefined = undefined;
   export let disabled = false;
+  export let gray = false;
 </script>
 
-<Button type={variant} {href} {rel} {disabled} wide on:click>
+<Button type={variant} {href} {rel} {disabled} wide {gray} on:click>
   <slot />
 </Button>

@@ -315,6 +315,9 @@
           on:resetPass={(e) => {
             handleResetPassword(e.detail.email);
           }}
+          on:back={() => {
+            step = AuthStep.Base;
+          }}
         />
       {/if}
 
