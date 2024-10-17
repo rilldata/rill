@@ -18,9 +18,9 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 **`description`** - A description for the project. _(optional)_.
 
-**`dimensions`** - Provides the list of dimensions to import from the metrics view, defaults to `*`, all. _(required)_.
+**`dimensions`** - Provides the list of dimensions to import from the metrics view, defaults to `*`, all. _(optional)_.
 
-**`measures`** -  Provides the list of measures to import from the metrics view, defaults to `*`, all. _(required)_.
+**`measures`** -  Provides the list of measures to import from the metrics view, defaults to `*`, all. _(optional)_.
 
 **`defaults`** - defines the defaults YAML struct
 
