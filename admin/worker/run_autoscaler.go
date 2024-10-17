@@ -17,7 +17,7 @@ const (
 	minScalingSlots       = 5.0
 
 	// Reasons for not scaling
-	scaledown      = "scaling down is temporarily disabled"
+	scaledown      = "scaling down is temporarily disabled due to constraint"
 	scaleMatch     = "current scale equals recommendation"
 	belowThreshold = "scaling change is below the threshold"
 )
@@ -57,7 +57,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			continue
 		}
 
-		if shouldScale, reason := shouldScale(targetProject.ProdSlots, rec.RecommendedSlots); !shouldScale {
+		if shouldScale, reason := shouldScale(targetProject.ProdSlots, rec.RecommendedSlots, w.admin.ScaleDownConstraint); !shouldScale {
 			logMessage := "skipping autoscaler: " + reason
 
 			logFields := []zap.Field{
@@ -150,14 +150,16 @@ func (w *Worker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSl
 // shouldScale determines whether scaling operations should be initiated
 // based on the comparison of the current number of slots (originSlots)
 // and the recommended number of slots (recommendSlots).
-func shouldScale(originSlots, recommendSlots int) (bool, string) {
+func shouldScale(originSlots, recommendSlots, scaleDownConstraint int) (bool, string) {
 	if recommendSlots == originSlots {
 		return false, scaleMatch
 	}
 
-	// NOTE(2024-07-23): Temporary measure to avoid autoscaling DOWN
+	// NOTE(2024-10-15): Disable scale down if breaking the constraints
 	if recommendSlots < originSlots {
-		return false, scaledown
+		if scaleDownConstraint != -1 && originSlots > scaleDownConstraint {
+			return false, scaledown
+		}
 	}
 
 	// Always allow scaling for small services
