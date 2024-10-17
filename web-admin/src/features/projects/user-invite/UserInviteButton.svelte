@@ -100,17 +100,19 @@
           </div>
         </div>
       {/if}
-      <!-- {#if showGroupsSection} -->
-      <div class="mt-2">
-        <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
-        <!-- 52 * 5 = 260px -->
-        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
-          {#each projectMemberUserGroupsList as group}
-            <UserInviteGroup {organization} {project} {group} />
-          {/each}
+      {#if showGroupsSection}
+        <div class="mt-2">
+          <div class="text-xs text-gray-500 font-semibold uppercase">
+            Groups
+          </div>
+          <!-- 52 * 5 = 260px -->
+          <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
+            {#each projectMemberUserGroupsList as group}
+              <UserInviteGroup {organization} {project} {group} />
+            {/each}
+          </div>
         </div>
-      </div>
-      <!-- {/if} -->
+      {/if}
       <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
         <!-- 52 * 5 = 260px -->
@@ -129,7 +131,7 @@
                 pendingAcceptance={!user.userName}
               />
               <UserInviteMultipleAccessTooltip
-                showTooltip={showOverriddenRoleTooltip}
+                showTooltip={user.userName && showOverriddenRoleTooltip}
               >
                 <UserInviteUserSetRole
                   {organization}
