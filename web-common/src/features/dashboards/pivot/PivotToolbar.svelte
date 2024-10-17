@@ -19,8 +19,7 @@
   const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const { exploreName, metricsViewName, dashboardStore, validSpecStore } =
-    stateManagers;
+  const { exploreName, dashboardStore, validSpecStore } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: metricsViewProto = $dashboardStore.proto;
@@ -51,7 +50,7 @@
   //     expandRow(i.toString(), 1); // Start from level 1
   //   }
 
-  //   metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+  //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   // }
 
   const scheduledReportsQueryArgs = getPivotExportArgs(stateManagers);
@@ -95,7 +94,7 @@
       compact
       type="text"
       on:click={() => {
-        metricsExplorerStore.setPivotExpanded($metricsViewName, {});
+        metricsExplorerStore.setPivotExpanded($exploreName, {});
       }}
     >
       Collapse All

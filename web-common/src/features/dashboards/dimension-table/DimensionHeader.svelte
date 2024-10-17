@@ -141,7 +141,7 @@
       });
 
     metricsExplorerStore.createPivot(
-      $metricsViewName,
+      $exploreName,
       { dimension: rowDimensions },
       {
         dimension: [],
