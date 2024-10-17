@@ -10,6 +10,7 @@
   import {
     fetchPaymentsPortalURL,
     fetchTeamPlan,
+    getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
@@ -20,6 +21,11 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+
+  /**
+   * Landing page to upgrade a user to team plan.
+   * Is set as a return url on stripe portal.
+   */
 
   $: organization = $page.params.organization;
 
@@ -42,7 +48,7 @@
           text: "Update payment",
           href: await fetchPaymentsPortalURL(
             organization,
-            window.location.href,
+            getBillingUpgradeUrl($page, organization),
           ),
         },
       });

@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-admin/client";
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { Page } from "@sveltejs/kit";
 import { DateTime } from "luxon";
 
 export async function fetchTeamPlan() {
@@ -36,6 +37,10 @@ export async function fetchPaymentsPortalURL(
   });
 
   return portalUrlResp.url;
+}
+
+export function getBillingUpgradeUrl(page: Page, organization: string) {
+  return `${page.url.protocol}//${page.url.host}/${organization}/-/settings/billing/upgrade/callback`;
 }
 
 export function getNextBillingCycleDate(curEndDateRaw: string): string {

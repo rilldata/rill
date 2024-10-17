@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -215,6 +216,17 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 
 	// clean up any trial related billing issues if present
 	err = s.admin.CleanupTrialBillingIssues(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
+		ToEmail:  org.BillingEmail,
+		ToName:   org.Name,
+		OrgName:  org.Name,
+		PlanName: "Team Plan", // TODO: will this ever be different?
+		EndDate:  endDate,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

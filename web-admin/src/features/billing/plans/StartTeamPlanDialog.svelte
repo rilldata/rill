@@ -23,6 +23,7 @@
   import {
     fetchPaymentsPortalURL,
     fetchTeamPlan,
+    getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import {
     getSubscriptionResumedText,
@@ -117,7 +118,7 @@
       window.open(
         await fetchPaymentsPortalURL(
           organization,
-          `${$page.url.protocol}//${$page.url.host}/${organization}/-/upgrade`,
+          getBillingUpgradeUrl($page, organization),
         ),
         "_self",
       );
