@@ -16,7 +16,7 @@ interface NotificationOptions {
 }
 
 export interface BannerMessage {
-  type: "default" | "success" | "info" | "warning" | "error";
+  type: "default" | "success" | "info" | "warning" | "error" | "clear";
   message: string;
   includesHtml?: boolean;
 
@@ -32,6 +32,6 @@ export interface BannerMessage {
     target?: string;
 
     // callback when we need to take action like open pylon
-    onClick?: () => void;
+    onClick?: () => void | Promise<void>;
   };
 }

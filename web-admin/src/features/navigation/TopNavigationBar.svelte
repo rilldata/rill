@@ -1,5 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import BillingBanner from "@rilldata/web-admin/features/billing/banner/BillingBanner.svelte";
+  import { getPlanDisplayName } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { getSubscriptionForOrg } from "@rilldata/web-admin/features/billing/selectors";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
@@ -88,9 +91,16 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
+  $: plan = getSubscriptionForOrg(organization, {
+    enabled: !onPublicURLPage,
+    select: (data) => data.subscription?.plan,
+  });
   $: organizationPaths = organizations.reduce(
     (map, { name, displayName }) =>
-      map.set(name.toLowerCase(), { label: displayName || name }),
+      map.set(name.toLowerCase(), {
+        label: displayName || name,
+        pill: $plan?.data ? getPlanDisplayName($plan.data) : "",
+      }),
     new Map<string, PathOption>(),
   );
 
@@ -158,6 +168,9 @@
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
+{#if organization}
+  <BillingBanner {organization} />
+{/if}
 <div class="flex items-center w-full pr-4 pl-2 py-1">
   <!-- Left side -->
   <a
