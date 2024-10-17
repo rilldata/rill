@@ -35,7 +35,7 @@
 
     errorText = "";
 
-    dispatch("ssoSubmit", userEmail.toLowerCase());
+    dispatch("submitSSO", userEmail.toLowerCase());
   }
 
   function handleKeydown(e) {
@@ -70,7 +70,7 @@
       {disabled}
       variant="secondary"
       on:click={() => {
-        dispatch("back", -1);
+        dispatch("back");
       }}
     >
       <div class="flex justify-center items-center font-medium">

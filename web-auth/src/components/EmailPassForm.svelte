@@ -66,22 +66,7 @@
 
 <div>
   <div class="mb-4 flex flex-col gap-y-4">
-    <input
-      class="{inputClasses} {focusClasses}"
-      style:width="400px"
-      type="email"
-      placeholder="Enter your email address"
-      id="email"
-      bind:value={email}
-    />
-
-    {#if errorText}
-      <div class="text-red-500 text-sm -mt-2">
-        {errorText}
-      </div>
-    {/if}
-
-    <div style="position: relative;">
+    <div class="relative">
       <input
         class="{inputClasses} {focusClasses}"
         style:width="400px"
@@ -90,6 +75,12 @@
         id="password"
         placeholder="Enter your password"
       />
+
+      {#if errorText}
+        <div class="text-red-500 text-sm -mt-2">
+          {errorText}
+        </div>
+      {/if}
 
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <span
@@ -107,7 +98,7 @@
     </div>
   </div>
 
-  <!-- TODO: revisit -->
+  <!-- TODO: AuthStep.EmailPassword -->
   <!-- {#if isLoginPage}
       <div>
         <button
@@ -119,6 +110,6 @@
     {/if} -->
 
   <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
-    <div class="flex justify-center font-medium">Continue with Email</div>
+    <div class="flex justify-center font-medium">Continue with email</div>
   </CtaButton>
 </div>
