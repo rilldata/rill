@@ -2,7 +2,7 @@
   "name": "web-admin",
   "version": "0.0.1",
   "scripts": {
-    "dev": "vite dev --port 4000",
+    "dev": "vite dev",
     "build": "vite build && cp _redirects build",
     "preview": "vite preview",
     "test": "playwright test",
