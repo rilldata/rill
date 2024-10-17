@@ -5,19 +5,25 @@
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
   import UserInviteOrganizationSetRole from "./UserInviteOrganizationSetRole.svelte";
-  import type {
-    V1MemberUsergroup,
-    V1MemberUser,
+  import {
+    type V1MemberUsergroup,
+    type V1MemberUser,
+    createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
 
   export let organization: string;
   export let project: string;
   export let group: V1MemberUsergroup;
-  export let memberUsers: V1MemberUser[];
 
   let isHovered = false;
 
-  $: organizationUsersCount = memberUsers?.length ?? 0;
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    group.groupName,
+  );
+
+  $: userGroupMemberUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
 </script>
 
 <Tooltip location="right" alignment="middle" distance={8}>
@@ -34,7 +40,7 @@
     <AvatarListItem
       shape="square"
       name={organization}
-      count={organizationUsersCount}
+      count={userGroupMemberUsersCount}
       isEveryFromText
     />
     <UserInviteOrganizationSetRole {organization} {project} {group} />
@@ -42,8 +48,7 @@
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">
     <ul>
-      <!-- TODO: are these the members from 'all-users' group? -->
-      {#each memberUsers.slice(0, 6) as user}
+      {#each userGroupMemberUsers.slice(0, 6) as user}
         <div class="flex items-center gap-1 py-1">
           <Avatar
             src={user.userPhotoUrl}
@@ -55,8 +60,8 @@
           <li>{user.userName}</li>
         </div>
       {/each}
-      {#if memberUsers.length > 6}
-        <li>and {memberUsers.length - 6} more</li>
+      {#if userGroupMemberUsers.length > 6}
+        <li>and {userGroupMemberUsers.length - 6} more</li>
       {/if}
     </ul>
   </TooltipContent>

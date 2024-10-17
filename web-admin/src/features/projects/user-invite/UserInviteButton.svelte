@@ -2,7 +2,6 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceListOrganizationMemberUsers,
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
@@ -40,14 +39,11 @@
     organization,
     project,
   );
-  $: listOrganizationMemberUsers =
-    createAdminServiceListOrganizationMemberUsers(organization);
 
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
-  $: organizationUsersList = $listOrganizationMemberUsers.data?.members ?? [];
 
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
@@ -94,12 +90,7 @@
           </div>
           <div class="flex flex-col gap-y-1">
             {#each projectMemberUserGroupsList as group}
-              <UserInviteOrganization
-                {organization}
-                {project}
-                {group}
-                memberUsers={organizationUsersList}
-              />
+              <UserInviteOrganization {organization} {project} {group} />
             {/each}
           </div>
         </div>
