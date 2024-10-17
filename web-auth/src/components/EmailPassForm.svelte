@@ -5,6 +5,7 @@
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import { validateEmail } from "./utils";
+  import { ArrowLeftIcon } from "lucide-svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -64,42 +65,41 @@
   }
 </script>
 
-<div>
-  <div class="mb-4 flex flex-col gap-y-4">
-    <div class="relative">
-      <input
-        class="{inputClasses} {focusClasses}"
-        style:width="400px"
-        {type}
-        on:input={onPassInput}
-        id="password"
-        placeholder="Enter your password"
-      />
+<div class="flex flex-col gap-y-4">
+  <div class="relative">
+    <input
+      class="{inputClasses} {focusClasses}"
+      style:width="400px"
+      {type}
+      on:input={onPassInput}
+      id="password"
+      placeholder="Enter your password"
+    />
 
-      {#if errorText}
-        <div class="text-red-500 text-sm -mt-2">
-          {errorText}
-        </div>
+    {#if errorText}
+      <div class="text-red-500 text-sm -mt-2">
+        {errorText}
+      </div>
+    {/if}
+
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <span
+      role="button"
+      tabindex="0"
+      style:right="10px"
+      class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
+    >
+      {#if !showPassword}
+        <Eye />
+      {:else}
+        <EyeInvisible />
       {/if}
-
-      <!-- svelte-ignore a11y-click-events-have-key-events -->
-      <span
-        role="button"
-        tabindex="0"
-        style:right="10px"
-        class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
-      >
-        {#if !showPassword}
-          <Eye />
-        {:else}
-          <EyeInvisible />
-        {/if}
-      </span>
-    </div>
+    </span>
   </div>
+</div>
 
-  <!-- TODO: AuthStep.EmailPassword -->
-  <!-- {#if isLoginPage}
+<!-- TODO: AuthStep.EmailPassword -->
+<!-- {#if isLoginPage}
       <div>
         <button
           on:click={() => handleForgotPass()}
@@ -109,7 +109,21 @@
       </div>
     {/if} -->
 
-  <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
-    <div class="flex justify-center font-medium">Continue with email</div>
+<div class="flex flex-col gap-y-4">
+  <CtaButton {disabled} variant="primary" on:click={() => handleSubmit()}>
+    <div class="flex justify-center font-medium">Continue</div>
+  </CtaButton>
+  <CtaButton
+    {disabled}
+    variant="secondary"
+    gray
+    on:click={() => {
+      dispatch("back");
+    }}
+  >
+    <div class="flex justify-center items-center font-medium">
+      <ArrowLeftIcon class="mr-1" size={14} />
+      <span>Back</span>
+    </div>
   </CtaButton>
 </div>
