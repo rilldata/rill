@@ -13,17 +13,51 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import { page } from "$app/stores";
-  import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceCreateUsergroup,
+    createAdminServiceListUsergroupMemberUsers,
+    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let open = false;
   export let groupName: string;
-  export let onCreate: (name: string) => void;
 
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     groupName,
   );
+
+  const queryClient = useQueryClient();
+  const createUserGroup = createAdminServiceCreateUsergroup();
+
+  async function handleCreate(newName: string) {
+    try {
+      await $createUserGroup.mutateAsync({
+        organization: organization,
+        data: {
+          name: newName,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      groupName = "";
+      open = false;
+
+      eventBus.emit("notification", { message: "User group created" });
+    } catch (error) {
+      console.error("Error creating user group", error);
+      eventBus.emit("notification", {
+        message: "Error creating user group",
+        type: "error",
+      });
+    }
+  }
 
   const formId = "create-user-group-form";
 
@@ -53,7 +87,7 @@
         const values = form.data;
 
         try {
-          await onCreate(values.name);
+          await handleCreate(values.name);
           open = false;
         } catch (error) {
           console.error(error);

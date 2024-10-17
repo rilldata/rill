@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AvatarCircleList from "@rilldata/web-admin/features/organizations/users/AvatarCircleList.svelte";
+  import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
   import { Combobox } from "bits-ui";
   import type { Selected } from "bits-ui";
   import { Check } from "lucide-svelte";
@@ -55,7 +55,7 @@
           value={item.value}
           label={item.label}
         >
-          <AvatarCircleList name={item.name} email={item.value} />
+          <AvatarListItem name={item.name} email={item.value} />
           <Combobox.ItemIndicator class="ml-auto" asChild={false}>
             <Check size="16px" />
           </Combobox.ItemIndicator>
