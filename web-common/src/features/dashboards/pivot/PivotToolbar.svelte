@@ -14,7 +14,7 @@
   const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const { metricsViewName, dashboardStore } = stateManagers;
+  const { exploreName, dashboardStore } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
 
@@ -44,7 +44,7 @@
   //     expandRow(i.toString(), 1); // Start from level 1
   //   }
 
-  //   metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+  //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   // }
 </script>
 
@@ -75,7 +75,7 @@
       compact
       type="text"
       on:click={() => {
-        metricsExplorerStore.setPivotExpanded($metricsViewName, {});
+        metricsExplorerStore.setPivotExpanded($exploreName, {});
       }}
     >
       Collapse All

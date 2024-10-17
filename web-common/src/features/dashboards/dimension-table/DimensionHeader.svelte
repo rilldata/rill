@@ -48,7 +48,7 @@
       dimensionsFilter: { toggleDimensionFilterMode },
     },
     dashboardStore,
-    metricsViewName,
+    exploreName,
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
@@ -131,7 +131,7 @@
       });
 
     metricsExplorerStore.createPivot(
-      $metricsViewName,
+      $exploreName,
       { dimension: rowDimensions },
       {
         dimension: [],
