@@ -13,6 +13,7 @@
   import EmailSubmission from "./EmailSubmission.svelte";
   import DiscordCTA from "./DiscordCTA.svelte";
   import Disclaimer from "./Disclaimer.svelte";
+  import Spacer from "./Spacer.svelte";
 
   type InternalOptions = {
     protocol: string;
@@ -46,6 +47,16 @@
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
+  const databaseConnection = "Username-Password-Authentication";
+
+  enum AuthStep {
+    Base = 0,
+    SSO = 1,
+    EmailPassword = 2,
+    SignUp = 3,
+    Thanks = 4,
+  }
+
   $: errorText = "";
   $: isRillCloud = false;
 
@@ -56,16 +67,8 @@
   let email = "";
   let emailSubmitted = false;
 
-  enum AuthStep {
-    Base = 0,
-    SSO = 1,
-    EmailPassword = 2,
-  }
-
   let step: AuthStep = AuthStep.Base;
-
   let webAuth: WebAuth;
-  const databaseConnection = "Username-Password-Authentication";
 
   function getLastUsedConnection() {
     return localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -84,7 +87,6 @@
     const storedConnection = getLastUsedConnection();
     if (storedConnection) {
       lastUsedConnection = storedConnection;
-      // console.log(`Last used connection: ${lastUsedConnection}`);
     } else {
       setLastUsedConnection(null);
     }
@@ -95,11 +97,9 @@
       decodeURIComponent(escape(window.atob(configParams))),
     ) as Config;
 
-    // TO BE REMOVED
-    // if (config?.extraParams?.screen_hint === "signup") {
-    //   isLoginPage = false;
-    // }
-
+    if (config?.extraParams?.screen_hint === "signup") {
+      step = AuthStep.SignUp;
+    }
     if (cloudClientIDsArr.includes(config?.clientID)) {
       isRillCloud = true;
     }
@@ -239,6 +239,35 @@
     }
   }
 
+  function getHeadingText() {
+    switch (step) {
+      case AuthStep.Base:
+        return "Log in or sign up";
+      case AuthStep.SSO:
+        return "Log in with SSO";
+      case AuthStep.EmailPassword:
+        return "Log in with email";
+      case AuthStep.SignUp:
+        return "Sign up with email";
+      case AuthStep.Thanks:
+        return "Thanks for signing up!";
+    }
+  }
+
+  function getSubheadingText() {
+    switch (step) {
+      case AuthStep.SSO:
+        return `SAML SSO enabled workspace is associated with ${email}`;
+      case AuthStep.EmailPassword:
+        return `Log in using ${email}`;
+    }
+  }
+
+  $: headingText = getHeadingText();
+  $: subheadingText = getSubheadingText();
+
+  $: console.log("headingText: ", headingText);
+
   onMount(() => {
     initConfig();
   });
@@ -247,7 +276,20 @@
 <RillTheme>
   <AuthContainer>
     <RillLogoSquareNegative size="84px" />
-    <div class="text-xl my-6">Log in or sign up</div>
+    <Spacer />
+    <div class="flex flex-col items-center gap-y-2 text-center">
+      <div class="text-xl text-slate-800">
+        {headingText}
+      </div>
+      {#if subheadingText}
+        <div class="text-base text-gray-500">
+          {subheadingText}
+        </div>
+      {:else}
+        <Spacer />
+      {/if}
+    </div>
+
     <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
       {#if step === AuthStep.Base}
         {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
@@ -268,26 +310,19 @@
 
         <EmailSubmission
           disabled={isEmailDisabled}
-          on:emailSubmit={handleEmailSubmission}
+          on:submitEmail={handleEmailSubmission}
         />
       {/if}
 
       {#if step === AuthStep.SSO}
         <SSOForm
           disabled={isSSODisabled}
-          on:ssoSubmit={(e) => {
+          on:submitSSO={(e) => {
             handleSSOLogin(e.detail);
           }}
           on:back={() => {
-            console.log("back");
+            step = AuthStep.Base;
           }}
-        />
-      {/if}
-
-      {#if step === AuthStep.EmailPassword}
-        <EmailSubmission
-          disabled={isEmailDisabled}
-          on:emailSubmit={handleEmailSubmission}
         />
       {/if}
 
@@ -303,6 +338,8 @@
           }}
         />
       {/if}
+
+      <!-- TODO: AuthStep.SignUp -->
     </div>
 
     {#if errorText}
