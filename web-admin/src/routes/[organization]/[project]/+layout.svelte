@@ -42,7 +42,11 @@
     type RpcStatus,
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
-  import { isProjectPage } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import {
+    isProjectPage,
+    isPublicReportPage,
+    isPublicURLPage,
+  } from "@rilldata/web-admin/features/navigation/nav-utils";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
@@ -62,7 +66,10 @@
 
   $: ({ organization, project, token } = $page.params);
   $: onProjectPage = isProjectPage($page);
-  $: onPublicURLPage = !!token;
+  $: onPublicURLPage = isPublicURLPage($page);
+  $: if ($page.url.searchParams.has("token") && isPublicReportPage($page)) {
+    token = $page.url.searchParams.get("token");
+  }
 
   /**
    * `GetProject` with default cookie-based auth.

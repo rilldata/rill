@@ -311,8 +311,12 @@ func (u *URLs) ReportOpen(org, project, report string, executionTime time.Time) 
 }
 
 // ReportExport returns the URL for exporting a report in the frontend.
-func (u *URLs) ReportExport(org, project, report string) string {
-	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
+func (u *URLs) ReportExport(org, project, report, token string) string {
+	exportURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
+	if token != "" {
+		exportURL += fmt.Sprintf("?token=%s", token)
+	}
+	return exportURL
 }
 
 // ReportEdit returns the URL for editing a report in the frontend.
