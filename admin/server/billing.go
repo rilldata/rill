@@ -126,7 +126,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
 	if !plan.Public && !forceAccess {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %s", plan.Name)
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)
 	}
 
 	// check for validation errors
@@ -533,12 +533,12 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        org.CustomDomain,
-		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaProjects:                       biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     biggerOfInt(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -569,7 +569,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 	}
 
 	if !pc.HasBillableAddress {
-		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
+		validationErrs = append(validationErrs, "no billing address found")
 	}
 
 	be, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
@@ -579,7 +579,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 		}
 	}
 	if be != nil {
-		validationErrs = append(validationErrs, "a previous payment is due, please pay the outstanding amount")
+		validationErrs = append(validationErrs, "a previous payment is due")
 	}
 
 	if len(validationErrs) > 0 && !forceAccess {
