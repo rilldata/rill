@@ -2,11 +2,11 @@ package org
 
 import (
 	"fmt"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
