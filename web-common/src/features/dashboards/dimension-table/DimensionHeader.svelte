@@ -55,7 +55,6 @@
       dimensionsFilter: { toggleDimensionFilterMode },
     },
     dashboardStore,
-    metricsViewName,
     exploreName,
   } = stateManagers;
 
