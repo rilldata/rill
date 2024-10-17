@@ -69,6 +69,7 @@
     <CtaButton
       {disabled}
       variant="secondary"
+      gray
       on:click={() => {
         dispatch("back");
       }}
