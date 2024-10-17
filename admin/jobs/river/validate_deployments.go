@@ -84,6 +84,12 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 		return err
 	}
 
+	// Get project variables
+	projVars, err := w.admin.ResolveProdVariables(ctx, proj.ID)
+	if err != nil {
+		return err
+	}
+
 	var prodDeplID string
 	if proj.ProdDeploymentID != nil {
 		prodDeplID = *proj.ProdDeploymentID
@@ -109,7 +115,7 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 				err = w.admin.UpdateDeployment(ctx, depl, &admin.UpdateDeploymentOptions{
 					Version:         depl.RuntimeVersion,
 					Branch:          depl.Branch,
-					Variables:       proj.ProdVariables,
+					Variables:       projVars,
 					Annotations:     w.admin.NewDeploymentAnnotations(org, proj),
 					EvictCachedRepo: false,
 				})
@@ -128,7 +134,7 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 				err = w.admin.UpdateDeployment(ctx, depl, &admin.UpdateDeploymentOptions{
 					Version:         latestVersion,
 					Branch:          depl.Branch,
-					Variables:       proj.ProdVariables,
+					Variables:       projVars,
 					Annotations:     w.admin.NewDeploymentAnnotations(org, proj),
 					EvictCachedRepo: false,
 				})

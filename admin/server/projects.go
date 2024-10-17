@@ -21,6 +21,7 @@ import (
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -448,7 +449,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdOLAPDriver:       req.ProdOlapDriver,
 		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
-		ProdVariables:        req.Variables,
 		ProdTTLSeconds:       prodTTL,
 	}
 
@@ -647,7 +647,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           prodBranch,
-		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
@@ -666,11 +665,13 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.project", req.Name),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.environment", req.Environment),
+		attribute.Bool("args.for_all_environments", req.ForAllEnvironments),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -680,42 +681,57 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
 	}
 
-	return &adminv1.GetProjectVariablesResponse{Variables: proj.ProdVariables}, nil
+	var enviornment *string
+	if !req.ForAllEnvironments {
+		enviornment = &req.Environment
+	}
+	vars, err := s.admin.DB.FindProjectVariablesByEnviornment(ctx, proj.ID, enviornment)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	resp := &adminv1.GetProjectVariablesResponse{
+		Variables:    make([]*adminv1.ProjectVariable, 0, len(vars)),
+		VariablesMap: make(map[string]string, len(vars)),
+	}
+	for _, v := range vars {
+		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
+		resp.VariablesMap[v.Name] = string(v.Value)
+	}
+	return resp, nil
 }
 
 func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.UpdateProjectVariablesRequest) (*adminv1.UpdateProjectVariablesResponse, error) {
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.environment", req.Environment),
+		attribute.StringSlice("args.variables", maps.Keys(req.Variables)),
+		attribute.StringSlice("args.unset_variables", req.UnsetVariables),
+	)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.PermissionDenied, "only users can update project variables")
+	}
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	proj, err = s.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
-		Name:                 proj.Name,
-		Description:          proj.Description,
-		Public:               proj.Public,
-		ArchiveAssetID:       proj.ArchiveAssetID,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		ProdVersion:          proj.ProdVersion,
-		ProdBranch:           proj.ProdBranch,
-		Subpath:              proj.Subpath,
-		ProdVariables:        req.Variables,
-		ProdDeploymentID:     proj.ProdDeploymentID,
-		ProdSlots:            proj.ProdSlots,
-		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		Provisioner:          proj.Provisioner,
-		Annotations:          proj.Annotations,
-	})
+	vars, err := s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.UpdateProjectVariablesResponse{Variables: proj.ProdVariables}, nil
+	resp := &adminv1.UpdateProjectVariablesResponse{}
+	for _, v := range vars {
+		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
+	}
+	return resp, nil
 }
 
 func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListProjectMemberUsersRequest) (*adminv1.ListProjectMemberUsersResponse, error) {
@@ -1329,7 +1345,6 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,
-		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
@@ -1687,6 +1702,18 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		StatusMessage:     d.StatusMessage,
 		CreatedOn:         timestamppb.New(d.CreatedOn),
 		UpdatedOn:         timestamppb.New(d.UpdatedOn),
+	}
+}
+
+func projectVariableToDTO(v *database.ProjectVariable) *adminv1.ProjectVariable {
+	return &adminv1.ProjectVariable{
+		Id:              v.ID,
+		Name:            v.Name,
+		Value:           string(v.Value),
+		Environment:     v.Environment,
+		UpdatedByUserId: v.UpdatedByUserID,
+		CreatedOn:       timestamppb.New(v.CreatedOn),
+		UpdatedOn:       timestamppb.New(v.UpdatedOn),
 	}
 }
 

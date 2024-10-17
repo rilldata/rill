@@ -276,6 +276,10 @@ type DB interface {
 	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
+
+	FindProjectVariablesByEnviornment(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
+	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
+	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -359,22 +363,20 @@ type Project struct {
 	Provisioner     string
 	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
-	ArchiveAssetID               *string           `db:"archive_asset_id"`
-	GithubURL                    *string           `db:"github_url"`
-	GithubInstallationID         *int64            `db:"github_installation_id"`
-	Subpath                      string            `db:"subpath"`
-	ProdVersion                  string            `db:"prod_version"`
-	ProdBranch                   string            `db:"prod_branch"`
-	ProdVariables                map[string]string `db:"prod_variables"`
-	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
-	ProdOLAPDriver               string            `db:"prod_olap_driver"`
-	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
-	ProdSlots                    int               `db:"prod_slots"`
-	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID             *string           `db:"prod_deployment_id"`
-	Annotations                  map[string]string `db:"annotations"`
-	CreatedOn                    time.Time         `db:"created_on"`
-	UpdatedOn                    time.Time         `db:"updated_on"`
+	ArchiveAssetID       *string           `db:"archive_asset_id"`
+	GithubURL            *string           `db:"github_url"`
+	GithubInstallationID *int64            `db:"github_installation_id"`
+	Subpath              string            `db:"subpath"`
+	ProdVersion          string            `db:"prod_version"`
+	ProdBranch           string            `db:"prod_branch"`
+	ProdOLAPDriver       string            `db:"prod_olap_driver"`
+	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
+	ProdSlots            int               `db:"prod_slots"`
+	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID     *string           `db:"prod_deployment_id"`
+	Annotations          map[string]string `db:"annotations"`
+	CreatedOn            time.Time         `db:"created_on"`
+	UpdatedOn            time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -391,7 +393,6 @@ type InsertProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
@@ -410,7 +411,6 @@ type UpdateProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
@@ -951,6 +951,18 @@ type Asset struct {
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+type ProjectVariable struct {
+	ID                   string    `db:"id"`
+	ProjectID            string    `db:"project_id"`
+	Environment          string    `db:"environment"`
+	Name                 string    `db:"name"`
+	Value                []byte    `db:"value"`
+	ValueEncryptionKeyID string    `db:"value_encryption_key_id"`
+	UpdatedByUserID      string    `db:"updated_by_user_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // EncryptionKey represents an encryption key for column-level encryption/decryption.
