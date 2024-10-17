@@ -123,7 +123,7 @@
         form="user-invite-form"
         loading={$submitting}
         disabled={hasInvalidEmails || !hasSomeValue}
-        forcedStyle="height: 32px !important;"
+        forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
       >
         Invite
       </Button>

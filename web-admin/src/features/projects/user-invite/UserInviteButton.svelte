@@ -20,6 +20,8 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
+  import { getProjectPermissions } from "../selectors";
+  import UserInviteMultipleAccessTooltip from "./UserInviteMultipleAccessTooltip.svelte";
 
   export let organization: string;
   export let project: string;
@@ -44,6 +46,9 @@
     $listProjectMemberUsergroups.data?.members ?? [];
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
+
+  $: projectPermissions = getProjectPermissions(organization, project);
+  $: manageProject = $projectPermissions.data?.manageProject;
 
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
@@ -95,24 +100,24 @@
           </div>
         </div>
       {/if}
-      {#if showGroupsSection}
-        <div class="mt-2">
-          <div class="text-xs text-gray-500 font-semibold uppercase">
-            Groups
-          </div>
-          <!-- 52 * 5 = 260px -->
-          <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
-            {#each projectMemberUserGroupsList as group}
-              <UserInviteGroup {organization} {project} {group} />
-            {/each}
-          </div>
+      <!-- {#if showGroupsSection} -->
+      <div class="mt-2">
+        <div class="text-xs text-gray-500 font-semibold uppercase">Groups</div>
+        <!-- 52 * 5 = 260px -->
+        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
+          {#each projectMemberUserGroupsList as group}
+            <UserInviteGroup {organization} {project} {group} />
+          {/each}
         </div>
-      {/if}
+      </div>
+      <!-- {/if} -->
       <div class="mt-2">
         <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
         <!-- 52 * 5 = 260px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
           {#each usersWithPendingInvites as user}
+            {@const showOverriddenRoleTooltip =
+              manageProject && user.roleName === "viewer"}
             <div
               class="flex flex-row items-center gap-x-2 justify-between cursor-auto"
             >
@@ -123,12 +128,17 @@
                 isCurrentUser={user.userEmail === $currentUser.data?.user.email}
                 pendingAcceptance={!user.userName}
               />
-              <UserInviteUserSetRole
-                {organization}
-                {project}
-                {user}
-                isCurrentUser={user.userEmail === $currentUser.data?.user.email}
-              />
+              <UserInviteMultipleAccessTooltip
+                showTooltip={showOverriddenRoleTooltip}
+              >
+                <UserInviteUserSetRole
+                  {organization}
+                  {project}
+                  {user}
+                  isCurrentUser={user.userEmail ===
+                    $currentUser.data?.user.email}
+                />
+              </UserInviteMultipleAccessTooltip>
             </div>
           {/each}
         </div>
