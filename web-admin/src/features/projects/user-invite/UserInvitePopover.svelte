@@ -20,7 +20,6 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
-  import { getProjectPermissions } from "../selectors";
   import UserInviteMultipleAccessTooltip from "./UserInviteMultipleAccessTooltip.svelte";
 
   export let organization: string;
@@ -47,9 +46,6 @@
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
 
-  $: projectPermissions = getProjectPermissions(organization, project);
-  $: manageProject = $projectPermissions.data?.manageProject;
-
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
       ...invite,
@@ -73,6 +69,25 @@
     projectMemberUserGroupsList.length > 0 &&
     projectMemberUserGroupsList.length === 1 &&
     projectMemberUserGroupsList[0].groupName !== "all-users";
+
+  let userGroupsMap = new Map<
+    string,
+    { userEmail: string; roleName: string }[]
+  >();
+
+  function handleUpdateGroupsList(event) {
+    const { groupsList } = event.detail;
+    userGroupsMap = groupsList;
+  }
+
+  function findGroupByUserEmail(userEmail: string, groupsList) {
+    for (let [groupName, members] of groupsList.entries()) {
+      if (members.some((user) => user.userEmail === userEmail)) {
+        return groupName;
+      }
+    }
+    return null;
+  }
 </script>
 
 <Popover bind:open>
@@ -95,7 +110,12 @@
           </div>
           <div class="flex flex-col gap-y-1">
             {#each projectMemberUserGroupsList as group}
-              <UserInviteOrganization {organization} {project} {group} />
+              <UserInviteOrganization
+                {organization}
+                {project}
+                {group}
+                on:updateGroupsList={handleUpdateGroupsList}
+              />
             {/each}
           </div>
         </div>
@@ -118,8 +138,12 @@
         <!-- 52 * 5 = 260px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
           {#each usersWithPendingInvites as user}
+            {@const foundGroupName = findGroupByUserEmail(
+              user.userEmail,
+              userGroupsMap,
+            )}
             {@const showOverriddenRoleTooltip =
-              manageProject && user.roleName === "viewer"}
+              user.roleName === "viewer" && foundGroupName}
             <div
               class="flex flex-row items-center gap-x-2 justify-between cursor-auto"
             >
@@ -132,6 +156,7 @@
               />
               <UserInviteMultipleAccessTooltip
                 showTooltip={user.userName && showOverriddenRoleTooltip}
+                groupName={foundGroupName}
               >
                 <UserInviteUserSetRole
                   {organization}
