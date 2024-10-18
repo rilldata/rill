@@ -3829,6 +3829,8 @@ definitions:
         type: string
       description:
         type: string
+      superuserForceAccess:
+        type: boolean
   v1CreateOrganizationResponse:
     type: object
     properties:

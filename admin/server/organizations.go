@@ -97,17 +97,21 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	// check single user org limit for this user
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	count, err := s.admin.DB.CountSingleuserOrganizationsForMemberUser(ctx, user.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if user.QuotaSingleuserOrgs >= 0 && count >= user.QuotaSingleuserOrgs {
-		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
+
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !forceAccess {
+		// check single user org limit for this user
+		count, err := s.admin.DB.CountSingleuserOrganizationsForMemberUser(ctx, user.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if user.QuotaSingleuserOrgs >= 0 && count >= user.QuotaSingleuserOrgs {
+			return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
+		}
 	}
 
 	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, user.Email, req.Name, req.Description)
