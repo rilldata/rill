@@ -2097,7 +2097,7 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 			Name:                 key,
 			Value:                encryptedValue,
 			ValueEncryptionKeyID: valueEncryptionKeyID,
-			UpdatedByUserID:      userID,
+			UpdatedByUserID:      &userID,
 		})
 	}
 
