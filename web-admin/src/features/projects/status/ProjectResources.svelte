@@ -5,7 +5,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
 
-  const resources = createRuntimeServiceListResources(
+  $: resources = createRuntimeServiceListResources(
     $runtime.instanceId,
     // All resource "kinds"
     undefined,
