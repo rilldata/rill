@@ -36,9 +36,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.CreateOrganization(cmd.Context(), &adminv1.CreateOrganizationRequest{
-				Name:                 name,
-				Description:          description,
-				SuperuserForceAccess: true,
+				Name:        name,
+				Description: description,
 			})
 			if err != nil {
 				if !isNameExistsErr(err) {

@@ -84,6 +84,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Errorf(codes.FailedPrecondition, "plan cannot be changed on existing subscription as it was cancelled, please renew the subscription")
 	}
 
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
 	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
@@ -101,8 +103,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if bi != nil {
-			// check against trial orgs quota
-			if org.CreatedByUserID != nil {
+			// check against trial orgs quota, skip for superusers
+			if org.CreatedByUserID != nil && !forceAccess {
 				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
@@ -122,8 +124,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			}, nil
 		}
 	}
-
-	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
 	if !plan.Public && !forceAccess {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)

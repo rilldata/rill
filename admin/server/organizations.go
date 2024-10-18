@@ -102,8 +102,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-	if !forceAccess {
+	if !claims.Superuser(ctx) {
 		// check single user org limit for this user
 		count, err := s.admin.DB.CountSingleuserOrganizationsForMemberUser(ctx, user.ID)
 		if err != nil {

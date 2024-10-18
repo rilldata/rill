@@ -1220,7 +1220,6 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
-  superuserForceAccess?: boolean;
 }
 
 export interface V1CreateBookmarkResponse {

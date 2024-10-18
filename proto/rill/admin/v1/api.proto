@@ -854,7 +854,6 @@ message GetOrganizationNameForDomainResponse {
 message CreateOrganizationRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
-  bool superuser_force_access = 4;
 }
 
 message CreateOrganizationResponse {
