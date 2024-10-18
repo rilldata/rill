@@ -25,6 +25,7 @@ WITH project_data AS (
     prod_variables_encryption_key_id
   FROM
     projects
+  WHERE prod_variables::JSON::TEXT NOT LIKE 'null'
 )
 INSERT INTO project_variables (
   project_id,
