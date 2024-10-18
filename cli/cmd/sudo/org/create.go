@@ -71,13 +71,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 					return cmd.Context().Err()
 				case <-timeout:
 					ch.PrintfError("\nTimed out waiting for billing to be initialized\n")
-					ch.PrintfWarn("\nDeleting organization %q\n", org.Name)
-					_, err = client.DeleteOrganization(cmd.Context(), &adminv1.DeleteOrganizationRequest{
-						Name: res.Organization.Name,
-					})
-					if err != nil {
-						ch.PrintfError("\nFailed to delete organization %q with error %v\n", org.Name, err)
-					}
+					ch.PrintfWarn(fmt.Sprintf("\nRun 'rill billing subscription edit --plan %s --force' to subscribe to the plan manually\n", plan))
 					return err
 				case <-ticker.C:
 					res, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{
