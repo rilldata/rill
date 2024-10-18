@@ -1,5 +1,5 @@
 ---
-title: "Organizations and Projects (Rill Cloud)"
+title: "Organizations and Projects in Rill Cloud"
 description: Basic managment from projects 
 sidebar_label: "Organizations and Projects"
 sidebar_position: 19

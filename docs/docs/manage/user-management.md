@@ -1,6 +1,6 @@
 ---
-title: User and Group Management
-sidebar_label: Users Management 
+title: User Management
+sidebar_label: User Management 
 sidebar_position: 21
 ---
 
