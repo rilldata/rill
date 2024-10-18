@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -84,13 +85,13 @@ func (s *Server) AnalyzeVariables(ctx context.Context, req *runtimev1.AnalyzeVar
 
 	// Result
 	var analyzedVars []*runtimev1.AnalyzedVariable
-	for _, v := range va.analyzedVars {
+	for _, analyzedVar := range va.analyzedVars {
 		av := &runtimev1.AnalyzedVariable{
-			Name:         v.Name,
-			DefaultValue: v.DefaultValue,
-			UsedBy:       make([]*runtimev1.ResourceName, 0, len(v.UsedBy)),
+			Name:         analyzedVar.Name,
+			DefaultValue: analyzedVar.DefaultValue,
+			UsedBy:       make([]*runtimev1.ResourceName, 0, len(analyzedVar.UsedBy)),
 		}
-		for r := range v.UsedBy {
+		for r := range analyzedVar.UsedBy {
 			av.UsedBy = append(av.UsedBy, rillv1ToRuntimeResourceName(r))
 		}
 		analyzedVars = append(analyzedVars, av)
@@ -112,9 +113,10 @@ type analyzedVariable struct {
 	UsedBy       map[rillv1.ResourceName]any
 }
 
-func (va *variableAnalyzer) trackVariablesForResource(vars map[string]string, r rillv1.ResourceName) {
-	for v := range vars {
-		analyzedVar, ok := va.analyzedVars[v]
+func (va *variableAnalyzer) trackVariablesForResource(variables map[string]string, r rillv1.ResourceName) {
+	for variable := range variables {
+		variable = strings.TrimPrefix(variable, "vars.")
+		analyzedVar, ok := va.analyzedVars[variable]
 		if ok {
 			// Variable is also used by another resource
 			analyzedVar.UsedBy[r] = nil
@@ -122,12 +124,13 @@ func (va *variableAnalyzer) trackVariablesForResource(vars map[string]string, r 
 		}
 
 		analyzedVar = &analyzedVariable{
-			Name: v,
+			Name:   variable,
+			UsedBy: map[rillv1.ResourceName]any{r: nil},
 		}
-		if def, ok := va.inst.ProjectVariables[v]; ok {
+		if def, ok := va.inst.ProjectVariables[variable]; ok {
 			analyzedVar.DefaultValue = def
 		}
-		va.analyzedVars[v] = analyzedVar
+		va.analyzedVars[variable] = analyzedVar
 	}
 }
 

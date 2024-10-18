@@ -722,6 +722,10 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
+	if len(req.Variables) == 0 && len(req.UnsetVariables) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "no variables or unset_variables provided")
+	}
+
 	vars, err := s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

@@ -21,7 +21,6 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	// Load postgres driver
-
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
@@ -2084,7 +2083,7 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 		updated_by_user_id = EXCLUDED.updated_by_user_id,
 		updated_on = now() RETURNING *`
 
-	args := make([]map[string]interface{}, 0, len(vars))
+	args := make([]database.ProjectVariable, 0, len(vars))
 	for key, value := range vars {
 		// Encrypt the variables
 		encryptedValue, valueEncryptionKeyID, err := c.encrypt([]byte(value))
@@ -2092,13 +2091,13 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 			return nil, err
 		}
 
-		args = append(args, map[string]interface{}{
-			"project_id":              projectID,
-			"environment":             environment,
-			"name":                    key,
-			"value":                   encryptedValue,
-			"value_encryption_key_id": valueEncryptionKeyID,
-			"updated_by_user_id":      userID,
+		args = append(args, database.ProjectVariable{
+			ProjectID:            projectID,
+			Environment:          environment,
+			Name:                 key,
+			Value:                encryptedValue,
+			ValueEncryptionKeyID: valueEncryptionKeyID,
+			UpdatedByUserID:      userID,
 		})
 	}
 

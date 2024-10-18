@@ -93,7 +93,7 @@ service AdminService {
     };
   }
 
-  // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+  // GetProjectVariables returns project variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/variables"};
   }
@@ -972,6 +972,7 @@ message UpdateProjectVariablesRequest {
   // New variable values.
   // It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
   map<string, string> variables = 3;
+  // Variables to delete.
   repeated string unset_variables = 5;
 }
 

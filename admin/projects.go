@@ -186,18 +186,13 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		return nil, err
 	}
 
-	vars, err := s.ResolveProdVariables(ctx, proj.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
 			Version:         d.RuntimeVersion,
 			Branch:          opts.ProdBranch,
-			Variables:       vars,
+			Variables:       nil,
 			Annotations:     annotations,
 			EvictCachedRepo: true,
 		})
@@ -211,22 +206,28 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 }
 
 // UpdateProjectVariables updates a project's variables and runs reconcile on the deployments.
-func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.Project, enviornment string, vars map[string]string, unsetVars []string, userID string) ([]*database.ProjectVariable, error) {
-	ctx, tx, err := s.DB.NewTx(ctx)
+func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.Project, environment string, vars map[string]string, unsetVars []string, userID string) ([]*database.ProjectVariable, error) {
+	if len(vars) == 0 && len(unsetVars) == 0 {
+		return nil, nil
+	}
+	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// Upsert variables
-	updatedVars, err := s.DB.UpsertProjectVariable(ctx, project.ID, enviornment, vars, userID)
-	if err != nil {
-		_ = tx.Rollback()
-		return nil, status.Error(codes.Internal, err.Error())
+	var updatedVars []*database.ProjectVariable
+	if len(vars) > 0 {
+		updatedVars, err = s.DB.UpsertProjectVariable(txCtx, project.ID, environment, vars, userID)
+		if err != nil {
+			_ = tx.Rollback()
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	// Delete unset variables
 	if len(unsetVars) > 0 {
-		err = s.DB.DeleteProjectVariables(ctx, project.ID, enviornment, unsetVars)
+		err = s.DB.DeleteProjectVariables(txCtx, project.ID, environment, unsetVars)
 		if err != nil {
 			_ = tx.Rollback()
 			return nil, status.Error(codes.Internal, err.Error())
@@ -258,6 +259,13 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	vars, err = s.ResolveProdVariables(ctx, project.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(vars) == 0 {
+		// edge case : no prod variables to set (variable was deleted)
+		// but the runtime does not update variables if the new map is empty
+		// so we need to set a dummy variable to trigger the update
+		vars = map[string]string{"nonce": time.Now().Format(time.RFC3339Nano)}
 	}
 
 	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
@@ -297,16 +305,11 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 				return err
 			}
 
-			vars, err := s.ResolveProdVariables(ctx, proj.ID)
-			if err != nil {
-				return err
-			}
-
 			for _, d := range ds {
 				err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
 					Version:         d.RuntimeVersion,
 					Branch:          proj.ProdBranch,
-					Variables:       vars,
+					Variables:       nil,
 					Annotations:     s.NewDeploymentAnnotations(org, proj),
 					EvictCachedRepo: false,
 				})
