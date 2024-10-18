@@ -74,7 +74,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Provisioner:    proj.Provisioner,
 		Annotations:    s.NewDeploymentAnnotations(org, proj),
 		ProdBranch:     proj.ProdBranch,
-		ProdVariables:  proj.ProdVariables,
+		ProdVariables:  nil,
 		ProdOLAPDriver: proj.ProdOLAPDriver,
 		ProdOLAPDSN:    proj.ProdOLAPDSN,
 		ProdSlots:      proj.ProdSlots,
@@ -97,7 +97,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,
-		ProdVariables:        proj.ProdVariables,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
@@ -147,7 +146,6 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		(proj.Subpath != opts.Subpath) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
 		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
-		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
 		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID)
@@ -194,7 +192,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
 			Version:         d.RuntimeVersion,
 			Branch:          opts.ProdBranch,
-			Variables:       opts.ProdVariables,
+			Variables:       nil,
 			Annotations:     annotations,
 			EvictCachedRepo: true,
 		})
@@ -205,6 +203,88 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	}
 
 	return proj, nil
+}
+
+// UpdateProjectVariables updates a project's variables and runs reconcile on the deployments.
+func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.Project, environment string, vars map[string]string, unsetVars []string, userID string) ([]*database.ProjectVariable, error) {
+	if len(vars) == 0 && len(unsetVars) == 0 {
+		return nil, nil
+	}
+	txCtx, tx, err := s.DB.NewTx(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Upsert variables
+	var updatedVars []*database.ProjectVariable
+	if len(vars) > 0 {
+		updatedVars, err = s.DB.UpsertProjectVariable(txCtx, project.ID, environment, vars, userID)
+		if err != nil {
+			_ = tx.Rollback()
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	// Delete unset variables
+	if len(unsetVars) > 0 {
+		err = s.DB.DeleteProjectVariables(txCtx, project.ID, environment, unsetVars)
+		if err != nil {
+			_ = tx.Rollback()
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	// Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Update deployments
+	s.Logger.Info("update project variables: updating deployments", observability.ZapCtx(ctx))
+
+	org, err := s.DB.FindOrganization(ctx, project.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	annotations := s.NewDeploymentAnnotations(org, project)
+
+	ds, err := s.DB.FindDeploymentsForProject(ctx, project.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	vars, err = s.ResolveProdVariables(ctx, project.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(vars) == 0 {
+		// edge case : no prod variables to set (variable was deleted)
+		// but the runtime does not update variables if the new map is empty
+		// so we need to set a dummy variable to trigger the update
+		vars = map[string]string{"nonce": time.Now().Format(time.RFC3339Nano)}
+	}
+
+	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
+	// It needs to be refactored when implementing preview deploys.
+	for _, d := range ds {
+		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
+			Version:         d.RuntimeVersion,
+			Branch:          project.ProdBranch,
+			Variables:       vars,
+			Annotations:     annotations,
+			EvictCachedRepo: true,
+		})
+		if err != nil {
+			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
+			return nil, err
+		}
+	}
+
+	return updatedVars, nil
 }
 
 // UpdateOrgDeploymentAnnotations iterates over projects of the given org and
@@ -229,7 +309,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 				err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
 					Version:         d.RuntimeVersion,
 					Branch:          proj.ProdBranch,
-					Variables:       proj.ProdVariables,
+					Variables:       nil,
 					Annotations:     s.NewDeploymentAnnotations(org, proj),
 					EvictCachedRepo: false,
 				})
@@ -256,6 +336,11 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		return nil, err
 	}
 
+	vars, err := s.ResolveProdVariables(ctx, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
 		ProjectID:      proj.ID,
@@ -263,7 +348,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		Annotations:    s.NewDeploymentAnnotations(org, proj),
 		ProdVersion:    proj.ProdVersion,
 		ProdBranch:     proj.ProdBranch,
-		ProdVariables:  proj.ProdVariables,
+		ProdVariables:  vars,
 		ProdOLAPDriver: proj.ProdOLAPDriver,
 		ProdOLAPDSN:    proj.ProdOLAPDSN,
 		ProdSlots:      proj.ProdSlots,
@@ -284,7 +369,6 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,
-		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     &newDepl.ID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
@@ -331,7 +415,6 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,
-		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     nil,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
@@ -433,4 +516,24 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 			return nil
 		}
 	}
+}
+
+func (s *Service) ResolveProdVariables(ctx context.Context, projectID string) (map[string]string, error) {
+	vars, err := s.DB.FindProjectVariablesByEnvironment(ctx, projectID, nil)
+	if err != nil {
+		return nil, err
+	}
+	res := make(map[string]string)
+	for _, v := range vars {
+		switch v.Environment {
+		case "":
+			// only add default variable if it doesn't already exist to not override production variables
+			if _, ok := res[v.Name]; !ok {
+				res[v.Name] = string(v.Value)
+			}
+		case "production":
+			res[v.Name] = string(v.Value)
+		}
+	}
+	return res, nil
 }

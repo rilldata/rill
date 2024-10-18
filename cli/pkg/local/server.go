@@ -404,9 +404,9 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
 	}
 	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-		OrganizationName: r.Msg.Org,
-		Name:             r.Msg.ProjectName,
-		Variables:        parser.DotEnv,
+		Organization: r.Msg.Org,
+		Project:      r.Msg.ProjectName,
+		Variables:    parser.DotEnv,
 	})
 	if err != nil {
 		return nil, err
