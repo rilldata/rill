@@ -40,7 +40,7 @@ Global Flags:
 
 :::tip
 
-[Access to Rill can be granted on the organization level](user-management.md#adding-a-member-to-the-organization).
+[Access to Rill can be granted on the organization level](/manage/user-management#how-to-add-an-organization-user).
 
 :::
 
@@ -94,7 +94,7 @@ If you have already setup your connection to GitHub, you can edit the branch fro
 
 :::tip
 
-[Access to Rill can be granted from the project level](user-management.md#adding-a-member-to-a-specific-project).
+[Access to Rill can be granted from the project level](/manage/user-management#how-to-add-a-project-user).
 
 :::
 
