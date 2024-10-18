@@ -483,8 +483,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if bi != nil {
-		// check against trial orgs quota
-		if org.CreatedByUserID != nil {
+		// check against trial orgs quota but skip if the user is a superuser
+		if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
 			u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())

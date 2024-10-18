@@ -856,12 +856,12 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 }
 
 const (
-	DefaultQuotaProjects                       = 5
-	DefaultQuotaDeployments                    = 10
-	DefaultQuotaSlotsTotal                     = 20
-	DefaultQuotaSlotsPerDeployment             = 5
+	DefaultQuotaProjects                       = 1
+	DefaultQuotaDeployments                    = 2
+	DefaultQuotaSlotsTotal                     = 4
+	DefaultQuotaSlotsPerDeployment             = 2
 	DefaultQuotaOutstandingInvites             = 200
-	DefaultQuotaSingleuserOrgs                 = 3
+	DefaultQuotaSingleuserOrgs                 = 100
 	DefaultQuotaTrialOrgs                      = 2
 	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
 )
