@@ -66,7 +66,7 @@ export function createDashboardStateSync(
       const exploreName = get(ctx.exploreName);
       if (exploreName in get(metricsExplorerStore).entities) {
         // Successive syncs with metrics view spec
-        metricsExplorerStore.sync(exploreName, explore);
+        // metricsExplorerStore.sync(exploreName, explore);
       } else {
         // Running for the 1st time. Initialise the dashboard store.
         metricsExplorerStore.init(

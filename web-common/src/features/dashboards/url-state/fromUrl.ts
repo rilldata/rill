@@ -78,6 +78,9 @@ export function getMetricsExplorerFromUrl(
     if (dimensionFilters) entity.whereFilter = dimensionFilters;
     if (dimensionThresholdFilters)
       entity.dimensionThresholdFilters = dimensionThresholdFilters;
+  } else {
+    entity.whereFilter = createAndExpression([]);
+    entity.dimensionThresholdFilters = [];
   }
 
   const { entity: trEntity, errors: trErrors } = fromTimeRangesParams(
@@ -128,11 +131,16 @@ function fromTimeRangesParams(
     const { timeRange, error } = fromTimeRangeUrlParam(comparisonTimeRange);
     if (error) errors.push(error);
     entity.selectedComparisonTimeRange = timeRange;
+  } else {
+    entity.selectedComparisonTimeRange = undefined;
   }
+
   const comparisonDimension =
     searchParams.get("cd") || preset.comparisonDimension;
   if (comparisonDimension && dimensions.has(comparisonDimension)) {
     entity.selectedComparisonDimension = comparisonDimension;
+  } else {
+    entity.selectedComparisonDimension = "";
   }
 
   // TODO: grain
