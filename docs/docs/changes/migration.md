@@ -1,11 +1,9 @@
 ---
-title: "Migrations"
+title: "Dashboard split into two components"
 description: For documenting required migrations
-sidebar_label: "Migrations"
+sidebar_label: "Changes to Dashboards"
 sidebar_position: 60
 ---
-
-Please refer to the changes below and recommended migration steps.
 
 ## Migration
 
