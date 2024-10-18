@@ -39,7 +39,7 @@ Now that this is created, you have a few options on which level you want to crea
 1. Am I using the metrics view on other components other than the dashboard? IE: APIs, canvas dashboards
 2. If I am using the metrics view in other locations, how strict do I want the metrics layer to be? 
 
-For most situations, you would define the dashboard policies at the metrics-view level. So let's do that. Let's create a new metrics view, `auction_data_model_metrics_row_policies.yaml`, and copy the contents of `auction_data_model_metrics.yaml` into it.
+For most situations, you would define the dashboard policies at the metrics view level. So let's do that. Let's create a new metrics view, `auction_data_model_metrics_row_policies.yaml`, and copy the contents of `auction_data_model_metrics.yaml` into it.
 
 In our new file, we want to define the following security rule:
 ```yaml
@@ -75,7 +75,7 @@ This is a relatively straight forward example of row policies in Rill. By settin
 
 Let's say you hired a contractor to assist with several customers. Mapping their domain or even email to the accounts will grant them visibility to only that specific data without having to create a new dashboard, metrics view, etc.
 
-Grant Rill Data to three values in 'Pub Name', but for Roy only LG USA. You would need to modify the SQL statement in the metrics-view to also accommodate email.
+Grant Rill Data to three values in 'Pub Name', but for Roy only LG USA. You would need to modify the SQL statement in the metrics view to also accommodate email.
 ```SQL
 -- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models

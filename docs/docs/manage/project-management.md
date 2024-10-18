@@ -9,6 +9,9 @@ Once a project is ready to be deployed onto Rill Cloud, as an admin, you will ne
 
 ## Organization
 
+! [] ()
+> Add image here of org view, overview of all projects, maybe demo page>
+
 An Organization in Rill is the parent management object and encompasses how your team or organization interfaces with Rill Cloud. Organizations are designed to hold the differnet components of your Rill project. Projects exist within an organization, which itself contains sources, models, dashboards, and other resources that belong to your standalone Rill projects.
 
 If you'd like to create, edit, modify, or delete an organization, run the following command.
@@ -43,6 +46,9 @@ Global Flags:
 
 ## Project
 
+! [] () 
+> insert project view, seeing all the dashboards
+
 A project is a single deployed instance from Rill Developer (or what we refer to as a Rill project). Each project can be connected to one GitHub repository. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI or the UI.
 
 ### CLI
@@ -73,7 +79,7 @@ A branch from which continuous deployment is setup can be changed while editing 
 rill project edit
 ```
 
-### UI
+### Rill Cloud
 
 #### Checking deployment status
 After deploying to Rill Cloud, you will be navigating to the status page. Here you will be able to see your component's status and if there are any issues with loading or parsing.

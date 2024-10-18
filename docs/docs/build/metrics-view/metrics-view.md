@@ -1,6 +1,6 @@
 ---
 title: Create Metrics Views
-description: Create metrics-view using source data and models with time, dimensions, and measures
+description: Create metrics view using source data and models with time, dimensions, and measures
 sidebar_label: Create Metrics Views
 sidebar_position: 00
 ---

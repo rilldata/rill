@@ -12,10 +12,10 @@ As we continue to develope more features within Rill, it became clear that we ne
 <img src = '/img/concepts/metrics-view/old-dashboard.png' class='rounded-gif' />
 <br />
 
-Historically in Rill, the metrics layer and dashboard configuration were a single file. As seen above, the metrics would be defined **inside** a dashboard YAML file along with the dashboard components and dashboard customizations. We found that this was not the best approach as we continued developement. In order to create a metrics layer in Rill as a first class resource and not a consequence of dashboards, we found it necessary to split the two resources into their own files. Thus, the metrics-view was born.
+Historically in Rill, the metrics layer and dashboard configuration were a single file. As seen above, the metrics would be defined **inside** a dashboard YAML file along with the dashboard components and dashboard customizations. We found that this was not the best approach as we continued developement. In order to create a metrics layer in Rill as a first class resource and not a consequence of dashboards, we found it necessary to split the two resources into their own files. Thus, the metrics view was born.
 
-## Splitting the Dashboard into two components, Metrics-view and Dashboard Configuration
-Splitting the metrics view into its own component allows us more freedom to continue building Rill and adding new additional features. Instead of querying a dashboard for data, we would be querying the metrics-layer. The dashboard will directly query the metrics-view along with many new components that are currently being developed.
+## Splitting the Dashboard into two components, Metrics view and Dashboard Configuration
+Splitting the metrics view into its own component allows us more freedom to continue building Rill and adding new additional features. Instead of querying a dashboard for data, we would be querying the metrics-layer. The dashboard will directly query the metrics view along with many new components that are currently being developed.
 
 ### New Metrics View as an independent object in Rill 
 
@@ -23,7 +23,7 @@ Splitting the metrics view into its own component allows us more freedom to cont
 
 ### (Explore) Dashboard
 
-With the split of metrics view, dashboard configurations experienced an overhaul. Instead of defining measure and dimensions, you will now reference the object into your dashboard. What this allows is creating customized dashboards for specific viewers and reusability of a single metrics-view in multiple dashboards!
+With the split of metrics view, dashboard configurations experienced an overhaul. Instead of defining measure and dimensions, you will now reference the object into your dashboard. What this allows is creating customized dashboards for specific viewers and reusability of a single metrics view in multiple dashboards!
 
 ![img](/img/concepts/metrics-view/explore-dashboard.png)
 
@@ -36,12 +36,12 @@ Due to the [separation of dashboards to metrics layer and dashboards](/concepts/
 **[Sample Legacy Dashboard Contents](https://docs.rilldata.com/reference/project-files/explore-dashboards):**
 
 ```yaml
-title: #defined on metrics-view and dashboard
-model: #defined on metrics-view
-type: #defined on both, explore or metrics-view
-timeseries: #defined on metrics-view
+title: #defined on metrics view and dashboard
+model: #defined on metrics view
+type: #defined on both, explore or metrics view
+timeseries: #defined on metrics view
 
-smallest_time_grain: #defined in metrics-view, 
+smallest_time_grain: #defined in metrics view, 
 
 default_dimensions:  #separate default
 default_measures:    #values defined in
@@ -50,13 +50,13 @@ default_comparisons: #dashboard config
 
 
 
-measures: #defined in metrics-view, 
+measures: #defined in metrics view, 
     ...
 
-dimensions: #defined in metrics-view, 
+dimensions: #defined in metrics view, 
     ...
 
-security: #defined on both metrics-view and dashboard but different capabilities
+security: #defined on both metrics view and dashboard but different capabilities
     ...
 
 theme:  #defined in dashboard
@@ -64,8 +64,8 @@ theme:  #defined in dashboard
 available_time_zones: #defined in dashboard as time_zones:
 available_time_ranges: #defined in dashboard as time_ranges:
 
-first_day_of_week: #defined in metrics-view,
-first_month_of_year: #defined in metrics-view,
+first_day_of_week: #defined in metrics view,
+first_month_of_year: #defined in metrics view,
 
 ```
 ---
