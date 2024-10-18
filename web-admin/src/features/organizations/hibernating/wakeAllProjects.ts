@@ -65,10 +65,10 @@ async function redeployProject(
     organization,
     project: project.name,
   });
-  void queryClient.refetchQueries(
+  void queryClient.invalidateQueries(
     getAdminServiceGetProjectQueryKey(organization, project.name),
     {
-      // avoid refetching createAdminServiceGetProjectWithBearerToken
+      // avoid invalidating createAdminServiceGetProjectWithBearerToken
       exact: true,
     },
   );

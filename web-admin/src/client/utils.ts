@@ -20,7 +20,7 @@ export function isAdminServerQuery(query: Query): boolean {
   return adminApiEndpoints.some((endpoint) => apiPath.startsWith(endpoint));
 }
 
-export function mergedQueryStatusStatus(
+export function mergedQueryStatus(
   queriesOrMutations: Readable<{
     isLoading: boolean;
     isError: boolean;

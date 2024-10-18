@@ -18,7 +18,7 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import { mergedQueryStatusStatus } from "@rilldata/web-admin/client/utils";
+  import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
     fetchPaymentsPortalURL,
@@ -105,7 +105,7 @@
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
-  $: allStatus = mergedQueryStatusStatus([
+  $: allStatus = mergedQueryStatus([
     categorisedIssues,
     planUpdater,
     planRenewer,

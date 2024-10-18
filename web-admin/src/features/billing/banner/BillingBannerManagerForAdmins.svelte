@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BannerCTAHandler } from "@rilldata/web-admin/features/billing/banner/BannerCTAHandler";
+  import { BillingCTAHandler } from "@rilldata/web-admin/features/billing/banner/BillingCTAHandler";
   import {
     type BillingIssueMessage,
     useBillingIssueMessage,
@@ -10,9 +10,9 @@
   export let organization: string;
 
   $: billingIssueMessage = useBillingIssueMessage(organization);
-  $: bannerCTAHandler = new BannerCTAHandler(organization);
+  $: billingCTAHandler = new BillingCTAHandler(organization);
   $: ({ showStartTeamPlanDialog, startTeamPlanType, teamPlanEndDate } =
-    bannerCTAHandler);
+    billingCTAHandler);
 
   function showBillingIssueBanner(message: BillingIssueMessage) {
     eventBus.emit("banner", {
@@ -25,7 +25,7 @@
               type: "button",
               text: message.cta.text + "->",
               onClick() {
-                return bannerCTAHandler.handle(message);
+                return billingCTAHandler.handle(message);
               },
             },
           }
@@ -38,12 +38,7 @@
       showBillingIssueBanner($billingIssueMessage.data);
     } else {
       // when switching orgs we need to make sure we clear previous org's banner.
-      // TODO: could this interfere with other banners?
-      eventBus.emit("banner", {
-        type: "clear",
-        message: "",
-        iconType: "none",
-      });
+      eventBus.emit("banner", null);
     }
   }
 </script>

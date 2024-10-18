@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isProjectInvitePage,
     withinOrganization,
@@ -22,7 +23,8 @@
 
   export let data;
 
-  $: ({ projectPermissions } = data);
+  $: ({ projectPermissions, organizationPermissions } = data);
+  $: organization = $page.params.organization;
 
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -62,6 +64,9 @@
   <QueryClientProvider client={queryClient}>
     <main class="flex flex-col min-h-screen h-screen">
       <BannerCenter />
+      {#if organization}
+        <BillingBannerManager {organization} {organizationPermissions} />
+      {/if}
       {#if !isEmbed && !hideTopBar}
         <TopNavigationBar
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}

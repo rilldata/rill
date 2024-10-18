@@ -18,6 +18,10 @@ export async function fetchTeamPlan() {
   return plansResp.plans.find(isTeamPlan);
 }
 
+/**
+ * We cannot prefetch this since the url is short-lived and single use for security purposes.
+ * So we fetch just when we need it.
+ */
 export async function fetchPaymentsPortalURL(
   organization: string,
   returnUrl: string,

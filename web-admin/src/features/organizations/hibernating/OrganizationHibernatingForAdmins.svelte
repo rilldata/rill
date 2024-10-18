@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BannerCTAHandler } from "@rilldata/web-admin/features/billing/banner/BannerCTAHandler";
+  import { BillingCTAHandler } from "@rilldata/web-admin/features/billing/banner/BillingCTAHandler";
   import {
     type BillingIssueMessage,
     useBillingIssueMessage,
@@ -17,13 +17,13 @@
   export let organization: string;
 
   $: billingIssueMessage = useBillingIssueMessage(organization);
-  $: bannerCTAHandler = new BannerCTAHandler(organization);
+  $: billingCTAHandler = new BillingCTAHandler(organization);
   $: ({
     showStartTeamPlanDialog,
     startTeamPlanType,
     teamPlanEndDate,
     wakingProjects,
-  } = bannerCTAHandler);
+  } = billingCTAHandler);
   let issueForHibernation: BillingIssueMessage;
   $: if ($billingIssueMessage.data) {
     if ($billingIssueMessage.data.type === "error") {
@@ -85,7 +85,7 @@
       <Button
         type="secondary"
         wide
-        on:click={() => bannerCTAHandler.handle(issueForHibernation)}
+        on:click={() => billingCTAHandler.handle(issueForHibernation)}
       >
         {issueForHibernation.cta.text}
       </Button>

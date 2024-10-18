@@ -16,6 +16,7 @@
 
   export let organization: string;
   export let subscription: V1Subscription;
+  export let showUpgrade: boolean;
 
   $: plan = subscription?.plan;
 
@@ -44,7 +45,7 @@
 
   $: title = "Trial plan" + (trialEnded ? " expired" : "");
 
-  let open = false;
+  let open = showUpgrade;
   $: type = (trialEnded ? "trial-expired" : "base") as TeamPlanDialogTypes;
 </script>
 
@@ -74,4 +75,6 @@
   </Button>
 </SettingsContainer>
 
-<StartTeamPlanDialog bind:open {organization} {type} />
+{#if !$categorisedIssues.isLoading}
+  <StartTeamPlanDialog bind:open {organization} {type} />
+{/if}

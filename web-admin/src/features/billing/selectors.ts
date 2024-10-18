@@ -1,8 +1,10 @@
 import type { CreateQueryOptions } from "@rilldata/svelte-query";
 import {
+  adminServiceListOrganizationBillingIssues,
   createAdminServiceGetBillingSubscription,
   createAdminServiceGetOrganization,
   createAdminServiceListOrganizationBillingIssues,
+  getAdminServiceListOrganizationBillingIssuesQueryKey,
   type V1BillingIssue,
   V1BillingIssueType,
   type V1GetBillingSubscriptionResponse,
@@ -24,39 +26,38 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function getSubscriptionForOrg<T = V1GetBillingSubscriptionResponse>(
-  org: string,
+  organization: string,
   queryOptions?: CreateQueryOptions<
     V1GetBillingSubscriptionResponse,
     ErrorType<RpcStatus>,
     T // T is the return type of the `select` function
   >,
 ): CreateQueryResult<T, ErrorType<RpcStatus>> {
-  return derived([createAdminServiceGetOrganization(org)], ([orgResp], set) =>
-    createAdminServiceGetBillingSubscription(org, {
-      query: {
-        ...queryOptions,
-        enabled:
-          (queryOptions && "enabled" in queryOptions
-            ? queryOptions.enabled
-            : true) &&
-          !!orgResp.data?.permissions?.manageOrg &&
-          !!org,
-        queryClient,
-      },
-    }).subscribe(set),
+  return derived(
+    [createAdminServiceGetOrganization(organization)],
+    ([orgResp], set) =>
+      createAdminServiceGetBillingSubscription(organization, {
+        query: {
+          ...queryOptions,
+          enabled:
+            (queryOptions && "enabled" in queryOptions
+              ? queryOptions.enabled
+              : true) &&
+            !!orgResp.data?.permissions?.manageOrg &&
+            !!organization,
+          queryClient,
+        },
+      }).subscribe(set),
   );
 }
 
-export function getPlanForOrg(org: string, enabled = true) {
-  return derived([createAdminServiceGetOrganization(org)], ([orgResp], set) =>
-    createAdminServiceGetBillingSubscription(org, {
-      query: {
-        enabled: enabled && !!orgResp.data?.permissions?.manageOrg && !!org,
-        select: (data) => data.subscription?.plan,
-        queryClient,
-      },
-    }).subscribe(set),
-  );
+export async function fetchOrganizationBillingIssues(organization: string) {
+  const resp = await queryClient.fetchQuery({
+    queryKey:
+      getAdminServiceListOrganizationBillingIssuesQueryKey(organization),
+    queryFn: () => adminServiceListOrganizationBillingIssues(organization),
+  });
+  return resp.issues ?? [];
 }
 
 export type CategorisedOrganizationBillingIssues = {
@@ -65,8 +66,8 @@ export type CategorisedOrganizationBillingIssues = {
   cancelled?: V1BillingIssue;
   payment: V1BillingIssue[];
 };
-export function useCategorisedOrganizationBillingIssues(org: string) {
-  return createAdminServiceListOrganizationBillingIssues(org, {
+export function useCategorisedOrganizationBillingIssues(organization: string) {
+  return createAdminServiceListOrganizationBillingIssues(organization, {
     query: {
       select: (data) => {
         const issues = data.issues ?? [];
@@ -82,14 +83,6 @@ export function useCategorisedOrganizationBillingIssues(org: string) {
   });
 }
 
-export function orgHasBlockerIssues(org: string) {
-  return createAdminServiceListOrganizationBillingIssues(org, {
-    query: {
-      select: (data) => hasBlockerIssues(data.issues ?? []),
-      refetchOnWindowFocus: true,
-    },
-  });
-}
 export function hasBlockerIssues(issues: V1BillingIssue[]) {
   const trialIssue = getTrialIssue(issues);
   if (trialIssue) {

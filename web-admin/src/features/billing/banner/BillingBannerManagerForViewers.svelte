@@ -18,11 +18,7 @@
     } else {
       // when switching orgs we need to make sure we clear previous org's banner.
       // TODO: could this interfere with other banners?
-      eventBus.emit("banner", {
-        type: "clear",
-        message: "",
-        iconType: "none",
-      });
+      eventBus.emit("banner", null);
     }
   }
 </script>

@@ -8,9 +8,11 @@ export const ssr = false;
 import {
   adminServiceGetProject,
   getAdminServiceGetProjectQueryKey,
+  type V1OrganizationPermissions,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
 import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error } from "@sveltejs/kit";
 import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
@@ -22,8 +24,21 @@ import {
 export const load = async ({ params }) => {
   const { organization, project, token } = params;
 
+  let organizationPermissions: V1OrganizationPermissions = {};
+  if (organization && !token) {
+    try {
+      organizationPermissions =
+        await fetchOrganizationPermissions(organization);
+    } catch (e) {
+      if (e.response?.status !== 403 || (await checkUserAccess())) {
+        throw error(e.response.status, "Error fetching organization");
+      }
+    }
+  }
+
   if (!organization || !project) {
     return {
+      organizationPermissions,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
@@ -65,6 +80,7 @@ export const load = async ({ params }) => {
     const { projectPermissions } = response;
 
     return {
+      organizationPermissions,
       projectPermissions,
     };
   } catch (e) {

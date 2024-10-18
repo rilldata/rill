@@ -16,7 +16,7 @@ interface NotificationOptions {
 }
 
 export interface BannerMessage {
-  type: "default" | "success" | "info" | "warning" | "error" | "clear";
+  type: "default" | "success" | "info" | "warning" | "error";
   message: string;
   includesHtml?: boolean;
 

@@ -8,6 +8,7 @@
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 
   export let organization: string;
+  export let showUpgrade: boolean;
 
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: subscription = $subscriptionQuery?.data?.subscription;
@@ -26,9 +27,9 @@
 {#if neverSubbed}
   No subscription (TODO)
 {:else if isTrial}
-  <TrialPlan {organization} {subscription} />
+  <TrialPlan {organization} {subscription} {showUpgrade} />
 {:else if hasEnded}
-  <EndedTeamPlan {organization} {subscription} />
+  <EndedTeamPlan {organization} {subscription} {showUpgrade} />
 {:else if subIsTeamPlan}
   <TeamPlan {organization} {subscription} />
 {:else if subscription?.plan}

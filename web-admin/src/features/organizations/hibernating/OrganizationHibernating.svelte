@@ -1,12 +1,14 @@
 <script lang="ts">
+  import type { V1OrganizationPermissions } from "@rilldata/web-admin/client";
   import OrganizationHibernatingForAdmins from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernatingForAdmins.svelte";
   import OrganizationHibernatingForViewers from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernatingForViewers.svelte";
-  import OrganizationAccessControls from "@rilldata/web-admin/features/organizations/OrganizationAccessControls.svelte";
 
   export let organization: string;
+  export let organizationPermissions: V1OrganizationPermissions;
 </script>
 
-<OrganizationAccessControls {organization}>
-  <OrganizationHibernatingForAdmins {organization} slot="manage-org" />
-  <OrganizationHibernatingForViewers slot="read-projects" />
-</OrganizationAccessControls>
+{#if organizationPermissions.manageOrg}
+  <OrganizationHibernatingForAdmins {organization} />
+{:else if organizationPermissions.readOrg}
+  <OrganizationHibernatingForViewers />
+{/if}

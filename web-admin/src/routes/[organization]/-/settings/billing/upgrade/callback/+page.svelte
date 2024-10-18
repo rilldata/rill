@@ -26,9 +26,7 @@
    * Landing page to upgrade a user to team plan.
    * Is set as a return url on stripe portal.
    */
-
   $: organization = $page.params.organization;
-
   let upgrading = false;
   let isRenew = false;
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
@@ -38,6 +36,7 @@
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
+
   async function upgrade() {
     // if there are still payment issues then do not upgrade
     if ($categorisedIssues.data?.payment?.length) {
@@ -54,10 +53,8 @@
       });
       return goto(`/${organization}`);
     }
-
     isRenew = !!$categorisedIssues.data?.cancelled;
     const teamPlan = await fetchTeamPlan();
-
     try {
       if (isRenew) {
         await $planRenewer.mutateAsync({

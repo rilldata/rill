@@ -10,6 +10,7 @@
 
   export let organization: string;
   export let subscription: V1Subscription;
+  export let showUpgrade: boolean;
 
   $: plan = subscription?.plan;
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
@@ -24,7 +25,7 @@
       willEndOnText = endDate.toLocaleString(DateTime.DATE_MED);
   }
 
-  let open = false;
+  let open = showUpgrade;
 </script>
 
 <SettingsContainer title="Team Plan" titleIcon="info">
@@ -54,9 +55,11 @@
   </Button>
 </SettingsContainer>
 
-<StartTeamPlanDialog
-  bind:open
-  {organization}
-  type="renew"
-  endDate={cancelledSubIssue?.metadata.subscriptionCancelled?.endDate}
-/>
+{#if !$categorisedIssues.isLoading}
+  <StartTeamPlanDialog
+    bind:open
+    {organization}
+    type="renew"
+    endDate={cancelledSubIssue?.metadata.subscriptionCancelled?.endDate}
+  />
+{/if}

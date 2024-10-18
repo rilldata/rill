@@ -9,6 +9,8 @@
   import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
   import ProjectCards from "../../features/projects/ProjectCards.svelte";
 
+  export let data;
+  $: ({ organizationPermissions } = data);
   $: ({
     params: { organization: orgName },
   } = $page);
@@ -31,7 +33,10 @@
     class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto flex flex-col gap-y-4"
   >
     {#if $allProjectsHibernating.data}
-      <OrganizationHibernating organization={orgName} />
+      <OrganizationHibernating
+        organization={orgName}
+        {organizationPermissions}
+      />
     {:else}
       <OrganizationHero organization={orgName} {title} />
       {#if $projs.data.projects?.length === 0}

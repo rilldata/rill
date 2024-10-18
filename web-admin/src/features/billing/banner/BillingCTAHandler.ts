@@ -5,24 +5,24 @@ import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibe
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { writable } from "svelte/store";
 
-export class BannerCTAHandler {
+export class BillingCTAHandler {
   public showStartTeamPlanDialog = writable(false);
   public startTeamPlanType = writable<TeamPlanDialogTypes>("base");
   public teamPlanEndDate = writable("");
   public wakingProjects = writable(false);
 
-  private static instances = new Map<string, BannerCTAHandler>();
+  private static instances = new Map<string, BillingCTAHandler>();
 
   public constructor(private readonly organization: string) {}
 
   // maintain a cache of instances so that multiple components are in sync with internal state
   public static get(organization: string) {
-    let instance: BannerCTAHandler;
+    let instance: BillingCTAHandler;
     if (this.instances.has(organization)) {
       instance = this.instances.get(organization);
       instance.wakingProjects.set(false);
     } else {
-      instance = new BannerCTAHandler(organization);
+      instance = new BillingCTAHandler(organization);
       this.instances.set(organization, instance);
     }
     return instance;
