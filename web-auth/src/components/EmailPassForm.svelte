@@ -73,7 +73,7 @@
       {type}
       on:input={onPassInput}
       id="password"
-      placeholder="Enter your password"
+      placeholder="Password"
     />
 
     {#if errorText}
