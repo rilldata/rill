@@ -7,6 +7,7 @@ import {
   getPersistentDashboardStore,
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
@@ -139,6 +140,7 @@ export function createStateManagers({
 
   // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
   initPersistentDashboardStore((extraKeyPrefix || "") + exploreName);
+  initLocalUserPreferenceStore(exploreName);
   const persistentDashboardStore = getPersistentDashboardStore();
 
   return {
