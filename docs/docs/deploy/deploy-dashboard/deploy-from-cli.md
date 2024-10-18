@@ -11,7 +11,7 @@ Follow these steps to setup continuous deployment from Gitlab to Rill Cloud:
 
 1. Create a new Gitlab repository and push your Rill project to it.
 
-2. On your local, [authenticate with Rill Cloud](/manage/user-management.md#install-and-authenticate-the-rill-cli) and create an organization (replace `my-org-name` with your desired name):
+2. On your local, [authenticate with Rill Cloud](/manage/user-management#logging-into-rill-cloud) and create an organization (replace `my-org-name` with your desired name):
 ```bash
 rill login
 rill org create my-org-name

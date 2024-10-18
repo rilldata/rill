@@ -188,7 +188,7 @@ Likewise, if using the UI by selecting the `Update` button, Rill will detect the
 
 :::tip Interested in using Gitlab?
 
-Check out our documentation on deploying a [Rill project using Gitlab](deploy-from-ci.md)!
+Check out our documentation on deploying a [Rill project using Gitlab](deploy-from-cli.md)!
 
 :::
 

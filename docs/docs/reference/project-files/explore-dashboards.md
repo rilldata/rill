@@ -12,7 +12,7 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 **`type`** — Refers to the resource type and must be `explore` _(required)_. 
 
-**`metrics_view`** — Refers to the metrics_view resource _(required)_. 
+**`metrics_view`** — Refers to the metrics view resource _(required)_. 
 
 **`title`** — Refers to the display name for the dashboard _(required)_.
 
