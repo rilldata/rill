@@ -171,6 +171,10 @@ export type AdminServiceListMagicAuthTokensParams = {
   pageToken?: string;
 };
 
+export type AdminServiceUnsubscribeReportBody = {
+  email?: string;
+};
+
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;

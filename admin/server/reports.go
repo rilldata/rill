@@ -62,7 +62,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			BaseUrls: &adminv1.GetReportMetaResponse_URLs{
 				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
-				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, "", ""),
 			},
 		}, nil
 	}
@@ -88,6 +88,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	for email, token := range emailTokens {
 		externalUrls[email] = &adminv1.GetReportMetaResponse_URLs{
 			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, token),
+			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, email, token),
 		}
 	}
 
@@ -95,7 +96,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		BaseUrls: &adminv1.GetReportMetaResponse_URLs{
 			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
-			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, "", ""),
 		},
 		RecipientUrls: externalUrls,
 	}, nil
@@ -269,12 +270,21 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
-	if claims.OwnerType() != auth.OwnerTypeUser {
+	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeMagicAuthToken {
 		return nil, status.Error(codes.PermissionDenied, "only users can unsubscribe from reports")
 	}
-	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+
+	var userEmail string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		userEmail = user.Email
+	} else if req.Email == nil {
+		return nil, status.Error(codes.InvalidArgument, "email is required for magic auth token")
+	} else {
+		userEmail = *req.Email
 	}
 
 	opts, err := recreateReportOptionsFromSpec(spec)
@@ -284,14 +294,14 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 	found := false
 	for idx, email := range opts.EmailRecipients {
-		if strings.EqualFold(user.Email, email) {
+		if strings.EqualFold(userEmail, email) {
 			opts.EmailRecipients = slices.Delete(opts.EmailRecipients, idx, idx+1)
 			found = true
 			break
 		}
 	}
 	for idx, email := range opts.SlackUsers {
-		if strings.EqualFold(user.Email, email) {
+		if strings.EqualFold(userEmail, email) {
 			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
 			found = true
 			break

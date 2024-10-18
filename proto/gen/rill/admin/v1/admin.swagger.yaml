@@ -1446,6 +1446,10 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              email:
+                type: string
+                title: for non-rill recipients
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/request-access:

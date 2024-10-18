@@ -35,6 +35,7 @@ type ScheduledReport struct {
 	OpenLink       string
 	DownloadLink   string
 	EditLink       string
+	External       bool
 }
 
 type scheduledReportData struct {
@@ -44,6 +45,7 @@ type scheduledReportData struct {
 	OpenLink         template.URL
 	DownloadLink     template.URL
 	EditLink         template.URL
+	External         bool
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
@@ -55,6 +57,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		OpenLink:         template.URL(opts.OpenLink),
 		DownloadLink:     template.URL(opts.DownloadLink),
 		EditLink:         template.URL(opts.EditLink),
+		External:         opts.External,
 	}
 
 	// Build subject

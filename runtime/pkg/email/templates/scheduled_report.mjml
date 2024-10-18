@@ -46,10 +46,10 @@
 
         <mj-spacer height="20px" />
         
-        <mj-text css-class="{{ if not .EditLink }}hidden{{ end }}" align="center" font-size="12px">
-          To edit or unsubscribe from this report, <a href="{{ .EditLink }}">click here</a>.
+        <mj-text align="center" font-size="12px">
+          To{{ if not .External}} edit or{{ end }} unsubscribe from this report, <a href="{{ .EditLink }}">click here</a>.
         </mj-text>
-        
+
         <mj-text align="center" font-size="12px" line-height="1.5">
           © 2024 Rill Data, Inc<br />
           18 Bartol St. • San Francisco • CA<br />

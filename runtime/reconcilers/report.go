@@ -439,6 +439,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 						return false, err
 					}
 					exportURL = u.String()
+					opts.External = true
 				}
 				opts.OpenLink = openURL
 				opts.DownloadLink = exportURL
