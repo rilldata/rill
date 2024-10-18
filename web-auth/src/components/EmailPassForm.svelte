@@ -3,17 +3,16 @@
   import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
   import { validateEmail } from "./utils";
+  import { ArrowLeftIcon } from "lucide-svelte";
 
   const dispatch = createEventDispatcher();
 
-  export let isLoginPage = false;
   export let disabled = false;
+  export let email = "";
+  export let showForgetPassword = false;
 
-  let email = "";
   let password = "";
-
   let showForm = false;
   let showPassword = false;
   let errorText = "";
@@ -64,66 +63,71 @@
       email,
     });
   }
+
+  $: {
+    if (password.length > 0) {
+      disabled = false;
+    } else {
+      disabled = true;
+    }
+  }
 </script>
 
-<div>
-  {#if showForm}
-    <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide|global>
-      <input
-        class="{inputClasses} {focusClasses}"
-        style:width="400px"
-        type="email"
-        placeholder="Enter your email address"
-        id="email"
-        bind:value={email}
-      />
+<div class="flex flex-col gap-y-4">
+  <div class="relative">
+    <input
+      class="{inputClasses} {focusClasses}"
+      style:width="400px"
+      {type}
+      on:input={onPassInput}
+      id="password"
+      placeholder="Password"
+    />
 
-      {#if errorText}
-        <div class="text-red-500 text-sm -mt-2">
-          {errorText}
-        </div>
-      {/if}
-
-      <div style="position: relative;">
-        <input
-          class="{inputClasses} {focusClasses}"
-          style:width="400px"
-          {type}
-          on:input={onPassInput}
-          id="password"
-          placeholder={isLoginPage ? "Enter your password" : "Create password"}
-        />
-
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <span
-          role="button"
-          tabindex="0"
-          style:right="10px"
-          class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
-          on:click={() => (showPassword = !showPassword)}
-        >
-          {#if !showPassword}
-            <Eye />
-          {:else}
-            <EyeInvisible />
-          {/if}
-        </span>
-      </div>
-    </div>
-    {#if isLoginPage}
-      <div>
-        <button
-          on:click={() => handleForgotPass()}
-          class="text-sm mb-5 text-slate-500 pl-1 font-medium"
-          >Forgot password?</button
-        >
+    {#if errorText}
+      <div class="text-red-500 text-sm -mt-2">
+        {errorText}
       </div>
     {/if}
-  {/if}
 
-  <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
-    <div class="flex justify-center font-medium w-[400px]">
-      <div>Continue with Email</div>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <span
+      role="button"
+      tabindex="0"
+      style:right="10px"
+      class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
+    >
+      {#if !showPassword}
+        <Eye />
+      {:else}
+        <EyeInvisible />
+      {/if}
+    </span>
+  </div>
+  {#if showForgetPassword}
+    <div>
+      <button
+        on:click={() => handleForgotPass()}
+        class="text-sm text-slate-500 pl-1 font-medium">Forgot password?</button
+      >
+    </div>
+  {/if}
+</div>
+
+<div class="flex flex-col gap-y-4">
+  <CtaButton {disabled} variant="primary" on:click={() => handleSubmit()}>
+    <div class="flex justify-center font-medium">Continue</div>
+  </CtaButton>
+  <CtaButton
+    variant="secondary"
+    gray
+    on:click={() => {
+      dispatch("back");
+    }}
+  >
+    <div class="flex justify-center items-center font-medium">
+      <ArrowLeftIcon class="mr-1" size={14} />
+      <span>Back</span>
     </div>
   </CtaButton>
 </div>

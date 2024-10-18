@@ -6,30 +6,70 @@
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
   import AuthContainer from "./AuthContainer.svelte";
-  import Disclaimer from "./Disclaimer.svelte";
   import EmailPassForm from "./EmailPassForm.svelte";
-  import SSOForm from "./SSOForm.svelte";
   import { getConnectionFromEmail } from "./utils";
+  import OrSeparator from "./OrSeparator.svelte";
+  import SSOForm from "./SSOForm.svelte";
+  import EmailSubmission from "./EmailSubmission.svelte";
+  import DiscordCTA from "./DiscordCTA.svelte";
+  import Disclaimer from "./Disclaimer.svelte";
+  import Spacer from "./Spacer.svelte";
 
   export let configParams: string;
   export let cloudClientIDs = "";
   export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
 
+  const LOCAL_STORAGE_KEY = "last_used_connection";
+
   const connectionMapObj = JSON.parse(connectionMap);
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
-  // By default show the LogIn page
-  $: isLoginPage = true;
+  const databaseConnection = "Username-Password-Authentication";
+
+  enum AuthStep {
+    Base = 0,
+    SSO = 1,
+    EmailPassword = 2,
+    SignUp = 3,
+    Thanks = 4,
+  }
+
   $: errorText = "";
   $: isRillCloud = false;
 
   let isSSODisabled = false;
   let isEmailDisabled = false;
+  let lastUsedConnection: string | null = null;
 
+  let email = "";
+  let emailSubmitted = false;
+
+  let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
-  const databaseConnection = "Username-Password-Authentication";
+
+  function getLastUsedConnection() {
+    return localStorage.getItem(LOCAL_STORAGE_KEY);
+  }
+
+  function setLastUsedConnection(connection: string | null) {
+    if (connection) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, connection);
+    } else {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+    lastUsedConnection = connection;
+  }
+
+  $: {
+    const storedConnection = getLastUsedConnection();
+    if (storedConnection) {
+      lastUsedConnection = storedConnection;
+    } else {
+      setLastUsedConnection(null);
+    }
+  }
 
   function initConfig() {
     const config = JSON.parse(
@@ -37,9 +77,8 @@
     );
 
     if (config?.extraParams?.screen_hint === "signup") {
-      isLoginPage = false;
+      step = AuthStep.SignUp;
     }
-
     if (cloudClientIDsArr.includes(config?.clientID)) {
       isRillCloud = true;
     }
@@ -66,6 +105,7 @@
   }
 
   function authorize(connection: string) {
+    setLastUsedConnection(connection);
     webAuth.authorize({ connection });
   }
 
@@ -88,48 +128,52 @@
       login_hint: email,
       prompt: "login",
     });
+
+    setLastUsedConnection(connectionName);
   }
 
   function handleEmailSubmit(email: string, password: string) {
     isEmailDisabled = true;
     errorText = "";
     try {
-      if (isLoginPage) {
-        webAuth.login(
-          {
-            realm: databaseConnection,
-            username: email,
-            password: password,
-          },
-          (err) => {
-            if (err) displayError({ message: err?.description });
-            isEmailDisabled = false;
-          },
-        );
-      } else {
-        webAuth.redirect.signupAndLogin(
-          {
-            connection: databaseConnection,
-            email: email,
-            password: password,
-          },
-          // explicitly typing as any to avoid missing property TS/svelte-check error
-          (err: any) => {
-            // Auth0 is not consistent in the naming of the error description field
-            const errorText =
-              typeof err?.description === "string"
-                ? err.description
-                : typeof err?.policy === "string"
-                  ? err.policy
-                  : typeof err?.error_description === "string"
-                    ? err.error_description
-                    : err?.message;
+      webAuth.login(
+        {
+          realm: databaseConnection,
+          username: email,
+          password: password,
+        },
+        (err) => {
+          if (err) displayError({ message: err?.description });
+          isEmailDisabled = false;
+        },
+      );
 
-            if (err) displayError({ message: errorText });
-            isEmailDisabled = false;
-          },
-        );
-      }
+      setLastUsedConnection(databaseConnection);
+
+      // TO BE REMOVED
+      // TODO: should we check for `last_used_connection`
+      // webAuth.redirect.signupAndLogin(
+      //   {
+      //     connection: databaseConnection,
+      //     email: email,
+      //     password: password,
+      //   },
+      //   // explicitly typing as any to avoid missing property TS/svelte-check error
+      //   (err: any) => {
+      //     // Auth0 is not consistent in the naming of the error description field
+      //     const errorText =
+      //       typeof err?.description === "string"
+      //         ? err.description
+      //         : typeof err?.policy === "string"
+      //           ? err.policy
+      //           : typeof err?.error_description === "string"
+      //             ? err.error_description
+      //             : err?.message;
+
+      //     if (err) displayError({ message: errorText });
+      //     isEmailDisabled = false;
+      //   },
+      // );
     } catch (err) {
       displayError({ message: err?.description || err?.message });
       isEmailDisabled = false;
@@ -162,6 +206,55 @@
     );
   }
 
+  function handleEmailSubmission(event) {
+    email = event.detail.email;
+    const connectionName = getConnectionFromEmail(email, connectionMapObj);
+    emailSubmitted = true;
+
+    if (connectionName) {
+      step = AuthStep.SSO;
+    } else {
+      step = AuthStep.EmailPassword;
+    }
+  }
+
+  let headingText = "";
+
+  $: {
+    function getHeadingText() {
+      switch (step) {
+        case AuthStep.Base:
+          return "Log in or sign up";
+        case AuthStep.SSO:
+          return "Log in with SSO";
+        case AuthStep.EmailPassword:
+          return "Log in with email";
+        case AuthStep.SignUp:
+          return "Sign up with email";
+        case AuthStep.Thanks:
+          return "Thanks for signing up!";
+        default:
+          return "";
+      }
+    }
+    headingText = getHeadingText();
+  }
+
+  let subheadingText = "";
+  $: {
+    function getSubheadingText() {
+      switch (step) {
+        case AuthStep.SSO:
+          return `SAML SSO enabled workspace is associated with ${email}`;
+        case AuthStep.EmailPassword:
+          return `Log in using ${email}`;
+        default:
+          return "";
+      }
+    }
+    subheadingText = getSubheadingText();
+  }
+
   onMount(() => {
     initConfig();
   });
@@ -170,60 +263,84 @@
 <RillTheme>
   <AuthContainer>
     <RillLogoSquareNegative size="84px" />
-    <div class="text-xl my-6">
-      {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
-    </div>
-    <div class="flex flex-col gap-y-4" style:width="400px">
-      {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
-        <CtaButton
-          variant={style === "primary" ? "primary" : "secondary"}
-          on:click={() => authorize(connection)}
-        >
-          <div class="flex justify-center items-center gap-x-2 font-medium">
-            {#if icon}
-              <svelte:component this={icon} />
-            {/if}
-            <div>{label}</div>
-          </div>
-        </CtaButton>
-      {/each}
-
-      <SSOForm
-        disabled={isSSODisabled}
-        on:ssoSubmit={(e) => {
-          handleSSOLogin(e.detail);
-        }}
-      />
-
-      <EmailPassForm
-        {isLoginPage}
-        disabled={isEmailDisabled}
-        on:submit={(e) => {
-          handleEmailSubmit(e.detail.email, e.detail.password);
-        }}
-        on:resetPass={(e) => {
-          handleResetPassword(e.detail.email);
-        }}
-      />
+    <Spacer />
+    <div class="flex flex-col items-center gap-y-2 text-center">
+      <div class="text-xl text-slate-800">
+        {headingText}
+      </div>
+      {#if subheadingText}
+        <div class="text-base text-gray-500">
+          {subheadingText}
+        </div>
+      {:else}
+        <Spacer />
+      {/if}
     </div>
 
-    {#if errorText}
+    <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
+      {#if step === AuthStep.Base}
+        {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
+          <CtaButton
+            variant={style === "primary" ? "primary" : "secondary"}
+            on:click={() => authorize(connection)}
+          >
+            <div class="flex justify-center items-center gap-x-2 font-medium">
+              {#if icon}
+                <svelte:component this={icon} />
+              {/if}
+              <div>{label}</div>
+            </div>
+          </CtaButton>
+        {/each}
+
+        <OrSeparator />
+
+        <EmailSubmission
+          disabled={isEmailDisabled}
+          on:submitEmail={handleEmailSubmission}
+        />
+      {/if}
+
+      {#if step === AuthStep.SSO}
+        <SSOForm
+          disabled={isSSODisabled}
+          on:submitSSO={(e) => {
+            handleSSOLogin(e.detail);
+          }}
+          on:back={() => {
+            step = AuthStep.Base;
+          }}
+        />
+      {/if}
+
+      {#if step === AuthStep.EmailPassword}
+        <EmailPassForm
+          disabled={isEmailDisabled}
+          {email}
+          on:submit={(e) => {
+            handleEmailSubmit(e.detail.email, e.detail.password);
+          }}
+          on:resetPass={(e) => {
+            handleResetPassword(e.detail.email);
+          }}
+          on:back={() => {
+            step = AuthStep.Base;
+          }}
+          showForgetPassword={step === AuthStep.EmailPassword}
+        />
+      {/if}
+    </div>
+
+    <!-- {#if errorText}
       <div style:max-width="400px" class="text-red-500 text-sm mt-3">
         {errorText}
       </div>
-    {/if}
+    {/if} -->
 
     <Disclaimer />
 
-    {#if isRillCloud}
-      <div class="mt-6 text-sm text-slate-500">
-        {isLoginPage ? "Don't" : "Already"} have an account?
-
-        <!-- svelte-ignore a11y-invalid-attribute -->
-        <a href="#" on:click={() => (isLoginPage = !isLoginPage)}>
-          {isLoginPage ? "Sign up" : "Log in"}</a
-        >
-      </div>
-    {/if}
+    <div class="mt-6 text-center">
+      <DiscordCTA />
+    </div>
   </AuthContainer>
 </RillTheme>

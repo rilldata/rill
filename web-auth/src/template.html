@@ -14,10 +14,34 @@
         style-src 'unsafe-inline' https:
         "
     />
+    <!-- TODO use font-display: block; to avoid FOUT -->
+    <!-- See: https://codebycorey.com/blog/defeating-flash-of-unstyled-text-fout -->
     <link
       rel="stylesheet"
       href="https://storage.googleapis.com/stage-cdn.rilldata.io/auth0-assets/fonts/fonts.css"
     />
+
+    <!-- fallback fonts -->
+    <style>
+      body {
+        font-size: 14px;
+        line-height: 21px;
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif,
+          "Apple Color Emoji",
+          "Segoe UI Emoji",
+          "Segoe UI Symbol";
+        font-display: fallback;
+      }
+    </style>
+
     <!-- preloaded fonts -->
     <link
       rel="preload"
@@ -36,7 +60,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 
-    <title>Sign In with Auth0</title>
+    <title>Rill</title>
     <meta charset="utf-8" />
     <link
       rel="icon"
