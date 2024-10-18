@@ -339,9 +339,10 @@ func (c *Client) InitOrgBilling(ctx context.Context, orgID string) (*jobs.Insert
 	}, nil
 }
 
-func (c *Client) RepairOrgBilling(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
+func (c *Client) RepairOrgBilling(ctx context.Context, orgID, biller string) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, RepairOrgBillingArgs{
-		OrgID: orgID,
+		OrgID:  orgID,
+		Biller: biller,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
