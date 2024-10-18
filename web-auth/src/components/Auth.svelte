@@ -239,32 +239,42 @@
     }
   }
 
-  function getHeadingText() {
-    switch (step) {
-      case AuthStep.Base:
-        return "Log in or sign up";
-      case AuthStep.SSO:
-        return "Log in with SSO";
-      case AuthStep.EmailPassword:
-        return "Log in with email";
-      case AuthStep.SignUp:
-        return "Sign up with email";
-      case AuthStep.Thanks:
-        return "Thanks for signing up!";
+  let headingText = "";
+
+  $: {
+    function getHeadingText() {
+      switch (step) {
+        case AuthStep.Base:
+          return "Log in or sign up";
+        case AuthStep.SSO:
+          return "Log in with SSO";
+        case AuthStep.EmailPassword:
+          return "Log in with email";
+        case AuthStep.SignUp:
+          return "Sign up with email";
+        case AuthStep.Thanks:
+          return "Thanks for signing up!";
+        default:
+          return "";
+      }
     }
+    headingText = getHeadingText();
   }
 
-  function getSubheadingText() {
-    switch (step) {
-      case AuthStep.SSO:
-        return `SAML SSO enabled workspace is associated with ${email}`;
-      case AuthStep.EmailPassword:
-        return `Log in using ${email}`;
+  let subheadingText = "";
+  $: {
+    function getSubheadingText() {
+      switch (step) {
+        case AuthStep.SSO:
+          return `SAML SSO enabled workspace is associated with ${email}`;
+        case AuthStep.EmailPassword:
+          return `Log in using ${email}`;
+        default:
+          return "";
+      }
     }
+    subheadingText = getSubheadingText();
   }
-
-  $: headingText = getHeadingText();
-  $: subheadingText = getSubheadingText();
 
   onMount(() => {
     initConfig();
