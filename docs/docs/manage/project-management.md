@@ -49,7 +49,7 @@ Global Flags:
 ! [] () 
 > insert project view, seeing all the dashboards
 
-A project is a single deployed instance from Rill Developer (or what we refer to as a Rill project). Each project can be connected to one GitHub repository. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI or the UI.
+A project is a single deployed instance from Rill Developer (or what we refer to as a Rill project). Each project can be connected to one GitHub repository. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI or via Rill Cloud.
 
 ### CLI
 Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, GitHub branch, etc using the following:

@@ -15,9 +15,9 @@ Note that the permissions may vary from each level, please review the [Roles and
 
 :::
 
-:::tip More UI-based workflows coming
+:::tip More Rill Cloud workflows coming
 
-We have begun releasing new features around user managment via the UI. If you'd like to learn more, please feel free to [reach out](contact.md)!
+We have begun releasing new features around user managment via Rill Cloud. If you'd like to learn more, please feel free to [reach out](contact.md)!
 
 :::
 

@@ -15,7 +15,7 @@ There are two different levels of settings.
 
 
 :::tip 
-Starting from version 0.50, we are beginning to port the ability to manage objects in Rill Cloud within the Rill Cloud UI. This includes, public URLs (currently released), user and group management, and more!
+Starting from version 0.50, we are beginning to port the ability to manage objects in Rill within Rill Cloud. This includes, public URLs (currently released), user and group management, and more!
 :::
 ## Organization Settings
 
