@@ -8,7 +8,7 @@ import (
 
 // RmCmd is sub command for env. Removes the variable for a project
 func RmCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName, enviornment string
+	var projectPath, projectName, environment string
 
 	rmCmd := &cobra.Command{
 		Use:   "rm <key>",
@@ -33,7 +33,7 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 				Organization:   ch.Org,
 				Project:        projectName,
-				Environment:    enviornment,
+				Environment:    environment,
 				UnsetVariables: []string{key},
 			})
 			if err != nil {
@@ -47,7 +47,7 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	rmCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	rmCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	rmCmd.Flags().StringVar(&enviornment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
+	rmCmd.Flags().StringVar(&environment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
 
 	return rmCmd
 }

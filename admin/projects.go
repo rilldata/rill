@@ -519,7 +519,7 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 }
 
 func (s *Service) ResolveProdVariables(ctx context.Context, projectID string) (map[string]string, error) {
-	vars, err := s.DB.FindProjectVariablesByEnviornment(ctx, projectID, nil)
+	vars, err := s.DB.FindProjectVariablesByEnvironment(ctx, projectID, nil)
 	if err != nil {
 		return nil, err
 	}

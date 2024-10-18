@@ -416,7 +416,7 @@ func testUpsertProjectVariable(t *testing.T, db database.DB) {
 	require.Equal(t, len(vars), 2)
 
 	// find project variables
-	vars, err = db.FindProjectVariablesByEnviornment(ctx, projectID, nil)
+	vars, err = db.FindProjectVariablesByEnvironment(ctx, projectID, nil)
 	require.NoError(t, err)
 
 	require.Equal(t, len(vars), 4)
@@ -437,7 +437,7 @@ func testUpsertProjectVariable(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	// find project variables
-	vars, err = db.FindProjectVariablesByEnviornment(ctx, projectID, nil)
+	vars, err = db.FindProjectVariablesByEnvironment(ctx, projectID, nil)
 	require.NoError(t, err)
 	require.Equal(t, len(vars), 0)
 

@@ -681,11 +681,11 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
 	}
 
-	var enviornment *string
+	var environment *string
 	if !req.ForAllEnvironments {
-		enviornment = &req.Environment
+		environment = &req.Environment
 	}
-	vars, err := s.admin.DB.FindProjectVariablesByEnviornment(ctx, proj.ID, enviornment)
+	vars, err := s.admin.DB.FindProjectVariablesByEnvironment(ctx, proj.ID, environment)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -696,6 +696,7 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 	}
 	for _, v := range vars {
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
+		// nolint:staticcheck // We still need to set it
 		resp.VariablesMap[v.Name] = string(v.Value)
 	}
 	return resp, nil

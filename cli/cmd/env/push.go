@@ -11,7 +11,7 @@ import (
 )
 
 func PushCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName, enviornment string
+	var projectPath, projectName, environment string
 
 	pushCmd := &cobra.Command{
 		Use:   "push",
@@ -55,7 +55,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			res, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
 				Organization: ch.Org,
 				Project:      projectName,
-				Environment:  enviornment,
+				Environment:  environment,
 			})
 			if err != nil {
 				return err
@@ -64,7 +64,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Merge the current .env file with the cloud variables
 			vars := make(map[string]string)
 			for _, v := range res.Variables {
-				vars[v.Name] = string(v.Value)
+				vars[v.Name] = v.Value
 			}
 			added := 0
 			changed := 0
@@ -100,7 +100,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
 					Organization: ch.Org,
 					Project:      projectName,
-					Environment:  enviornment,
+					Environment:  environment,
 					Variables:    vars,
 				})
 				if err != nil {
@@ -115,7 +115,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	pushCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	pushCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
-	pushCmd.Flags().StringVar(&enviornment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
+	pushCmd.Flags().StringVar(&environment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
 
 	return pushCmd
 }

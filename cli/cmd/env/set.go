@@ -8,7 +8,7 @@ import (
 
 // SetCmd is sub command for env. Sets the variable for a project
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName, enviornment string
+	var projectPath, projectName, environment string
 
 	setCmd := &cobra.Command{
 		Use:   "set <key> <value>",
@@ -34,7 +34,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 				Organization: ch.Org,
 				Project:      projectName,
-				Environment:  enviornment,
+				Environment:  environment,
 				Variables:    map[string]string{key: value},
 			})
 			if err != nil {
@@ -48,7 +48,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	setCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	setCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	setCmd.Flags().StringVar(&enviornment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
+	setCmd.Flags().StringVar(&environment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
 
 	return setCmd
 }

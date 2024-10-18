@@ -18,7 +18,7 @@ import (
 )
 
 func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName, enviornment string
+	var projectPath, projectName, environment string
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -63,7 +63,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 				Organization: ch.Org,
 				Project:      projectName,
-				Environment:  enviornment,
+				Environment:  environment,
 				Variables:    variables,
 			})
 			if err != nil {
@@ -78,7 +78,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
-	configureCommand.Flags().StringVar(&enviornment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
+	configureCommand.Flags().StringVar(&environment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
 
 	return configureCommand
 }

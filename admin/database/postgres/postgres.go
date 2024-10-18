@@ -2049,7 +2049,7 @@ func (c *connection) DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID s
 	return checkDeleteRow("billing issue", res, err)
 }
 
-func (c *connection) FindProjectVariablesByEnviornment(ctx context.Context, projectID string, environment *string) ([]*database.ProjectVariable, error) {
+func (c *connection) FindProjectVariablesByEnvironment(ctx context.Context, projectID string, environment *string) ([]*database.ProjectVariable, error) {
 	q := `SELECT * FROM project_variables WHERE project_id = $1`
 	args := []interface{}{projectID}
 	if environment != nil {
