@@ -63,6 +63,14 @@
       email,
     });
   }
+
+  $: {
+    if (password.length > 0) {
+      disabled = false;
+    } else {
+      disabled = true;
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-y-4">
@@ -111,7 +119,6 @@
     <div class="flex justify-center font-medium">Continue</div>
   </CtaButton>
   <CtaButton
-    {disabled}
     variant="secondary"
     gray
     on:click={() => {
