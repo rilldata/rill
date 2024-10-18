@@ -35,7 +35,7 @@ INSERT INTO project_variables (
 SELECT
   project_data.project_id,
   key AS name,
-  value::BYTEA AS value,
+  convert_to(value, 'UTF8')::bytea AS value,
   project_data.prod_variables_encryption_key_id AS value_encryption_key_id
 FROM
   project_data,
