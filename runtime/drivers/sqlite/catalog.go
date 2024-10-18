@@ -353,7 +353,7 @@ func (c *catalogStore) FindInstanceHealth(ctx context.Context, instanceID string
 
 func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
 	_, err := c.db.ExecContext(ctx, `INSERT INTO instance_health(instance_id, health_json, updated_on) Values (?, ?, CURRENT_TIMESTAMP)
-		ON CONFLICT(instance_id) DO UPDATE SET health=excluded.health, updated_on=excluded.updated_on;
+		ON CONFLICT(instance_id) DO UPDATE SET health_json=excluded.health_json, updated_on=excluded.updated_on;
 	`, h.InstanceID, h.HealthJSON)
 	return err
 }
