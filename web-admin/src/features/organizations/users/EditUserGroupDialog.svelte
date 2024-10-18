@@ -12,7 +12,15 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceRemoveUsergroupMemberUser,
+    createAdminServiceRenameUsergroup,
+    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
+    getAdminServiceListUsergroupMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
   import { page } from "$app/stores";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -20,14 +28,13 @@
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import type { V1MemberUser } from "@rilldata/web-admin/client";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let open = false;
   export let groupName: string;
   export let currentUserEmail: string;
   export let searchUsersList: V1MemberUser[];
-  export let onRename: (groupName: string, newName: string) => void;
-  export let onRemoveUser: (groupName: string, email: string) => void;
-  export let onAddUser: (groupName: string, email: string) => void;
 
   let searchText = "";
 
@@ -36,6 +43,97 @@
     organization,
     groupName,
   );
+
+  const queryClient = useQueryClient();
+  const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
+  const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
+  const renameUserGroup = createAdminServiceRenameUsergroup();
+
+  async function handleAddUsergroupMemberUser(
+    email: string,
+    usergroup: string,
+  ) {
+    try {
+      await $addUsergroupMemberUser.mutateAsync({
+        organization: organization,
+        usergroup: usergroup,
+        email: email,
+        data: {},
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      );
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          usergroup,
+        ),
+      );
+
+      eventBus.emit("notification", {
+        message: "User added to user group",
+      });
+    } catch (error) {
+      console.error("Error adding user to user group", error);
+      eventBus.emit("notification", {
+        message: "Error adding user to user group",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleRename(groupName: string, newName: string) {
+    try {
+      await $renameUserGroup.mutateAsync({
+        organization: organization,
+        usergroup: groupName,
+        data: {
+          name: newName,
+        },
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      );
+
+      eventBus.emit("notification", { message: "User group renamed" });
+    } catch (error) {
+      console.error("Error renaming user group", error);
+      eventBus.emit("notification", {
+        message: "Error renaming user group",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleRemoveUser(groupName: string, email: string) {
+    try {
+      await $removeUserGroupMember.mutateAsync({
+        organization: organization,
+        usergroup: groupName,
+        email: email,
+      });
+
+      await queryClient.invalidateQueries(
+        getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          groupName,
+        ),
+      );
+
+      eventBus.emit("notification", {
+        message: "User removed from user group",
+      });
+    } catch (error) {
+      console.error("Error removing user from user group", error);
+      eventBus.emit("notification", {
+        message: "Error removing user from user group",
+        type: "error",
+      });
+    }
+  }
 
   // We don't want to show users that are already in the group
   $: availableSearchUsersList = searchUsersList.filter(
@@ -73,7 +171,7 @@
         const values = form.data;
 
         try {
-          await onRename(groupName, values.newName);
+          await handleRename(groupName, values.newName);
           open = false;
         } catch (error) {
           console.error(error);
@@ -129,7 +227,7 @@
           emptyText="No users found"
           onSelectedChange={(value) => {
             if (value) {
-              onAddUser(value.value, groupName);
+              handleAddUsergroupMemberUser(value.value, groupName);
             }
           }}
         />
@@ -155,7 +253,7 @@
             {#each $listUsergroupMemberUsers.data?.members as member}
               <div class="flex flex-row justify-between gap-2 items-center">
                 <div class="flex items-center gap-2">
-                  <Avatar size="h-7 w-7" alt={member.userName} />
+                  <Avatar avatarSize="h-7 w-7" alt={member.userName} />
                   <div class="flex flex-col text-left">
                     <span class="text-sm font-medium text-gray-900">
                       {member.userName}
@@ -171,7 +269,7 @@
                   type="text"
                   danger
                   on:click={() => {
-                    onRemoveUser(groupName, member.userEmail);
+                    handleRemoveUser(groupName, member.userEmail);
                   }}
                 >
                   Remove
