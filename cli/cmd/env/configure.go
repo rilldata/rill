@@ -78,7 +78,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
-	configureCommand.Flags().StringVar(&environment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
+	configureCommand.Flags().StringVar(&environment, "environment", "", "Environment for which variables apply (options: 'production', 'development', '')")
 
 	return configureCommand
 }

@@ -47,7 +47,7 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	rmCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	rmCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	rmCmd.Flags().StringVar(&environment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
+	rmCmd.Flags().StringVar(&environment, "environment", "", "Environment for which variables apply (options: 'production', 'development', '')")
 
 	return rmCmd
 }

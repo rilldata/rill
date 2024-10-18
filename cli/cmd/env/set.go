@@ -48,7 +48,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	setCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	setCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	setCmd.Flags().StringVar(&environment, "environment", "production", "Environment for which variables apply (options: 'production', 'development', '')")
+	setCmd.Flags().StringVar(&environment, "environment", "", "Environment for which variables apply (options: 'production', 'development', '')")
 
 	return setCmd
 }

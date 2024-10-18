@@ -406,7 +406,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 		Organization: r.Msg.Org,
 		Project:      r.Msg.ProjectName,
-		Environment:  "production",
 		Variables:    parser.DotEnv,
 	})
 	if err != nil {
