@@ -1,6 +1,7 @@
 {
   "name": "web-common",
   "version": "0.0.1",
+  "type": "module",
   "scripts": {
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
@@ -97,9 +98,8 @@
     "yaml": "^2.4.5",
     "yup": "^1.4.0"
   },
-  "type": "module",
   "dependencies": {
-    "@rilldata/actions": "^0.0.0",
-    "@rilldata/utils": "^0.0.0"
+    "@rilldata/actions": "*",
+    "@rilldata/utils": "*"
   }
 }
