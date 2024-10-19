@@ -25,7 +25,6 @@ const config = defineConfig(({ mode }) => ({
     },
   },
   server: {
-    port: 3001,
     strictPort: true,
     fs: {
       allow: ["."],
