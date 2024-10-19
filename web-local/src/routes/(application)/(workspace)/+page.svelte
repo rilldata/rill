@@ -4,8 +4,9 @@
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import UserTestCta from "@rilldata/web-common/features/welcome/UserTestCTA.svelte";
   import { fly } from "svelte/transition";
+  import type { LayoutData } from "../$types";
 
-  export let data;
+  export let data: LayoutData;
 </script>
 
 <svelte:head>

@@ -24,8 +24,9 @@
   import type { Writable } from "svelte/store";
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import { page } from "$app/stores";
+  import type { LayoutData } from "./$types";
 
-  export let data;
+  export let data: LayoutData;
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
    */
