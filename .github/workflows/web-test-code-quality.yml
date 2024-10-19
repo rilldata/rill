@@ -52,6 +52,7 @@ jobs:
       - name: lint and type checks for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
+          npm run build -w web-local
           npx eslint web-local --quiet
           npx svelte-check --workspace web-local --no-tsconfig
 
