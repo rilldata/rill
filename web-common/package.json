@@ -8,6 +8,8 @@
     "generate:template-schema": "ts-json-schema-generator -p src/features/templates/types.ts -t TemplateSpec -o ../runtime/compilers/rillv1/data/component-template-v1.json",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
+    "check": "svelte-kit sync && svelte-check --no-tsconfig --ignore 'src/components/data-graphic/elements/GraphicContext.svelte'",
+    "check:watch": "svelte-kit sync && svelte-check --no-tsconfig --watch",
     "test:watch": "vitest",
     "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
     "storybook:smoketest": "STORYBOOK_MODE=true storybook dev --smoke-test",
@@ -90,9 +92,14 @@
     "vega-lite": "^5.17.0",
     "vega-typings": "^1.3.1",
     "vite": "^5.4.8",
-    "vitest": "^2.1.1",
+    "vitest": "^2.1.3",
+    "web-common": "^0.0.1",
     "yaml": "^2.4.5",
     "yup": "^1.4.0"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@rilldata/actions": "^0.0.0",
+    "@rilldata/utils": "^0.0.0"
+  }
 }

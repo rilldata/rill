@@ -1,0 +1,13 @@
+{
+  "name": "@rilldata/utils",
+  "version": "0.0.0",
+  "main": "index.ts",
+  "types": "index.ts",
+  "type": "module",
+  "scripts": {
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.3"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@rilldata/events",
+  "version": "0.0.0",
+  "main": "index.ts",
+  "types": "index.ts",
+  "type": "module"
+}
