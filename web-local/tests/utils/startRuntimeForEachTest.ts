@@ -3,7 +3,7 @@ import { rmSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import treeKill from "tree-kill";
-import { isPortOpen } from "$lib";
+import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
 import { asyncWaitUntil, waitUntil } from "@rilldata/utils";
 import axios from "axios";
 
