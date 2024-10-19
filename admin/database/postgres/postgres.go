@@ -1227,6 +1227,15 @@ func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName 
 	return ret, nil
 }
 
+func (c *connection) FindReportTokenForEmail(ctx context.Context, reportName, email string) (*database.ReportToken, error) {
+	res := &database.ReportToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM report_tokens WHERE report_name=$1 AND recipient_email=$2`, reportName, email).StructScan(res)
+	if err != nil {
+		return nil, parseErr("report token", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertReportToken(ctx context.Context, opts *database.InsertReportTokenOptions) (*database.ReportToken, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

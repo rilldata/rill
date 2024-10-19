@@ -281,10 +281,22 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		userEmail = user.Email
-	} else if req.Email == nil {
-		return nil, status.Error(codes.InvalidArgument, "email is required for magic auth token")
-	} else {
+	}
+
+	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
+		if req.Email == nil {
+			return nil, status.Error(codes.InvalidArgument, "missing email")
+		}
 		userEmail = *req.Email
+
+		reportTkn, err := s.admin.DB.FindReportTokenForEmail(ctx, req.Name, userEmail)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "could not find report token for email: %s", err.Error())
+		}
+
+		if reportTkn.MagicAuthTokenID != claims.OwnerID() {
+			return nil, status.Error(codes.PermissionDenied, "magic token not issued for this email")
+		}
 	}
 
 	opts, err := recreateReportOptionsFromSpec(spec)
