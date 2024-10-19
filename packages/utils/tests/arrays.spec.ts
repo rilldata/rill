@@ -1,4 +1,4 @@
-import { createBatches } from "../lib/arrays";
+import { createBatches } from "../src/index";
 import { describe, expect, it } from "vitest";
 
 describe("createBatches", () => {

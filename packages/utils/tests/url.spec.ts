@@ -1,4 +1,4 @@
-import { getFullUrlForPath, getUrlForPath } from "../index";
+import { getFullUrlForPath, getUrlForPath } from "../src/index";
 import { describe, it, expect } from "vitest";
 
 describe("url-utils", () => {

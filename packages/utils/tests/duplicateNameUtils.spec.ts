@@ -1,4 +1,4 @@
-import { duplicateNameChecker, incrementedNameGetter } from "../index";
+import { duplicateNameChecker, incrementedNameGetter } from "../src/index";
 import { describe, expect, it } from "vitest";
 
 function testDuplicateNameChecker(
