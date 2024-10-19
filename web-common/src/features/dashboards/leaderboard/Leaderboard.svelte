@@ -74,37 +74,39 @@
     runtime,
   } = getStateManagers();
 
-  $: dimension = $getDimensionByName(dimensionName);
-
   const timeControlsStore = useTimeControlStore(StateManagers);
+
+  $: ({ instanceId } = $runtime);
+
+  $: dimension = $getDimensionByName(dimensionName);
 
   $: timeControls = $timeControlsStore;
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     $metricsViewName,
     $leaderboardSortedQueryBody(dimensionName),
     $leaderboardSortedQueryOptions(dimensionName, visible),
   );
 
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     $metricsViewName,
     {
       dimensions: [{ name: dimensionName }],
       whereSql: selectedBelowTheFold
-        .map((item) => {
-          return `${dimensionName} = '${item.dimensionValue}'`;
-        })
+        .map((item) => `${dimensionName} = '${item.dimensionValue}'`)
         .join(" OR "),
       timeRange: {
         start: timeControls.timeStart,
         end: timeControls.timeEnd,
       },
-      comparisonTimeRange: {
-        start: timeControls.comparisonTimeStart,
-        end: timeControls.comparisonTimeEnd,
-      },
+      comparisonTimeRange: timeControls.showTimeComparison
+        ? {
+            start: timeControls.comparisonTimeStart,
+            end: timeControls.comparisonTimeEnd,
+          }
+        : undefined,
 
       measures: [
         { name: $activeMeasureName },
@@ -123,7 +125,7 @@
   $: belowTheFoldData = $belowTheFoldDataQuery?.data?.data ?? [];
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     $metricsViewName,
     $leaderboardDimensionTotalQueryBody(dimensionName),
     $leaderboardDimensionTotalQueryOptions(dimensionName),
