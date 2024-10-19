@@ -1,13 +1,8 @@
 {
-
   "compilerOptions": {
     "moduleResolution": "bundler",
     "module": "esnext",
-    "lib": [
-			"esnext",
-			"DOM",
-			"DOM.Iterable"
-		],
+    "lib": ["esnext", "DOM", "DOM.Iterable"],
     "target": "esnext",
 
     /**
@@ -39,10 +34,5 @@
     },
     "outDir": "dist"
   },
-  "include": [
-    "**/*.d.ts",
-    "**/*.ts",
-    "**/*.svelte",
-    "**/rollup.config.js",
-  ]
+  "include": ["**/*.d.ts", "**/*.ts", "**/*.svelte", "**/rollup.config.js"]
 }

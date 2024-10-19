@@ -50,7 +50,7 @@ Duckdb-Dockerfile
 README.md
 docs
 package-lock.json
-# *.json
+Users.json
 *.cjs
 _redirects
 Makefile
