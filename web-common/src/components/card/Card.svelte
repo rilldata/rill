@@ -1,29 +1,56 @@
 <script lang="ts">
-  export let bgClasses = "";
+  import LoadingCircleOutline from "../icons/LoadingCircleOutline.svelte";
+
+  export let disabled = false;
+  export let isLoading = false;
+  export let redirect = false;
+  export let href = "/";
+  export let imageUrl = "";
 </script>
 
-<div
-  class="w-[240px] h-[240px] rounded-md
-flex flex-col items-center justify-center gap-y-2
-relative {bgClasses} 
-transition duration-300 ease-out custom-shadow custom-shadow-hover cursor-pointer"
+<a
+  href={href + (redirect ? "?redirect=true" : "")}
+  class={imageUrl ? `bg-[url('${imageUrl}')]` : "gradient"}
   on:click
   on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
-  role="button"
-  tabindex="0"
+  aria-disabled={disabled && !isLoading}
 >
+  {#if isLoading}
+    <div
+      class="absolute z-10 inset-0 flex items-center justify-center backdrop-blur-sm"
+    >
+      <LoadingCircleOutline size="48px" color="var(--color-primary-600)" />
+    </div>
+  {/if}
   <slot />
-</div>
+</a>
 
-<style>
-  .custom-shadow {
+<style lang="postcss">
+  a {
+    @apply bg-no-repeat bg-center bg-cover;
+    @apply relative;
+    @apply size-60 rounded-md;
+    @apply flex flex-col items-center justify-center gap-y-2;
+    @apply transition duration-300 ease-out;
+    @apply cursor-pointer overflow-hidden;
+
     box-shadow:
       0px 2px 3px rgba(15, 23, 42, 0.06),
       0px 1px 3px rgba(15, 23, 42, 0.08),
       0px 0px 0px 1px rgba(15, 23, 42, 0.12);
   }
 
-  .custom-shadow-hover:hover {
+  .gradient {
+    @apply bg-gradient-to-b from-white to-slate-50;
+  }
+
+  a[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  a:hover {
     box-shadow:
       0px 2px 3px rgba(99, 102, 241, 0.2),
       0px 1px 3px rgba(15, 23, 42, 0.08),
