@@ -52,7 +52,7 @@ jobs:
       - name: lint and type checks for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
-          npx svelte-kit sync
+          npx eslint web-local --quiet
           npm run check -w web-local
 
       - name: lint and type checks for web admin
