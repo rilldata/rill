@@ -15,9 +15,10 @@ export class Heap<Item extends { index?: number }, Key = string> {
     return this.array[0];
   }
 
-  public get(key: Key): Item {
-    if (!this.valueToIdxMap.has(key)) return undefined;
-    return this.array[this.valueToIdxMap.get(key)];
+  public get(key: Key): Item | undefined {
+    const idx = this.valueToIdxMap.get(key);
+    if (idx === undefined) return undefined;
+    return this.array[idx];
   }
 
   public push(value: Item) {
@@ -62,6 +63,7 @@ export class Heap<Item extends { index?: number }, Key = string> {
   // doesnt work on literals
   public updateItem(value: Item) {
     const idx = value.index ?? this.valueToIdxMap.get(this.keyGetter(value));
+    if (idx === undefined || idx < 0) return;
     if (!this.moveUp(idx)) {
       this.moveDown(idx);
     }

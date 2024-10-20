@@ -210,7 +210,7 @@ describe("dashboard-stores", () => {
     assertMetricsViewRaw(
       AD_BIDS_EXPLORE_NO_TIMESTAMP_NAME,
       createAndExpression([]),
-      null,
+      undefined,
       AD_BIDS_IMPRESSIONS_MEASURE,
     );
 
@@ -221,7 +221,7 @@ describe("dashboard-stores", () => {
     assertMetricsViewRaw(
       AD_BIDS_EXPLORE_NO_TIMESTAMP_NAME,
       AD_BIDS_BASE_FILTER,
-      null,
+      undefined,
       AD_BIDS_IMPRESSIONS_MEASURE,
     );
   });
