@@ -215,7 +215,7 @@
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center pointer-events-none  w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
-        <div class="truncate text-xs ${fontWeight}">${total}</div></div>`;
+        <div class="truncate text-xs ${value.value === null ? "italic text-gray-500" : ""} ${fontWeight}">${total}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs pointer-events-none font-semibold text-right flex items-center justify-end gap-2" >
         ${total}
