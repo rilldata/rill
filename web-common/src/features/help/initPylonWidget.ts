@@ -20,7 +20,7 @@ export function initPylonWidget() {
     e.setAttribute("async", "true");
     e.setAttribute("src", `https://widget.usepylon.com/widget/${appId}`);
     const n = t.getElementsByTagName("script")[0];
-    n.parentNode.insertBefore(e, n);
+    n.parentNode?.insertBefore(e, n);
   };
   if (t.readyState === "complete") {
     r();
