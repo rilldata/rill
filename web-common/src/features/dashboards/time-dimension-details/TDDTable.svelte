@@ -175,7 +175,6 @@
   };
 
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
-    console.log(value, x, y, element);
     const showBorder =
       (pinIndex > -1 && comparing === "dimension" && y === pinIndex + 1) ||
       (comparing === "time" && y === 2);
