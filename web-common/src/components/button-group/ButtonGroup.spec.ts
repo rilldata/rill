@@ -192,11 +192,11 @@ describe("ButtonGroup - removing buttons", () => {
     unmount();
   });
 
-  it("removed buttons not found", () => {
-    component.$set({ values: [1, 3, 4] });
-    const button2 = screen.queryByRole("button", { name: `button-2` });
+  it("removed buttons not found", async () => {
+    await component.$set({ values: [1, 3, 4] });
+    const button2 = await screen.queryByRole("button", { name: `button-2` });
     expect(button2).toBeNull();
-    const button5 = screen.queryByRole("button", { name: `button-5` });
+    const button5 = await screen.queryByRole("button", { name: `button-5` });
     expect(button5).toBeNull();
   });
 
