@@ -11,6 +11,8 @@
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import LoadingRows from "./LoadingRows.svelte";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
+  import { getComparisonRequestMeasures } from "../dashboard-utils";
 
   const slice = 7;
   const columnWidth = 66;
@@ -43,6 +45,8 @@
     observer.observe(container);
   });
 
+  const StateManagers = getStateManagers();
+
   const {
     selectors: {
       dimensions: {
@@ -70,19 +74,58 @@
     runtime,
   } = getStateManagers();
 
+  const timeControlsStore = useTimeControlStore(StateManagers);
+
+  $: ({ instanceId } = $runtime);
+
   $: dimension = $getDimensionByName(dimensionName);
 
+  $: timeControls = $timeControlsStore;
+
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     $metricsViewName,
     $leaderboardSortedQueryBody(dimensionName),
     $leaderboardSortedQueryOptions(dimensionName, visible),
   );
 
+  $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    $metricsViewName,
+    {
+      dimensions: [{ name: dimensionName }],
+      whereSql: selectedBelowTheFold
+        .map((item) => `${dimensionName} = '${item.dimensionValue}'`)
+        .join(" OR "),
+      timeRange: {
+        start: timeControls.timeStart,
+        end: timeControls.timeEnd,
+      },
+      comparisonTimeRange: timeControls.showTimeComparison
+        ? {
+            start: timeControls.comparisonTimeStart,
+            end: timeControls.comparisonTimeEnd,
+          }
+        : undefined,
+
+      measures: [
+        { name: $activeMeasureName },
+        ...(timeControls.showTimeComparison
+          ? getComparisonRequestMeasures($activeMeasureName)
+          : []),
+      ],
+    },
+    $leaderboardSortedQueryOptions(
+      dimensionName,
+      visible && selectedBelowTheFold.length > 0,
+    ),
+  );
+
   $: ({ data: sortedData, isFetching } = $sortedQuery);
+  $: belowTheFoldData = $belowTheFoldDataQuery?.data?.data ?? [];
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     $metricsViewName,
     $leaderboardDimensionTotalQueryBody(dimensionName),
     $leaderboardDimensionTotalQueryOptions(dimensionName),
@@ -97,7 +140,7 @@
 
   $: if (sortedData && !isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
-      sortedData?.data ?? [],
+      (sortedData?.data ?? []).concat(belowTheFoldData),
       dimensionName,
       $activeMeasureName,
       slice,
