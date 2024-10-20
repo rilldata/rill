@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
 
-const config = defineConfig(({ mode }) => ({
+const config = defineConfig({
   build: {
     rollupOptions: {
       // This ensures that the web-admin package is not bundled into the web-local package.
@@ -19,9 +19,6 @@ const config = defineConfig(({ mode }) => ({
       "@rilldata/web-local": "/src",
       "@rilldata/web-common": "/../web-common/src",
       "@rilldata/web-admin": "/../web-admin/src",
-      // Adding $img alias to fix Vite build warnings due to static assets referenced in CSS
-      // See: https://stackoverflow.com/questions/75843825/sveltekit-dev-build-and-path-problems-with-static-assets-referenced-in-css
-      $img: mode === "production" ? "/../web-common/static/img" : "/../img",
     },
   },
   server: {
@@ -36,6 +33,6 @@ const config = defineConfig(({ mode }) => ({
   plugins: [sveltekit()],
   envDir: "../",
   envPrefix: "RILL_UI_PUBLIC_",
-}));
+});
 
 export default config;
