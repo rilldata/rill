@@ -10,10 +10,11 @@
 
 <a
   href={href + (redirect ? "?redirect=true" : "")}
-  class={imageUrl ? `bg-[url('${imageUrl}')]` : "gradient"}
+  class:gradient={!imageUrl}
   on:click
   on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
   aria-disabled={disabled && !isLoading}
+  style:background-image={imageUrl ? `url('${imageUrl}')` : ""}
 >
   {#if isLoading}
     <div
