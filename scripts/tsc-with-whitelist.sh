@@ -52,6 +52,9 @@ web-common/src/runtime-client/http-request-queue/HttpRequestQueue.ts: error TS23
 web-common/src/runtime-client/http-request-queue/HttpRequestQueue.ts: error TS2532
 web-common/src/runtime-client/http-request-queue/HttpRequestQueueTypes.ts: error TS18048
 web-common/src/runtime-client/http-request-queue/HttpRequestQueueTypes.ts: error TS2322
+web-admin/vite.config.ts: error TS2322
+web-auth/vite.config.ts: error TS2322
+web-local/vite.config.ts: error TS2345
 "
 
 # Run TypeScript compiler and find all distinct error per file
