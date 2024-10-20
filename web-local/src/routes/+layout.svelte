@@ -24,7 +24,9 @@
   import type { Writable } from "svelte/store";
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import { page } from "$app/stores";
+  import type { LayoutData } from "./$types";
 
+  export let data: LayoutData;
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
    */
@@ -75,7 +77,7 @@
       <div
         class="body h-screen w-screen overflow-hidden absolute flex flex-col"
       >
-        {#if !route.id?.includes("/welcome")}
+        {#if data.initialized}
           <BannerCenter />
           <RepresentingUserBanner />
           <ApplicationHeader {mode} />

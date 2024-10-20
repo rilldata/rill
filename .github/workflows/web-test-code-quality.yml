@@ -61,7 +61,7 @@ jobs:
           npx eslint web-admin --quiet
           npm run check -w web-admin
 
-      - name: lint and type checks for web auth
+      - name: lint and type checks for web  auth
         if: steps.filter.outputs.auth == 'true'
         run: |-
           npx eslint web-auth --quiet

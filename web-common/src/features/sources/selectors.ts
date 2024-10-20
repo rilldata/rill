@@ -86,7 +86,7 @@ export function useAllSourceColumns(
           r.source?.state?.connector ?? "",
           "",
           "",
-          r.meta.name.name,
+          r.meta?.name?.name ?? "",
         ),
       ),
       (sourceColumnResponses) =>
@@ -107,7 +107,7 @@ export function createTableColumnsWithName(
   database: string,
   databaseSchema: string,
   tableName: string,
-): CreateQueryResult<TableColumnsWithName> {
+) {
   return createQueryServiceTableColumns(
     instanceId,
     tableName,
