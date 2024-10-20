@@ -101,7 +101,7 @@ export function assertMetricsView(
 export function assertMetricsViewRaw(
   name: string,
   filters: V1Expression,
-  timeRange: DashboardTimeControls | null,
+  timeRange: DashboardTimeControls | undefined,
   selectedMeasure: string,
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
