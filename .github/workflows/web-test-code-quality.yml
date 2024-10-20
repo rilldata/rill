@@ -53,7 +53,7 @@ jobs:
         if: steps.filter.outputs.local == 'true'
         run: |-
           npx eslint web-local --quiet
-          npx svelte-check --workspace web-local --no-tsconfig
+          npm run check -w web-local
 
       - name: lint and type checks for web admin
         if: steps.filter.outputs.admin == 'true'
@@ -61,7 +61,7 @@ jobs:
           npx eslint web-admin --quiet
           npx svelte-check --workspace web-admin --no-tsconfig
 
-      - name: lint and type checks for web auth
+      - name: lint and type checks for web  auth
         if: steps.filter.outputs.auth == 'true'
         run: |-
           npx eslint web-auth --quiet

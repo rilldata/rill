@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Card from "@rilldata/web-common/components/card/Card.svelte";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
@@ -21,10 +20,7 @@
 </script>
 
 {#if $proj.data}
-  <Card
-    on:click={() => goto(`/${organization}/${project}`)}
-    bgClasses="bg-gradient-to-b from-white to-slate-50"
-  >
+  <Card href="/{organization}/{project}">
     <!-- Project name -->
     <h2
       class="text-gray-700 font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
