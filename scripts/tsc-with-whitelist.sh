@@ -148,6 +148,7 @@ web-auth/vite.config.ts: error TS2322
 web-local/vite.config.ts: error TS2345
 web-common/src/features/dashboards/url-state/filters/expression.cjs: error TS1286
 web-local/src/routes//dashboard/[name]/+page.ts: error TS2307
+web-local/vite.config.ts: error TS2322
 "
 
 # Run TypeScript compiler and find all distinct error per file
