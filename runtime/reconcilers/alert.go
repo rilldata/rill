@@ -841,15 +841,6 @@ func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []
 }
 
 func (r *AlertReconciler) validateOLAPState(ctx context.Context, self *runtimev1.Resource) error {
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-	if err != nil {
-		return err
-	}
-
-	if !cfg.AlertsSkipCheckOnIdleOLAP {
-		return nil
-	}
-
 	var mvSpec *runtimev1.MetricsViewSpec
 	for _, ref := range self.Meta.Refs {
 		if ref.Kind != runtime.ResourceKindMetricsView {
@@ -870,8 +861,8 @@ func (r *AlertReconciler) validateOLAPState(ctx context.Context, self *runtimev1
 		return err
 	}
 	defer release()
-	if olap.ScaledToZero(ctx) {
-		return skipError{reason: "OLAP is scaled to zero and `rill.alerts.skip_check_on_idle_olap` is set to true"}
+	if olap.MayBeScaledToZero(ctx) {
+		return skipError{reason: "OLAP may be scaled to zero"}
 	}
 	return nil
 }

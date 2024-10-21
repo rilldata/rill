@@ -6,7 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"sync/atomic"
+	"sync"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/XSAM/otelsql"
@@ -258,9 +259,11 @@ type connection struct {
 	// cloudAPI is http client used to make requests to the cloud API
 	cloudAPI http.Client
 	// scaledToZero is the cached service status.
-	scaledToZero atomic.Bool
-	// statusCheckedAt is the unix timestamp in seconds when the service status was last checked and cached. Cached status is valid for 10 minutes.
-	statusCheckedAt atomic.Int64
+	scaledToZero bool
+	// statusCheckedAt is the time when the service status was last checked and cached. Cached status is valid for 10 minutes.
+	statusCheckedAt time.Time
+	// statusCheckMutex is used to synchronize access to scaledToZero and statusCheckedAt
+	statusCheckMutex sync.Mutex
 }
 
 // Ping implements drivers.Handle.

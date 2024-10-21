@@ -625,10 +625,6 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 	return false
 }
 
-func (c *connection) ScaledToZero(ctx context.Context) bool {
-	return false
-}
-
 func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql string, byName bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	var byNameClause string
 	if byName {

@@ -504,25 +504,20 @@ func (c *connection) renameTable(ctx context.Context, oldName, newName, onCluste
 	return c.DropTable(context.Background(), oldName, false)
 }
 
-func (c *connection) MayBeScaledToZero() bool {
-	return c.config.CanScaleToZero
-}
-
-func (c *connection) ScaledToZero(ctx context.Context) bool {
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 	if c.config.APIKeyID == "" {
 		// no api key provided resort to the config set
 		return c.config.CanScaleToZero
 	}
 
+	c.statusCheckMutex.Lock()
+	defer c.statusCheckMutex.Unlock()
 	// check if stauts is cached
-	lastCheckedAt := c.statusCheckedAt.Load()
-	if lastCheckedAt > 0 {
-		if time.Now().Unix()-lastCheckedAt < int64(time.Minute)*10 {
-			return c.scaledToZero.Load()
-		}
+	if !c.statusCheckedAt.IsZero() && time.Since(c.statusCheckedAt) <= time.Minute*10 {
+		return c.scaledToZero
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.clickhouse.cloud/v1/organizations/%s/services/%s", c.config.OrganizationID, c.config.ServiceID), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://api.clickhouse.cloud/v1/organizations/%s/services/%s", c.config.OrganizationID, c.config.ServiceID), http.NoBody)
 	if err != nil {
 		c.logger.Warn("failed to create clickhouse cloud API request", zap.Error(err))
 		return c.config.CanScaleToZero
@@ -554,8 +549,8 @@ func (c *connection) ScaledToZero(ctx context.Context) bool {
 	}
 	scaledToZero := strings.EqualFold(response.Result.State, "idle")
 	// also cache the result
-	c.scaledToZero.Store(scaledToZero)
-	c.statusCheckedAt.Store(time.Now().Unix())
+	c.scaledToZero = scaledToZero
+	c.statusCheckedAt = time.Now()
 	return scaledToZero
 }
 

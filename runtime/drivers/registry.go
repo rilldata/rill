@@ -93,8 +93,6 @@ type InstanceConfig struct {
 	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
-	// AlertsSkipCheckOnIdleOLAP indicates whether to skip alert checks when OLAP is idle(scaled down to zero).
-	AlertsSkipCheckOnIdleOLAP bool `mapstructure:"rill.alerts.skip_check_on_idle_olap"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
