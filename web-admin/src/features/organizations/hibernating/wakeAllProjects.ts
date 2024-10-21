@@ -65,7 +65,7 @@ async function redeployProject(
     organization,
     project: project.name,
   });
-  void queryClient.invalidateQueries(
+  void queryClient.refetchQueries(
     getAdminServiceGetProjectQueryKey(organization, project.name),
     {
       // avoid invalidating createAdminServiceGetProjectWithBearerToken

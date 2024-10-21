@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
+    isBillingUpgradePage,
     isProjectInvitePage,
     withinOrganization,
     withinProject,
@@ -50,8 +51,12 @@
   });
 
   $: isEmbed = $page.url.pathname === "/-/embed";
-  // invite page shouldn't show the top bar because it is considered an onboard step
-  $: hideTopBar = isProjectInvitePage($page);
+
+  $: hideTopBar =
+    // invite page shouldn't show the top bar because it is considered an onboard step
+    isProjectInvitePage($page) ||
+    // upgrade callback landing page shouldn't show any rill identifications
+    isBillingUpgradePage($page);
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 </script>

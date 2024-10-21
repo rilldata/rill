@@ -34,6 +34,7 @@
   }
 
   $: if (!$billingIssueMessage.isFetching) {
+    // is fetching guard is to avoid flicker while the issues are re-fetched
     if ($billingIssueMessage.data) {
       showBillingIssueBanner($billingIssueMessage.data);
     } else {

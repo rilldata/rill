@@ -5,15 +5,14 @@
     createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
   } from "@rilldata/web-admin/client";
-  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
+  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
     fetchTeamPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
-  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -21,28 +20,27 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onMount } from "svelte";
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+  $: ({ cancelled, paymentIssues } = data);
 
   /**
    * Landing page to upgrade a user to team plan.
    * Is set as a return url on stripe portal.
    */
   $: organization = $page.params.organization;
-  let upgrading = false;
-  let isRenew = false;
-  $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
-  $: if (!$categorisedIssues.isLoading && !upgrading) {
-    upgrade();
-  }
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
 
   async function upgrade() {
     // if there are still payment issues then do not upgrade
-    if ($categorisedIssues.data?.payment?.length) {
+    if (paymentIssues.length) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Please fix payment issues: ${getPaymentIssueErrorText($categorisedIssues.data.payment)}`,
+        message: `Please fix payment issues: ${getPaymentIssueErrorText(paymentIssues)}`,
         link: {
           text: "Update payment",
           href: await fetchPaymentsPortalURL(
@@ -53,10 +51,9 @@
       });
       return goto(`/${organization}`);
     }
-    isRenew = !!$categorisedIssues.data?.cancelled;
     const teamPlan = await fetchTeamPlan();
     try {
-      if (isRenew) {
+      if (cancelled) {
         await $planRenewer.mutateAsync({
           organization,
           data: {
@@ -82,6 +79,8 @@
     }
     return goto(`/${organization}`);
   }
+
+  onMount(() => upgrade());
 </script>
 
 <CtaLayoutContainer>
@@ -89,15 +88,13 @@
     <div class="h-36">
       <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
     </div>
-    {#if !$categorisedIssues.isLoading}
-      <CtaHeader variant="bold">
-        {#if isRenew}
-          Renewing team plan...
-        {:else}
-          Upgrading to team plan...
-        {/if}
-      </CtaHeader>
-    {/if}
+    <CtaHeader variant="bold">
+      {#if cancelled}
+        Renewing team plan...
+      {:else}
+        Upgrading to team plan...
+      {/if}
+    </CtaHeader>
     <CtaNeedHelp />
   </CtaContentContainer>
 </CtaLayoutContainer>

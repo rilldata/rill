@@ -78,7 +78,6 @@ export function useCategorisedOrganizationBillingIssues(organization: string) {
           payment: getPaymentIssues(issues),
         };
       },
-      refetchOnWindowFocus: true,
     },
   });
 }
