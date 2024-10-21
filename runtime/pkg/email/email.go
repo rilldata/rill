@@ -371,7 +371,7 @@ func (c *Client) SendInvoicePaymentFailed(opts *InvoicePaymentFailed) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Payment for %s has failed", opts.OrgName),
 		Title:   fmt.Sprintf("Payment for %s has failed", opts.OrgName),
-		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has failed. Your projects will be hibenrated on %s if payment is not received.", opts.Currency, opts.Amount, opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
+		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has failed. Your projects will be hibenrated on %s if payment not received.", opts.Currency, opts.Amount, opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
 	})
 }
 
@@ -424,6 +424,23 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 		Subject: fmt.Sprintf("Subscription ended for %s", opts.OrgName),
 		Title:   fmt.Sprintf("Subscription ended for %s", opts.OrgName),
 		Body:    template.HTML(fmt.Sprintf("Thank you for using Rill, all your projects have been hibernated as subscription has ended for %q.", opts.OrgName)),
+	})
+}
+
+type TrialStarted struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialStarted(opts *TrialStarted) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your trial for %s has started", opts.OrgName),
+		Title:   fmt.Sprintf("Your trial for %s has started", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Welcome to Rill! Your trial for %q has started and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
 	})
 }
 

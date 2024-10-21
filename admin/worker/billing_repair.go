@@ -8,18 +8,18 @@ import (
 )
 
 func (w *Worker) repairOrgBilling(ctx context.Context) error {
-	orgs, err := w.admin.DB.FindOrganizationsWithoutBillingCustomerID(ctx)
+	ids, err := w.admin.DB.FindOrganizationIDsWithoutBilling(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get organizations without billing id: %w", err)
 	}
 
-	for _, org := range orgs {
-		_, _, err = w.admin.RepairOrgBilling(ctx, org)
+	for _, orgID := range ids {
+		// TODO limit concurrency by a having a separate queue or submit limited jobs in each run
+		_, err = w.admin.Jobs.RepairOrgBilling(ctx, orgID)
 		if err != nil {
-			w.logger.Error("failed to repair billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+			w.logger.Named("billing").Error("failed to submit repair billing job", zap.String("org_id", orgID), zap.Error(err))
 			continue
 		}
-		w.logger.Info("repaired billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID))
 	}
 	return nil
 }

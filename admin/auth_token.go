@@ -167,15 +167,16 @@ func (t *magicAuthToken) OwnerID() string {
 
 // IssueMagicAuthTokenOptions provides options for IssueMagicAuthToken.
 type IssueMagicAuthTokenOptions struct {
-	ProjectID             string
-	TTL                   *time.Duration
-	CreatedByUserID       *string
-	Attributes            map[string]any
-	MetricsView           string
-	MetricsViewFilterJSON string
-	MetricsViewFields     []string
-	State                 string
-	Title                 string
+	ProjectID       string
+	TTL             *time.Duration
+	CreatedByUserID *string
+	Attributes      map[string]any
+	ResourceType    string
+	ResourceName    string
+	FilterJSON      string
+	Fields          []string
+	State           string
+	Title           string
 }
 
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
@@ -189,18 +190,19 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	}
 
 	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
-		ID:                    tkn.ID.String(),
-		SecretHash:            tkn.SecretHash(),
-		Secret:                tkn.Secret[:],
-		ProjectID:             opts.ProjectID,
-		ExpiresOn:             expiresOn,
-		CreatedByUserID:       opts.CreatedByUserID,
-		Attributes:            opts.Attributes,
-		MetricsView:           opts.MetricsView,
-		MetricsViewFilterJSON: opts.MetricsViewFilterJSON,
-		MetricsViewFields:     opts.MetricsViewFields,
-		State:                 opts.State,
-		Title:                 opts.Title,
+		ID:              tkn.ID.String(),
+		SecretHash:      tkn.SecretHash(),
+		Secret:          tkn.Secret[:],
+		ProjectID:       opts.ProjectID,
+		ExpiresOn:       expiresOn,
+		CreatedByUserID: opts.CreatedByUserID,
+		Attributes:      opts.Attributes,
+		ResourceType:    opts.ResourceType,
+		ResourceName:    opts.ResourceName,
+		FilterJSON:      opts.FilterJSON,
+		Fields:          opts.Fields,
+		State:           opts.State,
+		Title:           opts.Title,
 	})
 	if err != nil {
 		return nil, err

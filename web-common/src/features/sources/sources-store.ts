@@ -1,4 +1,4 @@
-import { writable, Writable } from "svelte/store";
+import { writable, type Writable } from "svelte/store";
 
 export enum DuplicateActions {
   None = "NONE",

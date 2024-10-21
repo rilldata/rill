@@ -7,14 +7,14 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { Duration } from "luxon";
 import {
-  AvailableTimeGrain,
+  type AvailableTimeGrain,
   Period,
   RangePresetType,
   ReferencePoint,
   TimeComparisonOption,
-  TimeGrain,
+  type TimeGrain,
   TimeOffsetType,
-  TimeRangeMeta,
+  type TimeRangeMeta,
   TimeRangePreset,
   TimeTruncationType,
 } from "./types";

@@ -19,10 +19,10 @@
   class="px-3 py-2 rounded grid gap-x-2 {!disabled
     ? 'hover:bg-gray-200'
     : ''} {!disabled ? 'hover:dark:bg-gray-600' : ''} items-center"
-  style:grid-template-columns="{$$slots["icon"] ? "max-content" : ""}
+  style:grid-template-columns="{$$slots['icon'] ? 'max-content' : ''}
   max-content
-  {$$slots["context"] ? "max-content" : ""}
-  {disabled ? "" : "max-content"}"
+  {$$slots['context'] ? 'max-content' : ''}
+  {disabled ? '' : 'max-content'}"
   on:click
 >
   {#if $$slots["icon"]}

@@ -150,24 +150,20 @@ export function getComparisonRequestMeasures(
 }
 
 export function getBreadcrumbOptions(
-  dashboardResources: V1Resource[],
-  canvaseResources: V1Resource[],
+  exploreResources: V1Resource[],
+  canvasResources: V1Resource[],
 ): Map<string, PathOption> {
-  const dashboardOptions = dashboardResources.reduce(
-    (map, dashboardResource) => {
-      const name = dashboardResource.meta?.name?.name ?? "";
-      const label =
-        dashboardResource.metricsView?.state?.validSpec?.title || name;
+  const exploreOptions = exploreResources.reduce((map, exploreResource) => {
+    const name = exploreResource.meta?.name?.name ?? "";
+    const label = exploreResource.explore?.state?.validSpec?.title || name;
 
-      if (label && name)
-        map.set(name.toLowerCase(), { label, section: "dashboard", depth: 0 });
+    if (label && name)
+      map.set(name.toLowerCase(), { label, section: "explore", depth: 0 });
 
-      return map;
-    },
-    new Map<string, PathOption>(),
-  );
+    return map;
+  }, new Map<string, PathOption>());
 
-  const canvasOptions = canvaseResources.reduce((map, canvasResource) => {
+  const canvasOptions = canvasResources.reduce((map, canvasResource) => {
     const name = canvasResource.meta?.name?.name ?? "";
     const label = canvasResource?.canvas?.spec?.title || name;
 
@@ -177,5 +173,5 @@ export function getBreadcrumbOptions(
     return map;
   }, new Map<string, PathOption>());
 
-  return new Map([...dashboardOptions, ...canvasOptions]);
+  return new Map([...exploreOptions, ...canvasOptions]);
 }

@@ -2079,34 +2079,32 @@ export class ExploreSpec extends Message<ExploreSpec> {
   metricsView = "";
 
   /**
-   * Dimensions to show.
+   * Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
    *
    * @generated from field: repeated string dimensions = 4;
    */
   dimensions: string[] = [];
 
   /**
-   * If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-   * Since it is processed during validation, this will always be false in `state.valid_spec`.
+   * Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
    *
-   * @generated from field: bool dimensions_exclude = 5;
+   * @generated from field: rill.runtime.v1.FieldSelector dimensions_selector = 13;
    */
-  dimensionsExclude = false;
+  dimensionsSelector?: FieldSelector;
 
   /**
-   * Measures available
+   * Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
    *
    * @generated from field: repeated string measures = 6;
    */
   measures: string[] = [];
 
   /**
-   * If true, `measures` will be inverted during validation to include all measures except the ones listed.
-   * Since it is processed during validation, this will always be false in `state.valid_spec`.
+   * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
    *
-   * @generated from field: bool measures_exclude = 7;
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 14;
    */
-  measuresExclude = false;
+  measuresSelector?: FieldSelector;
 
   /**
    * Theme to use
@@ -2133,12 +2131,11 @@ export class ExploreSpec extends Message<ExploreSpec> {
   timeZones: string[] = [];
 
   /**
-   * List of preconfigured UI states that can be toggled between.
-   * If the list is not empty, the first item should be selected by default.
+   * Preset UI state to show by default.
    *
-   * @generated from field: repeated rill.runtime.v1.ExplorePreset presets = 11;
+   * @generated from field: rill.runtime.v1.ExplorePreset default_preset = 15;
    */
-  presets: ExplorePreset[] = [];
+  defaultPreset?: ExplorePreset;
 
   /**
    * Security for the explore dashboard.
@@ -2160,13 +2157,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 5, name: "dimensions_exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "dimensions_selector", kind: "message", T: FieldSelector },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "measures_exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 8, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "presets", kind: "message", T: ExplorePreset, repeated: true },
+    { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
@@ -2324,41 +2321,32 @@ export class ExploreComparisonTimeRange extends Message<ExploreComparisonTimeRan
  */
 export class ExplorePreset extends Message<ExplorePreset> {
   /**
-   * Display name of the preset
-   *
-   * @generated from field: string label = 1;
-   */
-  label = "";
-
-  /**
-   * Dimensions to show
+   * Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
    *
    * @generated from field: repeated string dimensions = 2;
    */
   dimensions: string[] = [];
 
   /**
-   * If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-   * Since it is processed during validation, this will always be false in `state.valid_spec`.
+   * Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
    *
-   * @generated from field: bool dimensions_exclude = 3;
+   * @generated from field: rill.runtime.v1.FieldSelector dimensions_selector = 9;
    */
-  dimensionsExclude = false;
+  dimensionsSelector?: FieldSelector;
 
   /**
-   * Measures to show
+   * Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
    *
    * @generated from field: repeated string measures = 4;
    */
   measures: string[] = [];
 
   /**
-   * If true, `measures` will be inverted during validation to include all measures except the ones listed.
-   * Since it is processed during validation, this will always be false in `state.valid_spec`.
+   * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
    *
-   * @generated from field: bool measures_exclude = 5;
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 10;
    */
-  measuresExclude = false;
+  measuresSelector?: FieldSelector;
 
   /**
    * Time range for the explore.
@@ -2391,11 +2379,10 @@ export class ExplorePreset extends Message<ExplorePreset> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ExplorePreset";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 3, name: "dimensions_exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "dimensions_selector", kind: "message", T: FieldSelector },
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 5, name: "measures_exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -2415,6 +2402,126 @@ export class ExplorePreset extends Message<ExplorePreset> {
 
   static equals(a: ExplorePreset | PlainMessage<ExplorePreset> | undefined, b: ExplorePreset | PlainMessage<ExplorePreset> | undefined): boolean {
     return proto3.util.equals(ExplorePreset, a, b);
+  }
+}
+
+/**
+ * FieldSelector describes logic for selecting a list of fields.
+ * It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
+ *
+ * @generated from message rill.runtime.v1.FieldSelector
+ */
+export class FieldSelector extends Message<FieldSelector> {
+  /**
+   * Invert the result such that all fields *except* the selected fields are returned.
+   *
+   * @generated from field: bool invert = 1;
+   */
+  invert = false;
+
+  /**
+   * @generated from oneof rill.runtime.v1.FieldSelector.selector
+   */
+  selector: {
+    /**
+     * Select all fields.
+     *
+     * @generated from field: bool all = 2;
+     */
+    value: boolean;
+    case: "all";
+  } | {
+    /**
+     * Select specific fields by name.
+     *
+     * @generated from field: rill.runtime.v1.StringListValue fields = 3;
+     */
+    value: StringListValue;
+    case: "fields";
+  } | {
+    /**
+     * Select fields by a regular expression.
+     *
+     * @generated from field: string regex = 4;
+     */
+    value: string;
+    case: "regex";
+  } | {
+    /**
+     * Select fields by a DuckDB SQL SELECT expression. For example "* EXCLUDE (city)".
+     *
+     * @generated from field: string duckdb_expression = 5;
+     */
+    value: string;
+    case: "duckdbExpression";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<FieldSelector>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.FieldSelector";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "invert", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "all", kind: "scalar", T: 8 /* ScalarType.BOOL */, oneof: "selector" },
+    { no: 3, name: "fields", kind: "message", T: StringListValue, oneof: "selector" },
+    { no: 4, name: "regex", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "selector" },
+    { no: 5, name: "duckdb_expression", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "selector" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FieldSelector {
+    return new FieldSelector().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FieldSelector {
+    return new FieldSelector().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FieldSelector {
+    return new FieldSelector().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: FieldSelector | PlainMessage<FieldSelector> | undefined, b: FieldSelector | PlainMessage<FieldSelector> | undefined): boolean {
+    return proto3.util.equals(FieldSelector, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.StringListValue
+ */
+export class StringListValue extends Message<StringListValue> {
+  /**
+   * @generated from field: repeated string values = 1;
+   */
+  values: string[] = [];
+
+  constructor(data?: PartialMessage<StringListValue>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.StringListValue";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "values", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StringListValue {
+    return new StringListValue().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StringListValue {
+    return new StringListValue().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StringListValue {
+    return new StringListValue().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StringListValue | PlainMessage<StringListValue> | undefined, b: StringListValue | PlainMessage<StringListValue> | undefined): boolean {
+    return proto3.util.equals(StringListValue, a, b);
   }
 }
 

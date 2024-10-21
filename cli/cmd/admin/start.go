@@ -90,6 +90,7 @@ type Config struct {
 	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
 	MetricsProject                    string `default:"" split_words:"true"`
 	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
+	ScaleDownConstraint               int    `default:"0" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
 	OrbWebhookSecret                  string `split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
@@ -289,6 +290,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectOrg:         metricsProjectOrg,
 				MetricsProjectName:        metricsProjectName,
 				AutoscalerCron:            conf.AutoscalerCron,
+				ScaleDownConstraint:       conf.ScaleDownConstraint,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
 			if err != nil {

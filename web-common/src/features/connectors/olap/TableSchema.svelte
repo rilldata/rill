@@ -40,9 +40,9 @@
             {column.name}
           </TooltipContent>
         </Tooltip>
-        <span class="uppercase text-gray-700"
-          >{prettyPrintType(column.type ?? "")}</span
-        >
+        <span class="uppercase text-gray-700">
+          {prettyPrintType(column.type ?? "")}
+        </span>
       </li>
     {/each}
   {/if}

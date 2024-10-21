@@ -1,34 +1,33 @@
-<script>
+<script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import { createEventDispatcher } from "svelte";
-  import Dialog from "../../../components/dialog/Dialog.svelte";
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
 
   export let open;
-
-  const dispatch = createEventDispatcher();
-  function onClose() {
-    dispatch("close");
-  }
-  function onReplace() {
-    dispatch("replace");
-  }
+  export let onCancel: () => void;
+  export let onReplace: () => void;
 </script>
 
-<Dialog titleMarginBottomOverride="mb-4" on:close {open}>
-  <svelte:fragment slot="title">Replace current pivot table?</svelte:fragment>
+<AlertDialog.Root bind:open>
+  <AlertDialog.Content>
+    <AlertDialog.Title>Replace current pivot table?</AlertDialog.Title>
 
-  <div class="flex flex-col items-center" slot="body">
-    <div class="text-left text-sm text-gray-500 w-full">
+    <AlertDialog.Description>
       Starting a new table will loose your previous work. Bookmark tables you
       want to keep
-    </div>
-  </div>
+    </AlertDialog.Description>
 
-  <svelte:fragment slot="footer">
-    <div class="flex gap-x-2">
-      <div class="grow" />
-      <Button type="secondary" on:click={onClose}>Close</Button>
-      <Button type="primary" on:click={onReplace}>Replace</Button>
-    </div>
-  </svelte:fragment>
-</Dialog>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel asChild let:builder>
+        <Button large builders={[builder]} type="secondary" on:click={onCancel}>
+          Cancel
+        </Button>
+      </AlertDialog.Cancel>
+
+      <AlertDialog.Action asChild let:builder>
+        <Button large builders={[builder]} type="primary" on:click={onReplace}>
+          Replace
+        </Button>
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>

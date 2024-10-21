@@ -1,21 +1,19 @@
 <script lang="ts">
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { DateTime, Interval } from "luxon";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
-  import { Interval, DateTime } from "luxon";
-  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
 
-  export let metricViewName: string;
+  export let exploreName: string;
   export let showComparison = false;
   export let timeGrain: V1TimeGrain | undefined;
 
@@ -28,11 +26,10 @@
     selectors: {
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
+    validSpecStore,
   } = StateManagers;
 
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
-
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: ({ selectedScrubRange } = $dashboardStore);
 
@@ -73,7 +70,7 @@
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
         e.key === "Escape"
       ) {
-        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+        metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
       }
     } else if (
       priorRange &&
@@ -100,11 +97,11 @@
       : undefined;
 
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      exploreName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
-      $metricsView.data ?? {},
+      $validSpecStore.data?.metricsView ?? {},
     );
   }
 
@@ -121,7 +118,7 @@
         selectedScrubRange.start,
         selectedScrubRange.end,
       );
-      metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+      metricsExplorerStore.setSelectedTimeRange(exploreName, {
         name: TimeRangePreset.CUSTOM,
         start,
         end,
@@ -137,7 +134,7 @@
 
   function undoZoom() {
     if (priorRange) {
-      metricsExplorerStore.setSelectedTimeRange(metricViewName, priorRange);
+      metricsExplorerStore.setSelectedTimeRange(exploreName, priorRange);
       clearPriorRange();
     }
   }

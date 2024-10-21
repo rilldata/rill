@@ -3683,6 +3683,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for TtlSeconds
 
+	// no validation rules for Type
+
 	// no validation rules for Kind
 
 	// no validation rules for Resource
@@ -10229,7 +10231,13 @@ func (m *SudoUpdateOrganizationBillingCustomerRequest) validate(all bool) error 
 
 	// no validation rules for Organization
 
-	// no validation rules for BillingCustomerId
+	if m.BillingCustomerId != nil {
+		// no validation rules for BillingCustomerId
+	}
+
+	if m.PaymentCustomerId != nil {
+		// no validation rules for PaymentCustomerId
+	}
 
 	if len(errors) > 0 {
 		return SudoUpdateOrganizationBillingCustomerRequestMultiError(errors)
@@ -10367,38 +10375,33 @@ func (m *SudoUpdateOrganizationBillingCustomerResponse) validate(all bool) error
 		}
 	}
 
-	for idx, item := range m.GetSubscriptions() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, SudoUpdateOrganizationBillingCustomerResponseValidationError{
-						field:  fmt.Sprintf("Subscriptions[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, SudoUpdateOrganizationBillingCustomerResponseValidationError{
-						field:  fmt.Sprintf("Subscriptions[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return SudoUpdateOrganizationBillingCustomerResponseValidationError{
-					field:  fmt.Sprintf("Subscriptions[%v]", idx),
+	if all {
+		switch v := interface{}(m.GetSubscription()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SudoUpdateOrganizationBillingCustomerResponseValidationError{
+					field:  "Subscription",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SudoUpdateOrganizationBillingCustomerResponseValidationError{
+					field:  "Subscription",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
 			}
 		}
-
+	} else if v, ok := interface{}(m.GetSubscription()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SudoUpdateOrganizationBillingCustomerResponseValidationError{
+				field:  "Subscription",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -10757,6 +10760,10 @@ func (m *SudoUpdateUserQuotasRequest) validate(all bool) error {
 
 	if m.SingleuserOrgs != nil {
 		// no validation rules for SingleuserOrgs
+	}
+
+	if m.TrialOrgs != nil {
+		// no validation rules for TrialOrgs
 	}
 
 	if len(errors) > 0 {
@@ -20761,14 +20768,16 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 
 	// no validation rules for TtlMinutes
 
-	// no validation rules for MetricsView
+	// no validation rules for ResourceType
+
+	// no validation rules for ResourceName
 
 	if all {
-		switch v := interface{}(m.GetMetricsViewFilter()).(type) {
+		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
-					field:  "MetricsViewFilter",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -20776,16 +20785,16 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
-					field:  "MetricsViewFilter",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetMetricsViewFilter()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return IssueMagicAuthTokenRequestValidationError{
-				field:  "MetricsViewFilter",
+				field:  "Filter",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -28333,7 +28342,16 @@ func (m *GetBillingSubscriptionRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := GetBillingSubscriptionRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetBillingSubscriptionRequestMultiError(errors)
@@ -28602,9 +28620,29 @@ func (m *UpdateBillingSubscriptionRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := UpdateBillingSubscriptionRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PlanName
+	if utf8.RuneCountInString(m.GetPlanName()) < 1 {
+		err := UpdateBillingSubscriptionRequestValidationError{
+			field:  "PlanName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return UpdateBillingSubscriptionRequestMultiError(errors)
@@ -28688,6 +28726,169 @@ var _ interface {
 	ErrorName() string
 } = UpdateBillingSubscriptionRequestValidationError{}
 
+// Validate checks the field values on UpdateBillingSubscriptionResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *UpdateBillingSubscriptionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateBillingSubscriptionResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// UpdateBillingSubscriptionResponseMultiError, or nil if none found.
+func (m *UpdateBillingSubscriptionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateBillingSubscriptionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetOrganization()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdateBillingSubscriptionResponseValidationError{
+					field:  "Organization",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdateBillingSubscriptionResponseValidationError{
+					field:  "Organization",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOrganization()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateBillingSubscriptionResponseValidationError{
+				field:  "Organization",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetSubscription()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdateBillingSubscriptionResponseValidationError{
+					field:  "Subscription",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdateBillingSubscriptionResponseValidationError{
+					field:  "Subscription",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSubscription()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateBillingSubscriptionResponseValidationError{
+				field:  "Subscription",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UpdateBillingSubscriptionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateBillingSubscriptionResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// UpdateBillingSubscriptionResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateBillingSubscriptionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateBillingSubscriptionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateBillingSubscriptionResponseMultiError) AllErrors() []error { return m }
+
+// UpdateBillingSubscriptionResponseValidationError is the validation error
+// returned by UpdateBillingSubscriptionResponse.Validate if the designated
+// constraints aren't met.
+type UpdateBillingSubscriptionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateBillingSubscriptionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateBillingSubscriptionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateBillingSubscriptionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateBillingSubscriptionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateBillingSubscriptionResponseValidationError) ErrorName() string {
+	return "UpdateBillingSubscriptionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateBillingSubscriptionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateBillingSubscriptionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateBillingSubscriptionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateBillingSubscriptionResponseValidationError{}
+
 // Validate checks the field values on CancelBillingSubscriptionRequest with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the first error encountered is returned, or nil if there are
@@ -28711,7 +28912,16 @@ func (m *CancelBillingSubscriptionRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := CancelBillingSubscriptionRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return CancelBillingSubscriptionRequestMultiError(errors)
@@ -28900,107 +29110,66 @@ var _ interface {
 	ErrorName() string
 } = CancelBillingSubscriptionResponseValidationError{}
 
-// Validate checks the field values on UpdateBillingSubscriptionResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *UpdateBillingSubscriptionResponse) Validate() error {
+// Validate checks the field values on RenewBillingSubscriptionRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RenewBillingSubscriptionRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UpdateBillingSubscriptionResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// UpdateBillingSubscriptionResponseMultiError, or nil if none found.
-func (m *UpdateBillingSubscriptionResponse) ValidateAll() error {
+// ValidateAll checks the field values on RenewBillingSubscriptionRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RenewBillingSubscriptionRequestMultiError, or nil if none found.
+func (m *RenewBillingSubscriptionRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UpdateBillingSubscriptionResponse) validate(all bool) error {
+func (m *RenewBillingSubscriptionRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if all {
-		switch v := interface{}(m.GetOrganization()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, UpdateBillingSubscriptionResponseValidationError{
-					field:  "Organization",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, UpdateBillingSubscriptionResponseValidationError{
-					field:  "Organization",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RenewBillingSubscriptionRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
 		}
-	} else if v, ok := interface{}(m.GetOrganization()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return UpdateBillingSubscriptionResponseValidationError{
-				field:  "Organization",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
+		if !all {
+			return err
 		}
+		errors = append(errors, err)
 	}
 
-	for idx, item := range m.GetSubscriptions() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, UpdateBillingSubscriptionResponseValidationError{
-						field:  fmt.Sprintf("Subscriptions[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, UpdateBillingSubscriptionResponseValidationError{
-						field:  fmt.Sprintf("Subscriptions[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return UpdateBillingSubscriptionResponseValidationError{
-					field:  fmt.Sprintf("Subscriptions[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
+	if utf8.RuneCountInString(m.GetPlanName()) < 1 {
+		err := RenewBillingSubscriptionRequestValidationError{
+			field:  "PlanName",
+			reason: "value length must be at least 1 runes",
 		}
-
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
-		return UpdateBillingSubscriptionResponseMultiError(errors)
+		return RenewBillingSubscriptionRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// UpdateBillingSubscriptionResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// UpdateBillingSubscriptionResponse.ValidateAll() if the designated
-// constraints aren't met.
-type UpdateBillingSubscriptionResponseMultiError []error
+// RenewBillingSubscriptionRequestMultiError is an error wrapping multiple
+// validation errors returned by RenewBillingSubscriptionRequest.ValidateAll()
+// if the designated constraints aren't met.
+type RenewBillingSubscriptionRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UpdateBillingSubscriptionResponseMultiError) Error() string {
+func (m RenewBillingSubscriptionRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -29009,12 +29178,12 @@ func (m UpdateBillingSubscriptionResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UpdateBillingSubscriptionResponseMultiError) AllErrors() []error { return m }
+func (m RenewBillingSubscriptionRequestMultiError) AllErrors() []error { return m }
 
-// UpdateBillingSubscriptionResponseValidationError is the validation error
-// returned by UpdateBillingSubscriptionResponse.Validate if the designated
+// RenewBillingSubscriptionRequestValidationError is the validation error
+// returned by RenewBillingSubscriptionRequest.Validate if the designated
 // constraints aren't met.
-type UpdateBillingSubscriptionResponseValidationError struct {
+type RenewBillingSubscriptionRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -29022,24 +29191,24 @@ type UpdateBillingSubscriptionResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e UpdateBillingSubscriptionResponseValidationError) Field() string { return e.field }
+func (e RenewBillingSubscriptionRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UpdateBillingSubscriptionResponseValidationError) Reason() string { return e.reason }
+func (e RenewBillingSubscriptionRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UpdateBillingSubscriptionResponseValidationError) Cause() error { return e.cause }
+func (e RenewBillingSubscriptionRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UpdateBillingSubscriptionResponseValidationError) Key() bool { return e.key }
+func (e RenewBillingSubscriptionRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UpdateBillingSubscriptionResponseValidationError) ErrorName() string {
-	return "UpdateBillingSubscriptionResponseValidationError"
+func (e RenewBillingSubscriptionRequestValidationError) ErrorName() string {
+	return "RenewBillingSubscriptionRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e UpdateBillingSubscriptionResponseValidationError) Error() string {
+func (e RenewBillingSubscriptionRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -29051,14 +29220,14 @@ func (e UpdateBillingSubscriptionResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUpdateBillingSubscriptionResponse.%s: %s%s",
+		"invalid %sRenewBillingSubscriptionRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UpdateBillingSubscriptionResponseValidationError{}
+var _ error = RenewBillingSubscriptionRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -29066,7 +29235,170 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UpdateBillingSubscriptionResponseValidationError{}
+} = RenewBillingSubscriptionRequestValidationError{}
+
+// Validate checks the field values on RenewBillingSubscriptionResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *RenewBillingSubscriptionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RenewBillingSubscriptionResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RenewBillingSubscriptionResponseMultiError, or nil if none found.
+func (m *RenewBillingSubscriptionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RenewBillingSubscriptionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetOrganization()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, RenewBillingSubscriptionResponseValidationError{
+					field:  "Organization",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, RenewBillingSubscriptionResponseValidationError{
+					field:  "Organization",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOrganization()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return RenewBillingSubscriptionResponseValidationError{
+				field:  "Organization",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetSubscription()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, RenewBillingSubscriptionResponseValidationError{
+					field:  "Subscription",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, RenewBillingSubscriptionResponseValidationError{
+					field:  "Subscription",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSubscription()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return RenewBillingSubscriptionResponseValidationError{
+				field:  "Subscription",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return RenewBillingSubscriptionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RenewBillingSubscriptionResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// RenewBillingSubscriptionResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RenewBillingSubscriptionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RenewBillingSubscriptionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RenewBillingSubscriptionResponseMultiError) AllErrors() []error { return m }
+
+// RenewBillingSubscriptionResponseValidationError is the validation error
+// returned by RenewBillingSubscriptionResponse.Validate if the designated
+// constraints aren't met.
+type RenewBillingSubscriptionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RenewBillingSubscriptionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RenewBillingSubscriptionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RenewBillingSubscriptionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RenewBillingSubscriptionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RenewBillingSubscriptionResponseValidationError) ErrorName() string {
+	return "RenewBillingSubscriptionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RenewBillingSubscriptionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRenewBillingSubscriptionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RenewBillingSubscriptionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RenewBillingSubscriptionResponseValidationError{}
 
 // Validate checks the field values on GetPaymentsPortalURLRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -29090,9 +29422,27 @@ func (m *GetPaymentsPortalURLRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := GetPaymentsPortalURLRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ReturnUrl
+	if utf8.RuneCountInString(m.GetReturnUrl()) < 1 {
+		err := GetPaymentsPortalURLRequestValidationError{
+			field:  "ReturnUrl",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetPaymentsPortalURLRequestMultiError(errors)
@@ -31420,11 +31770,34 @@ func (m *Subscription) validate(all bool) error {
 
 	// no validation rules for Id
 
-	// no validation rules for PlanId
-
-	// no validation rules for PlanName
-
-	// no validation rules for PlanDisplayName
+	if all {
+		switch v := interface{}(m.GetPlan()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SubscriptionValidationError{
+					field:  "Plan",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SubscriptionValidationError{
+					field:  "Plan",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPlan()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SubscriptionValidationError{
+				field:  "Plan",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if all {
 		switch v := interface{}(m.GetStartDate()).(type) {
@@ -31671,6 +32044,8 @@ func (m *UserQuotas) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for SingleuserOrgs
+
+	// no validation rules for TrialOrgs
 
 	if len(errors) > 0 {
 		return UserQuotasMultiError(errors)
@@ -32514,6 +32889,8 @@ func (m *MemberUser) validate(all bool) error {
 
 	// no validation rules for UserName
 
+	// no validation rules for UserPhotoUrl
+
 	// no validation rules for RoleName
 
 	if all {
@@ -33348,14 +33725,16 @@ func (m *MagicAuthToken) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for MetricsView
+	// no validation rules for ResourceType
+
+	// no validation rules for ResourceName
 
 	if all {
-		switch v := interface{}(m.GetMetricsViewFilter()).(type) {
+		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, MagicAuthTokenValidationError{
-					field:  "MetricsViewFilter",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -33363,16 +33742,16 @@ func (m *MagicAuthToken) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, MagicAuthTokenValidationError{
-					field:  "MetricsViewFilter",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetMetricsViewFilter()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return MagicAuthTokenValidationError{
-				field:  "MetricsViewFilter",
+				field:  "Filter",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -33925,6 +34304,8 @@ func (m *BillingPlan) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Public
 
 	if len(errors) > 0 {
 		return BillingPlanMultiError(errors)
@@ -34895,6 +35276,47 @@ func (m *BillingIssueMetadata) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return BillingIssueMetadataValidationError{
 					field:  "SubscriptionCancelled",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *BillingIssueMetadata_NeverSubscribed:
+		if v == nil {
+			err := BillingIssueMetadataValidationError{
+				field:  "Metadata",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetNeverSubscribed()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "NeverSubscribed",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BillingIssueMetadataValidationError{
+						field:  "NeverSubscribed",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetNeverSubscribed()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BillingIssueMetadataValidationError{
+					field:  "NeverSubscribed",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -35934,6 +36356,111 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = BillingIssueMetadataSubscriptionCancelledValidationError{}
+
+// Validate checks the field values on BillingIssueMetadataNeverSubscribed with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *BillingIssueMetadataNeverSubscribed) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BillingIssueMetadataNeverSubscribed
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// BillingIssueMetadataNeverSubscribedMultiError, or nil if none found.
+func (m *BillingIssueMetadataNeverSubscribed) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BillingIssueMetadataNeverSubscribed) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return BillingIssueMetadataNeverSubscribedMultiError(errors)
+	}
+
+	return nil
+}
+
+// BillingIssueMetadataNeverSubscribedMultiError is an error wrapping multiple
+// validation errors returned by
+// BillingIssueMetadataNeverSubscribed.ValidateAll() if the designated
+// constraints aren't met.
+type BillingIssueMetadataNeverSubscribedMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BillingIssueMetadataNeverSubscribedMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BillingIssueMetadataNeverSubscribedMultiError) AllErrors() []error { return m }
+
+// BillingIssueMetadataNeverSubscribedValidationError is the validation error
+// returned by BillingIssueMetadataNeverSubscribed.Validate if the designated
+// constraints aren't met.
+type BillingIssueMetadataNeverSubscribedValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BillingIssueMetadataNeverSubscribedValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BillingIssueMetadataNeverSubscribedValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BillingIssueMetadataNeverSubscribedValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BillingIssueMetadataNeverSubscribedValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BillingIssueMetadataNeverSubscribedValidationError) ErrorName() string {
+	return "BillingIssueMetadataNeverSubscribedValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BillingIssueMetadataNeverSubscribedValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBillingIssueMetadataNeverSubscribed.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BillingIssueMetadataNeverSubscribedValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BillingIssueMetadataNeverSubscribedValidationError{}
 
 // Validate checks the field values on ListGithubUserReposResponse_Repo with
 // the rules defined in the proto definition for this message. If any rules

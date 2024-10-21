@@ -67,7 +67,7 @@
           class="min-w-44 max-h-96 overflow-y-auto"
         >
           {#each options as [id, option] (id)}
-            {@const selected = id === current}
+            {@const selected = id === current.toLowerCase()}
             <DropdownMenu.CheckboxItem
               class="cursor-pointer"
               checked={selected}

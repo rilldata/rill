@@ -1,8 +1,10 @@
 ---
 title: User Group Management
 sidebar_label: User Groups
-sidebar_position: 22
+sidebar_position: 20
 ---
+
+import ComingSoon from '@site/src/components/ComingSoon';
 
 ## Managing User groups 
 

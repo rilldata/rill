@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import ChartPromptHistoryDisplay from "@rilldata/web-common/features/canvas-components/prompt/ChartPromptHistoryDisplay.svelte";
   import { createChartGenerator } from "@rilldata/web-common/features/canvas-components/prompt/generateChart";
@@ -24,9 +24,10 @@
   }
 </script>
 
-<Dialog on:close={() => (open = false)} {open}>
-  <svelte:fragment slot="title">Generate vega config using AI</svelte:fragment>
-  <svelte:fragment slot="body">
+<Dialog.Root bind:open>
+  <Dialog.Content>
+    <Dialog.Title>Generate vega config using AI</Dialog.Title>
+
     <Input bind:value={prompt} label="Prompt" />
     <ChartPromptHistoryDisplay
       entityName={chart}
@@ -34,8 +35,8 @@
         prompt = detail;
       }}
     />
-  </svelte:fragment>
-  <div class="pt-2" slot="footer">
-    <Button on:click={createVegaConfig}>Generate</Button>
-  </div>
-</Dialog>
+    <div class="ml-auto">
+      <Button on:click={createVegaConfig} large type="primary">Generate</Button>
+    </div>
+  </Dialog.Content>
+</Dialog.Root>

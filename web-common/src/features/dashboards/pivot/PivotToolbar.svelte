@@ -6,7 +6,12 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
-  import PivotExportButton from "./PivotExportButton.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import {
+    V1ExportFormat,
+    createQueryServiceExport,
+  } from "../../../runtime-client";
+  import exportPivot, { getPivotExportArgs } from "./pivot-export";
 
   export let showPanels = true;
   export let isFetching = false;
@@ -14,9 +19,10 @@
   const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const { metricsViewName, dashboardStore } = stateManagers;
+  const { exploreName, dashboardStore, validSpecStore } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
+  $: metricsViewProto = $dashboardStore.proto;
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -44,8 +50,21 @@
   //     expandRow(i.toString(), 1); // Start from level 1
   //   }
 
-  //   metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+  //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   // }
+
+  const scheduledReportsQueryArgs = getPivotExportArgs(stateManagers);
+
+  const exportDash = createQueryServiceExport();
+
+  async function handleExportPivot(format: V1ExportFormat) {
+    await exportPivot({
+      ctx: stateManagers,
+      query: exportDash,
+      format,
+      timeDimension: $validSpecStore.data?.metricsView?.timeDimension,
+    });
+  }
 </script>
 
 <div class="flex items-center gap-x-4 select-none pointer-events-none">
@@ -75,7 +94,7 @@
       compact
       type="text"
       on:click={() => {
-        metricsExplorerStore.setPivotExpanded($metricsViewName, {});
+        metricsExplorerStore.setPivotExpanded($exploreName, {});
       }}
     >
       Collapse All
@@ -87,6 +106,13 @@
   {/if}
   <div class="grow" />
   {#if $exports}
-    <PivotExportButton includeScheduledReport={$adminServer} />
+    <ExportMenu
+      label="Export pivot data"
+      onExport={handleExportPivot}
+      includeScheduledReport={$adminServer}
+      queryArgs={$scheduledReportsQueryArgs}
+      exploreName={$exploreName}
+      {metricsViewProto}
+    />
   {/if}
 </div>

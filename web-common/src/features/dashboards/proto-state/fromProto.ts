@@ -1,6 +1,6 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import {
-  MeasureFilterEntry,
+  type MeasureFilterEntry,
   mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
@@ -49,6 +49,7 @@ import {
 import type {
   MetricsViewSpecDimensionV2,
   StructTypeField,
+  V1ExploreSpec,
   V1Expression,
   V1MetricsViewSpec,
   V1StructType,
@@ -81,6 +82,7 @@ const TDDChartTypeReverseMap: Record<string, TDDChart> = {
 export function getDashboardStateFromUrl(
   urlState: string,
   metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   // backwards compatibility for older urls that had encoded state
@@ -88,6 +90,7 @@ export function getDashboardStateFromUrl(
   return getDashboardStateFromProto(
     base64ToProto(urlState),
     metricsView,
+    explore,
     schema,
   );
 }
@@ -95,6 +98,7 @@ export function getDashboardStateFromUrl(
 export function getDashboardStateFromProto(
   binary: Uint8Array,
   metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
@@ -182,9 +186,7 @@ export function getDashboardStateFromProto(
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
-    entity.visibleMeasureKeys = new Set(
-      metricsView.measures?.map((measure) => measure.name) ?? [],
-    ) as Set<string>;
+    entity.visibleMeasureKeys = new Set(explore.measures);
   } else if (dashboard.visibleMeasures?.length) {
     entity.allMeasuresVisible = false;
     entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
@@ -192,9 +194,7 @@ export function getDashboardStateFromProto(
 
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
-    entity.visibleDimensionKeys = new Set(
-      metricsView.dimensions?.map((measure) => measure.name) ?? [],
-    ) as Set<string>;
+    entity.visibleDimensionKeys = new Set(explore.dimensions);
   } else if (dashboard.visibleDimensions?.length) {
     entity.allDimensionsVisible = false;
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
@@ -351,7 +351,7 @@ function fromPivotProto(
     dimension: PivotElement,
   ) => {
     if (dimension?.element.case === "pivotTimeDimension") {
-      const grain = dimension?.element.value as TimeGrain;
+      const grain = dimension?.element.value;
       return {
         id: FromProtoTimeGrainMap[grain],
         title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,

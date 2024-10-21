@@ -5,14 +5,14 @@
   } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import Add from "../../../components/icons/Add.svelte";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { ResourceKind } from "../../entity-management/resource-selectors";
 
   export let connector: string;
   export let database: string = "";
@@ -21,13 +21,13 @@
 
   const { ai } = featureFlags;
 
-  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     connector,
     database,
     databaseSchema,
     table,
-    "dashboards",
+    false,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
@@ -43,21 +43,22 @@
     showInspectorToggle={false}
     titleInput={table}
     hasUnsavedChanges={false}
+    resourceKind={ResourceKind.Source}
+    filePath={table}
   >
     <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
-        <Button on:click={createDashboardFromTable} type="primary">
+        <Button on:click={createMetricsViewFromTable} type="primary">
           <IconSpaceFixer pullLeft pullRight={collapse}>
             <Add />
           </IconSpaceFixer>
           <ResponsiveButtonText {collapse}>
-            Generate dashboard {#if $ai}
+            Generate metrics {#if $ai}
               with AI
             {/if}
           </ResponsiveButtonText>
         </Button>
-        <LocalAvatarButton />
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>

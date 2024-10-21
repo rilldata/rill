@@ -12,14 +12,15 @@
       label: "General",
       route: "",
     },
-    {
-      label: "Billing",
-      route: "/billing",
-    },
-    {
-      label: "Usage",
-      route: "/usage",
-    },
+    // TODO: Uncomment when we have billing and usage page
+    // {
+    //   label: "Billing",
+    //   route: "/billing",
+    // },
+    // {
+    //   label: "Usage",
+    //   route: "/usage",
+    // },
   ];
 </script>
 

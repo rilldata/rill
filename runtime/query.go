@@ -80,7 +80,10 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 
 		// Infer OLAP connector for common resource types used in a query
 		if mv := res.GetMetricsView(); mv != nil {
-			olapConnector = mv.Spec.Connector
+			if mv.State.ValidSpec == nil {
+				return fmt.Errorf("metrics view spec is not valid")
+			}
+			olapConnector = mv.State.ValidSpec.Connector
 		} else if mdl := res.GetModel(); mdl != nil {
 			olapConnector = mdl.Spec.OutputConnector
 		} else if src := res.GetSource(); src != nil {

@@ -268,7 +268,7 @@ func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
 }
 
 func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
-	expr := metricsview.NewExpressionFromProto(t.MetricsViewFilter)
+	expr := metricsview.NewExpressionFromProto(t.Filter)
 	filter, err := metricsview.ExpressionToString(expr)
 	if err != nil {
 		panic(err)
@@ -276,7 +276,7 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 
 	row := &magicAuthToken{
 		ID:        t.Id,
-		Dashboard: t.MetricsView,
+		Resource:  t.ResourceName,
 		Filter:    filter,
 		CreatedBy: t.CreatedByUserEmail,
 		CreatedOn: t.CreatedOn.AsTime().Local().Format(time.DateTime),
@@ -290,7 +290,7 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 
 type magicAuthToken struct {
 	ID        string `header:"id" json:"id"`
-	Dashboard string `header:"dashboard" json:"dashboard"`
+	Resource  string `header:"resource" json:"resource"`
 	Filter    string `header:"filter" json:"filter"`
 	CreatedBy string `header:"created by" json:"created_by"`
 	CreatedOn string `header:"created on" json:"created_on"`
@@ -318,8 +318,8 @@ func toSubscriptionsTable(subs []*adminv1.Subscription) []*subscription {
 func toSubscriptionRow(s *adminv1.Subscription) *subscription {
 	return &subscription{
 		ID:                           s.Id,
-		PlanName:                     s.PlanName,
-		PlanDisplayName:              s.PlanDisplayName,
+		PlanName:                     s.Plan.Name,
+		PlanDisplayName:              s.Plan.DisplayName,
 		StartDate:                    s.StartDate.AsTime().Local().Format(time.DateTime),
 		EndDate:                      s.EndDate.AsTime().Local().Format(time.DateTime),
 		CurrentBillingCycleStartDate: s.CurrentBillingCycleStartDate.AsTime().Local().Format(time.DateTime),
@@ -364,6 +364,7 @@ func toPlanRow(p *adminv1.BillingPlan) *plan {
 		Description:                         p.Description,
 		TrialDays:                           strconv.Itoa(int(p.TrialPeriodDays)),
 		Default:                             p.Default,
+		Public:                              p.Public,
 		QuotaNumProjects:                    p.Quotas.Projects,
 		QuotaNumDeployments:                 p.Quotas.Deployments,
 		QuotaNumSlotsTotal:                  p.Quotas.SlotsTotal,
@@ -380,6 +381,7 @@ type plan struct {
 	Description                         string `header:"description" json:"description"`
 	TrialDays                           string `header:"trial_days" json:"trial_days"`
 	Default                             bool   `header:"default" json:"default"`
+	Public                              bool   `header:"public" json:"public"`
 	QuotaNumProjects                    string `header:"quota_num_projects" json:"quota_num_projects"`
 	QuotaNumDeployments                 string `header:"quota_num_deployments" json:"quota_num_deployments"`
 	QuotaNumSlotsTotal                  string `header:"quota_num_slots_total" json:"quota_num_slots_total"`

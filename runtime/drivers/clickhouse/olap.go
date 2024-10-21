@@ -504,7 +504,7 @@ func (c *connection) renameTable(ctx context.Context, oldName, newName, onCluste
 	return c.DropTable(context.Background(), oldName, false)
 }
 
-func (c *connection) CanScaleToZero() bool {
+func (c *connection) MayBeScaledToZero() bool {
 	return c.config.CanScaleToZero
 }
 

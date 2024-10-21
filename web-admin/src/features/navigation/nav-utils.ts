@@ -27,7 +27,7 @@ export function withinProject(page: Page): boolean {
 
 export function isMetricsExplorerPage(page: Page): boolean {
   return (
-    page.route.id === "/[organization]/[project]/[dashboard]" ||
+    page.route.id === "/[organization]/[project]/explore/[dashboard]" ||
     page.route.id === "/-/embed"
   );
 }

@@ -4,7 +4,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import { PivotChipType, PivotChipData } from "./types";
+  import { PivotChipType, type PivotChipData } from "./types";
   import { slide } from "svelte/transition";
 
   const stateManagers = getStateManagers();
@@ -12,21 +12,21 @@
     selectors: {
       pivot: { rows, columns },
     },
-    metricsViewName,
+    exploreName,
   } = stateManagers;
 
   $: ({ dimension: columnsDimensions, measure: columnsMeasures } = $columns);
   $: ({ dimension: rowsDimensions } = $rows);
 
   function updateColumn(e: CustomEvent<PivotChipData[]>) {
-    metricsExplorerStore.setPivotColumns($metricsViewName, e.detail);
+    metricsExplorerStore.setPivotColumns($exploreName, e.detail);
   }
 
   function updateRows(e: CustomEvent<PivotChipData[]>) {
     const filtered = e.detail.filter(
       (item) => item.type !== PivotChipType.Measure,
     );
-    metricsExplorerStore.setPivotRows($metricsViewName, filtered);
+    metricsExplorerStore.setPivotRows($exploreName, filtered);
   }
 </script>
 

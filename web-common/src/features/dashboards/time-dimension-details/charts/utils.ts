@@ -1,11 +1,11 @@
 import { TDDChartMap } from "@rilldata/web-common/features/canvas-components/types";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
-  ChartField,
+  type ChartField,
   buildVegaLiteSpec,
 } from "@rilldata/web-common/features/templates/charts/build-template";
-import { View, VisualizationSpec } from "svelte-vega";
-import { TDDAlternateCharts, TDDChart } from "../types";
+import type { View, VisualizationSpec } from "svelte-vega";
+import { type TDDAlternateCharts, TDDChart } from "../types";
 
 export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
   return dimensionData

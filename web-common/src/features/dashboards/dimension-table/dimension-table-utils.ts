@@ -14,7 +14,7 @@ import {
   copyFilterExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationResponseDataItem,
   V1Operation,
 } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
@@ -41,7 +41,7 @@ import type { DimensionTableConfig } from "./DimensionTableConfig";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
-  filterForDimension: V1Expression | undefined,
+  filterForDimension: V1Expression,
   searchText: string,
   dimensionName: string,
 ): V1Expression | undefined {
@@ -86,10 +86,9 @@ export function getDimensionFilterWithSearch(
   searchText: string,
   dimensionName: string,
 ) {
-  let filterForDimension = getFiltersForOtherDimensions(filters, dimensionName);
-  if (filters && !filterForDimension) {
-    filterForDimension = createAndExpression([]); // create an empty query for consistency
-  }
+  const filterForDimension =
+    getFiltersForOtherDimensions(filters, dimensionName) ??
+    createAndExpression([]);
 
   return updateFilterOnSearch(filterForDimension, searchText, dimensionName);
 }

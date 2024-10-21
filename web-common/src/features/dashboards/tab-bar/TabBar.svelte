@@ -18,7 +18,7 @@
   const StateManagers = getStateManagers();
 
   const {
-    metricsViewName,
+    exploreName,
     selectors: {
       pivot: { showPivot },
     },
@@ -44,13 +44,13 @@
     const selectedTab = tabs[index];
 
     metricsExplorerStore.setPivotMode(
-      $metricsViewName,
+      $exploreName,
       selectedTab.label === "Pivot",
     );
 
     // We do not have behaviour events in cloud
     behaviourEvent?.fireNavigationEvent(
-      $metricsViewName,
+      $exploreName,
       BehaviourEventMedium.Tab,
       MetricsEventSpace.Workspace,
       MetricsEventScreenName.Dashboard,

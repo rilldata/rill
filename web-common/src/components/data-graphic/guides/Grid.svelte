@@ -24,8 +24,8 @@
   export let yDashArray = "1,1";
   export let yThickness = 1;
 
-  let xTicks = [];
-  let yTicks = [];
+  let xTicks: number[] | Date[] = [];
+  let yTicks: number[] | Date[] = [];
 
   $: if ($config) {
     xTicks = getTicks("x", $xScale, $config.graphicWidth, $config[`xType`]);

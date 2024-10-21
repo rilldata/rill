@@ -1,6 +1,6 @@
 import {
   NullValue,
-  PartialMessage,
+  type PartialMessage,
   protoBase64,
   Timestamp,
   Value,
@@ -8,7 +8,7 @@ import {
 import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
-  PivotChipData,
+  type PivotChipData,
   PivotChipType,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -191,10 +191,7 @@ function toTimeProto(date: Date) {
   });
 }
 
-function toExpressionProto(
-  expression: V1Expression | undefined,
-): Expression | undefined {
-  if (!expression) return undefined;
+function toExpressionProto(expression: V1Expression): Expression {
   if ("ident" in expression) {
     return new Expression({
       expression: {
@@ -224,7 +221,7 @@ function toExpressionProto(
       },
     });
   }
-  return undefined;
+  return new Expression();
 }
 
 function toPbValue(val: unknown) {

@@ -7,11 +7,11 @@ import {
 import {
   RangePresetType,
   ReferencePoint,
-  RelativeTimeTransformation,
+  type RelativeTimeTransformation,
   TimeComparisonOption,
   TimeOffsetType,
-  TimeRange,
-  TimeRangeMeta,
+  type TimeRange,
+  type TimeRangeMeta,
   TimeRangePreset,
   TimeTruncationType,
 } from "@rilldata/web-common/lib/time/types";

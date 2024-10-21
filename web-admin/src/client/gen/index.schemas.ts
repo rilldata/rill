@@ -155,12 +155,14 @@ export type AdminServiceSearchProjectUsersParams = {
 export type AdminServiceIssueMagicAuthTokenBody = {
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
   ttlMinutes?: string;
-  /** Metrics view the token will provide access to. */
-  metricsView?: string;
-  metricsViewFilter?: V1Expression;
-  /** Optional list of names of dimensions and measures to limit access to.
-If empty, all dimensions and measures are accessible. */
-  metricsViewFields?: string[];
+  /** Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore". */
+  resourceType?: string;
+  /** Name of the resource to grant access to. */
+  resourceName?: string;
+  filter?: V1Expression;
+  /** Optional list of fields to limit access to. If empty, no field access rule will be added.
+This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views. */
+  fields?: string[];
   /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
   state?: string;
   /** Optional public url title to store with the token. */
@@ -211,7 +213,9 @@ export type AdminServiceGetIFrameBody = {
   userEmail?: string;
   /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetIFrameBodyAttributes;
-  /** Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView". */
+  /** Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore". */
+  type?: string;
+  /** Deprecated: Alias for `type`. */
   kind?: string;
   /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
@@ -269,10 +273,6 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceUpdateBillingSubscriptionBody = {
-  planName?: string;
-};
-
 export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -316,6 +316,11 @@ export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
+export type AdminServiceUpdateBillingSubscriptionBodyBody = {
+  planName?: string;
+  superuserForceAccess?: boolean;
+};
+
 export interface V1WhitelistedDomain {
   domain?: string;
   role?: string;
@@ -338,6 +343,7 @@ export interface V1Usergroup {
 
 export interface V1UserQuotas {
   singleuserOrgs?: number;
+  trialOrgs?: number;
 }
 
 export interface V1UserPreferences {
@@ -407,7 +413,7 @@ export interface V1UpdateBookmarkRequest {
 
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+  subscription?: V1Subscription;
 }
 
 export interface V1UnsubscribeReportResponse {
@@ -447,6 +453,7 @@ export interface V1SudoUpdateUserQuotasResponse {
 export interface V1SudoUpdateUserQuotasRequest {
   email?: string;
   singleuserOrgs?: number;
+  trialOrgs?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
@@ -474,12 +481,13 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
 
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+  subscription?: V1Subscription;
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   organization?: string;
   billingCustomerId?: string;
+  paymentCustomerId?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -518,9 +526,7 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
 
 export interface V1Subscription {
   id?: string;
-  planId?: string;
-  planName?: string;
-  planDisplayName?: string;
+  plan?: V1BillingPlan;
   startDate?: string;
   endDate?: string;
   currentBillingCycleStartDate?: string;
@@ -623,6 +629,11 @@ export interface V1ReportOptions {
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
+}
+
+export interface V1RenewBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
 }
 
 export interface V1RenameUsergroupResponse {
@@ -807,6 +818,7 @@ export interface V1MemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
+  userPhotoUrl?: string;
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
@@ -825,9 +837,10 @@ export interface V1MagicAuthToken {
   createdByUserId?: string;
   createdByUserEmail?: string;
   attributes?: V1MagicAuthTokenAttributes;
-  metricsView?: string;
-  metricsViewFilter?: V1Expression;
-  metricsViewFields?: string[];
+  resourceType?: string;
+  resourceName?: string;
+  filter?: V1Expression;
+  fields?: string[];
   state?: string;
   title?: string;
 }
@@ -1285,6 +1298,7 @@ export interface V1BillingPlan {
   trialPeriodDays?: number;
   default?: boolean;
   quotas?: V1Quotas;
+  public?: boolean;
 }
 
 export type V1BillingIssueType =
@@ -1301,6 +1315,7 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_PAYMENT_FAILED: "BILLING_ISSUE_TYPE_PAYMENT_FAILED",
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
 } as const;
 
 export interface V1BillingIssueMetadataTrialEnded {
@@ -1338,6 +1353,10 @@ export interface V1BillingIssueMetadataNoBillableAddress {
   [key: string]: any;
 }
 
+export interface V1BillingIssueMetadataNeverSubscribed {
+  [key: string]: any;
+}
+
 export interface V1BillingIssueMetadata {
   onTrial?: V1BillingIssueMetadataOnTrial;
   trialEnded?: V1BillingIssueMetadataTrialEnded;
@@ -1345,6 +1364,7 @@ export interface V1BillingIssueMetadata {
   noBillableAddress?: V1BillingIssueMetadataNoBillableAddress;
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
+  neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
 }
 
 export type V1BillingIssueLevel =

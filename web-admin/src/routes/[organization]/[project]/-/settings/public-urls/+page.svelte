@@ -1,18 +1,18 @@
 <script lang="ts">
-  import PublicURLsTable from "@rilldata/web-admin/features/public-urls/PublicURLsTable.svelte";
   import { page } from "$app/stores";
   import {
-    getAdminServiceListMagicAuthTokensQueryKey,
     createAdminServiceRevokeMagicAuthToken,
+    getAdminServiceListMagicAuthTokensQueryKey,
   } from "@rilldata/web-admin/client";
-  import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import type { DashboardResource } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
+  import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
+  import PublicURLsTable from "@rilldata/web-admin/features/public-urls/PublicURLsTable.svelte";
   import { createAdminServiceListMagicAuthTokensInfiniteQuery } from "@rilldata/web-admin/features/public-urls/create-infinite-query-public-urls";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -26,7 +26,7 @@
 
   function useValidDashboardTitle(dashboard: DashboardResource) {
     return (
-      dashboard?.resource.metricsView.state?.validSpec?.title ||
+      dashboard?.resource.explore?.spec?.title ??
       dashboard?.resource.meta.name.name
     );
   }
@@ -40,7 +40,7 @@
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
     const dashboard = $dashboards.data?.find(
-      (d) => d.resource.meta.name.name === token.metricsView,
+      (d) => d.resource.meta.name.name === token.resourceName,
     );
     return {
       ...token,
@@ -65,7 +65,7 @@
       );
 
       eventBus.emit("notification", { message: "Public URL deleted" });
-    } catch (error) {
+    } catch {
       eventBus.emit("notification", {
         message: "Error deleting public URL",
         type: "error",

@@ -14,6 +14,11 @@ export async function waitForFileNavEntry(
   }
 }
 
+export async function gotoNavEntry(page: Page, filePath: string) {
+  await page.getByLabel(`${filePath} Nav Entry`).click();
+  return waitForFileNavEntry(page, filePath, true);
+}
+
 export async function fileNotPresent(page: Page, filePath: string) {
   await asyncWait(100);
   await expect(getFileNavEntry(page, filePath)).toBeHidden();

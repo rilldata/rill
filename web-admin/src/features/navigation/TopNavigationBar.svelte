@@ -7,8 +7,8 @@
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
@@ -25,11 +25,10 @@
   import { useDashboardsV2 } from "../dashboards/listing/selectors";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
-  import { usePublicURLMetricsView } from "../public-urls/selectors";
+  import { usePublicURLExplore } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
-    isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
@@ -56,7 +55,6 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: onOrgPage = isOrganizationPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -103,13 +101,13 @@
 
   $: visualizationPaths = visualizations.reduce((map, { resource }) => {
     const name = resource.meta.name.name;
-    const isMetricsExplorer = !!resource?.metricsView;
+    const isMetricsExplorer = !!resource?.explore;
     return map.set(name.toLowerCase(), {
       label:
         (isMetricsExplorer
-          ? resource?.metricsView?.spec?.title
+          ? resource?.explore?.spec?.title
           : resource?.canvas?.spec?.title) || name,
-      section: isMetricsExplorer ? undefined : "-/dashboards",
+      section: isMetricsExplorer ? "explore" : "-/dashboards",
     });
   }, new Map<string, PathOption>());
 
@@ -136,33 +134,31 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  $: dashboardQuery = useDashboard(instanceId, dashboardParam, {
+  $: dashboardQuery = useExplore(instanceId, dashboardParam, {
     enabled: !!instanceId && onMetricsExplorerPage,
   });
-  $: isDashboardValid = !!$dashboardQuery.data?.metricsView?.state?.validSpec;
+  $: exploreSpec = $dashboardQuery.data?.explore?.explore?.state?.validSpec;
+  $: isDashboardValid = !!exploreSpec;
 
-  // Public URLs do not have the metrics view name in the URL. However, the magic token's metadata includes the metrics view name.
+  // Public URLs do not have the resource name in the URL. However, the magic token's metadata includes the resource name.
   $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
   $: dashboard = onPublicURLPage
-    ? $tokenQuery?.data?.token?.metricsView
+    ? $tokenQuery?.data?.token?.resourceName
     : dashboardParam;
 
   // If on a Public URL, get the dashboard title
-  $: metricsViewQuery = usePublicURLMetricsView(
+  $: exploreQuery = usePublicURLExplore(
     instanceId,
-    $tokenQuery?.data?.token?.metricsView,
+    $tokenQuery?.data?.token?.resourceName,
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $metricsViewQuery.data?.metricsView?.spec?.title ?? dashboard ?? "";
+    $exploreQuery.data?.explore?.spec?.title ?? dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<div
-  class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage && !onOrgPage}
->
+<div class="flex items-center w-full pr-4 pl-2 py-1">
   <!-- Left side -->
   <a
     href={rillLogoHref}
@@ -185,17 +181,25 @@
       <UserInviteButton {organization} {project} />
     {/if}
     {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
-      {#key dashboard}
-        <StateManagersProvider metricsViewName={dashboard}>
-          <LastRefreshedDate {dashboard} />
-          <GlobalDimensionSearch metricsViewName={dashboard} />
-          {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-            <CreateAlert />
-            <Bookmarks metricsViewName={dashboard} />
-            <ShareDashboardButton {createMagicAuthTokens} />
-          {/if}
-        </StateManagersProvider>
-      {/key}
+      {#if exploreSpec}
+        {#key dashboard}
+          <StateManagersProvider
+            metricsViewName={exploreSpec.metricsView}
+            exploreName={dashboard}
+          >
+            <LastRefreshedDate {dashboard} />
+            <GlobalDimensionSearch />
+            {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
+              <CreateAlert />
+              <Bookmarks
+                metricsViewName={exploreSpec.metricsView}
+                exploreName={dashboard}
+              />
+              <ShareDashboardButton {createMagicAuthTokens} />
+            {/if}
+          </StateManagersProvider>
+        {/key}
+      {/if}
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

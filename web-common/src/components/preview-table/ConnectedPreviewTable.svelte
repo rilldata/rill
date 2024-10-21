@@ -1,7 +1,7 @@
 <script lang="ts">
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import {
-    V1TableRowsResponseDataItem,
+    type V1TableRowsResponseDataItem,
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";

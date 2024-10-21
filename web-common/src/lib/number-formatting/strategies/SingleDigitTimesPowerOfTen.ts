@@ -5,11 +5,11 @@ import {
 } from "../utils/format-with-order-of-magnitude";
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 import {
-  FormatterOptionsCommon,
-  NumberParts,
-  Formatter,
+  type FormatterOptionsCommon,
+  type NumberParts,
+  type Formatter,
   NumberKind,
-  FormatterOptionsIntTimesPowerOfTenStrategy,
+  type FormatterOptionsIntTimesPowerOfTenStrategy,
 } from "../humanizer-types";
 import { numberPartsToString } from "../utils/number-parts-utils";
 

@@ -2,7 +2,7 @@
  * Util methods for handling vega signals
  */
 
-import { TimeRange } from "@rilldata/web-common/lib/time/types";
+import type { TimeRange } from "@rilldata/web-common/lib/time/types";
 
 export function resolveSignalField(value: unknown, field: string) {
   if (typeof value === "object" && value !== null) {

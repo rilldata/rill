@@ -137,13 +137,18 @@ This component will draw an axis on the specified side.
     }
   }
 
-  let axisLength;
-  let ticks = [];
+  let axisLength: number;
+  let ticks: number[] = [];
   $: if ($plotConfig) {
     if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
     else axisLength = $plotConfig.graphicHeight;
 
-    ticks = getTicks(xOrY, scale, axisLength, $plotConfig[`${xOrY}Type`]);
+    ticks = getTicks(
+      xOrY,
+      scale,
+      axisLength,
+      $plotConfig[`${xOrY}Type`],
+    ) as number[];
   }
 
   let formatterFunction;

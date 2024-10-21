@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { Meta, Story, Template } from "@storybook/addon-svelte-csf";
+  import { Story, Template } from "@storybook/addon-svelte-csf";
 
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-</script>
 
-<Meta title="tooltip template" />
+  export const meta = {
+    title: "tooltip template",
+  };
+</script>
 
 <Template let:args>
   <TooltipContent maxWidth="360px">

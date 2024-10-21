@@ -19,8 +19,14 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
-  import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
   import SelectAllButton from "./SelectAllButton.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import exportToplist from "./export-toplist";
+  import {
+    createQueryServiceExport,
+    V1ExportFormat,
+  } from "@rilldata/web-common/runtime-client";
+  import { getDimensionTableExportArgs } from "./dimension-table-export-utils";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -28,6 +34,7 @@
   export let isRowsEmpty = true;
 
   const dispatch = createEventDispatcher();
+  const exportDash = createQueryServiceExport();
 
   const stateManagers = getStateManagers();
   const {
@@ -48,7 +55,7 @@
       dimensionsFilter: { toggleDimensionFilterMode },
     },
     dashboardStore,
-    metricsViewName,
+    exploreName,
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
@@ -57,6 +64,8 @@
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
+
+  $: metricsViewProto = $dashboardStore.proto;
 
   let searchBarOpen = false;
 
@@ -131,7 +140,7 @@
       });
 
     metricsExplorerStore.createPivot(
-      $metricsViewName,
+      $exploreName,
       { dimension: rowDimensions },
       {
         dimension: [],
@@ -143,6 +152,16 @@
   onDestroy(() => {
     clearDimensionTableSearchString();
   });
+
+  const scheduledReportsQueryArgs = getDimensionTableExportArgs(stateManagers);
+
+  const handleExportTopList = async (format: V1ExportFormat) => {
+    await exportToplist({
+      ctx: stateManagers,
+      query: exportDash,
+      format,
+    });
+  };
 </script>
 
 <div class="flex justify-between items-center p-1 pr-5 h-7">
@@ -207,7 +226,14 @@
     </Tooltip>
 
     {#if $exports}
-      <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+      <ExportMenu
+        label="Export dimension table data"
+        onExport={handleExportTopList}
+        includeScheduledReport={$adminServer}
+        queryArgs={$scheduledReportsQueryArgs}
+        {metricsViewProto}
+        exploreName={$exploreName}
+      />
     {/if}
     <button
       class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
@@ -222,8 +248,8 @@
 
 <ReplacePivotDialog
   open={showReplacePivotModal}
-  on:close={() => {
+  onCancel={() => {
     showReplacePivotModal = false;
   }}
-  on:replace={() => createPivot()}
+  onReplace={createPivot}
 />

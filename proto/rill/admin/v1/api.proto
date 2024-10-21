@@ -768,6 +768,14 @@ service AdminService {
     };
   }
 
+  // RenewBillingSubscription renews the billing plan for the organization once cancelled
+  rpc RenewBillingSubscription(RenewBillingSubscriptionRequest) returns (RenewBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/billing/subscriptions/renew",
+      body: "*"
+    };
+  }
+
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/billing/payments/portal-url"};
@@ -975,7 +983,9 @@ message GetIFrameRequest {
     // If set, will use the provided attributes outright.
     google.protobuf.Struct attributes = 11;
   }
-  // Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+  // Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
+  string type = 14;
+  // Deprecated: Alias for `type`.
   string kind = 4;
   // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
   string resource = 5;
@@ -1250,12 +1260,13 @@ message SudoUpdateOrganizationQuotasResponse {
 
 message SudoUpdateOrganizationBillingCustomerRequest {
   string organization = 1;
-  string billing_customer_id = 2;
+  optional string billing_customer_id = 2;
+  optional string payment_customer_id = 3;
 }
 
 message SudoUpdateOrganizationBillingCustomerResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
@@ -1270,6 +1281,7 @@ message SudoUpdateOrganizationCustomDomainResponse {
 message SudoUpdateUserQuotasRequest {
   string email = 1;
   optional int32 singleuser_orgs = 2;
+  optional int32 trial_orgs = 3;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1622,7 +1634,6 @@ message ListServiceAuthTokensResponse {
   repeated ServiceToken tokens = 1;
 }
 
-
 message IssueMagicAuthTokenRequest {
   // Organization that owns the project.
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -1630,17 +1641,20 @@ message IssueMagicAuthTokenRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   // TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
   int64 ttl_minutes = 3;
-  // Metrics view the token will provide access to.
-  string metrics_view = 4;
-  // Optional filter to apply to all queries to the metrics view.
-  rill.runtime.v1.Expression metrics_view_filter = 5;
-  // Optional list of names of dimensions and measures to limit access to.
-  // If empty, all dimensions and measures are accessible.
-  repeated string metrics_view_fields = 6;
+  // Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+  string resource_type = 8;
+  // Name of the resource to grant access to.
+  string resource_name = 9;
+  // Optional filter to apply as a row filter in queries.
+  // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+  rill.runtime.v1.Expression filter = 5;
+  // Optional list of fields to limit access to. If empty, no field access rule will be added.
+  // This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
+  repeated string fields = 6;
   // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
   string state = 7;
   // Optional public url title to store with the token.
-  string title = 8;
+  string title = 10;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1966,7 +1980,7 @@ message GetAlertYAMLResponse {
 }
 
 message GetBillingSubscriptionRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 message GetBillingSubscriptionResponse {
@@ -1976,24 +1990,36 @@ message GetBillingSubscriptionResponse {
 }
 
 message UpdateBillingSubscriptionRequest {
-  string organization = 1;
-  string plan_name = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string plan_name = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
+}
+
+message UpdateBillingSubscriptionResponse {
+  Organization organization = 1;
+  Subscription subscription = 2;
 }
 
 message CancelBillingSubscriptionRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 message CancelBillingSubscriptionResponse {}
 
-message UpdateBillingSubscriptionResponse {
+message RenewBillingSubscriptionRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string plan_name = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
+}
+
+message RenewBillingSubscriptionResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
 }
 
 message GetPaymentsPortalURLRequest {
-  string organization = 1;
-  string return_url = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string return_url = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetPaymentsPortalURLResponse {
@@ -2088,18 +2114,17 @@ message Organization {
 
 message Subscription {
   string id = 1;
-  string plan_id = 2;
-  string plan_name = 3;
-  string plan_display_name = 4;
-  google.protobuf.Timestamp start_date = 5;
-  google.protobuf.Timestamp end_date = 6;
-  google.protobuf.Timestamp current_billing_cycle_start_date = 7;
-  google.protobuf.Timestamp current_billing_cycle_end_date = 8;
-  google.protobuf.Timestamp trial_end_date = 9;
+  BillingPlan plan = 2;
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp end_date = 4;
+  google.protobuf.Timestamp current_billing_cycle_start_date = 5;
+  google.protobuf.Timestamp current_billing_cycle_end_date = 6;
+  google.protobuf.Timestamp trial_end_date = 7;
 }
 
 message UserQuotas {
   int32 singleuser_orgs = 1;
+  int32 trial_orgs = 2;
 }
 
 message OrganizationQuotas {
@@ -2191,6 +2216,7 @@ message MemberUser {
   string user_id = 1;
   string user_email = 3;
   string user_name = 2;
+  string user_photo_url = 7;
   string role_name = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
@@ -2239,11 +2265,12 @@ message MagicAuthToken {
   string created_by_user_id = 6;
   string created_by_user_email = 7;
   google.protobuf.Struct attributes = 8;
-  string metrics_view = 9;
-  rill.runtime.v1.Expression metrics_view_filter = 10;
-  repeated string metrics_view_fields = 11;
+  string resource_type = 15;
+  string resource_name = 9;
+  rill.runtime.v1.Expression filter = 10;
+  repeated string fields = 11;
   string state = 12;
-  string title = 15;
+  string title = 16;
 }
 
 message VirtualFile {
@@ -2298,6 +2325,7 @@ message BillingPlan {
   uint32 trial_period_days = 5;
   bool default = 6;
   Quotas quotas = 7;
+  bool public = 8;
   // TODO expose pricing information
 }
 
@@ -2334,6 +2362,7 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS = 4;
   BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
 }
 
 enum BillingIssueLevel {
@@ -2359,6 +2388,7 @@ message BillingIssueMetadata {
     BillingIssueMetadataNoBillableAddress no_billable_address = 4;
     BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
+    BillingIssueMetadataNeverSubscribed never_subscribed = 7;
   }
 }
 
@@ -2392,3 +2422,5 @@ message BillingIssueMetadataPaymentFailedMeta {
 message BillingIssueMetadataSubscriptionCancelled {
   google.protobuf.Timestamp end_date = 1;
 }
+
+message BillingIssueMetadataNeverSubscribed {}

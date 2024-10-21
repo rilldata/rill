@@ -16,11 +16,12 @@ export const pivotSelectors = {
         id: measure.name || "Unknown",
         title: measure.label || measure.name || "Unknown",
         type: PivotChipType.Measure,
+        description: measure.description,
       }));
   },
-  dimensions: ({ metricsSpecQueryResult, dashboard }: DashboardDataSources) => {
+  dimensions: ({ validMetricsView, dashboard }: DashboardDataSources) => {
     {
-      const dimensions = metricsSpecQueryResult.data?.dimensions ?? [];
+      const dimensions = validMetricsView?.dimensions ?? [];
 
       const columns = dashboard.pivot.columns;
       const rows = dashboard.pivot.rows;
@@ -37,6 +38,7 @@ export const pivotSelectors = {
           title:
             dimension.label || dimension.name || dimension.column || "Unknown",
           type: PivotChipType.Dimension,
+          description: dimension.description,
         }));
     }
   },

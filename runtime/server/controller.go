@@ -496,8 +496,8 @@ func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.R
 	if spec == nil {
 		return r
 	}
-	if spec.DimensionsExclude || spec.MeasuresExclude {
-		// If the ValidSpec has exclude flags set, we don't know what the available fields, so we can't filter it correctly.
+	if spec.DimensionsSelector != nil || spec.MeasuresSelector != nil {
+		// If the ValidSpec has dynamic selectors, we don't know what the available fields, so we can't filter it correctly.
 		// This should never happen because the Explore reconciler should have resolved the fields and removed the exclude flags.
 		panic(fmt.Errorf("the ValidSpec for an explore should not have exclude flags set"))
 	}
@@ -524,7 +524,9 @@ func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.R
 	spec.Measures = ms
 
 	// Filter the dimensions and measures in the presets
-	for _, p := range spec.Presets {
+	if spec.DefaultPreset != nil {
+		p := spec.DefaultPreset
+
 		var dims []string
 		for _, dim := range p.Dimensions {
 			if security.CanAccessField(dim) {

@@ -10,7 +10,7 @@ sidebar_position: 00
 There are two ways to define an OLAP engine within Rill.
 
 1. Set the [default OLAP engine](../../reference/project-files/rill-yaml#configuring-the-default-olap-engine) via the rill.yaml file.
-2. Set the [OLAP engine](../../reference/project-files/dashboards.md) for a specific dashboard.
+2. Set the [OLAP engine](../../reference/project-files/explore-dashboards.md) for a specific dashboard.
 
 The OLAP engine set on the dashboard will take precedence over the project-level defined OLAP engine.
 
@@ -38,6 +38,7 @@ DuckDB is unique in that it can act as both a [source](../../reference/connector
 Rill will use DuckDB by default as an embedded OLAP engine but it is **not** currently possible to "bring your own DuckDB database" to be used as an alternative OLAP Engine. The internal DuckDB that Rill uses is hardcoded and not configurable (necessary for Rill Cloud consistency).
 
 :::
+
 
 ## Druid
 

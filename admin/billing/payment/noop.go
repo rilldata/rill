@@ -17,15 +17,24 @@ func NewNoop() Provider {
 }
 
 func (n noop) CreateCustomer(ctx context.Context, organization *database.Organization) (*Customer, error) {
-	return &Customer{}, nil
+	return &Customer{
+		HasPaymentMethod:   true,
+		HasBillableAddress: true,
+	}, nil
 }
 
 func (n noop) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
-	return &Customer{}, nil
+	return &Customer{
+		HasPaymentMethod:   true,
+		HasBillableAddress: true,
+	}, nil
 }
 
 func (n noop) FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error) {
-	return &Customer{}, nil
+	return &Customer{
+		HasPaymentMethod:   true,
+		HasBillableAddress: true,
+	}, nil
 }
 
 func (n noop) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {

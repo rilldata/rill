@@ -25,5 +25,5 @@ Well now you can! For more details, see our page on [Using Multiple OLAP Engines
 
 ## Additional Notes
 
-- For dashboards powered by DuckDB, [measure definitions](/build/dashboards/dashboards.md#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.
+- For dashboards powered by DuckDB, [measure definitions](/build/metrics-view/metrics-view.md#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.
 - Known issue around creating a DuckDB source via the UI, you will need to create the YAML file manually.

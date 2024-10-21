@@ -73,7 +73,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 
 	sanitizedColumnName := safeName(q.ColumnName)
-	outlierPseudoBucketSize := 500
+	outlierPseudoBucketCount := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
 	rugSQL := fmt.Sprintf(
@@ -87,15 +87,15 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		WHERE %[2]s IS NOT NULL
   ), buckets AS (
 		SELECT
-		`+rangeNumbersCol(olap.Dialect())+`::FLOAT as bucket,
-		  (bucket) * (%[7]v) / %[4]v + (%[5]v) AS low,
-		  (bucket + 1) * (%[7]v) / %[4]v + (%[5]v) AS high
-		FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v)
+		`+rangeNumbersCol(olap.Dialect())+`::FLOAT as bucket, -- range
+		  (bucket) * (%[7]v) / %[4]v + (%[5]v) AS low, -- bucket * (max-min) / bucketCount + min
+		  (bucket + 1) * (%[7]v) / %[4]v + (%[5]v) AS high -- (bucket+1) * (max-min) / bucketCount + min
+		FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v) -- range(0,bucketCount)
 	),
 	-- bin the values
 	binned_data AS (
 		SELECT 
-		  FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket
+		  FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket -- floor((value - min) / (max-min) * bucketCount)
 		from values
 	),
 	-- join the bucket set with the binned values to generate the histogram
@@ -113,7 +113,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	-- calculate the right edge, sine in histogram_stage we don't look at the values that
 	-- might be the largest.
 	right_edge AS (
-		SELECT count(*) as c from values WHERE value = (%[6]v)
+		SELECT count(*) as c from values WHERE value = (%[6]v) -- value = max
 	), histrogram_with_edge AS (
 	  SELECT
 			bucket,
@@ -131,14 +131,15 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		ifNull(count, 0)
 	  FROM histrogram_with_edge
 	  WHERE present=true
+	  ORDER BY bucket
 `,
-		selectColumn,
-		sanitizedColumnName,
-		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
-		outlierPseudoBucketSize,
-		*minVal,
-		*maxVal,
-		*rng,
+		selectColumn,        // 1
+		sanitizedColumnName, // 2
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName), // 3
+		outlierPseudoBucketCount, // 4
+		*minVal,                  // 5
+		*maxVal,                  // 6
+		*rng,                     // 7
 	)
 
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
   import AlertPreviewTable from "@rilldata/web-common/features/alerts/AlertPreviewTable.svelte";
-  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";

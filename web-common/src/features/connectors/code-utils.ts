@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
   ConnectorDriverPropertyType,
-  V1ConnectorDriver,
+  type V1ConnectorDriver,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
 } from "../../runtime-client";
@@ -36,6 +36,7 @@ driver: ${connector.name}`;
 
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
+    .filter((key) => formValues[key] !== undefined)
     .map((key) => {
       const value = formValues[key] as string;
 

@@ -118,7 +118,10 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 		return err
 	}
 
-	mv := r.GetMetricsView().Spec
+	spec := r.GetMetricsView().State.ValidSpec
+	if spec == nil {
+		return fmt.Errorf("metrics view spec is not valid")
+	}
 
 	if opts.PreWriteHook != nil {
 		err = opts.PreWriteHook(q.generateFilename())
@@ -129,10 +132,10 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 
 	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
 	meta := append([]*runtimev1.MetricsViewColumn{{
-		Name: mv.TimeDimension,
+		Name: spec.TimeDimension,
 	}}, q.Result.Meta...)
 	for _, dt := range q.Result.Data {
-		dt.Records.Fields[mv.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
+		dt.Records.Fields[spec.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
 		tmp = append(tmp, dt.Records)
 	}
 

@@ -14,13 +14,13 @@
     selectors: {
       pivot: { dimensions, measures },
     },
-    metricsViewName,
+    exploreName,
   } = getStateManagers();
 
   let open = false;
 
   function handleSelectValue(data: PivotChipData) {
-    metricsExplorerStore.addPivotField($metricsViewName, data, zone === "rows");
+    metricsExplorerStore.addPivotField($exploreName, data, zone === "rows");
   }
 </script>
 

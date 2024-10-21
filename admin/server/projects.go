@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -157,26 +158,55 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
 		}
 
+		// Build condition for what the magic auth token can access
+		var condition strings.Builder
+		// All themes
+		condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
+		// The magic token's resource
+		condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(mdl.ResourceType), duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))))
+		// If the magic token's resource is an Explore, we also need to include its underlying metrics view
+		if mdl.ResourceType == runtime.ResourceKindExplore {
+			client, err := s.admin.OpenRuntimeClient(depl)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
+			}
+			defer client.Close()
+
+			resp, err := client.GetResource(ctx, &runtimev1.GetResourceRequest{
+				InstanceId: depl.RuntimeInstanceID,
+				Name: &runtimev1.ResourceName{
+					Kind: mdl.ResourceType,
+					Name: mdl.ResourceName,
+				},
+			})
+			if err != nil {
+				if status.Code(err) == codes.NotFound {
+					return nil, status.Errorf(codes.NotFound, "resource for magic token not found (name=%q, type=%q)", mdl.ResourceName, mdl.ResourceType)
+				}
+				return nil, status.Errorf(codes.Internal, "could not get resource for magic token: %s", err.Error())
+			}
+
+			spec := resp.Resource.GetExplore().State.ValidSpec
+			if spec != nil {
+				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+			}
+		}
+
 		attr = mdl.Attributes
 
-		// Deny access to all resources except themes and mdl.MetricsView
+		// Add a rule that denies access to anything that doesn't match the condition.
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
-					Condition: fmt.Sprintf(
-						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ lower .self.name }}'=%s)",
-						runtime.ResourceKindTheme,
-						runtime.ResourceKindMetricsView,
-						duckdbsql.EscapeStringValue(strings.ToLower(mdl.MetricsView)),
-					),
-					Allow: false,
+					Condition: fmt.Sprintf("NOT (%s)", condition.String()),
+					Allow:     false,
 				},
 			},
 		})
 
-		if mdl.MetricsViewFilterJSON != "" {
+		if mdl.FilterJSON != "" {
 			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(mdl.MetricsViewFilterJSON), expr)
+			err := protojson.Unmarshal([]byte(mdl.FilterJSON), expr)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
 			}
@@ -190,11 +220,11 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			})
 		}
 
-		if len(mdl.MetricsViewFields) > 0 {
+		if len(mdl.Fields) > 0 {
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_FieldAccess{
 					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Fields: mdl.MetricsViewFields,
+						Fields: mdl.Fields,
 						Allow:  true,
 					},
 				},
@@ -351,6 +381,12 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
+	// check if org has any blocking billing errors
+	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Check projects quota
 	count, err := s.admin.DB.CountProjectsForOrganization(ctx, org.ID)
 	if err != nil {
@@ -439,6 +475,29 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
 		opts.ArchiveAssetID = &req.ArchiveAssetId
+	}
+
+	// if there is no subscription for the org, submit a job to start a trial
+	bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if bi != nil {
+		// check against trial orgs quota
+		if org.CreatedByUserID != nil {
+			u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
+				return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
+			}
+		}
+		_, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID)
+		if err != nil {
+			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
+			// continue creating the project
+		}
 	}
 
 	// Create the project
@@ -1450,8 +1509,8 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// check if org has blocking billing errors and return error if it does
-	err = s.admin.CheckBillingErrors(ctx, org.ID)
+	// check if org has blocking billing errors
+	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -1519,8 +1578,8 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// check if org has blocking billing errors and return error if it does
-	err = s.admin.CheckBillingErrors(ctx, org.ID)
+	// check if org has blocking billing errors
+	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

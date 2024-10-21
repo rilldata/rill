@@ -1,6 +1,6 @@
-import { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
-import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { QueryObserverResult } from "@tanstack/svelte-query";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 
 export const isMeasureValid = (
   metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, HTTPError>,

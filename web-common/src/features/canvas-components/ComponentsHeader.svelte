@@ -2,12 +2,11 @@
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import GenerateVegaSpecPrompt from "@rilldata/web-common/features/canvas-components/prompt/GenerateVegaSpecPrompt.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     extractFileName,
-    splitFolderAndName,
+    splitFolderAndFileName,
   } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -18,18 +17,14 @@
   export let hasUnsavedChanges: boolean;
 
   let fileName: string;
-  $: [, fileName] = splitFolderAndName(filePath);
+  $: [, fileName] = splitFolderAndFileName(filePath);
   $: runtimeInstanceId = $runtime.instanceId;
   $: componentName = extractFileName(filePath);
 
-  async function handleNameChange(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
       runtimeInstanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       componentName,
       fileArtifacts.getNamesForKind(ResourceKind.Component),
@@ -42,15 +37,18 @@
 </script>
 
 <WorkspaceHeader
-  on:change={handleNameChange}
+  resourceKind={ResourceKind.Component}
+  onTitleChange={handleNameChange}
   titleInput={fileName}
   {hasUnsavedChanges}
+  {filePath}
   showInspectorToggle={false}
 >
   <svelte:fragment slot="cta">
     <PanelCTA side="right">
-      <Button on:click={() => (generateOpen = true)}>Generate using AI</Button>
-      <LocalAvatarButton />
+      <Button type="secondary" on:click={() => (generateOpen = true)}
+        >Generate using AI</Button
+      >
     </PanelCTA>
   </svelte:fragment>
 </WorkspaceHeader>

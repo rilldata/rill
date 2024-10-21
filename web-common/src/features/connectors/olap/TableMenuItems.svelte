@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -10,16 +9,17 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
+  import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
+  import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "./createModel";
   import { useIsModelingSupportedForOlapDriver } from "./selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   const { ai } = featureFlags;
-  const queryClient = useQueryClient();
 
   export let connector: string;
   export let database: string = "";
@@ -30,13 +30,23 @@
     $runtime.instanceId,
     connector,
   );
-  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     connector,
     database,
     databaseSchema,
     table,
-    "dashboards",
+    false,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
+  $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    $runtime.instanceId,
+    connector,
+    database,
+    databaseSchema,
+    table,
+    true,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -72,8 +82,19 @@
   </NavigationMenuItem>
 {/if}
 
-<NavigationMenuItem on:click={createDashboardFromTable}>
-  <Explore slot="icon" />
+<NavigationMenuItem on:click={createMetricsViewFromTable}>
+  <MetricsViewIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate metrics
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+</NavigationMenuItem>
+
+<NavigationMenuItem on:click={createExploreFromTable}>
+  <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
     Generate dashboard
     {#if $ai}

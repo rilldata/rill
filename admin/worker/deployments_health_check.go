@@ -179,26 +179,39 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 		for k, v := range annotations.ToMap() {
 			f = append(f, zap.String(k, v))
 		}
+
+		// log metrics view errors separately
 		for d, err := range health.MetricsViewErrors {
-			w.logger.Error("deployment health check: dashboard error", append(f, zap.String("dashboard", d), zap.String("error", err))...)
+			w.logger.Warn("deployment health check: metrics view error", zap.String("metrics_view", d), zap.String("error", err))
 		}
-		onlyUnhealthyDash := true
-		if health.OlapError != "" {
-			onlyUnhealthyDash = false
-			f = append(f, zap.String("olap_error", health.OlapError))
-		}
+
+		logAtError := false
 		if health.ControllerError != "" {
-			onlyUnhealthyDash = false
+			logAtError = true
 			f = append(f, zap.String("controller_error", health.ControllerError))
 		}
+		if health.OlapError != "" {
+			logAtError = true
+			f = append(f, zap.String("olap_error", health.OlapError))
+		}
 		if health.RepoError != "" {
-			onlyUnhealthyDash = false
+			logAtError = true
 			f = append(f, zap.String("repo_error", health.RepoError))
 		}
-		if onlyUnhealthyDash {
-			continue
+		if len(health.MetricsViewErrors) > 0 {
+			f = append(f, zap.Int("metrics_view_errors", len(health.MetricsViewErrors)))
 		}
-		w.logger.Error("deployment health check: runtime instance is unhealthy", f...)
+		if health.ParseErrorCount > 0 {
+			f = append(f, zap.Int32("parse_errors", health.ParseErrorCount))
+		}
+		if health.ReconcileErrorCount > 0 {
+			f = append(f, zap.Int32("reconcile_errors", health.ReconcileErrorCount))
+		}
+		if logAtError {
+			w.logger.Error("deployment health check: instance is unhealthy", f...)
+		} else {
+			w.logger.Warn("deployment health check: instance is unhealthy", f...)
+		}
 	}
 	return instances, true
 }
@@ -221,7 +234,7 @@ func runtimeUnhealthy(r *runtimev1.HealthResponse) bool {
 }
 
 func instanceUnhealthy(i *runtimev1.InstanceHealth) bool {
-	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != "" || len(i.MetricsViewErrors) != 0
+	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != "" || len(i.MetricsViewErrors) != 0 || i.ParseErrorCount > 0 || i.ReconcileErrorCount > 0
 }
 
 func addExpectedInstance(expectedInstances map[string][]string, d *database.Deployment) {

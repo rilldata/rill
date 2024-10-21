@@ -180,6 +180,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			}
 
 			if auto {
+				f.Expr = ast.dialect.AutoUnnest(f.Expr)
 				f.AutoUnnest = true
 			} else {
 				ast.unnests = append(ast.unnests, tblWithAlias)

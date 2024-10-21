@@ -487,7 +487,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	}
 
 	// get rill user orgs
-	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{PageSize: 1000})
 	if err != nil {
 		return nil, err
 	}

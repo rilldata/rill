@@ -5,7 +5,7 @@
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
-    LeaderboardItemData,
+    type LeaderboardItemData,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";

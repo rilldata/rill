@@ -442,6 +442,38 @@ paths:
             properties:
               planName:
                 type: string
+              superuserForceAccess:
+                type: boolean
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/billing/subscriptions/renew:
+    post:
+      summary: RenewBillingSubscription renews the billing plan for the organization once cancelled
+      operationId: AdminService_RenewBillingSubscription
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenewBillingSubscriptionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              planName:
+                type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -1008,9 +1040,12 @@ paths:
               attributes:
                 type: object
                 description: If set, will use the provided attributes outright.
+              type:
+                type: string
+                description: Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
               kind:
                 type: string
-                description: Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+                description: 'Deprecated: Alias for `type`.'
               resource:
                 type: string
                 description: Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
@@ -1507,19 +1542,24 @@ paths:
                 type: string
                 format: int64
                 description: TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
-              metricsView:
+              resourceType:
                 type: string
-                description: Metrics view the token will provide access to.
-              metricsViewFilter:
+                description: Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+              resourceName:
+                type: string
+                description: Name of the resource to grant access to.
+              filter:
                 $ref: '#/definitions/v1Expression'
-                description: Optional filter to apply to all queries to the metrics view.
-              metricsViewFields:
+                description: |-
+                  Optional filter to apply as a row filter in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+              fields:
                 type: array
                 items:
                   type: string
                 description: |-
-                  Optional list of names of dimensions and measures to limit access to.
-                  If empty, all dimensions and measures are accessible.
+                  Optional list of fields to limit access to. If empty, no field access rule will be added.
+                  This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
               state:
                 type: string
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
@@ -3053,6 +3093,7 @@ paths:
             - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+            - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
       tags:
         - AdminService
   /v1/superuser/projects/annotations:
@@ -3587,6 +3628,10 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataPaymentFailed'
       subscriptionCancelled:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
+      neverSubscribed:
+        $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+  v1BillingIssueMetadataNeverSubscribed:
+    type: object
   v1BillingIssueMetadataNoBillableAddress:
     type: object
   v1BillingIssueMetadataNoPaymentMethod:
@@ -3649,6 +3694,7 @@ definitions:
       - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+      - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -3668,6 +3714,8 @@ definitions:
         type: boolean
       quotas:
         $ref: '#/definitions/v1Quotas'
+      public:
+        type: boolean
         title: TODO expose pricing information
   v1Bookmark:
     type: object
@@ -4323,11 +4371,13 @@ definitions:
         type: string
       attributes:
         type: object
-      metricsView:
+      resourceType:
         type: string
-      metricsViewFilter:
+      resourceName:
+        type: string
+      filter:
         $ref: '#/definitions/v1Expression'
-      metricsViewFields:
+      fields:
         type: array
         items:
           type: string
@@ -4343,6 +4393,8 @@ definitions:
       userEmail:
         type: string
       userName:
+        type: string
+      userPhotoUrl:
         type: string
       roleName:
         type: string
@@ -4606,6 +4658,13 @@ definitions:
     type: object
   v1RenameUsergroupResponse:
     type: object
+  v1RenewBillingSubscriptionResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1ReportOptions:
     type: object
     properties:
@@ -4751,12 +4810,8 @@ definitions:
     properties:
       id:
         type: string
-      planId:
-        type: string
-      planName:
-        type: string
-      planDisplayName:
-        type: string
+      plan:
+        $ref: '#/definitions/v1BillingPlan'
       startDate:
         type: string
         format: date-time
@@ -4820,16 +4875,15 @@ definitions:
         type: string
       billingCustomerId:
         type: string
+      paymentCustomerId:
+        type: string
   v1SudoUpdateOrganizationBillingCustomerResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-      subscriptions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Subscription'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1SudoUpdateOrganizationCustomDomainRequest:
     type: object
     properties:
@@ -4878,6 +4932,9 @@ definitions:
       singleuserOrgs:
         type: integer
         format: int32
+      trialOrgs:
+        type: integer
+        format: int32
   v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
@@ -4912,11 +4969,8 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-      subscriptions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Subscription'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1UpdateBookmarkRequest:
     type: object
     properties:
@@ -5006,6 +5060,9 @@ definitions:
     type: object
     properties:
       singleuserOrgs:
+        type: integer
+        format: int32
+      trialOrgs:
         type: integer
         format: int32
   v1Usergroup:

@@ -104,7 +104,7 @@
   </select>
 </div>
 
-<div class="pb-4">
+<div>
   {#if sortedProfile && exampleValue}
     {#each sortedProfile as column (column.name)}
       {@const hideRight = containerWidth < COLUMN_PROFILE_CONFIG.hideRight}

@@ -20,12 +20,6 @@ import (
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
-	// check if org has any blocking billing errors and return error if it does
-	err := s.CheckBillingErrors(ctx, org.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
 	if (opts.ArchiveAssetID == nil) == isGitInfoEmpty {
 		return nil, fmt.Errorf("either github info or archive_asset_id must be set")

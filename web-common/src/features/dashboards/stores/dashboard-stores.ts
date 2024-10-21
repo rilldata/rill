@@ -14,7 +14,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -22,6 +21,7 @@ import type {
 } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
+  V1ExploreSpec,
   V1Expression,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
@@ -32,7 +32,7 @@ import {
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
-import { Readable, derived, writable } from "svelte/store";
+import { type Readable, derived, writable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import type { PivotColumns, PivotRows } from "../pivot/types";
 import { PivotChipType, type PivotChipData } from "../pivot/types";
@@ -76,67 +76,55 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
 }
 
 function syncMeasures(
-  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   metricsExplorer: MetricsExplorerEntity,
 ) {
-  const measuresMap = getMapFromArray(
-    metricsView.measures,
-    (measure) => measure.name,
-  );
+  const measuresSet = new Set(explore.measures ?? []);
 
   // sync measures with selected leaderboard measure.
   if (
-    metricsView.measures.length &&
+    explore.measures?.length &&
     (!metricsExplorer.leaderboardMeasureName ||
-      !measuresMap.has(metricsExplorer.leaderboardMeasureName))
+      !measuresSet.has(metricsExplorer.leaderboardMeasureName))
   ) {
-    metricsExplorer.leaderboardMeasureName = metricsView.measures[0].name;
-  } else if (!metricsView.measures.length) {
-    metricsExplorer.leaderboardMeasureName = undefined;
+    metricsExplorer.leaderboardMeasureName = explore.measures[0];
   }
 
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
-    metricsExplorer.visibleMeasureKeys = new Set(
-      metricsView.measures.map((measure) => measure.name),
-    );
+    metricsExplorer.visibleMeasureKeys = measuresSet;
   } else {
     // remove any keys from visible measure if it doesn't exist anymore
     for (const measureKey of metricsExplorer.visibleMeasureKeys) {
-      if (!measuresMap.has(measureKey)) {
+      if (!measuresSet.has(measureKey)) {
         metricsExplorer.visibleMeasureKeys.delete(measureKey);
       }
     }
     // If there are no visible measures, make the first measure visible
     if (
-      metricsView.measures.length &&
+      explore.measures?.length &&
       metricsExplorer.visibleMeasureKeys.size === 0
     ) {
-      metricsExplorer.visibleMeasureKeys = new Set([
-        metricsView.measures[0].name,
-      ]);
+      metricsExplorer.visibleMeasureKeys = new Set([explore.measures[0]]);
     }
   }
 }
 
 function syncDimensions(
-  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   metricsExplorer: MetricsExplorerEntity,
 ) {
   // Having a map here improves the lookup for existing dimension name
-  const dimensionsMap = getMapFromArray(
-    metricsView.dimensions,
-    (dimension) => dimension.name,
-  );
+  const dimensionsSet = new Set(explore.dimensions ?? []);
   metricsExplorer.whereFilter =
     filterExpressions(metricsExplorer.whereFilter, (e) => {
       if (!e.cond?.exprs?.length) return true;
-      return dimensionsMap.has(e.cond.exprs[0].ident);
+      return dimensionsSet.has(e.cond.exprs[0].ident!);
     }) ?? createAndExpression([]);
 
   if (
     metricsExplorer.selectedDimensionName &&
-    !dimensionsMap.has(metricsExplorer.selectedDimensionName)
+    !dimensionsSet.has(metricsExplorer.selectedDimensionName)
   ) {
     metricsExplorer.selectedDimensionName = undefined;
     metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
@@ -144,23 +132,22 @@ function syncDimensions(
 
   if (metricsExplorer.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
-    metricsExplorer.visibleDimensionKeys = new Set(
-      metricsView.dimensions.map((dimension) => dimension.name),
-    );
+    metricsExplorer.visibleDimensionKeys = dimensionsSet;
   } else {
     // remove any keys from visible dimension if it doesn't exist anymore
     for (const dimensionKey of metricsExplorer.visibleDimensionKeys) {
-      if (!dimensionsMap.has(dimensionKey)) {
+      if (!dimensionsSet.has(dimensionKey)) {
         metricsExplorer.visibleDimensionKeys.delete(dimensionKey);
       }
     }
   }
 }
 
-const metricViewReducers = {
+const metricsViewReducers = {
   init(
     name: string,
     metricsView: V1MetricsViewSpec,
+    explore: V1ExploreSpec,
     fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
   ) {
     update((state) => {
@@ -169,6 +156,7 @@ const metricViewReducers = {
       state.entities[name] = getDefaultMetricsExplorerEntity(
         name,
         metricsView,
+        explore,
         fullTimeRange,
       );
       state.entities[name] = restorePersistedDashboardState(
@@ -185,12 +173,18 @@ const metricViewReducers = {
     name: string,
     urlState: string,
     metricsView: V1MetricsViewSpec,
+    explore: V1ExploreSpec,
     schema: V1StructType,
   ) {
     if (!urlState || !metricsView) return;
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(urlState, metricsView, schema);
+    const partial = getDashboardStateFromUrl(
+      urlState,
+      metricsView,
+      explore,
+      schema,
+    );
     if (!partial) return;
 
     updateMetricsExplorerByName(name, (metricsExplorer) => {
@@ -208,14 +202,14 @@ const metricViewReducers = {
     });
   },
 
-  sync(name: string, metricsView: V1MetricsViewSpec) {
-    if (!name || !metricsView || !metricsView.measures) return;
+  sync(name: string, explore: V1ExploreSpec) {
+    if (!name || !explore || !explore.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       // remove references to non existent measures
-      syncMeasures(metricsView, metricsExplorer);
+      syncMeasures(explore, metricsExplorer);
 
       // remove references to non existent dimensions
-      syncDimensions(metricsView, metricsExplorer);
+      syncDimensions(explore, metricsExplorer);
     });
   },
 
@@ -428,7 +422,7 @@ const metricViewReducers = {
 
   setMetricDimensionName(name: string, dimensionName: string | null) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.selectedDimensionName = dimensionName;
+      metricsExplorer.selectedDimensionName = dimensionName ?? undefined;
       if (dimensionName) {
         metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
       } else {
@@ -519,14 +513,12 @@ const metricViewReducers = {
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
-  typeof metricViewReducers = {
+  typeof metricsViewReducers = {
   subscribe,
-  ...metricViewReducers,
+  ...metricsViewReducers,
 };
 
-export function useDashboardStore(
-  name: string,
-): Readable<MetricsExplorerEntity> {
+export function useExploreStore(name: string): Readable<MetricsExplorerEntity> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });

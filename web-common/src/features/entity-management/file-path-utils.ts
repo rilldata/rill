@@ -21,7 +21,7 @@ export function extractFileExtension(filePath: string): string {
   return lastIndexOfDot >= 0 ? fileName.substring(lastIndexOfDot) : "";
 }
 
-export function splitFolderAndName(
+export function splitFolderAndFileName(
   filePath: string,
 ): [folder: string, fileName: string] {
   const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];

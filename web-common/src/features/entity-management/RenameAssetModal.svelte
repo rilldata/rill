@@ -1,16 +1,16 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
-  import { Dialog } from "@rilldata/web-common/components/modal/index";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+  import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
-    useAllFileNames,
     useDirectoryNamesInDirectory,
+    useFileNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { defaults, superForm } from "sveltekit-superforms";
+  import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -28,7 +28,7 @@
 
   let error: string;
 
-  const [folder, assetName] = splitFolderAndName(filePath);
+  const [folderName, fileName] = splitFolderAndFileName(filePath);
 
   const validationSchema = object({
     newName: string()
@@ -37,7 +37,7 @@
   });
 
   const initialValues = {
-    newName: assetName,
+    newName: fileName,
   };
 
   const {
@@ -48,12 +48,13 @@
   } = superForm(defaults(initialValues, yup(validationSchema)), {
     SPA: true,
     validators: yup(validationSchema),
+    validationMethod: "onsubmit",
     async onUpdate({ form }) {
       if (!form.valid) return;
 
       const values = form.data;
 
-      if (values.newName === assetName) {
+      if (values.newName === fileName) {
         closeModal();
         return;
       }
@@ -62,23 +63,28 @@
         isDir &&
         isDuplicateName(
           values?.newName,
-          assetName,
+          fileName,
           $existingDirectories?.data ?? [],
         )
       ) {
         error = `An existing folder with name ${values.newName} already exists`;
-        return;
+        return setError(form, "newName", error);
       }
 
       if (
         !isDir &&
-        isDuplicateName(values?.newName, assetName, $allNamesQuery?.data ?? [])
+        isDuplicateName(
+          values?.newName,
+          fileName,
+          $fileNamesInDirectory?.data ?? [],
+        )
       ) {
         error = `Name ${values.newName} is already in use`;
-        return;
+
+        return setError(form, "newName", error);
       }
       try {
-        const newPath = (folder ? `${folder}/` : "") + values.newName;
+        const newPath = (folderName ? `${folderName}/` : "") + values.newName;
         await renameFileArtifact(runtimeInstanceId, filePath, newPath);
         if (isDir) {
           if (
@@ -107,39 +113,52 @@
   });
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: allNamesQuery = useAllFileNames(queryClient, runtimeInstanceId);
-
   $: existingDirectories = useDirectoryNamesInDirectory(
     runtimeInstanceId,
-    folder,
+    folderName,
+  );
+  $: fileNamesInDirectory = useFileNamesInDirectory(
+    runtimeInstanceId,
+    folderName,
   );
 </script>
 
-<Dialog
-  compact
-  on:cancel={closeModal}
-  on:click-outside={closeModal}
-  on:primary-action={submit}
-  showCancel
-  size="sm"
+<Dialog.Root
+  open
+  onOpenChange={(open) => {
+    if (!open) {
+      closeModal();
+    }
+  }}
+  portal="#rill-portal"
 >
-  <svelte:fragment slot="title">Rename</svelte:fragment>
-  <div slot="body">
-    {#if error}
-      <SubmissionError message={error} />
+  <Dialog.Content>
+    <Dialog.Title>Rename</Dialog.Title>
+
+    {#if $errors.newName?.[0]}
+      <SubmissionError message={$errors.newName?.[0]} />
     {/if}
-    <form autocomplete="off" on:submit|preventDefault={submit} use:enhance>
-      <div class="py-2">
-        <Input
-          bind:value={$superform.newName}
-          claimFocusOnMount
-          alwaysShowError
-          errors={$errors.newName?.[0]}
-          id={isDir ? "folder-name" : "file-name"}
-          label={isDir ? "Folder name" : "File name"}
-        />
-      </div>
+    <form
+      id="rename-asset-form"
+      class="flex flex-col gap-y-4"
+      autocomplete="off"
+      on:submit|preventDefault={submit}
+      use:enhance
+    >
+      <Input
+        bind:value={$superform.newName}
+        claimFocusOnMount
+        alwaysShowError
+        id={isDir ? "folder-name" : "file-name"}
+        label={isDir ? "Folder name" : "File name"}
+        onEnter={submit}
+      />
     </form>
-  </div>
-  <svelte:fragment slot="primary-action-body">Change Name</svelte:fragment>
-</Dialog>
+    <Dialog.Footer class="gap-x-2">
+      <Button large type="text" on:click={closeModal}>Cancel</Button>
+      <Button large type="primary" submitForm form="rename-asset-form">
+        Change Name
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>

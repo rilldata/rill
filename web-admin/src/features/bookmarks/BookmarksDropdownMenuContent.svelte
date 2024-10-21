@@ -21,6 +21,7 @@
   import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
 
   export let metricsViewName: string;
+  export let exploreName: string;
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
@@ -36,6 +37,7 @@
     organization,
     project,
     metricsViewName,
+    exploreName,
   );
   $: filteredBookmarks = searchBookmarks($bookmarks.data, searchText);
 

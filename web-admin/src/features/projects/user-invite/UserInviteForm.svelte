@@ -59,7 +59,7 @@
                 },
               });
               succeeded.push(email);
-            } catch (e) {
+            } catch {
               errored = true;
             }
           }),

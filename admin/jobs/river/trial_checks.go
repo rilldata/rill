@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/riverqueue/river"
@@ -30,7 +31,7 @@ func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEn
 }
 
 func (w *TrialEndingSoonWorker) trialEndingSoon(ctx context.Context) error {
-	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeNotOverdueProcessed(ctx, database.BillingIssueTypeOnTrial)
+	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypeOnTrial, false)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no orgs have this billing issue
@@ -89,7 +90,7 @@ func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndC
 }
 
 func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
-	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeNotOverdueProcessed(ctx, database.BillingIssueTypeOnTrial)
+	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypeOnTrial, true)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no orgs have this billing issue
@@ -100,7 +101,7 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 
 	for _, o := range onTrialOrgs {
 		m := o.Metadata.(*database.BillingIssueMetadataOnTrial)
-		if time.Now().UTC().Before(m.EndDate.AddDate(0, 0, 1)) {
+		if time.Now().UTC().Before(m.EndDate) {
 			// trial end date is not finished yet, move to next org
 			continue
 		}
@@ -111,19 +112,50 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			return fmt.Errorf("failed to find organization: %w", err)
 		}
 
+		sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+		if err != nil {
+			return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
+		}
+		if sub.ID != m.SubID || sub.Plan.ID != m.PlanID {
+			w.logger.Warn("trial period has ended, but org has different active subscription, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("sub_id", sub.ID), zap.String("sub_plan_id", sub.Plan.ID), zap.String("expected_sub_id", m.SubID), zap.String("expected_sub_plan_id", m.PlanID))
+			continue
+		}
+
 		w.logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 		gracePeriodEndDate := m.EndDate.AddDate(0, 0, gracePeriodDays)
-		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+
+		cctx, tx, err := w.admin.DB.NewTx(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to start transaction: %w", err)
+		}
+
+		_, err = w.admin.DB.UpsertBillingIssue(cctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeTrialEnded,
 			Metadata: &database.BillingIssueMetadataTrialEnded{
+				SubID:              m.SubID,
+				PlanID:             m.PlanID,
 				GracePeriodEndDate: gracePeriodEndDate,
 			},
-			EventTime: m.EndDate.AddDate(0, 0, 1),
+			EventTime: m.EndDate,
 		})
 		if err != nil {
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("failed to rollback transaction: %w", err)
+			}
 			return fmt.Errorf("failed to add billing error: %w", err)
+		}
+
+		// delete the on-trial billing issue
+		err = w.admin.DB.DeleteBillingIssue(cctx, o.ID)
+		if err != nil {
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("failed to rollback transaction: %w", err)
+			}
+			return fmt.Errorf("failed to delete billing issue: %w", err)
 		}
 
 		// send email
@@ -134,13 +166,16 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			GracePeriodEndDate: gracePeriodEndDate,
 		})
 		if err != nil {
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("failed to rollback transaction: %w", err)
+			}
 			return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
 		}
 
-		// mark the billing issue as processed
-		err = w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, o.ID)
+		err = tx.Commit()
 		if err != nil {
-			return fmt.Errorf("failed to update billing issue as processed: %w", err)
+			return fmt.Errorf("failed to commit transaction: %w", err)
 		}
 	}
 
@@ -162,7 +197,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 }
 
 func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context) error {
-	trailEndedOrgs, err := w.admin.DB.FindBillingIssueByTypeNotOverdueProcessed(ctx, database.BillingIssueTypeTrialEnded)
+	trailEndedOrgs, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypeTrialEnded, false)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// no orgs have this billing issue
@@ -173,7 +208,7 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 
 	for _, o := range trailEndedOrgs {
 		m := o.Metadata.(*database.BillingIssueMetadataTrialEnded)
-		if time.Now().UTC().Before(m.GracePeriodEndDate.AddDate(0, 0, 1)) {
+		if time.Now().UTC().Before(m.GracePeriodEndDate) {
 			// grace period end date is not finished yet, move to next org
 			continue
 		}
@@ -183,33 +218,48 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 			return fmt.Errorf("failed to find organization: %w", err)
 		}
 
-		// double check - get active subscriptions for the org
-		sub, err := w.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+		// get active subscription for the org
+		sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 		if err != nil {
-			return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
-		}
-
-		if len(sub) == 0 {
-			w.logger.Warn("trial grace period end check - no active subscription found for the org, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-			continue
-		}
-
-		if len(sub) > 1 {
-			w.logger.Warn("trial grace period end check - multiple active subscriptions found for the org, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-			continue
-		}
-
-		if sub[0].ID != m.SubID || sub[0].Plan.ID != m.PlanID {
-			w.logger.Warn("trial grace period end check - subscription or plan changed, but billing issue not updated, doing nothing, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-			// subscription or plan have changed, mark the billing issue as processed
-			err = w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, o.ID)
-			if err != nil {
-				return fmt.Errorf("failed to update billing issue as processed: %w", err)
+			if !errors.Is(err, billing.ErrNotFound) {
+				return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
 			}
+		}
+		if sub == nil {
+			// might happen if previous job failed in middle
+			w.logger.Warn("trial grace period has ended, but org has no active subscription, please check", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+		} else if sub.ID != m.SubID || sub.Plan.ID != m.PlanID {
+			w.logger.Warn("trial grace period has ended, but org has different active subscription, doing nothing, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("sub_id", sub.ID), zap.String("sub_plan_id", sub.Plan.ID), zap.String("expected_sub_id", m.SubID), zap.String("expected_sub_plan_id", m.PlanID))
 			continue
 		}
 
-		// trial grace period has ended, log warn and hibernate projects
+		// cancel the subscription
+		_, err = w.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
+		if err != nil {
+			return fmt.Errorf("failed to cancel subscription for org %q: %w", org.Name, err)
+		}
+
+		// trial grace period ended, update quotas to 0 and hibernate all projects
+		_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+			Name:                                org.Name,
+			DisplayName:                         org.DisplayName,
+			Description:                         org.Description,
+			CustomDomain:                        org.CustomDomain,
+			QuotaProjects:                       0,
+			QuotaDeployments:                    0,
+			QuotaSlotsTotal:                     0,
+			QuotaSlotsPerDeployment:             0,
+			QuotaOutstandingInvites:             0,
+			QuotaStorageLimitBytesPerDeployment: 0,
+			BillingCustomerID:                   org.BillingCustomerID,
+			PaymentCustomerID:                   org.PaymentCustomerID,
+			BillingEmail:                        org.BillingEmail,
+			CreatedByUserID:                     org.CreatedByUserID,
+		})
+		if err != nil {
+			return err
+		}
+
 		limit := 10
 		afterProjectName := ""
 		for {

@@ -26,7 +26,7 @@ const removeUnusedCss = purgeCss({
   content: [
     "./src/**/*.html",
     "./src/**/*.svelte",
-    "../web-common/**/*.{html,js,svelte,ts}",
+    "../web-common/src/**/*.{html,js,svelte,ts}",
   ],
   defaultExtractor: (content) => content.match(/[A-Za-z0-9-_:/]+/g) || [],
 });

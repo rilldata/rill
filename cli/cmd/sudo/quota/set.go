@@ -10,7 +10,7 @@ import (
 
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org, email string
-	var singleUser, projects, deployments, slotsTotal, slotsPerDeployment, outstandingInvites, numUsers int32
+	var singleUser, trialOrgs, projects, deployments, slotsTotal, slotsPerDeployment, outstandingInvites, numUsers int32
 	var storageLimitBytesPerDeployment int64
 	setCmd := &cobra.Command{
 		Use:   "set",
@@ -71,6 +71,10 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 					req.SingleuserOrgs = &singleUser
 				}
 
+				if cmd.Flags().Changed("trial-orgs") {
+					req.TrialOrgs = &trialOrgs
+				}
+
 				res, err := client.SudoUpdateUserQuotas(ctx, req)
 				if err != nil {
 					return err
@@ -79,6 +83,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				userQuotas := res.User.Quotas
 				ch.PrintfSuccess("Updated user's quota\n")
 				fmt.Printf("User: %s\n", email)
+				fmt.Printf("Trial orgs: %d\n", userQuotas.TrialOrgs)
 				fmt.Printf("Single user orgs: %d\n", userQuotas.SingleuserOrgs)
 			} else {
 				return fmt.Errorf("Please set --org or --user")
@@ -92,6 +97,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	setCmd.Flags().StringVar(&org, "org", "", "Organization Name")
 	setCmd.Flags().StringVar(&email, "user", "", "User Email")
 	setCmd.Flags().Int32Var(&singleUser, "singleuser-orgs", 0, "Quota single user org")
+	setCmd.Flags().Int32Var(&trialOrgs, "trial-orgs", 0, "Quota trial orgs for a user")
 	setCmd.Flags().Int32Var(&projects, "projects", 0, "Quota projects")
 	setCmd.Flags().Int32Var(&deployments, "deployments", 0, "Quota deployments")
 	setCmd.Flags().Int32Var(&slotsTotal, "slots-total", 0, "Quota slots total")

@@ -2,19 +2,28 @@ import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-cl
 import type { DashboardDataSources } from "./types";
 
 export const allDimensions = ({
-  metricsSpecQueryResult,
-}: DashboardDataSources): MetricsViewSpecDimensionV2[] | undefined => {
-  return metricsSpecQueryResult.data?.dimensions;
+  validMetricsView,
+  validExplore,
+}: Pick<
+  DashboardDataSources,
+  "validMetricsView" | "validExplore"
+>): MetricsViewSpecDimensionV2[] => {
+  return (
+    validMetricsView?.dimensions?.filter((d) =>
+      validExplore?.dimensions?.includes(d.name ?? ""),
+    ) ?? []
+  );
 };
 
 export const visibleDimensions = ({
-  metricsSpecQueryResult,
+  validMetricsView,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
-  const dimensions = metricsSpecQueryResult.data?.dimensions?.filter(
-    (d) => d.name && dashboard.visibleDimensionKeys.has(d.name),
+  return (
+    validMetricsView?.dimensions?.filter(
+      (d) => d.name && dashboard.visibleDimensionKeys.has(d.name),
+    ) ?? []
   );
-  return dimensions === undefined ? [] : dimensions;
 };
 
 export const dimensionTableDimName = ({

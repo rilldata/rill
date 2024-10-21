@@ -173,8 +173,8 @@ time_ranges:
       - P1M
       - offset: P4M
         range: P2M
-presets:
-  - time_range: P4W
+defaults:
+  time_range: P4W
 `,
 		// migration c1
 		`custom/c1.yml`: `
@@ -288,10 +288,10 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "d1"}},
 			Paths: []string{"/explores/e1.yaml"},
 			ExploreSpec: &runtimev1.ExploreSpec{
-				Title:             "E1",
-				MetricsView:       "d1",
-				DimensionsExclude: true,
-				Measures:          []string{"b"},
+				Title:              "E1",
+				MetricsView:        "d1",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				Measures:           []string{"b"},
 				TimeRanges: []*runtimev1.ExploreTimeRange{
 					{Range: "P2W"},
 					{Range: "P4W"},
@@ -303,8 +303,8 @@ schema: default
 						},
 					},
 				},
-				Presets: []*runtimev1.ExplorePreset{
-					{TimeRange: "P4W"},
+				DefaultPreset: &runtimev1.ExplorePreset{
+					TimeRange: "P4W",
 				},
 			},
 		},

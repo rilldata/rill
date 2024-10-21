@@ -22,7 +22,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
     type V1MetricsViewAggregationRequest,
@@ -39,9 +39,9 @@
 
   // Get dashboard
   $: dashboardName = useAlertDashboardName($runtime.instanceId, alert);
-  $: dashboard = useDashboard($runtime.instanceId, $dashboardName.data);
-  $: dashboardTitle =
-    $dashboard.data?.metricsView.spec.title || $dashboardName.data;
+  $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
+  $: metricsViewName = $dashboard.data?.explore?.metricsView;
+  $: dashboardTitle = $dashboard.data?.explore?.title || $dashboardName.data;
   $: dashboardDoesNotExist = $dashboard.error?.response?.status === 404;
 
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
@@ -99,7 +99,7 @@
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
-          <EditAlert {alertSpec} metricsViewName={$dashboardName.data} />
+          <EditAlert {alertSpec} {metricsViewName} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton>
@@ -134,7 +134,9 @@
                 </Tooltip>
               </div>
             {:else}
-              <a href={`/${organization}/${project}/${$dashboardName.data}`}>
+              <a
+                href={`/${organization}/${project}/explore/${$dashboardName.data}`}
+              >
                 {dashboardTitle}
               </a>
             {/if}
@@ -170,7 +172,7 @@
 
     <!-- Filters -->
     <AlertFilters
-      metricsViewName={$dashboardName.data}
+      {metricsViewName}
       filters={metricsViewAggregationRequest?.where}
       timeRange={metricsViewAggregationRequest?.timeRange}
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}

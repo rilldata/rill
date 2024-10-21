@@ -1,6 +1,6 @@
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 import {
-  AlertFormValues,
+  type AlertFormValues,
   getAlertQueryArgsFromFormValues,
 } from "@rilldata/web-common/features/alerts/form-utils";
 import { getComparisonProperties } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
@@ -10,11 +10,11 @@ import {
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
-  StructTypeField,
+  type StructTypeField,
   TypeCode,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
@@ -38,7 +38,12 @@ export function getAlertPreviewData(
   formValues: AlertFormValues,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
-    [useMetricsView(get(runtime).instanceId, formValues.metricsViewName)],
+    [
+      useMetricsViewValidSpec(
+        get(runtime).instanceId,
+        formValues.metricsViewName,
+      ),
+    ],
     ([metricsViewResp], set) =>
       createQueryServiceMetricsViewAggregation(
         get(runtime).instanceId,

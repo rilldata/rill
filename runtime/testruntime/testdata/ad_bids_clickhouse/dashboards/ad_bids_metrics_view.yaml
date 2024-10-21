@@ -1,5 +1,5 @@
 # Dashboard YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
 
 type: metrics_view
 title: Ad Bids

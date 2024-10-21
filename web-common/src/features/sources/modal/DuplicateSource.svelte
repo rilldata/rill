@@ -1,31 +1,32 @@
 <script lang="ts">
-  import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
-  import DialogCTA from "@rilldata/web-common/components/modal/dialog/DialogCTA.svelte";
-  import { createEventDispatcher, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import {
     DuplicateActions,
     duplicateSourceAction,
     duplicateSourceName,
   } from "../sources-store";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
 
-  const dispatch = createEventDispatcher();
+  export let onComplete: () => void;
+  export let onCancel: () => void;
 
-  function onCancel() {
+  function cancel() {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.Cancel;
-    dispatch("cancel");
+    onCancel();
   }
 
-  function onPrimaryAction() {
+  function keepBoth() {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.KeepBoth;
-    dispatch("complete");
+    onComplete();
   }
 
-  function onSecondaryAction() {
+  function overwriteSource() {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.Overwrite;
-    dispatch("complete");
+    onComplete();
   }
 
   onDestroy(() => {
@@ -33,22 +34,16 @@
   });
 </script>
 
-<p class="py-2">
+<Dialog.Description>
   A source with the name <b>{$duplicateSourceName}</b> already exists.
-</p>
+</Dialog.Description>
 
-<DialogFooter>
-  <DialogCTA
-    on:cancel={onCancel}
-    on:primary-action={onPrimaryAction}
-    on:secondary-action={onSecondaryAction}
-    showSecondary
-  >
-    <svelte:fragment slot="secondary-action-body"
-      ><slot name="secondary-action-body" />Replace Existing Source</svelte:fragment
-    >
-    <svelte:fragment slot="primary-action-body"
-      ><slot name="primary-action-body" />Keep Both</svelte:fragment
-    >
-  </DialogCTA>
-</DialogFooter>
+<Dialog.Footer>
+  <Button type="text" on:click={cancel}>Cancel</Button>
+
+  <Button type="text" on:click={overwriteSource}>
+    Replace Existing Source
+  </Button>
+
+  <Button type="primary" on:click={keepBoth}>Keep Both</Button>
+</Dialog.Footer>

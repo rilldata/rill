@@ -11,8 +11,8 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import { CreateQueryResult } from "@tanstack/svelte-query";
-import { Readable, derived, readable, writable } from "svelte/store";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { type Readable, derived, readable, writable } from "svelte/store";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,

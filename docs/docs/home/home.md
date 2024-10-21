@@ -17,23 +17,18 @@ rill start my-rill-project
 
 ## Tutorials
 
-import ComingSoon from '@site/src/components/ComingSoon';
-
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-
-
-If you're looking for a in-depth tutorial that walks you through our software and results in a finished project with all of our available features, head over to our [tutorials] to get started.
+If you're looking for a in-depth tutorial that walks you through our available features, click [here](../tutorials/index.md)! 
 
 Some of the Tutorials include:
 
-- [From Source to Deployment in 5 steps!] : Data Import, Transformation, Dashboard, to Deployment!
-- [How to Administrate Rill] : Administrative tasks from the CLI and UI that an administrator would need to know to be a Rill Administrator
-- [Rill's Cloud and Advanced Features] : In-depth of Rill Cloud Features and hands-on with Advanced Features
-- [Rill and ClickHouse] : For our friends coming from ClickHouse, get started in **4 steps**.
+- [From Source to Deployment in 5 steps!](../tutorials/rill_basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
+- [How to Administrate Rill](../tutorials/administration/) : Administrative tasks from the CLI and UI that an administrator would need to know to be a Rill Administrator
+- [Rill and ClickHouse](../tutorials/rill_clickhouse/r_ch_launch) : For our friends coming from ClickHouse, get started in **4 steps**.
+- Rill's Advanced Features : Coming soon!
 
-</div>
+The final project is available on our [example repository](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial). 
+
+
 ## Quick Starts & Examples
 
 If you need a reference point to get started, you can download our [example repository](https://github.com/rilldata/rill-examples/). 

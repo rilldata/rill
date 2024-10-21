@@ -5,26 +5,28 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
+import type {
   RpcStatus,
   V1Expression,
   V1GetResourceResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
   V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import {
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
-  type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryOptions,
   CreateQueryResult,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
-import { ErrorType } from "../../runtime-client/http-client";
+import type { ErrorType } from "../../runtime-client/http-client";
 
-export function useDashboard(
+export function useMetricsView(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   queryOptions?: CreateQueryOptions<
     V1GetResourceResponse,
     ErrorType<RpcStatus>,
@@ -33,16 +35,16 @@ export function useDashboard(
 ) {
   return useResource(
     instanceId,
-    metricViewName,
+    metricsViewName,
     ResourceKind.MetricsView,
     queryOptions,
   );
 }
 
-export function useValidDashboards(instanceId: string) {
+export function useValidExplores(instanceId: string) {
   // This is used in cloud as well so do not use "useClientFilteredResources"
-  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
-    data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
+  return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
+    data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
   );
 }
 
@@ -52,16 +54,17 @@ export function useValidCanvases(instanceId: string) {
   );
 }
 
-export function useValidVisualizations(instanceId: string) {
+export function useValidDashboards(instanceId: string) {
   return createRuntimeServiceListResources(
     instanceId,
     undefined, // TODO: it'd be nice if we could provide multiple kinds here
     {
       query: {
         select: (data) => {
-          // Filter for valid Metrics Explorers and all Custom Dashboards (which don't yet have a valid/invalid state)
+          // Filter for valid Explores and Canvases
           return data?.resources?.filter(
-            (res) => !!res.metricsView?.state?.validSpec || res.canvas,
+            (res) =>
+              !!res.explore?.state?.validSpec || !!res.canvas?.state?.validSpec,
           );
         },
       },
@@ -73,12 +76,12 @@ export function useValidVisualizations(instanceId: string) {
  * Gets the valid metrics view spec. Only to be used in displaying a dashboard.
  * Use {@link useDashboard} in the metrics view editor and other use cases.
  */
-export const useMetricsView = <T = V1MetricsViewSpec>(
+export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
 ) => {
-  return useResource<T>(instanceId, metricViewName, ResourceKind.MetricsView, {
+  return useResource<T>(instanceId, metricsViewName, ResourceKind.MetricsView, {
     select: (data) =>
       selector
         ? selector(data.resource?.metricsView?.state?.validSpec)
@@ -89,9 +92,13 @@ export const useMetricsView = <T = V1MetricsViewSpec>(
 // TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange
 export const useModelHasTimeSeries = (
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
 ) =>
-  useMetricsView(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
+  useMetricsViewValidSpec(
+    instanceId,
+    metricsViewName,
+    (meta) => !!meta?.timeDimension,
+  );
 
 export function useMetricsViewTimeRange(
   instanceId: string,
@@ -103,7 +110,7 @@ export function useMetricsViewTimeRange(
   const { query: queryOptions } = options ?? {};
 
   return derived(
-    [useMetricsView(instanceId, metricsViewName)],
+    [useMetricsViewValidSpec(instanceId, metricsViewName)],
     ([metricsView], set) =>
       createQueryServiceMetricsViewTimeRange(
         instanceId,
@@ -119,30 +126,14 @@ export function useMetricsViewTimeRange(
   );
 }
 
-export const useMetaMeasure = (
+export const useMetricsViewSpecMeasure = (
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   measureName: string,
 ) =>
-  useMetricsView(instanceId, metricViewName, (meta) =>
+  useMetricsViewValidSpec(instanceId, metricsViewName, (meta) =>
     meta?.measures?.find((measure) => measure.name === measureName),
   );
-
-export const useMetaDimension = (
-  instanceId: string,
-  metricViewName: string,
-  dimensionName: string,
-) =>
-  useMetricsView(instanceId, metricViewName, (meta) => {
-    const dim = meta?.dimensions?.find(
-      (dimension) => dimension.name === dimensionName,
-    );
-    return {
-      ...dim,
-      // this is for backwards compatibility when we used `name` as `column`
-      column: dim.column ?? dim.name,
-    };
-  });
 
 /**
  * Returns a copy of a V1MetricsViewFilter that does not include
@@ -159,13 +150,26 @@ export const getFiltersForOtherDimensions = (
   );
 };
 
-export const useGetDashboardsForModel = (
+export const useGetMetricsViewsForModel = (
   instanceId: string,
   modelName: string,
 ) => {
   return useClientFilteredResources(
     instanceId,
     ResourceKind.MetricsView,
-    (res) => res.metricsView?.spec?.table === modelName,
+    (res) =>
+      res.metricsView?.spec?.model === modelName ||
+      res.metricsView?.spec?.table === modelName,
+  );
+};
+
+export const useGetExploresForMetricsView = (
+  instanceId: string,
+  metricsViewName: string,
+) => {
+  return useClientFilteredResources(
+    instanceId,
+    ResourceKind.Explore,
+    (res) => res.explore?.spec?.metricsView === metricsViewName,
   );
 };

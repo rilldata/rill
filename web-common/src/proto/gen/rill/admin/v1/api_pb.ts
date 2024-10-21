@@ -104,6 +104,11 @@ export enum BillingIssueType {
    * @generated from enum value: BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
    */
   SUBSCRIPTION_CANCELLED = 6,
+
+  /**
+   * @generated from enum value: BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
+   */
+  NEVER_SUBSCRIBED = 7,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BillingIssueType)
 proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
@@ -114,6 +119,7 @@ proto3.util.setEnumType(BillingIssueType, "rill.admin.v1.BillingIssueType", [
   { no: 4, name: "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS" },
   { no: 5, name: "BILLING_ISSUE_TYPE_PAYMENT_FAILED" },
   { no: 6, name: "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED" },
+  { no: 7, name: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED" },
 ]);
 
 /**
@@ -1462,7 +1468,14 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+   * Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
+   *
+   * @generated from field: string type = 14;
+   */
+  type = "";
+
+  /**
+   * Deprecated: Alias for `type`.
    *
    * @generated from field: string kind = 4;
    */
@@ -1518,6 +1531,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 9, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 10, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 11, name: "attributes", kind: "message", T: Struct, oneof: "for" },
+    { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -3782,9 +3796,14 @@ export class SudoUpdateOrganizationBillingCustomerRequest extends Message<SudoUp
   organization = "";
 
   /**
-   * @generated from field: string billing_customer_id = 2;
+   * @generated from field: optional string billing_customer_id = 2;
    */
-  billingCustomerId = "";
+  billingCustomerId?: string;
+
+  /**
+   * @generated from field: optional string payment_customer_id = 3;
+   */
+  paymentCustomerId?: string;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationBillingCustomerRequest>) {
     super();
@@ -3795,7 +3814,8 @@ export class SudoUpdateOrganizationBillingCustomerRequest extends Message<SudoUp
   static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationBillingCustomerRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationBillingCustomerRequest {
@@ -3825,9 +3845,9 @@ export class SudoUpdateOrganizationBillingCustomerResponse extends Message<SudoU
   organization?: Organization;
 
   /**
-   * @generated from field: repeated rill.admin.v1.Subscription subscriptions = 2;
+   * @generated from field: rill.admin.v1.Subscription subscription = 2;
    */
-  subscriptions: Subscription[] = [];
+  subscription?: Subscription;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationBillingCustomerResponse>) {
     super();
@@ -3838,7 +3858,7 @@ export class SudoUpdateOrganizationBillingCustomerResponse extends Message<SudoU
   static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationBillingCustomerResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "message", T: Organization },
-    { no: 2, name: "subscriptions", kind: "message", T: Subscription, repeated: true },
+    { no: 2, name: "subscription", kind: "message", T: Subscription },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationBillingCustomerResponse {
@@ -3952,6 +3972,11 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
    */
   singleuserOrgs?: number;
 
+  /**
+   * @generated from field: optional int32 trial_orgs = 3;
+   */
+  trialOrgs?: number;
+
   constructor(data?: PartialMessage<SudoUpdateUserQuotasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3962,6 +3987,7 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "singleuser_orgs", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 3, name: "trial_orgs", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateUserQuotasRequest {
@@ -7241,26 +7267,34 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   ttlMinutes = protoInt64.zero;
 
   /**
-   * Metrics view the token will provide access to.
+   * Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
    *
-   * @generated from field: string metrics_view = 4;
+   * @generated from field: string resource_type = 8;
    */
-  metricsView = "";
+  resourceType = "";
 
   /**
-   * Optional filter to apply to all queries to the metrics view.
+   * Name of the resource to grant access to.
    *
-   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 5;
+   * @generated from field: string resource_name = 9;
    */
-  metricsViewFilter?: Expression;
+  resourceName = "";
 
   /**
-   * Optional list of names of dimensions and measures to limit access to.
-   * If empty, all dimensions and measures are accessible.
+   * Optional filter to apply as a row filter in queries.
+   * This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
    *
-   * @generated from field: repeated string metrics_view_fields = 6;
+   * @generated from field: rill.runtime.v1.Expression filter = 5;
    */
-  metricsViewFields: string[] = [];
+  filter?: Expression;
+
+  /**
+   * Optional list of fields to limit access to. If empty, no field access rule will be added.
+   * This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
+   *
+   * @generated from field: repeated string fields = 6;
+   */
+  fields: string[] = [];
 
   /**
    * Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
@@ -7272,7 +7306,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   /**
    * Optional public url title to store with the token.
    *
-   * @generated from field: string title = 8;
+   * @generated from field: string title = 10;
    */
   title = "";
 
@@ -7287,11 +7321,12 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "metrics_view_filter", kind: "message", T: Expression },
-    { no: 6, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "filter", kind: "message", T: Expression },
+    { no: 6, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -10202,6 +10237,11 @@ export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubsc
    */
   planName = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 3;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<UpdateBillingSubscriptionRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -10212,6 +10252,7 @@ export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubsc
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBillingSubscriptionRequest {
@@ -10228,6 +10269,49 @@ export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubsc
 
   static equals(a: UpdateBillingSubscriptionRequest | PlainMessage<UpdateBillingSubscriptionRequest> | undefined, b: UpdateBillingSubscriptionRequest | PlainMessage<UpdateBillingSubscriptionRequest> | undefined): boolean {
     return proto3.util.equals(UpdateBillingSubscriptionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateBillingSubscriptionResponse
+ */
+export class UpdateBillingSubscriptionResponse extends Message<UpdateBillingSubscriptionResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Organization organization = 1;
+   */
+  organization?: Organization;
+
+  /**
+   * @generated from field: rill.admin.v1.Subscription subscription = 2;
+   */
+  subscription?: Subscription;
+
+  constructor(data?: PartialMessage<UpdateBillingSubscriptionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateBillingSubscriptionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "message", T: Organization },
+    { no: 2, name: "subscription", kind: "message", T: Subscription },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBillingSubscriptionResponse {
+    return new UpdateBillingSubscriptionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateBillingSubscriptionResponse {
+    return new UpdateBillingSubscriptionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateBillingSubscriptionResponse {
+    return new UpdateBillingSubscriptionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateBillingSubscriptionResponse | PlainMessage<UpdateBillingSubscriptionResponse> | undefined, b: UpdateBillingSubscriptionResponse | PlainMessage<UpdateBillingSubscriptionResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateBillingSubscriptionResponse, a, b);
   }
 }
 
@@ -10300,45 +10384,94 @@ export class CancelBillingSubscriptionResponse extends Message<CancelBillingSubs
 }
 
 /**
- * @generated from message rill.admin.v1.UpdateBillingSubscriptionResponse
+ * @generated from message rill.admin.v1.RenewBillingSubscriptionRequest
  */
-export class UpdateBillingSubscriptionResponse extends Message<UpdateBillingSubscriptionResponse> {
+export class RenewBillingSubscriptionRequest extends Message<RenewBillingSubscriptionRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string plan_name = 2;
+   */
+  planName = "";
+
+  /**
+   * @generated from field: bool superuser_force_access = 3;
+   */
+  superuserForceAccess = false;
+
+  constructor(data?: PartialMessage<RenewBillingSubscriptionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RenewBillingSubscriptionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RenewBillingSubscriptionRequest {
+    return new RenewBillingSubscriptionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RenewBillingSubscriptionRequest {
+    return new RenewBillingSubscriptionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RenewBillingSubscriptionRequest {
+    return new RenewBillingSubscriptionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RenewBillingSubscriptionRequest | PlainMessage<RenewBillingSubscriptionRequest> | undefined, b: RenewBillingSubscriptionRequest | PlainMessage<RenewBillingSubscriptionRequest> | undefined): boolean {
+    return proto3.util.equals(RenewBillingSubscriptionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RenewBillingSubscriptionResponse
+ */
+export class RenewBillingSubscriptionResponse extends Message<RenewBillingSubscriptionResponse> {
   /**
    * @generated from field: rill.admin.v1.Organization organization = 1;
    */
   organization?: Organization;
 
   /**
-   * @generated from field: repeated rill.admin.v1.Subscription subscriptions = 2;
+   * @generated from field: rill.admin.v1.Subscription subscription = 2;
    */
-  subscriptions: Subscription[] = [];
+  subscription?: Subscription;
 
-  constructor(data?: PartialMessage<UpdateBillingSubscriptionResponse>) {
+  constructor(data?: PartialMessage<RenewBillingSubscriptionResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.UpdateBillingSubscriptionResponse";
+  static readonly typeName = "rill.admin.v1.RenewBillingSubscriptionResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "message", T: Organization },
-    { no: 2, name: "subscriptions", kind: "message", T: Subscription, repeated: true },
+    { no: 2, name: "subscription", kind: "message", T: Subscription },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBillingSubscriptionResponse {
-    return new UpdateBillingSubscriptionResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RenewBillingSubscriptionResponse {
+    return new RenewBillingSubscriptionResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateBillingSubscriptionResponse {
-    return new UpdateBillingSubscriptionResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RenewBillingSubscriptionResponse {
+    return new RenewBillingSubscriptionResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateBillingSubscriptionResponse {
-    return new UpdateBillingSubscriptionResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RenewBillingSubscriptionResponse {
+    return new RenewBillingSubscriptionResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UpdateBillingSubscriptionResponse | PlainMessage<UpdateBillingSubscriptionResponse> | undefined, b: UpdateBillingSubscriptionResponse | PlainMessage<UpdateBillingSubscriptionResponse> | undefined): boolean {
-    return proto3.util.equals(UpdateBillingSubscriptionResponse, a, b);
+  static equals(a: RenewBillingSubscriptionResponse | PlainMessage<RenewBillingSubscriptionResponse> | undefined, b: RenewBillingSubscriptionResponse | PlainMessage<RenewBillingSubscriptionResponse> | undefined): boolean {
+    return proto3.util.equals(RenewBillingSubscriptionResponse, a, b);
   }
 }
 
@@ -11189,42 +11322,32 @@ export class Subscription extends Message<Subscription> {
   id = "";
 
   /**
-   * @generated from field: string plan_id = 2;
+   * @generated from field: rill.admin.v1.BillingPlan plan = 2;
    */
-  planId = "";
+  plan?: BillingPlan;
 
   /**
-   * @generated from field: string plan_name = 3;
-   */
-  planName = "";
-
-  /**
-   * @generated from field: string plan_display_name = 4;
-   */
-  planDisplayName = "";
-
-  /**
-   * @generated from field: google.protobuf.Timestamp start_date = 5;
+   * @generated from field: google.protobuf.Timestamp start_date = 3;
    */
   startDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp end_date = 6;
+   * @generated from field: google.protobuf.Timestamp end_date = 4;
    */
   endDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp current_billing_cycle_start_date = 7;
+   * @generated from field: google.protobuf.Timestamp current_billing_cycle_start_date = 5;
    */
   currentBillingCycleStartDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp current_billing_cycle_end_date = 8;
+   * @generated from field: google.protobuf.Timestamp current_billing_cycle_end_date = 6;
    */
   currentBillingCycleEndDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp trial_end_date = 9;
+   * @generated from field: google.protobuf.Timestamp trial_end_date = 7;
    */
   trialEndDate?: Timestamp;
 
@@ -11237,14 +11360,12 @@ export class Subscription extends Message<Subscription> {
   static readonly typeName = "rill.admin.v1.Subscription";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "plan_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "start_date", kind: "message", T: Timestamp },
-    { no: 6, name: "end_date", kind: "message", T: Timestamp },
-    { no: 7, name: "current_billing_cycle_start_date", kind: "message", T: Timestamp },
-    { no: 8, name: "current_billing_cycle_end_date", kind: "message", T: Timestamp },
-    { no: 9, name: "trial_end_date", kind: "message", T: Timestamp },
+    { no: 2, name: "plan", kind: "message", T: BillingPlan },
+    { no: 3, name: "start_date", kind: "message", T: Timestamp },
+    { no: 4, name: "end_date", kind: "message", T: Timestamp },
+    { no: 5, name: "current_billing_cycle_start_date", kind: "message", T: Timestamp },
+    { no: 6, name: "current_billing_cycle_end_date", kind: "message", T: Timestamp },
+    { no: 7, name: "trial_end_date", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Subscription {
@@ -11273,6 +11394,11 @@ export class UserQuotas extends Message<UserQuotas> {
    */
   singleuserOrgs = 0;
 
+  /**
+   * @generated from field: int32 trial_orgs = 2;
+   */
+  trialOrgs = 0;
+
   constructor(data?: PartialMessage<UserQuotas>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11282,6 +11408,7 @@ export class UserQuotas extends Message<UserQuotas> {
   static readonly typeName = "rill.admin.v1.UserQuotas";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "singleuser_orgs", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "trial_orgs", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserQuotas {
@@ -11858,6 +11985,11 @@ export class MemberUser extends Message<MemberUser> {
   userName = "";
 
   /**
+   * @generated from field: string user_photo_url = 7;
+   */
+  userPhotoUrl = "";
+
+  /**
    * @generated from field: string role_name = 4;
    */
   roleName = "";
@@ -11883,6 +12015,7 @@ export class MemberUser extends Message<MemberUser> {
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
@@ -12204,19 +12337,24 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   attributes?: Struct;
 
   /**
-   * @generated from field: string metrics_view = 9;
+   * @generated from field: string resource_type = 15;
    */
-  metricsView = "";
+  resourceType = "";
 
   /**
-   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 10;
+   * @generated from field: string resource_name = 9;
    */
-  metricsViewFilter?: Expression;
+  resourceName = "";
 
   /**
-   * @generated from field: repeated string metrics_view_fields = 11;
+   * @generated from field: rill.runtime.v1.Expression filter = 10;
    */
-  metricsViewFields: string[] = [];
+  filter?: Expression;
+
+  /**
+   * @generated from field: repeated string fields = 11;
+   */
+  fields: string[] = [];
 
   /**
    * @generated from field: string state = 12;
@@ -12224,7 +12362,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   state = "";
 
   /**
-   * @generated from field: string title = 15;
+   * @generated from field: string title = 16;
    */
   title = "";
 
@@ -12246,11 +12384,12 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 6, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "created_by_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "attributes", kind: "message", T: Struct },
-    { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
-    { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "filter", kind: "message", T: Expression },
+    { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 15, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
@@ -12608,11 +12747,16 @@ export class BillingPlan extends Message<BillingPlan> {
   default = false;
 
   /**
-   * TODO expose pricing information
-   *
    * @generated from field: rill.admin.v1.Quotas quotas = 7;
    */
   quotas?: Quotas;
+
+  /**
+   * TODO expose pricing information
+   *
+   * @generated from field: bool public = 8;
+   */
+  public = false;
 
   constructor(data?: PartialMessage<BillingPlan>) {
     super();
@@ -12629,6 +12773,7 @@ export class BillingPlan extends Message<BillingPlan> {
     { no: 5, name: "trial_period_days", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 6, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "quotas", kind: "message", T: Quotas },
+    { no: 8, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingPlan {
@@ -12947,6 +13092,12 @@ export class BillingIssueMetadata extends Message<BillingIssueMetadata> {
      */
     value: BillingIssueMetadataSubscriptionCancelled;
     case: "subscriptionCancelled";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.BillingIssueMetadataNeverSubscribed never_subscribed = 7;
+     */
+    value: BillingIssueMetadataNeverSubscribed;
+    case: "neverSubscribed";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<BillingIssueMetadata>) {
@@ -12963,6 +13114,7 @@ export class BillingIssueMetadata extends Message<BillingIssueMetadata> {
     { no: 4, name: "no_billable_address", kind: "message", T: BillingIssueMetadataNoBillableAddress, oneof: "metadata" },
     { no: 5, name: "payment_failed", kind: "message", T: BillingIssueMetadataPaymentFailed, oneof: "metadata" },
     { no: 6, name: "subscription_cancelled", kind: "message", T: BillingIssueMetadataSubscriptionCancelled, oneof: "metadata" },
+    { no: 7, name: "never_subscribed", kind: "message", T: BillingIssueMetadataNeverSubscribed, oneof: "metadata" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadata {
@@ -13268,6 +13420,37 @@ export class BillingIssueMetadataSubscriptionCancelled extends Message<BillingIs
 
   static equals(a: BillingIssueMetadataSubscriptionCancelled | PlainMessage<BillingIssueMetadataSubscriptionCancelled> | undefined, b: BillingIssueMetadataSubscriptionCancelled | PlainMessage<BillingIssueMetadataSubscriptionCancelled> | undefined): boolean {
     return proto3.util.equals(BillingIssueMetadataSubscriptionCancelled, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.BillingIssueMetadataNeverSubscribed
+ */
+export class BillingIssueMetadataNeverSubscribed extends Message<BillingIssueMetadataNeverSubscribed> {
+  constructor(data?: PartialMessage<BillingIssueMetadataNeverSubscribed>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.BillingIssueMetadataNeverSubscribed";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataNeverSubscribed {
+    return new BillingIssueMetadataNeverSubscribed().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingIssueMetadataNeverSubscribed {
+    return new BillingIssueMetadataNeverSubscribed().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingIssueMetadataNeverSubscribed {
+    return new BillingIssueMetadataNeverSubscribed().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BillingIssueMetadataNeverSubscribed | PlainMessage<BillingIssueMetadataNeverSubscribed> | undefined, b: BillingIssueMetadataNeverSubscribed | PlainMessage<BillingIssueMetadataNeverSubscribed> | undefined): boolean {
+    return proto3.util.equals(BillingIssueMetadataNeverSubscribed, a, b);
   }
 }
 

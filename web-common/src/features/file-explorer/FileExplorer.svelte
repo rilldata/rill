@@ -10,7 +10,7 @@
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     getTopLevelFolder,
-    splitFolderAndName,
+    splitFolderAndFileName,
   } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmationDialog.svelte";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
@@ -123,7 +123,7 @@
     const isCurrentFile =
       $page.params.file && // handle case when user is on home page
       removeLeadingSlash(fromPath) === removeLeadingSlash($page.params.file);
-    const [, srcFile] = splitFolderAndName(fromPath);
+    const [, srcFile] = splitFolderAndFileName(fromPath);
     const newFilePath = `${toDir === "/" ? toDir : toDir + "/"}${srcFile}`;
 
     if (fromPath !== newFilePath) {

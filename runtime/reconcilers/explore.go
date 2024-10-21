@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
 )
 
 func init() {
@@ -122,74 +122,65 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	for _, d := range mv.Dimensions {
 		allDims = append(allDims, d.Name)
 	}
-	dims, err := r.resolveNames(allDims, spec.Dimensions, spec.DimensionsExclude)
+	spec.Dimensions, err = r.resolveFields(spec.Dimensions, spec.DimensionsSelector, allDims)
 	if err != nil {
 		return nil, err
 	}
-	spec.Dimensions = dims
-	spec.DimensionsExclude = false
+	spec.DimensionsSelector = nil
 
 	// Validate and rewrite measures
 	allMeasures := make([]string, 0, len(mv.Measures))
 	for _, m := range mv.Measures {
 		allMeasures = append(allMeasures, m.Name)
 	}
-	measures, err := r.resolveNames(allMeasures, spec.Measures, spec.MeasuresExclude)
+	spec.Measures, err = r.resolveFields(spec.Measures, spec.MeasuresSelector, allMeasures)
 	if err != nil {
 		return nil, err
 	}
-	spec.Measures = measures
-	spec.MeasuresExclude = false
+	spec.MeasuresSelector = nil
 
 	// Validate and rewrite presets, now in the context of the explore's dimensions and measures resolved above.
-	for _, p := range spec.Presets {
-		dims, err = r.resolveNames(spec.Dimensions, p.Dimensions, p.DimensionsExclude)
+	if spec.DefaultPreset != nil {
+		p := spec.DefaultPreset
+
+		dims, err := r.resolveFields(p.Dimensions, p.DimensionsSelector, spec.Dimensions)
 		if err != nil {
 			return nil, err
 		}
 		p.Dimensions = dims
-		p.DimensionsExclude = false
+		p.DimensionsSelector = nil
 
-		measures, err := r.resolveNames(spec.Measures, p.Measures, p.MeasuresExclude)
+		measures, err := r.resolveFields(p.Measures, p.MeasuresSelector, spec.Measures)
 		if err != nil {
 			return nil, err
 		}
 		p.Measures = measures
-		p.MeasuresExclude = false
+		p.MeasuresSelector = nil
 	}
 
 	// Done with rewriting
 	return spec, nil
 }
 
-func (r *ExploreReconciler) resolveNames(allNames, names []string, exclude bool) ([]string, error) {
-	// Optimization for the wildcard case (exclude nothing = include everything)
-	if len(names) == 0 && exclude {
-		return allNames, nil
-	}
-
-	// Check the provided names exist
-	allNamesMap := make(map[string]bool, len(allNames))
-	for _, n := range allNames {
-		allNamesMap[n] = true
-	}
-	for _, n := range names {
-		if !allNamesMap[n] {
-			return nil, fmt.Errorf("dimension or measure name %q not found in the parent metrics view", n)
+func (r *ExploreReconciler) resolveFields(selected []string, selector *runtimev1.FieldSelector, all []string) ([]string, error) {
+	// If no selector is provided, validate and return the selected fields.
+	if selector == nil {
+		allMap := make(map[string]struct{}, len(all))
+		for _, f := range all {
+			allMap[f] = struct{}{}
 		}
-	}
-
-	// If not excluding, return the provided names as is
-	if !exclude {
-		return names, nil
-	}
-
-	// Get all names not in the provided names
-	var res []string
-	for _, n := range allNames {
-		if !slices.Contains(names, n) {
-			res = append(res, n)
+		for _, f := range selected {
+			if _, ok := allMap[f]; !ok {
+				return nil, fmt.Errorf("dimension or measure name %q not found in the parent metrics view", f)
+			}
 		}
+		return selected, nil
+	}
+
+	// Resolve the selector (it includes validation of the resulting fields against `all` if needed).
+	res, err := fieldselectorpb.Resolve(selector, all)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve dimension or measure name selector: %w", err)
 	}
 	return res, nil
 }

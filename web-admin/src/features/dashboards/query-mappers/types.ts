@@ -1,5 +1,6 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
+  V1ExploreSpec,
   V1MetricsViewAggregationRequest,
   V1MetricsViewComparisonRequest,
   V1MetricsViewRowsRequest,
@@ -23,6 +24,7 @@ export type QueryMapperArgs<R extends QueryRequests> = {
   dashboard: MetricsExplorerEntity;
   req: R;
   metricsView: V1MetricsViewSpec;
+  explore: V1ExploreSpec;
   timeRangeSummary: V1TimeRangeSummary;
   executionTime: string;
   annotations: Record<string, string>;

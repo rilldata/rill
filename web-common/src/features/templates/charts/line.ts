@@ -1,4 +1,4 @@
-import { ChartField } from "./build-template";
+import type { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
 
 export function buildLine(

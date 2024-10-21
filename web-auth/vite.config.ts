@@ -1,11 +1,11 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
-import type { UserConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
 
-const config: UserConfig = {
+export default defineConfig({
   resolve: {
     alias: {
       "@rilldata/web-auth": "/src",
@@ -19,6 +19,4 @@ const config: UserConfig = {
     strictPort: true,
   },
   plugins: [sveltekit()],
-};
-
-export default config;
+});

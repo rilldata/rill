@@ -1,8 +1,8 @@
 import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import {
   createQueryServiceMetricsViewSearch,
-  V1MetricsViewSpec,
-  V1TimeRangeSummary,
+  type V1MetricsViewSpec,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { derived } from "svelte/store";
 

@@ -1,4 +1,4 @@
-import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import { type AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import { AllMeasureFilterTypeOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";

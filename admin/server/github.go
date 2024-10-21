@@ -88,6 +88,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		GithubUsername:      user.GithubUsername,
 		GithubRefreshToken:  refreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:      user.QuotaTrialOrgs,
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
@@ -261,6 +262,7 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 		GithubUsername:      user.GithubUsername,
 		GithubRefreshToken:  refreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:      user.QuotaTrialOrgs,
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
@@ -319,6 +321,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		GithubUsername:      user.GithubUsername,
 		GithubRefreshToken:  refreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:      user.QuotaTrialOrgs,
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
@@ -482,6 +485,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		GithubUsername:      githubUser.GetLogin(),
 		GithubRefreshToken:  refreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:      user.QuotaTrialOrgs,
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
@@ -655,6 +659,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		GithubUsername:      gitUser.GetLogin(),
 		GithubRefreshToken:  refreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:      user.QuotaTrialOrgs,
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {

@@ -115,6 +115,11 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 		return nil, err
 	}
 
+	spec := metricsView.GetMetricsView().State.ValidSpec
+	if spec == nil {
+		return nil, fmt.Errorf("metrics view spec is not valid")
+	}
+
 	err = r.runtime.Query(ctx, r.instanceID, r.query, r.args.Priority)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -132,7 +137,7 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 					break
 				}
 				if r.args.Format {
-					out = append(out, r.formatMetricsViewAggregationResult(row.AsMap(), q, metricsView.GetMetricsView().Spec.Measures))
+					out = append(out, r.formatMetricsViewAggregationResult(row.AsMap(), q, spec.Measures))
 					continue
 				}
 				out = append(out, row.AsMap())
@@ -145,7 +150,7 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 					break
 				}
 				if r.args.Format {
-					out = append(out, r.formatMetricsViewComparisonResult(row, q, metricsView.GetMetricsView().Spec.Measures))
+					out = append(out, r.formatMetricsViewComparisonResult(row, q, spec.Measures))
 					continue
 				}
 				r := make(map[string]any)

@@ -1,4 +1,4 @@
-import { ConnectError } from "@connectrpc/connect";
+import type { ConnectError } from "@connectrpc/connect";
 
 // rpc error: code = PermissionDenied desc = does not have permission to create assets
 const RPCErrorExtractor = /rpc error: code = (.*) desc = (.*)/;

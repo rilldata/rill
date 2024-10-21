@@ -1,11 +1,11 @@
 <script lang="ts">
+  import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import "regular-table";
   import type { RegularTableElement } from "regular-table";
   import { createEventDispatcher, onMount } from "svelte";
   import "./regular-table-style.css";
+  import { isEmptyPos, range } from "./regular-table-utils";
   import type { PivotPos, PivotRenderCallback } from "./types";
-  import { isEmptyPos, range } from "./util";
-  import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
   const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
   const NULL_CELL = `<div class="null-cell text-gray-400">-</div>`;

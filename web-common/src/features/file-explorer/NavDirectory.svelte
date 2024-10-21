@@ -1,7 +1,7 @@
 <script lang="ts">
   import NavDirectoryEntry from "@rilldata/web-common/features/file-explorer/NavDirectoryEntry.svelte";
   import {
-    NavDragData,
+    type NavDragData,
     navEntryDragDropStore,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import NavFile from "./NavFile.svelte";
