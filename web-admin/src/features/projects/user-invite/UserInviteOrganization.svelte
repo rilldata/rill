@@ -1,0 +1,92 @@
+<script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
+  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
+  import UserInviteOrganizationSetRole from "./UserInviteOrganizationSetRole.svelte";
+  import {
+    type V1MemberUsergroup,
+    createAdminServiceListUsergroupMemberUsers,
+  } from "@rilldata/web-admin/client";
+  import { createEventDispatcher } from "svelte";
+
+  export let organization: string;
+  export let project: string;
+  export let group: V1MemberUsergroup;
+
+  let isHovered = false;
+
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    group.groupName,
+  );
+
+  $: userGroupMemberUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+
+  let groupsList = new Map<string, { userEmail: string; roleName: string }[]>();
+  const dispatch = createEventDispatcher();
+
+  $: {
+    groupsList.clear();
+
+    userGroupMemberUsers.forEach((user) => {
+      const { userEmail } = user;
+      const { groupName, roleName } = group;
+
+      // Only process groups with admin role
+      // NOTE: This is to ensure we show overridden role tooltip for users who are viewers but have admin role in groups
+      if (roleName === "admin") {
+        if (!groupsList.has(groupName)) {
+          groupsList.set(groupName, []);
+        }
+
+        groupsList.get(groupName).push({ userEmail, roleName });
+      }
+    });
+
+    dispatch("updateGroupsList", { groupsList });
+  }
+</script>
+
+<Tooltip location="right" alignment="middle" distance={8}>
+  <div
+    role="button"
+    tabindex="0"
+    class="flex flex-row items-center gap-x-2 justify-between data-[hovered=true]:bg-slate-50 rounded-sm cursor-auto"
+    data-hovered={isHovered}
+    on:mouseover={() => (isHovered = true)}
+    on:mouseleave={() => (isHovered = false)}
+    on:focus={() => (isHovered = true)}
+    on:blur={() => (isHovered = false)}
+  >
+    <AvatarListItem
+      shape="square"
+      name={organization}
+      count={userGroupMemberUsersCount}
+      isEveryFromText
+    />
+    <UserInviteOrganizationSetRole {organization} {project} {group} />
+  </div>
+
+  <TooltipContent maxWidth="121px" slot="tooltip-content">
+    <ul>
+      {#each userGroupMemberUsers.slice(0, 6) as user}
+        <div class="flex items-center gap-1 py-1">
+          <Avatar
+            src={user.userPhotoUrl}
+            avatarSize="h-4 w-4"
+            fontSize="text-[10px]"
+            alt={user.userName}
+            bgColor={getRandomBgColor(user.userEmail)}
+          />
+          <li>{user.userName}</li>
+        </div>
+      {/each}
+      {#if userGroupMemberUsers.length > 6}
+        <li>and {userGroupMemberUsers.length - 6} more</li>
+      {/if}
+    </ul>
+  </TooltipContent>
+</Tooltip>
