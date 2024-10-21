@@ -58,15 +58,12 @@
   }
 
   $: errorText = "";
-  $: isRillCloud = false;
+  // $: isRillCloud = false;
 
   let isSSODisabled = false;
   let isEmailDisabled = false;
   let lastUsedConnection: string | null = null;
-
   let email = "";
-  let emailSubmitted = false;
-
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
 
@@ -100,9 +97,9 @@
     if (config?.extraParams?.screen_hint === "signup") {
       step = AuthStep.SignUp;
     }
-    if (cloudClientIDsArr.includes(config?.clientID)) {
-      isRillCloud = true;
-    }
+    // if (cloudClientIDsArr.includes(config?.clientID)) {
+    //   isRillCloud = true;
+    // }
 
     const params: AuthOptions = Object.assign(
       {
@@ -230,7 +227,6 @@
   function handleEmailSubmission(event) {
     email = event.detail.email;
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
-    emailSubmitted = true;
 
     if (connectionName) {
       step = AuthStep.SSO;
@@ -239,42 +235,36 @@
     }
   }
 
-  let headingText = "";
-
-  $: {
-    function getHeadingText() {
-      switch (step) {
-        case AuthStep.Base:
-          return "Log in or sign up";
-        case AuthStep.SSO:
-          return "Log in with SSO";
-        case AuthStep.EmailPassword:
-          return "Log in with email";
-        case AuthStep.SignUp:
-          return "Sign up with email";
-        case AuthStep.Thanks:
-          return "Thanks for signing up!";
-        default:
-          return "";
-      }
+  function getHeadingText(step: AuthStep): string {
+    switch (step) {
+      case AuthStep.Base:
+        return "Log in or sign up";
+      case AuthStep.SSO:
+        return "Log in with SSO";
+      case AuthStep.EmailPassword:
+        return "Log in with email";
+      case AuthStep.SignUp:
+        return "Sign up with email";
+      case AuthStep.Thanks:
+        return "Thanks for signing up!";
+      default:
+        return "";
     }
-    headingText = getHeadingText();
   }
 
-  let subheadingText = "";
-  $: {
-    function getSubheadingText() {
-      switch (step) {
-        case AuthStep.SSO:
-          return `SAML SSO enabled workspace is associated with ${email}`;
-        case AuthStep.EmailPassword:
-          return `Log in using ${email}`;
-        default:
-          return "";
-      }
+  function getSubheadingText(step: AuthStep, email: string): string {
+    switch (step) {
+      case AuthStep.SSO:
+        return `SAML SSO enabled workspace is associated with ${email}`;
+      case AuthStep.EmailPassword:
+        return `Log in using ${email}`;
+      default:
+        return "";
     }
-    subheadingText = getSubheadingText();
   }
+
+  $: headingText = getHeadingText(step);
+  $: subheadingText = getSubheadingText(step, email);
 
   onMount(() => {
     initConfig();
@@ -299,6 +289,11 @@
     </div>
 
     <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
+      {#if lastUsedConnection}
+        <div class="text-sm text-gray-500">
+          Last used connection: {lastUsedConnection}
+        </div>
+      {/if}
       {#if step === AuthStep.Base}
         {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
           <CtaButton
