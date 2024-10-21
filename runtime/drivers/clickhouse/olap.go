@@ -2,8 +2,10 @@ package clickhouse
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -503,7 +505,55 @@ func (c *connection) renameTable(ctx context.Context, oldName, newName, onCluste
 }
 
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return c.config.CanScaleToZero
+	if c.config.APIKeyID == "" {
+		// no api key provided resort to the config set
+		return c.config.CanScaleToZero
+	}
+
+	c.statusCheckMutex.Lock()
+	defer c.statusCheckMutex.Unlock()
+	// check if stauts is cached
+	if !c.statusCheckedAt.IsZero() && time.Since(c.statusCheckedAt) <= time.Minute*10 {
+		return c.scaledToZero
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://api.clickhouse.cloud/v1/organizations/%s/services/%s", c.config.OrganizationID, c.config.ServiceID), http.NoBody)
+	if err != nil {
+		c.logger.Warn("failed to create clickhouse cloud API request", zap.Error(err))
+		return c.config.CanScaleToZero
+	}
+	req.SetBasicAuth(c.config.APIKeyID, c.config.APIKeySecret)
+
+	resp, err := c.cloudAPI.Do(req)
+	if err != nil {
+		c.logger.Warn("failed to get clickhouse cloud API response", zap.Error(err))
+		return c.config.CanScaleToZero
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.logger.Warn("failed to get clickhouse cloud API response", zap.Int("status_code", resp.StatusCode))
+		return c.config.CanScaleToZero
+	}
+
+	// parse response
+	var response struct {
+		Result struct {
+			State string `json:"state"`
+		} `json:"result"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		c.logger.Warn("failed to decode clickhouse cloud API response", zap.Error(err))
+		return c.config.CanScaleToZero
+	}
+	scaledToZero := strings.EqualFold(response.Result.State, "idle")
+	// also cache the result
+	c.scaledToZero = scaledToZero
+	c.statusCheckedAt = time.Now()
+	return scaledToZero
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
