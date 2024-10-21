@@ -88,7 +88,6 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 
 	// subscription related workers
-	river.AddWorker(workers, &HandlePlanChangeBillingIssues{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &SubscriptionCancellationCheckWorker{admin: adm, logger: billingLogger})
 
 	// org related workers
@@ -284,31 +283,6 @@ func (c *Client) PaymentSuccess(ctx context.Context, billingCustomerID, invoiceI
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("PaymentSuccess job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID))
-	}
-
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
-func (c *Client) HandlePlanChangeBillingIssues(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, HandlePlanChangeBillingIssuesArgs{
-		OrgID:     orgID,
-		SubID:     subID,
-		PlanID:    planID,
-		StartDate: subStartDate,
-	}, &river.InsertOpts{
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("HandlePlanChangeBillingIssues job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("start_date", subStartDate))
 	}
 
 	return &jobs.InsertResult{

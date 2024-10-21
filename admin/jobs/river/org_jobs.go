@@ -116,8 +116,6 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 		return err
 	}
 
-	w.logger.Info("started trial for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("trial_end_date", sub.TrialEndDate.String()))
-
 	// send trial started email
 	err = w.admin.Email.SendTrialStarted(&email.TrialStarted{
 		ToEmail:      org.BillingEmail,

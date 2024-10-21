@@ -476,6 +476,14 @@ service AdminService {
     };
   }
 
+  // SudoExtendTrial extends the trial period for an organization
+  rpc SudoExtendTrial(SudoExtendTrialRequest) returns (SudoExtendTrialResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/trial/extend",
+      body: "*"
+    };
+  }
+
   // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
   // It only updates the custom domain in the database, which is used to ensure correct redirects.
   // The DNS records and ingress TLS must be configured separately.
@@ -1267,6 +1275,15 @@ message SudoUpdateOrganizationBillingCustomerRequest {
 message SudoUpdateOrganizationBillingCustomerResponse {
   Organization organization = 1;
   Subscription subscription = 2;
+}
+
+message SudoExtendTrialRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  int32 days = 2 [(validate.rules).int32 = {gt: 0, lte: 30}];
+}
+
+message SudoExtendTrialResponse {
+  google.protobuf.Timestamp trial_end = 1;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
@@ -2394,10 +2411,12 @@ message BillingIssueMetadata {
 
 message BillingIssueMetadataOnTrial {
   google.protobuf.Timestamp end_date = 1;
+  google.protobuf.Timestamp grace_period_end_date = 2;
 }
 
 message BillingIssueMetadataTrialEnded {
-  google.protobuf.Timestamp grace_period_end_date = 1;
+  google.protobuf.Timestamp end_date = 1;
+  google.protobuf.Timestamp grace_period_end_date = 2;
 }
 
 message BillingIssueMetadataNoPaymentMethod {}

@@ -57,7 +57,7 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 		}
 	}
 
-	gracePeriodEndDate := job.Args.DueDate.AddDate(0, 0, gracePeriodDays)
+	gracePeriodEndDate := job.Args.DueDate.AddDate(0, 0, database.BillingGracePeriodDays)
 	metadata.Invoices[job.Args.InvoiceID] = &database.BillingIssueMetadataPaymentFailedMeta{
 		ID:                 job.Args.InvoiceID,
 		Number:             job.Args.InvoiceNumber,
