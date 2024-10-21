@@ -168,7 +168,7 @@ export function formatDataType(value: unknown, type: string) {
     return JSON.stringify(value).replace(/"/g, "'");
   } else if (isList(type)) {
     return (
-      `[${(value as Array<unknown>)
+      `[${(value as Array<any>)
         ?.map((entry) => (+entry ? +entry : `'${entry}'`))
         ?.join(", ")}]` || `null`
     );
@@ -221,8 +221,9 @@ export function formatDataTypeAsDuckDbQueryString(
   } else if (isStruct(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   } else if (isList(type)) {
+    console.log("WHATTT");
     return (
-      `[${(value as Array<unknown>)
+      `[${(value as Array<any>)
         ?.map((entry) => (+entry ? +entry : `'${entry}'`))
         ?.join(", ")}]` || `null`
     );
@@ -231,6 +232,10 @@ export function formatDataTypeAsDuckDbQueryString(
   }
   return JSON.stringify(value).replace(/"/g, "'");
 }
+
+const what = "2";
+
+console.log(+what);
 
 /** These will be used in the string */
 export const PreviewRollupIntervalFormatter = {

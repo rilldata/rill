@@ -90,7 +90,7 @@
 
                 <div class="text-gray-500">
                   {#if reference?.totalRows}
-                    {`${formatCompactInteger(reference.totalRows)} rows` || ""}
+                    {`${formatCompactInteger(reference.totalRows)} rows`}
                   {/if}
                 </div>
               </a>

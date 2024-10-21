@@ -43,7 +43,7 @@ export function initColumnWidths<K>(params: {
   return columns.map((column) => {
     if (!resizableColumns) return minWidth;
 
-    const columnName = String(column[columnAccessor]) ?? "";
+    const columnName = String(column[columnAccessor]);
 
     const columnNameLength = columnName.length ?? 8;
 
