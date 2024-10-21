@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -442,6 +443,28 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		Organization: organizationToDTO(org),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
+}
+
+func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can trigger billing repair")
+	}
+
+	ids, err := s.admin.DB.FindOrganizationIDsWithoutBilling(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get organizations without billing id: %v", err))
+	}
+
+	for _, orgID := range ids {
+		_, err := s.admin.Jobs.RepairOrgBilling(ctx, orgID, s.admin.Biller.Name())
+		if err != nil {
+			s.logger.Named("billing").Error("failed to submit repair billing job", zap.String("org_id", orgID), zap.Error(err))
+			continue
+		}
+	}
+
+	return &adminv1.SudoTriggerBillingRepairResponse{}, nil
 }
 
 func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPublicBillingPlansRequest) (*adminv1.ListPublicBillingPlansResponse, error) {
