@@ -22,17 +22,6 @@ type Health struct {
 // We want to avoid hitting the underlying OLAP engine when OLAP engine can scale to zero when no queries are generated within TTL.
 // We do not want to keep it running just to check health. In such cases, we use the cached health information.
 type InstanceHealth struct {
-<<<<<<< HEAD
-	// always recomputed
-	Controller string
-	Repo       string
-
-	// cached
-	OLAP         string
-	MetricsViews map[string]metricsViewHealth
-
-	ControllerVersion int64
-=======
 	Controller string `json:"controller"`
 	// OLAP error can be cached
 	OLAP string `json:"olap"`
@@ -49,7 +38,6 @@ type InstanceHealth struct {
 type InstanceHealthMetricsViewError struct {
 	Err     string `json:"err"`
 	Version int64  `json:"version"`
->>>>>>> origin/main
 }
 
 func (r *Runtime) Health(ctx context.Context) (*Health, error) {
@@ -86,15 +74,12 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		return res, nil
 	}
 
-<<<<<<< HEAD
-=======
 	parser, err := ctrl.Get(ctx, GlobalProjectParserName, false)
 	if err != nil {
 		return nil, err
 	}
 	res.ParseErrCount = len(parser.GetProjectParser().State.ParseErrors)
 
->>>>>>> origin/main
 	cachedHealth, _ := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version)
 	// set to true if any of the olap engines can be scaled to zero
 	var canScaleToZero bool
@@ -104,11 +89,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	if err != nil {
 		res.OLAP = err.Error()
 	} else {
-<<<<<<< HEAD
-		mayBeScaledToZero := olap.CanScaleToZero()
-=======
 		mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
->>>>>>> origin/main
 		canScaleToZero = canScaleToZero || mayBeScaledToZero
 		if cachedHealth != nil && mayBeScaledToZero {
 			res.OLAP = cachedHealth.OLAP
@@ -121,16 +102,6 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		release()
 	}
 
-<<<<<<< HEAD
-	// run queries against metrics views
-	resources, err := ctrl.List(ctx, ResourceKindMetricsView, "", false)
-	if err != nil {
-		return nil, err
-	}
-	res.MetricsViews = make(map[string]metricsViewHealth, len(resources))
-	for _, mv := range resources {
-		if mv.GetMetricsView().State.ValidSpec == nil {
-=======
 	// check resources with reconcile errors
 	resources, err := ctrl.List(ctx, "", "", false)
 	if err != nil {
@@ -146,24 +117,15 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	res.MetricsViews = make(map[string]InstanceHealthMetricsViewError, len(resources))
 	for _, mv := range resources {
 		if mv.GetMetricsView() == nil || mv.GetMetricsView().State.ValidSpec == nil {
->>>>>>> origin/main
 			continue
 		}
 		olap, release, err := r.OLAP(ctx, instanceID, mv.GetMetricsView().State.ValidSpec.Connector)
 		if err != nil {
-<<<<<<< HEAD
-			res.MetricsViews[mv.Meta.Name.Name] = metricsViewHealth{err: err.Error()}
-			release()
-			continue
-		}
-		mayBeScaledToZero := olap.CanScaleToZero()
-=======
 			res.MetricsViews[mv.Meta.Name.Name] = InstanceHealthMetricsViewError{Err: err.Error()}
 			release()
 			continue
 		}
 		mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
->>>>>>> origin/main
 		canScaleToZero = canScaleToZero || mayBeScaledToZero
 		release()
 
@@ -177,38 +139,21 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		}
 		_, err = r.Resolve(ctx, &ResolveOptions{
 			InstanceID:         ctrl.InstanceID,
-<<<<<<< HEAD
-			Resolver:           "metricsview_time_range",
-=======
 			Resolver:           "metrics_time_range",
->>>>>>> origin/main
 			ResolverProperties: map[string]any{"metrics_view": mv.Meta.Name.Name},
 			Args:               map[string]any{"priority": 10},
 			Claims:             &SecurityClaims{SkipChecks: true},
 		})
 
-<<<<<<< HEAD
-		mvHealth := metricsViewHealth{Version: mv.Meta.StateVersion}
-		if err != nil {
-			mvHealth.err = err.Error()
-=======
 		mvHealth := InstanceHealthMetricsViewError{
 			Version: mv.Meta.StateVersion,
 		}
 		if err != nil {
 			mvHealth.Err = err.Error()
->>>>>>> origin/main
 		}
 		res.MetricsViews[mv.Meta.Name.Name] = mvHealth
 	}
 
-<<<<<<< HEAD
-	if !canScaleToZero {
-		return res, nil
-	}
-
-=======
->>>>>>> origin/main
 	// save to cache
 	res.ControllerVersion = ctrl.catalog.version
 	bytes, err := json.Marshal(res)
@@ -224,11 +169,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 
 	err = catalog.UpsertInstanceHealth(ctx, &drivers.InstanceHealth{
 		InstanceID: instanceID,
-<<<<<<< HEAD
-		Health:     bytes,
-=======
 		HealthJSON: bytes,
->>>>>>> origin/main
 	})
 	if err != nil {
 		return nil, err
@@ -250,11 +191,7 @@ func (r *Runtime) cachedInstanceHealth(ctx context.Context, instanceID string, c
 	}
 
 	c := &InstanceHealth{}
-<<<<<<< HEAD
-	err = json.Unmarshal(cached.Health, c)
-=======
 	err = json.Unmarshal(cached.HealthJSON, c)
->>>>>>> origin/main
 	if err != nil || ctrlVersion != c.ControllerVersion {
 		return nil, false
 	}
@@ -287,24 +224,6 @@ func (h *InstanceHealth) To() *runtimev1.InstanceHealth {
 		return nil
 	}
 	r := &runtimev1.InstanceHealth{
-<<<<<<< HEAD
-		ControllerError: h.Controller,
-		RepoError:       h.Repo,
-		OlapError:       h.OLAP,
-	}
-	r.MetricsViewErrors = make(map[string]string, len(h.MetricsViews))
-	for k, v := range h.MetricsViews {
-		if v.err != "" {
-			r.MetricsViewErrors[k] = v.err
-		}
-	}
-	return r
-}
-
-type metricsViewHealth struct {
-	err     string
-	Version int64
-=======
 		ControllerError:     h.Controller,
 		RepoError:           h.Repo,
 		OlapError:           h.OLAP,
@@ -318,5 +237,4 @@ type metricsViewHealth struct {
 		}
 	}
 	return r
->>>>>>> origin/main
 }

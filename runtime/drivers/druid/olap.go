@@ -126,15 +126,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
-<<<<<<< HEAD
-func (c *connection) CanScaleToZero() bool {
+func (c *connection) MayBeScaledToZero() bool {
 	return false
 }
 
 func (c *connection) ScaledToZero(ctx context.Context) bool {
-=======
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
->>>>>>> origin/main
 	return false
 }
 

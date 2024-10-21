@@ -5,24 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-<<<<<<< HEAD
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
-	"github.com/rilldata/rill/runtime/queries"
-)
-
-func init() {
-	runtime.RegisterResolverInitializer("metricsview_time_range", newMetricsViewTimeRangeResolver)
-}
-
-type metricsViewTimeRangeResolver struct {
-	runtime    *runtime.Runtime
-	instanceID string
-	query      *queries.MetricsViewTimeRange
-	args       *metricsViewTimeRangeResolverArgs
-=======
 	"strconv"
 	"time"
 
@@ -54,7 +36,6 @@ type metricsViewTimeRangeResolver struct {
 	mv                 *runtimev1.MetricsViewSpec
 	resolvedMVSecurity *runtime.ResolvedSecurity
 	args               *metricsViewTimeRangeResolverArgs
->>>>>>> origin/main
 }
 
 type metricsViewTimeRangeResolverArgs struct {
@@ -91,13 +72,10 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-<<<<<<< HEAD
-=======
 	if mv.TimeDimension == "" {
 		return nil, fmt.Errorf("metrics view '%s' does not have a time dimension", tr.MetricsView)
 	}
 
->>>>>>> origin/main
 	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
@@ -107,19 +85,6 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, runtime.ErrForbidden
 	}
 
-<<<<<<< HEAD
-	query := &queries.MetricsViewTimeRange{
-		MetricsViewName:    tr.MetricsView,
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
-	}
-
-	return &metricsViewTimeRangeResolver{
-		runtime:    opts.Runtime,
-		instanceID: opts.InstanceID,
-		query:      query,
-		args:       args,
-=======
 	return &metricsViewTimeRangeResolver{
 		runtime:            opts.Runtime,
 		instanceID:         opts.InstanceID,
@@ -127,7 +92,6 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		mv:                 mv,
 		resolvedMVSecurity: security,
 		args:               args,
->>>>>>> origin/main
 	}, nil
 }
 
@@ -140,13 +104,6 @@ func (r *metricsViewTimeRangeResolver) Cacheable() bool {
 }
 
 func (r *metricsViewTimeRangeResolver) Key() string {
-<<<<<<< HEAD
-	return r.query.Key()
-}
-
-func (r *metricsViewTimeRangeResolver) Refs() []*runtimev1.ResourceName {
-	return r.query.Deps()
-=======
 	hash, err := hashstructure.Hash(r.mvName, hashstructure.FormatV2, nil)
 	if err != nil {
 		panic(err)
@@ -156,7 +113,6 @@ func (r *metricsViewTimeRangeResolver) Refs() []*runtimev1.ResourceName {
 
 func (r *metricsViewTimeRangeResolver) Refs() []*runtimev1.ResourceName {
 	return []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.mvName}}
->>>>>>> origin/main
 }
 
 func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
@@ -164,9 +120,6 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-<<<<<<< HEAD
-	err := r.runtime.Query(ctx, r.instanceID, r.query, r.args.Priority)
-=======
 	olap, release, err := r.runtime.OLAP(ctx, r.instanceID, r.mv.Connector)
 	if err != nil {
 		return nil, err
@@ -186,26 +139,10 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 	default:
 		return nil, fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
->>>>>>> origin/main
 	if err != nil {
 		return nil, err
 	}
 
-<<<<<<< HEAD
-	// TODO :: Also add interval
-	tr := r.query.Result.TimeRangeSummary
-	row := map[string]any{}
-	if tr.Min != nil {
-		row["min"] = tr.Min.AsTime()
-	}
-	if tr.Max != nil {
-		row["max"] = tr.Max.AsTime()
-	}
-	schema := &runtimev1.StructType{
-		Fields: []*runtimev1.StructType_Field{
-			{Name: "min", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
-			{Name: "max", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
-=======
 	row := map[string]any{}
 	if tr.Min != nil {
 		row["min"] = tr.Min.AsTime()
@@ -231,7 +168,6 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 				},
 				Nullable: true,
 			}},
->>>>>>> origin/main
 		},
 	}
 	return runtime.NewMapsResolverResult([]map[string]any{row}, schema), nil
@@ -240,8 +176,6 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }
-<<<<<<< HEAD
-=======
 
 func (r *metricsViewTimeRangeResolver) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) (*runtimev1.TimeRangeSummary, error) {
 	rangeSQL := fmt.Sprintf(
@@ -457,4 +391,3 @@ func handleDuckDBInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, e
 func escapeMetricsViewTable(d drivers.Dialect, mv *runtimev1.MetricsViewSpec) string {
 	return d.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
 }
->>>>>>> origin/main
