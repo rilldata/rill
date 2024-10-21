@@ -107,7 +107,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
 				}
-				if u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
+				if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
 					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
 				}
 			}
@@ -360,16 +360,21 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingCustomerRequest) (*adminv1.SudoUpdateOrganizationBillingCustomerResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
-		attribute.String("args.billing_customer_id", req.BillingCustomerId),
 	)
+	if req.BillingCustomerId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.billing_customer_id", *req.BillingCustomerId))
+	}
+	if req.PaymentCustomerId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.payment_customer_id", *req.PaymentCustomerId))
+	}
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage billing customer")
 	}
 
-	if req.BillingCustomerId == "" {
-		return nil, status.Error(codes.InvalidArgument, "billing customer id is required")
+	if req.BillingCustomerId == nil && req.PaymentCustomerId == nil {
+		return nil, status.Error(codes.InvalidArgument, "either or both billing and payment customer id must be provided")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -388,10 +393,30 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-		BillingCustomerID:                   req.BillingCustomerId,
-		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingCustomerID:                   valOrDefault(req.BillingCustomerId, org.BillingCustomerID),
+		PaymentCustomerID:                   valOrDefault(req.PaymentCustomerId, org.PaymentCustomerID),
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+	}
+
+	var sub *billing.Subscription
+	if req.BillingCustomerId != nil {
+		// get active subscriptions if present
+		sub, err = s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+		if err != nil {
+			if !errors.Is(err, billing.ErrNotFound) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		if sub != nil {
+			opts.QuotaProjects = biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects)
+			opts.QuotaDeployments = biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments)
+			opts.QuotaSlotsTotal = biggerOfInt(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal)
+			opts.QuotaSlotsPerDeployment = biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
+			opts.QuotaOutstandingInvites = biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
+			opts.QuotaStorageLimitBytesPerDeployment = biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
+		}
 	}
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -399,15 +424,18 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		return nil, err
 	}
 
-	// get active subscriptions if present
-	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
-	if err != nil {
-		if errors.Is(err, billing.ErrNotFound) {
-			return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-				Organization: organizationToDTO(org),
-			}, nil
+	if req.PaymentCustomerId != nil {
+		// link the payment customer to the billing customer
+		err = s.admin.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, billing.PaymentProviderStripe, *req.PaymentCustomerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if sub == nil {
+		return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
+			Organization: organizationToDTO(org),
+		}, nil
 	}
 
 	return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
@@ -581,6 +609,7 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 		Description:     plan.Description,
 		TrialPeriodDays: uint32(plan.TrialPeriodDays),
 		Default:         plan.Default,
+		Public:          plan.Public,
 		Quotas: &adminv1.Quotas{
 			Projects:                       valOrEmptyString(plan.Quotas.NumProjects),
 			Deployments:                    valOrEmptyString(plan.Quotas.NumDeployments),
@@ -749,4 +778,36 @@ func comparableInt64(v *int64) int64 {
 		return math.MaxInt64
 	}
 	return *v
+}
+
+func biggerOfInt(ptr *int, def int) int {
+	if ptr == nil {
+		return def
+	}
+
+	if *ptr < 0 || def < 0 {
+		return -1
+	}
+
+	if *ptr > def {
+		return *ptr
+	}
+
+	return def
+}
+
+func biggerOfInt64(ptr *int64, def int64) int64 {
+	if ptr == nil {
+		return def
+	}
+
+	if *ptr < 0 || def < 0 {
+		return -1
+	}
+
+	if *ptr > def {
+		return *ptr
+	}
+
+	return def
 }

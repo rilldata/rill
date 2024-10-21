@@ -667,7 +667,7 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_trial_orgs, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaTrialOrgs, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}
@@ -1915,7 +1915,7 @@ func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]stri
 
 func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error) {
 	var res []string
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = '' OR payment_customer_id = ''`)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = ''`)
 	if err != nil {
 		return nil, parseErr("billing orgs without billing or payment info", err)
 	}

@@ -16,11 +16,11 @@
 
   $: ({ isFetching, assembled } = $pivotDataStore);
 
-  $: ({ metricsViewName, dashboardStore } = stateManagers);
+  $: ({ exploreName, dashboardStore } = stateManagers);
 
   function removeActiveCell() {
     if (!$dashboardStore.pivot.activeCell) return;
-    metricsExplorerStore.removePivotActiveCell($metricsViewName);
+    metricsExplorerStore.removePivotActiveCell($exploreName);
   }
 </script>
 

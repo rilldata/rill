@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -194,15 +193,17 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	if emailChanged {
-		err = s.admin.Biller.UpdateCustomerEmail(ctx, org.BillingCustomerID, org.BillingEmail)
-		if err != nil {
-			s.logger.Error("failed to update billing email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
-			return nil, status.Error(codes.Internal, err.Error())
+		if org.BillingCustomerID != "" {
+			err = s.admin.Biller.UpdateCustomerEmail(ctx, org.BillingCustomerID, org.BillingEmail)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to update billing email in biller: %v", err)
+			}
 		}
-		err = s.admin.PaymentProvider.UpdateCustomerEmail(ctx, org.PaymentCustomerID, org.BillingEmail)
-		if err != nil {
-			s.logger.Error("failed to update billing email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
-			return nil, status.Error(codes.Internal, err.Error())
+		if org.PaymentCustomerID != "" {
+			err = s.admin.PaymentProvider.UpdateCustomerEmail(ctx, org.PaymentCustomerID, org.BillingEmail)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to update billing email in payment provider: %v", err)
+			}
 		}
 	}
 

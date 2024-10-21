@@ -126,6 +126,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil

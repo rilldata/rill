@@ -20,7 +20,7 @@ You can also change settings in the dashboard configuration to hide certain fiel
 
 Or, an administrator can set the default view of a dashboard by [bookmarking the view](../bookmarks.md) as Home. 
 :::
-## Dimension & Measure Filters 
+## Dimension & Measure & Time Filters 
 
 ### Filter by Dimensions
 
@@ -55,6 +55,16 @@ Metric filters are a good way to "sort" by two different metrics. First, apply y
 As an example - to see most active enterprise customers - filter all customers with revenue greater than $1000 then sorted by number of users increased descending.
 :::
 
+### Filter by Scrubbing 
+
+For a specific view into your time series graph, you can interactively scrub directly on the time series graph. 
+
+
+<img src = '/img/explore/filters/scrub-graph.gif' class='rounded-gif' />
+<br />
+
+This allows the ability for a more detailed view into your time series without having to change the overall time series filter for quick access to measures. 
+
 ## Time & Dimension Comparisons
 
 ![img](/img/explore/filters/time-series.png)
@@ -66,7 +76,7 @@ Time comparison is a key feature of Rill and recommended to find insights quicke
 <img src = '/img/explore/alerts/time-series.gif' class='rounded-gif' />
 <br />
 :::note
-Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](/reference/project-files/dashboards) for more details
+Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](/reference/project-files/explore-dashboards) for more details
 :::
 
 
@@ -88,3 +98,4 @@ De-select the comparison option or clear the filter bar to remove your compariso
 :::note
 For more advanced time and dimension comparisons, visit the [Time Dimension Detail](tdd.md) page.
 :::
+

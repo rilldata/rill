@@ -106,6 +106,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 type informationSchema struct {
 	c *connection
 }

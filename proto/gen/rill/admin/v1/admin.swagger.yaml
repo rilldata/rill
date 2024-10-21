@@ -3714,6 +3714,8 @@ definitions:
         type: boolean
       quotas:
         $ref: '#/definitions/v1Quotas'
+      public:
+        type: boolean
         title: TODO expose pricing information
   v1Bookmark:
     type: object
@@ -4872,6 +4874,8 @@ definitions:
       organization:
         type: string
       billingCustomerId:
+        type: string
+      paymentCustomerId:
         type: string
   v1SudoUpdateOrganizationBillingCustomerResponse:
     type: object

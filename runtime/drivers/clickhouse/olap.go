@@ -296,6 +296,10 @@ func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
 	}
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return c.config.CanScaleToZero
+}
+
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, oldName, newName string, view bool) error {
 	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", oldName)
