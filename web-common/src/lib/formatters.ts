@@ -167,11 +167,11 @@ export function formatDataType(value: unknown, type: string) {
   } else if (isStruct(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   } else if (isList(type)) {
-    return (
-      `[${(value as Array<any>)
-        ?.map((entry) => (+entry ? +entry : `'${entry}'`))
-        ?.join(", ")}]` || `null`
-    );
+    return value !== undefined && value !== null
+      ? `[${(value as Array<any>)
+          ?.map((entry) => (+entry ? +entry : `'${entry}'`))
+          ?.join(", ")}]`
+      : `null`;
   } else if (isNested(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   }
@@ -221,12 +221,11 @@ export function formatDataTypeAsDuckDbQueryString(
   } else if (isStruct(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   } else if (isList(type)) {
-    console.log("WHATTT");
-    return (
-      `[${(value as Array<any>)
-        ?.map((entry) => (+entry ? +entry : `'${entry}'`))
-        ?.join(", ")}]` || `null`
-    );
+    return value !== undefined && value !== null
+      ? `[${(value as Array<any>)
+          ?.map((entry) => (+entry ? +entry : `'${entry}'`))
+          ?.join(", ")}]`
+      : `null`;
   } else if (isNested(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   }
