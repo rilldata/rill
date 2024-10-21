@@ -23,8 +23,13 @@
   export let borderTop = false;
   export let borderBottom = false;
   export let uri: string | undefined;
-  export let firstColumnWidth: number;
-  export let columnWidth: number;
+  export let columnWidths: {
+    dimension: number;
+    value: number;
+    percentOfTotal: number;
+    delta: number;
+    deltaPercent: number;
+  };
   export let gutterWidth: number;
 
   let hovered = false;
@@ -96,21 +101,36 @@
       ? "var(--color-primary-200)"
       : "var(--color-primary-100)";
 
-  // Bar gradient has to be split up across cells because of a bug in Safari
-  // This is not necessary in other browsers, but doing it this way ensures consistency
-
-  $: secondCellBarLength = clamp(0, barLength - firstColumnWidth, columnWidth);
-  $: thirdCellBarLength = clamp(
+  $: secondCellBarLength = clamp(
     0,
-    barLength - (firstColumnWidth + columnWidth),
-    columnWidth,
+    barLength - columnWidths.dimension,
+    columnWidths.value,
   );
-  $: fourthCellBarLength = clamp(
-    0,
-    Math.max(barLength - (firstColumnWidth + columnWidth * 2), 0),
-    columnWidth,
-  );
+  $: thirdCellBarLength = isTimeComparisonActive
+    ? clamp(
+        0,
+        barLength - columnWidths.dimension - columnWidths.value,
+        columnWidths.delta,
+      )
+    : isValidPercentOfTotal
+      ? clamp(
+          0,
+          barLength - columnWidths.dimension - columnWidths.value,
+          columnWidths.percentOfTotal,
+        )
+      : 0;
+  $: fourthCellBarLength = isTimeComparisonActive
+    ? clamp(
+        0,
+        barLength -
+          columnWidths.dimension -
+          columnWidths.value -
+          columnWidths.delta,
+        columnWidths.deltaPercent,
+      )
+    : 0;
 
+  // Update the gradients
   $: firstCellGradient = `linear-gradient(to right, ${barColor}
     ${barLength}px, transparent ${barLength}px)`;
 
@@ -129,7 +149,7 @@
     ${fourthCellBarLength}px, transparent ${fourthCellBarLength}px)`
     : undefined;
 
-  $: showZigZag = barLength > tableWidth;
+  $: showZigZag = barLength > tableWidth - gutterWidth;
 
   // uri template or "true" string literal or undefined
   function makeHref(uriTemplateOrBoolean: string | undefined) {
