@@ -517,6 +517,8 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 		return c.scaledToZero
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://api.clickhouse.cloud/v1/organizations/%s/services/%s", c.config.OrganizationID, c.config.ServiceID), http.NoBody)
 	if err != nil {
 		c.logger.Warn("failed to create clickhouse cloud API request", zap.Error(err))

@@ -41,7 +41,6 @@ type OLAPStore interface {
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
 
-	// MayBeScaledToZero returns true if the OLAP store can be scaled to zero.
 	MayBeScaledToZero(ctx context.Context) bool
 }
 

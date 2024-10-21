@@ -9,8 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-type DashboardHealthQuery func(ctx context.Context, instanceID, name string) (Query, error)
-
 type Health struct {
 	HangingConn     error
 	Registry        error
