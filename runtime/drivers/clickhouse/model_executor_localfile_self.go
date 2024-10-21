@@ -162,7 +162,8 @@ func (e *localFileToSelfExecutor) inferColumns(ctx context.Context, opts *driver
 	}
 	defer os.RemoveAll(tempDir)
 	connector, err := duckdb.NewConnector(filepath.Join(tempDir, "temp.db?threads=1&max_memory=256MB"), func(execer sqldriver.ExecerContext) error {
-		return nil
+		_, err = execer.ExecContext(ctx, "SET autoinstall_known_extensions=1; SET autoload_known_extensions=1;", nil)
+		return err
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create duckdb connector: %w", err)
