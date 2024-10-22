@@ -279,7 +279,7 @@ func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
 		})
 		// then drop the temp table
 		_ = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", tempTableForDictionary(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
 			Priority: 100,
 		})
 		return err

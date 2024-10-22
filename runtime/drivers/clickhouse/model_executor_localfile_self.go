@@ -135,13 +135,11 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		if err != nil {
 			return nil, fmt.Errorf("failed to create dictionary: %w", err)
 		}
-	} else {
+	} else if stagingTableName != tableName {
 		// Rename the staging table to the final table name
-		if stagingTableName != tableName {
-			err = olapForceRenameTable(ctx, e.c, stagingTableName, false, tableName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to rename staged model: %w", err)
-			}
+		err = olapForceRenameTable(ctx, e.c, stagingTableName, false, tableName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to rename staged model: %w", err)
 		}
 	}
 
