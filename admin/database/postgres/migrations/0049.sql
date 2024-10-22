@@ -8,3 +8,4 @@ CREATE TABLE report_tokens (
 );
 
 CREATE INDEX report_tokens_report_name_idx ON report_tokens (report_name);
+CREATE INDEX report_tokens_magic_auth_token_id_idx ON report_tokens (magic_auth_token_id);
