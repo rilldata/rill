@@ -87,7 +87,6 @@ import type {
   V1EditReportResponse,
   V1TriggerReportResponse,
   V1UnsubscribeReportResponse,
-  AdminServiceUnsubscribeReportBody,
   V1RequestProjectAccessResponse,
   V1ListMagicAuthTokensResponse,
   AdminServiceListMagicAuthTokensParams,
@@ -3179,13 +3178,13 @@ export const adminServiceUnsubscribeReport = (
   organization: string,
   project: string,
   name: string,
-  adminServiceUnsubscribeReportBody: AdminServiceUnsubscribeReportBody,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
 ) => {
   return httpClient<V1UnsubscribeReportResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/reports/${name}/unsubscribe`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceUnsubscribeReportBody,
+    data: adminServiceTriggerReconcileBodyBody,
   });
 };
 
@@ -3193,7 +3192,7 @@ export type AdminServiceUnsubscribeReportMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>
 >;
 export type AdminServiceUnsubscribeReportMutationBody =
-  AdminServiceUnsubscribeReportBody;
+  AdminServiceTriggerReconcileBodyBody;
 export type AdminServiceUnsubscribeReportMutationError = RpcStatus;
 
 export const createAdminServiceUnsubscribeReport = <
@@ -3207,7 +3206,7 @@ export const createAdminServiceUnsubscribeReport = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >;
@@ -3220,7 +3219,7 @@ export const createAdminServiceUnsubscribeReport = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceTriggerReconcileBodyBody;
     }
   > = (props) => {
     const { organization, project, name, data } = props ?? {};
@@ -3235,7 +3234,7 @@ export const createAdminServiceUnsubscribeReport = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);

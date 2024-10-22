@@ -320,9 +320,9 @@ func (u *URLs) ReportExport(org, project, report, token string) string {
 }
 
 // ReportEdit returns the URL for editing a report in the frontend or unsubscribe for non-rill recipients.
-func (u *URLs) ReportEdit(org, project, report, recipient, token string) string {
+func (u *URLs) ReportEdit(org, project, report, token string) string {
 	if token != "" {
-		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "unsubscribe"), map[string]string{"recipient": recipient, "token": token})
+		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "unsubscribe"), map[string]string{"token": token})
 	}
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report)
 }

@@ -1896,7 +1896,6 @@ message UnsubscribeReportRequest {
   string organization = 1;
   string project = 2;
   string name = 3;
-  optional string email = 4 [(validate.rules).string.email = true]; // for non-rill recipients
 }
 
 message UnsubscribeReportResponse {}

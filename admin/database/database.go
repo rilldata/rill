@@ -177,7 +177,7 @@ type DB interface {
 
 	FindReportTokens(ctx context.Context, reportName string) ([]*ReportToken, error)
 	FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*ReportTokenWithSecret, error)
-	FindReportTokenForEmail(ctx context.Context, reportName, email string) (*ReportToken, error)
+	FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*ReportToken, error)
 	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)

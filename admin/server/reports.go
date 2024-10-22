@@ -62,7 +62,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			BaseUrls: &adminv1.GetReportMetaResponse_URLs{
 				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
-				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, "", ""),
+				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, ""),
 			},
 		}, nil
 	}
@@ -88,7 +88,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	for email, token := range emailTokens {
 		externalUrls[email] = &adminv1.GetReportMetaResponse_URLs{
 			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, token),
-			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, email, token),
+			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, token),
 		}
 	}
 
@@ -96,7 +96,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		BaseUrls: &adminv1.GetReportMetaResponse_URLs{
 			OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 			ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
-			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, "", ""),
+			EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report, ""),
 		},
 		RecipientUrls: externalUrls,
 	}, nil
@@ -284,19 +284,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		if req.Email == nil {
-			return nil, status.Error(codes.InvalidArgument, "missing email")
-		}
-		userEmail = *req.Email
-
-		reportTkn, err := s.admin.DB.FindReportTokenForEmail(ctx, req.Name, userEmail)
+		reportTkn, err := s.admin.DB.FindReportTokenForMagicAuthToken(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "could not find report token for email: %s", err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, "failed to find report token: %s", err.Error())
 		}
 
-		if reportTkn.MagicAuthTokenID != claims.OwnerID() {
-			return nil, status.Error(codes.PermissionDenied, "magic token not issued for this email")
-		}
+		userEmail = reportTkn.RecipientEmail
 	}
 
 	opts, err := recreateReportOptionsFromSpec(spec)

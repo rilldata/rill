@@ -9369,13 +9369,6 @@ export class UnsubscribeReportRequest extends Message<UnsubscribeReportRequest> 
    */
   name = "";
 
-  /**
-   * for non-rill recipients
-   *
-   * @generated from field: optional string email = 4;
-   */
-  email?: string;
-
   constructor(data?: PartialMessage<UnsubscribeReportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9387,7 +9380,6 @@ export class UnsubscribeReportRequest extends Message<UnsubscribeReportRequest> 
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnsubscribeReportRequest {
