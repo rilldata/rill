@@ -4374,6 +4374,16 @@ definitions:
         type: string
       repoError:
         type: string
+      metricsViewErrors:
+        type: object
+        additionalProperties:
+          type: string
+      parseErrorCount:
+        type: integer
+        format: int32
+      reconcileErrorCount:
+        type: integer
+        format: int32
   v1InstanceHealthResponse:
     type: object
     properties:

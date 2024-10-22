@@ -18,8 +18,8 @@
   <button
     {...getAttrs(builders)}
     aria-label={label}
-    class="group-hover:block"
-    class:!group-hover:block={suppressTooltip}
+    class="group-hover:w-fit"
+    class:!w-fit={suppressTooltip}
     {id}
     on:click|preventDefault|stopPropagation
     use:builderActions={{ builders }}
@@ -33,10 +33,11 @@
 
 <style lang="postcss">
   button {
-    @apply h-full aspect-square p-1.5;
+    @apply h-full aspect-square;
     @apply flex justify-center items-center;
-    @apply text-gray-500 hidden;
+    @apply text-gray-500;
     @apply transition-transform duration-100;
+    width: 0px;
   }
 
   button:hover,

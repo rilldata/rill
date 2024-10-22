@@ -20,6 +20,7 @@ type RepoStore interface {
 	CommitHash(ctx context.Context) (string, error)
 	ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]DirEntry, error)
 	Get(ctx context.Context, path string) (string, error)
+	FileHash(ctx context.Context, paths []string) (string, error)
 	Stat(ctx context.Context, path string) (*RepoObjectStat, error)
 	Put(ctx context.Context, path string, reader io.Reader) error
 	MakeDir(ctx context.Context, path string) error

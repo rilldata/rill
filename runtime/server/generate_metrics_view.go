@@ -206,6 +206,10 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	doc.Type = "metrics_view"
 	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
+	for _, measure := range doc.Measures {
+		// Apply the default format preset to measures (the AI doesn't set the format preset).
+		measure.FormatPreset = "humanize"
+	}
 	if isModel {
 		doc.Model = tbl.Name
 	} else {
@@ -241,10 +245,11 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		}
 
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       measure.Name,
-			Label:      measure.Label,
-			Expression: measure.Expression,
-			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			Name:         measure.Name,
+			Label:        measure.Label,
+			Expression:   measure.Expression,
+			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			FormatPreset: measure.FormatPreset,
 		})
 	}
 	validateResult, err := s.runtime.ValidateMetricsView(ctx, instanceID, spec)
@@ -386,10 +391,11 @@ func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.Table) []*metricsViewMea
 	// Add a count measure
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
-		Name:        "total_records",
-		Label:       "Total records",
-		Expression:  "COUNT(*)",
-		Description: "",
+		Name:         "total_records",
+		Label:        "Total records",
+		Expression:   "COUNT(*)",
+		Description:  "",
+		FormatPreset: "humanize",
 	})
 
 	// Add sum measures for float columns
@@ -397,10 +403,11 @@ func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.Table) []*metricsViewMea
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
 			measures = append(measures, &metricsViewMeasureYAML{
-				Name:        fmt.Sprintf("%s_sum", f.Name),
-				Label:       fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
-				Expression:  fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
-				Description: "",
+				Name:         fmt.Sprintf("%s_sum", f.Name),
+				Label:        fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
+				Expression:   fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
+				Description:  "",
+				FormatPreset: "humanize",
 			})
 		}
 	}
@@ -440,15 +447,16 @@ type metricsViewYAML struct {
 }
 
 type metricsViewDimensionYAML struct {
-	Label  string
-	Column string
+	Label  string `yaml:"label"`
+	Column string `yaml:"column"`
 }
 
 type metricsViewMeasureYAML struct {
-	Name        string
-	Label       string
-	Expression  string
-	Description string
+	Name         string `yaml:"name"`
+	Label        string `yaml:"label"`
+	Expression   string `yaml:"expression"`
+	Description  string `yaml:"description"`
+	FormatPreset string `yaml:"format_preset,omitempty"`
 }
 
 func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error) {

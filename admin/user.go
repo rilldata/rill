@@ -239,17 +239,6 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		return nil, err
 	}
 
-	// raise never subscribed billing issue
-	_, err = s.DB.UpsertBillingIssue(txCtx, &database.UpsertBillingIssueOptions{
-		OrgID:     org.ID,
-		Type:      database.BillingIssueTypeNeverSubscribed,
-		Metadata:  database.BillingIssueMetadataNeverSubscribed{},
-		EventTime: org.CreatedOn,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	err = tx.Commit()
 	if err != nil {
 		return nil, err

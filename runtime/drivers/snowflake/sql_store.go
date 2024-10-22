@@ -66,7 +66,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 	}
 
 	var rows sqld.Rows
-	err = conn.Raw(func(x interface{}) error {
+	err = rawConn(conn, func(x sqld.Conn) error {
 		rows, err = x.(sqld.QueryerContext).QueryContext(ctx, srcProps.SQL, nil)
 		return err
 	})
@@ -277,4 +277,22 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"snowflake\"")
 	}
 	return conf, err
+}
+
+// rawConn is similar to *sql.Conn.Raw, but additionally unwraps otelsql (which we use for instrumentation).
+func rawConn(conn *sql.Conn, f func(sqld.Conn) error) error {
+	return conn.Raw(func(raw any) error {
+		// For details, see: https://github.com/XSAM/otelsql/issues/98
+		if c, ok := raw.(interface{ Raw() sqld.Conn }); ok {
+			raw = c.Raw()
+		}
+
+		// This is currently guaranteed, but adding check to be safe
+		driverConn, ok := raw.(sqld.Conn)
+		if !ok {
+			return fmt.Errorf("internal: did not obtain a driver.Conn")
+		}
+
+		return f(driverConn)
+	})
 }

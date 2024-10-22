@@ -49,7 +49,7 @@
 
   const stateManagers = getStateManagers();
 
-  const { dashboardStore, metricsViewName } = stateManagers;
+  const { dashboardStore, exploreName } = stateManagers;
 
   const config = getPivotConfig(stateManagers);
 
@@ -215,7 +215,7 @@
     //@ts-expect-error-free
     //eslint-disable-next-line
     expanded = updater(expanded);
-    metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+    metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   }
 
   function onSortingChange(updater: Updater<SortingState>) {
@@ -224,7 +224,7 @@
     } else {
       sorting = updater;
     }
-    metricsExplorerStore.setPivotSort($metricsViewName, sorting);
+    metricsExplorerStore.setPivotSort($exploreName, sorting);
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -241,7 +241,7 @@
         !$pivotDataStore.isFetching &&
         !reachedEndForRows
       ) {
-        metricsExplorerStore.setPivotRowPage($metricsViewName, rowPage + 1);
+        metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
     }
   };
@@ -278,7 +278,7 @@
     const rowId = cell.row.id;
     const columnId = cell.column.id;
 
-    metricsExplorerStore.setPivotActiveCell($metricsViewName, rowId, columnId);
+    metricsExplorerStore.setPivotActiveCell($exploreName, rowId, columnId);
   }
 
   function handleHover(
