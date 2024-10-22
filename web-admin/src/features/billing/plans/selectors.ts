@@ -44,7 +44,7 @@ export async function fetchPaymentsPortalURL(
 }
 
 export function getBillingUpgradeUrl(page: Page, organization: string) {
-  return `${page.url.protocol}//${page.url.host}/${organization}/-/settings/billing/upgrade/callback`;
+  return `${page.url.protocol}//${page.url.host}/${organization}/-/upgrade-callback`;
 }
 
 export function getNextBillingCycleDate(curEndDateRaw: string): string {
