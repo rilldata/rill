@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
-  import UserInvitePopover from "@rilldata/web-admin/features/projects/user-invite/UserInvitePopover.svelte";
+  import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
@@ -178,7 +178,7 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage && manageProjectMembers}
-      <UserInvitePopover {organization} {project} />
+      <UserInviteButton {organization} {project} />
     {/if}
     {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
       {#if exploreSpec}

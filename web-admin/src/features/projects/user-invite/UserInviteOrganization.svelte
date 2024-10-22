@@ -9,7 +9,6 @@
     type V1MemberUsergroup,
     createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
-  import { createEventDispatcher } from "svelte";
 
   export let organization: string;
   export let project: string;
@@ -24,30 +23,6 @@
 
   $: userGroupMemberUsers = $listUsergroupMemberUsers.data?.members ?? [];
   $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
-
-  let groupsList = new Map<string, { userEmail: string; roleName: string }[]>();
-  const dispatch = createEventDispatcher();
-
-  $: {
-    groupsList.clear();
-
-    userGroupMemberUsers.forEach((user) => {
-      const { userEmail } = user;
-      const { groupName, roleName } = group;
-
-      // Only process groups with admin role
-      // NOTE: This is to ensure we show overridden role tooltip for users who are viewers but have admin role in groups
-      if (roleName === "admin") {
-        if (!groupsList.has(groupName)) {
-          groupsList.set(groupName, []);
-        }
-
-        groupsList.get(groupName).push({ userEmail, roleName });
-      }
-    });
-
-    dispatch("updateGroupsList", { groupsList });
-  }
 </script>
 
 <Tooltip location="right" alignment="middle" distance={8}>
