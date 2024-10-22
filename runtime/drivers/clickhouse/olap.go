@@ -224,10 +224,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 			Priority: 100,
 		})
 	} else if outputProps.Typ == "DICTIONARY" {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.EngineFull),
-			Priority: 100,
-		})
+		return c.createDictionary(ctx, name, sql, outputProps)
 	}
 	// on replicated databases `create table t as select * from ...` is prohibited
 	// so we need to create a table first and then insert data into it
@@ -269,11 +266,23 @@ func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	}
 	switch typ {
-	case "VIEW", "DICTIONARY":
+	case "VIEW":
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP %s %s %s", typ, safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP VIEW %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
+	case "DICTIONARY":
+		// first drop the dictionary
+		err := c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP DICTIONARY %s %s", safeSQLName(name), onClusterClause),
+			Priority: 100,
+		})
+		// then drop the temp table
+		_ = c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE %s %s", tempTableForDictionary(name), onClusterClause),
+			Priority: 100,
+		})
+		return err
 	case "TABLE":
 		// drop the main table
 		err := c.Exec(ctx, &drivers.Statement{
@@ -341,30 +350,10 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
 
 		// build the column type clause
-		var columnClause strings.Builder
-		res, err = c.Execute(ctx, &drivers.Statement{
-			Query:    "SELECT name, type FROM system.columns WHERE database = currentDatabase() AND table = ?",
-			Args:     []any{oldName},
-			Priority: 100,
-		})
+		columnClause, err := c.columnClause(ctx, oldName)
 		if err != nil {
 			return err
 		}
-
-		var col, typ string
-		for res.Next() {
-			if err := res.Scan(&col, &typ); err != nil {
-				res.Close()
-				return err
-			}
-			if columnClause.Len() > 0 {
-				columnClause.WriteString(", ")
-			}
-			columnClause.WriteString(safeSQLName(col))
-			columnClause.WriteString(" ")
-			columnClause.WriteString(typ)
-		}
-		res.Close()
 
 		// rename the local table
 		err = c.renameTable(ctx, localTableName(oldName), localTableName(newName), onClusterClause)
@@ -374,7 +363,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 		// recreate the distributed table
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s (%s) Engine = %s", safeSQLName(newName), onClusterClause, columnClause.String(), engineFull),
+			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s %s Engine = %s", safeSQLName(newName), onClusterClause, columnClause, engineFull),
 			Priority: 100,
 		})
 		if err != nil {
@@ -513,6 +502,84 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 		fmt.Fprintf(&distributed, " SETTINGS %s", outputProps.DistributedSettings)
 	}
 	return c.Exec(ctx, &drivers.Statement{Query: distributed.String(), Priority: 100})
+}
+
+func (c *connection) createDictionary(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) error {
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+	if sql == "" {
+		if outputProps.Columns == "" {
+			return fmt.Errorf("clickhouse: no columns specified for dictionary %q", name)
+		}
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.EngineFull),
+			Priority: 100,
+		})
+	}
+
+	// create a temp table first
+	// NOTE :: this can only be dropped when the dictionary is dropped
+	tempTable := tempTableForDictionary(name)
+	err := c.createTable(ctx, tempTable, sql, outputProps)
+	if err != nil {
+		return err
+	}
+	err = c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempTable), sql),
+		Priority: 100,
+	})
+	if err != nil {
+		return err
+	}
+
+	if outputProps.Columns == "" {
+		// infer columns
+		outputProps.Columns, err = c.columnClause(ctx, tempTable)
+		if err != nil {
+			return err
+		}
+	}
+
+	if outputProps.PrimaryKey == "" {
+		return fmt.Errorf("clickhouse: no primary key specified for dictionary %q", name)
+	}
+
+	// create dictionary
+	return c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf(`CREATE OR REPLACE DICTIONARY %s %s %s PRIMARY KEY %s SOURCE(CLICKHOUSE(TABLE %s)) LAYOUT(HASHED()) LIFETIME(0)`, safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.PrimaryKey, c.Dialect().EscapeStringValue(tempTable)),
+		Priority: 100,
+	})
+}
+
+func (c *connection) columnClause(ctx context.Context, table string) (string, error) {
+	var columnClause strings.Builder
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    "SELECT name, type FROM system.columns WHERE database = currentDatabase() AND table = ?",
+		Args:     []any{table},
+		Priority: 100,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer res.Close()
+
+	columnClause.WriteRune('(')
+	var col, typ string
+	for res.Next() {
+		if err := res.Scan(&col, &typ); err != nil {
+			return "", err
+		}
+		if columnClause.Len() > 1 {
+			columnClause.WriteString(", ")
+		}
+		columnClause.WriteString(safeSQLName(col))
+		columnClause.WriteString(" ")
+		columnClause.WriteString(typ)
+	}
+	columnClause.WriteRune(')')
+	return columnClause.String(), nil
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
@@ -949,4 +1016,8 @@ func safelocalTableName(name string) string {
 
 func localTableName(name string) string {
 	return name + "_local"
+}
+
+func tempTableForDictionary(name string) string {
+	return name + "_dict_temp_"
 }
