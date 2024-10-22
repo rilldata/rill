@@ -1,6 +1,6 @@
 ---
 title: User group Permissions
-sidebar_label: User Group Permissions 
+sidebar_label: User Group Management 
 sidebar_position: 24
 ---
 
@@ -14,14 +14,14 @@ There are two ways to set up user groups in Rill.
 1. Administrator via Rill Cloud (Coming soon!)
 2. Administrator via CLI 
 
-### Administrator via Rill Cloud
+### How to Manage User Groups in Rill Cloud
 <ComingSoon />
 
 <div class='contents_to_overlay'>
 a
 </div>
 
-### Administrator via CLI
+### How to Manage User Groups via the CLI
 ```
 rill usergroup
 Manage user groups

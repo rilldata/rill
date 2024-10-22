@@ -33,17 +33,10 @@ When you invite a user to an organization on Rill Cloud, they automatically get 
 For a detailed list of permissions, please refer to the [Roles and Permissions](roles-permissions.md).
 
 ### How to add an Organization User
-There are two ways to add an organization user.
-1. Administrator sharing the organization on Rill Cloud via the `Share` button.
-2. Administrator inviting a user via the CLI
+Administrators can be invited to an organization via the CLI directly or via a user group.
 
 
-### Administrator shares from Rill Cloud
-When sharing an instance from the organization page, see below, the invited user will gain organizational access to your Rill Cloud Instance. As described above, this will allow the user to at least browse all the projects within Rill Cloud.
-<h1> Update this </h1>
-![img](/img/manage/user-management/request-access.png)
-
-### Administrator invites via the CLI
+### Administrator invites user via the CLI
 ```
 rill user add
 ? Select role  [Use arrows to move, type to filter]
@@ -53,16 +46,22 @@ rill user add
 You will then be prompted for details about the user.
 
 :::tip Check your inbox (or spam)
-
 If you add a user who has not yet signed up for Rill, they will receive an email inviting them to sign up and join.
-
 :::
+
+### Administrator adds the user to a user group with organization access
+If you have already set up a user group that has access on the organization level, instead of setting up users individually, you can [add them to the user group](#how-to-add-a-user-to-a-usergroup).
+```
+rill user add --group <group_with_org_permissions>
+? Enter email <email here>
+User "<email here>" added to the user group "<group_with_org_permissions>"
+```
 
 ### Automatically add members by email domain
 
 You can automatically add users to your organization by their email domain. For example, if you whitelist `yourdomain.com`, new and existing users with an email address ending on `@yourdomain.com` will automatically be added to your organization.
 
-:::info Interested in whitelisting a domain?
+:::info Interested in whitelisting a different domain?
 
 The feature currently requires manual action by a support representative at Rill. Just [reach out here](https://www.rilldata.com/contact) and ask us to whitelist your domain.
 
