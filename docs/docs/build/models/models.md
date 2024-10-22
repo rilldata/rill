@@ -5,6 +5,10 @@ sidebar_label: Create Models
 sidebar_position: 00
 ---
 
+<img src = '/img/tutorials/102/Add-model.gif' class='rounded-gif' />
+<br />
+
+
 [Data models](/reference/project-files/models.md) in Rill are composed of SQL `SELECT` statements that operate on source data. They allow you to join, transform, and clean data.
 
 ## SQL transformations
