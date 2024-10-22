@@ -64,7 +64,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 	if outputProps.Typ != "TABLE" && outputProps.Typ != "DICTIONARY" {
-		return nil, fmt.Errorf("models with input_connector 'localfile' must be materialized as `TABLE` or `DICTIONARY`")
+		return nil, fmt.Errorf("models with input_connector `localfile` must be materialized as `TABLE` or `DICTIONARY`")
 	}
 
 	// get the local file path
