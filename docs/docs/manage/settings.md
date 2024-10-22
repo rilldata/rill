@@ -11,7 +11,7 @@ Settings in Rill Cloud give an easy access to manage objects and ensure that eve
 
 There are two different levels of settings. 
 1. Organization Settings (Coming soon!)
-2. Proejct Settings
+2. Project Settings
 
 
 :::tip 

@@ -5,7 +5,7 @@ sidebar_label: Create Dashboards
 sidebar_position: 00
 ---
 
-In Rill, dashboards are one of many components that access the metrics layer. Currently, it is possible to create an explore dashboard but more features are on the way!
+In Rill, dashboards are one of many components that access the metrics layer. Currently, it is only possible to create an explore dashboard but more features are on the way!
 
 ![img](/img/build/dashboard/explore-dashboard.png)
 

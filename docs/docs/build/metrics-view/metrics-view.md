@@ -71,7 +71,7 @@ In your Rill project directory, after the `metrics-view.yaml` file is created in
 version: 1
 type: metrics_view
 
-table: example_table # Choose a table to underpin your metrics
+model: example_model # Choose a table to underpin your metrics
 timeseries: timestamp_column # Choose a timestamp column (if any) from your table
 
 dimensions:
