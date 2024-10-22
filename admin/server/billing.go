@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -84,6 +86,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Errorf(codes.FailedPrecondition, "plan cannot be changed on existing subscription as it was cancelled, please renew the subscription")
 	}
 
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
 	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
@@ -101,14 +105,14 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if bi != nil {
-			// check against trial orgs quota
-			if org.CreatedByUserID != nil {
+			// check against trial orgs quota, skip for superusers
+			if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
 				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
 				}
 				if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
-					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
+					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota of %d reached for user %s", u.QuotaTrialOrgs, u.Email)
 				}
 			}
 
@@ -116,6 +120,18 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
+
+			// send trial started email
+			err = s.admin.Email.SendTrialStarted(&email.TrialStarted{
+				ToEmail:      org.BillingEmail,
+				ToName:       org.Name,
+				OrgName:      org.Name,
+				TrialEndDate: sub.TrialEndDate,
+			})
+			if err != nil {
+				s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+			}
+
 			return &adminv1.UpdateBillingSubscriptionResponse{
 				Organization: organizationToDTO(updatedOrg),
 				Subscription: subscriptionToDTO(sub),
@@ -123,10 +139,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
-	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-
 	if !plan.Public && !forceAccess {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %s", plan.Name)
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)
 	}
 
 	// check for validation errors
@@ -444,6 +458,121 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}, nil
 }
 
+func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTrialRequest) (*adminv1.SudoExtendTrialResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	days := int(req.Days)
+	observability.AddRequestAttributes(ctx, attribute.Int("args.days", days))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can extend trial")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	ns, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	if ns != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "organization %s never subscribed to a plan", org.Name)
+	}
+
+	// find existing trial end date
+	currentEndDate := time.Time{}
+	onTrial, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnTrial)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+	if onTrial != nil {
+		currentEndDate = onTrial.Metadata.(*database.BillingIssueMetadataOnTrial).GracePeriodEndDate
+	}
+
+	if currentEndDate.IsZero() {
+		trialEnded, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialEnded)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+		if trialEnded != nil {
+			currentEndDate = trialEnded.Metadata.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate
+		}
+	}
+
+	if currentEndDate.IsZero() {
+		subCancelled, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+		if subCancelled != nil {
+			currentEndDate = subCancelled.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate
+		}
+	}
+
+	if currentEndDate.IsZero() || currentEndDate.Before(time.Now()) {
+		currentEndDate = time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1)
+	}
+
+	newEndDate := currentEndDate.AddDate(0, 0, days)
+
+	// start a new trial, if already on trial plan, this will not create new subscription, if not on trial plan it will error
+	_, sub, err := s.admin.StartTrial(ctx, org)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if sub.ID != "" {
+		// update on trial metadata with new end date
+		_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID: org.ID,
+			Type:  database.BillingIssueTypeOnTrial,
+			Metadata: database.BillingIssueMetadataOnTrial{
+				SubID:              sub.ID,
+				PlanID:             sub.Plan.ID,
+				EndDate:            newEndDate,
+				GracePeriodEndDate: newEndDate,
+			},
+			EventTime: time.Now(),
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// send trial extended email
+		err = s.admin.Email.SendTrialExtended(&email.TrialExtended{
+			ToEmail:      org.BillingEmail,
+			ToName:       org.Name,
+			OrgName:      org.Name,
+			TrialEndDate: newEndDate,
+		})
+		if err != nil {
+			s.logger.Named("billing").Error("failed to send trial extended email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		}
+	}
+
+	// if trial subscription was cancelled then unschedule the cancellation
+	if sub.EndDate == sub.CurrentBillingCycleEndDate {
+		// if trial subscription was cancelled then unschedule the cancellation
+		_, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	return &adminv1.SudoExtendTrialResponse{TrialEnd: timestamppb.New(newEndDate)}, nil
+}
+
 func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPublicBillingPlansRequest) (*adminv1.ListPublicBillingPlansResponse, error) {
 	observability.AddRequestAttributes(ctx)
 
@@ -548,10 +677,16 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// schedule job to handle billing issues
-	_, err = s.admin.Jobs.HandlePlanChangeBillingIssues(ctx, org.ID, sub.ID, sub.Plan.ID, sub.CurrentBillingCycleStartDate)
+	// delete any trial related billing issues, irrespective of the new plan.
+	err = s.admin.CleanupTrialBillingIssues(ctx, org.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to cleanup trial billing errors and warnings: %w", err)
+	}
+
+	// delete any subscription related billing issues
+	err = s.admin.CleanupSubscriptionBillingIssues(ctx, org.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to cleanup subscription cancellation errors: %w", err)
 	}
 
 	return org, nil
@@ -569,7 +704,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 	}
 
 	if !pc.HasBillableAddress {
-		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
+		validationErrs = append(validationErrs, "no billing address found")
 	}
 
 	be, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
@@ -579,7 +714,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 		}
 	}
 	if be != nil {
-		validationErrs = append(validationErrs, "a previous payment is due, please pay the outstanding amount")
+		validationErrs = append(validationErrs, "a previous payment is due")
 	}
 
 	if len(validationErrs) > 0 && !forceAccess {
@@ -680,7 +815,8 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_OnTrial{
 				OnTrial: &adminv1.BillingIssueMetadataOnTrial{
-					EndDate: timestamppb.New(m.(*database.BillingIssueMetadataOnTrial).EndDate),
+					EndDate:            timestamppb.New(m.(*database.BillingIssueMetadataOnTrial).EndDate),
+					GracePeriodEndDate: timestamppb.New(m.(*database.BillingIssueMetadataOnTrial).GracePeriodEndDate),
 				},
 			},
 		}
@@ -688,6 +824,7 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_TrialEnded{
 				TrialEnded: &adminv1.BillingIssueMetadataTrialEnded{
+					EndDate:            timestamppb.New(m.(*database.BillingIssueMetadataTrialEnded).EndDate),
 					GracePeriodEndDate: timestamppb.New(m.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate),
 				},
 			},
