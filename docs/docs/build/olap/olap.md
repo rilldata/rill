@@ -10,7 +10,7 @@ sidebar_position: 00
 There are two ways to define an OLAP engine within Rill.
 
 1. Set the [default OLAP engine](../../reference/project-files/rill-yaml#configuring-the-default-olap-engine) via the rill.yaml file.
-2. Set the [OLAP engine](../../reference/project-files/dashboards.md) for a specific dashboard.
+2. Set the [OLAP engine](../../reference/project-files/explore-dashboards.md) for a specific dashboard.
 
 The OLAP engine set on the dashboard will take precedence over the project-level defined OLAP engine.
 

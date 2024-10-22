@@ -1,6 +1,7 @@
 package rillv1
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -31,12 +32,12 @@ type Node struct {
 }
 
 // parseNode multiplexes to the appropriate parse function based on the node kind.
-func (p *Parser) parseNode(node *Node) error {
+func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 	switch node.Kind {
 	case ResourceKindSource:
-		return p.parseSource(node)
+		return p.parseSource(ctx, node)
 	case ResourceKindModel:
-		return p.parseModel(node)
+		return p.parseModel(ctx, node)
 	case ResourceKindMetricsView:
 		return p.parseMetricsView(node)
 	case ResourceKindExplore:

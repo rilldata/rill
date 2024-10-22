@@ -1260,7 +1260,8 @@ message SudoUpdateOrganizationQuotasResponse {
 
 message SudoUpdateOrganizationBillingCustomerRequest {
   string organization = 1;
-  string billing_customer_id = 2;
+  optional string billing_customer_id = 2;
+  optional string payment_customer_id = 3;
 }
 
 message SudoUpdateOrganizationBillingCustomerResponse {
@@ -2215,6 +2216,7 @@ message MemberUser {
   string user_id = 1;
   string user_email = 3;
   string user_name = 2;
+  string user_photo_url = 7;
   string role_name = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
@@ -2323,6 +2325,7 @@ message BillingPlan {
   uint32 trial_period_days = 5;
   bool default = 6;
   Quotas quotas = 7;
+  bool public = 8;
   // TODO expose pricing information
 }
 

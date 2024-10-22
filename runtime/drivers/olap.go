@@ -40,6 +40,8 @@ type OLAPStore interface {
 	RenameTable(ctx context.Context, name, newName string, view bool) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
+
+	MayBeScaledToZero(ctx context.Context) bool
 }
 
 // Statement wraps a query to execute against an OLAP driver.
@@ -265,6 +267,9 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	if !dim.Unnest || d == DialectDruid {
 		return fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
 	}
+	if dim.Unnest && d == DialectClickHouse {
+		return fmt.Sprintf(`arrayJoin(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
+	}
 
 	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 	unnestTableName := tempName("tbl")
@@ -294,11 +299,18 @@ func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.
 }
 
 func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, auto bool, err error) {
-	if d == DialectDruid || d == DialectPinot {
+	if d == DialectDruid || d == DialectPinot || d == DialectClickHouse {
 		return "", true, nil
 	}
 
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
+}
+
+func (d Dialect) AutoUnnest(expr string) string {
+	if d == DialectClickHouse {
+		return fmt.Sprintf("arrayJoin(%s)", expr)
+	}
+	return expr
 }
 
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {

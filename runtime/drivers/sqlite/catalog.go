@@ -340,3 +340,20 @@ func (c *catalogStore) DeleteModelSplits(ctx context.Context, modelID string) er
 
 	return nil
 }
+
+func (c *catalogStore) FindInstanceHealth(ctx context.Context, instanceID string) (*drivers.InstanceHealth, error) {
+	var h drivers.InstanceHealth
+	err := c.db.QueryRowContext(ctx, "SELECT health_json, updated_on FROM instance_health WHERE instance_id=?", instanceID).Scan(&h.HealthJSON, &h.UpdatedOn)
+	if err != nil {
+		return nil, err
+	}
+
+	return &h, nil
+}
+
+func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
+	_, err := c.db.ExecContext(ctx, `INSERT INTO instance_health(instance_id, health_json, updated_on) Values (?, ?, CURRENT_TIMESTAMP)
+		ON CONFLICT(instance_id) DO UPDATE SET health_json=excluded.health_json, updated_on=excluded.updated_on;
+	`, h.InstanceID, h.HealthJSON)
+	return err
+}

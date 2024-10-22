@@ -197,7 +197,9 @@
                   on:click={() => goToConnectorForm(connector)}
                   class="connector-tile-button"
                 >
-                  <svelte:component this={ICONS[connector.name]} />
+                  <div class="connector-wrapper">
+                    <svelte:component this={ICONS[connector.name]} />
+                  </div>
                 </button>
               {/if}
             {/each}
@@ -230,7 +232,9 @@
                   class="connector-tile-button"
                   on:click={() => goToConnectorForm(connector)}
                 >
-                  <svelte:component this={ICONS[connector.name]} />
+                  <div class="connector-wrapper">
+                    <svelte:component this={ICONS[connector.name]} />
+                  </div>
                 </button>
               {/if}
             {/each}
@@ -262,10 +266,14 @@
 
   .connector-tile-button {
     aspect-ratio: 2/1;
-    @apply basis-40 p-2;
+    @apply basis-40;
     @apply border border-gray-300 rounded;
-    @apply justify-center items-center inline-flex;
-    @apply cursor-pointer;
+    @apply cursor-pointer overflow-hidden;
+  }
+
+  .connector-wrapper {
+    @apply py-3 px-7 size-full;
+    @apply flex items-center justify-center;
   }
 
   .connector-tile-button:hover {

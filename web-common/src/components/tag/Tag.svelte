@@ -16,6 +16,10 @@
   export let height = 21;
   export let text: string = "";
 
+  let className: string | undefined = undefined;
+
+  export { className as class };
+
   function getColorClass(color: string) {
     switch (color) {
       case "gray":
@@ -46,7 +50,7 @@
   style:height="{height}px"
   class="px-2 border rounded-[20px] items-center justify-center inline-flex shrink-0 {getColorClass(
     color,
-  )}"
+  )} {className}"
 >
   <span class="text-xs font-normal">
     {#if text !== ""}

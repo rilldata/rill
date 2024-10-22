@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
 import type { QueryClient } from "@tanstack/query-core";
@@ -19,10 +20,7 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import {
-  getFileAPIPathFromNameAndType,
-  getFilePathFromNameAndType,
-} from "../../entity-management/entity-mappers";
+import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
 import { ResourceKind } from "../../entity-management/resource-selectors";
@@ -90,11 +88,12 @@ export async function submitAddDataForm(
     );
 
     // Make a new <source>.yaml file
+    const newSourceFilePath = getFileAPIPathFromNameAndType(
+      values.name as string,
+      EntityType.Table,
+    );
     await runtimeServicePutFile(instanceId, {
-      path: getFileAPIPathFromNameAndType(
-        values.name as string,
-        EntityType.Table,
-      ),
+      path: newSourceFilePath,
       blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
       create: true,
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
@@ -112,10 +111,9 @@ export async function submitAddDataForm(
       createOnly: false,
     });
 
-    await checkSourceImported(
-      queryClient,
-      getFilePathFromNameAndType(values.name as string, EntityType.Table),
-    );
+    await checkSourceImported(queryClient, newSourceFilePath);
+
+    await goto(`/files/${newSourceFilePath}`);
 
     return;
   }
@@ -130,8 +128,12 @@ export async function submitAddDataForm(
   );
 
   // Make a new `<connector>.yaml` file
+  const newConnectorFilePath = getFileAPIPathFromNameAndType(
+    newConnectorName,
+    EntityType.Connector,
+  );
   await runtimeServicePutFile(instanceId, {
-    path: getFileAPIPathFromNameAndType(newConnectorName, EntityType.Connector),
+    path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues),
     create: true,
     createOnly: false,
@@ -152,4 +154,7 @@ export async function submitAddDataForm(
     create: true,
     createOnly: false,
   });
+
+  // Go to the new connector file
+  await goto(`/files/${newConnectorFilePath}`);
 }

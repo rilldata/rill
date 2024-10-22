@@ -372,6 +372,21 @@ export class InstanceHealth extends Message<InstanceHealth> {
    */
   repoError = "";
 
+  /**
+   * @generated from field: map<string, string> metrics_view_errors = 4;
+   */
+  metricsViewErrors: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: int32 parse_error_count = 5;
+   */
+  parseErrorCount = 0;
+
+  /**
+   * @generated from field: int32 reconcile_error_count = 6;
+   */
+  reconcileErrorCount = 0;
+
   constructor(data?: PartialMessage<InstanceHealth>) {
     super();
     proto3.util.initPartial(data, this);
@@ -383,6 +398,9 @@ export class InstanceHealth extends Message<InstanceHealth> {
     { no: 1, name: "controller_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "metrics_view_errors", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 5, name: "parse_error_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "reconcile_error_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealth {

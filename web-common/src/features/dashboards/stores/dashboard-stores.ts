@@ -88,8 +88,6 @@ function syncMeasures(
       !measuresSet.has(metricsExplorer.leaderboardMeasureName))
   ) {
     metricsExplorer.leaderboardMeasureName = explore.measures[0];
-  } else if (!explore.measures?.length) {
-    metricsExplorer.leaderboardMeasureName = undefined;
   }
 
   if (metricsExplorer.allMeasuresVisible) {
@@ -446,7 +444,7 @@ const metricsViewReducers = {
 
   setMetricDimensionName(name: string, dimensionName: string | null) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.selectedDimensionName = dimensionName;
+      metricsExplorer.selectedDimensionName = dimensionName ?? undefined;
       if (dimensionName) {
         metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
       } else {

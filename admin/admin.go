@@ -29,27 +29,29 @@ type Options struct {
 	MetricsProjectOrg         string
 	MetricsProjectName        string
 	AutoscalerCron            string
+	ScaleDownConstraint       int
 }
 
 type Service struct {
-	DB               database.DB
-	Jobs             jobs.Client
-	URLs             *URLs
-	ProvisionerSet   map[string]provisioner.Provisioner
-	Email            *email.Client
-	Github           Github
-	AI               ai.Client
-	Assets           *storage.BucketHandle
-	Used             *usedFlusher
-	Logger           *zap.Logger
-	opts             *Options
-	issuer           *auth.Issuer
-	VersionNumber    string
-	VersionCommit    string
-	metricsProjectID string
-	AutoscalerCron   string
-	Biller           billing.Biller
-	PaymentProvider  payment.Provider
+	DB                  database.DB
+	Jobs                jobs.Client
+	URLs                *URLs
+	ProvisionerSet      map[string]provisioner.Provisioner
+	Email               *email.Client
+	Github              Github
+	AI                  ai.Client
+	Assets              *storage.BucketHandle
+	Used                *usedFlusher
+	Logger              *zap.Logger
+	opts                *Options
+	issuer              *auth.Issuer
+	VersionNumber       string
+	VersionCommit       string
+	metricsProjectID    string
+	AutoscalerCron      string
+	ScaleDownConstraint int
+	Biller              billing.Biller
+	PaymentProvider     payment.Provider
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
@@ -107,23 +109,24 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	}
 
 	return &Service{
-		DB:               db,
-		URLs:             urls,
-		ProvisionerSet:   provSet,
-		Email:            emailClient,
-		Github:           github,
-		AI:               aiClient,
-		Assets:           assets,
-		Used:             newUsedFlusher(logger, db),
-		Logger:           logger,
-		opts:             opts,
-		issuer:           issuer,
-		VersionNumber:    opts.VersionNumber,
-		VersionCommit:    opts.VersionCommit,
-		metricsProjectID: metricsProjectID,
-		AutoscalerCron:   opts.AutoscalerCron,
-		Biller:           biller,
-		PaymentProvider:  p,
+		DB:                  db,
+		URLs:                urls,
+		ProvisionerSet:      provSet,
+		Email:               emailClient,
+		Github:              github,
+		AI:                  aiClient,
+		Assets:              assets,
+		Used:                newUsedFlusher(logger, db),
+		Logger:              logger,
+		opts:                opts,
+		issuer:              issuer,
+		VersionNumber:       opts.VersionNumber,
+		VersionCommit:       opts.VersionCommit,
+		metricsProjectID:    metricsProjectID,
+		AutoscalerCron:      opts.AutoscalerCron,
+		ScaleDownConstraint: opts.ScaleDownConstraint,
+		Biller:              biller,
+		PaymentProvider:     p,
 	}, nil
 }
 

@@ -667,7 +667,7 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_trial_orgs, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaTrialOrgs, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}
@@ -825,7 +825,7 @@ func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, use
 func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT uug.user_id as "id", u.email, u.display_name FROM usergroups_users uug
+		SELECT uug.user_id as "id", u.email, u.display_name, u.photo_url FROM usergroups_users uug
 		JOIN users u ON uug.user_id = u.id
 		WHERE uug.usergroup_id = $1 AND lower(u.email) > lower($2)
 		ORDER BY lower(u.email) LIMIT $3
@@ -1325,7 +1325,7 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
     	JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
 		WHERE uor.org_id=$1 AND lower(u.email) > lower($2)
@@ -1390,7 +1390,7 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
 			JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
 		WHERE uor.org_id=$1 AND r.manage_org_members=true
@@ -1405,7 +1405,7 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
     	JOIN users_projects_roles upr ON u.id = upr.user_id
 		JOIN project_roles r ON r.id = upr.project_role_id
 		WHERE upr.project_id=$1 AND lower(u.email) > lower($2)
@@ -1915,7 +1915,7 @@ func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]stri
 
 func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error) {
 	var res []string
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = '' OR payment_customer_id = ''`)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = ''`)
 	if err != nil {
 		return nil, parseErr("billing orgs without billing or payment info", err)
 	}

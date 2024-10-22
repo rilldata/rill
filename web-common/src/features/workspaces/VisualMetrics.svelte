@@ -1,6 +1,9 @@
 <script lang="ts">
   import {
+    createConnectorServiceOLAPListTables,
     createQueryServiceTableColumns,
+    createRuntimeServiceAnalyzeConnectors,
+    createRuntimeServiceGetInstance,
     type MetricsViewSpecDimensionV2,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
@@ -14,7 +17,6 @@
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import {
     ResourceKind,
     useResource,
@@ -41,6 +43,30 @@
   } from "../visual-metrics-editing/lib";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import ConnectorExplorer from "../connectors/ConnectorExplorer.svelte";
+  import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../connectors/olap/olap-config";
+  import { featureFlags } from "../feature-flags";
+  import AlertConfirmation from "../visual-metrics-editing/AlertConfirmation.svelte";
+
+  const { clickhouseModeling } = featureFlags;
+  const store = connectorExplorerStore.duplicateStore(
+    (connector, database, schema, table) => {
+      if (!table || !schema) return;
+
+      confirmation = {
+        action: "switch",
+        connector,
+        database,
+        schema,
+        model: table,
+      };
+
+      tableSelectionOpen = false;
+    },
+  );
 
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
@@ -49,6 +75,7 @@
   let searchValue = "";
   let unsavedChanges = false;
   let confirmation: Confirmation | null = null;
+  let tableSelectionOpen = false;
   let collapsed = {
     measures: false,
     dimensions: false,
@@ -57,8 +84,15 @@
     measures: new Set<number>(),
     dimensions: new Set<number>(),
   };
+  let storedProperties: Record<string, unknown> = {};
 
   $: ({ instanceId } = $runtime);
+
+  $: instance = createRuntimeServiceGetInstance(instanceId, {
+    sensitive: true,
+  });
+
+  $: olapConnector = $instance.data?.instance?.olapConnector;
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
 
@@ -72,16 +106,28 @@
     dimensions: parsedDocument.get("dimensions"),
   };
 
+  $: modelingDisabled =
+    olapConnector &&
+    OLAP_DRIVERS_WITHOUT_MODELING.filter(
+      (driver) => driver === "clickhouse" && $clickhouseModeling,
+    ).includes(olapConnector);
+
   $: rawSmallestTimeGrain = parsedDocument.get("smallest_time_grain");
   $: rawTimeDimension = parsedDocument.get("timeseries");
   $: rawDatabaseSchema = parsedDocument.get("database_schema");
   $: rawModel = parsedDocument.get("model");
   $: rawTable = parsedDocument.get("table");
+  $: rawDatabase = parsedDocument.get("database");
+  $: rawConnector = parsedDocument.get("connector");
 
   $: timeDimension = stringGuard(rawTimeDimension);
   $: databaseSchema = stringGuard(rawDatabaseSchema);
-  $: modelOrSourceName = stringGuard(rawModel) || stringGuard(rawTable);
+  $: database = stringGuard(rawDatabase);
+  $: yamlConnector = stringGuard(rawConnector);
+  $: modelOrSourceOrTableName = stringGuard(rawModel) || stringGuard(rawTable);
   $: smallestTimeGrain = stringGuard(rawSmallestTimeGrain);
+
+  $: noTableProperties = !yamlConnector && !database && !databaseSchema;
 
   $: modelsQuery = useModels(instanceId);
   $: sourcesQuery = useSources(instanceId);
@@ -90,38 +136,62 @@
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
   $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
-  $: hasSourceSelected = sourceNames.some(
-    ({ value }) => value === modelOrSourceName,
-  );
-  $: hasModelSelected = modelNames.some(
-    ({ value }) => value === modelOrSourceName,
-  );
+  $: hasSourceSelected =
+    noTableProperties &&
+    sourceNames.some(({ value }) => value === modelOrSourceOrTableName);
+  $: hasModelSelected =
+    noTableProperties &&
+    modelNames.some(({ value }) => value === modelOrSourceOrTableName);
 
   $: modelAndSourceOptions = [...modelNames, ...sourceNames];
 
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
-  $: resourceQuery = useResource(
-    instanceId,
-    modelOrSourceName,
-    hasSourceSelected ? ResourceKind.Source : ResourceKind.Model,
-  );
+  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
+    query: {
+      select: (data) => {
+        if (!data?.connectors) return [];
 
-  $: connector = hasModelSelected
-    ? $resourceQuery?.data?.model?.spec?.outputConnector
-    : $resourceQuery?.data?.source?.spec?.sinkConnector;
+        const connectors = data.connectors.filter(
+          (connector) =>
+            connector.driver?.implementsOlap &&
+            connector.driver.name !== "duckdb",
+        );
+        return connectors;
+      },
+    },
+  });
+
+  $: resourceKind = hasSourceSelected
+    ? ResourceKind.Source
+    : hasModelSelected
+      ? ResourceKind.Model
+      : undefined;
+
+  $: hasNonDuckDBOLAPConnector = Boolean($connectorsQuery.data?.length);
+
+  $: resourceQuery =
+    resourceKind &&
+    useResource(instanceId, modelOrSourceOrTableName, resourceKind);
+
+  $: connector =
+    yamlConnector ||
+    (hasModelSelected
+      ? $resourceQuery?.data?.model?.spec?.outputConnector
+      : $resourceQuery?.data?.source?.spec?.sinkConnector) ||
+    olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
     instanceId,
-    modelOrSourceName,
+    modelOrSourceOrTableName,
     {
       connector,
-      database: "", // models use the default database
+      database,
       databaseSchema,
     },
     {
       query: {
-        enabled: Boolean(connector) && hasValidModelOrSourceSelection,
+        enabled: Boolean(modelOrSourceOrTableName && connector),
       },
     },
   );
@@ -179,6 +249,33 @@
     measureNamesAndLabels.label,
   );
 
+  $: tablesQuery = createConnectorServiceOLAPListTables(
+    {
+      instanceId,
+      connector,
+    },
+    {
+      query: {
+        enabled: !!instanceId && !!connector && !hasValidModelOrSourceSelection,
+      },
+    },
+  );
+
+  $: tables = $tablesQuery.data?.tables ?? [];
+
+  $: hasValidOLAPTableSelected =
+    !hasValidModelOrSourceSelection &&
+    modelOrSourceOrTableName &&
+    tables.find(
+      (table) =>
+        table.name === modelOrSourceOrTableName &&
+        table.database === database &&
+        (table.databaseSchema === databaseSchema ||
+          (!databaseSchema && table.databaseSchema === "default")),
+    );
+
+  $: tableMode = Boolean(hasValidOLAPTableSelected);
+
   function createDimensions(
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
     metricsViewDimensions: MetricsViewSpecDimensionV2[],
@@ -225,15 +322,22 @@
     unsavedChanges = false;
   }
 
-  async function updateProperty(
-    property: string,
-    value: unknown,
-    removeProperty?: string,
+  async function updateProperties(
+    newRecord: Record<string, unknown>,
+    removeProperties?: string[],
   ) {
-    parsedDocument.set(property, value);
+    Object.entries(newRecord).forEach(([property, value]) => {
+      if (!value) {
+        parsedDocument.delete(property);
+      } else {
+        parsedDocument.set(property, value);
+      }
+    });
 
-    if (removeProperty) {
-      parsedDocument.delete(removeProperty);
+    if (removeProperties) {
+      removeProperties.forEach((prop) => {
+        parsedDocument.delete(prop);
+      });
     }
 
     await saveContent(parsedDocument.toString());
@@ -294,10 +398,7 @@
       selected[type] = new Set(newIndexes);
     }
 
-    await updateProperty(
-      type,
-      items.filter((i) => i !== null),
-    );
+    await updateProperties({ [type]: items.filter((i) => i !== null) });
 
     eventBus.emit("notification", { message: "Item moved", type: "success" });
   }
@@ -392,55 +493,135 @@
 
     items.splice(index + 1, 0, newItem);
 
-    await updateProperty(type, items);
+    await updateProperties({ [type]: items });
 
     eventBus.emit("notification", {
       message: "Item duplicated",
       type: "success",
     });
   }
+
+  async function switchTableMode() {
+    const mode = tableMode;
+
+    const currentProperties = {
+      model: rawModel,
+      database: rawDatabase,
+      connector: rawConnector,
+      database_schema: rawDatabaseSchema,
+    };
+    await updateProperties(storedProperties);
+
+    storedProperties = currentProperties;
+    tableMode = !mode;
+  }
 </script>
 
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4 border-b pb-4">
-      {#key confirmation}
-        <Input
-          sameWidth
-          full
-          truncate
-          value={modelOrSourceName}
-          options={modelAndSourceOptions}
-          placeholder="Select a model"
-          label="Model or source referenced"
-          onChange={async (newModelOrSourceName) => {
-            if (!modelOrSourceName) {
-              await updateProperty("model", newModelOrSourceName, "table");
-            } else {
-              confirmation = {
-                action: "switch",
-                model: newModelOrSourceName,
-              };
-            }
-          }}
-        />
-      {/key}
+      {#if tableMode || modelingDisabled}
+        <div class="flex flex-col gap-y-1 w-full">
+          <InputLabel label="Table" id="table">
+            <svelte:fragment slot="mode-switch">
+              {#if !modelingDisabled}
+                <button
+                  on:click={switchTableMode}
+                  class="ml-auto text-primary-600 font-medium text-xs"
+                >
+                  Select model
+                </button>
+              {/if}
+            </svelte:fragment>
+          </InputLabel>
+          <DropdownMenu.Root bind:open={tableSelectionOpen}>
+            <DropdownMenu.Trigger asChild let:builder>
+              <button
+                use:builder.action
+                {...builder}
+                class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
+                focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
+               "
+              >
+                {#if !hasValidOLAPTableSelected}
+                  <span class="text-gray-400 truncate">Select table</span>
+                {:else}
+                  <span class="text-gray-700 truncate">
+                    {modelOrSourceOrTableName}
+                  </span>
+                {/if}
+                <CaretDownIcon
+                  size="12px"
+                  className="!fill-gray-600 ml-auto flex-none"
+                />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content
+              sameWidth
+              align="start"
+              class="!min-w-64  overflow-hidden p-1"
+            >
+              <div class="size-full overflow-y-auto max-h-72">
+                <ConnectorExplorer {store} />
+              </div>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </div>
+      {:else}
+        {#key confirmation}
+          <Input
+            sameWidth
+            full
+            truncate
+            value={noTableProperties ? modelOrSourceOrTableName : undefined}
+            options={modelAndSourceOptions}
+            placeholder="Select a model"
+            label="Model"
+            onChange={async (newModelOrSourceName) => {
+              if (!modelOrSourceOrTableName) {
+                await updateProperties({ model: newModelOrSourceName }, [
+                  "table",
+                  "database",
+                  "connector",
+                  "database_schema",
+                ]);
+              } else {
+                confirmation = {
+                  action: "switch",
+                  model: newModelOrSourceName,
+                };
+              }
+            }}
+          >
+            <svelte:fragment slot="mode-switch">
+              {#if hasNonDuckDBOLAPConnector}
+                <button
+                  on:click={switchTableMode}
+                  class="ml-auto text-primary-600 font-medium text-xs"
+                >
+                  Select table
+                </button>
+              {/if}
+            </svelte:fragment>
+          </Input>
+        {/key}
+      {/if}
 
       <Input
         sameWidth
         full
+        enableSearch
         truncate
         value={timeDimension}
         options={timeOptions}
         placeholder="Select time column"
         label="Time column"
-        disabled={!hasValidModelOrSourceSelection || !timeOptions.length}
         disabledMessage={!hasValidModelOrSourceSelection
           ? "No model selected"
           : "No timestamp columns in model"}
         hint="Column from model that will be used as primary time dimension in dashboards"
         onChange={async (value) => {
-          await updateProperty("timeseries", value);
+          await updateProperties({ timeseries: value });
         }}
       />
 
@@ -457,7 +638,7 @@
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {
-          await updateProperty("smallest_time_grain", value);
+          await updateProperties({ smallest_time_grain: value });
         }}
       />
     </div>
@@ -611,7 +792,14 @@
     {#key $editingItem}
       <Sidebar
         {item}
+        {type}
+        {index}
         {columns}
+        {fileArtifact}
+        editing={index !== -1}
+        bind:unsavedChanges
+        {switchView}
+        {resetEditing}
         onDelete={() => {
           triggerDelete(index, type);
         }}
@@ -626,117 +814,53 @@
             resetEditing();
           }
         }}
-        {index}
-        {type}
-        {resetEditing}
-        editing={index !== -1}
-        {fileArtifact}
-        {switchView}
-        bind:unsavedChanges
       />
     {/key}
   {/if}
 </div>
 
 {#if confirmation}
-  <AlertDialog.Root open>
-    <AlertDialog.Content>
-      <AlertDialog.Header>
-        <AlertDialog.Title>
-          {#if confirmation.action === "delete"}
-            <h2>
-              Delete {confirmation.index === undefined
-                ? "selected items"
-                : "this " + confirmation.type?.slice(0, -1)}?
-            </h2>
-          {:else if confirmation.action === "cancel"}
-            <h2>Cancel changes to {confirmation.type?.slice(0, -1)}?</h2>
-          {:else if confirmation.action === "switch"}
-            <h2>Switch reference model?</h2>
-          {/if}
-        </AlertDialog.Title>
-        <AlertDialog.Description>
-          {#if confirmation.action === "cancel"}
-            You haven't saved changes to this {confirmation.type?.slice(0, -1)} yet,
-            so closing this window will lose your work.
-          {:else if confirmation.action === "delete"}
-            You will permanently remove {confirmation.index === undefined
-              ? "the selected items"
-              : "this " + confirmation.type?.slice(0, -1)} from all associated dashboards.
-          {:else if confirmation.action === "switch"}
-            Switching to a different model may break your measures and
-            dimensions unless the new model has similar data.
-          {/if}
-        </AlertDialog.Description>
-      </AlertDialog.Header>
-      <AlertDialog.Footer class="gap-y-2">
-        <AlertDialog.Cancel asChild let:builder>
-          <Button
-            builders={[builder]}
-            type="secondary"
-            large
-            gray={confirmation.action === "delete"}
-            on:click={() => {
-              confirmation = null;
-            }}
-          >
-            {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
-          </Button>
-        </AlertDialog.Cancel>
-
-        <AlertDialog.Action asChild let:builder>
-          <Button
-            large
-            builders={[builder]}
-            status={confirmation.action === "delete" ? "error" : "info"}
-            type="primary"
-            on:click={async () => {
-              if (confirmation?.action === "delete") {
-                await deleteItems(
-                  confirmation?.index !== undefined && confirmation.type
-                    ? {
-                        [confirmation.type]: new Set([confirmation.index]),
-                      }
-                    : selected,
-                );
-
-                resetEditing();
-              } else if (confirmation?.action === "switch") {
-                await updateProperty("model", confirmation.model, "table");
-                resetEditing();
-              } else if (confirmation?.action === "cancel") {
-                if (
-                  confirmation?.field &&
-                  confirmation?.index !== undefined &&
-                  confirmation?.type
-                ) {
-                  unsavedChanges = false;
-                  await setEditing(
-                    confirmation.index,
-                    confirmation.type,
-                    confirmation.field,
-                  );
-                } else {
-                  resetEditing();
-                }
+  <AlertConfirmation
+    {confirmation}
+    onCancel={() => (confirmation = null)}
+    onConfirm={async () => {
+      if (confirmation?.action === "delete") {
+        await deleteItems(
+          confirmation?.index !== undefined && confirmation.type
+            ? {
+                [confirmation.type]: new Set([confirmation.index]),
               }
-              confirmation = null;
-            }}
-          >
-            {#if confirmation.action === "delete"}
-              Yes, delete
-            {:else if confirmation.action === "switch"}
-              Switch model
-            {:else if confirmation.action === "cancel" && confirmation.field}
-              Switch items
-            {:else}
-              Close
-            {/if}
-          </Button>
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
+            : selected,
+        );
+      } else if (confirmation?.action === "switch") {
+        await updateProperties(
+          {
+            model: confirmation.model,
+            database: confirmation.database,
+            connector: confirmation.connector,
+            database_schema: confirmation.schema,
+          },
+          ["table"],
+        );
+      } else if (confirmation?.action === "cancel") {
+        if (
+          confirmation?.field &&
+          confirmation?.index !== undefined &&
+          confirmation?.type
+        ) {
+          unsavedChanges = false;
+          await setEditing(
+            confirmation.index,
+            confirmation.type,
+            confirmation.field,
+          );
+        }
+      }
+
+      resetEditing();
+      confirmation = null;
+    }}
+  />
 {/if}
 
 <style lang="postcss">
@@ -757,9 +881,5 @@
 
   .section {
     @apply flex flex-none flex-col gap-y-2 justify-start w-full h-fit max-w-full;
-  }
-
-  h2 {
-    @apply font-semibold text-lg;
   }
 </style>

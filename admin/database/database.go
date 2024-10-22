@@ -767,6 +767,7 @@ type MemberUser struct {
 	ID          string
 	Email       string
 	DisplayName string    `db:"display_name"`
+	PhotoURL    string    `db:"photo_url"`
 	RoleName    string    `db:"name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`

@@ -34,7 +34,7 @@
 
   $: navWrapperHeight = contentRect.height;
 
-  $: showConnectors = $connectorExplorerStore.showConnectors;
+  let showConnectors = true;
 
   $: connectorSectionHeight = navWrapperHeight * connectorHeightPercentage;
 
@@ -112,7 +112,7 @@
               on:click={() => {
                 const open = showConnectors;
 
-                if (!open) connectorExplorerStore.toggleExplorer();
+                if (!open) showConnectors = true;
 
                 connectorWrapper.animate(
                   [
@@ -128,7 +128,7 @@
                     easing: "ease-out",
                   },
                 ).onfinish = () => {
-                  if (open) connectorExplorerStore.toggleExplorer();
+                  if (open) showConnectors = false;
                 };
               }}
             >
@@ -146,7 +146,7 @@
               style:height="{showConnectors ? connectorSectionHeight : 0}px"
             >
               {#if showConnectors}
-                <ConnectorExplorer />
+                <ConnectorExplorer store={connectorExplorerStore} />
               {/if}
             </div>
           </section>

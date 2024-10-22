@@ -77,6 +77,13 @@ var spec = drivers.Spec{
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
 		},
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Database",
+			Description: "Specify the database within the ClickHouse server",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -92,6 +99,8 @@ type configProperties struct {
 	Password string `mapstructure:"password"`
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
+	// Database specifies the name of the ClickHouse database within the cluster.
+	Database string `mapstructure:"database"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. Required for running distributed queries.
@@ -105,8 +114,9 @@ type configProperties struct {
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort int `mapstructure:"embed_port"`
 	// DataDir is the path to directory where db files will be created.
-	DataDir string `mapstructure:"data_dir"`
-	TempDir string `mapstructure:"temp_dir"`
+	DataDir        string `mapstructure:"data_dir"`
+	TempDir        string `mapstructure:"temp_dir"`
+	CanScaleToZero bool   `mapstructure:"can_scale_to_zero"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -116,7 +126,9 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
 
-	conf := &configProperties{}
+	conf := &configProperties{
+		CanScaleToZero: true,
+	}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
@@ -155,6 +167,11 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 			opts.Auth.Password = conf.Password
 		} else if conf.Username != "" {
 			opts.Auth.Username = conf.Username
+		}
+
+		// database
+		if conf.Database != "" {
+			opts.Auth.Database = conf.Database
 		}
 	} else {
 		// run clickhouse locally

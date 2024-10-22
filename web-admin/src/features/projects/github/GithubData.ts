@@ -41,8 +41,8 @@ export class GithubData {
     >
   >;
 
-  private userPromptWindow: Window | null;
-  private windowCheckTimer: ReturnType<typeof setInterval> | null;
+  private userPromptWindow: Window | null = null;
+  private windowCheckTimer: ReturnType<typeof setInterval> | null = null;
 
   public readonly status = derived(
     [this.userStatus, this.userRepos],
@@ -112,7 +112,7 @@ export class GithubData {
     // periodically check if the new window was closed
     this.windowCheckTimer = setInterval(() => {
       if (!this.userPromptWindow?.closed) return;
-      clearInterval(this.windowCheckTimer);
+      if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
       this.windowCheckTimer = null;
       this.userPromptWindow = null;
       void this.refetch();

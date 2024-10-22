@@ -169,7 +169,7 @@ export function getDefaultMetricsExplorerEntity(
     dashboardSortType: SortType.VALUE,
     sortDirection: SortDirection.DESCENDING,
     selectedTimezone: "UTC",
-    selectedTimeRange: null,
+    selectedTimeRange: undefined,
 
     activePage: DashboardState_ActivePage.DEFAULT,
     selectedComparisonDimension: undefined,

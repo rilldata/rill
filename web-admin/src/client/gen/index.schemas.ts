@@ -487,6 +487,7 @@ export interface V1SudoUpdateOrganizationBillingCustomerResponse {
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   organization?: string;
   billingCustomerId?: string;
+  paymentCustomerId?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -817,6 +818,7 @@ export interface V1MemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
+  userPhotoUrl?: string;
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
@@ -1296,6 +1298,7 @@ export interface V1BillingPlan {
   trialPeriodDays?: number;
   default?: boolean;
   quotas?: V1Quotas;
+  public?: boolean;
 }
 
 export type V1BillingIssueType =

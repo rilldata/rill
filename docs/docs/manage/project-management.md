@@ -11,22 +11,29 @@ Once a project is ready to be deployed onto Rill Cloud, as an admin, you will ne
 
 An Organization in Rill is the parent management object and encompasses how your team or organization interfaces with Rill Cloud. Organizations are designed to hold the differnet components of your Rill project. Projects exist within an organization, which itself contains sources, models, dashboards, and other resources that belong to your standalone Rill projects.
 
-If you'd like to create, edit, modify, or delete an organization, you can do this either via the CLI or UI.
+If you'd like to create, edit, modify, or delete an organization, run the following command.
 
-### CLI
 ```
-rill org 
+rill org
+Manage organisations
+
+Usage:
+  rill org [command]
+
+Available Commands:
+  create      Create organization
+  edit        Edit organization details
+  switch      Switch to other organization
+  list        List all organizations
+  delete      Delete organization
+  rename      Rename organization
+
+Global Flags:
+      --api-token string   Token for authenticating with the cloud API
+      --format string      Output format (options: "human", "json", "csv") (default "human")
+  -h, --help               Print usage
+      --interactive        Prompt for missing required parameters (default true)
 ```
-
-
-### UI
-import ComingSoon from '@site/src/components/ComingSoon';
-
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-a
-</div>
 
 :::tip
 

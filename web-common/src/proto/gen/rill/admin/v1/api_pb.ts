@@ -3796,9 +3796,14 @@ export class SudoUpdateOrganizationBillingCustomerRequest extends Message<SudoUp
   organization = "";
 
   /**
-   * @generated from field: string billing_customer_id = 2;
+   * @generated from field: optional string billing_customer_id = 2;
    */
-  billingCustomerId = "";
+  billingCustomerId?: string;
+
+  /**
+   * @generated from field: optional string payment_customer_id = 3;
+   */
+  paymentCustomerId?: string;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationBillingCustomerRequest>) {
     super();
@@ -3809,7 +3814,8 @@ export class SudoUpdateOrganizationBillingCustomerRequest extends Message<SudoUp
   static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationBillingCustomerRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationBillingCustomerRequest {
@@ -11979,6 +11985,11 @@ export class MemberUser extends Message<MemberUser> {
   userName = "";
 
   /**
+   * @generated from field: string user_photo_url = 7;
+   */
+  userPhotoUrl = "";
+
+  /**
    * @generated from field: string role_name = 4;
    */
   roleName = "";
@@ -12004,6 +12015,7 @@ export class MemberUser extends Message<MemberUser> {
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
@@ -12735,11 +12747,16 @@ export class BillingPlan extends Message<BillingPlan> {
   default = false;
 
   /**
-   * TODO expose pricing information
-   *
    * @generated from field: rill.admin.v1.Quotas quotas = 7;
    */
   quotas?: Quotas;
+
+  /**
+   * TODO expose pricing information
+   *
+   * @generated from field: bool public = 8;
+   */
+  public = false;
 
   constructor(data?: PartialMessage<BillingPlan>) {
     super();
@@ -12756,6 +12773,7 @@ export class BillingPlan extends Message<BillingPlan> {
     { no: 5, name: "trial_period_days", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 6, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "quotas", kind: "message", T: Quotas },
+    { no: 8, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingPlan {
