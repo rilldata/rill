@@ -12,7 +12,7 @@ import (
 )
 
 type ExploreYAML struct {
-	commonYAML  `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title       string                 `yaml:"title"`
 	Description string                 `yaml:"description"`
 	MetricsView string                 `yaml:"metrics_view"`
@@ -214,14 +214,22 @@ func (p *Parser) parseExplore(node *Node) error {
 			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
 		}
 
+		var tr *string
+		if tmp.Defaults.TimeRange != "" {
+			tr = &tmp.Defaults.TimeRange
+		}
+		var compareDim *string
+		if tmp.Defaults.ComparisonDimension != "" {
+			compareDim = &tmp.Defaults.ComparisonDimension
+		}
 		defaultPreset = &runtimev1.ExplorePreset{
 			Dimensions:          presetDimensions,
 			DimensionsSelector:  presetDimensionsSelector,
 			Measures:            presetMeasures,
 			MeasuresSelector:    presetMeasuresSelector,
-			TimeRange:           tmp.Defaults.TimeRange,
+			TimeRange:           tr,
 			ComparisonMode:      mode,
-			ComparisonDimension: tmp.Defaults.ComparisonDimension,
+			ComparisonDimension: compareDim,
 		}
 	}
 

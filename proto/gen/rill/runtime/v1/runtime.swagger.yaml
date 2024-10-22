@@ -3999,6 +3999,8 @@ definitions:
       measuresSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      where:
+        $ref: '#/definitions/v1Expression'
       timeRange:
         type: string
         description: |-

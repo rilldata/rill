@@ -68,6 +68,7 @@ export function createDashboardStateSync(
         // Successive syncs with metrics view spec
         // metricsExplorerStore.sync(exploreName, explore);
       } else {
+        console.log("init");
         // Running for the 1st time. Initialise the dashboard store.
         metricsExplorerStore.init(
           exploreName,
@@ -79,13 +80,13 @@ export function createDashboardStateSync(
           get(page).url.searchParams.get("state") ?? initialUrlStateRes?.data;
         if (initialUrlState) {
           // If there is data to be loaded, load it during the init
-          metricsExplorerStore.syncFromUrl(
-            exploreName,
-            initialUrlState,
-            metricsView,
-            explore,
-            metricsViewSchemaRes.data.schema,
-          );
+          // metricsExplorerStore.syncFromUrl(
+          //   exploreName,
+          //   initialUrlState,
+          //   metricsView,
+          //   explore,
+          //   metricsViewSchemaRes.data.schema,
+          // );
           // Call sync to make sure changes in dashboard are honoured
           metricsExplorerStore.sync(exploreName, explore);
         }

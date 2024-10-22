@@ -16,7 +16,9 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { getMetricsExplorerFromUrl } from "@rilldata/web-common/features/dashboards/url-state/fromUrl";
+import { convertPresetToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
+import { convertURLToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
+import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
 import { getUrlFromMetricsExplorer } from "@rilldata/web-common/features/dashboards/url-state/toUrl";
 import { URLStateTestMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/url-state/url-state-test-data";
 import {
@@ -454,13 +456,19 @@ function testEntity(
 
   expect(url.toString()).to.eq(expectedUrl);
 
-  const { entity: actualEntity } = getMetricsExplorerFromUrl(
+  const { preset: presetFromUrl } = convertURLToExplorePreset(
     url.searchParams,
     AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
     explore,
-    preset ?? {},
+    getBasePreset(explore, {}),
   );
-  expect(actualEntity).toEqual({
+  const { entity: entityFromPreset } = convertPresetToMetricsExplore(
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    explore,
+    presetFromUrl,
+  );
+
+  expect(entityFromPreset).toEqual({
     ...URLStateTestMetricsExplorerEntity,
     ...entity,
   });

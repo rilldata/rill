@@ -80,10 +80,23 @@ function toTimeRangesUrl(
     searchParams.set("tz", metrics.selectedTimezone);
   }
 
-  if (metrics.selectedComparisonTimeRange?.name !== preset.compareTimeRange) {
+  console.log(metrics.showTimeComparison, metrics.selectedComparisonTimeRange);
+  if (
+    (preset.compareTimeRange !== undefined &&
+      metrics.selectedComparisonTimeRange?.name !== preset.compareTimeRange) ||
+    (preset.compareTimeRange === undefined &&
+      !!metrics.selectedComparisonTimeRange?.name)
+  ) {
     searchParams.set("ctr", metrics.selectedComparisonTimeRange?.name ?? "");
   }
-  if (metrics.selectedComparisonDimension !== preset.comparisonDimension) {
+  if (
+    // if preset has a compare dimension then only set if selected is not the same
+    (preset.comparisonDimension !== undefined &&
+      metrics.selectedComparisonDimension !== preset.comparisonDimension) ||
+    // else if there is no default then set if there was a selected compare dimension
+    (preset.comparisonDimension === undefined &&
+      !!metrics.selectedComparisonDimension)
+  ) {
     searchParams.set("cd", metrics.selectedComparisonDimension ?? "");
   }
 

@@ -1,5 +1,8 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { getMetricsExplorerFromUrl } from "@rilldata/web-common/features/dashboards/url-state/fromUrl";
+import { convertPresetToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
+import { convertURLToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
+import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import {
   getRuntimeServiceGetExploreQueryKey,
@@ -45,25 +48,37 @@ export const load = async ({ params, depends, url }) => {
     }
 
     let partialMetrics: Partial<MetricsExplorerEntity> = {};
+    const errors: Error[] = [];
     if (
       metricsViewResource.metricsView.state?.validSpec &&
       exploreResource.explore.state?.validSpec &&
       url
     ) {
-      const { entity, errors } = getMetricsExplorerFromUrl(
+      const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
         url.searchParams,
         metricsViewResource.metricsView.state.validSpec,
         exploreResource.explore.state.validSpec,
-        exploreResource.explore.state.validSpec.defaultPreset ?? {},
+        getBasePreset(
+          exploreResource.explore.state.validSpec,
+          getLocalUserPreferencesState(exploreName),
+        ),
       );
+      errors.push(...errorsFromPreset);
+      const { entity, errors: errorsFromEntity } =
+        convertPresetToMetricsExplore(
+          metricsViewResource.metricsView.state.validSpec,
+          exploreResource.explore.state.validSpec,
+          preset,
+        );
+      errors.push(...errorsFromEntity);
       partialMetrics = entity;
-      if (errors.length) console.log(errors); // TODO
     }
 
     return {
       explore: exploreResource,
       metricsView: metricsViewResource,
       partialMetrics,
+      errors,
     };
   } catch (e) {
     console.error(e);

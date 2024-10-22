@@ -1854,6 +1854,7 @@ export interface V1ExplorePreset {
   /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
   measuresSelector?: V1FieldSelector;
+  where?: V1Expression;
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */

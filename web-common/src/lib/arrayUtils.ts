@@ -40,3 +40,10 @@ export function arrayOrderedEquals<T>(src: T[], tar: T[]) {
   }
   return true;
 }
+
+/**
+ * Returns values in tar that are missing in src.
+ */
+export function getMissingValues<T>(src: T[], tar: T[]) {
+  return tar.filter((v) => !src.includes(v));
+}

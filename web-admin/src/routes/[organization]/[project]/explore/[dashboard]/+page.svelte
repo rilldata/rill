@@ -9,9 +9,8 @@
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
-  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -88,20 +87,18 @@
       <StateManagersProvider {metricsViewName} {exploreName}>
         {#if $user.isSuccess && $user.data.user}
           <DashboardBookmarksStateProvider {metricsViewName} {exploreName}>
-            <DashboardURLStateProvider {metricsViewName}>
+            <DashboardURLStateSync>
               <DashboardThemeProvider>
                 <Dashboard {metricsViewName} {exploreName} />
               </DashboardThemeProvider>
-            </DashboardURLStateProvider>
+            </DashboardURLStateSync>
           </DashboardBookmarksStateProvider>
         {:else}
-          <DashboardStateProvider {exploreName}>
-            <DashboardURLStateProvider {metricsViewName}>
-              <DashboardThemeProvider>
-                <Dashboard {metricsViewName} {exploreName} />
-              </DashboardThemeProvider>
-            </DashboardURLStateProvider>
-          </DashboardStateProvider>
+          <DashboardURLStateSync>
+            <DashboardThemeProvider>
+              <Dashboard {metricsViewName} {exploreName} />
+            </DashboardThemeProvider>
+          </DashboardURLStateSync>
         {/if}
       </StateManagersProvider>
     {/key}

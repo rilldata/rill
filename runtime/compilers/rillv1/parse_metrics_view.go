@@ -4,30 +4,29 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title             string           `yaml:"title"`
-	DisplayName       string           `yaml:"display_name"` // Backwards compatibility
-	Description       string           `yaml:"description"`
-	Model             string           `yaml:"model"`
-	Database          string           `yaml:"database"`
-	DatabaseSchema    string           `yaml:"database_schema"`
-	Table             string           `yaml:"table"`
-	TimeDimension     string           `yaml:"timeseries"`
-	Watermark         string           `yaml:"watermark"`
-	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	Title             string `yaml:"title"`
+	DisplayName       string `yaml:"display_name"` // Backwards compatibility
+	Description       string `yaml:"description"`
+	Model             string `yaml:"model"`
+	Database          string `yaml:"database"`
+	DatabaseSchema    string `yaml:"database_schema"`
+	Table             string `yaml:"table"`
+	TimeDimension     string `yaml:"timeseries"`
+	Watermark         string `yaml:"watermark"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name        string
 		Label       string
@@ -872,14 +871,22 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if len(spec.DefaultMeasures) == 0 {
 		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
 	}
+	var tr *string
+	if spec.DefaultTimeRange != "" {
+		tr = &spec.DefaultTimeRange
+	}
+	var compareDim *string
+	if spec.DefaultComparisonDimension != "" {
+		compareDim = &spec.DefaultComparisonDimension
+	}
 	e.ExploreSpec.DefaultPreset = &runtimev1.ExplorePreset{
 		Dimensions:          spec.DefaultDimensions,
 		DimensionsSelector:  presetDimensionsSelector,
 		Measures:            spec.DefaultMeasures,
 		MeasuresSelector:    presetMeasuresSelector,
-		TimeRange:           spec.DefaultTimeRange,
+		TimeRange:           tr,
 		ComparisonMode:      exploreComparisonMode,
-		ComparisonDimension: spec.DefaultComparisonDimension,
+		ComparisonDimension: compareDim,
 	}
 
 	return nil

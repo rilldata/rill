@@ -188,6 +188,7 @@ const metricsViewReducers = {
       schema,
     );
     if (!partial) return;
+    console.log("syncFromUrl", partial);
 
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       for (const key in partial) {
@@ -204,7 +205,7 @@ const metricsViewReducers = {
     });
   },
 
-  syncFromUrlParams(
+  mergePartialExplorerEntity(
     name: string,
     partialMetrics: Partial<MetricsExplorerEntity>,
     metricsView: V1MetricsViewSpec,
@@ -227,6 +228,7 @@ const metricsViewReducers = {
   sync(name: string, explore: V1ExploreSpec) {
     if (!name || !explore || !explore.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      console.log("sync");
       // remove references to non existent measures
       syncMeasures(explore, metricsExplorer);
 

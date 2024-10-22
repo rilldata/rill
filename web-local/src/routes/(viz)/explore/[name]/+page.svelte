@@ -6,7 +6,6 @@
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -41,8 +40,6 @@
     );
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $exploreQuery.error?.response?.status === 404;
-
-  console.log("???");
 </script>
 
 <svelte:head>
@@ -70,13 +67,11 @@
 {:else}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardStateProvider {exploreName}>
-        <DashboardURLStateSync {partialMetrics}>
-          <DashboardThemeProvider>
-            <Dashboard {metricsViewName} {exploreName} />
-          </DashboardThemeProvider>
-        </DashboardURLStateSync>
-      </DashboardStateProvider>
+      <DashboardURLStateSync {partialMetrics}>
+        <DashboardThemeProvider>
+          <Dashboard {metricsViewName} {exploreName} />
+        </DashboardThemeProvider>
+      </DashboardURLStateSync>
     </StateManagersProvider>
   {/key}
 {/if}

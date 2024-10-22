@@ -2387,23 +2387,28 @@ export class ExplorePreset extends Message<ExplorePreset> {
   measuresSelector?: FieldSelector;
 
   /**
+   * @generated from field: optional rill.runtime.v1.Expression where = 25;
+   */
+  where?: Expression;
+
+  /**
    * Time range for the explore.
    * It corresponds to the `range` property of the explore's `time_ranges`.
    * If not found in `time_ranges`, it should be added to the list.
    *
-   * @generated from field: string time_range = 6;
+   * @generated from field: optional string time_range = 6;
    */
-  timeRange = "";
+  timeRange?: string;
 
   /**
-   * @generated from field: string timezone = 11;
+   * @generated from field: optional string timezone = 11;
    */
-  timezone = "";
+  timezone?: string;
 
   /**
-   * @generated from field: string time_grain = 12;
+   * @generated from field: optional string time_grain = 12;
    */
-  timeGrain = "";
+  timeGrain?: string;
 
   /**
    * Comparison mode.
@@ -2420,44 +2425,44 @@ export class ExplorePreset extends Message<ExplorePreset> {
   /**
    * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
    *
-   * @generated from field: string comparison_dimension = 8;
+   * @generated from field: optional string comparison_dimension = 8;
    */
-  comparisonDimension = "";
+  comparisonDimension?: string;
 
   /**
-   * @generated from field: rill.runtime.v1.ExploreWebView view = 14;
+   * @generated from field: optional rill.runtime.v1.ExploreWebView view = 14;
    */
-  view = ExploreWebView.EXPLORE_ACTIVE_PAGE_UNSPECIFIED;
+  view?: ExploreWebView;
 
   /**
-   * @generated from field: string overview_sort_by = 15;
+   * @generated from field: optional string overview_sort_by = 15;
    */
-  overviewSortBy = "";
+  overviewSortBy?: string;
 
   /**
-   * @generated from field: bool overview_sort_asc = 16;
+   * @generated from field: optional bool overview_sort_asc = 16;
    */
-  overviewSortAsc = false;
+  overviewSortAsc?: boolean;
 
   /**
-   * @generated from field: string overview_expanded_dimension = 17;
+   * @generated from field: optional string overview_expanded_dimension = 17;
    */
-  overviewExpandedDimension = "";
+  overviewExpandedDimension?: string;
 
   /**
-   * @generated from field: string time_dimension_measure = 18;
+   * @generated from field: optional string time_dimension_measure = 18;
    */
-  timeDimensionMeasure = "";
+  timeDimensionMeasure?: string;
 
   /**
-   * @generated from field: string time_dimension_chart_type = 19;
+   * @generated from field: optional string time_dimension_chart_type = 19;
    */
-  timeDimensionChartType = "";
+  timeDimensionChartType?: string;
 
   /**
-   * @generated from field: bool time_dimension_pin = 20;
+   * @generated from field: optional bool time_dimension_pin = 20;
    */
-  timeDimensionPin = false;
+  timeDimensionPin?: boolean;
 
   /**
    * @generated from field: repeated string pivot_rows = 21;
@@ -2470,14 +2475,14 @@ export class ExplorePreset extends Message<ExplorePreset> {
   pivotCols: string[] = [];
 
   /**
-   * @generated from field: string pivot_sort_by = 23;
+   * @generated from field: optional string pivot_sort_by = 23;
    */
-  pivotSortBy = "";
+  pivotSortBy?: string;
 
   /**
-   * @generated from field: bool pivot_sort_asc = 24;
+   * @generated from field: optional bool pivot_sort_asc = 24;
    */
-  pivotSortAsc = false;
+  pivotSortAsc?: boolean;
 
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
@@ -2491,23 +2496,24 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 9, name: "dimensions_selector", kind: "message", T: FieldSelector },
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
-    { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 12, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 25, name: "where", kind: "message", T: Expression, opt: true },
+    { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 11, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 12, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 13, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "view", kind: "enum", T: proto3.getEnumType(ExploreWebView) },
-    { no: 15, name: "overview_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 16, name: "overview_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 17, name: "overview_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 18, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 19, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 20, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 14, name: "view", kind: "enum", T: proto3.getEnumType(ExploreWebView), opt: true },
+    { no: 15, name: "overview_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 16, name: "overview_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 17, name: "overview_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 20, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 21, name: "pivot_rows", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 22, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 23, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 24, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 24, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
