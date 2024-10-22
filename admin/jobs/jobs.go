@@ -16,7 +16,7 @@ type Client interface {
 	// payment provider related jobs
 	PaymentMethodAdded(ctx context.Context, methodID, paymentCustomerID, typ string, eventTime time.Time) (*InsertResult, error)
 	PaymentMethodRemoved(ctx context.Context, methodID, paymentCustomerID string, eventTime time.Time) (*InsertResult, error)
-	CustomerAddressUpdated(ctx context.Context, paymentCustomerID, country string, eventTime time.Time) (*InsertResult, error)
+	CustomerAddressUpdated(ctx context.Context, paymentCustomerID string, eventTime time.Time) (*InsertResult, error)
 
 	// biller related jobs
 	PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error)

@@ -107,7 +107,6 @@ func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[Pa
 
 type CustomerAddressUpdatedArgs struct {
 	PaymentCustomerID string
-	Country           string // needed for tax reasons
 	EventTime         time.Time
 }
 

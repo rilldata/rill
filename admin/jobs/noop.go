@@ -36,7 +36,7 @@ func (n *noop) PaymentMethodRemoved(ctx context.Context, methodID, paymentCustom
 	return nil, nil
 }
 
-func (n *noop) CustomerAddressUpdated(ctx context.Context, paymentCustomerID, country string, eventTime time.Time) (*InsertResult, error) {
+func (n *noop) CustomerAddressUpdated(ctx context.Context, paymentCustomerID string, eventTime time.Time) (*InsertResult, error) {
 	return nil, nil
 }
 

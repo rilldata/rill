@@ -118,7 +118,7 @@ func (s *stripeWebhook) handlePaymentMethodRemoved(ctx context.Context, eventID,
 }
 
 func (s *stripeWebhook) handleCustomerAddressUpdated(ctx context.Context, eventID string, eventTime time.Time, customer *stripe.Customer) error {
-	res, err := s.jobs.CustomerAddressUpdated(ctx, customer.ID, customer.Address.Country, eventTime)
+	res, err := s.jobs.CustomerAddressUpdated(ctx, customer.ID, eventTime)
 	if err != nil {
 		return fmt.Errorf("failed to add customer updated event: %w", err)
 	}
