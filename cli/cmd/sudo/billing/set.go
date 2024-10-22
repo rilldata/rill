@@ -10,7 +10,7 @@ import (
 )
 
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
-	var org, customerID string
+	var org, billingCustomerID, paymentCustomerID string
 	setCmd := &cobra.Command{
 		Use:   "set",
 		Short: "Set billing information for customers",
@@ -27,16 +27,26 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("Please set --org")
 			}
 
-			res, err := client.SudoUpdateOrganizationBillingCustomer(ctx, &adminv1.SudoUpdateOrganizationBillingCustomerRequest{
-				Organization:      org,
-				BillingCustomerId: customerID,
-			})
+			req := &adminv1.SudoUpdateOrganizationBillingCustomerRequest{
+				Organization: org,
+			}
+
+			if cmd.Flags().Changed("billing-customer-id") {
+				req.BillingCustomerId = &billingCustomerID
+			}
+
+			if cmd.Flags().Changed("payment-customer-id") {
+				req.PaymentCustomerId = &paymentCustomerID
+			}
+
+			res, err := client.SudoUpdateOrganizationBillingCustomer(ctx, req)
 			if err != nil {
 				return err
 			}
 
 			ch.PrintfSuccess("Updated billing information for organization %s\n", org)
 			fmt.Printf("Billing Customer Id: %s\n", res.Organization.BillingCustomerId)
+			fmt.Printf("Payment Customer Id: %s\n", res.Organization.PaymentCustomerId)
 
 			if res.Subscription == nil {
 				fmt.Printf("No existing subscriptions\n")
@@ -60,6 +70,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	setCmd.Flags().StringVar(&org, "org", "", "Organization Name")
-	setCmd.Flags().StringVar(&customerID, "customer-id", "", "Billing Customer Id")
+	setCmd.Flags().StringVar(&billingCustomerID, "billing-customer-id", "", "Billing Customer Id")
+	setCmd.Flags().StringVar(&paymentCustomerID, "payment-customer-id", "", "Payment Customer Id")
 	return setCmd
 }
