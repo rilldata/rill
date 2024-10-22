@@ -107,6 +107,7 @@ func (w *PaymentMethodRemovedWorker) Work(ctx context.Context, job *river.Job[Pa
 
 type CustomerAddressUpdatedArgs struct {
 	PaymentCustomerID string
+	Country           string // needed for tax reasons
 	EventTime         time.Time
 }
 
@@ -139,6 +140,24 @@ func (w *CustomerAddressUpdatedWorker) Work(ctx context.Context, job *river.Job[
 		err = w.admin.DB.DeleteBillingIssue(ctx, be.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	}
+
+	// fetch the customer again to get the latest address status
+	c, err := w.admin.PaymentProvider.FindCustomer(ctx, job.Args.PaymentCustomerID)
+	if err != nil {
+		return fmt.Errorf("failed to find customer: %w", err)
+	}
+
+	if c.TaxExempt {
+		err = w.admin.Biller.MarkCustomerTaxExempt(ctx, org.BillingCustomerID)
+		if err != nil {
+			return fmt.Errorf("failed to set organization tax exempt: %w", err)
+		}
+	} else {
+		err = w.admin.Biller.UnmarkCustomerTaxExempt(ctx, org.BillingCustomerID)
+		if err != nil {
+			return fmt.Errorf("failed to unset organization tax exempt: %w", err)
 		}
 	}
 

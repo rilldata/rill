@@ -214,7 +214,7 @@ func (o *Orb) UnscheduleCancellation(ctx context.Context, subscriptionID string)
 	if err != nil {
 		return nil, err
 	}
-	return getBillingSubscriptionFromOrbSubscription(sub)
+	return o.getBillingSubscriptionFromOrbSubscription(ctx, sub)
 }
 
 func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
@@ -277,6 +277,35 @@ func (o *Orb) IsInvoiceValid(ctx context.Context, invoice *Invoice) bool {
 
 func (o *Orb) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
 	return strings.EqualFold(invoice.Status, "paid")
+}
+
+func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) error {
+	// note - hard coded to use Avalara tax provider as of now, Orb supports Avalara and TaxJar
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+			TaxExempt:        orb.F(true),
+			TaxProvider:      orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+			TaxExemptionCode: orb.F("R"), // code for NON-RESIDENT
+		}),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error {
+	// note - hard coded to use Avalara tax provider as of now, Orb supports Avalara and TaxJar
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+			TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+			TaxExempt:   orb.F(false),
+		}),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
@@ -372,7 +401,7 @@ func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status or
 	var subscriptions []*Subscription
 	for i := 0; i < len(sub.Data); i++ {
 		s := sub.Data[i]
-		billingSub, err := getBillingSubscriptionFromOrbSubscription(&s)
+		billingSub, err := o.getBillingSubscriptionFromOrbSubscription(ctx, &s)
 		if err != nil {
 			return nil, err
 		}
@@ -409,7 +438,7 @@ func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
 
 	var billingPlans []*Plan
 	for i := 0; i < len(plans.Data); i++ {
-		billingPlan, err := getBillingPlanFromOrbPlan(&plans.Data[i])
+		billingPlan, err := o.getBillingPlanFromOrbPlan(ctx, &plans.Data[i])
 		if err != nil {
 			return nil, err
 		}
@@ -442,7 +471,16 @@ func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent
 	return nil
 }
 
-func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
+func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan, error) {
+	if p.BasePlanID != "" {
+		// fetch base plan metadata, child plans are auto-created by Orb in case of overrides so will be only one level deep
+		basePlan, err := o.client.Plans.Fetch(ctx, p.BasePlanID)
+		if err != nil {
+			return nil, err
+		}
+		p.Metadata = basePlan.Metadata
+	}
+
 	metadata := &planMetadata{}
 	err := mapstructure.WeakDecode(p.Metadata, metadata)
 	if err != nil {
@@ -477,8 +515,8 @@ func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 	return billingPlan, nil
 }
 
-func getBillingSubscriptionFromOrbSubscription(s *orb.Subscription) (*Subscription, error) {
-	plan, err := getBillingPlanFromOrbPlan(&s.Plan)
+func (o *Orb) getBillingSubscriptionFromOrbSubscription(ctx context.Context, s *orb.Subscription) (*Subscription, error) {
+	plan, err := o.getBillingPlanFromOrbPlan(ctx, &s.Plan)
 	if err != nil {
 		return nil, err
 	}

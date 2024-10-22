@@ -50,6 +50,9 @@ type Biller interface {
 	IsInvoiceValid(ctx context.Context, invoice *Invoice) bool
 	IsInvoicePaid(ctx context.Context, invoice *Invoice) bool
 
+	MarkCustomerTaxExempt(ctx context.Context, customerID string) error
+	UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error
+
 	ReportUsage(ctx context.Context, usage []*Usage) error
 
 	GetReportingGranularity() UsageReportingGranularity

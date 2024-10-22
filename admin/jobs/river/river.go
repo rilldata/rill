@@ -217,9 +217,10 @@ func (c *Client) PaymentMethodRemoved(ctx context.Context, paymentMethodID, paym
 	}, nil
 }
 
-func (c *Client) CustomerAddressUpdated(ctx context.Context, paymentCustomerID string, eventTime time.Time) (*jobs.InsertResult, error) {
+func (c *Client) CustomerAddressUpdated(ctx context.Context, paymentCustomerID, country string, eventTime time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, CustomerAddressUpdatedArgs{
 		PaymentCustomerID: paymentCustomerID,
+		Country:           country,
 		EventTime:         eventTime,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
