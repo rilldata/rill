@@ -7,10 +7,12 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"test": "vitest run",
+		"check": "svelte-check --no-tsconfig",
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
 		"format": "prettier --plugin-search-dir . --write ."
 	},
 	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^3.1.2",
 		"@types/auth0-js": "^9.14.7",
 		"auth0-js": "^9.20.2",
 		"autoprefixer": "^10.4.20",

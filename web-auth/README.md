@@ -1,7 +1,6 @@
 
 # Login and Sign up page template
 
-  
 
 This folder contains the log in and sign up which is used for Rill Cloud and Rill Enterprise. It's implemented with TypeScript, Vite and Svelte.
 
@@ -30,18 +29,18 @@ VITE_CONNECTION_MAP={"connection-a":["domain1.com"]...}
 
 These environment variables can be found in 1Password. The document is named - **Rill Web Auth env**
 
-While developing, to test the login features, deploy the generated template `bundle.html` (follow steps mentioned in building for production) to Auth0 staging. Verification can be done through Rill Cloud Staging and Dash staging.
+While developing, to test the login features, deploy the generated template `/dist/index.html` (follow steps mentioned in building for production) to Auth0 staging. Verification can be done through Rill Cloud Staging and Dash staging.
 
 
 ## Building for production
 
 1. Add `.env` file to the workspace
 2. Run `npm run build -w web-auth`
-3. Copy the contents of `/dist/src/bundle.html` 
+3. Copy the contents of `/dist/index.html` 
 4. Paste it in Auth0 login page which can be found at `https://manage.auth0.com/dashboard/us/<tenant-name>/login_page`
 
 
-**Note**: If static files such as fonts/favicon are changed, `/src/bundle.html` should be updated with the new links. The static files are hosted on Rill CDN.
+**Note**: If static files such as fonts/favicon are changed, `/index.html` should be updated with the new links. The static files are hosted on Rill CDN.
 
 ## Contributing
 

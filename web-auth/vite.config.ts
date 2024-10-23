@@ -15,17 +15,13 @@ export default defineConfig({
       "@rilldata/web-local": "/../web-local/src",
     },
   },
-
-  plugins: [svelte(), viteSingleFile()],
+  plugins: [svelte(), viteSingleFile({ removeViteModuleLoader: true })],
   server: {
     port: 3000,
     strictPort: true,
   },
 
   build: {
-    rollupOptions: {
-      input: "/src/bundle.html",
-    },
     target: "es2019",
   },
 });
