@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceGetCurrentUser,
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
@@ -26,7 +25,6 @@
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
-  $: currentUser = createAdminServiceGetCurrentUser();
   $: listProjectMemberUsergroups =
     createAdminServiceListProjectMemberUsergroups(organization, project);
   $: listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
