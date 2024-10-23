@@ -270,3 +270,32 @@ func TestHanging(t *testing.T) {
 	require.Equal(t, true, m1.(*mockConn).closeCalled.Load())
 	require.GreaterOrEqual(t, hangingCloses.Load(), int64(1))
 }
+
+func TestAcquireCloseAfterOpening(t *testing.T) {
+	c := New(Options{
+		MaxIdleConnections: 2,
+		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
+			time.Sleep(time.Second)
+			return &mockConn{cfg: cfg.(string)}, nil
+		},
+		KeyFunc: func(cfg any) string {
+			return cfg.(string)
+		},
+	})
+
+	// Acquire a conn that takes 1s to open, but cancellation after 100ms.
+	// The conn will continue opening in the background after the cancellation (for 1s).
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	_, _, err := c.Acquire(ctx, "foo")
+	require.ErrorIs(t, err, ctx.Err())
+
+	// Evict all connections, including the one that's still opening.
+	// Internally, it will get closeAfterOpening set to true.
+	c.EvictWhere(func(cfg any) bool { return true })
+
+	// Now try to acquire it again. We expect it to finish opening (), then be closed (per the eviction), then be opened again and returned here.
+	_, r1, err := c.Acquire(context.Background(), "foo")
+	require.NoError(t, err)
+	r1()
+}

@@ -159,18 +159,27 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 
 	c.retainEntry(k, e)
 
-	if e.status == entryStatusOpen {
-		defer c.mu.Unlock()
-		if e.err != nil {
-			c.releaseEntry(k, e)
-			return nil, nil, e.err
+	var ch chan struct{}
+	ok = false
+	for {
+		if e.status == entryStatusOpen {
+			defer c.mu.Unlock() // nolint: gocritic // Guaranteed to return in this loop iteration
+			if e.err != nil {
+				c.releaseEntry(k, e)
+				return nil, nil, e.err
+			}
+			return e.handle, c.releaseFunc(k, e), nil
 		}
-		return e.handle, c.releaseFunc(k, e), nil
-	}
 
-	ch, ok := c.singleflight[k]
+		ch, ok = c.singleflight[k]
+		if !ok {
+			break
+		}
 
-	if ok && e.status == entryStatusClosing {
+		if e.status != entryStatusClosing && !e.closeAfterOpening {
+			break
+		}
+
 		c.mu.Unlock()
 		select {
 		case <-ch:
@@ -188,17 +197,6 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 			c.mu.Unlock()
 			return nil, nil, errors.New("conncache: closed")
 		}
-
-		if e.status == entryStatusOpen {
-			defer c.mu.Unlock()
-			if e.err != nil {
-				c.releaseEntry(k, e)
-				return nil, nil, e.err
-			}
-			return e.handle, c.releaseFunc(k, e), nil
-		}
-
-		ch, ok = c.singleflight[k]
 	}
 
 	if !ok {
