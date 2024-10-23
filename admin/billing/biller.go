@@ -33,6 +33,7 @@ type Biller interface {
 	FindCustomer(ctx context.Context, customerID string) (*Customer, error)
 	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
 	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
+	DeleteCustomer(ctx context.Context, customerID string) error
 
 	// CreateSubscription creates a subscription for the given organization. Subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
