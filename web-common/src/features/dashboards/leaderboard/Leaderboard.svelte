@@ -5,19 +5,27 @@
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
-    type LeaderboardItemData,
     prepareLeaderboardItemData,
+    type LeaderboardItemData,
   } from "./leaderboard-utils";
+  import {
+    LEADERBOARD_DEFAULT_COLUMN_WIDTHS,
+    type ColumnWidths,
+  } from "./leaderboard-widths";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import LoadingRows from "./LoadingRows.svelte";
 
   const slice = 7;
-  const columnWidth = 66;
   const gutterWidth = 24;
 
   export let parentElement: HTMLElement;
   export let dimensionName: string;
+  export let columnWidths: ColumnWidths = LEADERBOARD_DEFAULT_COLUMN_WIDTHS;
+  export let calculateAllLeaderboardWidths: (
+    dimensionName: string,
+    leaderboardData,
+  ) => void;
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -95,6 +103,9 @@
   let showExpandTable = false;
   let noAvailableValues = true;
 
+  $: firstColumnWidth =
+    !$isTimeComparisonActive && !$isValidPercentOfTotal ? 240 : 164;
+
   $: if (sortedData && !isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
       sortedData?.data ?? [],
@@ -109,18 +120,25 @@
     selectedBelowTheFold = leaderboardData.selectedBelowTheFold;
     noAvailableValues = leaderboardData.noAvailableValues;
     showExpandTable = leaderboardData.showExpandTable;
+
+    // Calculate column widths for this leaderboard
+    calculateAllLeaderboardWidths(dimensionName, leaderboardData);
   }
 
   $: isBeingCompared = $isBeingComparedReadable(dimensionName);
 
   $: dimensionDescription = $getDimensionDescription(dimensionName);
 
-  $: firstColumnWidth =
-    !$isTimeComparisonActive && !$isValidPercentOfTotal ? 240 : 164;
-
   $: columnCount = $isTimeComparisonActive ? 3 : $isValidPercentOfTotal ? 2 : 1;
 
-  $: tableWidth = columnCount * columnWidth + firstColumnWidth;
+  $: tableWidth =
+    firstColumnWidth +
+    columnWidths.value +
+    ($isTimeComparisonActive
+      ? columnWidths.delta + columnWidths.deltaPercent
+      : $isValidPercentOfTotal
+        ? columnWidths.percentOfTotal
+        : 0);
 </script>
 
 <div
@@ -135,10 +153,12 @@
     <colgroup>
       <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
-      <col style:width="{columnWidth}px" />
+      <col style:width="{columnWidths.value}px" />
       {#if $isTimeComparisonActive}
-        <col style:width="{columnWidth}px" />
-        <col style:width="{columnWidth}px" />
+        <col style:width="{columnWidths.delta}px" />
+        <col style:width="{columnWidths.deltaPercent}px" />
+      {:else if $isValidPercentOfTotal}
+        <col style:width="{columnWidths.percentOfTotal}px" />
       {/if}
     </colgroup>
 
@@ -169,9 +189,8 @@
             {itemData}
             isValidPercentOfTotal={$isValidPercentOfTotal}
             isTimeComparisonActive={$isTimeComparisonActive}
-            {columnWidth}
+            {columnWidths}
             {gutterWidth}
-            {firstColumnWidth}
           />
         {/each}
       {/if}
@@ -186,9 +205,8 @@
           isTimeComparisonActive={$isTimeComparisonActive}
           borderTop={i === 0}
           borderBottom={i === selectedBelowTheFold.length - 1}
-          {columnWidth}
+          {columnWidths}
           {gutterWidth}
-          {firstColumnWidth}
         />
       {/each}
     </tbody>

@@ -5,6 +5,7 @@ import {
   formatPresetToNumberKind,
   NumberKind,
   type FormatterFactoryOptions,
+  type FormatterType,
 } from "./humanizer-types";
 import {
   formatMsInterval,
@@ -15,8 +16,14 @@ import { PerRangeFormatter } from "./strategies/per-range";
 import {
   defaultCurrencyOptions,
   defaultGenericNumOptions,
+  defaultNoFormattingOptions,
   defaultPercentOptions,
 } from "./strategies/per-range-default-options";
+import {
+  tooltipCurrencyOptions,
+  tooltipNoFormattingOptions,
+  tooltipPercentOptions,
+} from "./strategies/per-range-tooltip-options";
 
 /**
  * This function is intended to provides a compact,
@@ -71,11 +78,16 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
         value,
       );
 
+    case FormatPreset.DEFAULT:
+      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
+        value,
+      );
+
     default:
       console.warn(
         "Unknown format preset, using default formatter. All number kinds should be handled.",
       );
-      return new PerRangeFormatter(defaultGenericNumOptions).stringFormat(
+      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
         value,
       );
   }
@@ -83,6 +95,7 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
 
 /**
  * Parse the currency symbol from a d3 format string.
+ * For d3 the currency symbol is always "$" in the format string
  */
 export function includesCurrencySymbol(formatString: string): boolean {
   return formatString.includes("$");
@@ -101,9 +114,55 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
     return JSON.stringify(value);
   }
   if (type === FormatPreset.INTERVAL) {
-    return formatMsToDuckDbIntervalString(value as number);
+    return formatMsToDuckDbIntervalString(value);
   }
   return value.toString();
+}
+
+function humanizeDataTypeForTooltip(
+  value: number,
+  preset: FormatPreset,
+): string {
+  if (typeof value !== "number") {
+    console.warn(
+      `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${preset}"`,
+    );
+
+    return JSON.stringify(value);
+  }
+
+  switch (preset) {
+    case FormatPreset.CURRENCY_USD:
+      return new PerRangeFormatter(
+        tooltipCurrencyOptions(NumberKind.DOLLAR),
+      ).stringFormat(value);
+
+    case FormatPreset.CURRENCY_EUR:
+      return new PerRangeFormatter(
+        tooltipCurrencyOptions(NumberKind.EURO),
+      ).stringFormat(value);
+
+    case FormatPreset.PERCENTAGE:
+      return new PerRangeFormatter(tooltipPercentOptions).stringFormat(value);
+
+    case FormatPreset.INTERVAL:
+      return formatMsToDuckDbIntervalString(value);
+
+    case FormatPreset.HUMANIZE:
+    case FormatPreset.DEFAULT:
+    case FormatPreset.NONE:
+      return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
+        value,
+      );
+
+    default:
+      console.warn(
+        "Unknown format preset, using default formatter. All number kinds should be handled.",
+      );
+      return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
+        value,
+      );
+  }
 }
 
 /**
@@ -122,12 +181,20 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
  */
 export function createMeasureValueFormatter<T extends null | undefined = never>(
   measureSpec: MetricsViewSpecMeasureV2,
-  useUnabridged = false,
-  isBigNumber = false,
+  type: FormatterType = "default",
 ): (value: number | string | T) => string | T {
-  const humanizer = useUnabridged
-    ? humanizeDataTypeUnabridged
-    : humanizeDataType;
+  const useUnabridged = type === "unabridged";
+  const isBigNumber = type === "big-number";
+  const isTooltip = type === "tooltip";
+
+  let humanizer: (value: number, type: FormatPreset) => string;
+  if (useUnabridged) {
+    humanizer = humanizeDataTypeUnabridged;
+  } else if (isTooltip) {
+    humanizer = humanizeDataTypeForTooltip;
+  } else {
+    humanizer = humanizeDataType;
+  }
 
   // Return and empty string if measureSpec is not provided.
   // This may e.g. be the case during the initial render of a dashboard,
@@ -144,11 +211,11 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
     try {
       const formatter = d3format(measureSpec.formatD3);
       const hasCurrencySymbol = includesCurrencySymbol(measureSpec.formatD3);
+
       return (value: number | string | T) => {
         if (typeof value !== "number") return value;
 
-        if (isBigNumber) {
-          // For Big Number always use the humanizer
+        if (isBigNumber || isTooltip) {
           if (hasCurrencySymbol) {
             return humanizer(value, FormatPreset.CURRENCY_USD);
           } else {
@@ -169,11 +236,16 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   let formatPreset =
     measureSpec.formatPreset && measureSpec.formatPreset !== ""
       ? (measureSpec.formatPreset as FormatPreset)
-      : FormatPreset.HUMANIZE;
+      : FormatPreset.DEFAULT;
 
-  if (isBigNumber && formatPreset === FormatPreset.NONE) {
+  if (
+    isBigNumber &&
+    (formatPreset === FormatPreset.NONE ||
+      formatPreset === FormatPreset.DEFAULT)
+  ) {
     formatPreset = FormatPreset.HUMANIZE;
   }
+
   return (value: number | T) =>
     typeof value === "number" ? humanizer(value, formatPreset) : value;
 }
