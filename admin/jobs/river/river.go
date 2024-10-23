@@ -313,13 +313,13 @@ func (c *Client) InitOrgBilling(ctx context.Context, orgID string) (*jobs.Insert
 	}, nil
 }
 
-func (c *Client) RepairOrgBilling(ctx context.Context, orgID, biller string) (*jobs.InsertResult, error) {
+func (c *Client) RepairOrgBilling(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, RepairOrgBillingArgs{
-		OrgID:  orgID,
-		Biller: biller,
+		OrgID: orgID,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
+			ByArgs:  true,
+			ByState: []rivertype.JobState{rivertype.JobStateAvailable, rivertype.JobStateRunning, rivertype.JobStateRetryable, rivertype.JobStateScheduled}, // to prevent concurrent run but still allow retries
 		},
 	})
 	if err != nil {

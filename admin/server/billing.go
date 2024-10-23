@@ -585,7 +585,7 @@ func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.Sudo
 	}
 
 	for _, orgID := range ids {
-		_, err := s.admin.Jobs.RepairOrgBilling(ctx, orgID, s.admin.Biller.Name())
+		_, err := s.admin.Jobs.RepairOrgBilling(ctx, orgID)
 		if err != nil {
 			s.logger.Named("billing").Error("failed to submit repair billing job", zap.String("org_id", orgID), zap.Error(err))
 			continue

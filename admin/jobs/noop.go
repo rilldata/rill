@@ -56,7 +56,7 @@ func (n *noop) InitOrgBilling(ctx context.Context, orgID string) (*InsertResult,
 	return nil, nil
 }
 
-func (n *noop) RepairOrgBilling(ctx context.Context, orgID, biller string) (*InsertResult, error) {
+func (n *noop) RepairOrgBilling(ctx context.Context, orgID string) (*InsertResult, error) {
 	return nil, nil
 }
 

@@ -55,8 +55,7 @@ func (w *InitOrgBillingWorker) Work(ctx context.Context, job *river.Job[InitOrgB
 }
 
 type RepairOrgBillingArgs struct {
-	OrgID  string
-	Biller string
+	OrgID string
 }
 
 func (RepairOrgBillingArgs) Kind() string { return "repair_org_billing" }
