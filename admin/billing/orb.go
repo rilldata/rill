@@ -20,6 +20,12 @@ import (
 const (
 	requestMaxLimit = 500
 	requestTimeout  = 10 * time.Second
+
+	avalaraTaxProvider = "avalara"
+	taxJarTaxProvider  = "taxjar"
+	noneTaxProvider    = "none"
+
+	avalaraTaxExemptionCode = "R" // code for NON-RESIDENT
 )
 
 var _ Biller = &Orb{}
@@ -282,18 +288,18 @@ func (o *Orb) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
 
 func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) error {
 	switch o.taxProvider {
-	case "avalara":
+	case avalaraTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
 			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
 				TaxExempt:        orb.F(true),
 				TaxProvider:      orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
-				TaxExemptionCode: orb.F("R"), // code for NON-RESIDENT
+				TaxExemptionCode: orb.F(avalaraTaxExemptionCode), // code for NON-RESIDENT
 			}),
 		})
 		if err != nil {
 			return err
 		}
-	case "taxjar":
+	case taxJarTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
 			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
 				TaxExempt:   orb.F(true),
@@ -304,7 +310,7 @@ func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) erro
 		if err != nil {
 			return err
 		}
-	case "none":
+	case noneTaxProvider:
 		o.logger.Named("billing").Warn("no tax provider is set, cannot mark customer tax exempt", zap.String("customer_id", customerID))
 	default:
 		o.logger.Error("unsupported tax provider", zap.String("tax_provider", o.taxProvider))
@@ -315,7 +321,7 @@ func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) erro
 
 func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error {
 	switch o.taxProvider {
-	case "avalara":
+	case avalaraTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
 			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
 				TaxExempt:   orb.F(false),
@@ -325,7 +331,7 @@ func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) er
 		if err != nil {
 			return err
 		}
-	case "taxjar":
+	case taxJarTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
 			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
 				TaxExempt:   orb.F(false),
@@ -335,7 +341,7 @@ func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) er
 		if err != nil {
 			return err
 		}
-	case "none":
+	case noneTaxProvider:
 		o.logger.Named("billing").Warn("no tax provider is set, cannot unmark customer tax exempt", zap.String("customer_id", customerID))
 	default:
 		o.logger.Error("unsupported tax provider", zap.String("tax_provider", o.taxProvider))
