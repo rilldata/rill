@@ -2112,17 +2112,12 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 		if placeholders.Len() > 0 {
 			placeholders.WriteString(", ")
 		}
-		placeholders.WriteString("($1, $2") // project_id, environment
-		for j := 0; j < 3; j++ {
-			i++
-			placeholders.WriteString(fmt.Sprintf(", $%d", i)) // name, value, value_encryption_key_id
-		}
-		placeholders.WriteString(",$3, now())") // updated_by_user_id, updated_on
+		fmt.Fprintf(&placeholders, "($1, lower($2), $%d, $%d, $%d, $3, now())", i+1, i+2, i+3) // project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on
+		i += 3
 	}
 
-	query = fmt.Sprintf(query, placeholders.String())
 	var res []*database.ProjectVariable
-	err := c.getDB(ctx).SelectContext(ctx, &res, query, args...)
+	err := c.getDB(ctx).SelectContext(ctx, &res, fmt.Sprintf(query, placeholders.String()), args...)
 	if err != nil {
 		return nil, parseErr("project variables", err)
 	}
