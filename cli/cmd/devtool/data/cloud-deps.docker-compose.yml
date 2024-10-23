@@ -50,3 +50,8 @@ services:
       - "55679:55679" # zpages extension
     depends_on:
       - zipkin
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    command: listen --forward-to http://host.docker.internal:8080/payment/webhook
+    environment:
+      - STRIPE_API_KEY=
