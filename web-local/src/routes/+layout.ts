@@ -23,25 +23,11 @@ export async function load({ url, depends, untrack }) {
     },
   });
 
-  const firstDashboardFile = files.files?.find((file) =>
-    file.path?.startsWith("/dashboards/"),
-  );
-
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
-
-  const redirectPath = untrack(() => {
-    return (
-      !!url.searchParams.get("redirect") &&
-      url.pathname !== `/files${firstDashboardFile?.path}` &&
-      `/files${firstDashboardFile?.path}`
-    );
-  });
 
   if (!initialized) {
     initialized = await handleUninitializedProject(instanceId);
-  } else if (redirectPath) {
-    throw redirect(303, redirectPath);
   }
 
-  return { initialized };
+  return { initialized, files };
 }

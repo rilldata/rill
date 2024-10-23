@@ -9,7 +9,7 @@ import { get, writable } from "svelte/store";
 import { runtime } from "./runtime-store";
 import { asyncWait } from "../lib/waitUtils";
 
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 3;
 const BACKOFF_DELAY = 1000;
 const RETRY_COUNT_DELAY = 500;
 const RECONNECT_CALLBACK_DELAY = 150;
@@ -39,7 +39,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
-  private outOfFocusThrottler = new Throttler(120000, 30000);
+  private outOfFocusThrottler = new Throttler(120000, 20000);
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;

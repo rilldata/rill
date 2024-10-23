@@ -3,18 +3,16 @@
 
   export let disabled = false;
   export let isLoading = false;
-  export let redirect = false;
-  export let href = "/";
   export let imageUrl = "";
 </script>
 
-<a
-  href={href + (redirect ? "?redirect=true" : "")}
+<button
+  aria-disabled={disabled}
+  class:loading={isLoading}
   class:gradient={!imageUrl}
+  style:background-image={imageUrl ? `url('${imageUrl}')` : ""}
   on:click
   on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
-  aria-disabled={disabled && !isLoading}
-  style:background-image={imageUrl ? `url('${imageUrl}')` : ""}
 >
   {#if isLoading}
     <div
@@ -24,10 +22,10 @@
     </div>
   {/if}
   <slot />
-</a>
+</button>
 
 <style lang="postcss">
-  a {
+  button {
     @apply bg-no-repeat bg-center bg-cover;
     @apply relative;
     @apply size-60 rounded-md;
@@ -45,13 +43,16 @@
     @apply bg-gradient-to-b from-white to-slate-50;
   }
 
-  a[aria-disabled="true"] {
+  button[aria-disabled="true"] {
     cursor: not-allowed;
-    opacity: 0.4;
     pointer-events: none;
   }
 
-  a:hover {
+  button[aria-disabled="true"]:not(.loading) {
+    opacity: 0.4;
+  }
+
+  button:hover {
     box-shadow:
       0px 2px 3px rgba(99, 102, 241, 0.2),
       0px 1px 3px rgba(15, 23, 42, 0.08),

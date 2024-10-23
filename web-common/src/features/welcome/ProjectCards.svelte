@@ -14,6 +14,8 @@
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import { createRuntimeServiceUnpackEmpty } from "../../runtime-client";
+  import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
+  import { goto } from "$app/navigation";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -24,18 +26,22 @@
       title: "Cost Monitoring",
       description: "Monitoring cloud infrastructure",
       image: "/img/welcome-bg-cost-monitoring.png",
+      firstPage: "/files/dashboards/metrics_margin_model_metrics_explore.yaml",
     },
     {
       name: "rill-openrtb-prog-ads",
       title: "OpenRTB Programmatic Ads",
       description: "Real-time Bidding (RTB) advertising",
       image: "/img/welcome-bg-openrtb.png",
+      firstPage:
+        "/files/dashboards/auction_data_model_metrics_explore_row_policies.yaml",
     },
     {
       name: "rill-github-analytics",
       title: "Github Analytics",
       description: "A Git project's commit activity",
       image: "/img/welcome-bg-github-analytics.png",
+      firstPage: "/files/dashboards/duckdb_commits_model_metrics_explore.yaml",
     },
   ];
 
@@ -69,6 +75,10 @@
           force: true,
         },
       });
+
+      await asyncWait(400);
+
+      if (example?.firstPage) await goto(example.firstPage);
     } catch {
       selectedProjectName = null;
     }
@@ -89,7 +99,6 @@
 
     {#each EXAMPLES as example (example.name)}
       <Card
-        redirect
         imageUrl={example.image}
         disabled={!!selectedProjectName}
         isLoading={selectedProjectName === example.name}
