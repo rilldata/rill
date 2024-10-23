@@ -40,6 +40,7 @@
       }
     },
   });
+  $: exploreTitle = $explore.data?.explore?.explore?.state?.validSpec?.title;
 
   $: isDashboardNotFound =
     !$explore.data &&
@@ -75,7 +76,7 @@
 </script>
 
 <svelte:head>
-  <title>{exploreName} - Rill</title>
+  <title>{exploreTitle || `${exploreName} - Rill`}</title>
 </svelte:head>
 
 {#if $explore.isSuccess}

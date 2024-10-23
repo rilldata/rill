@@ -33,6 +33,9 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck.md) and [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB though, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
 
+![ch](/img/build/connect/duckdb.png)
+
+
 :::warning
 
 Rill will use DuckDB by default as an embedded OLAP engine but it is **not** currently possible to "bring your own DuckDB database" to be used as an alternative OLAP Engine. The internal DuckDB that Rill uses is hardcoded and not configurable (necessary for Rill Cloud consistency).
@@ -52,9 +55,11 @@ When Druid has been configured as the [default OLAP engine](../../reference/proj
 
 When ClickHouse has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI. You can then create dashboards using these external ClickHouse tables.
 
-<div className="center-content">
-![External ClickHouse tables](/img/build/connect/external-tables/external-clickhouse-table.png)
-</div>
+![ch](/img/build/connect/clickhouse.png)
+
+:::note No Source Folder in ClickHouse
+There is no source folder in a ClickHouse based project as all of the tables exist on your ClickHouse Database and is read into Rill at start up. If you try to import data into a ClickHouse based project, you will likely result in errors stating that importing from XXX to ClickHouse is not supported.
+:::
 
 ## Pinot
 
