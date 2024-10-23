@@ -681,11 +681,12 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
 	}
 
-	var environment *string
-	if !req.ForAllEnvironments {
-		environment = &req.Environment
+	var vars []*database.ProjectVariable
+	if req.ForAllEnvironments {
+		vars, err = s.admin.DB.FindProjectVariables(ctx, proj.ID, nil)
+	} else {
+		vars, err = s.admin.DB.FindProjectVariables(ctx, proj.ID, &req.Environment)
 	}
-	vars, err := s.admin.DB.FindProjectVariablesByEnvironment(ctx, proj.ID, environment)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -721,10 +722,6 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
-	}
-
-	if len(req.Variables) == 0 && len(req.UnsetVariables) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "no variables or unset_variables provided")
 	}
 
 	vars, err := s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())

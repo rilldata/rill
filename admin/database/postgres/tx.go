@@ -47,14 +47,7 @@ type dbHandle interface {
 	sqlx.QueryerContext
 	sqlx.PreparerContext
 	sqlx.ExecerContext
-	binder
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
-}
-
-type binder interface {
-	DriverName() string
-	Rebind(string) string
-	BindNamed(string, interface{}) (string, []interface{}, error)
 }
 
 // getDB either returns the current tx (if one is present) or c.db.

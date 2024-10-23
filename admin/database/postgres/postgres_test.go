@@ -410,26 +410,34 @@ func testUpsertProjectVariable(t *testing.T, db database.DB) {
 	require.Equal(t, len(vars), 3)
 
 	// update some variables
-	vars, err = db.UpsertProjectVariable(ctx, projectID, "", map[string]string{"foo4": "bar1", "foo2": "baz2"}, userID)
+	vars, err = db.UpsertProjectVariable(ctx, projectID, "prod", map[string]string{"foo1": "baz1", "foo2": "baz2"}, userID)
 	require.NoError(t, err)
-
 	require.Equal(t, len(vars), 2)
 
+	// update some dev variables
+	vars, err = db.UpsertProjectVariable(ctx, projectID, "dev", map[string]string{"foo3": "bad3"}, userID)
+	require.NoError(t, err)
+	require.Equal(t, len(vars), 1)
+
+	// find all variables
+	vars, err = db.FindProjectVariables(ctx, projectID, nil)
+	require.NoError(t, err)
+	require.Equal(t, len(vars), 6)
+
 	// find project variables
-	vars, err = db.FindProjectVariablesByEnvironment(ctx, projectID, nil)
+	env := "prod"
+	vars, err = db.FindProjectVariables(ctx, projectID, &env)
 	require.NoError(t, err)
 
-	require.Equal(t, len(vars), 4)
+	require.Equal(t, len(vars), 3)
 	for _, v := range vars {
 		switch v.Name {
 		case "foo1":
-			require.Equal(t, "bar1", string(v.Value))
+			require.Equal(t, "baz1", string(v.Value))
 		case "foo2":
 			require.Equal(t, "baz2", string(v.Value))
 		case "foo3":
 			require.Equal(t, "bar3", string(v.Value))
-		case "foo4":
-			require.Equal(t, "bar1", string(v.Value))
 		}
 	}
 
@@ -437,7 +445,15 @@ func testUpsertProjectVariable(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	// find project variables
-	vars, err = db.FindProjectVariablesByEnvironment(ctx, projectID, nil)
+	vars, err = db.FindProjectVariables(ctx, projectID, &env)
+	require.NoError(t, err)
+	require.Equal(t, len(vars), 2)
+
+	err = db.DeleteProjectVariables(ctx, projectID, "prod", []string{"foo1", "foo2", "foo3", "foo4"})
+	require.NoError(t, err)
+
+	// find project variables
+	vars, err = db.FindProjectVariables(ctx, projectID, &env)
 	require.NoError(t, err)
 	require.Equal(t, len(vars), 0)
 

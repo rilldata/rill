@@ -115,7 +115,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	pushCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	pushCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
-	pushCmd.Flags().StringVar(&environment, "environment", "", "Environment for which variables apply (options: 'production', 'development', '')")
+	pushCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
 
 	return pushCmd
 }

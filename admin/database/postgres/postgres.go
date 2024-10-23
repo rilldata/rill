@@ -2049,11 +2049,26 @@ func (c *connection) DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID s
 	return checkDeleteRow("billing issue", res, err)
 }
 
-func (c *connection) FindProjectVariablesByEnvironment(ctx context.Context, projectID string, environment *string) ([]*database.ProjectVariable, error) {
-	q := `SELECT * FROM project_variables WHERE project_id = $1`
+func (c *connection) FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*database.ProjectVariable, error) {
+	q := `SELECT * FROM project_variables p WHERE p.project_id = $1`
 	args := []interface{}{projectID}
 	if environment != nil {
-		q += ` AND environment = $2`
+		// Also include variables that are not environment specific but not set for the given environment
+		q += `
+			AND (
+				p.environment = $2 
+				OR (
+					p.environment = '' 
+					AND NOT EXISTS (
+						SELECT 1 
+						FROM project_variables p2 
+						WHERE p2.project_id = p.project_id 
+						AND p2.environment = $2 
+						AND lower(p2.name) = lower(p.name)
+					)
+				)
+			)
+		`
 		args = append(args, environment)
 	}
 	var res []*database.ProjectVariable
@@ -2076,14 +2091,16 @@ func (c *connection) FindProjectVariablesByEnvironment(ctx context.Context, proj
 
 func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*database.ProjectVariable, error) {
 	query := `INSERT INTO project_variables (project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on)
-	VALUES (:project_id, :environment, :name, :value, :value_encryption_key_id, :updated_by_user_id, now())
+	VALUES %s
 	ON CONFLICT (project_id, environment, lower(name)) DO UPDATE SET
 		value = EXCLUDED.value,
 		value_encryption_key_id = EXCLUDED.value_encryption_key_id,
 		updated_by_user_id = EXCLUDED.updated_by_user_id,
 		updated_on = now() RETURNING *`
 
-	args := make([]database.ProjectVariable, 0, len(vars))
+	var placeholders strings.Builder
+	args := []any{projectID, environment, userID}
+	i := 3
 	for key, value := range vars {
 		// Encrypt the variables
 		encryptedValue, valueEncryptionKeyID, err := c.encrypt([]byte(value))
@@ -2091,36 +2108,34 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 			return nil, err
 		}
 
-		args = append(args, database.ProjectVariable{
-			ProjectID:            projectID,
-			Environment:          environment,
-			Name:                 key,
-			Value:                encryptedValue,
-			ValueEncryptionKeyID: valueEncryptionKeyID,
-			UpdatedByUserID:      &userID,
-		})
+		args = append(args, key, encryptedValue, valueEncryptionKeyID)
+		if placeholders.Len() > 0 {
+			placeholders.WriteString(", ")
+		}
+		placeholders.WriteString("($1, $2") // project_id, environment
+		for j := 0; j < 3; j++ {
+			i++
+			placeholders.WriteString(fmt.Sprintf(", $%d", i)) // name, value, value_encryption_key_id
+		}
+		placeholders.WriteString(",$3, now())") // updated_by_user_id, updated_on
 	}
 
-	rows, err := sqlx.NamedQueryContext(ctx, c.getDB(ctx), query, args)
+	query = fmt.Sprintf(query, placeholders.String())
+	var res []*database.ProjectVariable
+	err := c.getDB(ctx).SelectContext(ctx, &res, query, args...)
 	if err != nil {
 		return nil, parseErr("project variables", err)
 	}
-	defer rows.Close()
 
-	res := make([]*database.ProjectVariable, 0, len(vars))
-	// Scan and decrypt the variable values
-	for rows.Next() {
-		p := &database.ProjectVariable{}
-		if err := rows.StructScan(&p); err != nil {
-			return nil, err
-		}
-		decryptedValue, err := c.decrypt(p.Value, p.ValueEncryptionKeyID)
+	// Decrypt the variables
+	for _, v := range res {
+		decryptedValue, err := c.decrypt(v.Value, v.ValueEncryptionKeyID)
 		if err != nil {
 			return nil, err
 		}
-		p.Value = decryptedValue
-		res = append(res, p)
+		v.Value = decryptedValue
 	}
+
 	return res, nil
 }
 
@@ -2134,8 +2149,8 @@ func (c *connection) DeleteProjectVariables(ctx context.Context, projectID, envi
 	args[0] = projectID
 	args[1] = environment
 	for i, name := range names {
-		placeholders[i] = fmt.Sprintf("$%d", i+3)
-		args[i+2] = strings.ToLower(name)
+		placeholders[i] = fmt.Sprintf("lower($%d)", i+3)
+		args[i+2] = name
 	}
 
 	query := fmt.Sprintf("DELETE FROM project_variables WHERE project_id = $1 AND environment = $2 AND lower(name) IN (%s)", strings.Join(placeholders, ","))

@@ -5,7 +5,7 @@ CREATE TABLE project_variables (
     value BYTEA NOT NULL,
     -- Encryption key ID if the value is encrypted
     value_encryption_key_id TEXT NOT NULL DEFAULT '',
-    -- Environment it belongs to ("production" or "development").
+    -- Environment it belongs to ("prod" or "dev").
     -- If empty, then it should be used as the fallback for all environments.
     environment TEXT NOT NULL DEFAULT '',
     -- The user who most recently edited the variable

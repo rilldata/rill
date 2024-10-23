@@ -214,13 +214,15 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	// Upsert variables
 	var updatedVars []*database.ProjectVariable
 	if len(vars) > 0 {
 		updatedVars, err = s.DB.UpsertProjectVariable(txCtx, project.ID, environment, vars, userID)
 		if err != nil {
-			_ = tx.Rollback()
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -229,7 +231,6 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	if len(unsetVars) > 0 {
 		err = s.DB.DeleteProjectVariables(txCtx, project.ID, environment, unsetVars)
 		if err != nil {
-			_ = tx.Rollback()
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -237,7 +238,6 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	// Commit transaction
 	err = tx.Commit()
 	if err != nil {
-		_ = tx.Rollback()
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -256,7 +256,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 		return nil, err
 	}
 
-	vars, err = s.ResolveProdVariables(ctx, project.ID)
+	vars, err = s.ResolveVariables(ctx, project.ID, "prod")
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 		// edge case : no prod variables to set (variable was deleted)
 		// but the runtime does not update variables if the new map is empty
 		// so we need to set a dummy variable to trigger the update
-		vars = map[string]string{"nonce": time.Now().Format(time.RFC3339Nano)}
+		vars = map[string]string{"rill.internal.nonce": time.Now().Format(time.RFC3339Nano)}
 	}
 
 	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
@@ -336,7 +336,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		return nil, err
 	}
 
-	vars, err := s.ResolveProdVariables(ctx, proj.ID)
+	vars, err := s.ResolveVariables(ctx, proj.ID, "prod")
 	if err != nil {
 		return nil, err
 	}
@@ -518,22 +518,16 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 	}
 }
 
-func (s *Service) ResolveProdVariables(ctx context.Context, projectID string) (map[string]string, error) {
-	vars, err := s.DB.FindProjectVariablesByEnvironment(ctx, projectID, nil)
+// ResolveVariables resolves the project's variables for the given environment.
+// It fetches the variable specific to the environment plus the default variables not set exclusively for the environment.
+func (s *Service) ResolveVariables(ctx context.Context, projectID, environment string) (map[string]string, error) {
+	vars, err := s.DB.FindProjectVariables(ctx, projectID, &environment)
 	if err != nil {
 		return nil, err
 	}
 	res := make(map[string]string)
 	for _, v := range vars {
-		switch v.Environment {
-		case "":
-			// only add default variable if it doesn't already exist to not override production variables
-			if _, ok := res[v.Name]; !ok {
-				res[v.Name] = string(v.Value)
-			}
-		case "production":
-			res[v.Name] = string(v.Value)
-		}
+		res[v.Name] = string(v.Value)
 	}
 	return res, nil
 }
