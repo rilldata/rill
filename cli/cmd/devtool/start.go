@@ -684,7 +684,7 @@ func (s local) runUI(ctx context.Context) (err error) {
 	logInfo.Printf("Starting UI\n")
 	defer logInfo.Printf("Stopped UI\n")
 
-	cmd := newCmd(ctx, "npm", "run", "dev", "-w", "web-local")
+	cmd := newCmd(ctx, "npm", "run", "dev", "-w", "web-local", "--", "--port", "3001")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
