@@ -1682,8 +1682,9 @@ type UpdateProjectVariablesRequest struct {
 	Environment string `protobuf:"bytes,4,opt,name=environment,proto3" json:"environment,omitempty"`
 	// New variable values.
 	// It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
-	Variables      map[string]string `protobuf:"bytes,3,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	UnsetVariables []string          `protobuf:"bytes,5,rep,name=unset_variables,json=unsetVariables,proto3" json:"unset_variables,omitempty"`
+	Variables map[string]string `protobuf:"bytes,3,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Variables to delete.
+	UnsetVariables []string `protobuf:"bytes,5,rep,name=unset_variables,json=unsetVariables,proto3" json:"unset_variables,omitempty"`
 }
 
 func (x *UpdateProjectVariablesRequest) Reset() {

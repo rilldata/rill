@@ -3778,7 +3778,7 @@ export const createAdminServiceSearchProjectUsers = <
 };
 
 /**
- * @summary GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+ * @summary GetProjectVariables returns project variables.
  */
 export const adminServiceGetProjectVariables = (
   organization: string,

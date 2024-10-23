@@ -178,7 +178,7 @@ type AdminServiceClient interface {
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
-	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+	// GetProjectVariables returns project variables.
 	GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error)
 	// UpdateProjectVariables updates variables for a project.
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
@@ -1676,7 +1676,7 @@ type AdminServiceServer interface {
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
-	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+	// GetProjectVariables returns project variables.
 	GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error)
 	// UpdateProjectVariables updates variables for a project.
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)

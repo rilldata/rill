@@ -150,6 +150,7 @@ If empty, the variable(s) will be used as defaults for all environments. */
   /** New variable values.
 It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged. */
   variables?: AdminServiceUpdateProjectVariablesBodyVariables;
+  /** Variables to delete. */
   unsetVariables?: string[];
 };
 

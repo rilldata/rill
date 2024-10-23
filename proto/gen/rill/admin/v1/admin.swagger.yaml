@@ -1736,7 +1736,7 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/variables:
     get:
-      summary: 'GetProjectVariables returns project variables. NOTE: Get project API doesn''t return variables.'
+      summary: GetProjectVariables returns project variables.
       operationId: AdminService_GetProjectVariables
       responses:
         "200":
@@ -1819,6 +1819,7 @@ paths:
                 type: array
                 items:
                   type: string
+                description: Variables to delete.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/whitelisted:

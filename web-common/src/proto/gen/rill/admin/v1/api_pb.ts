@@ -1316,6 +1316,8 @@ export class UpdateProjectVariablesRequest extends Message<UpdateProjectVariable
   variables: { [key: string]: string } = {};
 
   /**
+   * Variables to delete.
+   *
    * @generated from field: repeated string unset_variables = 5;
    */
   unsetVariables: string[] = [];

@@ -2161,7 +2161,8 @@ func (c *connection) DeleteProjectVariables(ctx context.Context, projectID, envi
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
-	Annotations pgtype.JSON `db:"annotations"`
+	ProdVariables pgtype.JSON `db:"prod_variables"`
+	Annotations   pgtype.JSON `db:"annotations"`
 }
 
 func (c *connection) projectFromDTO(dto *projectDTO) (*database.Project, error) {

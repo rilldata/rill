@@ -43,5 +43,6 @@ FROM
   jsonb_each_text(project_data.prod_variables);
 
 -- Drop the old column
-ALTER TABLE projects DROP COLUMN prod_variables;
-ALTER TABLE projects DROP COLUMN prod_variables_encryption_key_id;
+-- TODO : Handle in next migration
+-- ALTER TABLE projects DROP COLUMN prod_variables;
+-- ALTER TABLE projects DROP COLUMN prod_variables_encryption_key_id;
