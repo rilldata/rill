@@ -275,6 +275,10 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
+	if !plan.Public && !forceAccess {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to a private plan %q", plan.Name)
+	}
+
 	// check for validation errors
 	err = s.planChangeValidationChecks(ctx, org, forceAccess)
 	if err != nil {
