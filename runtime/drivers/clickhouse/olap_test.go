@@ -36,6 +36,7 @@ func testClickhouseSingleHost(t *testing.T, dsn string) {
 	})
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
+	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
 
 }
 
@@ -54,6 +55,7 @@ func testClickhouseCluster(t *testing.T, dsn, cluster string) {
 	})
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
+	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
 }
 
 func testRenameView(t *testing.T, olap drivers.OLAPStore) {
@@ -114,6 +116,26 @@ func testCreateTableAsSelect(t *testing.T, olap drivers.OLAPStore) {
 		"distributed.sharding_key": "rand()",
 	})
 	require.NoError(t, err)
+}
+
+func testDictionary(t *testing.T, olap drivers.OLAPStore) {
+	err := olap.CreateTableAsSelect(context.Background(), "dict", false, "SELECT 1 AS id, 'Earth' AS planet", map[string]any{"table": "Dictionary", "primary_key": "id"})
+	require.NoError(t, err)
+
+	err = olap.RenameTable(context.Background(), "dict", "dict1", false)
+	require.NoError(t, err)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM dict1"})
+	require.NoError(t, err)
+
+	require.True(t, res.Next())
+	var id int
+	var planet string
+	require.NoError(t, res.Scan(&id, &planet))
+	require.Equal(t, 1, id)
+	require.Equal(t, "Earth", planet)
+
+	require.NoError(t, olap.DropTable(context.Background(), "dict1", false))
 }
 
 func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
