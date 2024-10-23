@@ -16,11 +16,9 @@
 		"@types/auth0-js": "^9.14.7",
 		"auth0-js": "^9.20.2",
 		"autoprefixer": "^10.4.20",
-		"dotenv": "^16.0.3",
 		"postcss": "^8.4.47",
 		"svelte": "^4.2.19",
 		"svelte-check": "^4.0.4",
-		"svelte-preprocess": "^6.0.3",
 		"tailwindcss": "^3.4.13",
 		"vite-plugin-singlefile": "^2.0.2",
 		"vitest": "^2.1.3"
