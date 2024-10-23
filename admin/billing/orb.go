@@ -28,12 +28,13 @@ type Orb struct {
 	client        *orb.Client
 	logger        *zap.Logger
 	webhookSecret string
+	taxProvider   string
 }
 
-func NewOrb(logger *zap.Logger, orbKey, webhookSecret string) Biller {
+func NewOrb(logger *zap.Logger, orbKey, webhookSecret, taxProvider string) Biller {
 	c := orb.NewClient(option.WithAPIKey(orbKey), option.WithRequestTimeout(requestTimeout))
 
-	return &Orb{client: c, logger: logger, webhookSecret: webhookSecret}
+	return &Orb{client: c, logger: logger, webhookSecret: webhookSecret, taxProvider: taxProvider}
 }
 
 func (o *Orb) Name() string {
@@ -280,31 +281,66 @@ func (o *Orb) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
 }
 
 func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) error {
-	// note - hard coded to use Avalara tax provider as of now, Orb supports Avalara and TaxJar
-	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-		TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
-			TaxExempt:        orb.F(true),
-			TaxProvider:      orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
-			TaxExemptionCode: orb.F("R"), // code for NON-RESIDENT
-		}),
-	})
-	if err != nil {
-		return err
+	switch o.taxProvider {
+	case "avalara":
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+				TaxExempt:        orb.F(true),
+				TaxProvider:      orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+				TaxExemptionCode: orb.F("R"), // code for NON-RESIDENT
+			}),
+		})
+		if err != nil {
+			return err
+		}
+	case "taxjar":
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
+				TaxExempt:   orb.F(true),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfigurationTaxProviderTaxjar),
+				// category option not available in TaxJar config
+			}),
+		})
+		if err != nil {
+			return err
+		}
+	case "none":
+		o.logger.Named("billing").Warn("no tax provider is set, cannot mark customer tax exempt", zap.String("customer_id", customerID))
+	default:
+		o.logger.Error("unsupported tax provider", zap.String("tax_provider", o.taxProvider))
 	}
+
 	return nil
 }
 
 func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error {
-	// note - hard coded to use Avalara tax provider as of now, Orb supports Avalara and TaxJar
-	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-		TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
-			TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
-			TaxExempt:   orb.F(false),
-		}),
-	})
-	if err != nil {
-		return err
+	switch o.taxProvider {
+	case "avalara":
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+				TaxExempt:   orb.F(false),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+			}),
+		})
+		if err != nil {
+			return err
+		}
+	case "taxjar":
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
+				TaxExempt:   orb.F(false),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfigurationTaxProviderTaxjar),
+			}),
+		})
+		if err != nil {
+			return err
+		}
+	case "none":
+		o.logger.Named("billing").Warn("no tax provider is set, cannot unmark customer tax exempt", zap.String("customer_id", customerID))
+	default:
+		o.logger.Error("unsupported tax provider", zap.String("tax_provider", o.taxProvider))
 	}
+
 	return nil
 }
 
