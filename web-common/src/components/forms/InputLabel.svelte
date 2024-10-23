@@ -21,7 +21,7 @@
       <div class="text-gray-500">
         <InfoCircle size="13px" />
       </div>
-      <TooltipContent maxWidth="400px" slot="tooltip-content">
+      <TooltipContent maxWidth="240px" slot="tooltip-content">
         {@html hint}
       </TooltipContent>
     </Tooltip>

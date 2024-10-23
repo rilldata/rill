@@ -3090,6 +3090,27 @@ paths:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
       tags:
         - AdminService
+  /v1/superuser/organization/trial/extend:
+    post:
+      summary: SudoExtendTrial extends the trial period for an organization
+      operationId: AdminService_SudoExtendTrial
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoExtendTrialResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoExtendTrialRequest'
+      tags:
+        - AdminService
   /v1/superuser/organizations/{organization}/billing/issues/{type}:
     delete:
       summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
@@ -3669,6 +3690,9 @@ definitions:
       endDate:
         type: string
         format: date-time
+      gracePeriodEndDate:
+        type: string
+        format: date-time
   v1BillingIssueMetadataPaymentFailed:
     type: object
     properties:
@@ -3708,6 +3732,9 @@ definitions:
   v1BillingIssueMetadataTrialEnded:
     type: object
     properties:
+      endDate:
+        type: string
+        format: date-time
       gracePeriodEndDate:
         type: string
         format: date-time
@@ -4892,6 +4919,20 @@ definitions:
         format: date-time
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
+  v1SudoExtendTrialRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+      days:
+        type: integer
+        format: int32
+  v1SudoExtendTrialResponse:
+    type: object
+    properties:
+      trialEnd:
+        type: string
+        format: date-time
   v1SudoGetResourceResponse:
     type: object
     properties:

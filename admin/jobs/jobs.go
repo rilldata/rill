@@ -22,9 +22,6 @@ type Client interface {
 	PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error)
 	PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*InsertResult, error)
 
-	// subscription related jobs
-	HandlePlanChangeBillingIssues(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*InsertResult, error)
-
 	// org related joba
 	InitOrgBilling(ctx context.Context, orgID string) (*InsertResult, error)
 	RepairOrgBilling(ctx context.Context, orgID string) (*InsertResult, error)

@@ -1,6 +1,6 @@
 ---
-title: "3. Create Metrics-view and Dashboard in Rill"
-sidebar_label: "3. Create Metrics-view and Dashboard in Rill"
+title: "3. Create Metrics view and Dashboard in Rill"
+sidebar_label: "3. Create Metrics view and Dashboard in Rill"
 sidebar_position: 4
 hide_table_of_contents: false
 tags:
@@ -15,16 +15,16 @@ If you noticed in the previous screenshot, we had a table called `uk_price_paid`
 In the case that you have not already added this table to your local or Cloud database, please follow the step on [ClickHouse's site](https://clickhouse.com/docs/en/getting-started/example-datasets/uk-price-paid) for the steps to do so!
 :::
 
-### Create metrics-view
+### Create metrics view
 
-Let's create a metrics-view based on the table via the `Generate metrics via AI`.
+Let's create a metrics view based on the table via the `Generate metrics via AI`.
 
 <img src = '/img/tutorials/ch/ai-generate.gif' class='rounded-gif' />
 <br />
 
 ### What are we looking at?
 
-This is our metrics-view, where we can define measures and dimensions to be used on dashboards.  
+This is our metrics view, where we can define measures and dimensions to be used on dashboards.  
 
 ```yaml
 # Metrics view YAML

@@ -191,10 +191,7 @@ function toTimeProto(date: Date) {
   });
 }
 
-function toExpressionProto(
-  expression: V1Expression | undefined,
-): Expression | undefined {
-  if (!expression) return undefined;
+function toExpressionProto(expression: V1Expression): Expression {
   if ("ident" in expression) {
     return new Expression({
       expression: {
@@ -224,7 +221,7 @@ function toExpressionProto(
       },
     });
   }
-  return undefined;
+  return new Expression();
 }
 
 function toPbValue(val: unknown) {
