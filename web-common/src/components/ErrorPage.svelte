@@ -3,7 +3,6 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
 
   export let statusCode: number | undefined = undefined;
   export let header: string;
@@ -24,7 +23,6 @@
     {#if !fatal}
       <CtaButton variant="secondary" href="/">Back to home</CtaButton>
     {/if}
-    <CtaNeedHelp />
     {#if detail}
       <section class="detail-section">
         <button
