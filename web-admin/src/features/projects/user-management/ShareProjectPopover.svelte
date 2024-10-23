@@ -56,9 +56,13 @@
     ...coerceInvitesToUsers(projectInvitesList),
   ];
 
-  $: showOrganizationSection =
-    projectMemberUserGroupsList.length === 1 &&
-    projectMemberUserGroupsList[0].groupName === "all-users";
+  $: showOrganizationSection = projectMemberUserGroupsList.some(
+    (group) => group.groupName === "all-users",
+  );
+
+  $: showAllUsersGroup = projectMemberUserGroupsList.find(
+    (group) => group.groupName === "all-users",
+  );
 
   $: showGroupsSection =
     projectMemberUserGroupsList.length > 0 &&
@@ -87,7 +91,7 @@
             <OrganizationItem
               {organization}
               {project}
-              group={projectMemberUserGroupsList[0]}
+              group={showAllUsersGroup ? projectMemberUserGroupsList[0] : null}
             />
           </div>
         </div>
