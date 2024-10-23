@@ -416,7 +416,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	var sub *billing.Subscription
 	if req.BillingCustomerId != nil {
 		// get active subscriptions if present
-		sub, err = s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+		sub, err = s.admin.Biller.GetActiveSubscription(ctx, *req.BillingCustomerId)
 		if err != nil {
 			if !errors.Is(err, billing.ErrNotFound) {
 				return nil, status.Error(codes.Internal, err.Error())
@@ -439,10 +439,40 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}
 
 	if req.PaymentCustomerId != nil {
+		// fetch the customer
+		pc, err := s.admin.PaymentProvider.FindCustomer(ctx, *req.PaymentCustomerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
 		// link the payment customer to the billing customer
 		err = s.admin.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, billing.PaymentProviderStripe, *req.PaymentCustomerId)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		if !pc.HasPaymentMethod {
+			_, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingIssueTypeNoPaymentMethod,
+				Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
+				EventTime: time.Now(),
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		if !pc.HasBillableAddress {
+			_, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingIssueTypeNoBillableAddress,
+				Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
+				EventTime: time.Now(),
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
 	}
 
