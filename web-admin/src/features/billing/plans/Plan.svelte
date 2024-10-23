@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
-  import EndedTeamPlan from "@rilldata/web-admin/features/billing/plans/EndedTeamPlan.svelte";
+  import CancelledTeamPlan from "@rilldata/web-admin/features/billing/plans/CancelledTeamPlan.svelte";
   import EnterprisePlan from "@rilldata/web-admin/features/billing/plans/EnterprisePlan.svelte";
   import TeamPlan from "@rilldata/web-admin/features/billing/plans/TeamPlan.svelte";
   import TrialPlan from "@rilldata/web-admin/features/billing/plans/TrialPlan.svelte";
@@ -29,7 +29,7 @@
 {:else if isTrial}
   <TrialPlan {organization} {subscription} {showUpgrade} />
 {:else if hasEnded}
-  <EndedTeamPlan {organization} {subscription} {showUpgrade} />
+  <CancelledTeamPlan {organization} {subscription} {showUpgrade} />
 {:else if subIsTeamPlan}
   <TeamPlan {organization} {subscription} />
 {:else if subscription?.plan}

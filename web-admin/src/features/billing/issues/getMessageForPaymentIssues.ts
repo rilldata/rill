@@ -10,7 +10,7 @@ export const PaymentBillingIssueTypes: Partial<
 > = {
   [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD]: {
     long: "Input a valid payment to maintain access.",
-    short: "payment",
+    short: "payment method",
   },
   [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]: {
     long: "Input a valid billing address to maintain access.",

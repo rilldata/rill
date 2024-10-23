@@ -19,7 +19,9 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
+  import { startPylonChat } from "@rilldata/web-common/features/help/startPylonChat";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { DateTime } from "luxon";
 
   export let organization: string;
   export let subscription: V1Subscription;
@@ -42,6 +44,9 @@
   let open = false;
 
   $: error = getErrorForMutation($planCanceller);
+  $: currentBillingCycleEndDate = DateTime.fromJSDate(
+    new Date(subscription.currentBillingCycleEndDate),
+  ).toLocaleString(DateTime.DATE_MED);
 </script>
 
 <SettingsContainer title="Team plan">
@@ -55,7 +60,12 @@
   </div>
   <svelte:fragment slot="contact">
     <span>For any questions,</span>
-    <Button type="link" compact forcedStyle="padding-left:2px !important;">
+    <Button
+      type="link"
+      compact
+      forcedStyle="padding-left:2px !important;"
+      on:click={startPylonChat}
+    >
       contact us
     </Button>
   </svelte:fragment>
@@ -70,7 +80,9 @@
 
         <AlertDialogDescription>
           If you cancel your plan, you’ll still be able to access your account
-          through <end of paid period>. </end>
+          through <span class="font-semibold"
+            >{currentBillingCycleEndDate}.</span
+          >
         </AlertDialogDescription>
 
         {#if error}

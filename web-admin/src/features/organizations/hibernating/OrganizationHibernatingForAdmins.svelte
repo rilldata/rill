@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BillingCTAHandler } from "@rilldata/web-admin/features/billing/banner/BillingCTAHandler";
+  import { BillingCTAHandler } from "@rilldata/web-admin/features/billing/BillingCTAHandler";
   import {
     type BillingIssueMessage,
     useBillingIssueMessage,

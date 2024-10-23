@@ -6,6 +6,8 @@
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
+  import { startPylonChat } from "@rilldata/web-common/features/help/startPylonChat";
   import { DateTime } from "luxon";
 
   export let organization: string;
@@ -28,15 +30,18 @@
   let open = showUpgrade;
 </script>
 
-<SettingsContainer title="Team Plan" titleIcon="info">
+<SettingsContainer title="Team Plan">
   <div slot="body">
     <div>
-      Your plan is cancelled
-      {#if willEndOnText}
-        but you still have access until {willEndOnText}.
-      {:else}
-        and your subscription has ended.
-      {/if}
+      <div class="flex flex-row items-center gap-x-1">
+        <InfoCircleFilled className="text-yellow-500" size="14px" />
+        Your plan is cancelled
+        {#if willEndOnText}
+          but you still have access until {willEndOnText}.
+        {:else}
+          and your subscription has ended.
+        {/if}
+      </div>
       <PricingDetails />
       {#if plan}
         <PlanQuotas {organization} quotas={plan.quotas} />
@@ -45,7 +50,12 @@
   </div>
   <svelte:fragment slot="contact">
     <span>For custom enterprise needs,</span>
-    <Button type="link" compact forcedStyle="padding-left:2px !important;">
+    <Button
+      type="link"
+      compact
+      forcedStyle="padding-left:2px !important;"
+      on:click={startPylonChat}
+    >
       contact us
     </Button>
   </svelte:fragment>

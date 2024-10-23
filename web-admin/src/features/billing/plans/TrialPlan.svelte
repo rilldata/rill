@@ -12,6 +12,7 @@
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import { startPylonChat } from "@rilldata/web-common/features/help/startPylonChat";
   import { DateTime } from "luxon";
 
   export let organization: string;
@@ -61,7 +62,12 @@
   </div>
   <svelte:fragment slot="contact">
     <span>For custom enterprise needs,</span>
-    <Button type="link" compact forcedStyle="padding-left:2px !important;">
+    <Button
+      type="link"
+      compact
+      forcedStyle="padding-left:2px !important;"
+      on:click={startPylonChat}
+    >
       contact us
     </Button>
   </svelte:fragment>
