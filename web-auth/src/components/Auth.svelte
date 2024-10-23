@@ -1,11 +1,8 @@
 <script lang="ts">
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
-  import auth0, {
-    WebAuth,
-    type AuthOptions,
-    type BaseAuthOptions,
-  } from "auth0-js";
+  import auth0, { WebAuth } from "auth0-js";
+  import type { AuthOptions } from "auth0-js";
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
   import AuthContainer from "./AuthContainer.svelte";
@@ -13,6 +10,15 @@
   import EmailPassForm from "./EmailPassForm.svelte";
   import SSOForm from "./SSOForm.svelte";
   import { getConnectionFromEmail } from "./utils";
+
+  type InternalOptions = {
+    protocol: string;
+    response_type: string;
+    prompt: string;
+    scope: string;
+    _csrf: string;
+    leeway: number;
+  };
 
   type Config = {
     auth0Domain: string;
@@ -22,7 +28,7 @@
       issuer: string;
     };
     callbackURL: string;
-    internalOptions: BaseAuthOptions;
+    internalOptions: InternalOptions;
     extraParams?: { screen_hint?: string };
   };
 
@@ -62,17 +68,19 @@
       isRillCloud = true;
     }
 
-    const params: AuthOptions = {
-      ...config.internalOptions,
-      overrides: {
-        __tenant: config.auth0Tenant,
-        __token_issuer: config.authorizationServer?.issuer,
+    const params: AuthOptions = Object.assign(
+      {
+        overrides: {
+          __tenant: config.auth0Tenant,
+          __token_issuer: config.authorizationServer.issuer,
+        },
+        domain: config.auth0Domain,
+        clientID: config.clientID,
+        redirectUri: config.callbackURL,
+        responseType: "code",
       },
-      domain: config.auth0Domain,
-      clientID: config.clientID,
-      redirectUri: config.callbackURL,
-      responseType: "code",
-    };
+      config.internalOptions,
+    );
 
     webAuth = new auth0.WebAuth(params);
   }
