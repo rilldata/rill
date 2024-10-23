@@ -229,63 +229,11 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 			Priority: 100,
 		})
 	}
-
-	var create strings.Builder
-	create.WriteString("CREATE OR REPLACE TABLE ")
-	if c.config.Cluster != "" {
-		// need to create a local table on the cluster first
-		fmt.Fprintf(&create, "%s %s", safelocalTableName(name), onClusterClause)
-	} else {
-		create.WriteString(safeSQLName(name))
-	}
-
-	if outputProps.Columns == "" {
-		// infer columns
-		v := tempName("view")
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
-		if err != nil {
-			return err
-		}
-		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-			defer cancel()
-			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW %s %s", v, onClusterClause)})
-		}()
-		// create table with same schema as view
-		fmt.Fprintf(&create, " AS %s ", v)
-	} else {
-		fmt.Fprintf(&create, " %s ", outputProps.Columns)
-	}
-	create.WriteString(outputProps.tblConfig())
-
-	// create table
 	// on replicated databases `create table t as select * from ...` is prohibited
 	// so we need to create a table first and then insert data into it
-	err := c.Exec(ctx, &drivers.Statement{Query: create.String(), Priority: 100})
-	if err != nil {
+	if err := c.createTable(ctx, name, sql, outputProps); err != nil {
 		return err
 	}
-
-	if c.config.Cluster != "" {
-		// create the distributed table
-		var distributed strings.Builder
-		fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
-		fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, currentDatabase(), %s", safeSQLName(c.config.Cluster), safelocalTableName(name))
-		if outputProps.DistributedShardingKey != "" {
-			fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
-		} else {
-			fmt.Fprintf(&distributed, ", rand()")
-		}
-		distributed.WriteString(")")
-		if outputProps.DistributedSettings != "" {
-			fmt.Fprintf(&distributed, " SETTINGS %s", outputProps.DistributedSettings)
-		}
-		err = c.Exec(ctx, &drivers.Statement{Query: distributed.String(), Priority: 100})
-		if err != nil {
-			return err
-		}
-	}
-
 	// insert into table
 	return c.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
@@ -346,6 +294,10 @@ func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
 	default:
 		return fmt.Errorf("clickhouse: unknown entity type %q", typ)
 	}
+}
+
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return c.config.CanScaleToZero
 }
 
 // RenameTable implements drivers.OLAPStore.
@@ -502,8 +454,65 @@ func (c *connection) renameTable(ctx context.Context, oldName, newName, onCluste
 	return c.DropTable(context.Background(), oldName, false)
 }
 
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return c.config.CanScaleToZero
+func (c *connection) createTable(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) error {
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+	var create strings.Builder
+	create.WriteString("CREATE OR REPLACE TABLE ")
+	if c.config.Cluster != "" {
+		// need to create a local table on the cluster first
+		fmt.Fprintf(&create, "%s %s", safelocalTableName(name), onClusterClause)
+	} else {
+		create.WriteString(safeSQLName(name))
+	}
+
+	if outputProps.Columns == "" {
+		if sql == "" {
+			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
+		}
+		// infer columns
+		v := tempName("view")
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
+		if err != nil {
+			return err
+		}
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+			defer cancel()
+			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW %s %s", v, onClusterClause)})
+		}()
+		// create table with same schema as view
+		fmt.Fprintf(&create, " AS %s ", v)
+	} else {
+		fmt.Fprintf(&create, " %s ", outputProps.Columns)
+	}
+	create.WriteString(outputProps.tblConfig())
+
+	// create table
+	err := c.Exec(ctx, &drivers.Statement{Query: create.String(), Priority: 100})
+	if err != nil {
+		return err
+	}
+
+	if c.config.Cluster == "" {
+		return nil
+	}
+	// create the distributed table
+	var distributed strings.Builder
+	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
+	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, currentDatabase(), %s", safeSQLName(c.config.Cluster), safelocalTableName(name))
+	if outputProps.DistributedShardingKey != "" {
+		fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
+	} else {
+		fmt.Fprintf(&distributed, ", rand()")
+	}
+	distributed.WriteString(")")
+	if outputProps.DistributedSettings != "" {
+		fmt.Fprintf(&distributed, " SETTINGS %s", outputProps.DistributedSettings)
+	}
+	return c.Exec(ctx, &drivers.Statement{Query: distributed.String(), Priority: 100})
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
