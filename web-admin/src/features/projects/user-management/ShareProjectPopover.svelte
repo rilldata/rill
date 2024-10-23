@@ -6,12 +6,12 @@
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
   } from "@rilldata/web-admin/client";
-  import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-invite/CopyInviteLinkButton.svelte";
+  import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
-  import UserInviteOrganization from "./UserManagementOrganization.svelte";
-  import UserInviteUserSetRole from "./UserManagementUserSetRole.svelte";
+  import UserManagementOrganization from "./UserManagementOrganization.svelte";
+  import UserManagementUserSetRole from "./UserManagementUserSetRole.svelte";
   import {
     Popover,
     PopoverContent,
@@ -87,7 +87,7 @@
             Organization
           </div>
           <div class="flex flex-col gap-y-1">
-            <UserInviteOrganization
+            <UserManagementOrganization
               {organization}
               {project}
               group={projectMemberUserGroupsList[0]}
@@ -123,7 +123,7 @@
                 isCurrentUser={user.userEmail === $currentUser.data?.user.email}
                 pendingAcceptance={!user.userName}
               />
-              <UserInviteUserSetRole
+              <UserManagementUserSetRole
                 {organization}
                 {project}
                 {user}
