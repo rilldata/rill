@@ -4,7 +4,7 @@
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
-  import UserInviteOrganizationSetRole from "./UserInviteOrganizationSetRole.svelte";
+  import UserManagementOrganizationSetRole from "./UserManagementOrganizationSetRole.svelte";
   import {
     type V1MemberUsergroup,
     createAdminServiceListUsergroupMemberUsers,
@@ -42,7 +42,7 @@
       count={userGroupMemberUsersCount}
       isEveryFromText
     />
-    <UserInviteOrganizationSetRole {organization} {project} {group} />
+    <UserManagementOrganizationSetRole {organization} {project} {group} />
   </div>
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">

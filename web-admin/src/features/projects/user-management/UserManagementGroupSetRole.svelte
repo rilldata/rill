@@ -20,9 +20,9 @@
 
   const queryClient = useQueryClient();
 
-  $: setProjectMemberUserGroupRole =
+  const setProjectMemberUserGroupRole =
     createAdminServiceSetProjectMemberUsergroupRole();
-  $: removeProjectMemberUsergroup =
+  const removeProjectMemberUsergroup =
     createAdminServiceRemoveProjectMemberUsergroup();
 
   async function handleSetRole(groupName: string, role: string) {

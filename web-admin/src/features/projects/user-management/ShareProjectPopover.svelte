@@ -7,19 +7,18 @@
     createAdminServiceListProjectMemberUsers,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-invite/CopyInviteLinkButton.svelte";
-  import UserInviteAllowlist from "@rilldata/web-admin/features/projects/user-invite/UserInviteAllowlist.svelte";
-  import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
+  import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
-  import UserInviteOrganization from "./UserInviteOrganization.svelte";
-  import UserInviteGroup from "./UserInviteGroup.svelte";
-  import UserInviteUserSetRole from "./UserInviteUserSetRole.svelte";
+  import UserInviteOrganization from "./UserManagementOrganization.svelte";
+  import UserInviteUserSetRole from "./UserManagementUserSetRole.svelte";
   import {
     Popover,
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
+  import UserManagementGroup from "./UserManagementGroup.svelte";
 
   export let organization: string;
   export let project: string;
@@ -82,16 +81,17 @@
         <CopyInviteLinkButton {copyLink} />
       </div>
       <UserInviteForm {organization} {project} />
-      <UserInviteAllowlist {organization} {project} />
       {#if showOrganizationSection}
         <div class="mt-4">
           <div class="text-xs text-gray-500 font-semibold uppercase">
             Organization
           </div>
           <div class="flex flex-col gap-y-1">
-            {#each projectMemberUserGroupsList as group}
-              <UserInviteOrganization {organization} {project} {group} />
-            {/each}
+            <UserInviteOrganization
+              {organization}
+              {project}
+              group={projectMemberUserGroupsList[0]}
+            />
           </div>
         </div>
       {/if}
@@ -103,7 +103,7 @@
           <!-- 52 * 5 = 260px -->
           <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
             {#each projectMemberUserGroupsList as group}
-              <UserInviteGroup {organization} {project} {group} />
+              <UserManagementGroup {organization} {project} {group} />
             {/each}
           </div>
         </div>

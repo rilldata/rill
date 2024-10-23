@@ -4,7 +4,7 @@
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-invite/UserRoleSelect.svelte";
+  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";

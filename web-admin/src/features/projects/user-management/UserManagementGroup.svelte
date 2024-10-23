@@ -1,6 +1,6 @@
 <script lang="ts">
-  import UserInviteGroupAvatar from "./UserInviteGroupAvatar.svelte";
-  import UserInviteGroupSetRole from "./UserInviteGroupSetRole.svelte";
+  import UserManagementGroupAvatar from "./UserManagementGroupAvatar.svelte";
+  import UserManagementGroupSetRole from "./UserManagementGroupSetRole.svelte";
   import {
     createAdminServiceListUsergroupMemberUsers,
     type V1MemberUsergroup,
@@ -34,8 +34,8 @@
     on:focus={() => (isHovered = true)}
     on:blur={() => (isHovered = false)}
   >
-    <UserInviteGroupAvatar {organization} usergroup={group.groupName} />
-    <UserInviteGroupSetRole {organization} {project} {group} />
+    <UserManagementGroupAvatar {organization} usergroup={group.groupName} />
+    <UserManagementGroupSetRole {organization} {project} {group} />
   </div>
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">
