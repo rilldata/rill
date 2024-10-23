@@ -10,15 +10,14 @@
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
-  import UserManagementOrganization from "./UserManagementOrganization.svelte";
-  import UserManagementUserSetRole from "./UserManagementUserSetRole.svelte";
+  import OrganizationItem from "./OrganizationItem.svelte";
   import {
     Popover,
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
-  import UserManagementGroup from "./UserManagementGroup.svelte";
+  import UsergroupItem from "./UsergroupItem.svelte";
+  import UserItem from "./UserItem.svelte";
 
   export let organization: string;
   export let project: string;
@@ -87,7 +86,7 @@
             Organization
           </div>
           <div class="flex flex-col gap-y-1">
-            <UserManagementOrganization
+            <OrganizationItem
               {organization}
               {project}
               group={projectMemberUserGroupsList[0]}
@@ -103,7 +102,7 @@
           <!-- 52 * 5 = 260px -->
           <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
             {#each projectMemberUserGroupsList as group}
-              <UserManagementGroup {organization} {project} {group} />
+              <UsergroupItem {organization} {project} {group} />
             {/each}
           </div>
         </div>
@@ -113,23 +112,7 @@
         <!-- 52 * 5 = 260px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
           {#each usersWithPendingInvites as user}
-            <div
-              class="flex flex-row items-center gap-x-2 justify-between cursor-auto"
-            >
-              <AvatarListItem
-                name={user.userName ?? user.userEmail}
-                email={user.userEmail}
-                photoUrl={user.userPhotoUrl}
-                isCurrentUser={user.userEmail === $currentUser.data?.user.email}
-                pendingAcceptance={!user.userName}
-              />
-              <UserManagementUserSetRole
-                {organization}
-                {project}
-                {user}
-                isCurrentUser={user.userEmail === $currentUser.data?.user.email}
-              />
-            </div>
+            <UserItem {organization} {project} {user} />
           {/each}
         </div>
       </div>

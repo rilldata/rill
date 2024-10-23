@@ -4,7 +4,7 @@
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
-  import UserManagementOrganizationSetRole from "./UserManagementOrganizationSetRole.svelte";
+  import UserManagementOrganizationSetRole from "./OrganizationSetRole.svelte";
   import {
     type V1MemberUsergroup,
     createAdminServiceListUsergroupMemberUsers,

@@ -18,6 +18,7 @@
     | {
         userName: any;
         userEmail: string;
+        userPhotoUrl?: string;
         roleName: string;
         email?: string;
         role?: string;
