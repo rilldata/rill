@@ -91,7 +91,7 @@
             <OrganizationItem
               {organization}
               {project}
-              group={showAllUsersGroup ? projectMemberUserGroupsList[0] : null}
+              group={showAllUsersGroup ?? null}
             />
           </div>
         </div>
