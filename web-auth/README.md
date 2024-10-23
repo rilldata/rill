@@ -3,7 +3,7 @@
 
   
 
-This folder contains the log in and sign up which is used for Rill Cloud and Rill Enterprise. It's implemented with TypeScript and [SvelteKit](https://kit.svelte.dev). Rollup is used for bundling the template.
+This folder contains the log in and sign up which is used for Rill Cloud and Rill Enterprise. It's implemented with TypeScript, Vite and Svelte.
 
 ## Project Details
 
@@ -15,7 +15,6 @@ The template is being used for both Rill Cloud and Rill Enterprise login. For cl
 2. Run `npm install -w web-auth`
 3. Run `npm run dev -w web-auth`
 
-The development tooling uses SvelteKit. `+page.svelte` is being used to mount the `Auth` component and pass down the props/environment variables through it.  
 
 The `configParams` props takes in `@@config@@` as an input. This is a variable which is replaced by the Auth0 runtime to an object containing tenant details. While in development we do not have the tenant object so login functionalities do not work. 
 
@@ -38,12 +37,11 @@ While developing, to test the login features, deploy the generated template `bun
 
 1. Add `.env` file to the workspace
 2. Run `npm run build -w web-auth`
-3. Copy the contents of `bundle.html` 
+3. Copy the contents of `/dist/src/bundle.html` 
 4. Paste it in Auth0 login page which can be found at `https://manage.auth0.com/dashboard/us/<tenant-name>/login_page`
 
-The build process uses Rollup extensively to package the template, inject JS inline and replacing the environment variables. 
 
-**Note**: If static files such as fonts/favicon are changed, `template.html` should be updated with the new links. The static files are hosted on Rill CDN.
+**Note**: If static files such as fonts/favicon are changed, `/src/bundle.html` should be updated with the new links. The static files are hosted on Rill CDN.
 
 ## Contributing
 
