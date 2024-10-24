@@ -36,7 +36,7 @@
           organization: organization,
           project: project,
           id: info.row.original.meta.name.name,
-          title: info.row.original.report.spec.title,
+          title: info.row.original.report.spec.displayName,
           lastRun:
             info.row.original.report.state.executionHistory[0]?.reportTime,
           timeZone: info.row.original.report.spec.refreshSchedule.timeZone,

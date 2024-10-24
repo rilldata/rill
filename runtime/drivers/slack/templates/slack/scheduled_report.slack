@@ -1,4 +1,4 @@
-*{{ .Title }}*
+*{{ .DisplayName }}*
 
 Your report for *{{ .ReportTimeString }}* is ready to view.
 

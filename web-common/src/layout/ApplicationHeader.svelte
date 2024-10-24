@@ -80,7 +80,7 @@
     }
     const parsed = parseDocument(content);
 
-    parsed.set("title", editedTitle);
+    parsed.set("display_name", editedTitle);
 
     artifact.updateLocalContent(parsed.toString(), true);
     await artifact.saveLocalContent();

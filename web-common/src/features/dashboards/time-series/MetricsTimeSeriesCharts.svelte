@@ -265,7 +265,7 @@
       .map((m) => {
         return {
           id: m.name as string,
-          title: m.label || (m.name as string),
+          title: m.displayName || (m.name as string),
           type: PivotChipType.Measure,
         };
       });
@@ -302,9 +302,9 @@
         category="Measures"
         tooltipText="Choose measures to display"
         onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
-        selectableItems={$allMeasures.map(({ name, label }) => ({
+        selectableItems={$allMeasures.map(({ name, displayName }) => ({
           name: name ?? "",
-          label: label ?? name ?? "",
+          label: displayName ?? name ?? "",
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {

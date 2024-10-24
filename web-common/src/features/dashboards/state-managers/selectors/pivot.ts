@@ -14,7 +14,7 @@ export const pivotSelectors = {
       .filter((m) => !columns.measure.find((c) => c.id === m.name))
       .map((measure) => ({
         id: measure.name || "Unknown",
-        title: measure.label || measure.name || "Unknown",
+        title: measure.displayName || measure.name || "Unknown",
         type: PivotChipType.Measure,
         description: measure.description,
       }));
@@ -36,7 +36,10 @@ export const pivotSelectors = {
         .map((dimension) => ({
           id: dimension.name || dimension.column || "Unknown",
           title:
-            dimension.label || dimension.name || dimension.column || "Unknown",
+            dimension.displayName ||
+            dimension.name ||
+            dimension.column ||
+            "Unknown",
           type: PivotChipType.Dimension,
           description: dimension.description,
         }));

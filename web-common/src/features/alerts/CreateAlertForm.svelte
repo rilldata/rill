@@ -123,7 +123,7 @@
           project,
           data: {
             options: {
-              title: values.name,
+              displayName: values.name,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),

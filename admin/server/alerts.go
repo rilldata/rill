@@ -115,7 +115,7 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	name, err := s.generateAlertName(ctx, depl, req.Options.Title)
+	name, err := s.generateAlertName(ctx, depl, req.Options.DisplayName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -443,7 +443,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Type = "alert"
 	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
-	res.Title = opts.Title
+	res.DisplayName = opts.DisplayName
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
@@ -485,7 +485,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Type = "alert"
 	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
-	res.Title = opts.Title
+	res.DisplayName = opts.DisplayName
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
@@ -507,12 +507,12 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	return yaml.Marshal(res)
 }
 
-// generateAlertName generates a random alert name with the title as a seed.
+// generateAlertName generates a random alert name with the display name as a seed.
 // Example: "My alert!" -> "my-alert-5b3f7e1a".
 // It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateAlertName(ctx context.Context, depl *database.Deployment, title string) (string, error) {
+func (s *Server) generateAlertName(ctx context.Context, depl *database.Deployment, displayName string) (string, error) {
 	for i := 0; i < 5; i++ {
-		name := randomAlertName(title)
+		name := randomAlertName(displayName)
 
 		_, err := s.admin.LookupAlert(ctx, depl, name)
 		if err != nil {
@@ -532,8 +532,8 @@ var alertNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
 
 var alertNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
 
-func randomAlertName(title string) string {
-	name := alertNameToDashCharsRegexp.ReplaceAllString(title, "-")
+func randomAlertName(displayName string) string {
+	name := alertNameToDashCharsRegexp.ReplaceAllString(displayName, "-")
 	name = alertNameExcludeCharsRegexp.ReplaceAllString(name, "")
 	name = strings.ToLower(name)
 	name = strings.Trim(name, "-")
@@ -547,11 +547,12 @@ func randomAlertName(title string) string {
 
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
-	Type      string   `yaml:"type"`
-	Refs      []string `yaml:"refs"`
-	Title     string   `yaml:"title"`
-	Watermark string   `yaml:"watermark"`
-	Intervals struct {
+	Type        string   `yaml:"type"`
+	Refs        []string `yaml:"refs"`
+	DisplayName string   `yaml:"display_name"`
+	Title       string   `yaml:"title,omitempty"` // Deprecated: replaced by display_name, but preserved for backwards compatibility
+	Watermark   string   `yaml:"watermark"`
+	Intervals   struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
 	Data map[string]any `yaml:"data,omitempty"`

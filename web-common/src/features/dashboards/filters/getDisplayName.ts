@@ -6,11 +6,19 @@ import type {
 export function getDimensionDisplayName(
   dimension: MetricsViewSpecDimensionV2 | undefined,
 ) {
-  return (dimension?.label?.length ? dimension.label : dimension?.name) ?? "";
+  return (
+    (dimension?.displayName?.length
+      ? dimension.displayName
+      : dimension?.name) ?? ""
+  );
 }
 
 export function getMeasureDisplayName(
   measure: MetricsViewSpecMeasureV2 | undefined,
 ) {
-  return (measure?.label?.length ? measure.label : measure?.expression) ?? "";
+  return (
+    (measure?.displayName?.length
+      ? measure.displayName
+      : measure?.expression) ?? ""
+  );
 }

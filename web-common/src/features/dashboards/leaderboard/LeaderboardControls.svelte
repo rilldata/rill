@@ -67,9 +67,9 @@
         category="Dimensions"
         tooltipText="Choose dimensions to display"
         onSelect={(name) => toggleDimensionVisibility(allDimensionNames, name)}
-        selectableItems={$allDimensions.map(({ name, label }) => ({
+        selectableItems={$allDimensions.map(({ name, displayName }) => ({
           name: name ?? "",
-          label: label ?? name ?? "",
+          label: displayName ?? name ?? "",
         }))}
         selectedItems={visibleDimensionsNames}
         onToggleSelectAll={() => {
@@ -82,7 +82,7 @@
         selected={{ value: activeLeaderboardMeasure.name, label: "" }}
         items={measures.map((measure) => ({
           value: measure.name ?? "",
-          label: measure.label ?? measure.name,
+          label: measure.displayName ?? measure.name,
         }))}
         onSelectedChange={(newSelection) => {
           if (!newSelection?.value) return;
@@ -93,7 +93,7 @@
           <Button type="text" label="Select a measure to filter by">
             <span class="truncate text-gray-700 hover:text-inherit">
               Showing <b>
-                {activeLeaderboardMeasure?.label ??
+                {activeLeaderboardMeasure?.displayName ??
                   activeLeaderboardMeasure.name}
               </b>
             </span>
@@ -108,12 +108,12 @@
           {#each measures as measure (measure.name)}
             <Select.Item
               value={measure.name}
-              label={measure.label ?? measure.name}
+              label={measure.displayName ?? measure.name}
               class="text-[12px]"
             >
               <div class="flex flex-col">
                 <div class:font-bold={$leaderboardMeasureName === measure.name}>
-                  {measure.label ?? measure.name}
+                  {measure.displayName ?? measure.name}
                 </div>
 
                 <p class="ui-copy-muted" style:font-size="11px">

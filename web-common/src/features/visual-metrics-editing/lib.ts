@@ -43,7 +43,7 @@ export class YAMLDimension {
     this.column = item?.get("column") ?? "";
     this.expression = item?.get("expression") ?? "";
     this.name = item?.get("name") ?? "";
-    this.label = item?.get("label") ?? "";
+    this.label = item?.get("display_name") ?? item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
     this.unnest =
       item?.get("unnest") === undefined
@@ -65,7 +65,7 @@ export class YAMLMeasure {
   constructor(item?: YAMLMap<string, string>) {
     this.expression = item?.get("expression") ?? "";
     this.name = item?.get("name") ?? "";
-    this.label = item?.get("label") ?? "";
+    this.label = item?.get("display_name") ?? item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
     this.valid_percent_of_total =
       item?.get("valid_percent_of_total") === undefined

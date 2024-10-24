@@ -13,8 +13,8 @@
   export let value = "";
 
   $: description =
-    measure?.description || measure?.label || measure?.expression;
-  $: name = measure?.label || measure?.expression;
+    measure?.description || measure?.displayName || measure?.expression;
+  $: name = measure?.displayName || measure?.expression;
 </script>
 
 <TooltipContent maxWidth="280px">

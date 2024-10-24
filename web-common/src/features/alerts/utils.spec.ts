@@ -11,7 +11,7 @@ const MetricsView: V1MetricsViewSpec = {
   measures: [
     {
       name: "total_records",
-      label: "Total records",
+      displayName: "Total records",
     },
   ],
 };

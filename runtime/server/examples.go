@@ -25,7 +25,7 @@ func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRe
 	for i, example := range list {
 		resp[i] = &runtimev1.Example{
 			Name:        example.Name,
-			Title:       example.Title,
+			DisplayName: example.DisplayName,
 			Description: example.Description,
 		}
 	}
@@ -114,7 +114,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequest) (*runtimev1.UnpackEmptyResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.title", req.Title),
+		attribute.String("args.display_name", req.DisplayName),
 		attribute.Bool("args.force", req.Force),
 	)
 
@@ -135,7 +135,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	}
 
 	// Init empty project
-	err = rillv1.InitEmpty(ctx, repo, req.InstanceId, req.Title)
+	err = rillv1.InitEmpty(ctx, repo, req.InstanceId, req.DisplayName)
 	if err != nil {
 		return nil, err
 	}

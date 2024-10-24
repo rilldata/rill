@@ -636,7 +636,7 @@ type MagicAuthToken struct {
 	FilterJSON            string         `db:"filter_json"`
 	Fields                []string       `db:"fields"`
 	State                 string         `db:"state"`
-	Title                 string         `db:"title"`
+	DisplayName           string         `db:"display_name"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -659,7 +659,7 @@ type InsertMagicAuthTokenOptions struct {
 	FilterJSON      string
 	Fields          []string
 	State           string
-	Title           string
+	DisplayName     string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.

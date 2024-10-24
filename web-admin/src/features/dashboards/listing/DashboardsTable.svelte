@@ -39,8 +39,8 @@
         // If not a Metrics Explorer, it's a Custom Dashboard.
         const isMetricsExplorer = !!resource?.explore;
         const title = isMetricsExplorer
-          ? resource.explore.spec.title
-          : resource.canvas.spec.title;
+          ? resource.explore.spec.displayName
+          : resource.canvas.spec.displayName;
         const description = isMetricsExplorer
           ? resource.explore.spec.description
           : "";
@@ -62,8 +62,8 @@
         const resource = row.resource;
         const isMetricsExplorer = !!resource?.explore;
         return isMetricsExplorer
-          ? resource.explore.spec.title
-          : resource.canvas.spec.title;
+          ? resource.explore.spec.displayName
+          : resource.canvas.spec.displayName;
       },
     },
     {

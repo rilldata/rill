@@ -65,18 +65,18 @@
   $: metricsViewProto = $dashboardStore.proto;
 
   $: selectableMeasures = $allMeasures
-    .filter((m) => m.name !== undefined || m.label !== undefined)
+    .filter((m) => m.name !== undefined || m.displayName !== undefined)
     .map((m) =>
       // Note: undefined values are filtered out above, so the
       // empty string fallback is unreachable.
       ({
         name: m.name ?? "",
-        label: m.label ?? "",
+        label: m.displayName ?? "",
       }),
     );
 
   $: selectedMeasureLabel =
-    $allMeasures.find((m) => m.name === expandedMeasureName)?.label ??
+    $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ??
     expandedMeasureName;
 
   $: excludeMode =

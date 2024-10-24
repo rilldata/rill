@@ -27,8 +27,8 @@
   $: measureOptions = [
     {
       value: $form["measure"],
-      label: measure?.label?.length
-        ? measure.label
+      label: measure?.displayName?.length
+        ? measure.displayName
         : (measure?.expression ?? $form["measure"]),
     },
   ];

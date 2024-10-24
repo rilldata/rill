@@ -56,7 +56,7 @@ export async function submitAddDataForm(
   const projectInitialized = await isProjectInitialized(instanceId);
   if (!projectInitialized) {
     await runtimeServiceUnpackEmpty(instanceId, {
-      title: EMPTY_PROJECT_TITLE,
+      displayName: EMPTY_PROJECT_TITLE,
     });
   }
 

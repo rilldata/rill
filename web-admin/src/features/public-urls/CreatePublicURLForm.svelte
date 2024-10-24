@@ -99,7 +99,7 @@
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
               state: sanitizedState ? sanitizedState : undefined,
-              title: values.title,
+              displayName: values.title,
             },
           });
           token = _token;

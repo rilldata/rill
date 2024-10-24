@@ -36,8 +36,8 @@
       return map.set(name.toLowerCase(), {
         label:
           (isExplore
-            ? explore?.state?.validSpec?.title
-            : canvas?.state?.validSpec?.title) || name,
+            ? explore?.state?.validSpec?.displayName
+            : canvas?.state?.validSpec?.displayName) || name,
       });
     },
     new Map(),

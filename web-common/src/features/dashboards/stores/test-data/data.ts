@@ -148,7 +148,7 @@ export const AD_BIDS_TIME_RANGE_SUMMARY: V1MetricsViewTimeRangeResponse = {
 };
 
 export const AD_BIDS_METRICS_INIT: V1MetricsViewSpec = {
-  title: AD_BIDS_NAME,
+  displayName: AD_BIDS_NAME,
   table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_INIT_DIMENSIONS,
@@ -158,7 +158,7 @@ export const AD_BIDS_METRICS_INIT_WITH_TIME: V1MetricsViewSpec = {
   timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
 };
 export const AD_BIDS_METRICS_WITH_DELETED_MEASURE: V1MetricsViewSpec = {
-  title: AD_BIDS_NAME,
+  displayName: AD_BIDS_NAME,
   table: AD_BIDS_SOURCE_NAME,
   measures: [
     {
@@ -169,7 +169,7 @@ export const AD_BIDS_METRICS_WITH_DELETED_MEASURE: V1MetricsViewSpec = {
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
 export const AD_BIDS_METRICS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
-  title: AD_BIDS_NAME,
+  displayName: AD_BIDS_NAME,
   table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: [
@@ -182,37 +182,37 @@ export const AD_BIDS_METRICS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
 };
 
 export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {
-  title: AD_BIDS_EXPLORE_NAME,
+  displayName: AD_BIDS_EXPLORE_NAME,
   metricsView: AD_BIDS_NAME,
   measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
 };
 export const AD_BIDS_EXPLORE_WITH_DELETED_MEASURE: V1ExploreSpec = {
-  title: AD_BIDS_EXPLORE_NAME,
+  displayName: AD_BIDS_EXPLORE_NAME,
   metricsView: AD_BIDS_NAME,
   measures: [AD_BIDS_IMPRESSIONS_MEASURE],
   dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
 };
 export const AD_BIDS_EXPLORE_WITH_THREE_MEASURES: V1ExploreSpec = {
-  title: AD_BIDS_EXPLORE_NAME,
+  displayName: AD_BIDS_EXPLORE_NAME,
   metricsView: AD_BIDS_NAME,
   measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
 };
 export const AD_BIDS_EXPLORE_WITH_DELETED_DIMENSION: V1ExploreSpec = {
-  title: AD_BIDS_EXPLORE_NAME,
+  displayName: AD_BIDS_EXPLORE_NAME,
   metricsView: AD_BIDS_NAME,
   measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
 };
 export const AD_BIDS_EXPLORE_WITH_THREE_DIMENSIONS: V1ExploreSpec = {
-  title: AD_BIDS_EXPLORE_NAME,
+  displayName: AD_BIDS_EXPLORE_NAME,
   metricsView: AD_BIDS_NAME,
   measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_THREE_DIMENSIONS.map((d) => d.name!),
 };
 export const AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION: V1ExploreSpec = {
-  title: AD_BIDS_EXPLORE_NAME,
+  displayName: AD_BIDS_EXPLORE_NAME,
   metricsView: AD_BIDS_NAME,
   measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
   dimensions: [
