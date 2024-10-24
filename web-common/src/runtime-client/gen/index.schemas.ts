@@ -1812,6 +1812,18 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
 } as const;
 
+export type V1ExploreWebView =
+  (typeof V1ExploreWebView)[keyof typeof V1ExploreWebView];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreWebView = {
+  EXPLORE_ACTIVE_PAGE_UNSPECIFIED: "EXPLORE_ACTIVE_PAGE_UNSPECIFIED",
+  EXPLORE_ACTIVE_PAGE_OVERVIEW: "EXPLORE_ACTIVE_PAGE_OVERVIEW",
+  EXPLORE_ACTIVE_PAGE_TIME_DIMENSION: "EXPLORE_ACTIVE_PAGE_TIME_DIMENSION",
+  EXPLORE_ACTIVE_PAGE_PIVOT: "EXPLORE_ACTIVE_PAGE_PIVOT",
+  EXPLORE_ACTIVE_PAGE_CANVAS: "EXPLORE_ACTIVE_PAGE_CANVAS",
+} as const;
+
 export interface V1ExploreState {
   validSpec?: V1ExploreSpec;
 }
@@ -1847,13 +1859,28 @@ export interface V1ExplorePreset {
   /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
   measuresSelector?: V1FieldSelector;
+  where?: V1Expression;
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */
   timeRange?: string;
+  timezone?: string;
+  timeGrain?: string;
   comparisonMode?: V1ExploreComparisonMode;
+  compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
+  view?: V1ExploreWebView;
+  overviewSortBy?: string;
+  overviewSortAsc?: boolean;
+  overviewExpandedDimension?: string;
+  timeDimensionMeasure?: string;
+  timeDimensionChartType?: string;
+  timeDimensionPin?: boolean;
+  pivotRows?: string[];
+  pivotCols?: string[];
+  pivotSortBy?: string;
+  pivotSortAsc?: boolean;
 }
 
 export interface V1ExploreSpec {

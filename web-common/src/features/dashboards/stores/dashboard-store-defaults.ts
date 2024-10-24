@@ -10,7 +10,12 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { convertPresetToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
+import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import {
+  getLocalUserPreferences,
+  getLocalUserPreferencesState,
+} from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -41,7 +46,8 @@ export function setDefaultTimeRange(
     !fullTimeRange.timeRangeSummary?.max
   )
     return;
-  const timeZone = get(getLocalUserPreferences()).timeZone;
+  const timeZone =
+    explorePreset?.timezone || get(getLocalUserPreferences()).timeZone;
   const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
   const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
   const timeRange = isoDurationToFullTimeRange(
@@ -140,68 +146,26 @@ export function getDefaultMetricsExplorerEntity(
   explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ): MetricsExplorerEntity {
-  const defaultMeasureNames =
-    explore?.defaultPreset?.measures ?? explore?.measures ?? [];
-
-  const defaultDimNames =
-    explore?.defaultPreset?.dimensions ?? explore?.dimensions ?? [];
-
-  const metricsExplorer: MetricsExplorerEntity = {
+  const { entity: baseEntity } = convertPresetToMetricsExplore(
+    metricsView,
+    explore,
+    getBasePreset(explore, getLocalUserPreferencesState(name)),
+  );
+  const metricsExplorer = {
+    // fields filled here are the ones that are not stored and loaded to/from URL
     name,
-    visibleMeasureKeys: new Set(
-      defaultMeasureNames
-        .map((dm) => normaliseName(dm, metricsView.measures))
-        .filter((dm) => !!dm) as string[],
-    ),
-    allMeasuresVisible: defaultMeasureNames.length === explore.measures?.length,
-    visibleDimensionKeys: new Set(
-      defaultDimNames
-        .map((dd) => normaliseName(dd, metricsView.dimensions))
-        .filter((dd) => !!dd) as string[],
-    ),
-    allDimensionsVisible: defaultDimNames.length === explore.dimensions?.length,
-    leaderboardMeasureName: defaultMeasureNames[0],
-    whereFilter: createAndExpression([]),
     havingFilter: createAndExpression([]),
-    dimensionThresholdFilters: [],
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,
     sortDirection: SortDirection.DESCENDING,
-    selectedTimezone: "UTC",
-    selectedTimeRange: undefined,
 
-    activePage: DashboardState_ActivePage.DEFAULT,
-    selectedComparisonDimension: undefined,
-    selectedDimensionName: undefined,
-
-    showTimeComparison: false,
     dimensionSearchText: "",
     temporaryFilterName: null,
-    tdd: {
-      chartType: TDDChart.DEFAULT,
-      expandedMeasureName: "",
-      pinIndex: -1,
-    },
-    pivot: {
-      active: false,
-      rows: {
-        dimension: [],
-      },
-      columns: {
-        dimension: [],
-        measure: [],
-      },
-      rowJoinType: "nest",
-      expanded: {},
-      sorting: [],
-      rowPage: 1,
-      enableComparison: true,
-      columnPage: 1,
-      activeCell: null,
-    },
     contextColumnWidths: { ...contextColWidthDefaults },
-  };
+
+    ...baseEntity,
+  } as MetricsExplorerEntity;
   // set time range related stuff
   setDefaultTimeRange(explore?.defaultPreset, metricsExplorer, fullTimeRange);
   setDefaultComparison(metricsView, explore, metricsExplorer, fullTimeRange);

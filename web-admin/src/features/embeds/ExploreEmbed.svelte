@@ -1,9 +1,8 @@
 <script lang="ts">
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
-  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { errorStore } from "../errors/error-store";
 
@@ -38,13 +37,12 @@
   {:else if data}
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>
-        <DashboardStateProvider {exploreName}>
-          <DashboardURLStateProvider {metricsViewName}>
-            <DashboardThemeProvider>
-              <Dashboard {exploreName} {metricsViewName} />
-            </DashboardThemeProvider>
-          </DashboardURLStateProvider>
-        </DashboardStateProvider>
+        <!-- TODO -->
+        <DashboardURLStateSync partialMetrics={{}}>
+          <DashboardThemeProvider>
+            <Dashboard {exploreName} {metricsViewName} />
+          </DashboardThemeProvider>
+        </DashboardURLStateSync>
       </StateManagersProvider>
     {/key}
   {/if}

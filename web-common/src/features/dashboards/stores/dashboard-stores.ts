@@ -186,6 +186,7 @@ const metricsViewReducers = {
       schema,
     );
     if (!partial) return;
+    console.log("syncFromUrl", partial);
 
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       for (const key in partial) {
@@ -202,9 +203,30 @@ const metricsViewReducers = {
     });
   },
 
+  mergePartialExplorerEntity(
+    name: string,
+    partialMetrics: Partial<MetricsExplorerEntity>,
+    metricsView: V1MetricsViewSpec,
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      for (const key in partialMetrics) {
+        metricsExplorer[key] = partialMetrics[key];
+      }
+      // this hack is needed since what is shown for comparison is not a single source
+      // TODO: use an enum and get rid of this
+      if (!partialMetrics.showTimeComparison) {
+        metricsExplorer.showTimeComparison = false;
+      }
+      metricsExplorer.dimensionFilterExcludeMode =
+        includeExcludeModeFromFilters(partialMetrics.whereFilter);
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
+    });
+  },
+
   sync(name: string, explore: V1ExploreSpec) {
     if (!name || !explore || !explore.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      console.log("sync");
       // remove references to non existent measures
       syncMeasures(explore, metricsExplorer);
 

@@ -1,6 +1,6 @@
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
-import type { Readable, Writable } from "svelte/store";
+import { type Readable, type Writable } from "svelte/store";
 
 /**
  *  TODO: We should create a single user preference store for all dashboards
@@ -13,9 +13,9 @@ export interface LocalUserPreferences {
 }
 let localUserPreferences: Writable<LocalUserPreferences>;
 
-export function initLocalUserPreferenceStore(metricsViewName: string) {
+export function initLocalUserPreferenceStore(exploreName: string) {
   localUserPreferences = localStorageStore<LocalUserPreferences>(
-    `${metricsViewName}-userPreference`,
+    `${exploreName}-userPreference`,
     {
       timeZone: getLocalIANA(),
     },
@@ -37,6 +37,25 @@ function localUserPreferencesActions() {
 
   return {
     updateTimeZone: updateKey("timeZone"),
+  };
+}
+
+export function getLocalUserPreferencesState(
+  exploreName: string,
+): LocalUserPreferences {
+  const localstorageUserPreference = localStorage.getItem(
+    `${exploreName}-userPreference`,
+  );
+  if (localstorageUserPreference) {
+    try {
+      return JSON.parse(localstorageUserPreference);
+    } catch {
+      // TODO
+    }
+  }
+
+  return {
+    timeZone: getLocalIANA(),
   };
 }
 

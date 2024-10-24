@@ -26,3 +26,24 @@ export function createBatches<T>(array: T[], batchSize: number): T[][] {
   }
   return batches;
 }
+
+export function arrayUnorderedEquals<T>(src: T[], tar: T[]) {
+  if (src.length !== tar.length) return false;
+  const set = new Set<T>(src);
+  return tar.every((t) => set.has(t));
+}
+
+export function arrayOrderedEquals<T>(src: T[], tar: T[]) {
+  if (src.length !== tar.length) return false;
+  for (let i = 0; i < src.length; i += 1) {
+    if (src[i] !== tar[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Returns values in tar that are missing in src.
+ */
+export function getMissingValues<T>(src: T[], tar: T[]) {
+  return tar.filter((v) => !src.includes(v));
+}
