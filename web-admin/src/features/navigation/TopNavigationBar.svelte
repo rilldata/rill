@@ -105,8 +105,8 @@
     return map.set(name.toLowerCase(), {
       label:
         (isMetricsExplorer
-          ? resource?.explore?.spec?.title
-          : resource?.canvas?.spec?.title) || name,
+          ? resource?.explore?.spec?.displayName
+          : resource?.canvas?.spec?.displayName) || name,
       section: isMetricsExplorer ? "explore" : "-/dashboards",
     });
   }, new Map<string, PathOption>());
@@ -114,7 +114,7 @@
   $: alertPaths = alerts.reduce((map, alert) => {
     const name = alert.meta.name.name;
     return map.set(name.toLowerCase(), {
-      label: alert.alert.spec.title || name,
+      label: alert.alert.spec.displayName || name,
       section: "-/alerts",
     });
   }, new Map<string, PathOption>());
@@ -122,7 +122,7 @@
   $: reportPaths = reports.reduce((map, report) => {
     const name = report.meta.name.name;
     return map.set(name.toLowerCase(), {
-      label: report.report.spec.title || name,
+      label: report.report.spec.displayName || name,
       section: "-/reports",
     });
   }, new Map<string, PathOption>());
@@ -153,7 +153,7 @@
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.title ?? dashboard ?? "";
+    $exploreQuery.data?.explore?.spec?.displayName ?? dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>

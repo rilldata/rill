@@ -41,7 +41,7 @@
   $: dashboardName = useAlertDashboardName($runtime.instanceId, alert);
   $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
   $: metricsViewName = $dashboard.data?.explore?.metricsView;
-  $: dashboardTitle = $dashboard.data?.explore?.title || $dashboardName.data;
+  $: dashboardTitle = $dashboard.data?.explore?.displayName || $dashboardName.data;
   $: dashboardDoesNotExist = $dashboard.error?.response?.status === 404;
 
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
@@ -95,7 +95,7 @@
       </div>
       <div class="flex gap-x-2 items-center">
         <h1 class="text-gray-700 text-lg font-bold">
-          {alertSpec.title}
+          {alertSpec.displayName}
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}

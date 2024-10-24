@@ -37,7 +37,7 @@
   // Get dashboard
   $: dashboardName = useReportDashboardName($runtime.instanceId, report);
   $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
-  $: dashboardTitle = $dashboard.data?.explore?.title || $dashboardName.data;
+  $: dashboardTitle = $dashboard.data?.explore?.displayName || $dashboardName.data;
 
   // Get human-readable frequency
   $: humanReadableFrequency =
@@ -109,7 +109,7 @@
       </div>
       <div class="flex gap-x-2 items-center">
         <h1 class="text-gray-700 text-lg font-bold">
-          {$reportQuery.data.resource.report.spec.title}
+          {$reportQuery.data.resource.report.spec.displayName}
         </h1>
         <div class="grow" />
         <RunNowButton {organization} {project} {report} />

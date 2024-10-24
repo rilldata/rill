@@ -60,7 +60,7 @@
       cell: ({ row }) =>
         flexRender(DashboardLink, {
           href: row.original.url,
-          title: row.original.title,
+          title: row.original.displayName,
         }),
     },
     {

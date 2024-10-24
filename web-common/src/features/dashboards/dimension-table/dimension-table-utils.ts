@@ -312,7 +312,7 @@ export function prepareVirtualizedDimTableColumns(
         columnOut = {
           name,
           type: "INT",
-          label: measure?.label || measure?.expression,
+          label: measure?.displayName || measure?.expression,
           description: measure?.description,
           total: measureTotals[measure?.name ?? ""] || 0,
           enableResize: false,
@@ -325,7 +325,7 @@ export function prepareVirtualizedDimTableColumns(
         columnOut = {
           name,
           type: "VARCHAR",
-          label: dimension?.label,
+          label: dimension?.displayName,
           enableResize: true,
           highlight,
           sorted,

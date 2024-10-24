@@ -40,7 +40,7 @@
       }
     },
   });
-  $: exploreTitle = $explore.data?.explore?.explore?.state?.validSpec?.title;
+  $: exploreTitle = $explore.data?.explore?.explore?.state?.validSpec?.displayName;
 
   $: isDashboardNotFound =
     !$explore.data &&
