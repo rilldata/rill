@@ -42,11 +42,7 @@ func (s *Stripe) CreateCustomer(ctx context.Context, organization *database.Orga
 		return nil, err
 	}
 
-	return &Customer{
-		ID:    c.ID,
-		Name:  c.Name,
-		Email: c.Email,
-	}, nil
+	return getPaymentCustomerFromStripeCustomer(c), nil
 }
 
 func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
@@ -59,17 +55,7 @@ func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer
 		return nil, err
 	}
 
-	i := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
-		Customer: stripe.String(c.ID),
-	})
-
-	return &Customer{
-		ID:                 c.ID,
-		Name:               c.Name,
-		Email:              c.Email,
-		HasPaymentMethod:   i.Next(),
-		HasBillableAddress: c.Address != nil && c.Address.PostalCode != "",
-	}, nil
+	return getPaymentCustomerFromStripeCustomer(c), nil
 }
 
 func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error) {
@@ -87,17 +73,7 @@ func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.
 	for i.Next() {
 		c := i.Customer()
 		if c.Name == organization.ID {
-			it := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
-				Customer: stripe.String(c.ID),
-			})
-
-			return &Customer{
-				ID:                 c.ID,
-				Name:               c.Name,
-				Email:              c.Email,
-				HasPaymentMethod:   it.Next(),
-				HasBillableAddress: c.Address != nil && c.Address.PostalCode != "",
-			}, nil
+			return getPaymentCustomerFromStripeCustomer(c), nil
 		}
 	}
 
@@ -137,4 +113,19 @@ func (s *Stripe) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputi
 	}
 	sw := &stripeWebhook{stripe: s, jobs: jc}
 	return sw.handleWebhook
+}
+
+func getPaymentCustomerFromStripeCustomer(c *stripe.Customer) *Customer {
+	i := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
+		Customer: stripe.String(c.ID),
+	})
+
+	return &Customer{
+		ID:                 c.ID,
+		Name:               c.Name,
+		Email:              c.Email,
+		HasPaymentMethod:   i.Next(),
+		HasBillableAddress: c.Address != nil && c.Address.PostalCode != "",
+		TaxExempt:          c.Address != nil && c.Address.Country != "US" && c.Address.Country != "CA",
+	}
 }

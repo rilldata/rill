@@ -526,3 +526,20 @@ func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
 		ButtonLink: opts.UpgradeURL,
 	})
 }
+
+type TrialExtended struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialExtended(opts *TrialExtended) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your trial for %s has been extended", opts.OrgName),
+		Title:   fmt.Sprintf("Your trial for %s has been extened", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Welcome to Rill! Your trial for %q has been extended and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+	})
+}

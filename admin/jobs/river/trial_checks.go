@@ -14,8 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const gracePeriodDays = 9
-
 type TrialEndingSoonArgs struct{}
 
 func (TrialEndingSoonArgs) Kind() string { return "trial_ending_soon" }
@@ -124,8 +122,6 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 
 		w.logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
-		gracePeriodEndDate := m.EndDate.AddDate(0, 0, gracePeriodDays)
-
 		cctx, tx, err := w.admin.DB.NewTx(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to start transaction: %w", err)
@@ -137,7 +133,8 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			Metadata: &database.BillingIssueMetadataTrialEnded{
 				SubID:              m.SubID,
 				PlanID:             m.PlanID,
-				GracePeriodEndDate: gracePeriodEndDate,
+				EndDate:            m.EndDate,
+				GracePeriodEndDate: m.GracePeriodEndDate,
 			},
 			EventTime: m.EndDate,
 		})
@@ -165,7 +162,7 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			ToName:             org.Name,
 			OrgName:            org.Name,
 			UpgradeURL:         w.admin.URLs.UpgradePlan(org.Name),
-			GracePeriodEndDate: gracePeriodEndDate,
+			GracePeriodEndDate: m.GracePeriodEndDate,
 		})
 		if err != nil {
 			err = tx.Rollback()
