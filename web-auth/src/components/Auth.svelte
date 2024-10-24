@@ -37,7 +37,6 @@
   };
 
   export let configParams: string;
-  export let cloudClientIDs = "";
   export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
 
