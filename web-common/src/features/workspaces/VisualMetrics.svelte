@@ -109,7 +109,7 @@
   $: modelingDisabled =
     olapConnector &&
     OLAP_DRIVERS_WITHOUT_MODELING.filter(
-      (driver) => driver === "clickhouse" && $clickhouseModeling,
+      (driver) => !(driver === "clickhouse" && $clickhouseModeling),
     ).includes(olapConnector);
 
   $: rawSmallestTimeGrain = parsedDocument.get("smallest_time_grain");
