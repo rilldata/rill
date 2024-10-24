@@ -3796,9 +3796,14 @@ export class SudoUpdateOrganizationBillingCustomerRequest extends Message<SudoUp
   organization = "";
 
   /**
-   * @generated from field: string billing_customer_id = 2;
+   * @generated from field: optional string billing_customer_id = 2;
    */
-  billingCustomerId = "";
+  billingCustomerId?: string;
+
+  /**
+   * @generated from field: optional string payment_customer_id = 3;
+   */
+  paymentCustomerId?: string;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationBillingCustomerRequest>) {
     super();
@@ -3809,7 +3814,8 @@ export class SudoUpdateOrganizationBillingCustomerRequest extends Message<SudoUp
   static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationBillingCustomerRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationBillingCustomerRequest {
@@ -3869,6 +3875,86 @@ export class SudoUpdateOrganizationBillingCustomerResponse extends Message<SudoU
 
   static equals(a: SudoUpdateOrganizationBillingCustomerResponse | PlainMessage<SudoUpdateOrganizationBillingCustomerResponse> | undefined, b: SudoUpdateOrganizationBillingCustomerResponse | PlainMessage<SudoUpdateOrganizationBillingCustomerResponse> | undefined): boolean {
     return proto3.util.equals(SudoUpdateOrganizationBillingCustomerResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoExtendTrialRequest
+ */
+export class SudoExtendTrialRequest extends Message<SudoExtendTrialRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: int32 days = 2;
+   */
+  days = 0;
+
+  constructor(data?: PartialMessage<SudoExtendTrialRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoExtendTrialRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "days", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoExtendTrialRequest {
+    return new SudoExtendTrialRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoExtendTrialRequest {
+    return new SudoExtendTrialRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoExtendTrialRequest {
+    return new SudoExtendTrialRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoExtendTrialRequest | PlainMessage<SudoExtendTrialRequest> | undefined, b: SudoExtendTrialRequest | PlainMessage<SudoExtendTrialRequest> | undefined): boolean {
+    return proto3.util.equals(SudoExtendTrialRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoExtendTrialResponse
+ */
+export class SudoExtendTrialResponse extends Message<SudoExtendTrialResponse> {
+  /**
+   * @generated from field: google.protobuf.Timestamp trial_end = 1;
+   */
+  trialEnd?: Timestamp;
+
+  constructor(data?: PartialMessage<SudoExtendTrialResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoExtendTrialResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "trial_end", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoExtendTrialResponse {
+    return new SudoExtendTrialResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoExtendTrialResponse {
+    return new SudoExtendTrialResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoExtendTrialResponse {
+    return new SudoExtendTrialResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoExtendTrialResponse | PlainMessage<SudoExtendTrialResponse> | undefined, b: SudoExtendTrialResponse | PlainMessage<SudoExtendTrialResponse> | undefined): boolean {
+    return proto3.util.equals(SudoExtendTrialResponse, a, b);
   }
 }
 
@@ -12741,11 +12827,16 @@ export class BillingPlan extends Message<BillingPlan> {
   default = false;
 
   /**
-   * TODO expose pricing information
-   *
    * @generated from field: rill.admin.v1.Quotas quotas = 7;
    */
   quotas?: Quotas;
+
+  /**
+   * TODO expose pricing information
+   *
+   * @generated from field: bool public = 8;
+   */
+  public = false;
 
   constructor(data?: PartialMessage<BillingPlan>) {
     super();
@@ -12762,6 +12853,7 @@ export class BillingPlan extends Message<BillingPlan> {
     { no: 5, name: "trial_period_days", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 6, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "quotas", kind: "message", T: Quotas },
+    { no: 8, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingPlan {
@@ -13131,6 +13223,11 @@ export class BillingIssueMetadataOnTrial extends Message<BillingIssueMetadataOnT
    */
   endDate?: Timestamp;
 
+  /**
+   * @generated from field: google.protobuf.Timestamp grace_period_end_date = 2;
+   */
+  gracePeriodEndDate?: Timestamp;
+
   constructor(data?: PartialMessage<BillingIssueMetadataOnTrial>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13140,6 +13237,7 @@ export class BillingIssueMetadataOnTrial extends Message<BillingIssueMetadataOnT
   static readonly typeName = "rill.admin.v1.BillingIssueMetadataOnTrial";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "end_date", kind: "message", T: Timestamp },
+    { no: 2, name: "grace_period_end_date", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataOnTrial {
@@ -13164,7 +13262,12 @@ export class BillingIssueMetadataOnTrial extends Message<BillingIssueMetadataOnT
  */
 export class BillingIssueMetadataTrialEnded extends Message<BillingIssueMetadataTrialEnded> {
   /**
-   * @generated from field: google.protobuf.Timestamp grace_period_end_date = 1;
+   * @generated from field: google.protobuf.Timestamp end_date = 1;
+   */
+  endDate?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp grace_period_end_date = 2;
    */
   gracePeriodEndDate?: Timestamp;
 
@@ -13176,7 +13279,8 @@ export class BillingIssueMetadataTrialEnded extends Message<BillingIssueMetadata
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.BillingIssueMetadataTrialEnded";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "grace_period_end_date", kind: "message", T: Timestamp },
+    { no: 1, name: "end_date", kind: "message", T: Timestamp },
+    { no: 2, name: "grace_period_end_date", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingIssueMetadataTrialEnded {

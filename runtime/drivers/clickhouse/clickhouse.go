@@ -77,6 +77,13 @@ var spec = drivers.Spec{
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
 		},
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Database",
+			Description: "Specify the database within the ClickHouse server",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -92,6 +99,8 @@ type configProperties struct {
 	Password string `mapstructure:"password"`
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
+	// Database specifies the name of the ClickHouse database within the cluster.
+	Database string `mapstructure:"database"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. Required for running distributed queries.
@@ -158,6 +167,11 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 			opts.Auth.Password = conf.Password
 		} else if conf.Username != "" {
 			opts.Auth.Username = conf.Username
+		}
+
+		// database
+		if conf.Database != "" {
+			opts.Auth.Database = conf.Database
 		}
 	} else {
 		// run clickhouse locally
@@ -323,11 +337,17 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	if opts.InputHandle == c && opts.OutputHandle == c {
+	if opts.OutputHandle != c {
+		return nil, false
+	}
+	if opts.InputHandle == c {
 		return &selfToSelfExecutor{c}, true
 	}
-	if opts.InputHandle.Driver() == "s3" && opts.OutputHandle == c {
+	if opts.InputHandle.Driver() == "s3" {
 		return &s3ToSelfExecutor{opts.InputHandle, c}, true
+	}
+	if opts.InputHandle.Driver() == "local_file" {
+		return &localFileToSelfExecutor{opts.InputHandle, c}, true
 	}
 	return nil, false
 }

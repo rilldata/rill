@@ -1667,7 +1667,7 @@ type MetricsViewSpec struct {
 	Table string `protobuf:"bytes,2,opt,name=table,proto3" json:"table,omitempty"`
 	// Name of the model the metrics view is based on. Either table or model should be set.
 	Model string `protobuf:"bytes,24,opt,name=model,proto3" json:"model,omitempty"`
-	// User-facing title
+	// User-facing name
 	DisplayName string `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// User-facing description
 	Description string `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
@@ -2309,7 +2309,7 @@ type ExploreSpec struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// User-facing title
+	// User-facing name
 	DisplayName string `protobuf:"bytes,1,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// User-facing description
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`

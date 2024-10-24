@@ -4016,7 +4016,7 @@ definitions:
     properties:
       displayName:
         type: string
-        title: User-facing title
+        title: User-facing name
       description:
         type: string
         title: User-facing description
@@ -4903,7 +4903,7 @@ definitions:
         description: Name of the model the metrics view is based on. Either table or model should be set.
       displayName:
         type: string
-        title: User-facing title
+        title: User-facing name
       description:
         type: string
         title: User-facing description

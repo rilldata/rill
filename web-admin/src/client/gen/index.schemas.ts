@@ -479,14 +479,10 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
   customDomain?: string;
 }
 
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscription?: V1Subscription;
-}
-
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   organization?: string;
   billingCustomerId?: string;
+  paymentCustomerId?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -519,6 +515,15 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
+export interface V1SudoExtendTrialResponse {
+  trialEnd?: string;
+}
+
+export interface V1SudoExtendTrialRequest {
+  organization?: string;
+  days?: number;
+}
+
 export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: any;
 }
@@ -531,6 +536,11 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
 }
 
 export interface V1Subquery {
@@ -1297,6 +1307,7 @@ export interface V1BillingPlan {
   trialPeriodDays?: number;
   default?: boolean;
   quotas?: V1Quotas;
+  public?: boolean;
 }
 
 export type V1BillingIssueType =
@@ -1317,6 +1328,7 @@ export const V1BillingIssueType = {
 } as const;
 
 export interface V1BillingIssueMetadataTrialEnded {
+  endDate?: string;
   gracePeriodEndDate?: string;
 }
 
@@ -1341,6 +1353,7 @@ export interface V1BillingIssueMetadataPaymentFailed {
 
 export interface V1BillingIssueMetadataOnTrial {
   endDate?: string;
+  gracePeriodEndDate?: string;
 }
 
 export interface V1BillingIssueMetadataNoPaymentMethod {

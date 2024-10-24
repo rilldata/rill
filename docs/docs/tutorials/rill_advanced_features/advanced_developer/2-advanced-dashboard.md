@@ -7,8 +7,8 @@ sidebar_position: 16
 
 ## Let's make a new dashboard
 
-As we have learned in the previous course, we will need to set up the metrics-view based on the new column names. 
-Let's create a new metrics-view via the UI. It should be named `advanced_metrics-view.yaml`. Let's copy the contents from our old dashboard and make some changes.
+As we have learned in the previous course, we will need to set up the metrics view based on the new column names. 
+Let's create a new metrics view via the UI. It should be named `advanced_metrics-view.yaml`. Let's copy the contents from our old dashboard and make some changes.
 
 First, we will want to change the `table` value to the new model name `advaned_commits___model`
 
@@ -33,7 +33,7 @@ Depending on the size of data, type of measure, and what you are caluclating, yo
 
 
 <details>
-  <summary> Example Working metrics-view</summary>
+  <summary> Example Working metrics view</summary>
 ```yaml
 # Metrics View YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views

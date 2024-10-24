@@ -72,6 +72,8 @@ type ModelExecuteOptions struct {
 	// PreviousResult is the result of a previous execution.
 	// For concurrent split execution, it may not be the most recent previous result.
 	PreviousResult *ModelResult
+	// TempDir is a temporary directory for storing intermediate data.
+	TempDir string
 }
 
 // ModelEnv contains contextual info about the model's instance.

@@ -89,6 +89,14 @@ func (n noop) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
 	return true
 }
 
+func (n noop) MarkCustomerTaxExempt(ctx context.Context, customerID string) error {
+	return nil
+}
+
+func (n noop) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error {
+	return nil
+}
+
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }

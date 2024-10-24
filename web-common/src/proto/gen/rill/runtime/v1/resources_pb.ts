@@ -1115,7 +1115,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   model = "";
 
   /**
-   * User-facing title
+   * User-facing name
    *
    * @generated from field: string display_name = 3;
    */
@@ -2058,7 +2058,7 @@ export class Explore extends Message<Explore> {
  */
 export class ExploreSpec extends Message<ExploreSpec> {
   /**
-   * User-facing title
+   * User-facing name
    *
    * @generated from field: string display_name = 1;
    */

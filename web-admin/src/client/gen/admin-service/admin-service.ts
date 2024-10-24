@@ -169,6 +169,8 @@ import type {
   V1SudoUpdateOrganizationBillingCustomerRequest,
   V1SudoUpdateOrganizationCustomDomainResponse,
   V1SudoUpdateOrganizationCustomDomainRequest,
+  V1SudoExtendTrialResponse,
+  V1SudoExtendTrialRequest,
   V1SudoDeleteOrganizationBillingIssueResponse,
   V1SudoUpdateAnnotationsResponse,
   V1SudoUpdateAnnotationsRequest,
@@ -6607,6 +6609,55 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
     Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationCustomDomain>>,
     TError,
     { data: V1SudoUpdateOrganizationCustomDomainRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary SudoExtendTrial extends the trial period for an organization
+ */
+export const adminServiceSudoExtendTrial = (
+  v1SudoExtendTrialRequest: V1SudoExtendTrialRequest,
+) => {
+  return httpClient<V1SudoExtendTrialResponse>({
+    url: `/v1/superuser/organization/trial/extend`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoExtendTrialRequest,
+  });
+};
+
+export type AdminServiceSudoExtendTrialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>
+>;
+export type AdminServiceSudoExtendTrialMutationBody = V1SudoExtendTrialRequest;
+export type AdminServiceSudoExtendTrialMutationError = RpcStatus;
+
+export const createAdminServiceSudoExtendTrial = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    TError,
+    { data: V1SudoExtendTrialRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    { data: V1SudoExtendTrialRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoExtendTrial(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoExtendTrial>>,
+    TError,
+    { data: V1SudoExtendTrialRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

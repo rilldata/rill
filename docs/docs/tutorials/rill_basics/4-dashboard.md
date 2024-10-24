@@ -9,14 +9,14 @@ tags:
 
 ### What is a Metrics View? 
 :::note
-Starting from version 0.50, we have officially split the metrics-view and dashboard and rolled out [visual metric editor](#via-the-ui) What this means is that we have a separate file for the metrics layer and a dashboard built on top of this. For more reasoning behind this change, please refer to our documentation.
+Starting from version 0.50, we have officially split the metrics view and dashboard and rolled out [visual metric editor](#via-the-ui) What this means is that we have a separate file for the metrics layer and a dashboard built on top of this. For more reasoning behind this change, please refer to our documentation.
 :::
 A metrics view is a layer in which you can create and define your measures and dimensions. Once you have defined your measures and dimensions, you can build the dashboard.
 
 
 ### Let's create a metrics view!
 
-Now that the model is created, we can create a metrics-view. There are two ways to do so:
+Now that the model is created, we can create a metrics view. There are two ways to do so:
 1. Generate metrics with AI
 2. Start Simple using the +Add, Metrics 
 
@@ -81,7 +81,7 @@ Once finished, the red border will disappear and your explore dashboard is ready
 
 
 ## Via the YAML
-Let's go over each component and what they are in order to better understand the metrics-view and how to fix the dashboard.
+Let's go over each component and what they are in order to better understand the metrics view and how to fix the dashboard.
 
 ### Type 
 
