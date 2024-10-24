@@ -33,15 +33,12 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetReportMetaBodyAnnotations = {
-  [key: string]: string;
-};
-
 export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
-  annotations?: AdminServiceGetReportMetaBodyAnnotations;
+  ownerId?: string;
   executionTime?: string;
+  emailRecipients?: string[];
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -985,10 +982,13 @@ export interface V1GetUserResponse {
   user?: V1User;
 }
 
+export type V1GetReportMetaResponseRecipientUrls = {
+  [key: string]: GetReportMetaResponseURLs;
+};
+
 export interface V1GetReportMetaResponse {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
+  baseUrls?: GetReportMetaResponseURLs;
+  recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
 export interface V1GetRepoMetaResponse {
@@ -1478,4 +1478,10 @@ export interface ListGithubUserReposResponseRepo {
   description?: string;
   url?: string;
   defaultBranch?: string;
+}
+
+export interface GetReportMetaResponseURLs {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
 }
