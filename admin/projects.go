@@ -519,7 +519,7 @@ func (s *Service) ResolveVariables(ctx context.Context, projectID, environment s
 	}
 	res := make(map[string]string)
 	for _, v := range vars {
-		res[v.Name] = string(v.Value)
+		res[v.Name] = v.Value
 	}
 	if forWriting && len(res) == 0 {
 		// edge case : no prod variables to set (variable was deleted)

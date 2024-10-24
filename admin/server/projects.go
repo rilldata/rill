@@ -698,7 +698,7 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 	for _, v := range vars {
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 		// nolint:staticcheck // We still need to set it
-		resp.VariablesMap[v.Name] = string(v.Value)
+		resp.VariablesMap[v.Name] = v.Value
 	}
 	return resp, nil
 }

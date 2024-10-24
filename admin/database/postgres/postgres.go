@@ -2107,7 +2107,7 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 		}
 
 		if valueEncryptionKeyID != "" {
-			value = base64.StdEncoding.EncodeToString([]byte(encryptedValue))
+			value = base64.StdEncoding.EncodeToString(encryptedValue)
 		}
 		args = append(args, key, value, valueEncryptionKeyID)
 		if placeholders.Len() > 0 {
