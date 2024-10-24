@@ -148,6 +148,22 @@
   function handleEmailSubmit(email: string, password: string) {
     isEmailDisabled = true;
     errorText = "";
+
+    function handleAuthError(err: any) {
+      // Auth0 is not consistent in the naming of the error description field
+      const errorText =
+        typeof err?.description === "string"
+          ? err.description
+          : typeof err?.policy === "string"
+            ? err.policy
+            : typeof err?.error_description === "string"
+              ? err.error_description
+              : err?.message;
+
+      displayError({ message: errorText });
+      isEmailDisabled = false;
+    }
+
     try {
       webAuth.login(
         {
@@ -156,40 +172,32 @@
           password: password,
         },
         (err) => {
-          if (err) displayError({ message: err?.description });
-          isEmailDisabled = false;
+          if (err) {
+            // TODO: revisit error message from staging
+            // Check if the error indicates the user does not exist
+            if (err.error === "user_not_found") {
+              // Attempt to sign up the user
+              webAuth.redirect.signupAndLogin(
+                {
+                  connection: databaseConnection,
+                  email: email,
+                  password: password,
+                },
+                (signupErr: any) => {
+                  if (signupErr) handleAuthError(signupErr);
+                  else isEmailDisabled = false;
+                },
+              );
+            } else {
+              handleAuthError(err);
+            }
+          } else {
+            isEmailDisabled = false;
+          }
         },
       );
-
-      setLastUsedConnection(databaseConnection);
-
-      // TO BE REMOVED
-      // TODO: should we check for `last_used_connection`
-      // webAuth.redirect.signupAndLogin(
-      //   {
-      //     connection: databaseConnection,
-      //     email: email,
-      //     password: password,
-      //   },
-      //   // explicitly typing as any to avoid missing property TS/svelte-check error
-      //   (err: any) => {
-      //     // Auth0 is not consistent in the naming of the error description field
-      //     const errorText =
-      //       typeof err?.description === "string"
-      //         ? err.description
-      //         : typeof err?.policy === "string"
-      //           ? err.policy
-      //           : typeof err?.error_description === "string"
-      //             ? err.error_description
-      //             : err?.message;
-
-      //     if (err) displayError({ message: errorText });
-      //     isEmailDisabled = false;
-      //   },
-      // );
     } catch (err) {
-      displayError({ message: err?.description || err?.policy });
-      isEmailDisabled = false;
+      handleAuthError(err);
     }
   }
 
@@ -266,92 +274,91 @@
   });
 </script>
 
-<RillTheme>
-  <AuthContainer>
-    <RillLogoSquareNegative size="84px" />
-    <Spacer />
-    <div class="flex flex-col items-center gap-y-2 text-center">
-      <div class="text-xl text-slate-800">
-        {headingText}
+<AuthContainer>
+  <RillLogoSquareNegative size="84px" />
+  <Spacer />
+  <div class="flex flex-col items-center gap-y-2 text-center">
+    <div class="text-xl text-slate-800">
+      {headingText}
+    </div>
+    {#if subheadingText}
+      <div class="text-base text-gray-500">
+        {subheadingText}
       </div>
-      {#if subheadingText}
-        <div class="text-base text-gray-500">
-          {subheadingText}
-        </div>
-      {:else}
-        <Spacer />
-      {/if}
-    </div>
+    {:else}
+      <Spacer />
+    {/if}
+  </div>
 
-    <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
-      {#if lastUsedConnection}
-        <div class="text-sm text-gray-500">
-          Last used connection: {lastUsedConnection}
-        </div>
-      {/if}
-      {#if step === AuthStep.Base}
-        {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
-          <CtaButton
-            variant={style === "primary" ? "primary" : "secondary"}
-            on:click={() => authorize(connection)}
-          >
-            <div class="flex justify-center items-center gap-x-2 font-medium">
-              {#if icon}
-                <svelte:component this={icon} />
-              {/if}
-              <div>{label}</div>
-            </div>
-          </CtaButton>
-        {/each}
-
-        <OrSeparator />
-
-        <EmailSubmission
-          disabled={isEmailDisabled}
-          on:submitEmail={handleEmailSubmission}
-        />
-      {/if}
-
-      {#if step === AuthStep.SSO}
-        <SSOForm
-          disabled={isSSODisabled}
-          on:submitSSO={(e) => {
-            handleSSOLogin(e.detail);
-          }}
-          on:back={() => {
-            step = AuthStep.Base;
-          }}
-        />
-      {/if}
-
-      {#if step === AuthStep.EmailPassword}
-        <EmailPassForm
-          disabled={isEmailDisabled}
-          {email}
-          on:submit={(e) => {
-            handleEmailSubmit(e.detail.email, e.detail.password);
-          }}
-          on:resetPass={(e) => {
-            handleResetPassword(e.detail.email);
-          }}
-          on:back={() => {
-            step = AuthStep.Base;
-          }}
-          showForgetPassword={step === AuthStep.EmailPassword}
-        />
-      {/if}
-    </div>
-
-    {#if errorText}
-      <div style:max-width="400px" class="text-red-500 text-sm mt-3">
-        {errorText}
+  <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
+    {#if lastUsedConnection}
+      <div class="text-sm text-gray-500">
+        Last used connection: {lastUsedConnection}
       </div>
     {/if}
+    {#if step === AuthStep.Base}
+      {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
+        <CtaButton
+          variant={style === "primary" ? "primary" : "secondary"}
+          on:click={() => authorize(connection)}
+        >
+          <div class="flex justify-center items-center gap-x-2 font-medium">
+            {#if icon}
+              <svelte:component this={icon} />
+            {/if}
+            <div>{label}</div>
+          </div>
+        </CtaButton>
+      {/each}
 
-    <Disclaimer />
+      <OrSeparator />
 
-    <div class="mt-6 text-center">
-      <DiscordCTA />
+      <EmailSubmission
+        disabled={isEmailDisabled}
+        on:submitEmail={handleEmailSubmission}
+      />
+    {/if}
+
+    {#if step === AuthStep.SSO}
+      <SSOForm
+        disabled={isSSODisabled}
+        on:submitSSO={(e) => {
+          handleSSOLogin(e.detail);
+        }}
+        on:back={() => {
+          step = AuthStep.Base;
+        }}
+      />
+    {/if}
+
+    <!-- TODO: only show forget password in sign up flow -->
+    {#if step === AuthStep.EmailPassword}
+      <EmailPassForm
+        disabled={isEmailDisabled}
+        {email}
+        on:submit={(e) => {
+          handleEmailSubmit(e.detail.email, e.detail.password);
+        }}
+        on:resetPass={(e) => {
+          handleResetPassword(e.detail.email);
+        }}
+        on:back={() => {
+          step = AuthStep.Base;
+        }}
+        showForgetPassword={step === AuthStep.EmailPassword}
+      />
+    {/if}
+  </div>
+
+  {#if errorText}
+    <div style:max-width="400px" class="text-red-500 text-sm mt-3">
+      {errorText}
     </div>
-  </AuthContainer>
-</RillTheme>
+  {/if}
+
+  <Disclaimer />
+
+  <div class="mt-6 text-center">
+    <DiscordCTA />
+  </div>
+</AuthContainer>
