@@ -2962,6 +2962,27 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/superuser/billing/repair:
+    post:
+      summary: SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+      operationId: AdminService_SudoTriggerBillingRepair
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoTriggerBillingRepairResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoTriggerBillingRepairRequest'
+      tags:
+        - AdminService
   /v1/superuser/deployments/manager-token:
     post:
       summary: SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
@@ -4893,6 +4914,10 @@ definitions:
     properties:
       token:
         type: string
+  v1SudoTriggerBillingRepairRequest:
+    type: object
+  v1SudoTriggerBillingRepairResponse:
+    type: object
   v1SudoUpdateAnnotationsRequest:
     type: object
     properties:

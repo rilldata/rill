@@ -275,6 +275,10 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
+	if !plan.Public && !forceAccess {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to a private plan %q", plan.Name)
+	}
+
 	// check for validation errors
 	err = s.planChangeValidationChecks(ctx, org, forceAccess)
 	if err != nil {
@@ -416,7 +420,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	var sub *billing.Subscription
 	if req.BillingCustomerId != nil {
 		// get active subscriptions if present
-		sub, err = s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+		sub, err = s.admin.Biller.GetActiveSubscription(ctx, *req.BillingCustomerId)
 		if err != nil {
 			if !errors.Is(err, billing.ErrNotFound) {
 				return nil, status.Error(codes.Internal, err.Error())
@@ -439,10 +443,40 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}
 
 	if req.PaymentCustomerId != nil {
+		// fetch the customer
+		pc, err := s.admin.PaymentProvider.FindCustomer(ctx, *req.PaymentCustomerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
 		// link the payment customer to the billing customer
 		err = s.admin.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, billing.PaymentProviderStripe, *req.PaymentCustomerId)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		if !pc.HasPaymentMethod {
+			_, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingIssueTypeNoPaymentMethod,
+				Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
+				EventTime: time.Now(),
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		if !pc.HasBillableAddress {
+			_, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingIssueTypeNoBillableAddress,
+				Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
+				EventTime: time.Now(),
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
 	}
 
@@ -571,6 +605,28 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 	}
 
 	return &adminv1.SudoExtendTrialResponse{TrialEnd: timestamppb.New(newEndDate)}, nil
+}
+
+func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can trigger billing repair")
+	}
+
+	ids, err := s.admin.DB.FindOrganizationIDsWithoutBilling(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get organizations without billing id: %v", err))
+	}
+
+	for _, orgID := range ids {
+		_, err := s.admin.Jobs.RepairOrgBilling(ctx, orgID)
+		if err != nil {
+			s.logger.Named("billing").Error("failed to submit repair billing job", zap.String("org_id", orgID), zap.Error(err))
+			continue
+		}
+	}
+
+	return &adminv1.SudoTriggerBillingRepairResponse{}, nil
 }
 
 func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPublicBillingPlansRequest) (*adminv1.ListPublicBillingPlansResponse, error) {
