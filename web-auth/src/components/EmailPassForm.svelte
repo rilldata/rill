@@ -70,8 +70,9 @@
   $: disabled = !(password.length > 0);
 </script>
 
-<div class="flex flex-col gap-y-4">
+<form on:submit={handleSubmit} class="flex flex-col gap-y-4">
   <div class="relative">
+    <!-- TODO: look into using <Input /> component -->
     <input
       class="{inputClasses} {focusClasses}"
       style:width="400px"
@@ -93,6 +94,7 @@
       tabindex="0"
       style:right="10px"
       class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
+      on:click={() => (showPassword = !showPassword)}
     >
       {#if !showPassword}
         <Eye />
@@ -104,15 +106,14 @@
   {#if showForgetPassword}
     <div>
       <button
-        on:click={() => handleForgotPass()}
+        type="button"
+        on:click={handleForgotPass}
         class="text-sm text-slate-500 pl-1 font-medium">Forgot password?</button
       >
     </div>
   {/if}
-</div>
 
-<div class="flex flex-col gap-y-4">
-  <CtaButton {disabled} variant="primary" on:click={() => handleSubmit()}>
+  <CtaButton {disabled} variant="primary" submitForm>
     <div class="flex justify-center font-medium">Continue</div>
   </CtaButton>
   <CtaButton
@@ -127,4 +128,4 @@
       <span>Back</span>
     </div>
   </CtaButton>
-</div>
+</form>

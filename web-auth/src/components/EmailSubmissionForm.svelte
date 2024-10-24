@@ -57,7 +57,7 @@
     {/if}
   </div>
 
-  <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
+  <CtaButton {disabled} variant="secondary" submitForm>
     <div class="flex justify-center font-medium">
       <div>Continue</div>
     </div>
