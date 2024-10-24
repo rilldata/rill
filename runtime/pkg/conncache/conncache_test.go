@@ -179,8 +179,8 @@ func TestCloseDuringOpen(t *testing.T) {
 	// Start opening
 	go func() {
 		_, _, err := c.Acquire(context.Background(), "foo")
-		require.ErrorContains(t, err, "immediately closed")
-		require.Equal(t, int64(1), opens.Load())
+		require.NoError(t, err)
+		require.Equal(t, int64(2), opens.Load())
 	}()
 
 	// Evict it so it starts closing
@@ -298,4 +298,7 @@ func TestAcquireCloseAfterOpening(t *testing.T) {
 	_, r1, err := c.Acquire(context.Background(), "foo")
 	require.NoError(t, err)
 	r1()
+
+	// Close cache
+	require.NoError(t, c.Close(context.Background()))
 }

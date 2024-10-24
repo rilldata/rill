@@ -143,10 +143,7 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 	k := c.opts.KeyFunc(cfg)
 
 	c.mu.Lock()
-	if c.closed {
-		c.mu.Unlock()
-		return nil, nil, errors.New("conncache: closed")
-	}
+	defer c.mu.Unlock()
 
 	e, ok := c.entries[k]
 	if !ok {
@@ -159,121 +156,50 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 
 	c.retainEntry(k, e)
 
-	var ch chan struct{}
-	ok = false
-	for {
-		if e.status == entryStatusOpen {
-			defer c.mu.Unlock() // nolint: gocritic // Guaranteed to return in this loop iteration
+	for i := 0; i < 5; i++ { // Retry up to 5 times (in case it is currently closing or opening with closeAfterOpening=true)
+		// Check the cache is still open.
+		if c.closed {
+			c.releaseEntry(k, e)
+			return nil, nil, errors.New("conncache: closed")
+		}
+
+		// If the connection is open, return it. Else ensure a singleflight exists we can wait for.
+		switch e.status {
+		case entryStatusUnspecified:
+			c.beginOpen(k, e)
+		case entryStatusOpening:
+			// Nothing to do until next retry
+		case entryStatusOpen:
 			if e.err != nil {
 				c.releaseEntry(k, e)
 				return nil, nil, e.err
 			}
 			return e.handle, c.releaseFunc(k, e), nil
+		case entryStatusClosing:
+			// Nothing to do until next retry
+		case entryStatusClosed:
+			c.beginOpen(k, e)
+		default:
+			panic(fmt.Errorf("conncache: unknown entry status %v", e.status))
 		}
 
-		ch, ok = c.singleflight[k]
-		if !ok {
-			break
-		}
-
-		if e.status != entryStatusClosing && !e.closeAfterOpening {
-			break
-		}
-
+		// Get the singleflight and wait for it outside the lock.
+		ch := c.singleflight[k]
 		c.mu.Unlock()
 		select {
 		case <-ch:
+			c.mu.Lock()
 		case <-ctx.Done():
 			c.mu.Lock()
 			c.releaseEntry(k, e)
-			c.mu.Unlock()
 			return nil, nil, ctx.Err()
 		}
-		c.mu.Lock()
 
-		// Since we released the lock, need to check c.closed and e.status again.
-		if c.closed {
-			c.releaseEntry(k, e)
-			c.mu.Unlock()
-			return nil, nil, errors.New("conncache: closed")
-		}
+		// Loop around for the retry
 	}
 
-	if !ok {
-		c.retainEntry(k, e) // Retain again to count the goroutine's reference independently (in case ctx is cancelled while the Open continues in the background)
-
-		ch = make(chan struct{})
-		c.singleflight[k] = ch
-
-		e.status = entryStatusOpening
-		e.since = time.Now()
-		e.handle = nil
-		e.err = nil
-
-		go func() {
-			start := time.Now()
-			var handle Connection
-			var err error
-			if c.opts.OpenTimeout == 0 {
-				handle, err = c.opts.OpenFunc(c.ctx, cfg)
-			} else {
-				ctx, cancel := context.WithTimeout(c.ctx, c.opts.OpenTimeout)
-				handle, err = c.opts.OpenFunc(ctx, cfg)
-				cancel()
-			}
-
-			if c.opts.Metrics.Opens != nil {
-				c.opts.Metrics.Opens.Add(c.ctx, 1)
-			}
-			if c.opts.Metrics.OpenLatencyMS != nil {
-				c.opts.Metrics.OpenLatencyMS.Record(c.ctx, time.Since(start).Milliseconds())
-			}
-
-			c.mu.Lock()
-			defer c.mu.Unlock()
-
-			e.status = entryStatusOpen
-			e.since = time.Now()
-			e.handle = handle
-			e.err = err
-
-			delete(c.singleflight, k)
-			close(ch)
-
-			if e.closeAfterOpening {
-				e.closeAfterOpening = false
-				c.beginClose(k, e)
-			}
-
-			c.releaseEntry(k, e)
-		}()
-	}
-
-	c.mu.Unlock()
-
-	select {
-	case <-ch:
-	case <-ctx.Done():
-		c.mu.Lock()
-		c.releaseEntry(k, e)
-		c.mu.Unlock()
-		return nil, nil, ctx.Err()
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if e.status != entryStatusOpen {
-		c.releaseEntry(k, e)
-		return nil, nil, errors.New("conncache: connection was immediately closed after being opened")
-	}
-
-	if e.err != nil {
-		c.releaseEntry(k, e)
-		return nil, nil, e.err
-	}
-
-	return e.handle, c.releaseFunc(k, e), nil
+	c.releaseEntry(k, e)
+	return nil, nil, errors.New("conncache: failed to acquire handle after multiple retries")
 }
 
 func (c *cacheImpl) EvictWhere(predicate func(cfg any) bool) {
@@ -329,6 +255,61 @@ func (c *cacheImpl) HangingErr() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.hangingConnErr
+}
+
+// beginOpen must be called while c.mu is held.
+func (c *cacheImpl) beginOpen(k string, e *entry) {
+	if e.status != entryStatusUnspecified && e.status != entryStatusClosed {
+		panic(fmt.Errorf("conncache: beginOpen called on entry with status %v", e.status))
+	}
+
+	c.retainEntry(k, e) // Retain again to count the goroutine's reference independently (in case ctx is cancelled while the Open continues in the background)
+
+	ch := make(chan struct{})
+	c.singleflight[k] = ch
+
+	e.status = entryStatusOpening
+	e.since = time.Now()
+	e.handle = nil
+	e.err = nil
+
+	go func() {
+		start := time.Now()
+		var handle Connection
+		var err error
+		if c.opts.OpenTimeout == 0 {
+			handle, err = c.opts.OpenFunc(c.ctx, e.cfg)
+		} else {
+			ctx, cancel := context.WithTimeout(c.ctx, c.opts.OpenTimeout)
+			handle, err = c.opts.OpenFunc(ctx, e.cfg)
+			cancel()
+		}
+
+		if c.opts.Metrics.Opens != nil {
+			c.opts.Metrics.Opens.Add(c.ctx, 1)
+		}
+		if c.opts.Metrics.OpenLatencyMS != nil {
+			c.opts.Metrics.OpenLatencyMS.Record(c.ctx, time.Since(start).Milliseconds())
+		}
+
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		e.status = entryStatusOpen
+		e.since = time.Now()
+		e.handle = handle
+		e.err = err
+
+		delete(c.singleflight, k)
+		close(ch)
+
+		if e.closeAfterOpening {
+			e.closeAfterOpening = false
+			c.beginClose(k, e)
+		}
+
+		c.releaseEntry(k, e)
+	}()
 }
 
 // beginClose must be called while c.mu is held.
@@ -412,13 +393,14 @@ func (c *cacheImpl) retainEntry(key string, e *entry) {
 func (c *cacheImpl) releaseEntry(key string, e *entry) {
 	e.refs--
 	if e.refs == 0 {
-		// If open, keep entry and put in LRU. Else remove entirely.
-		if e.status != entryStatusClosing && e.status != entryStatusClosed {
+		// If opening/opening, keep entry and put in LRU. Else remove entirely.
+		switch e.status {
+		case entryStatusOpening, entryStatusOpen:
 			c.lru.Add(key, e)
 			if c.opts.Metrics.SizeLRU != nil {
 				c.opts.Metrics.SizeLRU.Add(c.ctx, 1)
 			}
-		} else {
+		default:
 			delete(c.entries, key)
 			if c.opts.Metrics.SizeTotal != nil {
 				c.opts.Metrics.SizeTotal.Add(c.ctx, -1)
