@@ -13,6 +13,7 @@
 
   export let disabled: boolean;
   export let href: string | null;
+  export let reconciling: boolean = false;
 
   const viewDashboard = () => {
     if (!href) return;
@@ -43,7 +44,9 @@
     <Play size="16px" />
   </Button>
   <TooltipContent slot="tooltip-content">
-    {#if disabled}
+    {#if reconciling}
+      Dashboard preview available after reconciliation
+    {:else if disabled}
       File errors must be resolved before previewing
     {:else}
       Preview dashboard

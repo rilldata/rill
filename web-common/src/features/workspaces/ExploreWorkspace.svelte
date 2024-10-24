@@ -65,6 +65,7 @@
       slot="cta"
       href="/explore/{exploreName}"
       disabled={allErrors.length > 0 || resourceIsReconciling}
+      reconciling={resourceIsReconciling}
     />
   </WorkspaceHeader>
 
