@@ -1715,7 +1715,7 @@ func projectVariableToDTO(v *database.ProjectVariable) *adminv1.ProjectVariable 
 	return &adminv1.ProjectVariable{
 		Id:              v.ID,
 		Name:            v.Name,
-		Value:           string(v.Value),
+		Value:           v.Value,
 		Environment:     v.Environment,
 		UpdatedByUserId: safeStr(v.UpdatedByUserID),
 		CreatedOn:       timestamppb.New(v.CreatedOn),
