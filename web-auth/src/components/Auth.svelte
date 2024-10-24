@@ -44,7 +44,6 @@
   const LOCAL_STORAGE_KEY = "last_used_connection";
 
   const connectionMapObj = JSON.parse(connectionMap);
-  const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
   const databaseConnection = "Username-Password-Authentication";
@@ -58,7 +57,6 @@
   }
 
   $: errorText = "";
-  // $: isRillCloud = false;
 
   let isSSODisabled = false;
   let isEmailDisabled = false;
@@ -97,9 +95,6 @@
     if (config?.extraParams?.screen_hint === "signup") {
       step = AuthStep.SignUp;
     }
-    // if (cloudClientIDsArr.includes(config?.clientID)) {
-    //   isRillCloud = true;
-    // }
 
     const params: AuthOptions = Object.assign(
       {
@@ -347,11 +342,11 @@
       {/if}
     </div>
 
-    <!-- {#if errorText}
+    {#if errorText}
       <div style:max-width="400px" class="text-red-500 text-sm mt-3">
         {errorText}
       </div>
-    {/if} -->
+    {/if}
 
     <Disclaimer />
 

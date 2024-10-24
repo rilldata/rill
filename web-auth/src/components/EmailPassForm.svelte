@@ -25,6 +25,9 @@
   $: type = showPassword ? "text" : "password";
 
   function onPassInput(e: any) {
+    if (e.key === "Enter") {
+      handleSubmit();
+    }
     password = e.target.value;
   }
 
@@ -64,13 +67,7 @@
     });
   }
 
-  $: {
-    if (password.length > 0) {
-      disabled = false;
-    } else {
-      disabled = true;
-    }
-  }
+  $: disabled = !(password.length > 0);
 </script>
 
 <div class="flex flex-col gap-y-4">
