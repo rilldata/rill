@@ -724,11 +724,15 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	vars, err := s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
+	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	vars, err := s.admin.DB.FindProjectVariables(ctx, proj.ID, nil)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	resp := &adminv1.UpdateProjectVariablesResponse{}
 	for _, v := range vars {
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))

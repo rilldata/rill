@@ -102,6 +102,7 @@ func testOrgsWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "test@rilldata.com", user.Email)
 
 	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+	require.NoError(t, err)
 
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
@@ -304,6 +305,7 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 
 	// fetch role
 	role, err := db.FindProjectRole(ctx, database.ProjectRoleNameCollaborator)
+	require.NoError(t, err)
 
 	// add org
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test"})
@@ -364,7 +366,9 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	admin, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+	require.NoError(t, err)
 	viewer, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
 
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
@@ -471,6 +475,7 @@ func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	require.NoError(t, err)
 
 	admin, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+	require.NoError(t, err)
 
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})

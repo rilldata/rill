@@ -206,24 +206,23 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 }
 
 // UpdateProjectVariables updates a project's variables and runs reconcile on the deployments.
-func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.Project, environment string, vars map[string]string, unsetVars []string, userID string) ([]*database.ProjectVariable, error) {
+func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.Project, environment string, vars map[string]string, unsetVars []string, userID string) error {
 	if len(vars) == 0 && len(unsetVars) == 0 {
-		return nil, nil
+		return nil
 	}
 	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return status.Error(codes.Internal, err.Error())
 	}
 	defer func() {
 		_ = tx.Rollback()
 	}()
 
 	// Upsert variables
-	var updatedVars []*database.ProjectVariable
 	if len(vars) > 0 {
-		updatedVars, err = s.DB.UpsertProjectVariable(txCtx, project.ID, environment, vars, userID)
+		_, err = s.DB.UpsertProjectVariable(txCtx, project.ID, environment, vars, userID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return status.Error(codes.Internal, err.Error())
 		}
 	}
 
@@ -231,14 +230,14 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	if len(unsetVars) > 0 {
 		err = s.DB.DeleteProjectVariables(txCtx, project.ID, environment, unsetVars)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return status.Error(codes.Internal, err.Error())
 		}
 	}
 
 	// Commit transaction
 	err = tx.Commit()
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return status.Error(codes.Internal, err.Error())
 	}
 
 	// Update deployments
@@ -246,26 +245,19 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 
 	org, err := s.DB.FindOrganization(ctx, project.OrganizationID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	annotations := s.NewDeploymentAnnotations(org, project)
 
 	ds, err := s.DB.FindDeploymentsForProject(ctx, project.ID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	vars, err = s.ResolveVariables(ctx, project.ID, "prod")
+	vars, err = s.ResolveVariables(ctx, project.ID, "prod", true)
 	if err != nil {
-		return nil, err
-	}
-
-	if len(vars) == 0 {
-		// edge case : no prod variables to set (variable was deleted)
-		// but the runtime does not update variables if the new map is empty
-		// so we need to set a dummy variable to trigger the update
-		vars = map[string]string{"rill.internal.nonce": time.Now().Format(time.RFC3339Nano)}
+		return err
 	}
 
 	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
@@ -280,11 +272,11 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 		})
 		if err != nil {
 			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
-			return nil, err
+			return err
 		}
 	}
 
-	return updatedVars, nil
+	return nil
 }
 
 // UpdateOrgDeploymentAnnotations iterates over projects of the given org and
@@ -336,7 +328,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		return nil, err
 	}
 
-	vars, err := s.ResolveVariables(ctx, proj.ID, "prod")
+	vars, err := s.ResolveVariables(ctx, proj.ID, "prod", false)
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +512,7 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 
 // ResolveVariables resolves the project's variables for the given environment.
 // It fetches the variable specific to the environment plus the default variables not set exclusively for the environment.
-func (s *Service) ResolveVariables(ctx context.Context, projectID, environment string) (map[string]string, error) {
+func (s *Service) ResolveVariables(ctx context.Context, projectID, environment string, forWriting bool) (map[string]string, error) {
 	vars, err := s.DB.FindProjectVariables(ctx, projectID, &environment)
 	if err != nil {
 		return nil, err
@@ -528,6 +520,12 @@ func (s *Service) ResolveVariables(ctx context.Context, projectID, environment s
 	res := make(map[string]string)
 	for _, v := range vars {
 		res[v.Name] = string(v.Value)
+	}
+	if forWriting && len(res) == 0 {
+		// edge case : no prod variables to set (variable was deleted)
+		// but the runtime does not update variables if the new map is empty
+		// so we need to set a dummy variable to trigger the update
+		res["rill.internal.nonce"] = time.Now().Format(time.RFC3339Nano)
 	}
 	return res, nil
 }

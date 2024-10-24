@@ -2,7 +2,7 @@ CREATE TABLE project_variables (
     id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    value BYTEA NOT NULL,
+    value TEXT NOT NULL,
     -- Encryption key ID if the value is encrypted
     value_encryption_key_id TEXT NOT NULL DEFAULT '',
     -- Environment it belongs to ("prod" or "dev").
@@ -36,7 +36,7 @@ INSERT INTO project_variables (
 SELECT
   project_data.project_id,
   key AS name,
-  convert_to(value, 'UTF8')::bytea AS value,
+  value AS value,
   project_data.prod_variables_encryption_key_id AS value_encryption_key_id
 FROM
   project_data,

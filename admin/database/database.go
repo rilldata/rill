@@ -960,7 +960,7 @@ type ProjectVariable struct {
 	ProjectID            string    `db:"project_id"`
 	Environment          string    `db:"environment"`
 	Name                 string    `db:"name"`
-	Value                []byte    `db:"value"`
+	Value                string    `db:"value"`
 	ValueEncryptionKeyID string    `db:"value_encryption_key_id"`
 	UpdatedByUserID      *string   `db:"updated_by_user_id"`
 	CreatedOn            time.Time `db:"created_on"`

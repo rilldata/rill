@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -2053,7 +2054,7 @@ func (c *connection) FindProjectVariables(ctx context.Context, projectID string,
 	q := `SELECT * FROM project_variables p WHERE p.project_id = $1`
 	args := []interface{}{projectID}
 	if environment != nil {
-		// Also include variables that are not environment specific but not set for the given environment
+		// Also include variables that are not environment specific and not set for the given environment
 		q += `
 			AND (
 				p.environment = $2 
@@ -2078,12 +2079,9 @@ func (c *connection) FindProjectVariables(ctx context.Context, projectID string,
 	}
 
 	// Decrypt the variables
-	for _, v := range res {
-		decryptedValue, err := c.decrypt(v.Value, v.ValueEncryptionKeyID)
-		if err != nil {
-			return nil, err
-		}
-		v.Value = decryptedValue
+	err = c.decryptProjectVariables(res)
+	if err != nil {
+		return nil, err
 	}
 
 	return res, nil
@@ -2108,11 +2106,14 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 			return nil, err
 		}
 
-		args = append(args, key, encryptedValue, valueEncryptionKeyID)
+		if valueEncryptionKeyID != "" {
+			value = base64.StdEncoding.EncodeToString([]byte(encryptedValue))
+		}
+		args = append(args, key, value, valueEncryptionKeyID)
 		if placeholders.Len() > 0 {
 			placeholders.WriteString(", ")
 		}
-		fmt.Fprintf(&placeholders, "($1, lower($2), $%d, $%d, $%d, $3, now())", i+1, i+2, i+3) // project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on
+		fmt.Fprintf(&placeholders, "($1, $2, $%d, $%d, $%d, $3, now())", i+1, i+2, i+3) // project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on
 		i += 3
 	}
 
@@ -2123,12 +2124,9 @@ func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, envir
 	}
 
 	// Decrypt the variables
-	for _, v := range res {
-		decryptedValue, err := c.decrypt(v.Value, v.ValueEncryptionKeyID)
-		if err != nil {
-			return nil, err
-		}
-		v.Value = decryptedValue
+	err = c.decryptProjectVariables(res)
+	if err != nil {
+		return nil, err
 	}
 
 	return res, nil
@@ -2210,6 +2208,26 @@ func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
 		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
 	}
 	return decrypt(text, encKey.Secret)
+}
+
+func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
+	for _, v := range res {
+		if v.ValueEncryptionKeyID == "" {
+			continue
+		}
+		dec, err := base64.StdEncoding.DecodeString(v.Value)
+		if err != nil {
+			return err
+		}
+
+		decryptedValue, err := c.decrypt(dec, v.ValueEncryptionKeyID)
+		if err != nil {
+			return err
+		}
+
+		v.Value = string(decryptedValue)
+	}
+	return nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
