@@ -48,24 +48,53 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 For example, the following YAML configuration below will set a project-wide default for:
 - **Sources** - Configure a [source refresh](/build/connect/source-refresh.md).
 - **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
-- **Dashboards** - Set the [first day of the week](explore-dashboards.md) for timeseries aggregations to be Sunday along with defining available timezones on a dashboard.
+- **Metrics View** - Set the [first day of the week](metrics-view.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
+- **Explore Dashboards** - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
 
 ```yaml
 title: My Rill Project
+
 sources:
   refresh:
     cron: '0 * * * *'
     # Uncomment to run cron jobs in development:
     # run_in_dev: true
+
 models:
   materialize: true
-dashboards:
-  first_day_of_week: 7
-  available_time_zones:
+
+metrics_views:
+  first_day_of_week: 1
+  smallest_time_grain: month
+
+explores:
+  defaults:
+    time_range: P24M
+  
+  time_zones:
+    - America/Denver
+    - UTC
     - America/Los_Angeles
+    - America/Chicago
     - America/New_York
     - Europe/London
+    - Europe/Paris
+    - Asia/Jerusalem
+    - Europe/Moscow
     - Asia/Kolkata
+    - Asia/Shanghai
+    - Asia/Tokyo
+    - Australia/Sydney
+
+  time_ranges:
+  # last x days/hours/months.
+    - PT24H
+    - P7D
+    - P14D
+    - P30D
+    - P3M
+    - P6M
+    - P12M
 ```
 
 :::info Hierarchy of inheritance and property overrides
