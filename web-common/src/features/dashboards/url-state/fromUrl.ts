@@ -390,7 +390,7 @@ function fromPivotUrlParams(
     sorting: [],
     columnPage: 1,
     rowPage: 1,
-    enableComparison: false,
+    enableComparison: true,
     activeCell: null,
     rowJoinType: "nest",
   };

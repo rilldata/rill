@@ -8,6 +8,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import {
   URLStateDefaultSortDirection,
   URLStateDefaultTDDChartType,
+  URLStateDefaultTimeRange,
   URLStateDefaultTimezone,
 } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
@@ -64,10 +65,12 @@ function toTimeRangesUrl(
   preset: V1ExplorePreset,
 ) {
   if (
-    metrics.selectedTimeRange?.name &&
-    metrics.selectedTimeRange?.name !== preset.timeRange
+    (preset.timeRange !== undefined &&
+      metrics.selectedTimeRange?.name !== preset.timeRange) ||
+    (preset.timeRange === undefined &&
+      metrics.selectedTimeRange?.name !== URLStateDefaultTimeRange)
   ) {
-    searchParams.set("tr", metrics.selectedTimeRange.name);
+    searchParams.set("tr", metrics.selectedTimeRange?.name ?? "");
   }
   if (
     // if preset has timezone then only set if selected is not the same

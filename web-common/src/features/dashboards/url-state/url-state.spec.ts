@@ -10,17 +10,19 @@ import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_NAME,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-  AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { convertPresetToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
-import { convertURLToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
 import { getUrlFromMetricsExplorer } from "@rilldata/web-common/features/dashboards/url-state/toUrl";
-import { URLStateTestMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/url-state/url-state-test-data";
+import {
+  getLocalUserPreferences,
+  initLocalUserPreferenceStore,
+} from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type DashboardTimeControls,
   TimeRangePreset,
@@ -32,9 +34,21 @@ import {
   V1ExploreWebView,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 describe("Human readable URL state", () => {
+  beforeAll(() => {
+    initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
+  });
+
+  beforeEach(() => {
+    getLocalUserPreferences().updateTimeZone("UTC");
+    localStorage.setItem(
+      `${AD_BIDS_EXPLORE_NAME}-userPreference`,
+      `{"timezone":"UTC"}`,
+    );
+  });
+
   it("filter", () => {
     testEntity(
       {
@@ -254,7 +268,7 @@ describe("Human readable URL state", () => {
       testEntity(
         {
           activePage: DashboardState_ActivePage.DEFAULT,
-          selectedDimensionName: "",
+          selectedDimensionName: undefined,
         },
         "http://localhost/?o.ed=",
         {
@@ -362,7 +376,7 @@ describe("Human readable URL state", () => {
         sorting: [],
         columnPage: 1,
         rowPage: 1,
-        enableComparison: false,
+        enableComparison: true,
         activeCell: null,
         rowJoinType: "nest",
       },
@@ -412,7 +426,7 @@ describe("Human readable URL state", () => {
             sorting: [],
             columnPage: 1,
             rowPage: 1,
-            enableComparison: false,
+            enableComparison: true,
             activeCell: null,
             rowJoinType: "nest",
           },
@@ -438,17 +452,20 @@ function testEntity(
     ...AD_BIDS_EXPLORE_INIT,
     ...(preset ? { defaultPreset: preset } : {}),
   };
-  const defaultEntity = {
-    ...getDefaultMetricsExplorerEntity(
-      AD_BIDS_NAME,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-      explore,
-      undefined,
-    ),
-    ...entity,
-  };
+  const initEntity = getDefaultMetricsExplorerEntity(
+    AD_BIDS_EXPLORE_NAME,
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    explore,
+    AD_BIDS_TIME_RANGE_SUMMARY,
+  );
+  cleanMetricsExplore(initEntity);
+
+  // load url params with update metrics state
   getUrlFromMetricsExplorer(
-    defaultEntity,
+    {
+      ...initEntity,
+      ...entity,
+    },
     url.searchParams,
     explore,
     preset ?? {},
@@ -456,20 +473,50 @@ function testEntity(
 
   expect(url.toString()).to.eq(expectedUrl);
 
-  const { preset: presetFromUrl } = convertURLToExplorePreset(
+  // get back the entity from url params
+  const { entity: entityFromUrl } = convertURLToMetricsExplore(
+    AD_BIDS_EXPLORE_NAME,
     url.searchParams,
     AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
     explore,
-    getBasePreset(explore, {}),
-  );
-  const { entity: entityFromPreset } = convertPresetToMetricsExplore(
-    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-    explore,
-    presetFromUrl,
   );
 
-  expect(entityFromPreset).toEqual({
-    ...URLStateTestMetricsExplorerEntity,
+  // assert that the entity we got back matches the original
+  expect(entityFromUrl).toEqual({
+    ...initEntity,
     ...entity,
   });
+
+  // go back to default url
+  const defaultUrl = new URL("http://localhost");
+  const { entity: entityFromDefaultUrl } = convertURLToMetricsExplore(
+    AD_BIDS_EXPLORE_NAME,
+    defaultUrl.searchParams,
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    explore,
+  );
+
+  // assert that the entity we got back matches the original
+  expect(entityFromDefaultUrl).toEqual(initEntity);
+}
+
+// cleans up any UI only state from MetricsExplorerEntity
+function cleanMetricsExplore(
+  metricsExplorerEntity: Partial<MetricsExplorerEntity>,
+) {
+  delete metricsExplorerEntity.name;
+  delete metricsExplorerEntity.dimensionFilterExcludeMode;
+  delete metricsExplorerEntity.havingFilter;
+  delete metricsExplorerEntity.temporaryFilterName;
+  delete metricsExplorerEntity.contextColumnWidths;
+  delete metricsExplorerEntity.dimensionSearchText;
+  metricsExplorerEntity.selectedTimeRange = {
+    name: metricsExplorerEntity.selectedTimeRange?.name ?? "inf",
+  } as DashboardTimeControls;
+  delete metricsExplorerEntity.lastDefinedScrubRange;
+
+  //TODO
+  delete metricsExplorerEntity.selectedScrubRange;
+  delete metricsExplorerEntity.leaderboardContextColumn;
+  delete metricsExplorerEntity.dashboardSortType;
 }

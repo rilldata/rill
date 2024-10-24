@@ -6,15 +6,18 @@ import {
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { convertURLToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import {
   getMultiFieldError,
   getSingleFieldError,
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
+import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
 import {
   FromURLParamTDDChartMap,
   FromURLParamTimeDimensionMap,
   ToActivePageViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getMapFromArray,
   getMissingValues,
@@ -31,6 +34,30 @@ import {
   V1ExploreWebView,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+
+export function convertURLToMetricsExplore(
+  exploreName: string,
+  searchParams: URLSearchParams,
+  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
+) {
+  const errors: Error[] = [];
+  const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
+    searchParams,
+    metricsView,
+    explore,
+    // TODO: can we cache this per explore?
+    getBasePreset(explore, getLocalUserPreferencesState(exploreName)),
+  );
+  errors.push(...errorsFromPreset);
+  const { entity, errors: errorsFromEntity } = convertPresetToMetricsExplore(
+    metricsView,
+    explore,
+    preset,
+  );
+  errors.push(...errorsFromEntity);
+  return { entity, errors };
+}
 
 /**
  * Converts a V1ExplorePreset to our internal metrics explore state.
@@ -147,7 +174,7 @@ function fromTimeRangesParams(
   ) {
     // unset all comparison setting if mode is none
     entity.selectedComparisonTimeRange = undefined;
-    entity.selectedComparisonDimension = "";
+    entity.selectedComparisonDimension = undefined;
     entity.showTimeComparison = false;
   }
 
@@ -228,7 +255,7 @@ function fromOverviewUrlParams(
 
   if (preset.overviewExpandedDimension !== undefined) {
     if (preset.overviewExpandedDimension === "") {
-      entity.selectedDimensionName = "";
+      entity.selectedDimensionName = undefined;
       // if preset didnt have a view then this is a dimension table unset.
       if (
         preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_UNSPECIFIED ||
@@ -403,7 +430,7 @@ function fromPivotUrlParams(
         sorting: [],
         columnPage: 1,
         rowPage: 1,
-        enableComparison: false,
+        enableComparison: true,
         activeCell: null,
         rowJoinType: "nest",
       },

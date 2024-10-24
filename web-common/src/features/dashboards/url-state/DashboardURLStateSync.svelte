@@ -73,7 +73,6 @@
       }
     }
 
-    console.log(partialMetrics);
     metricsExplorerStore.mergePartialExplorerEntity(
       $exploreName,
       partialMetrics,

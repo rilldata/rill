@@ -1,8 +1,5 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertPresetToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
-import { convertURLToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
-import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import {
   getRuntimeServiceGetExploreQueryKey,
@@ -54,24 +51,14 @@ export const load = async ({ params, depends, url }) => {
       exploreResource.explore.state?.validSpec &&
       url
     ) {
-      const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
+      const { entity, errors: errorsFromConvert } = convertURLToMetricsExplore(
+        exploreName,
         url.searchParams,
         metricsViewResource.metricsView.state.validSpec,
         exploreResource.explore.state.validSpec,
-        getBasePreset(
-          exploreResource.explore.state.validSpec,
-          getLocalUserPreferencesState(exploreName),
-        ),
       );
-      errors.push(...errorsFromPreset);
-      const { entity, errors: errorsFromEntity } =
-        convertPresetToMetricsExplore(
-          metricsViewResource.metricsView.state.validSpec,
-          exploreResource.explore.state.validSpec,
-          preset,
-        );
-      errors.push(...errorsFromEntity);
       partialMetrics = entity;
+      errors.push(...errorsFromConvert);
     }
 
     return {
