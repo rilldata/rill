@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/fatih/color"
@@ -388,6 +391,11 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 	logInfo.Printf("Starting dependencies\n")
 	defer logInfo.Printf("Stopped dependencies\n")
 
+	err := prepareStripeConfig()
+	if err != nil {
+		return fmt.Errorf("failed to prepare stripe config: %w", err)
+	}
+
 	cmd := newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "up", "--no-recreate")
 	if verbose {
 		cmd.Stdout = os.Stdout
@@ -708,6 +716,35 @@ func (s local) awaitUI(ctx context.Context) error {
 			return ctx.Err()
 		}
 	}
+}
+
+func prepareStripeConfig() error {
+	templateFile := "cli/cmd/devtool/data/stripe-config.template"
+	outputDir := "dev-cloud-state"
+	outputFile := filepath.Join(outputDir, "stripe-config.toml")
+
+	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
+
+	// Parse the template
+	tmpl, err := template.ParseFiles(templateFile)
+	if err != nil {
+		log.Fatalf("failed to parse template file: %v", err)
+	}
+
+	// Create the output file
+	out, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer out.Close()
+
+	// Execute the template, writing to the output file
+	err = tmpl.Execute(out, map[string]string{"APIKey": apiKey})
+	if err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return nil
 }
 
 // awaitClose waits for all of the given channels to close.

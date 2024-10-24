@@ -52,6 +52,6 @@ services:
       - zipkin
   stripe-cli:
     image: stripe/stripe-cli:latest
-    command: listen --forward-to http://host.docker.internal:8080/payment/webhook
-    environment:
-      - STRIPE_API_KEY=
+    command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
+    volumes:
+      - ../../../../dev-cloud-state/stripe-config.toml:/etc/stripe-config.toml
