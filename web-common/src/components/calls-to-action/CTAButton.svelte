@@ -6,8 +6,18 @@
   export let rel: string | undefined = undefined;
   export let disabled = false;
   export let gray = false;
+  export let submitForm = false;
 </script>
 
-<Button type={variant} {href} {rel} {disabled} wide {gray} on:click>
+<Button
+  type={variant}
+  {href}
+  {rel}
+  {disabled}
+  wide
+  {gray}
+  {submitForm}
+  on:click
+>
   <slot />
 </Button>

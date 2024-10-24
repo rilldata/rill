@@ -10,7 +10,7 @@
   import { getConnectionFromEmail } from "./utils";
   import OrSeparator from "./OrSeparator.svelte";
   import SSOForm from "./SSOForm.svelte";
-  import EmailSubmission from "./EmailSubmission.svelte";
+  import EmailSubmissionForm from "./EmailSubmissionForm.svelte";
   import DiscordCTA from "./DiscordCTA.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import Spacer from "./Spacer.svelte";
@@ -41,11 +41,10 @@
   export let connectionMap = "{}";
 
   const LOCAL_STORAGE_KEY = "last_used_connection";
+  const DATABASE_CONNECTION = "Username-Password-Authentication";
 
   const connectionMapObj = JSON.parse(connectionMap);
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
-
-  const databaseConnection = "Username-Password-Authentication";
 
   enum AuthStep {
     Base = 0,
@@ -166,19 +165,20 @@
     try {
       webAuth.login(
         {
-          realm: databaseConnection,
+          realm: DATABASE_CONNECTION,
           username: email,
           password: password,
         },
         (err) => {
           if (err) {
+            console.log("login err", err);
             // TODO: revisit error message from staging
             // Check if the error indicates the user does not exist
             if (err.error === "user_not_found") {
               // Attempt to sign up the user
               webAuth.redirect.signupAndLogin(
                 {
-                  connection: databaseConnection,
+                  connection: DATABASE_CONNECTION,
                   email: email,
                   password: password,
                 },
@@ -216,7 +216,7 @@
 
     webAuth.changePassword(
       {
-        connection: databaseConnection,
+        connection: DATABASE_CONNECTION,
         email: email,
       },
       (err, resp) => {
@@ -312,7 +312,7 @@
 
       <OrSeparator />
 
-      <EmailSubmission
+      <EmailSubmissionForm
         disabled={isEmailDisabled}
         on:submitEmail={handleEmailSubmission}
       />
