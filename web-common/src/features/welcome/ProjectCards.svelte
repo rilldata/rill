@@ -71,8 +71,8 @@
       });
 
       setTimeout(() => {
-        // If ?redirect=true is still in the url after 5 seconds, reload
-        if (window.location.search) window.location.reload();
+        if (window.location.search.includes("redirect=true"))
+          window.location.reload();
       }, 5000);
     } catch {
       selectedProjectName = null;
