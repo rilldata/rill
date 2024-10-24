@@ -540,6 +540,6 @@ func (c *Client) SendTrialExtended(opts *TrialExtended) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your trial for %s has been extended", opts.OrgName),
 		Title:   fmt.Sprintf("Your trial for %s has been extened", opts.OrgName),
-		Body:    template.HTML(fmt.Sprintf("Welcome to Rill! Your trial for %q has been extended and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+		Body:    template.HTML(fmt.Sprintf("Your trial for %q has been extended and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
 	})
 }

@@ -20,7 +20,7 @@
   <iframe
     src={billingUrl}
     title="Orb Billing Portal"
-    class="w-full h-[600px]"
-    on:load={() => (iframeLoading = true)}
+    class="w-full h-[1000px]"
+    on:load={() => (iframeLoading = false)}
   />
 {/if}

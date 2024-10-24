@@ -1,7 +1,4 @@
-import type {
-  V1OrganizationPermissions,
-  V1ProjectPermissions,
-} from "@rilldata/web-admin/client";
+import type { V1OrganizationPermissions } from "@rilldata/web-admin/client";
 import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { error } from "@sveltejs/kit";
