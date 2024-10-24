@@ -28,7 +28,9 @@
       )
       .map((m) => ({
         value: m.name as string,
-        label: m.displayName?.length ? m.displayName : (m.expression ?? (m.name as string)),
+        label: m.displayName?.length
+          ? m.displayName
+          : (m.expression ?? (m.name as string)),
       })) ?? [];
   $: dimensionOptions = [
     {
@@ -37,7 +39,9 @@
     },
     ...($metricsView.data?.dimensions?.map((d) => ({
       value: d.name as string,
-      label: d.displayName?.length ? d.displayName : (d.expression ?? (d.name as string)),
+      label: d.displayName?.length
+        ? d.displayName
+        : (d.expression ?? (d.name as string)),
     })) ?? []),
   ];
 </script>

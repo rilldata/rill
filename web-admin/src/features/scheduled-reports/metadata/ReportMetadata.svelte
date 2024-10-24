@@ -37,7 +37,8 @@
   // Get dashboard
   $: dashboardName = useReportDashboardName($runtime.instanceId, report);
   $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
-  $: dashboardTitle = $dashboard.data?.explore?.displayName || $dashboardName.data;
+  $: dashboardTitle =
+    $dashboard.data?.explore?.displayName || $dashboardName.data;
 
   // Get human-readable frequency
   $: humanReadableFrequency =
