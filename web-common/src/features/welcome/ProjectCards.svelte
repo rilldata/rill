@@ -69,6 +69,10 @@
           force: true,
         },
       });
+
+      setTimeout(() => {
+        if (window.location.search) window.location.reload();
+      }, 5000);
     } catch {
       selectedProjectName = null;
     }
