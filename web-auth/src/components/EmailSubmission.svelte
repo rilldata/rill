@@ -40,13 +40,7 @@
     }
   }
 
-  $: {
-    if (validateEmail(email)) {
-      disabled = false;
-    } else {
-      disabled = true;
-    }
-  }
+  $: disabled = !(email.length > 0 && validateEmail(email));
 </script>
 
 <form on:submit|preventDefault={handleSubmit}>
