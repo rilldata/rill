@@ -11,9 +11,9 @@ import (
 )
 
 func PushCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName string
+	var projectPath, projectName, environment string
 
-	pullCmd := &cobra.Command{
+	pushCmd := &cobra.Command{
 		Use:   "push",
 		Short: "Push local .env contents to cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -53,8 +53,9 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			res, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
+				Organization: ch.Org,
+				Project:      projectName,
+				Environment:  environment,
 			})
 			if err != nil {
 				return err
@@ -62,8 +63,8 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Merge the current .env file with the cloud variables
 			vars := make(map[string]string)
-			for k, v := range res.Variables {
-				vars[k] = v
+			for _, v := range res.Variables {
+				vars[v.Name] = v.Value
 			}
 			added := 0
 			changed := 0
@@ -97,9 +98,10 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Write the merged variables back to the cloud project
 			if added+changed != 0 {
 				_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
-					OrganizationName: ch.Org,
-					Name:             projectName,
-					Variables:        vars,
+					Organization: ch.Org,
+					Project:      projectName,
+					Environment:  environment,
+					Variables:    vars,
 				})
 				if err != nil {
 					return err
@@ -111,8 +113,9 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	pullCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	pullCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
+	pushCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	pushCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
+	pushCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
 
-	return pullCmd
+	return pushCmd
 }
