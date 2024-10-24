@@ -4,6 +4,7 @@
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
+  import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
@@ -19,7 +20,6 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
-  import { startPylonChat } from "@rilldata/web-common/features/help/startPylonChat";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { DateTime } from "luxon";
 
@@ -51,28 +51,19 @@
 
 <SettingsContainer title="Team plan">
   <div slot="body">
-    <div>
-      Next billing cycle will start on
-      <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>
-      <PricingDetails />
-      <PlanQuotas {organization} quotas={plan.quotas} />
-    </div>
+    Next billing cycle will start on
+    <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
+    <PricingDetails />
+    <PlanQuotas {organization} quotas={plan.quotas} />
   </div>
   <svelte:fragment slot="contact">
     <span>For any questions,</span>
-    <Button
-      type="link"
-      compact
-      forcedStyle="padding-left:2px !important;"
-      on:click={startPylonChat}
-    >
-      contact us
-    </Button>
+    <ContactUs />
   </svelte:fragment>
 
   <AlertDialog bind:open slot="action">
     <AlertDialogTrigger asChild let:builder>
-      <Button builders={[builder]} type="primary">Cancel plan</Button>
+      <Button builders={[builder]} type="secondary" gray>Cancel plan</Button>
     </AlertDialogTrigger>
     <AlertDialogContent>
       <AlertDialogHeader>

@@ -48,6 +48,9 @@
             getBillingUpgradeUrl($page, organization),
           ),
         },
+        options: {
+          persisted: true,
+        },
       });
       return goto(`/${organization}`);
     }

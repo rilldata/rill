@@ -1,13 +1,12 @@
 <script lang="ts">
   import { type V1Subscription } from "@rilldata/web-admin/client";
+  import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
-  import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
-  import { startPylonChat } from "@rilldata/web-common/features/help/startPylonChat";
   import { DateTime } from "luxon";
 
   export let organization: string;
@@ -33,16 +32,15 @@
 <SettingsContainer title="Team Plan">
   <div slot="body">
     <div>
-      <div class="flex flex-row items-center gap-x-1">
+      <div class="flex flex-row items-center gap-x-1 text-sm">
         <InfoCircleFilled className="text-yellow-500" size="14px" />
         Your plan is cancelled
         {#if willEndOnText}
-          but you still have access until {willEndOnText}.
+          but you still have access until <b>{willEndOnText}.</b>
         {:else}
           and your subscription has ended.
         {/if}
       </div>
-      <PricingDetails />
       {#if plan}
         <PlanQuotas {organization} quotas={plan.quotas} />
       {/if}
@@ -50,14 +48,7 @@
   </div>
   <svelte:fragment slot="contact">
     <span>For custom enterprise needs,</span>
-    <Button
-      type="link"
-      compact
-      forcedStyle="padding-left:2px !important;"
-      on:click={startPylonChat}
-    >
-      contact us
-    </Button>
+    <ContactUs />
   </svelte:fragment>
 
   <Button type="primary" slot="action" on:click={() => (open = true)}>

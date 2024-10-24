@@ -16,7 +16,7 @@
 <div class="quotas">
   <div class="quota-entry">
     <div class="quota-entry-title">Projects</div>
-    <div>
+    <div class="quota-entry-body">
       {$projects.data?.projects?.length} of {projectQuota}
     </div>
   </div>
@@ -54,6 +54,10 @@
   }
 
   .quota-entry-title {
-    @apply font-semibold text-[10px] uppercase;
+    @apply font-semibold text-[10px] uppercase text-gray-500;
+  }
+
+  .quota-entry-body {
+    @apply text-gray-800 text-xs;
   }
 </style>
