@@ -56,6 +56,7 @@ export async function fetchOrganizationBillingIssues(organization: string) {
     queryKey:
       getAdminServiceListOrganizationBillingIssuesQueryKey(organization),
     queryFn: () => adminServiceListOrganizationBillingIssues(organization),
+    staleTime: Infinity,
   });
   return resp.issues ?? [];
 }

@@ -23,8 +23,6 @@
 {#if $allStatus.isLoading}
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
-  <div class="flex flex-col w-full gap-y-5">
-    <Plan {organization} {showUpgrade} />
-    <Payment {organization} />
-  </div>
+  <Plan {organization} {showUpgrade} />
+  <Payment {organization} />
 {/if}

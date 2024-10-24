@@ -8,15 +8,19 @@
 
   $: billingSub = createAdminServiceGetBillingSubscription(organization);
   $: billingUrl = $billingSub.data?.billingPortalUrl;
+
+  let iframeLoading = true;
 </script>
 
-{#if $billingSub.isLoading}
+{#if $billingSub.isLoading || iframeLoading}
   <Spinner status={EntityStatus.Running} size="16px" />
-{:else if billingUrl}
+{/if}
+{#if billingUrl}
   <!-- TODO: resize based on page size -->
   <iframe
     src={billingUrl}
     title="Orb Billing Portal"
     class="w-full h-[600px]"
+    on:load={() => (iframeLoading = true)}
   />
 {/if}

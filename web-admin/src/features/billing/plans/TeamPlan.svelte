@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceCancelBillingSubscription,
+    V1BillingIssueType,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
@@ -37,7 +38,9 @@
       type: "success",
       message: "Your Team plan was canceled",
     });
-    void invalidateBillingInfo(organization);
+    void invalidateBillingInfo(organization, [
+      V1BillingIssueType.BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED,
+    ]);
     open = false;
   }
 
