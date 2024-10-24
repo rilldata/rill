@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { getPlanDisplayName } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { getSubscriptionForOrg } from "@rilldata/web-admin/features/billing/selectors";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
@@ -88,9 +90,16 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
+  $: plan = getSubscriptionForOrg(organization, {
+    enabled: !onPublicURLPage,
+    select: (data) => data.subscription?.plan,
+  });
   $: organizationPaths = organizations.reduce(
     (map, { name, displayName }) =>
-      map.set(name.toLowerCase(), { label: displayName || name }),
+      map.set(name.toLowerCase(), {
+        label: displayName || name,
+        pill: $plan?.data ? getPlanDisplayName($plan.data) : "",
+      }),
     new Map<string, PathOption>(),
   );
 

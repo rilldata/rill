@@ -393,6 +393,6 @@
   }
 
   .gray {
-    @apply saturate-0;
+    @apply text-slate-600 border-slate-300;
   }
 </style>

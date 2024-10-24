@@ -12,15 +12,14 @@
       label: "General",
       route: "",
     },
-    // TODO: Uncomment when we have billing and usage page
-    // {
-    //   label: "Billing",
-    //   route: "/billing",
-    // },
-    // {
-    //   label: "Usage",
-    //   route: "/usage",
-    // },
+    {
+      label: "Billing",
+      route: "/billing",
+    },
+    {
+      label: "Usage",
+      route: "/usage",
+    },
   ];
 </script>
 
@@ -28,7 +27,9 @@
   <h3>Settings</h3>
   <div class="container">
     <LeftNav {basePage} baseRoute="/[organization]/-/settings" {navItems} />
-    <slot />
+    <div class="contents-container">
+      <slot />
+    </div>
   </div>
 </div>
 
@@ -43,5 +44,9 @@
 
   .container {
     @apply flex flex-row pt-6 gap-x-6;
+  }
+
+  .contents-container {
+    @apply flex flex-col w-full gap-y-5 ml-16;
   }
 </style>

@@ -10,7 +10,7 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import { openPopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
+  import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
 
@@ -29,7 +29,7 @@
       },
     );
     // we need a popup window so we cannot use href
-    openPopupWindow("https://github.com/new", "githubNewWindow");
+    PopupWindow.open("https://github.com/new", "githubNewWindow");
   }
 
   function handleContinue() {

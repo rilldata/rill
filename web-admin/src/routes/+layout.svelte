@@ -1,6 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
+    isBillingUpgradePage,
     isProjectInvitePage,
     withinOrganization,
     withinProject,
@@ -22,7 +24,8 @@
 
   export let data;
 
-  $: ({ projectPermissions } = data);
+  $: ({ projectPermissions, organizationPermissions } = data);
+  $: organization = $page.params.organization;
 
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -48,8 +51,12 @@
   });
 
   $: isEmbed = $page.url.pathname === "/-/embed";
-  // invite page shouldn't show the top bar because it is considered an onboard step
-  $: hideTopBar = isProjectInvitePage($page);
+
+  $: hideTopBar =
+    // invite page shouldn't show the top bar because it is considered an onboard step
+    isProjectInvitePage($page) ||
+    // upgrade callback landing page shouldn't show any rill identifications
+    isBillingUpgradePage($page);
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 </script>
@@ -62,6 +69,9 @@
   <QueryClientProvider client={queryClient}>
     <main class="flex flex-col min-h-screen h-screen">
       <BannerCenter />
+      {#if organization}
+        <BillingBannerManager {organization} {organizationPermissions} />
+      {/if}
       {#if !isEmbed && !hideTopBar}
         <TopNavigationBar
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
