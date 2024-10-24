@@ -1,6 +1,6 @@
 {
   "name": "@rilldata/dev",
-  "version": "0.10.0",
+  "version": "0.50.5",
   "type": "module",
   "workspaces": [
     "docs",

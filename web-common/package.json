@@ -1,6 +1,6 @@
 {
   "name": "web-common",
-  "version": "0.0.1",
+  "version": "0.50.5",
   "scripts": {
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
