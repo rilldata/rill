@@ -2,7 +2,8 @@
   import Auth from "./components/Auth.svelte";
 
   const connectionMap = import.meta.env.VITE_CONNECTION_MAP;
-  const cloudClientIDs = import.meta.env.VITE_RILL_CLOUD_AUTH0_CLIENT_IDS;
+  // TODO: previously used for `isRillCloud` check
+  // const cloudClientIDs = import.meta.env.VITE_RILL_CLOUD_AUTH0_CLIENT_IDS;
   const disableForgotPassDomains = import.meta.env
     .VITE_DISABLE_FORGOT_PASS_DOMAINS;
 
@@ -28,10 +29,5 @@
 </svelte:head>
 
 <main class="size-full">
-  <Auth
-    {configParams}
-    {cloudClientIDs}
-    {disableForgotPassDomains}
-    {connectionMap}
-  />
+  <Auth {configParams} {disableForgotPassDomains} {connectionMap} />
 </main>
