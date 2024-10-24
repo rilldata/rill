@@ -6,7 +6,6 @@
   export let disabled = false;
 
   let email = "";
-  let haveValidEmail = false;
   let errorText = "";
 
   const dispatch = createEventDispatcher();
@@ -23,14 +22,11 @@
     }
 
     if (!validateEmail(email)) {
-      haveValidEmail = false;
       errorText = "Please enter a valid email address";
       return;
     }
 
     errorText = "";
-    haveValidEmail = true;
-
     dispatch("submitEmail", { email });
   }
 
