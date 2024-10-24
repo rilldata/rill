@@ -246,6 +246,19 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
+	// raise never subscribed billing issue in sync to prevent race condition where first project is deployed before issue is raised and thus trial not started
+	if s.Biller.Name() != "noop" {
+		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingIssueTypeNeverSubscribed,
+			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
+			EventTime: org.CreatedOn,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to upsert billing error: %w", err)
+		}
+	}
+
 	// Submit job to init org billing // TODO modify river client to allow job submission as part of transaction
 	_, err = s.Jobs.InitOrgBilling(ctx, org.ID)
 	if err != nil {
