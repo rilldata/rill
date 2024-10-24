@@ -6,7 +6,7 @@
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
   import AuthContainer from "./AuthContainer.svelte";
-  import EmailPassForm from "./EmailPassForm.svelte";
+  import EmailPasswordForm from "./EmailPasswordForm.svelte";
   import { getConnectionFromEmail } from "./utils";
   import OrSeparator from "./OrSeparator.svelte";
   import SSOForm from "./SSOForm.svelte";
@@ -14,45 +14,15 @@
   import DiscordCTA from "./DiscordCTA.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import Spacer from "./Spacer.svelte";
-
-  type InternalOptions = {
-    protocol: string;
-    response_type: string;
-    prompt: string;
-    scope: string;
-    _csrf: string;
-    leeway: number;
-  };
-
-  type Config = {
-    auth0Domain: string;
-    clientID: string;
-    auth0Tenant: string;
-    authorizationServer: {
-      issuer: string;
-    };
-    callbackURL: string;
-    internalOptions: InternalOptions;
-    extraParams?: { screen_hint?: string };
-  };
+  import { LOCAL_STORAGE_KEY } from "../constants";
+  import { AuthStep, type Config } from "../types";
 
   export let configParams: string;
   export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
 
-  const LOCAL_STORAGE_KEY = "last_used_connection";
-  const DATABASE_CONNECTION = "Username-Password-Authentication";
-
   const connectionMapObj = JSON.parse(connectionMap);
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
-
-  enum AuthStep {
-    Base = 0,
-    SSO = 1,
-    EmailPassword = 2,
-    SignUp = 3,
-    Thanks = 4,
-  }
 
   $: errorText = "";
 
@@ -115,7 +85,7 @@
     errorText = err.message;
   }
 
-  function authorize(connection: string) {
+  function authorizeConnection(connection: string) {
     setLastUsedConnection(connection);
     webAuth.authorize({ connection });
   }
@@ -143,97 +113,14 @@
     setLastUsedConnection(connectionName);
   }
 
-  function handleEmailSubmit(email: string, password: string) {
-    isEmailDisabled = true;
-    errorText = "";
-
-    function handleAuthError(err: any) {
-      // Auth0 is not consistent in the naming of the error description field
-      const errorText =
-        typeof err?.description === "string"
-          ? err.description
-          : typeof err?.policy === "string"
-            ? err.policy
-            : typeof err?.error_description === "string"
-              ? err.error_description
-              : err?.message;
-
-      displayError({ message: errorText });
-      isEmailDisabled = false;
-    }
-
-    try {
-      webAuth.login(
-        {
-          realm: DATABASE_CONNECTION,
-          username: email,
-          password: password,
-        },
-        (err) => {
-          if (err) {
-            console.log("login err", err);
-            // TODO: revisit error message from staging
-            // Check if the error indicates the user does not exist
-            if (err.error === "user_not_found") {
-              // Attempt to sign up the user
-              webAuth.redirect.signupAndLogin(
-                {
-                  connection: DATABASE_CONNECTION,
-                  email: email,
-                  password: password,
-                },
-                (signupErr: any) => {
-                  if (signupErr) handleAuthError(signupErr);
-                  else isEmailDisabled = false;
-                },
-              );
-            } else {
-              handleAuthError(err);
-            }
-          } else {
-            isEmailDisabled = false;
-          }
-        },
-      );
-    } catch (err) {
-      handleAuthError(err);
-    }
-  }
-
-  function handleResetPassword(email: string) {
-    errorText = "";
-    if (!email) return displayError({ message: "Please enter an email" });
-
-    if (
-      disableForgotPassDomainsArr.some((domain) =>
-        email.toLowerCase().endsWith(domain.toLowerCase()),
-      )
-    ) {
-      return displayError({
-        message: "Password reset is not available. Please contact your admin.",
-      });
-    }
-
-    webAuth.changePassword(
-      {
-        connection: DATABASE_CONNECTION,
-        email: email,
-      },
-      (err, resp) => {
-        if (err) displayError({ message: err?.description });
-        else alert(resp);
-      },
-    );
-  }
-
-  function handleEmailSubmission(event) {
+  function processEmailSubmission(event) {
     email = event.detail.email;
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
     if (connectionName) {
       step = AuthStep.SSO;
     } else {
-      step = AuthStep.EmailPassword;
+      step = AuthStep.Login;
     }
   }
 
@@ -243,7 +130,7 @@
         return "Log in or sign up";
       case AuthStep.SSO:
         return "Log in with SSO";
-      case AuthStep.EmailPassword:
+      case AuthStep.Login:
         return "Log in with email";
       case AuthStep.SignUp:
         return "Sign up with email";
@@ -258,7 +145,7 @@
     switch (step) {
       case AuthStep.SSO:
         return `SAML SSO enabled workspace is associated with ${email}`;
-      case AuthStep.EmailPassword:
+      case AuthStep.Login:
         return `Log in using ${email}`;
       default:
         return "";
@@ -267,6 +154,10 @@
 
   $: headingText = getHeadingText(step);
   $: subheadingText = getSubheadingText(step, email);
+
+  $: {
+    console.log("step: ", step);
+  }
 
   onMount(() => {
     initConfig();
@@ -290,7 +181,7 @@
   </div>
 
   <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
-    {#if lastUsedConnection}
+    {#if lastUsedConnection && step === AuthStep.Base}
       <div class="text-sm text-gray-500">
         Last used connection: {lastUsedConnection}
       </div>
@@ -299,7 +190,7 @@
       {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
-          on:click={() => authorize(connection)}
+          on:click={() => authorizeConnection(connection)}
         >
           <div class="flex justify-center items-center gap-x-2 font-medium">
             {#if icon}
@@ -314,7 +205,7 @@
 
       <EmailSubmissionForm
         disabled={isEmailDisabled}
-        on:submitEmail={handleEmailSubmission}
+        on:submitEmail={processEmailSubmission}
       />
     {/if}
 
@@ -330,21 +221,21 @@
       />
     {/if}
 
-    <!-- TODO: only show forget password in sign up flow -->
-    {#if step === AuthStep.EmailPassword}
-      <EmailPassForm
+    {#if step === AuthStep.Login || step === AuthStep.SignUp}
+      {@const isDomainDisabled = disableForgotPassDomainsArr.some((domain) =>
+        email.toLowerCase().endsWith(domain.toLowerCase()),
+      )}
+      <EmailPasswordForm
         disabled={isEmailDisabled}
+        {isEmailDisabled}
+        {step}
         {email}
-        on:submit={(e) => {
-          handleEmailSubmit(e.detail.email, e.detail.password);
-        }}
-        on:resetPass={(e) => {
-          handleResetPassword(e.detail.email);
-        }}
+        showForgetPassword={step === AuthStep.Login}
+        {isDomainDisabled}
+        {webAuth}
         on:back={() => {
           step = AuthStep.Base;
         }}
-        showForgetPassword={step === AuthStep.EmailPassword}
       />
     {/if}
   </div>
