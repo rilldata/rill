@@ -22,6 +22,10 @@ export function isTeamPlan(plan: V1BillingPlan) {
   return plan.name === "Teams";
 }
 
+export function isPOCPlan(plan: V1BillingPlan) {
+  return plan.name === "Custom";
+}
+
 export function getSubscriptionResumedText(endDate: string) {
   const date = DateTime.fromJSDate(new Date(endDate));
   if (!date.isValid || date.toMillis() < Date.now()) {
@@ -37,6 +41,9 @@ export function getPlanDisplayName(plan: V1BillingPlan) {
   }
   if (isTeamPlan(plan)) {
     return "Team Plan";
+  }
+  if (isPOCPlan(plan)) {
+    return "POC Plan";
   }
   return "Enterprise Plan";
 }
