@@ -9,7 +9,7 @@
   import {
     getUserDomain,
     userDomainIsPublic,
-  } from "@rilldata/web-admin/features/projects/user-invite/selectors";
+  } from "@rilldata/web-admin/features/projects/user-management/selectors";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import DelayedCircleOutlineSpinner from "@rilldata/web-common/components/spinner/DelayedCircleOutlineSpinner.svelte";
