@@ -1104,6 +1104,17 @@ export interface V1GetBillingSubscriptionResponse {
   billingPortalUrl?: string;
 }
 
+export interface V1GetBillingProjectCredentialsResponse {
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetBillingProjectCredentialsRequest {
+  organization?: string;
+}
+
 export interface V1GetAlertYAMLResponse {
   yaml?: string;
 }

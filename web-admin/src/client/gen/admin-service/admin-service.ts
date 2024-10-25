@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ListPublicBillingPlansResponse,
+  V1GetBillingProjectCredentialsResponse,
   RpcStatus,
+  V1GetBillingProjectCredentialsRequest,
+  V1ListPublicBillingPlansResponse,
   V1TriggerReconcileResponse,
   AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourcesResponse,
@@ -209,6 +211,57 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
+/**
+ * @summary GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+ */
+export const adminServiceGetBillingProjectCredentials = (
+  v1GetBillingProjectCredentialsRequest: V1GetBillingProjectCredentialsRequest,
+) => {
+  return httpClient<V1GetBillingProjectCredentialsResponse>({
+    url: `/v1/billing/metrics-project-credentials`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1GetBillingProjectCredentialsRequest,
+  });
+};
+
+export type AdminServiceGetBillingProjectCredentialsMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>
+  >;
+export type AdminServiceGetBillingProjectCredentialsMutationBody =
+  V1GetBillingProjectCredentialsRequest;
+export type AdminServiceGetBillingProjectCredentialsMutationError = RpcStatus;
+
+export const createAdminServiceGetBillingProjectCredentials = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+    TError,
+    { data: V1GetBillingProjectCredentialsRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+    { data: V1GetBillingProjectCredentialsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceGetBillingProjectCredentials(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+    TError,
+    { data: V1GetBillingProjectCredentialsRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListPublicBillingPlans lists all public billing plans
  */

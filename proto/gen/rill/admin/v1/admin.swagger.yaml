@@ -32,6 +32,27 @@ paths:
             $ref: '#/definitions/v1CompleteRequest'
       tags:
         - AIService
+  /v1/billing/metrics-project-credentials:
+    post:
+      summary: GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+      operationId: AdminService_GetBillingProjectCredentials
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetBillingProjectCredentialsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1GetBillingProjectCredentialsRequest'
+      tags:
+        - AdminService
   /v1/billing/plans:
     get:
       summary: ListPublicBillingPlans lists all public billing plans
@@ -4005,6 +4026,23 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetBillingProjectCredentialsRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+  v1GetBillingProjectCredentialsResponse:
+    type: object
+    properties:
+      runtimeHost:
+        type: string
+      instanceId:
+        type: string
+      accessToken:
+        type: string
+      ttlSeconds:
+        type: integer
+        format: int64
   v1GetBillingSubscriptionResponse:
     type: object
     properties:

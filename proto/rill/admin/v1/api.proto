@@ -802,6 +802,14 @@ service AdminService {
     option (google.api.http) = {get: "/v1/billing/plans"};
   }
 
+  // GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+  rpc GetBillingProjectCredentials(GetBillingProjectCredentialsRequest) returns (GetBillingProjectCredentialsResponse) {
+    option (google.api.http) = {
+      post: "/v1/billing/metrics-project-credentials",
+      body: "*"
+    };
+  }
+
   rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/request-access",
@@ -2059,6 +2067,17 @@ message ListPublicBillingPlansRequest {}
 
 message ListPublicBillingPlansResponse {
   repeated BillingPlan plans = 1;
+}
+
+message GetBillingProjectCredentialsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetBillingProjectCredentialsResponse {
+  string runtime_host = 1;
+  string instance_id = 2;
+  string access_token = 3;
+  uint32 ttl_seconds = 4;
 }
 
 message TelemetryRequest {
