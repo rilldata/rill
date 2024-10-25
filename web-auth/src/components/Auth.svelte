@@ -81,36 +81,9 @@
     webAuth = new auth0.WebAuth(params);
   }
 
-  function displayError(err: any) {
-    errorText = err.message;
-  }
-
   function authorizeConnection(connection: string) {
     setLastUsedConnection(connection);
     webAuth.authorize({ connection });
-  }
-
-  function handleSSOLogin(email: string) {
-    isSSODisabled = true;
-    errorText = "";
-
-    const connectionName = getConnectionFromEmail(email, connectionMapObj);
-
-    if (!connectionName) {
-      displayError({
-        message: `IDP for the email ${email} not found. Please contact your administrator.`,
-      });
-      isSSODisabled = false;
-      return;
-    }
-
-    webAuth.authorize({
-      connection: connectionName,
-      login_hint: email,
-      prompt: "login",
-    });
-
-    setLastUsedConnection(connectionName);
   }
 
   function processEmailSubmission(event) {
