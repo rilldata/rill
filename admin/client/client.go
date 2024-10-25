@@ -12,6 +12,19 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// Retry policy for requests to the admin service.
+// For details, see https://github.com/grpc/grpc/blob/master/doc/service_config.md and https://grpc.io/docs/guides/retry/.
+const retryPolicy = `{"methodConfig": [{
+	"name": [{}],
+	"retryPolicy": {
+		"maxAttempts": 5,
+		"initialBackoff": ".1s",
+		"maxBackoff": "10s",
+		"backoffMultiplier": 5,
+		"retryableStatusCodes": ["UNAVAILABLE"]
+	}
+}]}`
+
 // Client connects to an admin server.
 // It's a thin wrapper around the generated gRPC client for proto/rill/admin/v1.
 type Client struct {
@@ -29,6 +42,7 @@ func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 
 	opts := []grpc.DialOption{
 		grpc.WithUserAgent(userAgent),
+		grpc.WithDefaultServiceConfig(retryPolicy),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	}
 
