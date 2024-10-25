@@ -57,6 +57,10 @@ func (n noop) UpdateCustomerEmail(ctx context.Context, customerID, email string)
 	return nil
 }
 
+func (n noop) DeleteCustomer(ctx context.Context, customerID string) error {
+	return nil
+}
+
 func (n noop) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
