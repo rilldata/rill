@@ -19,8 +19,8 @@ const retryPolicy = `{"methodConfig": [{
 	"retryPolicy": {
 		"maxAttempts": 5,
 		"initialBackoff": ".1s",
-		"maxBackoff": "10s",
-		"backoffMultiplier": 5,
+		"maxBackoff": "20s",
+		"backoffMultiplier": 10,
 		"retryableStatusCodes": ["UNAVAILABLE"]
 	}
 }]}`
