@@ -2,64 +2,53 @@
   import { slide } from "svelte/transition";
   import { createEventDispatcher } from "svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
-  import { validateEmail } from "./utils";
+  import { getConnectionFromEmail, validateEmail } from "./utils";
   import { ArrowLeftIcon } from "lucide-svelte";
+  import { WebAuth } from "auth0-js";
 
   const dispatch = createEventDispatcher();
 
   export let disabled = false;
+  export let email = "";
+  export let webAuth: WebAuth;
+  export let connectionMapObj: Record<string, string>;
 
-  let userEmail = "";
-  let showForm = false;
   let errorText = "";
 
-  let inputClasses =
-    "h-10 px-4 py-2 border border-slate-300 rounded-sm text-base";
-  let focusClasses =
-    "ring-offset-2 focus:ring-2 focus:ring-primary-300 focus:outline-none";
-
   function handleSubmit() {
-    if (!showForm) {
-      showForm = true;
-      return;
-    }
-
-    if (!userEmail) {
-      return;
-    }
-
-    if (!validateEmail(userEmail)) {
-      errorText = "Please enter a valid email address";
-      return;
-    }
-
-    errorText = "";
-
-    dispatch("submitSSO", userEmail.toLowerCase());
+    void handleSSOLogin(email.toLowerCase());
   }
 
-  function handleKeydown(e) {
-    if (e.key === "Enter") {
-      handleSubmit();
+  function displayError(err: any) {
+    errorText = err.message;
+  }
+
+  function handleSSOLogin(email: string) {
+    disabled = true;
+    errorText = "";
+
+    const connectionName = getConnectionFromEmail(email, connectionMapObj);
+
+    if (!connectionName) {
+      displayError({
+        message: `IDP for the email ${email} not found. Please contact your administrator.`,
+      });
+      disabled = false;
+      return;
     }
+
+    webAuth.authorize({
+      connection: connectionName,
+      login_hint: email,
+      prompt: "login",
+    });
+
+    // TODO: centralized set local storage logic
+    // setLastUsedConnection(connectionName);
   }
 </script>
 
-<div class:mb-6={showForm}>
-  {#if showForm}
-    <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide|global>
-      <input
-        class="{inputClasses} {focusClasses}"
-        style:width="400px"
-        type="email"
-        placeholder="Enter your email address"
-        id="sso"
-        bind:value={userEmail}
-        on:keydown={handleKeydown}
-      />
-    </div>
-  {/if}
-
+<form on:submit={handleSubmit}>
   <div class="flex flex-col gap-y-4">
     <CtaButton {disabled} variant="primary" on:click={() => handleSubmit()}>
       <div class="flex justify-center font-medium">
@@ -84,4 +73,4 @@
   {#if errorText}
     <div class="mt-2 text-red-500 text-sm">{errorText}</div>
   {/if}
-</div>
+</form>
