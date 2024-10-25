@@ -22,6 +22,7 @@
   let password = "";
   let showPassword = false;
   let errorText = "";
+  let inputEl: HTMLInputElement;
 
   let inputClasses =
     "h-10 px-4 py-2 border border-slate-300 rounded-sm text-base";
@@ -30,18 +31,16 @@
 
   $: type = showPassword ? "text" : "password";
 
-  function onPassInput(e: any) {
-    password = e.target.value;
+  function handleInput(event) {
+    password = event.target.value;
+  }
+
+  function togglePasswordVisibility() {
+    showPassword = !showPassword;
   }
 
   function handleSubmit() {
-    if (!password) {
-      errorText = "Please enter your password";
-      return;
-    }
-
     errorText = "";
-
     authenticateUser(email, password);
   }
 
@@ -123,16 +122,27 @@
   }
 
   $: disabled = !(password.length > 0);
+
+  onMount(() => {
+    if (inputEl) {
+      inputEl.focus();
+    }
+  });
 </script>
 
-<form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-y-4">
+<form
+  on:submit|preventDefault={handleSubmit}
+  class="flex flex-col gap-y-4"
+  style:max-width="400px"
+>
   <div>
-    <div class="relative flex items-center" style="max-width: 400px;">
+    <div class="relative flex items-center">
       <input
+        bind:this={inputEl}
         class="{inputClasses} {focusClasses} flex-grow pr-10"
         style:width="100%"
         {type}
-        on:input={onPassInput}
+        on:input={handleInput}
         id="password"
         placeholder="Password"
       />
@@ -142,7 +152,7 @@
         role="button"
         tabindex="0"
         class="absolute right-3 cursor-pointer"
-        on:click={() => (showPassword = !showPassword)}
+        on:click={togglePasswordVisibility}
       >
         {#if !showPassword}
           <Eye />
@@ -153,7 +163,7 @@
     </div>
 
     {#if errorText}
-      <div style:max-width="400px" class="text-red-500 text-sm mt-3">
+      <div class="text-red-500 text-sm mt-3">
         {errorText}
       </div>
     {/if}

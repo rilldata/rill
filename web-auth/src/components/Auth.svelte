@@ -132,10 +132,6 @@
     step = AuthStep.Base;
   }
 
-  $: {
-    console.log("step: ", step);
-  }
-
   onMount(() => {
     initConfig();
   });
