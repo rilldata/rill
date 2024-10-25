@@ -1,4 +1,3 @@
-
 # Login and Sign up page template
 
 
@@ -6,7 +5,7 @@ This folder contains the log in and sign up which is used for Rill Cloud and Ril
 
 ## Project Details
 
-The template is being used for both Rill Cloud and Rill Enterprise login. For cloud only two login options are activated, Google and windows. For Enterprise we additionally support Pingfed and Okta. The configuration of this is decided by the environment variables we pass in.
+The template is being used for both Rill Cloud and Rill Enterprise login. For cloud only two login options are activated, Google and Microsoft. For Enterprise we additionally support Pingfed and Okta. The configuration of this is decided by the environment variables we pass in.
 
 ## Development
 
@@ -15,14 +14,16 @@ The template is being used for both Rill Cloud and Rill Enterprise login. For cl
 3. Run `npm run dev -w web-auth`
 
 
-The `configParams` props takes in `@@config@@` as an input. This is a variable which is replaced by the Auth0 runtime to an object containing tenant details. While in development we do not have the tenant object so login functionalities do not work. 
+The `configParams` props takes in `@@config@@` as an input. This is a variable which is replaced by the Auth0 runtime to an object containing tenant details. While in development we do not have the tenant object so login functionalities do not work.
 
 The project uses the following environment variables -
+
 ```
 VITE_RILL_CLOUD_AUTH0_CLIENT_IDS="clientID1,clientID2,..."
 VITE_DISABLE_FORGOT_PASS_DOMAINS="domain1.com,domain2.com,..."
 VITE_CONNECTION_MAP={"connection-a":["domain1.com"]...}
 ```
+
 `VITE_RILL_CLOUD_AUTH0_CLIENT_IDS` is a comma separated list of Auth0 client IDs of application created for Rill Cloud.
 `VITE_DISABLE_FORGOT_PASS_DOMAINS` is a comma separated list of domains for which reset password functionality has been blocked. This has been ported from the old sign-up template.
 `VITE_CONNECTION_MAP` is a connection name to domain mapping object
@@ -30,7 +31,6 @@ VITE_CONNECTION_MAP={"connection-a":["domain1.com"]...}
 These environment variables can be found in 1Password. The document is named - **Rill Web Auth env**
 
 While developing, to test the login features, deploy the generated template `/dist/index.html` (follow steps mentioned in building for production) to Auth0 staging. Verification can be done through Rill Cloud Staging and Dash staging.
-
 
 ## Building for production
 

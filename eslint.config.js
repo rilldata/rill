@@ -89,6 +89,7 @@ export default [
       // WARNINGS (some will be promoted to errors)
       "svelte/no-at-html-tags": "warn",
       "svelte/no-target-blank": "warn",
+      "svelte/no-unused-svelte-ignore": "warn",
       "svelte/require-each-key": "warn",
       "svelte/prefer-destructured-store-props": "warn",
       "svelte/require-optimized-style-attribute": "warn",

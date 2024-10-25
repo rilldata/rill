@@ -5,6 +5,19 @@
   export let href: string | null = null;
   export let rel: string | undefined = undefined;
   export let disabled = false;
+  export let gray = false;
+  export let submitForm = false;
 </script>
 
-<Button type={variant} {href} {rel} {disabled} wide on:click><slot /></Button>
+<Button
+  type={variant}
+  {href}
+  {rel}
+  {disabled}
+  wide
+  {gray}
+  {submitForm}
+  on:click
+>
+  <slot />
+</Button>

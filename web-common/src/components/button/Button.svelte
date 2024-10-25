@@ -393,6 +393,14 @@
   }
 
   .gray {
-    @apply saturate-0;
+    @apply saturate-0 border-slate-300 text-gray-600;
+  }
+
+  .gray:hover {
+    @apply bg-slate-50;
+  }
+
+  .gray:active {
+    @apply bg-slate-100;
   }
 </style>
