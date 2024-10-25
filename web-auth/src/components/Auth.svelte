@@ -144,9 +144,9 @@
   function getSubheadingText(step: AuthStep, email: string): string {
     switch (step) {
       case AuthStep.SSO:
-        return `SAML SSO enabled workspace is associated with ${email}`;
+        return `SAML SSO enabled workspace is associated with <span class="font-medium">${email}</span>`;
       case AuthStep.Login:
-        return `Log in using ${email}`;
+        return `Log in using <span class="font-medium">${email}</span>`;
       default:
         return "";
     }
@@ -173,7 +173,7 @@
     </div>
     {#if subheadingText}
       <div class="text-base text-gray-500">
-        {subheadingText}
+        {@html subheadingText}
       </div>
     {:else}
       <Spacer />
@@ -212,9 +212,9 @@
     {#if step === AuthStep.SSO}
       <SSOForm
         disabled={isSSODisabled}
-        on:submitSSO={(e) => {
-          handleSSOLogin(e.detail);
-        }}
+        {email}
+        {connectionMapObj}
+        {webAuth}
         on:back={() => {
           step = AuthStep.Base;
         }}
