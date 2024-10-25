@@ -688,7 +688,7 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		vars, err = s.admin.DB.FindProjectVariables(ctx, proj.ID, &req.Environment)
 	}
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	resp := &adminv1.GetProjectVariablesResponse{
@@ -726,12 +726,12 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 
 	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	vars, err := s.admin.DB.FindProjectVariables(ctx, proj.ID, nil)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	resp := &adminv1.UpdateProjectVariablesResponse{}
 	for _, v := range vars {

@@ -212,7 +212,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	}
 	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
-		return status.Error(codes.Internal, err.Error())
+		return err
 	}
 	defer func() {
 		_ = tx.Rollback()
@@ -222,7 +222,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	if len(vars) > 0 {
 		_, err = s.DB.UpsertProjectVariable(txCtx, project.ID, environment, vars, userID)
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return err
 		}
 	}
 
@@ -230,14 +230,14 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	if len(unsetVars) > 0 {
 		err = s.DB.DeleteProjectVariables(txCtx, project.ID, environment, unsetVars)
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return err
 		}
 	}
 
 	// Commit transaction
 	err = tx.Commit()
 	if err != nil {
-		return status.Error(codes.Internal, err.Error())
+		return err
 	}
 
 	// Update deployments
