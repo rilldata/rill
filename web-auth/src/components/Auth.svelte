@@ -14,7 +14,7 @@
   import DiscordCTA from "./DiscordCTA.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import Spacer from "./Spacer.svelte";
-  import { LOCAL_STORAGE_KEY } from "../constants";
+  import { LOCAL_STORAGE_KEY, DATABASE_CONNECTION } from "../constants";
   import { AuthStep, type Config } from "../types";
 
   export let configParams: string;
@@ -128,6 +128,10 @@
   $: headingText = getHeadingText(step);
   $: subheadingText = getSubheadingText(step, email);
 
+  function backToBaseStep() {
+    step = AuthStep.Base;
+  }
+
   $: {
     console.log("step: ", step);
   }
@@ -188,9 +192,7 @@
         {email}
         {connectionMapObj}
         {webAuth}
-        on:back={() => {
-          step = AuthStep.Base;
-        }}
+        on:back={backToBaseStep}
       />
     {/if}
 
@@ -206,9 +208,7 @@
         showForgetPassword={step === AuthStep.Login}
         {isDomainDisabled}
         {webAuth}
-        on:back={() => {
-          step = AuthStep.Base;
-        }}
+        on:back={backToBaseStep}
       />
     {/if}
   </div>

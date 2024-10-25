@@ -48,7 +48,7 @@
 
     errorText = "";
 
-    authenticateUser;
+    authenticateUser(email, password);
   }
 
   function displayError(err: any) {
@@ -57,8 +57,8 @@
 
   function handleResetPassword() {
     errorText = "";
-    if (!email) return displayError({ message: "Please enter an email" });
 
+    if (!email) return displayError({ message: "Please enter an email" });
     if (isDomainDisabled) {
       return displayError({
         message: "Password reset is not available. Please contact your admin.",
@@ -92,7 +92,7 @@
     isEmailDisabled = false;
   }
 
-  function authenticateUser(password: string) {
+  function authenticateUser(email: string, password: string) {
     isEmailDisabled = true;
     errorText = "";
 
@@ -118,38 +118,8 @@
             password: password,
           },
           (err) => {
-            if (err) {
-              // Check if the error indicates the user does not exist
-              // e.g. Wrong email or password
-              // {
-              //   "message": "Wrong email or password.",
-              //   "name": "ValidationError",
-              //   "code": "invalid_user_password",
-              //   "description": "Wrong email or password.",
-              //   "statusCode": 400
-              // }
-              if (
-                err.statusCode === 400 &&
-                err.code === "invalid_user_password"
-              ) {
-                // Attempt to sign up the user
-                webAuth.redirect.signupAndLogin(
-                  {
-                    connection: DATABASE_CONNECTION,
-                    email: email,
-                    password: password,
-                  },
-                  (signupErr: any) => {
-                    if (signupErr) handleAuthError(signupErr);
-                    else isEmailDisabled = false;
-                  },
-                );
-              } else {
-                handleAuthError(err);
-              }
-            } else {
-              isEmailDisabled = false;
-            }
+            if (err) displayError({ message: err?.description });
+            isEmailDisabled = false;
           },
         );
       }
