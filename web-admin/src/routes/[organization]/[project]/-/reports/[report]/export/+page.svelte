@@ -61,6 +61,7 @@
         </CtaMessage>
       </div>
     {/if}
+    <!-- User accessing with token wont have access to view report. So only show for other rows. -->
     {#if !token}
       <CtaButton
         variant="secondary"
