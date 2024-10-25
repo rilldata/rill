@@ -246,7 +246,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
-	// raise never subscribed billing issue in sync to prevent race condition where first project is deployed before issue is raised and thus trial not started
+	// raise never subscribed billing issue in sync to prevent race condition where first project is deployed before issue is raised and thus start trial job not submitted
 	if s.Biller.Name() != "noop" {
 		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     org.ID,
