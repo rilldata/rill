@@ -1399,7 +1399,8 @@ func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props m
 	vars := inst.ResolveVariables(false)
 
 	for k := range res {
-		k2 := strings.TrimPrefix(k, "vars.")
+		// Project variables are referenced with .env.name (current) or .vars.name (deprecated).
+		k2 := strings.TrimPrefix(strings.TrimPrefix(k, "vars."), "env.")
 		if len(k) == len(k2) {
 			continue
 		}

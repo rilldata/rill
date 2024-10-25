@@ -27,7 +27,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 	} else if u, ok := c.config["username"].(string); ok && u != "" { // get from driver configs
 		username = u
 	} else {
-		return nil, fmt.Errorf("the property 'username' is required for Salesforce. Provide 'username' in the YAML properties or pass '--var connector.salesforce.username=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'username' is required for Salesforce. Provide 'username' in the YAML properties or pass '--env connector.salesforce.username=...' to 'rill start'")
 	}
 
 	if srcProps.Endpoint != "" { // get from src properties
@@ -35,7 +35,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 	} else if e, ok := c.config["endpoint"].(string); ok && e != "" { // get from driver configs
 		endpoint = e
 	} else {
-		return nil, fmt.Errorf("the property 'endpoint' is required for Salesforce. Provide 'endpoint' in the YAML properties or pass '--var connector.salesforce.endpoint=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'endpoint' is required for Salesforce. Provide 'endpoint' in the YAML properties or pass '--env connector.salesforce.endpoint=...' to 'rill start'")
 	}
 
 	if srcProps.ClientID != "" { // get from src properties
@@ -59,7 +59,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 	}
 
 	if password == "" && key == "" {
-		return nil, fmt.Errorf("the property 'password' or property 'key' is required for Salesforce. Provide 'password' or 'key' in the YAML properties or pass '--var connector.salesforce.password=...' or '--var connector.salesforce.key=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'password' or property 'key' is required for Salesforce. Provide 'password' or 'key' in the YAML properties or pass '--env connector.salesforce.password=...' or '--env connector.salesforce.key=...' to 'rill start'")
 	}
 
 	authOptions := authenticationOptions{

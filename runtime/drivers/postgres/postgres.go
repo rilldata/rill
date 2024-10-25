@@ -39,7 +39,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
-			Hint:        "Either set this or pass --var connector.postgres.database_url=... to rill start",
+			Hint:        "Either set this or pass --env connector.postgres.database_url=... to rill start",
 		},
 		{
 			Key:         "name",

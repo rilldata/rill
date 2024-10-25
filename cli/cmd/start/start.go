@@ -28,8 +28,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var logFormat string
-	var env []string
-	var vars []string
+	var envVars, envVarsOld []string
+	var environment string
 	var allowedOrigins []string
 	var tlsCertPath string
 	var tlsKeyPath string
@@ -113,18 +113,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			// Backwards compatibility for --env (see comment on the flag definition for details)
-			environment := "dev"
-			for _, v := range env {
-				if strings.Contains(v, "=") {
-					vars = append(vars, v)
-				} else {
-					environment = v
-				}
-			}
-
 			// Parser variables from "a=b" format to map
-			varsMap, err := parseVariables(vars)
+			envVars = append(envVars, envVarsOld...)
+			envVarsMap, err := parseVariables(envVars)
 			if err != nil {
 				return err
 			}
@@ -161,7 +152,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				OlapDSN:        olapDSN,
 				ProjectPath:    projectPath,
 				LogFormat:      parsedLogFormat,
-				Variables:      varsMap,
+				Variables:      envVarsMap,
 				LocalURL:       localURL,
 				AllowedOrigins: allowedOrigins,
 			})
@@ -182,22 +173,26 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	startCmd.Flags().SortFlags = false
+	startCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
+	startCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
+	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
+	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
-	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
-	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
-	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringVar(&tlsCertPath, "tls-cert", "", "Path to TLS certificate")
 	startCmd.Flags().StringVar(&tlsKeyPath, "tls-key", "", "Path to TLS key file")
-
-	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
-	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
-	startCmd.Flags().StringSliceVarP(&vars, "var", "v", []string{}, "Set project variables")
 	startCmd.Flags().StringSliceVarP(&allowedOrigins, "allowed-origins", "", []string{}, "Override allowed origins for CORS")
+
+	// Deprecated support for "--env": replaced by "--env".
+	startCmd.Flags().StringSliceVarP(&envVarsOld, "var", "v", []string{}, "Set environment variables")
+	if err := startCmd.Flags().MarkHidden("var"); err != nil {
+		panic(err)
+	}
 
 	// We have deprecated the ability configure the OLAP database via the CLI. This should now be done via rill.yaml.
 	// Keeping these for backwards compatibility for a while.
