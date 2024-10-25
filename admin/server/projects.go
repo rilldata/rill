@@ -673,7 +673,7 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -713,7 +713,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	)
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
