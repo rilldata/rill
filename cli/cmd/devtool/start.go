@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -725,10 +724,14 @@ func prepareStripeConfig() error {
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
 
+	if apiKey == "" {
+		logWarn.Printf("No Stripe API key found in .env, Stripe webhook events will not be processed\n")
+	}
+
 	// Parse the template
 	tmpl, err := template.ParseFiles(templateFile)
 	if err != nil {
-		log.Fatalf("failed to parse template file: %v", err)
+		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
 	// Create the output file
