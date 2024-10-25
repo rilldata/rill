@@ -14,7 +14,7 @@
   import DiscordCTA from "./DiscordCTA.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import Spacer from "./Spacer.svelte";
-  import { LOCAL_STORAGE_KEY, DATABASE_CONNECTION } from "../constants";
+  import { LOCAL_STORAGE_KEY } from "../constants";
   import { AuthStep, type Config } from "../types";
 
   export let configParams: string;
@@ -64,7 +64,7 @@
       step = AuthStep.SignUp;
     }
 
-    const params: AuthOptions = Object.assign(
+    const authOptions: AuthOptions = Object.assign(
       {
         overrides: {
           __tenant: config.auth0Tenant,
@@ -78,7 +78,7 @@
       config.internalOptions,
     );
 
-    webAuth = new auth0.WebAuth(params);
+    webAuth = new auth0.WebAuth(authOptions);
   }
 
   function authorizeConnection(connection: string) {

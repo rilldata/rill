@@ -20,7 +20,6 @@
   export let step: AuthStep;
 
   let password = "";
-  let showForm = false;
   let showPassword = false;
   let errorText = "";
 
@@ -36,11 +35,6 @@
   }
 
   function handleSubmit() {
-    if (!showForm) {
-      showForm = true;
-      return;
-    }
-
     if (!password) {
       errorText = "Please enter your password";
       return;
@@ -131,37 +125,38 @@
   $: disabled = !(password.length > 0);
 </script>
 
-<form on:submit={handleSubmit} class="flex flex-col gap-y-4">
-  <div class="relative">
-    <input
-      class="{inputClasses} {focusClasses}"
-      style:width="400px"
-      {type}
-      on:input={onPassInput}
-      id="password"
-      placeholder="Password"
-    />
+<form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-y-4">
+  <div>
+    <div class="relative flex items-center" style="max-width: 400px;">
+      <input
+        class="{inputClasses} {focusClasses} flex-grow pr-10"
+        style:width="100%"
+        {type}
+        on:input={onPassInput}
+        id="password"
+        placeholder="Password"
+      />
+
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <span
+        role="button"
+        tabindex="0"
+        class="absolute right-3 cursor-pointer"
+        on:click={() => (showPassword = !showPassword)}
+      >
+        {#if !showPassword}
+          <Eye />
+        {:else}
+          <EyeInvisible />
+        {/if}
+      </span>
+    </div>
 
     {#if errorText}
       <div style:max-width="400px" class="text-red-500 text-sm mt-3">
         {errorText}
       </div>
     {/if}
-
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <span
-      role="button"
-      tabindex="0"
-      style:right="10px"
-      class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
-      on:click={() => (showPassword = !showPassword)}
-    >
-      {#if !showPassword}
-        <Eye />
-      {:else}
-        <EyeInvisible />
-      {/if}
-    </span>
   </div>
 
   {#if showForgetPassword}

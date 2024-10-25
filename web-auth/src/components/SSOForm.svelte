@@ -48,9 +48,9 @@
   }
 </script>
 
-<form on:submit={handleSubmit}>
+<form on:submit|preventDefault={handleSubmit}>
   <div class="flex flex-col gap-y-4">
-    <CtaButton {disabled} variant="primary" on:click={() => handleSubmit()}>
+    <CtaButton {disabled} variant="primary" submitForm>
       <div class="flex justify-center font-medium">
         <span>Continue with SAML SSO</span>
       </div>
