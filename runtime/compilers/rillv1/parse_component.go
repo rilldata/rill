@@ -22,7 +22,6 @@ type ComponentYAML struct {
 	Subtitle   string                    `yaml:"subtitle"`
 	Input      []*ComponentVariableYAML  `yaml:"input"`
 	Output     *ComponentVariableYAML    `yaml:"output"`
-	Data       *DataYAML                 `yaml:"data"`
 	Show       string                    `yaml:"show"`
 	VegaLite   *string                   `yaml:"vega_lite"`
 	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
@@ -66,18 +65,6 @@ func (p *Parser) parseComponent(node *Node) error {
 // parseComponentYAML parses and validates a ComponentYAML.
 // It is separated from parseComponent to allow inline creation of components from a canvas YAML file.
 func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpec, []ResourceName, error) {
-	// Parse the data YAML
-	var refs []ResourceName
-	var resolver string
-	var resolverProps *structpb.Struct
-	if tmp.Data != nil {
-		var err error
-		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
 	// Discover and validate the renderer
 	n := 0
 	var renderer string
@@ -107,6 +94,19 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		rendererProps = propsPB
 	} else {
 		n += len(tmp.Other)
+	}
+
+	// We generally treat the renderer props as untyped, but since "metrics_view" is a very common field,
+	// and adding it to refs generally makes for nicer error messages, we specifically search for and link it here.
+	var refs []ResourceName
+	for k, v := range rendererProps.Fields {
+		if k == "metrics_view" {
+			name := v.GetStringValue()
+			if name != "" {
+				refs = append(refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
+			}
+			break
+		}
 	}
 
 	// Check there is exactly one renderer
@@ -141,8 +141,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	spec := &runtimev1.ComponentSpec{
 		Title:              tmp.Title,
 		Subtitle:           tmp.Subtitle,
-		Resolver:           resolver,
-		ResolverProperties: resolverProps,
 		Renderer:           renderer,
 		RendererProperties: rendererProps,
 		Input:              input,

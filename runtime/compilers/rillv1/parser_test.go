@@ -1558,27 +1558,18 @@ func TestComponentsAndCanvas(t *testing.T) {
 		`rill.yaml`: ``,
 		`components/c1.yaml`: fmt.Sprintf(`
 type: component
-data:
-  api: MetricsViewAggregation
-  args:
-    metrics_view: foo
 vega_lite: |%s
 `, vegaLiteSpec),
 		`components/c2.yaml`: fmt.Sprintf(`
 type: component
-data:
-  api: MetricsViewAggregation
-  args:
-    metrics_view: bar
 vega_lite: |%s
 `, vegaLiteSpec),
 		`components/c3.yaml`: `
 type: component
-data:
-  metrics_sql: SELECT 1
-line_chart:
-  x: time
-  y: total_sales
+kpi:
+  metrics_view: foo
+  measure: bar
+  time_range: P1W
 `,
 		`canvases/d1.yaml`: `
 type: canvas
@@ -1599,10 +1590,7 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
 			Paths: []string{"/components/c1.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "api",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
@@ -1610,10 +1598,7 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c2"},
 			Paths: []string{"/components/c2.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "api",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
@@ -1621,11 +1606,10 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
 			Paths: []string{"/components/c3.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "metrics_sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
-				Renderer:           "line_chart",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"x": "time", "y": "total_sales"})),
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo", "measure": "bar", "time_range": "P1W"})),
 			},
 		},
 		{

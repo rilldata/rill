@@ -4048,16 +4048,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   subtitle = "";
 
   /**
-   * @generated from field: string resolver = 2;
-   */
-  resolver = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct resolver_properties = 3;
-   */
-  resolverProperties?: Struct;
-
-  /**
    * @generated from field: string renderer = 4;
    */
   renderer = "";
@@ -4099,8 +4089,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },

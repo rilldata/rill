@@ -9475,37 +9475,6 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for Subtitle
 
-	// no validation rules for Resolver
-
-	if all {
-		switch v := interface{}(m.GetResolverProperties()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ComponentSpecValidationError{
-					field:  "ResolverProperties",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ComponentSpecValidationError{
-					field:  "ResolverProperties",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ComponentSpecValidationError{
-				field:  "ResolverProperties",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	// no validation rules for Renderer
 
 	if all {

@@ -3285,7 +3285,7 @@ export class ResolveComponentRequest extends Message<ResolveComponentRequest> {
   component = "";
 
   /**
-   * Optional args to pass to the data resolver and for resolving templating in the renderer properties
+   * Optional args for resolving templating in the renderer properties
    *
    * @generated from field: google.protobuf.Struct args = 3;
    */
@@ -3334,23 +3334,9 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
   show = false;
 
   /**
-   * Schema of the resolved component data
-   *
-   * @generated from field: rill.runtime.v1.StructType schema = 2;
-   */
-  schema?: StructType;
-
-  /**
-   * Resolved component data
-   *
-   * @generated from field: repeated google.protobuf.Struct data = 3;
-   */
-  data: Struct[] = [];
-
-  /**
    * Renderer properties with templating resolved for the provided args
    *
-   * @generated from field: google.protobuf.Struct renderer_properties = 4;
+   * @generated from field: google.protobuf.Struct renderer_properties = 2;
    */
   rendererProperties?: Struct;
 
@@ -3363,9 +3349,7 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
   static readonly typeName = "rill.runtime.v1.ResolveComponentResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "schema", kind: "message", T: StructType },
-    { no: 3, name: "data", kind: "message", T: Struct, repeated: true },
-    { no: 4, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 2, name: "renderer_properties", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentResponse {

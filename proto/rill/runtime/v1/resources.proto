@@ -624,8 +624,6 @@ message Component {
 message ComponentSpec {
   string title = 1;
   string subtitle = 7;
-  string resolver = 2;
-  google.protobuf.Struct resolver_properties = 3;
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
   repeated ComponentVariable input = 8;
