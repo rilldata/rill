@@ -226,6 +226,8 @@ func rerunSelectRiverJobs(ctx context.Context, dsn string, kinds []string) error
 		return err
 	}
 
+	// there will be multiple instances of a job, one for every run.
+	// so run just one of them by keeping track in kindsRemaining
 	kindsRemaining := map[string]bool{}
 	for _, kind := range kinds {
 		kindsRemaining[kind] = true

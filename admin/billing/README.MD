@@ -101,3 +101,12 @@ If needed, trial can be extended using `rill sudo billing extend-trial --org <or
 
 ### Deleting billing issues
 If needed, billing issues can be deleted using `rill sudo billing delete-issue --org <org>`.
+
+### Local testing
+Time can be artificially advanced using `rill devtool subscription advance-time`.
+
+The command will use the default org and yesterday as due date. Pass `--org` or use `rill org switch` to change the org. Pass `--time` to advance due dates to a specific time.
+1. On a fresh trail plan running the above will advance time to trial's end date. To test "Ending soon" pass a time that is in the future but within 7 days.
+2. Once the trial has ended, running the command again will advance time to end the grace period.
+3. When on a cancelled team plan, running the command will advance time to end the plan end date (this is the billing cycle end date). Note that there will not be a grace period.
+4. When a invoice payment fails, running the command will end the grace period.
