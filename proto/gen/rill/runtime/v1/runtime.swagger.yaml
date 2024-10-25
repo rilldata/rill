@@ -2580,6 +2580,15 @@ paths:
           required: false
           type: string
         - name: connector
+          description: Connector to list tables from.
+          in: query
+          required: false
+          type: string
+        - name: searchPattern
+          description: |-
+            Optional search pattern to filter tables by.
+            Has the same syntax and behavior as ILIKE in SQL.
+            If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
           in: query
           required: false
           type: string
