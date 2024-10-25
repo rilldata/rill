@@ -276,6 +276,10 @@ type DB interface {
 	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
+
+	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
+	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
+	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -391,7 +395,6 @@ type InsertProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
@@ -410,7 +413,6 @@ type UpdateProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
@@ -951,6 +953,18 @@ type Asset struct {
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+type ProjectVariable struct {
+	ID                   string    `db:"id"`
+	ProjectID            string    `db:"project_id"`
+	Environment          string    `db:"environment"`
+	Name                 string    `db:"name"`
+	Value                string    `db:"value"`
+	ValueEncryptionKeyID string    `db:"value_encryption_key_id"`
+	UpdatedByUserID      *string   `db:"updated_by_user_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // EncryptionKey represents an encryption key for column-level encryption/decryption.

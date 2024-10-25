@@ -17,7 +17,7 @@ import (
 )
 
 func PullCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName string
+	var projectPath, projectName, environment string
 
 	pullCmd := &cobra.Command{
 		Use:   "pull",
@@ -59,15 +59,21 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			res, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
+				Organization: ch.Org,
+				Project:      projectName,
+				Environment:  environment,
 			})
 			if err != nil {
 				return err
 			}
 
+			resVars := make(map[string]string, len(res.Variables))
+			for _, v := range res.Variables {
+				resVars[v.Name] = v.Value
+			}
+
 			// If the variables match any existing .env file, do nothing
-			if maps.Equal(res.Variables, parser.DotEnv) {
+			if maps.Equal(resVars, parser.DotEnv) {
 				if len(res.Variables) == 0 {
 					ch.Printf("No cloud credentials found for project %q.\n", projectName)
 				} else {
@@ -81,7 +87,7 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 			for k, v := range parser.DotEnv {
 				vars[k] = v
 			}
-			for k, v := range res.Variables {
+			for k, v := range resVars {
 				vars[k] = v
 			}
 			err = godotenv.Write(vars, filepath.Join(projectPath, ".env"))
@@ -105,6 +111,7 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	pullCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	pullCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
+	pullCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
 
 	return pullCmd
 }

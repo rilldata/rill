@@ -68,14 +68,6 @@ export type AdminServiceUpdateServiceBody = {
 
 export type AdminServiceCreateServiceParams = { name?: string };
 
-export type AdminServiceUpdateProjectVariablesBodyVariables = {
-  [key: string]: string;
-};
-
-export type AdminServiceUpdateProjectVariablesBody = {
-  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
-};
-
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   public?: boolean;
@@ -95,8 +87,6 @@ export type AdminServiceGetProjectParams = {
   issueSuperuserToken?: boolean;
 };
 
-export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
-
 export type AdminServiceCreateProjectBody = {
   name?: string;
   description?: string;
@@ -112,7 +102,6 @@ Either github_url or archive_asset_id should be set. */
   githubUrl?: string;
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
-  variables?: AdminServiceCreateProjectBodyVariables;
   prodVersion?: string;
 };
 
@@ -144,6 +133,30 @@ export type AdminServiceGetUsergroupParams = {
 export type AdminServiceListOrganizationMemberUsergroupsParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+/**
+ * New variable values.
+It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
+ */
+export type AdminServiceUpdateProjectVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+export type AdminServiceUpdateProjectVariablesBody = {
+  /** Environment to set the variables for.
+If empty, the variable(s) will be used as defaults for all environments. */
+  environment?: string;
+  /** New variable values.
+It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged. */
+  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
+  /** Variables to delete. */
+  unsetVariables?: string[];
+};
+
+export type AdminServiceGetProjectVariablesParams = {
+  environment?: string;
+  forAllEnvironments?: boolean;
 };
 
 export type AdminServiceSearchProjectUsersParams = {
@@ -382,12 +395,9 @@ export interface V1UpdateServiceResponse {
   service?: V1Service;
 }
 
-export type V1UpdateProjectVariablesResponseVariables = {
-  [key: string]: string;
-};
-
 export interface V1UpdateProjectVariablesResponse {
-  variables?: V1UpdateProjectVariablesResponseVariables;
+  /** Variables that were created or updated by the request. */
+  variables?: V1ProjectVariable[];
 }
 
 export interface V1UpdateProjectResponse {
@@ -717,6 +727,24 @@ export interface V1PullVirtualRepoResponse {
   nextPageToken?: string;
 }
 
+export interface V1ProjectVariable {
+  /** Internal ID. */
+  id?: string;
+  /** Variable name (case insensitive). */
+  name?: string;
+  /** Variable value. */
+  value?: string;
+  /** Environment the variable is set for.
+If empty, the variable is shared for all environments. */
+  environment?: string;
+  /** User ID that most recently updated the variable. May be empty. */
+  updatedByUserId?: string;
+  /** Timestamp when the variable was created. */
+  createdOn?: string;
+  /** Timestamp when the variable was last updated. */
+  updatedOn?: string;
+}
+
 export interface V1ProjectPermissions {
   readProject?: boolean;
   manageProject?: boolean;
@@ -1006,10 +1034,19 @@ export interface V1GetRepoMetaResponse {
   archiveDownloadUrl?: string;
 }
 
-export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
+/**
+ * Deprecated: Populated for backwards compatibility.
+(Renamed from "variables" to "variables_map").
+ */
+export type V1GetProjectVariablesResponseVariablesMap = {
+  [key: string]: string;
+};
 
 export interface V1GetProjectVariablesResponse {
-  variables?: V1GetProjectVariablesResponseVariables;
+  variables?: V1ProjectVariable[];
+  /** Deprecated: Populated for backwards compatibility.
+(Renamed from "variables" to "variables_map"). */
+  variablesMap?: V1GetProjectVariablesResponseVariablesMap;
 }
 
 export interface V1GetProjectResponse {
