@@ -160,6 +160,8 @@ import type {
   V1GetReportMetaResponse,
   AdminServiceGetReportMetaBody,
   V1RevokeServiceAuthTokenResponse,
+  V1SudoTriggerBillingRepairResponse,
+  V1SudoTriggerBillingRepairRequest,
   V1SudoIssueRuntimeManagerTokenResponse,
   V1SudoIssueRuntimeManagerTokenRequest,
   V1ListSuperusersResponse,
@@ -6342,6 +6344,56 @@ export const createAdminServiceRevokeServiceAuthToken = <
     Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
     TError,
     { tokenId: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+ */
+export const adminServiceSudoTriggerBillingRepair = (
+  v1SudoTriggerBillingRepairRequest: V1SudoTriggerBillingRepairRequest,
+) => {
+  return httpClient<V1SudoTriggerBillingRepairResponse>({
+    url: `/v1/superuser/billing/repair`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoTriggerBillingRepairRequest,
+  });
+};
+
+export type AdminServiceSudoTriggerBillingRepairMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoTriggerBillingRepair>>
+>;
+export type AdminServiceSudoTriggerBillingRepairMutationBody =
+  V1SudoTriggerBillingRepairRequest;
+export type AdminServiceSudoTriggerBillingRepairMutationError = RpcStatus;
+
+export const createAdminServiceSudoTriggerBillingRepair = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoTriggerBillingRepair>>,
+    TError,
+    { data: V1SudoTriggerBillingRepairRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoTriggerBillingRepair>>,
+    { data: V1SudoTriggerBillingRepairRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoTriggerBillingRepair(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoTriggerBillingRepair>>,
+    TError,
+    { data: V1SudoTriggerBillingRepairRequest },
     TContext
   >(mutationFn, mutationOptions);
 };
