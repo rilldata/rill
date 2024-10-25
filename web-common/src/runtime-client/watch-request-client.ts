@@ -39,7 +39,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
-  private outOfFocusThrottler = new Throttler(120000, 30000);
+  private outOfFocusThrottler = new Throttler(120000, 20000);
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;

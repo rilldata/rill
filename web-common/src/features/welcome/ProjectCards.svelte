@@ -69,6 +69,11 @@
           force: true,
         },
       });
+
+      setTimeout(() => {
+        if (window.location.search.includes("redirect=true"))
+          window.location.reload();
+      }, 5000);
     } catch {
       selectedProjectName = null;
     }
