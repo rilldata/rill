@@ -35,6 +35,7 @@ export type ConnectorServiceS3GetBucketMetadataParams = {
 export type ConnectorServiceOLAPListTablesParams = {
   instanceId?: string;
   connector?: string;
+  searchPattern?: string;
 };
 
 export type RuntimeServiceCreateTriggerBody = {
