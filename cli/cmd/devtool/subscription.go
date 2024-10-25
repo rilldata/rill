@@ -116,7 +116,6 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					rerunJobs = append(rerunJobs, "trial_ending_soon", "trial_end_check")
 					ch.Println("Advanced trial issue to:", endDate.UTC().String())
-					break
 
 				case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_ENDED:
 					_, err = db.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
@@ -134,7 +133,6 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					rerunJobs = append(rerunJobs, "trial_grace_period_check")
 					ch.Println("Advanced trial ended issue to:", endDate.UTC().String())
-					break
 
 				case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
 					cfg := zap.NewProductionConfig()
@@ -167,7 +165,6 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					rerunJobs = append(rerunJobs, "subscription_cancellation_check")
 					ch.Println("Advanced sub cancelled issue to:", endDate.UTC().String())
-					break
 
 				case adminv1.BillingIssueType_BILLING_ISSUE_TYPE_PAYMENT_FAILED:
 					invoices := make(map[string]*database.BillingIssueMetadataPaymentFailedMeta)
@@ -197,7 +194,6 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					rerunJobs = append(rerunJobs, "payment_failed_grace_period_check")
 					ch.Println("Advanced payment failed issue to:", endDate.UTC().String())
-					break
 				}
 			}
 
