@@ -116,12 +116,12 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	// List all the private organizations for the authenticated user
 	orgs, _, err := client.Organizations.List(ctx, "", nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
+		return nil, fmt.Errorf("failed to get user organizations: %w", err)
 	}
 	// List all the public organizations for the authenticated user
 	publicOrgs, _, err := client.Organizations.List(ctx, user.GithubUsername, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
+		return nil, fmt.Errorf("failed to get user organizations: %w", err)
 	}
 
 	orgs = append(orgs, publicOrgs...)
@@ -141,7 +141,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 				orgInstallationPermission[org.GetLogin()] = adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
 				continue
 			}
-			return nil, status.Errorf(codes.Internal, "failed to get organization installation: %s", err.Error())
+			return nil, fmt.Errorf("failed to get organization installation: %w", err)
 		}
 		permission := adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
 		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
@@ -222,7 +222,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 			}
 			return res, nil
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	res := &adminv1.GetGithubRepoStatusResponse{
@@ -251,7 +251,7 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 
 	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// refresh token changes after using it for getting a new token
@@ -274,7 +274,7 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 	// use a client with user's token to get installations
 	repos, err := s.fetchReposForUser(ctx, client)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.ListGithubUserReposResponse{
@@ -310,7 +310,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 
 	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// refresh token changes after using it for getting a new token
@@ -364,7 +364,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
@@ -375,7 +375,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		Subpath:          &req.Subpath,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.ConnectProjectToGithubResponse{}, nil
