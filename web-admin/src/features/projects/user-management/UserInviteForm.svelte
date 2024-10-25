@@ -1,10 +1,15 @@
 <script lang="ts">
-  import { createAdminServiceAddProjectMemberUser } from "@rilldata/web-admin/client";
-  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-invite/UserRoleSelect.svelte";
+  import {
+    createAdminServiceAddProjectMemberUser,
+    getAdminServiceListProjectInvitesQueryKey,
+    getAdminServiceListProjectMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
@@ -13,6 +18,7 @@
   export let project: string;
   export let onInvite: () => void = () => {};
 
+  const queryClient = useQueryClient();
   const userInvite = createAdminServiceAddProjectMemberUser();
 
   const initialValues: {
@@ -65,6 +71,14 @@
           }),
         );
 
+        await queryClient.invalidateQueries(
+          getAdminServiceListProjectMemberUsersQueryKey(organization, project),
+        );
+
+        await queryClient.invalidateQueries(
+          getAdminServiceListProjectInvitesQueryKey(organization, project),
+        );
+
         eventBus.emit("notification", {
           type: "success",
           message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${values.role}`,
@@ -92,7 +106,7 @@
 >
   <MultiInput
     id="emails"
-    placeholder="Invite by email, separated by commas"
+    placeholder="Add emails, separated by commas"
     contentClassName="relative"
     bind:values={$form.emails}
     errors={$errors.emails}
@@ -109,7 +123,7 @@
         form="user-invite-form"
         loading={$submitting}
         disabled={hasInvalidEmails || !hasSomeValue}
-        forcedStyle="height: 32px !important;"
+        forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
       >
         Invite
       </Button>

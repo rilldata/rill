@@ -63,8 +63,8 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if err := outputProps.Validate(opts); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
-	if outputProps.Typ != "TABLE" {
-		return nil, fmt.Errorf("models with input_connector 'localfile' must be materialized as tables")
+	if outputProps.Typ != "TABLE" && outputProps.Typ != "DICTIONARY" {
+		return nil, fmt.Errorf("models with input connector `local_file` must be materialized as `TABLE` or `DICTIONARY`")
 	}
 
 	// get the local file path
@@ -100,7 +100,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	// Prepare for ingesting into the staging view/table.
 	// NOTE: This intentionally drops the end table if not staging changes.
 	stagingTableName := tableName
-	if opts.Env.StageChanges {
+	if opts.Env.StageChanges || outputProps.Typ == "DICTIONARY" {
 		stagingTableName = stagingTableNameFor(tableName)
 	}
 	if t, err := e.c.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
@@ -128,8 +128,15 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 	}
 
-	// Rename the staging table to the final table name
-	if stagingTableName != tableName {
+	if outputProps.Typ == "DICTIONARY" {
+		err = e.c.createDictionary(ctx, tableName, fmt.Sprintf("SELECT * FROM %s", safeSQLName(stagingTableName)), outputProps)
+		// drop the temp table
+		_ = e.c.DropTable(ctx, stagingTableName, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create dictionary: %w", err)
+		}
+	} else if stagingTableName != tableName {
+		// Rename the staging table to the final table name
 		err = olapForceRenameTable(ctx, e.c, stagingTableName, false, tableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to rename staged model: %w", err)

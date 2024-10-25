@@ -489,6 +489,11 @@ export interface V1SudoUpdateOrganizationCustomDomainRequest {
   customDomain?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   organization?: string;
   billingCustomerId?: string;
@@ -507,6 +512,14 @@ export interface V1SudoUpdateAnnotationsRequest {
   organization?: string;
   project?: string;
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
+}
+
+export interface V1SudoTriggerBillingRepairResponse {
+  [key: string]: any;
+}
+
+export interface V1SudoTriggerBillingRepairRequest {
+  [key: string]: any;
 }
 
 export interface V1SudoIssueRuntimeManagerTokenResponse {
@@ -546,11 +559,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscription?: V1Subscription;
 }
 
 export interface V1Subquery {

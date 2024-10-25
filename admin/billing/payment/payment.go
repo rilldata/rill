@@ -29,4 +29,5 @@ type Customer struct {
 	Email              string
 	HasPaymentMethod   bool
 	HasBillableAddress bool
+	TaxExempt          bool // if country not US or Canada, customer is tax-exempt
 }
