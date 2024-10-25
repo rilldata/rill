@@ -4359,6 +4359,68 @@ export class SudoDeleteOrganizationBillingIssueResponse extends Message<SudoDele
 }
 
 /**
+ * @generated from message rill.admin.v1.SudoTriggerBillingRepairRequest
+ */
+export class SudoTriggerBillingRepairRequest extends Message<SudoTriggerBillingRepairRequest> {
+  constructor(data?: PartialMessage<SudoTriggerBillingRepairRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoTriggerBillingRepairRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoTriggerBillingRepairRequest {
+    return new SudoTriggerBillingRepairRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoTriggerBillingRepairRequest {
+    return new SudoTriggerBillingRepairRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoTriggerBillingRepairRequest {
+    return new SudoTriggerBillingRepairRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoTriggerBillingRepairRequest | PlainMessage<SudoTriggerBillingRepairRequest> | undefined, b: SudoTriggerBillingRepairRequest | PlainMessage<SudoTriggerBillingRepairRequest> | undefined): boolean {
+    return proto3.util.equals(SudoTriggerBillingRepairRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoTriggerBillingRepairResponse
+ */
+export class SudoTriggerBillingRepairResponse extends Message<SudoTriggerBillingRepairResponse> {
+  constructor(data?: PartialMessage<SudoTriggerBillingRepairResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoTriggerBillingRepairResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoTriggerBillingRepairResponse {
+    return new SudoTriggerBillingRepairResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoTriggerBillingRepairResponse {
+    return new SudoTriggerBillingRepairResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoTriggerBillingRepairResponse {
+    return new SudoTriggerBillingRepairResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoTriggerBillingRepairResponse | PlainMessage<SudoTriggerBillingRepairResponse> | undefined, b: SudoTriggerBillingRepairResponse | PlainMessage<SudoTriggerBillingRepairResponse> | undefined): boolean {
+    return proto3.util.equals(SudoTriggerBillingRepairResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListProjectMemberUsersRequest
  */
 export class ListProjectMemberUsersRequest extends Message<ListProjectMemberUsersRequest> {

@@ -518,6 +518,14 @@ service AdminService {
     };
   }
 
+  // SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+  rpc SudoTriggerBillingRepair(SudoTriggerBillingRepairRequest) returns (SudoTriggerBillingRepairResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/billing/repair",
+      body: "*"
+    };
+  }
+
   // CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
   rpc CreateProjectWhitelistedDomain(CreateProjectWhitelistedDomainRequest) returns (CreateProjectWhitelistedDomainResponse) {
     option (google.api.http) = {
@@ -1329,6 +1337,10 @@ message SudoDeleteOrganizationBillingIssueRequest {
 }
 
 message SudoDeleteOrganizationBillingIssueResponse {}
+
+message SudoTriggerBillingRepairRequest {}
+
+message SudoTriggerBillingRepairResponse {}
 
 message ListProjectMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
