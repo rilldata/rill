@@ -2,7 +2,7 @@
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { ArrowLeftIcon } from "lucide-svelte";
   import { WebAuth } from "auth0-js";
   import { DATABASE_CONNECTION } from "../constants";
@@ -163,7 +163,6 @@
 
 <form on:submit={handleSubmit} class="flex flex-col gap-y-4">
   <div class="relative">
-    <!-- TODO: look into using <Input /> component -->
     <input
       class="{inputClasses} {focusClasses}"
       style:width="400px"

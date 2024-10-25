@@ -220,8 +220,5 @@
   {/if}
 
   <Disclaimer />
-
-  <div class="mt-6 text-center">
-    <DiscordCTA />
-  </div>
+  <DiscordCTA />
 </AuthContainer>
