@@ -42,7 +42,7 @@ export class PopupWindow {
     );
   }
 
-  public openAndWait(url: string) {
+  public openAndWaitForClose(url: string) {
     return new Promise<void>((resolve) => {
       try {
         // safeguard try catch
@@ -51,11 +51,7 @@ export class PopupWindow {
         // no-op
       }
       if (this.timer) clearInterval(this.timer);
-      this.window = PopupWindow.open(
-        // add `remote` to indicate the callback success dialog should auto close
-        `${url}?remote=autoclose`,
-        "githubWindow",
-      );
+      this.window = PopupWindow.open(url, "popupWindow");
 
       // periodically check if the new window was closed
       this.timer = setInterval(() => {

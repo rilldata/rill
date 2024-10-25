@@ -82,7 +82,7 @@ export class GithubData {
     }
 
     this.userPromptWindow
-      .openAndWait(userStatus.grantAccessUrl)
+      .openAndWaitForClose(userStatus.grantAccessUrl + "?remote=autoclose")
       .then(() => this.refetch());
   }
 
@@ -94,7 +94,7 @@ export class GithubData {
     }
 
     this.userPromptWindow
-      .openAndWait(userStatus.grantAccessUrl)
+      .openAndWaitForClose(userStatus.grantAccessUrl + "?remote=autoclose")
       .then(() => this.refetch());
   }
 

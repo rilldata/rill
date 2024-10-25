@@ -12,7 +12,7 @@
 
   export let data: PageData;
 
-  $: ({ organization, showUpgrade } = data);
+  $: ({ organization, showUpgradeDialog } = data);
 
   $: allStatus = mergedQueryStatus([
     createAdminServiceGetBillingSubscription(organization),
@@ -20,9 +20,11 @@
   ]);
 </script>
 
+<!-- Both the queries are used in both Plan and Payment.
+     So instead of showing 2 spinner it is better to show one at the top. -->
 {#if $allStatus.isLoading}
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
-  <Plan {organization} {showUpgrade} />
+  <Plan {organization} {showUpgradeDialog} />
   <Payment {organization} />
 {/if}

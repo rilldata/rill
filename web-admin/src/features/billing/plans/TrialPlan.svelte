@@ -17,7 +17,7 @@
 
   export let organization: string;
   export let subscription: V1Subscription;
-  export let showUpgrade: boolean;
+  export let showUpgradeDialog: boolean;
 
   $: plan = subscription?.plan;
 
@@ -46,7 +46,7 @@
 
   $: title = "Trial plan" + (trialEnded ? " expired" : "");
 
-  let open = showUpgrade;
+  let open = showUpgradeDialog;
   $: type = (trialEnded ? "trial-expired" : "base") as TeamPlanDialogTypes;
 </script>
 

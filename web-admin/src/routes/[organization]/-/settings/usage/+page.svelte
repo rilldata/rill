@@ -16,7 +16,6 @@
   <Spinner status={EntityStatus.Running} size="16px" />
 {/if}
 {#if billingUrl}
-  <!-- TODO: resize based on page size -->
   <iframe
     src={billingUrl}
     title="Orb Billing Portal"

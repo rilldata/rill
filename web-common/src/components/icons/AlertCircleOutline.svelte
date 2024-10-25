@@ -9,8 +9,8 @@
    * Used to set gradient to icon. Uses `color` as gradient start.
    * Make sure entries are added in app.css before referencing these (Add `--color-` prefix to these labels)
    */
-  export let gradientEnd = "";
-  $: hasGradient = !!gradientEnd;
+  export let gradientStopColor = "";
+  $: hasGradient = !!gradientStopColor;
 </script>
 
 <svg
@@ -20,7 +20,7 @@
   xmlns="http://www.w3.org/2000/svg"
   class={className}
 >
-  <TopToBottomGradient {gradientEnd} />
+  <TopToBottomGradient endColor={gradientStopColor} />
 
   <path
     d="M11 6.75C11 6.47386 11.2239 6.25 11.5 6.25H12.5C12.7761 6.25 13 6.47386 13 6.75V13.25C13 13.5261 12.7761 13.75 12.5 13.75H11.5C11.2239 13.75 11 13.5261 11 13.25V6.75Z"

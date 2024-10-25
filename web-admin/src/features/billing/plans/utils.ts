@@ -26,6 +26,10 @@ export function isPOCPlan(plan: V1BillingPlan) {
   return plan.name === "Custom";
 }
 
+export function isEnterprisePlan(plan: V1BillingPlan) {
+  return !isTrialPlan(plan) && !isTeamPlan(plan) && !isPOCPlan(plan);
+}
+
 export function getSubscriptionResumedText(endDate: string) {
   const date = DateTime.fromJSDate(new Date(endDate));
   if (!date.isValid || date.toMillis() < Date.now()) {

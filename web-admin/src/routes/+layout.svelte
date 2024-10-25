@@ -74,6 +74,7 @@
       {/if}
       {#if !isEmbed && !hideTopBar}
         <TopNavigationBar
+          manageOrganization={organizationPermissions?.manageOrg}
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           manageProjectMembers={projectPermissions?.manageProjectMembers}
         />

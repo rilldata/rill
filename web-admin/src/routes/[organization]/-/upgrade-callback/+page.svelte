@@ -52,7 +52,7 @@
           persisted: true,
         },
       });
-      return goto(`/${organization}`);
+      return goto(`/${organization}/-/settings/billing`);
     }
     const teamPlan = await fetchTeamPlan();
     try {

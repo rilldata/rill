@@ -69,7 +69,7 @@
           this={IconMap[issueForHibernation.iconType]}
           size="104px"
           className="text-slate-300"
-          gradientEnd="slate-200"
+          gradientStopColor="slate-200"
         />
       {/if}
       <CTAHeader variant="bold">

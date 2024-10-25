@@ -3,23 +3,31 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+  $: ({ neverSubscribed } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
 
-  const navItems = [
+  $: navItems = [
     {
       label: "General",
       route: "",
     },
-    {
-      label: "Billing",
-      route: "/billing",
-    },
-    {
-      label: "Usage",
-      route: "/usage",
-    },
+    ...(!neverSubscribed
+      ? [
+          {
+            label: "Billing",
+            route: "/billing",
+          },
+          {
+            label: "Usage",
+            route: "/usage",
+          },
+        ]
+      : []),
   ];
 </script>
 

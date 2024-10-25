@@ -11,7 +11,7 @@
 
   export let organization: string;
   export let subscription: V1Subscription;
-  export let showUpgrade: boolean;
+  export let showUpgradeDialog: boolean;
 
   $: plan = subscription?.plan;
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
@@ -26,7 +26,7 @@
       willEndOnText = endDate.toLocaleString(DateTime.DATE_MED);
   }
 
-  let open = showUpgrade;
+  let open = showUpgradeDialog;
 </script>
 
 <SettingsContainer title="Team Plan">

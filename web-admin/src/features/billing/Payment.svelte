@@ -12,6 +12,7 @@
   $: org = createAdminServiceGetOrganization(organization);
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
+  $: neverSubscribed = $categorisedIssues.data?.neverSubscribed;
 
   async function handleManagePayment() {
     window.open(
@@ -21,7 +22,8 @@
   }
 </script>
 
-{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId}
+<!-- Presence of paymentCustomerId signifies that the org's payment is managed through stripe -->
+{#if !$categorisedIssues.isLoading && !neverSubscribed && $org.data?.organization?.paymentCustomerId}
   <SettingsContainer title="Payment Method">
     <div slot="body" class="flex flex-row items-center gap-x-1">
       {#if paymentIssues?.length}

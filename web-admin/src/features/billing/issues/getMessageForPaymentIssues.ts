@@ -35,7 +35,6 @@ export function getPaymentIssueErrorText(paymentIssues: V1BillingIssue[]) {
 }
 
 export function getMessageForPaymentIssues(
-  organization: string,
   isCustomPlan: boolean,
   issues: V1BillingIssue[],
 ) {

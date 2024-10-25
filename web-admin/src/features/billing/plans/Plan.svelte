@@ -12,7 +12,7 @@
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 
   export let organization: string;
-  export let showUpgrade: boolean;
+  export let showUpgradeDialog: boolean;
 
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: subscription = $subscriptionQuery?.data?.subscription;
@@ -28,18 +28,20 @@
   $: hasEnded = !!$categorisedIssues.data?.cancelled;
   $: subIsTeamPlan = subscription?.plan && isTeamPlan(subscription.plan);
   $: subIsPOCPlan = subscription?.plan && isPOCPlan(subscription.plan);
+  $: subIsEnterprisePlan =
+    subscription?.plan && !isTrial && !subIsTeamPlan && !subIsPOCPlan;
 </script>
 
 {#if neverSubbed}
-  No subscription (TODO)
+  <!-- TODO: once mocks are in. Right now we just disable the routes. -->
 {:else if isTrial}
-  <TrialPlan {organization} {subscription} {showUpgrade} />
+  <TrialPlan {organization} {subscription} {showUpgradeDialog} />
 {:else if hasEnded}
-  <CancelledTeamPlan {organization} {subscription} {showUpgrade} />
+  <CancelledTeamPlan {organization} {subscription} {showUpgradeDialog} />
 {:else if subIsTeamPlan}
   <TeamPlan {organization} {subscription} />
 {:else if subIsPOCPlan}
   <POCPlan {organization} plan={subscription.plan} {hasPayment} />
-{:else if subscription?.plan}
+{:else if subIsEnterprisePlan}
   <EnterprisePlan {organization} plan={subscription.plan} />
 {/if}

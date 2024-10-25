@@ -32,26 +32,25 @@
   <section
     class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto flex flex-col gap-y-4"
   >
-    {#if $allProjectsHibernating.data}
+    {#if $projs.data.projects?.length === 0}
+      <OrganizationHero organization={orgName} {title} />
+      <span>
+        This organization has no projects yet. <a
+          href="https://docs.rilldata.com/home/get-started"
+          target="_blank"
+          rel="noreferrer noopener">See docs</a
+        >
+      </span>
+    {:else if $allProjectsHibernating.data}
       <OrganizationHibernating
         organization={orgName}
         {organizationPermissions}
       />
     {:else}
       <OrganizationHero organization={orgName} {title} />
-      {#if $projs.data.projects?.length === 0}
-        <span
-          >This organization has no projects yet. <a
-            href="https://docs.rilldata.com/home/get-started"
-            target="_blank"
-            rel="noreferrer noopener">See docs</a
-          ></span
-        >
-      {:else}
-        <div class="py-2 px-1.5">
-          <ProjectCards organization={orgName} />
-        </div>
-      {/if}
+      <div class="py-2 px-1.5">
+        <ProjectCards organization={orgName} />
+      </div>
     {/if}
   </section>
 {/if}
