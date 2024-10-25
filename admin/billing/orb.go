@@ -174,6 +174,19 @@ func (o *Orb) UpdateCustomerEmail(ctx context.Context, customerID, email string)
 	return nil
 }
 
+func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
+	c, err := o.client.Customers.FetchByExternalID(ctx, customerID)
+	if err != nil {
+		return err
+	}
+
+	err = o.client.Customers.Delete(ctx, c.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
 	return o.createSubscription(ctx, customerID, plan)
 }
