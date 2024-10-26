@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import { createEventDispatcher } from "svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
-  import { getConnectionFromEmail, validateEmail } from "./utils";
+  import { getConnectionFromEmail } from "./utils";
   import { ArrowLeftIcon } from "lucide-svelte";
   import { WebAuth } from "auth0-js";
 
