@@ -33,6 +33,11 @@
 
   function handleInput(event) {
     password = event.target.value;
+
+    // Clear error text if password is cleared
+    if (password.length === 0) {
+      errorText = "";
+    }
   }
 
   function togglePasswordVisibility() {
@@ -145,6 +150,7 @@
         on:input={handleInput}
         id="password"
         placeholder="Password"
+        required
       />
 
       <!-- svelte-ignore a11y-click-events-have-key-events -->

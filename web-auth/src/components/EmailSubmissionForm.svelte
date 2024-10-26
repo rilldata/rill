@@ -30,12 +30,6 @@
     dispatch("submitEmail", { email });
   }
 
-  function handleKeydown(e) {
-    if (e.key === "Enter") {
-      handleSubmit();
-    }
-  }
-
   $: disabled = !(email.length > 0 && validateEmail(email));
 </script>
 
@@ -48,7 +42,6 @@
       placeholder="Enter your email address"
       id="email"
       bind:value={email}
-      on:keydown={handleKeydown}
     />
     {#if errorText}
       <div class="text-red-500 text-sm -mt-2">
