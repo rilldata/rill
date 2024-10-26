@@ -192,7 +192,7 @@
         {email}
         {connectionMapObj}
         {webAuth}
-        on:submit={() => {
+        on:updateLastUsedConnection={() => {
           setLastUsedConnection("sso");
         }}
         on:back={backToBaseStep}
@@ -208,7 +208,7 @@
         showForgetPassword={step === AuthStep.Login}
         {isDomainDisabled}
         {webAuth}
-        on:submit={() => {
+        on:updateLastUsedConnection={() => {
           setLastUsedConnection("email-password");
         }}
         on:back={backToBaseStep}

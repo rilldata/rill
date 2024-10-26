@@ -15,9 +15,8 @@
 
   let errorText = "";
 
-  function handleSubmit() {
+  function handleClick() {
     void authorizeSSO(email.toLowerCase());
-    dispatch("submit");
   }
 
   function displayError(err: any) {
@@ -44,14 +43,13 @@
       prompt: "login",
     });
 
-    // TODO: centralized set local storage logic
-    // setLastUsedConnection(connectionName);
+    dispatch("updateLastUsedConnection");
   }
 </script>
 
-<form on:submit|preventDefault={handleSubmit}>
+<div>
   <div class="flex flex-col gap-y-4">
-    <CtaButton {disabled} variant="primary" submitForm>
+    <CtaButton {disabled} variant="primary" on:click={handleClick}>
       <div class="flex justify-center font-medium">
         <span>Continue with SAML SSO</span>
       </div>
@@ -74,4 +72,4 @@
   {#if errorText}
     <div class="mt-2 text-red-500 text-sm">{errorText}</div>
   {/if}
-</form>
+</div>
