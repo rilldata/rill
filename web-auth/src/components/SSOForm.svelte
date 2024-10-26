@@ -16,14 +16,15 @@
   let errorText = "";
 
   function handleSubmit() {
-    void handleSSOLogin(email.toLowerCase());
+    void authorizeSSO(email.toLowerCase());
+    dispatch("submit");
   }
 
   function displayError(err: any) {
     errorText = err.message;
   }
 
-  function handleSSOLogin(email: string) {
+  function authorizeSSO(email: string) {
     disabled = true;
     errorText = "";
 

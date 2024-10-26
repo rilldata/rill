@@ -46,7 +46,9 @@
 
   function handleSubmit() {
     errorText = "";
+
     authenticateUser(email, password);
+    dispatch("submit");
   }
 
   function displayError(err: any) {

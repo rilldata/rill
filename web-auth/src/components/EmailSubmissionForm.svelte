@@ -27,7 +27,7 @@
     }
 
     errorText = "";
-    dispatch("submitEmail", { email });
+    dispatch("submit", { email });
   }
 
   $: disabled = !(email.length > 0 && validateEmail(email));
