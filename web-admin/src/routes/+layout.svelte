@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import {
     isProjectInvitePage,
+    isPublicReportPage,
     withinOrganization,
     withinProject,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -48,8 +49,11 @@
   });
 
   $: isEmbed = $page.url.pathname === "/-/embed";
-  // invite page shouldn't show the top bar because it is considered an onboard step
-  $: hideTopBar = isProjectInvitePage($page);
+  $: hideTopBar =
+    // invite page shouldn't show the top bar because it is considered an onboard step
+    isProjectInvitePage($page) ||
+    // public reports are shared to external users who shouldn't be shown any rill related stuff
+    isPublicReportPage($page);
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 </script>

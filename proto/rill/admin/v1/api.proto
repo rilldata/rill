@@ -777,7 +777,7 @@ service AdminService {
     };
   }
 
-  // CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+  // CancelBillingSubscription cancels the billing subscription for the organization
   rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
     option (google.api.http) = {
       delete: "/v1/organizations/{organization}/billing/subscriptions",
@@ -1907,14 +1907,20 @@ message GetReportMetaRequest {
   string project_id = 1;
   string branch = 2;
   string report = 3;
-  map<string, string> annotations = 4;
-  google.protobuf.Timestamp execution_time = 5;
+  string owner_id = 5;
+  google.protobuf.Timestamp execution_time = 6;
+  repeated string email_recipients = 7;
+  reserved 4;
 }
 
 message GetReportMetaResponse {
-  string open_url = 1;
-  string export_url = 2;
-  string edit_url = 3;
+  message URLs {
+    string open_url = 1;
+    string export_url = 2;
+    string edit_url = 3;
+  }
+  URLs base_urls = 1;
+  map<string, URLs> recipient_urls = 2;
 }
 
 message GetAlertMetaRequest {

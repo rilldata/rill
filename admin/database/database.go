@@ -172,7 +172,13 @@ type DB interface {
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
+	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindReportTokens(ctx context.Context, reportName string) ([]*ReportToken, error)
+	FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*ReportTokenWithSecret, error)
+	FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*ReportToken, error)
+	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -639,6 +645,7 @@ type MagicAuthToken struct {
 	Fields                []string       `db:"fields"`
 	State                 string         `db:"state"`
 	Title                 string         `db:"title"`
+	Internal              bool           `db:"internal"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -662,6 +669,28 @@ type InsertMagicAuthTokenOptions struct {
 	Fields          []string
 	State           string
 	Title           string
+	Internal        bool
+}
+
+type ReportToken struct {
+	ID               string
+	ReportName       string `db:"report_name"`
+	RecipientEmail   string `db:"recipient_email"`
+	MagicAuthTokenID string `db:"magic_auth_token_id"`
+}
+
+type ReportTokenWithSecret struct {
+	ID                   string
+	ReportName           string `db:"report_name"`
+	RecipientEmail       string `db:"recipient_email"`
+	MagicAuthTokenID     string `db:"magic_auth_token_id"`
+	MagicAuthTokenSecret []byte `db:"magic_auth_token_secret"`
+}
+
+type InsertReportTokenOptions struct {
+	ReportName       string
+	RecipientEmail   string
+	MagicAuthTokenID string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.

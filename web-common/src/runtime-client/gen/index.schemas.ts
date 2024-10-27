@@ -76,6 +76,12 @@ export type RuntimeServiceGetResourceParams = {
   "name.name"?: string;
 };
 
+export type QueryServiceExportReportBody = {
+  limit?: string;
+  format?: V1ExportFormat;
+  executionTime?: string;
+};
+
 export type QueryServiceQueryBatch200 = {
   result?: V1QueryBatchResponse;
   error?: RpcStatus;
@@ -1799,6 +1805,10 @@ export interface V1Expression {
 }
 
 export interface V1ExportResponse {
+  downloadUrlPath?: string;
+}
+
+export interface V1ExportReportResponse {
   downloadUrlPath?: string;
 }
 

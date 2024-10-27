@@ -399,7 +399,7 @@ paths:
       tags:
         - AdminService
     delete:
-      summary: CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+      summary: CancelBillingSubscription cancels the billing subscription for the organization
       operationId: AdminService_CancelBillingSubscription
       responses:
         "200":
@@ -2960,13 +2960,15 @@ paths:
                 type: string
               report:
                 type: string
-              annotations:
-                type: object
-                additionalProperties:
-                  type: string
+              ownerId:
+                type: string
               executionTime:
                 type: string
                 format: date-time
+              emailRecipients:
+                type: array
+                items:
+                  type: string
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -3550,6 +3552,15 @@ paths:
       tags:
         - AdminService
 definitions:
+  GetReportMetaResponseURLs:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -4202,12 +4213,12 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
+      baseUrls:
+        $ref: '#/definitions/GetReportMetaResponseURLs'
+      recipientUrls:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/GetReportMetaResponseURLs'
   v1GetUserResponse:
     type: object
     properties:

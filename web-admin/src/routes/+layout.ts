@@ -19,14 +19,21 @@ import {
   getAdminServiceGetProjectWithBearerTokenQueryKey,
 } from "../features/public-urls/get-project-with-bearer-token.js";
 
-export const load = async ({ params }) => {
-  const { organization, project, token } = params;
+export const load = async ({ params, url }) => {
+  const { organization, project, token: routeToken } = params;
 
   if (!organization || !project) {
     return {
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
+
+  let searchParamToken: string | undefined;
+  if (url.searchParams.has("token")) {
+    searchParamToken = url.searchParams.get("token");
+  }
+
+  const token = searchParamToken ?? routeToken;
 
   let queryKey: QueryKey;
   let queryFn: QueryFunction<

@@ -2386,6 +2386,44 @@ paths:
                   $ref: '#/definitions/v1Query'
       tags:
         - QueryService
+  /v1/instances/{instanceId}/reports/{report}/export:
+    post:
+      summary: ExportReport builds a URL to download the results of a query as a file.
+      operationId: QueryService_ExportReport
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ExportReportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: report
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              limit:
+                type: string
+                format: int64
+              format:
+                $ref: '#/definitions/v1ExportFormat'
+              executionTime:
+                type: string
+                format: date-time
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/resource:
     get:
       summary: GetResource looks up a specific catalog resource
@@ -4147,6 +4185,11 @@ definitions:
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
     default: EXPORT_FORMAT_UNSPECIFIED
+  v1ExportReportResponse:
+    type: object
+    properties:
+      downloadUrlPath:
+        type: string
   v1ExportResponse:
     type: object
     properties:

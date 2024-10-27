@@ -1158,7 +1158,7 @@ export const createAdminServiceGetBillingSubscription = <
 };
 
 /**
- * @summary CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+ * @summary CancelBillingSubscription cancels the billing subscription for the organization
  */
 export const adminServiceCancelBillingSubscription = (organization: string) => {
   return httpClient<V1CancelBillingSubscriptionResponse>({

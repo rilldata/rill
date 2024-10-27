@@ -60,7 +60,18 @@ export function isReportExportPage(page: Page): boolean {
 }
 
 export function isPublicURLPage(page: Page): boolean {
-  return page.route.id === "/[organization]/[project]/-/share/[token]";
+  return (
+    page.route.id === "/[organization]/[project]/-/share/[token]" ||
+    isPublicReportPage(page)
+  );
+}
+
+export function isPublicReportPage(page: Page): boolean {
+  return (
+    !!page.route.id?.startsWith(
+      "/[organization]/[project]/-/reports/[report]",
+    ) && page.url.searchParams.has("token")
+  );
 }
 
 export function isProjectRequestAccessPage(page: Page): boolean {
