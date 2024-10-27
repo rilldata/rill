@@ -2599,6 +2599,26 @@ paths:
                   Will trigger models with RefreshModelTrigger.full set to true.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/variables/analyze:
+    get:
+      summary: AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+      operationId: RuntimeService_AnalyzeVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AnalyzeVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/olap/tables:
     get:
       summary: OLAPListTables list all tables across all databases on motherduck
@@ -2618,6 +2638,15 @@ paths:
           required: false
           type: string
         - name: connector
+          description: Connector to list tables from.
+          in: query
+          required: false
+          type: string
+        - name: searchPattern
+          description: |-
+            Optional search pattern to filter tables by.
+            Has the same syntax and behavior as ILIKE in SQL.
+            If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
           in: query
           required: false
           type: string
@@ -3270,6 +3299,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1AnalyzedConnector'
     title: Response message for RuntimeService.AnalyzeConnectors
+  v1AnalyzeVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AnalyzedVariable'
+    title: Response message for RuntimeService.AnalyzeVariables
   v1AnalyzedConnector:
     type: object
     properties:
@@ -3312,6 +3350,21 @@ definitions:
         type: string
         title: Error message if the connector is misconfigured
     description: AnalyzedConnector contains information about a connector that is referenced in the project files.
+  v1AnalyzedVariable:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Name of the variable.
+      defaultValue:
+        type: string
+        description: Default value set for the variable in rill.yaml, if any.
+      usedBy:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        description: List of resources that appear to use the connector.
   v1AssertionResult:
     type: object
     properties:

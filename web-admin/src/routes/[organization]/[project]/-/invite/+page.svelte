@@ -5,12 +5,12 @@
     createAdminServiceCreateProjectWhitelistedDomain,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-invite/CopyInviteLinkButton.svelte";
+  import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import {
     getUserDomain,
     userDomainIsPublic,
-  } from "@rilldata/web-admin/features/projects/user-invite/selectors";
-  import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
+  } from "@rilldata/web-admin/features/projects/user-management/selectors";
+  import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";

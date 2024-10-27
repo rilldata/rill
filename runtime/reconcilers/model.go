@@ -1107,6 +1107,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			IncrementalRun:       incrementalRun,
 			SplitRun:             split != nil,
 			PreviousResult:       prevResult,
+			TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
 		})
 		if err != nil {
 			return nil, err
@@ -1136,6 +1137,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		IncrementalRun:       incrementalRun,
 		SplitRun:             split != nil,
 		PreviousResult:       prevResult,
+		TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
 	})
 	if err != nil {
 		return nil, err
@@ -1385,7 +1387,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 // It returns a map of variable names referenced in the props mapped to their current value.
 func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props map[string]any) (map[string]string, error) {
 	res := make(map[string]string)
-	err := analyzeTemplatedVariables(props, res)
+	err := compilerv1.AnalyzeTemplateRecursively(props, res)
 	if err != nil {
 		return nil, err
 	}
@@ -1406,39 +1408,6 @@ func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props m
 	}
 
 	return res, nil
-}
-
-// analyzeTemplatedVariables analyzes strings nested in the provided value for template tags that reference variables.
-// Variables are added as keys to the provided map, with empty strings as values.
-// The values are empty strings instead of booleans as an optimization to enable re-using the map in upstream code.
-func analyzeTemplatedVariables(val any, res map[string]string) error {
-	switch val := val.(type) {
-	case string:
-		meta, err := compilerv1.AnalyzeTemplate(val)
-		if err != nil {
-			return err
-		}
-		for _, k := range meta.Variables {
-			res[k] = ""
-		}
-	case map[string]any:
-		for _, v := range val {
-			err := analyzeTemplatedVariables(v, res)
-			if err != nil {
-				return err
-			}
-		}
-	case []any:
-		for _, v := range val {
-			err := analyzeTemplatedVariables(v, res)
-			if err != nil {
-				return err
-			}
-		}
-	default:
-		// Nothing to do
-	}
-	return nil
 }
 
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.

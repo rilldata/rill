@@ -35,6 +35,7 @@ export type ConnectorServiceS3GetBucketMetadataParams = {
 export type ConnectorServiceOLAPListTablesParams = {
   instanceId?: string;
   connector?: string;
+  searchPattern?: string;
 };
 
 export type RuntimeServiceCreateTriggerBody = {
@@ -581,12 +582,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -614,6 +609,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -2190,6 +2191,10 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2214,10 +2219,6 @@ export interface V1CharLocation {
 export interface V1CategoricalSummary {
   topK?: V1TopK;
   cardinality?: number;
-}
-
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CanvasItem {
@@ -2306,6 +2307,15 @@ export interface V1AssertionResult {
   errorMessage?: string;
 }
 
+export interface V1AnalyzedVariable {
+  /** Name of the variable. */
+  name?: string;
+  /** Default value set for the variable in rill.yaml, if any. */
+  defaultValue?: string;
+  /** List of resources that appear to use the connector. */
+  usedBy?: V1ResourceName[];
+}
+
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
 export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
@@ -2327,6 +2337,10 @@ export interface V1AnalyzedConnector {
   hasAnonymousAccess?: boolean;
   usedBy?: V1ResourceName[];
   errorMessage?: string;
+}
+
+export interface V1AnalyzeVariablesResponse {
+  variables?: V1AnalyzedVariable[];
 }
 
 export interface V1AnalyzeConnectorsResponse {

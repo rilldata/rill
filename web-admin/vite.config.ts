@@ -1,7 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
 import { defineConfig } from "vitest/config";
-import { readPublicEmailDomains } from "./src/features/projects/user-invite/readPublicEmailDomains";
+import { readPublicEmailDomains } from "./src/features/projects/user-management/readPublicEmailDomains";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");

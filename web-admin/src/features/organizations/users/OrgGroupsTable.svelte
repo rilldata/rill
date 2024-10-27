@@ -12,13 +12,6 @@
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
   export let searchUsersList: V1MemberUser[];
-  export let onRename: (groupName: string, newName: string) => void;
-  export let onDelete: (deletedGroupName: string) => void;
-  export let onAddRole: (groupName: string, role: string) => void;
-  export let onSetRole: (groupName: string, role: string) => void;
-  export let onRevokeRole: (groupName: string) => void;
-  export let onRemoveUser: (groupName: string, email: string) => void;
-  export let onAddUser: (groupName: string, email: string) => void;
 
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
@@ -35,12 +28,10 @@
         flexRender(OrgGroupsTableRoleCell, {
           name: row.original.groupName,
           role: row.original.roleName,
-          onAddRole: onAddRole,
-          onSetRole: onSetRole,
-          onRevokeRole: onRevokeRole,
         }),
       meta: {
         widthPercent: 5,
+        marginLeft: "8px",
       },
     },
     {
@@ -52,10 +43,6 @@
           name: row.original.groupName,
           currentUserEmail: currentUserEmail,
           searchUsersList: searchUsersList,
-          onRename: onRename,
-          onDelete: onDelete,
-          onRemoveUser: onRemoveUser,
-          onAddUser: onAddUser,
         }),
       meta: {
         widthPercent: 0,

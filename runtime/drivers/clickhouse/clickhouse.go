@@ -337,11 +337,17 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	if opts.InputHandle == c && opts.OutputHandle == c {
+	if opts.OutputHandle != c {
+		return nil, false
+	}
+	if opts.InputHandle == c {
 		return &selfToSelfExecutor{c}, true
 	}
-	if opts.InputHandle.Driver() == "s3" && opts.OutputHandle == c {
+	if opts.InputHandle.Driver() == "s3" {
 		return &s3ToSelfExecutor{opts.InputHandle, c}, true
+	}
+	if opts.InputHandle.Driver() == "local_file" {
+		return &localFileToSelfExecutor{opts.InputHandle, c}, true
 	}
 	return nil, false
 }
