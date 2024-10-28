@@ -165,11 +165,12 @@
             variant={style === "primary" ? "primary" : "secondary"}
             on:click={() => {
               if (import.meta.env.DEV) {
+                setLastUsedConnection(connection);
                 return;
               }
 
-              setLastUsedConnection(connection);
               webAuth.authorize({ connection });
+              setLastUsedConnection(connection);
             }}
           >
             <div class="flex justify-center items-center gap-x-2 font-medium">
