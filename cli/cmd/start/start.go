@@ -188,7 +188,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().StringVar(&tlsKeyPath, "tls-key", "", "Path to TLS key file")
 	startCmd.Flags().StringSliceVarP(&allowedOrigins, "allowed-origins", "", []string{}, "Override allowed origins for CORS")
 
-	// Deprecated support for "--env": replaced by "--env".
+	// Deprecated support for "--var": replaced by "--env".
 	startCmd.Flags().StringSliceVarP(&envVarsOld, "var", "v", []string{}, "Set environment variables")
 	if err := startCmd.Flags().MarkHidden("var"); err != nil {
 		panic(err)
