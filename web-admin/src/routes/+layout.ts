@@ -11,7 +11,10 @@ import {
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
-import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import {
+  redirectToLoginIfNotLoggedIn,
+  redirectToLoginOrRequestAccess,
+} from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error, type Page } from "@sveltejs/kit";
@@ -44,9 +47,13 @@ export const load = async ({ params, url, route }) => {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
       }
-      const didRedirect = await redirectToLoginOrRequestAccess(pageState);
+      // Use without access to anything withing the org will hit this, so redirect to access page here.
+      const didRedirect = await redirectToLoginIfNotLoggedIn();
       if (!didRedirect) {
-        throw error(e.response.status, "Error fetching organization");
+        return {
+          organizationPermissions,
+          projectPermissions: <V1ProjectPermissions>{},
+        };
       }
     }
   }

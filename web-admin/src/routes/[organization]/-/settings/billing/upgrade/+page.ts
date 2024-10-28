@@ -15,10 +15,10 @@ export const load: PageLoad = async ({
       307,
       await fetchPaymentsPortalURL(
         organization,
-        `${url.protocol}//${url.host}/${organization}`,
+        `${url.protocol}//${url.host}/${organization}/-/upgrade-callback`,
       ),
     );
   } else {
-    throw redirect(307, `/${organization}/-/settings/billing/callback`);
+    throw redirect(307, `/${organization}/-/upgrade-callback`);
   }
 };

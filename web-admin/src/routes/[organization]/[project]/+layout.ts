@@ -19,8 +19,9 @@ export const load = async ({ params: { organization }, parent }) => {
       shouldRedirectToProjectsList = true;
     }
   } catch (e) {
-    console.error(e);
-    throw error(e.response.status, "Error fetching billing issues");
+    if (e.response?.status !== 403) {
+      throw error(e.response?.status, "Error fetching billing issues");
+    }
   }
 
   if (shouldRedirectToProjectsList) {
