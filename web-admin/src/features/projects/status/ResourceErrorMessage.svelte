@@ -18,7 +18,12 @@
         {message}
       </TooltipContent>
     </Tooltip>
-    <IconButton rounded compact on:click={() => copyToClipboard(message)}>
+    <IconButton
+      rounded
+      compact
+      on:click={() =>
+        copyToClipboard(message, "Copied error message to clipboard")}
+    >
       <CopyIcon size="16px" />
     </IconButton>
   </div>
