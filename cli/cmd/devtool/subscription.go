@@ -105,9 +105,10 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 						OrgID: orgResp.Organization.Id,
 						Type:  database.BillingIssueTypeOnTrial,
 						Metadata: &database.BillingIssueMetadataOnTrial{
-							SubID:   subResp.Subscription.Id,
-							PlanID:  subResp.Subscription.Plan.Id,
-							EndDate: endDate,
+							SubID:              subResp.Subscription.Id,
+							PlanID:             subResp.Subscription.Plan.Id,
+							EndDate:            endDate,
+							GracePeriodEndDate: issue.Metadata.GetOnTrial().GracePeriodEndDate.AsTime(),
 						},
 						EventTime: endDate.AddDate(0, 0, 1),
 					})
@@ -124,6 +125,7 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 						Metadata: &database.BillingIssueMetadataTrialEnded{
 							SubID:              subResp.Subscription.Id,
 							PlanID:             subResp.Subscription.Plan.Id,
+							EndDate:            issue.Metadata.GetTrialEnded().EndDate.AsTime(),
 							GracePeriodEndDate: endDate,
 						},
 						EventTime: endDate.AddDate(0, 0, 1),
