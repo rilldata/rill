@@ -219,7 +219,6 @@
   let noAvailableValues = true;
 
   $: if (sortedData && !isFetching) {
-    console.log("OOPS", sortedData.data, belowTheFoldData);
     const leaderboardData = prepareLeaderboardItemData(
       (sortedData?.data ?? []).concat(belowTheFoldData),
       dimensionName,
