@@ -42,6 +42,12 @@ Capture your current `.env` file and distribute it to other users of the devtool
 rill devtool dotenv upload cloud 
 ```
 
+To advance time in a billing subscription:
+```bash
+rill devtool subscription advance-time
+```
+Check [admin/billing/README.md](../../../admin/billing/README.MD) for more information.
+
 ## Services started by the devtool
 
 ### Cloud
@@ -73,3 +79,4 @@ The devtool is simply a convenience wrapper that:
 2. Uses Docker compose to start cloud dependencies
 3. Uses the `gs://rill-devtool` GCS bucket to share `.env` files for local development
 4. Manipulates the `~/.rill` configuration files to re-direct CLI commands to dev/staging backends
+5. Advances time in billing subscriptions to test thresholds.
