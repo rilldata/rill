@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { getPlanDisplayName } from "@rilldata/web-admin/features/billing/plans/utils";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
@@ -11,6 +12,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
+    createAdminServiceGetBillingSubscription,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
@@ -33,6 +35,7 @@
     isPublicURLPage,
   } from "./nav-utils";
 
+  export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
 
@@ -88,9 +91,18 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
+  $: plan = createAdminServiceGetBillingSubscription(organization, {
+    query: {
+      enabled: !!organization && manageOrganization && !onPublicURLPage,
+      select: (data) => data.subscription?.plan,
+    },
+  });
   $: organizationPaths = organizations.reduce(
     (map, { name, displayName }) =>
-      map.set(name.toLowerCase(), { label: displayName || name }),
+      map.set(name.toLowerCase(), {
+        label: displayName || name,
+        pill: $plan?.data ? getPlanDisplayName($plan.data) : "",
+      }),
     new Map<string, PathOption>(),
   );
 

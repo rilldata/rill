@@ -2,7 +2,10 @@ import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/Met
 import type { Page } from "@sveltejs/kit";
 
 export function isOrganizationPage(page: Page): boolean {
-  return page.route.id === "/[organization]";
+  return (
+    page.route.id === "/[organization]" ||
+    !!page.route?.id?.startsWith("/[organization]/-/settings")
+  );
 }
 
 export function withinOrganization(page: Page): boolean {
@@ -82,6 +85,10 @@ export function isProjectRequestAccessPage(page: Page): boolean {
 
 export function isProjectInvitePage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/invite";
+}
+
+export function isBillingUpgradePage(page: Page): boolean {
+  return page.route.id === "/[organization]/-/upgrade-callback";
 }
 
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {

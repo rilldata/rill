@@ -8,32 +8,62 @@ export const ssr = false;
 import {
   adminServiceGetProject,
   getAdminServiceGetProjectQueryKey,
+  type V1OrganizationPermissions,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
-import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import {
+  redirectToLoginIfNotLoggedIn,
+  redirectToLoginOrRequestAccess,
+} from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { error } from "@sveltejs/kit";
+import { error, type Page } from "@sveltejs/kit";
 import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
 import {
   adminServiceGetProjectWithBearerToken,
   getAdminServiceGetProjectWithBearerTokenQueryKey,
 } from "../features/public-urls/get-project-with-bearer-token.js";
 
-export const load = async ({ params, url }) => {
+export const load = async ({ params, url, route }) => {
   const { organization, project, token: routeToken } = params;
-
-  if (!organization || !project) {
-    return {
-      projectPermissions: <V1ProjectPermissions>{},
-    };
-  }
+  const pageState = {
+    url,
+    route,
+    params,
+  } as Page;
 
   let searchParamToken: string | undefined;
   if (url.searchParams.has("token")) {
     searchParamToken = url.searchParams.get("token");
   }
-
   const token = searchParamToken ?? routeToken;
+
+  let organizationPermissions: V1OrganizationPermissions = {};
+  if (organization && !token) {
+    try {
+      organizationPermissions =
+        await fetchOrganizationPermissions(organization);
+    } catch (e) {
+      if (e.response?.status !== 403) {
+        throw error(e.response.status, "Error fetching organization");
+      }
+      // Use without access to anything withing the org will hit this, so redirect to access page here.
+      const didRedirect = await redirectToLoginIfNotLoggedIn();
+      if (!didRedirect) {
+        return {
+          organizationPermissions,
+          projectPermissions: <V1ProjectPermissions>{},
+        };
+      }
+    }
+  }
+
+  if (!organization || !project) {
+    return {
+      organizationPermissions,
+      projectPermissions: <V1ProjectPermissions>{},
+    };
+  }
 
   let queryKey: QueryKey;
   let queryFn: QueryFunction<
@@ -72,11 +102,16 @@ export const load = async ({ params, url }) => {
     const { projectPermissions } = response;
 
     return {
+      organizationPermissions,
       projectPermissions,
     };
   } catch (e) {
-    if (e.response?.status !== 403 || (await checkUserAccess())) {
+    if (e.response?.status !== 403) {
       throw error(e.response.status, "Error fetching deployment");
+    }
+    const didRedirect = await redirectToLoginOrRequestAccess(pageState);
+    if (!didRedirect) {
+      throw error(e.response.status, "Error fetching organization");
     }
   }
 };

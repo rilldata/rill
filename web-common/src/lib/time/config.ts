@@ -5,7 +5,7 @@
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { Duration } from "luxon";
+import type { Duration, DurationUnit } from "luxon";
 import {
   type AvailableTimeGrain,
   Period,
@@ -653,7 +653,7 @@ export const DEFAULT_TIMEZONES = [
  */
 export const PeriodAndUnits: Array<{
   period: Period;
-  unit: keyof Duration;
+  unit: DurationUnit;
   grain: V1TimeGrain;
 }> = [
   {
