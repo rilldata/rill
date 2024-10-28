@@ -20,8 +20,9 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { Save } from "lucide-svelte";
+  import { Save, Settings } from "lucide-svelte";
   import type { Readable } from "svelte/store";
+  import CopyIcon from "../../components/icons/CopyIcon.svelte";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
@@ -35,9 +36,9 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
-  import { Settings } from "lucide-svelte";
 
   export let filePath: string;
+  export let onCopy: (filePath: string, isDir: boolean) => void;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onGenerateChart: (data: {
@@ -171,6 +172,10 @@
             Save file
           </NavigationMenuItem>
         {/if}
+        <NavigationMenuItem on:click={() => onCopy(filePath, false)}>
+          <CopyIcon slot="icon" />
+          Copy
+        </NavigationMenuItem>
         <NavigationMenuItem on:click={() => onRename(filePath, false)}>
           <EditIcon slot="icon" />
           Rename...

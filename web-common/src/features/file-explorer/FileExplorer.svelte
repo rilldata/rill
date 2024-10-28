@@ -4,6 +4,7 @@
   import GenerateChartYAMLPrompt from "@rilldata/web-common/features/canvas-components/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
+    copyFileArtifact,
     deleteFileArtifact,
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
@@ -62,6 +63,21 @@
   let showRenameModelModal = false;
   let renameFilePath: string;
   let renameIsDir: boolean;
+
+  async function onCopy(filePath: string, isDir: boolean) {
+    if (isDir) {
+      throw new Error("Copying directories is not supported");
+    }
+
+    try {
+      const newFilePath = await copyFileArtifact(instanceId, filePath);
+      await goto(`/files${newFilePath}`);
+    } catch {
+      eventBus.emit("notification", {
+        message: `Failed to copy ${filePath}`,
+      });
+    }
+  }
 
   function onRename(filePath: string, isDir: boolean) {
     showRenameModelModal = true;
@@ -169,6 +185,7 @@
   {#if fileTree}
     <NavDirectory
       directory={fileTree}
+      {onCopy}
       {onRename}
       {onDelete}
       {onGenerateChart}

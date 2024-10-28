@@ -2,11 +2,13 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import {
   extractFileName,
   getTopLevelFolder,
+  splitFolderFileNameAndExtension,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   runtimeServiceDeleteFile,
+  runtimeServicePutFile,
   runtimeServiceRenameFile,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
@@ -16,6 +18,30 @@ import {
   addLeadingSlash,
   removeLeadingSlash,
 } from "./entity-mappers";
+
+export async function copyFileArtifact(
+  instanceId: string,
+  filePath: string,
+): Promise<string> {
+  // Get new file path
+  const [folder, fileName, extension] =
+    splitFolderFileNameAndExtension(filePath);
+  const newFilePath = `${folder}/${fileName} (copy)${extension}`;
+
+  // Get file content
+  const fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  await fileArtifact.fetchContent();
+  const fileContent = get(fileArtifact.remoteContent);
+
+  // Create new file
+  await runtimeServicePutFile(instanceId, {
+    path: newFilePath,
+    blob: fileContent ?? "",
+  });
+
+  // Return the new file path
+  return newFilePath;
+}
 
 export async function renameFileArtifact(
   instanceId: string,

@@ -1,14 +1,15 @@
 <script lang="ts">
   import NavDirectoryEntry from "@rilldata/web-common/features/file-explorer/NavDirectoryEntry.svelte";
   import {
-    type NavDragData,
     navEntryDragDropStore,
+    type NavDragData,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import NavFile from "./NavFile.svelte";
   import { directoryState } from "./directory-store";
   import type { Directory } from "./transform-file-list";
 
   export let directory: Directory;
+  export let onCopy: (filePath: string, isDir: boolean) => void;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onGenerateChart: (data: {
@@ -35,7 +36,7 @@
   on:contextmenu={() => navEntryDragDropStore.resetDrag()}
 >
   {#if directory.path !== "/"}
-    <NavDirectoryEntry dir={directory} {onDelete} {onMouseDown} {onRename} />
+    <NavDirectoryEntry dir={directory} {onRename} {onDelete} {onMouseDown} />
   {/if}
 
   {#if expanded}
@@ -44,6 +45,7 @@
         <!-- Recursive call to display subdirectories -->
         <svelte:self
           directory={dir}
+          {onCopy}
           {onRename}
           {onDelete}
           {onGenerateChart}
@@ -57,6 +59,7 @@
         directory.path === "/" ? `/${file}` : `${directory.path}/${file}`}
       <NavFile
         {filePath}
+        {onCopy}
         {onRename}
         {onDelete}
         {onGenerateChart}
