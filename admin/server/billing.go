@@ -679,8 +679,8 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: prodDepl.RuntimeAudience,
-		Subject:     "admin-biling",
-		TTL:         runtimeAccessTokenEmbedTTL,
+		Subject:     claims.OwnerID(),
+		TTL:         runtimeAccessTokenDefaultTTL,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			prodDepl.RuntimeInstanceID: {
 				runtimeauth.ReadObjects,
@@ -700,7 +700,7 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 		RuntimeHost: prodDepl.RuntimeHost,
 		InstanceId:  prodDepl.RuntimeInstanceID,
 		AccessToken: jwt,
-		TtlSeconds:  uint32(runtimeAccessTokenEmbedTTL.Seconds()),
+		TtlSeconds:  uint32(runtimeAccessTokenDefaultTTL.Seconds()),
 	}, nil
 }
 
