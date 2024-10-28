@@ -27,9 +27,9 @@
   $: measureOptions = [
     {
       value: $form["measure"],
-      label: measure?.label?.length
-        ? measure.label
-        : measure?.expression ?? $form["measure"],
+      label: measure?.displayName?.length
+        ? measure.displayName
+        : (measure?.expression ?? $form["measure"]),
     },
   ];
   $: selectedMeasure = $metricsView.data?.measures?.find(

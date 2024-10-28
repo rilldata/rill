@@ -1563,9 +1563,9 @@ paths:
               state:
                 type: string
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
-              title:
+              displayName:
                 type: string
-                description: Optional public url title to store with the token.
+                description: Optional display name to store with the token.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
@@ -3624,7 +3624,7 @@ definitions:
   v1AlertOptions:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       intervalDuration:
         type: string
@@ -4477,7 +4477,7 @@ definitions:
           type: string
       state:
         type: string
-      title:
+      displayName:
         type: string
   v1MemberUser:
     type: object
@@ -4790,7 +4790,7 @@ definitions:
   v1ReportOptions:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       refreshCron:
         type: string

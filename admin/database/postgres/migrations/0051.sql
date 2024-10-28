@@ -1,1 +1,1 @@
-ALTER TABLE assets ALTER COLUMN org_id DROP NOT NULL;
+ALTER TABLE magic_auth_tokens RENAME COLUMN title TO display_name;

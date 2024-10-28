@@ -7585,11 +7585,11 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   state = "";
 
   /**
-   * Optional public url title to store with the token.
+   * Optional display name to store with the token.
    *
-   * @generated from field: string title = 10;
+   * @generated from field: string display_name = 10;
    */
-  title = "";
+  displayName = "";
 
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
@@ -7607,7 +7607,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 5, name: "filter", kind: "message", T: Expression },
     { no: 6, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -12692,9 +12692,9 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   state = "";
 
   /**
-   * @generated from field: string title = 16;
+   * @generated from field: string display_name = 16;
    */
-  title = "";
+  displayName = "";
 
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
@@ -12719,7 +12719,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 10, name: "filter", kind: "message", T: Expression },
     { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 16, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
@@ -12799,9 +12799,9 @@ export class VirtualFile extends Message<VirtualFile> {
  */
 export class ReportOptions extends Message<ReportOptions> {
   /**
-   * @generated from field: string title = 1;
+   * @generated from field: string display_name = 1;
    */
-  title = "";
+  displayName = "";
 
   /**
    * @generated from field: string refresh_cron = 2;
@@ -12880,7 +12880,7 @@ export class ReportOptions extends Message<ReportOptions> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ReportOptions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "refresh_cron", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "refresh_time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -12918,9 +12918,9 @@ export class ReportOptions extends Message<ReportOptions> {
  */
 export class AlertOptions extends Message<AlertOptions> {
   /**
-   * @generated from field: string title = 1;
+   * @generated from field: string display_name = 1;
    */
-  title = "";
+  displayName = "";
 
   /**
    * @generated from field: string interval_duration = 2;
@@ -13008,7 +13008,7 @@ export class AlertOptions extends Message<AlertOptions> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.AlertOptions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "resolver_properties", kind: "message", T: Struct },

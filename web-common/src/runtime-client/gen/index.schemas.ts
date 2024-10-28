@@ -431,7 +431,7 @@ export type RuntimeServiceUnpackExampleBody = {
 };
 
 export type RuntimeServiceUnpackEmptyBody = {
-  title?: string;
+  displayName?: string;
   force?: boolean;
 };
 
@@ -872,8 +872,8 @@ export interface V1ReportState {
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
+  displayName?: string;
   trigger?: boolean;
-  title?: string;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
   queryName?: string;
@@ -1302,7 +1302,7 @@ export interface V1MetricsViewSpec {
   table?: string;
   /** Name of the model the metrics view is based on. Either table or model should be set. */
   model?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
@@ -1868,7 +1868,7 @@ If not found in `time_ranges`, it should be added to the list. */
 }
 
 export interface V1ExploreSpec {
-  title?: string;
+  displayName?: string;
   description?: string;
   metricsView?: string;
   /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
@@ -1901,7 +1901,7 @@ export interface V1Explore {
  */
 export interface V1Example {
   name?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
 }
 
@@ -2033,8 +2033,8 @@ export type V1ComponentSpecRendererProperties = { [key: string]: any };
 export type V1ComponentSpecResolverProperties = { [key: string]: any };
 
 export interface V1ComponentSpec {
-  title?: string;
-  subtitle?: string;
+  displayName?: string;
+  description?: string;
   resolver?: string;
   resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
@@ -2231,7 +2231,7 @@ export interface V1CanvasItem {
 }
 
 export interface V1CanvasSpec {
-  title?: string;
+  displayName?: string;
   columns?: number;
   gap?: number;
   variables?: V1ComponentVariable[];
@@ -2354,8 +2354,8 @@ export type V1AlertSpecQueryForAttributes = { [key: string]: any };
 export type V1AlertSpecResolverProperties = { [key: string]: any };
 
 export interface V1AlertSpec {
+  displayName?: string;
   trigger?: boolean;
-  title?: string;
   refreshSchedule?: V1Schedule;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
   watermarkInherit?: boolean;
@@ -2542,14 +2542,14 @@ export const MetricsViewSpecMeasureType = {
 
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
+  displayName?: string;
+  description?: string;
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
   perDimensions?: MetricsViewSpecDimensionSelector[];
   requiredDimensions?: MetricsViewSpecDimensionSelector[];
   referencedMeasures?: string[];
-  label?: string;
-  description?: string;
   formatPreset?: string;
   formatD3?: string;
   validPercentOfTotal?: boolean;
@@ -2557,10 +2557,10 @@ export interface MetricsViewSpecMeasureV2 {
 
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
+  displayName?: string;
+  description?: string;
   column?: string;
   expression?: string;
-  label?: string;
-  description?: string;
   unnest?: boolean;
   uri?: string;
 }

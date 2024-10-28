@@ -209,7 +209,7 @@ func (q *MetricsViewToplist) rewriteToMetricsViewQuery(export bool) (*metricsvie
 		return nil, fmt.Errorf("error converting having clause: %w", err)
 	}
 
-	qry.Label = export
+	qry.UseDisplayNames = export
 
 	return qry, nil
 }

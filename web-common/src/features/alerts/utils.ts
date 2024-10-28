@@ -44,7 +44,7 @@ export function generateAlertName(
   if (!measure || !typeEntry) return undefined;
 
   const measureLabel =
-    measure.label ?? measure.expression ?? (measure.name as string);
+    measure.displayName ?? measure.expression ?? (measure.name as string);
 
   let comparisonTitle = "";
   if (

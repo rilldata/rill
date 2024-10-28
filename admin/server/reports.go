@@ -132,7 +132,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	name, err := s.generateReportName(ctx, depl, req.Options.Title)
+	name, err := s.generateReportName(ctx, depl, req.Options.DisplayName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -482,7 +482,7 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]byte, error) {
 	res := reportYAML{}
 	res.Type = "report"
-	res.Title = opts.Title
+	res.DisplayName = opts.DisplayName
 	res.Refresh.Cron = opts.RefreshCron
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
@@ -528,7 +528,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 
 	res := reportYAML{}
 	res.Type = "report"
-	res.Title = opts.Title
+	res.DisplayName = opts.DisplayName
 	res.Refresh.Cron = opts.RefreshCron
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
@@ -546,12 +546,12 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	return yaml.Marshal(res)
 }
 
-// generateReportName generates a random report name with the title as a seed.
+// generateReportName generates a random report name with the display name as a seed.
 // Example: "My report!" -> "my-report-5b3f7e1a".
 // It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateReportName(ctx context.Context, depl *database.Deployment, title string) (string, error) {
+func (s *Server) generateReportName(ctx context.Context, depl *database.Deployment, displayName string) (string, error) {
 	for i := 0; i < 5; i++ {
-		name := randomReportName(title)
+		name := randomReportName(displayName)
 
 		_, err := s.admin.LookupReport(ctx, depl, name)
 		if err != nil {
@@ -697,8 +697,8 @@ var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
 
 var reportNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
 
-func randomReportName(title string) string {
-	name := reportNameToDashCharsRegexp.ReplaceAllString(title, "-")
+func randomReportName(displayName string) string {
+	name := reportNameToDashCharsRegexp.ReplaceAllString(displayName, "-")
 	name = reportNameExcludeCharsRegexp.ReplaceAllString(name, "")
 	name = strings.ToLower(name)
 	name = strings.Trim(name, "-")
@@ -714,7 +714,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	annotations := parseReportAnnotations(spec.Annotations)
 
 	opts := &adminv1.ReportOptions{}
-	opts.Title = spec.Title
+	opts.DisplayName = spec.DisplayName
 	if spec.RefreshSchedule != nil && spec.RefreshSchedule.Cron != "" {
 		opts.RefreshCron = spec.RefreshSchedule.Cron
 		opts.RefreshTimeZone = spec.RefreshSchedule.TimeZone
@@ -747,9 +747,10 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 
 // reportYAML is derived from rillv1.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
 type reportYAML struct {
-	Type    string `yaml:"type"`
-	Title   string `yaml:"title"`
-	Refresh struct {
+	Type        string `yaml:"type"`
+	DisplayName string `yaml:"display_name"`
+	Title       string `yaml:"title,omitempty"` // Deprecated: replaced by display_name, but kept for backwards compatibility
+	Refresh     struct {
 		Cron     string `yaml:"cron"`
 		TimeZone string `yaml:"time_zone"`
 	} `yaml:"refresh"`

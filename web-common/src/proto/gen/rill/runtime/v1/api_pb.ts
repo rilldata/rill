@@ -1829,9 +1829,9 @@ export class Example extends Message<Example> {
   name = "";
 
   /**
-   * @generated from field: string title = 2;
+   * @generated from field: string display_name = 2;
    */
-  title = "";
+  displayName = "";
 
   /**
    * @generated from field: string description = 3;
@@ -1847,7 +1847,7 @@ export class Example extends Message<Example> {
   static readonly typeName = "rill.runtime.v1.Example";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -2036,9 +2036,9 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: string title = 2;
+   * @generated from field: string display_name = 2;
    */
-  title = "";
+  displayName = "";
 
   /**
    * @generated from field: bool force = 3;
@@ -2054,7 +2054,7 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
   static readonly typeName = "rill.runtime.v1.UnpackEmptyRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

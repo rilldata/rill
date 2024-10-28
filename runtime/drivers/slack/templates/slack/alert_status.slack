@@ -1,4 +1,4 @@
-*{{ .Title }}*
+*{{ .DisplayName }}*
 
 {{- if .IsError }}
 The alert failed to evaluate on *{{ .ExecutionTimeString }}*. It failed with the following error message: _{{ .ErrorMessage }}_.

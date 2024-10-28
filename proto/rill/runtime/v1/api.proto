@@ -494,7 +494,7 @@ message RenameFileResponse {}
 // Example contains metadata about an example project that is available for unpacking.
 message Example {
   string name = 1;
-  string title = 2;
+  string display_name = 2;
   string description = 3;
 }
 
@@ -519,7 +519,7 @@ message UnpackExampleResponse {}
 // Request message for RuntimeService.UnpackEmpty
 message UnpackEmptyRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string title = 2;
+  string display_name = 2;
   bool force = 3;
 }
 
