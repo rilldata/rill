@@ -11,14 +11,10 @@ import {
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
-import { redirectToLoginIfNotLoggedIn } from "@rilldata/web-admin/features/authentication/checkUserAccess";
-import {
-  isProjectRequestAccessPage,
-  withinProject,
-} from "@rilldata/web-admin/features/navigation/nav-utils";
+import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { error, type Page, redirect } from "@sveltejs/kit";
+import { error, type Page } from "@sveltejs/kit";
 import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
 import {
   adminServiceGetProjectWithBearerToken,
@@ -27,6 +23,11 @@ import {
 
 export const load = async ({ params, url, route }) => {
   const { organization, project, token: routeToken } = params;
+  const pageState = {
+    url,
+    route,
+    params,
+  } as Page;
 
   let searchParamToken: string | undefined;
   if (url.searchParams.has("token")) {
@@ -40,20 +41,11 @@ export const load = async ({ params, url, route }) => {
       organizationPermissions =
         await fetchOrganizationPermissions(organization);
     } catch (e) {
-      if (
-        e.response?.status !== 403 ||
-        (await redirectToLoginIfNotLoggedIn())
-      ) {
-        if (
-          withinProject({ url, route } as Page) &&
-          !isProjectRequestAccessPage({ url, route } as Page)
-        ) {
-          // if not in request access page (approve or deny routes) then go to a page to get access
-          throw redirect(
-            307,
-            `/-/request-project-access/?organization=${organization}&project=${project}`,
-          );
-        }
+      if (e.response?.status !== 403) {
+        throw error(e.response.status, "Error fetching organization");
+      }
+      const didRedirect = await redirectToLoginOrRequestAccess(pageState);
+      if (!didRedirect) {
         throw error(e.response.status, "Error fetching organization");
       }
     }
@@ -107,18 +99,12 @@ export const load = async ({ params, url, route }) => {
       projectPermissions,
     };
   } catch (e) {
-    if (e.response?.status !== 403 || (await redirectToLoginIfNotLoggedIn())) {
-      if (
-        withinProject({ url, route } as Page) &&
-        !isProjectRequestAccessPage({ url, route } as Page)
-      ) {
-        // if not in request access page (approve or deny routes) then go to a page to get access
-        throw redirect(
-          307,
-          `/-/request-project-access/?organization=${organization}&project=${project}`,
-        );
-      }
+    if (e.response?.status !== 403) {
       throw error(e.response.status, "Error fetching deployment");
+    }
+    const didRedirect = await redirectToLoginOrRequestAccess(pageState);
+    if (!didRedirect) {
+      throw error(e.response.status, "Error fetching organization");
     }
   }
 };

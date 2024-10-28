@@ -1,15 +1,13 @@
-import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
-import { redirectToLoginIfNotLoggedIn } from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
   isAlertPage,
   isMetricsExplorerPage,
   isProjectPage,
   isProjectRequestAccessPage,
   isPublicURLPage,
-  withinProject,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
 import {
@@ -52,18 +50,8 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
-      if (!(await redirectToLoginIfNotLoggedIn())) {
-        if (
-          withinProject(pageState) &&
-          !isProjectRequestAccessPage(pageState)
-        ) {
-          // if not in request access page (approve or deny routes) then go to a page to get access
-          await goto(
-            `/-/request-project-access/?organization=${pageState.params.organization}&project=${pageState.params.project}`,
-          );
-          return;
-        }
-      }
+      const didRedirect = await redirectToLoginOrRequestAccess(pageState);
+      if (didRedirect) return;
     }
 
     // If unauthorized to the admin server, redirect to login page

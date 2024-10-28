@@ -11,7 +11,11 @@ export const load: PageLoad = async ({ params: { organization }, url }) => {
       `${url.protocol}//${url.host}/${organization}`,
     );
   } catch (e) {
-    if (e.response?.status !== 403 || (await redirectToLoginIfNotLoggedIn())) {
+    if (e.response?.status !== 403) {
+      throw error(e.response.status, "Error redirecting to payment portal");
+    }
+    const didRedirect = await redirectToLoginIfNotLoggedIn();
+    if (!didRedirect) {
       throw error(e.response.status, "Error redirecting to payment portal");
     }
   }
