@@ -23,7 +23,7 @@ func TestRillYAML(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: `
-title: Hello world
+display_name: Hello world
 description: This project says hello to the world
 
 connectors:
@@ -40,7 +40,7 @@ env:
 	res, err := ParseRillYAML(ctx, repo, "")
 	require.NoError(t, err)
 
-	require.Equal(t, res.Title, "Hello world")
+	require.Equal(t, res.DisplayName, "Hello world")
 	require.Equal(t, res.Description, "This project says hello to the world")
 
 	require.Len(t, res.Connectors, 1)
@@ -161,7 +161,7 @@ first_month_of_year: 3
 		// explore e1
 		`explores/e1.yaml`: `
 type: explore
-title: E1
+display_name: E1
 metrics_view: d1
 measures:
   - b
@@ -288,7 +288,7 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "d1"}},
 			Paths: []string{"/explores/e1.yaml"},
 			ExploreSpec: &runtimev1.ExploreSpec{
-				Title:              "E1",
+				DisplayName:        "E1",
 				MetricsView:        "d1",
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				Measures:           []string{"b"},
@@ -1246,7 +1246,7 @@ func TestReport(t *testing.T) {
 		`rill.yaml`: ``,
 		`reports/r1.yaml`: `
 type: report
-title: My Report
+display_name: My Report
 
 refresh:
   cron: 0 * * * *
@@ -1276,7 +1276,7 @@ annotations:
 `,
 		`reports/r2.yaml`: `
 type: report
-title: My Report
+display_name: My Report
 
 refresh:
   cron: 0 * * * *
@@ -1318,7 +1318,7 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
 			Paths: []string{"/reports/r1.yaml"},
 			ReportSpec: &runtimev1.ReportSpec{
-				Title: "My Report",
+				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
 					RefUpdate: true,
 					Cron:      "0 * * * *",
@@ -1342,7 +1342,7 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
 			Paths: []string{"/reports/r2.yaml"},
 			ReportSpec: &runtimev1.ReportSpec{
-				Title: "My Report",
+				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
 					RefUpdate: true,
 					Cron:      "0 * * * *",
@@ -1377,7 +1377,7 @@ func TestAlert(t *testing.T) {
 		`models/m1.sql`: `SELECT 1`,
 		`alerts/a1.yaml`: `
 type: alert
-title: My Alert
+display_name: My Alert
 
 refs:
   - model/m1
@@ -1429,7 +1429,7 @@ annotations:
 			Paths: []string{"/alerts/a1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			AlertSpec: &runtimev1.AlertSpec{
-				Title: "My Alert",
+				DisplayName: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
 					Cron:      "0 * * * *",
 					RefUpdate: false,

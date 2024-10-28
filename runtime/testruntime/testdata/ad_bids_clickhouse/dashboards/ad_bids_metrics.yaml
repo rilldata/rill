@@ -5,33 +5,33 @@ description:
 timeseries: timestamp
 
 dimensions:
-  - label: Publisher
+  - display_name: Publisher
     name: pub
     property: publisher
     description: ""
     uri: concat('http://localhost/', publisher)
-  - label: Domain
+  - display_name: Domain
     name: dom
     property: domain
     description: ""
   - name: nolabel_pub
     property: publisher
-  - label: Space Label
+  - display_name: Space Label
     name: space_label
     expression: "publisher"
-  - label: TLD
+  - display_name: TLD
     name: tld
     expression: "regexp_extract(domain, '(.*\\.)\\?(.*\\.com)', 2)"
-  - label: Null Publisher
+  - display_name: Null Publisher
     name: null_publisher
     expression: case when publisher is null then true else false end
 
 measures:
-  - label: "Number of bids"
+  - display_name: "Number of bids"
     expression: count(*)
     description: ""
     format_preset: ""
-  - label: "Average bid price"
+  - display_name: "Average bid price"
     expression: avg(bid_prices)
     description: ""
     format_preset: ""

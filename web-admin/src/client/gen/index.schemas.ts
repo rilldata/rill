@@ -33,15 +33,12 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetReportMetaBodyAnnotations = {
-  [key: string]: string;
-};
-
 export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
-  annotations?: AdminServiceGetReportMetaBodyAnnotations;
+  ownerId?: string;
   executionTime?: string;
+  emailRecipients?: string[];
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -68,14 +65,6 @@ export type AdminServiceUpdateServiceBody = {
 
 export type AdminServiceCreateServiceParams = { name?: string };
 
-export type AdminServiceUpdateProjectVariablesBodyVariables = {
-  [key: string]: string;
-};
-
-export type AdminServiceUpdateProjectVariablesBody = {
-  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
-};
-
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   public?: boolean;
@@ -95,8 +84,6 @@ export type AdminServiceGetProjectParams = {
   issueSuperuserToken?: boolean;
 };
 
-export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
-
 export type AdminServiceCreateProjectBody = {
   name?: string;
   description?: string;
@@ -112,7 +99,6 @@ Either github_url or archive_asset_id should be set. */
   githubUrl?: string;
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
-  variables?: AdminServiceCreateProjectBodyVariables;
   prodVersion?: string;
 };
 
@@ -146,6 +132,30 @@ export type AdminServiceListOrganizationMemberUsergroupsParams = {
   pageToken?: string;
 };
 
+/**
+ * New variable values.
+It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
+ */
+export type AdminServiceUpdateProjectVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+export type AdminServiceUpdateProjectVariablesBody = {
+  /** Environment to set the variables for.
+If empty, the variable(s) will be used as defaults for all environments. */
+  environment?: string;
+  /** New variable values.
+It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged. */
+  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
+  /** Variables to delete. */
+  unsetVariables?: string[];
+};
+
+export type AdminServiceGetProjectVariablesParams = {
+  environment?: string;
+  forAllEnvironments?: boolean;
+};
+
 export type AdminServiceSearchProjectUsersParams = {
   emailQuery?: string;
   pageSize?: number;
@@ -165,8 +175,8 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   fields?: string[];
   /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
   state?: string;
-  /** Optional public url title to store with the token. */
-  title?: string;
+  /** Optional display name to store with the token. */
+  displayName?: string;
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
@@ -382,12 +392,9 @@ export interface V1UpdateServiceResponse {
   service?: V1Service;
 }
 
-export type V1UpdateProjectVariablesResponseVariables = {
-  [key: string]: string;
-};
-
 export interface V1UpdateProjectVariablesResponse {
-  variables?: V1UpdateProjectVariablesResponseVariables;
+  /** Variables that were created or updated by the request. */
+  variables?: V1ProjectVariable[];
 }
 
 export interface V1UpdateProjectResponse {
@@ -630,7 +637,7 @@ export interface V1RequestProjectAccessResponse {
 }
 
 export interface V1ReportOptions {
-  title?: string;
+  displayName?: string;
   refreshCron?: string;
   refreshTimeZone?: string;
   intervalDuration?: string;
@@ -715,6 +722,24 @@ export interface V1Quotas {
 export interface V1PullVirtualRepoResponse {
   files?: V1VirtualFile[];
   nextPageToken?: string;
+}
+
+export interface V1ProjectVariable {
+  /** Internal ID. */
+  id?: string;
+  /** Variable name (case insensitive). */
+  name?: string;
+  /** Variable value. */
+  value?: string;
+  /** Environment the variable is set for.
+If empty, the variable is shared for all environments. */
+  environment?: string;
+  /** User ID that most recently updated the variable. May be empty. */
+  updatedByUserId?: string;
+  /** Timestamp when the variable was created. */
+  createdOn?: string;
+  /** Timestamp when the variable was last updated. */
+  updatedOn?: string;
 }
 
 export interface V1ProjectPermissions {
@@ -859,7 +884,7 @@ export interface V1MagicAuthToken {
   filter?: V1Expression;
   fields?: string[];
   state?: string;
-  title?: string;
+  displayName?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -993,10 +1018,13 @@ export interface V1GetUserResponse {
   user?: V1User;
 }
 
+export type V1GetReportMetaResponseRecipientUrls = {
+  [key: string]: GetReportMetaResponseURLs;
+};
+
 export interface V1GetReportMetaResponse {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
+  baseUrls?: GetReportMetaResponseURLs;
+  recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
 export interface V1GetRepoMetaResponse {
@@ -1006,10 +1034,19 @@ export interface V1GetRepoMetaResponse {
   archiveDownloadUrl?: string;
 }
 
-export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
+/**
+ * Deprecated: Populated for backwards compatibility.
+(Renamed from "variables" to "variables_map").
+ */
+export type V1GetProjectVariablesResponseVariablesMap = {
+  [key: string]: string;
+};
 
 export interface V1GetProjectVariablesResponse {
-  variables?: V1GetProjectVariablesResponseVariables;
+  variables?: V1ProjectVariable[];
+  /** Deprecated: Populated for backwards compatibility.
+(Renamed from "variables" to "variables_map"). */
+  variablesMap?: V1GetProjectVariablesResponseVariablesMap;
 }
 
 export interface V1GetProjectResponse {
@@ -1412,7 +1449,7 @@ export interface V1ApproveProjectAccessResponse {
 export type V1AlertOptionsResolverProperties = { [key: string]: any };
 
 export interface V1AlertOptions {
-  title?: string;
+  displayName?: string;
   intervalDuration?: string;
   resolver?: string;
   resolverProperties?: V1AlertOptionsResolverProperties;
@@ -1486,4 +1523,10 @@ export interface ListGithubUserReposResponseRepo {
   description?: string;
   url?: string;
   defaultBranch?: string;
+}
+
+export interface GetReportMetaResponseURLs {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
 }

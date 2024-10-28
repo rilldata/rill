@@ -111,7 +111,7 @@ function getSchemaEntryForField(
         return {
           name: field.name as string,
           type: field.type?.code ?? TypeCode.CODE_STRING,
-          label: dimension.label ?? field.name,
+          label: dimension.displayName ?? field.name,
           enableResize: false,
           enableSorting: false,
         };
@@ -124,7 +124,8 @@ function getSchemaEntryForField(
       if (measure.name + ComparisonDeltaPreviousSuffix === field.name)
         return undefined;
 
-      let label: VirtualizedTableColumns["label"] = measure.label ?? field.name;
+      let label: VirtualizedTableColumns["label"] =
+        measure.displayName ?? field.name;
       let format = measure.formatPreset;
       let type: string = field.type?.code ?? TypeCode.CODE_STRING;
       if (

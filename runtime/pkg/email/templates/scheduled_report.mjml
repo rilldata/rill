@@ -8,6 +8,12 @@
       <mj-all font-family="Helvetica" font-size="16px" />
       <mj-text color="#000" font-size="16px" line-height="1.25" />
     </mj-attributes>
+    <mj-style>
+      .hidden {
+          display: none !important;
+          mso-hide: none;
+      }
+    </mj-style>
   </mj-head>
   <mj-body>
     <mj-section>
@@ -17,7 +23,7 @@
         <mj-spacer height="35px" />
         
         <mj-text font-size="20px" font-weight="bold">
-          {{ .Title }}
+          {{ .DisplayName }}
         </mj-text>
 
         <mj-text padding-bottom="0px">
@@ -26,7 +32,7 @@
 
         <mj-spacer height="20px" />
 
-        <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
+        <mj-button css-class="{{ if not .OpenLink }}hidden{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
           Open in browser
         </mj-button>
 
@@ -41,9 +47,9 @@
         <mj-spacer height="20px" />
         
         <mj-text align="center" font-size="12px">
-          To edit or unsubscribe from this report, <a href="{{ .EditLink }}">click here</a>.
+          To{{ if not .External}} edit or{{ end }} unsubscribe from this report, <a href="{{ .EditLink }}">click here</a>.
         </mj-text>
-        
+
         <mj-text align="center" font-size="12px" line-height="1.5">
           © 2024 Rill Data, Inc<br />
           18 Bartol St. • San Francisco • CA<br />

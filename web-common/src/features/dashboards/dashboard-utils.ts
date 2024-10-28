@@ -155,7 +155,8 @@ export function getBreadcrumbOptions(
 ): Map<string, PathOption> {
   const exploreOptions = exploreResources.reduce((map, exploreResource) => {
     const name = exploreResource.meta?.name?.name ?? "";
-    const label = exploreResource.explore?.state?.validSpec?.title || name;
+    const label =
+      exploreResource.explore?.state?.validSpec?.displayName || name;
 
     if (label && name)
       map.set(name.toLowerCase(), { label, section: "explore", depth: 0 });
@@ -165,7 +166,7 @@ export function getBreadcrumbOptions(
 
   const canvasOptions = canvasResources.reduce((map, canvasResource) => {
     const name = canvasResource.meta?.name?.name ?? "";
-    const label = canvasResource?.canvas?.spec?.title || name;
+    const label = canvasResource?.canvas?.spec?.displayName || name;
 
     if (label && name)
       map.set(name.toLowerCase(), { label, section: "custom", depth: 0 });
