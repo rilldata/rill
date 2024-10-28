@@ -2,8 +2,10 @@
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import { validateEmail } from "./utils";
   import { createEventDispatcher } from "svelte";
+  import LastUsedConnectionTooltip from "./LastUsedConnectionTooltip.svelte";
 
   export let disabled = false;
+  export let isLastUsed = false;
 
   let email = "";
   let errorText = "";
@@ -29,7 +31,6 @@
     errorText = "";
 
     dispatch("submit", { email });
-    dispatch("updateLastUsedConnection");
   }
 
   $: disabled = !(email.length > 0 && validateEmail(email));
@@ -37,14 +38,17 @@
 
 <form on:submit|preventDefault={handleSubmit}>
   <div class="mb-4 flex flex-col gap-y-4">
-    <input
-      class="{inputClasses} {focusClasses}"
-      style:width="400px"
-      type="email"
-      placeholder="Enter your email address"
-      id="email"
-      bind:value={email}
-    />
+    <LastUsedConnectionTooltip open={isLastUsed}>
+      <input
+        class="{inputClasses} {focusClasses}"
+        style:width="400px"
+        type="email"
+        placeholder="Enter your email address"
+        id="email"
+        bind:value={email}
+      />
+    </LastUsedConnectionTooltip>
+
     {#if errorText}
       <div class="text-red-500 text-sm -mt-2">
         {errorText}

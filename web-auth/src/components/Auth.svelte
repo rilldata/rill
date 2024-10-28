@@ -16,6 +16,7 @@
   import Spacer from "./Spacer.svelte";
   import { LOCAL_STORAGE_KEY } from "../constants";
   import { AuthStep, type Config } from "../types";
+  import LastUsedConnectionTooltip from "./LastUsedConnectionTooltip.svelte";
 
   export let configParams: string;
   export let disableForgotPassDomains = "";
@@ -85,13 +86,10 @@
     webAuth = new auth0.WebAuth(authOptions);
   }
 
-  function authorizeConnection(connection: string) {
-    setLastUsedConnection(connection);
-    webAuth.authorize({ connection });
-  }
-
   function processEmailSubmission(event) {
     email = event.detail.email;
+    setLastUsedConnection("email-password");
+
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
     if (connectionName) {
@@ -117,6 +115,7 @@
         return "";
     }
   }
+  $: headingText = getHeadingText(step);
 
   function getSubheadingText(step: AuthStep, email: string): string {
     switch (step) {
@@ -128,12 +127,14 @@
         return "";
     }
   }
-
-  $: headingText = getHeadingText(step);
   $: subheadingText = getSubheadingText(step, email);
 
   function backToBaseStep() {
     step = AuthStep.Base;
+  }
+
+  function shouldShowTooltip(connection: string) {
+    return Boolean(lastUsedConnection === connection && step === AuthStep.Base);
   }
 
   onMount(() => {
@@ -158,34 +159,32 @@
   </div>
 
   <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
-    {#if lastUsedConnection && step === AuthStep.Base}
-      <div class="text-sm text-gray-500">
-        Last used connection: {lastUsedConnection}
-      </div>
-    {/if}
     {#if step === AuthStep.Base}
       {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
-        <CtaButton
-          variant={style === "primary" ? "primary" : "secondary"}
-          on:click={() => authorizeConnection(connection)}
-        >
-          <div class="flex justify-center items-center gap-x-2 font-medium">
-            {#if icon}
-              <svelte:component this={icon} />
-            {/if}
-            <div>{label}</div>
-          </div>
-        </CtaButton>
+        <LastUsedConnectionTooltip open={shouldShowTooltip(connection)}>
+          <CtaButton
+            variant={style === "primary" ? "primary" : "secondary"}
+            on:click={() => {
+              setLastUsedConnection(connection);
+              webAuth.authorize({ connection });
+            }}
+          >
+            <div class="flex justify-center items-center gap-x-2 font-medium">
+              {#if icon}
+                <svelte:component this={icon} />
+              {/if}
+              <div>{label}</div>
+            </div>
+          </CtaButton>
+        </LastUsedConnectionTooltip>
       {/each}
 
       <OrSeparator />
 
       <EmailSubmissionForm
         disabled={isEmailDisabled}
+        isLastUsed={lastUsedConnection === "email-password"}
         on:submit={processEmailSubmission}
-        on:updateLastUsedConnection={() => {
-          setLastUsedConnection("email-password");
-        }}
       />
     {/if}
 
