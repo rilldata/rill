@@ -207,6 +207,10 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.PermissionDenied, "not allowed to cancel org subscription")
 	}
 
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
+	}
+
 	endDate, err := s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

@@ -111,7 +111,7 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 
 	org, sub, err := w.admin.StartTrial(ctx, org)
 	if err != nil {
-		w.logger.Error("failed to start trial for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		w.logger.Error("failed to start trial for organization", zap.String("org_id", job.Args.OrgID), zap.Error(err))
 		return err
 	}
 
