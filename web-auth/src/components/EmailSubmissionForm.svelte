@@ -5,7 +5,6 @@
   import LastUsedConnectionTooltip from "./LastUsedConnectionTooltip.svelte";
 
   export let disabled = false;
-  export let isLastUsed = false;
 
   let email = "";
   let errorText = "";
@@ -38,7 +37,7 @@
 
 <form on:submit|preventDefault={handleSubmit}>
   <div class="mb-4 flex flex-col gap-y-4">
-    <LastUsedConnectionTooltip open={isLastUsed}>
+    <LastUsedConnectionTooltip connection="email-password">
       <input
         class="{inputClasses} {focusClasses}"
         style:width="400px"

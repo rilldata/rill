@@ -133,10 +133,6 @@
     step = AuthStep.Base;
   }
 
-  function shouldShowTooltip(connection: string) {
-    return Boolean(lastUsedConnection === connection && step === AuthStep.Base);
-  }
-
   onMount(() => {
     initConfig();
   });
@@ -161,7 +157,10 @@
   <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
     {#if step === AuthStep.Base}
       {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
-        <LastUsedConnectionTooltip open={shouldShowTooltip(connection)}>
+        <LastUsedConnectionTooltip
+          showTooltip={lastUsedConnection === connection}
+          {connection}
+        >
           <CtaButton
             variant={style === "primary" ? "primary" : "secondary"}
             on:click={() => {
@@ -183,7 +182,6 @@
 
       <EmailSubmissionForm
         disabled={isEmailDisabled}
-        isLastUsed={lastUsedConnection === "email-password"}
         on:submit={processEmailSubmission}
       />
     {/if}
