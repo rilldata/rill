@@ -118,10 +118,7 @@
         {#each $table.getRowModel().rows as row (row.id)}
           <tr>
             {#each row.getVisibleCells() as cell (cell.id)}
-              <td
-                class="px-4 py-2 truncate"
-                data-label={cell.column.columnDef.header}
-              >
+              <td class="px-4 py-2" data-label={cell.column.columnDef.header}>
                 <svelte:component
                   this={flexRender(
                     cell.column.columnDef.cell,
