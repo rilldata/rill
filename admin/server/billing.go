@@ -237,16 +237,15 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
-	// 	ToEmail:  org.BillingEmail,
-	// 	ToName:   org.Name,
-	// 	OrgName:  org.Name,
-	// 	PlanName: "Team Plan", // TODO: will this ever be different?
-	// 	EndDate:  endDate,
-	// })
-	// if err != nil {
-	// 	return nil, status.Error(codes.Internal, err.Error())
-	// }
+	err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
+		ToEmail: org.BillingEmail,
+		ToName:  org.Name,
+		OrgName: org.Name,
+		EndDate: endDate,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 

@@ -435,7 +435,7 @@ func (c *Client) SendSubscriptionCancelled(opts *SubscriptionCancelled) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Subscription was cancelled %s", opts.OrgName),
 		Title:   fmt.Sprintf("Subscription was cancelled %s", opts.OrgName),
-		Body:    template.HTML(fmt.Sprintf("You’ve successfully canceled your %s plan. Your access will continue until %s", opts.PlanName, opts.EndDate.Format("January 2, 2006"))),
+		Body:    template.HTML(fmt.Sprintf("You’ve successfully canceled your plan. Your access will continue until %s", opts.EndDate.Format("January 2, 2006"))),
 	})
 }
 
