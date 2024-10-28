@@ -59,12 +59,6 @@
 
   $: currentPath = [projectTitle, dashboardName?.toLowerCase()];
 
-  $: currentDashboard = explores.find(
-    (d) => d.meta?.name?.name?.toLowerCase() === dashboardName?.toLowerCase(),
-  );
-
-  $: metricsViewName = currentDashboard?.meta?.name?.name;
-
   async function submitTitleChange(editedTitle: string) {
     const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
 
