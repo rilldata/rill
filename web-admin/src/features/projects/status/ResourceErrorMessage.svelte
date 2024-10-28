@@ -25,6 +25,9 @@
         copyToClipboard(message, "Copied error message to clipboard")}
     >
       <CopyIcon size="16px" />
+      <svelte:fragment slot="tooltip-content">
+        Copy to clipboard
+      </svelte:fragment>
     </IconButton>
   </div>
 {:else}
