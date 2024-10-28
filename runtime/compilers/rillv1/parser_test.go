@@ -32,7 +32,7 @@ connectors:
   defaults:
     region: us-east-1
 
-vars:
+env:
   foo: bar
 `,
 	})
@@ -1108,22 +1108,21 @@ func TestEnvironmentOverrides(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		// Provide dashboard defaults in rill.yaml
 		`rill.yaml`: `
-env:
-  test:
-    sources:
-      limit: 10000
+dev:
+  sources:
+    limit: 10000
 `,
 		// source s1
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
 sql: SELECT 10
-env:
-  test:
-    path: world
-    sql: SELECT 20 # Override a property from commonYAML
-    refresh:
-      cron: "0 0 * * *"
+dev:
+  path: world
+  sql: SELECT 20 # Override a property from commonYAML
+  refresh:
+    cron: "0 0 * * *"
+    run_in_dev: true
 `,
 	})
 
@@ -1154,8 +1153,8 @@ env:
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Base}, nil)
 
-	// Parse in environment "test"
-	p, err = Parse(ctx, repo, "", "test", "duckdb")
+	// Parse in environment "dev"
+	p, err = Parse(ctx, repo, "", "dev", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
 }

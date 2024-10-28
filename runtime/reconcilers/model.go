@@ -1384,7 +1384,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 }
 
 // analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference instance variables.
-// It returns a map of variable names referenced in the props mapped to their current value.
+// It returns a map of variable names referenced in the props mapped to their current value (if known).
 func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props map[string]any) (map[string]string, error) {
 	res := make(map[string]string)
 	err := compilerv1.AnalyzeTemplateRecursively(props, res)
@@ -1399,12 +1399,13 @@ func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props m
 	vars := inst.ResolveVariables(false)
 
 	for k := range res {
-		k2 := strings.TrimPrefix(k, "vars.")
-		if len(k) == len(k2) {
-			continue
+		// Project variables are referenced with .env.name (current) or .vars.name (deprecated).
+		// Other templated variable names are not project variable references.
+		if k2 := strings.TrimPrefix(k, "env."); k != k2 {
+			res[k] = vars[k2]
+		} else if k2 := strings.TrimPrefix(k, "vars."); k != k2 {
+			res[k] = vars[k2]
 		}
-
-		res[k] = vars[k2]
 	}
 
 	return res, nil

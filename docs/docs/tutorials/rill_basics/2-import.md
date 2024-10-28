@@ -64,8 +64,6 @@ By default, all environments running locally are considered `dev` environments. 
 sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet')
          {{if dev}} where author_date < TIMESTAMPTZ '2015-01-01 00:00:00 Z'  {{end}}"
 ```
-
-You will need to start rill with `rill start --env dev`.
 :::
 
 

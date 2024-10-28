@@ -17,7 +17,7 @@ import (
 // Template parsing serves a dual purpose of:
 //
 // a) extracting metadata at parse time (such as {{ config ...}} and {{ ref ... }})
-// b) populating values at resolve time (such as {{ .vars ... }} and {{ ref ... }})
+// b) populating values at resolve time (such as {{ .env ... }} and {{ ref ... }})
 //
 // The resolve time of a template varies. For models, the resolve time is when they are created in the database.
 // But for metrics expressions, the resolve time is when the metrics are queried.
@@ -33,7 +33,7 @@ import (
 //     dependency [`kind`] `name`: register a dependency (parse time)
 //     ref [`kind`] `name`: register a dependency at parse-time, resolve it to a name at resolve time (parse time and resolve time)
 //     lookup [`kind`] `name`: lookup another resource (resolve time)
-//     .vars.name: access a variable (resolve time)
+//     .env.name: access a project "environment" variable (resolve time)
 //     .user.attribute: access an attribute from auth claims (resolve time)
 //     .meta: access the current resource's metadata (resolve time)
 //     .spec: access the current resource's spec (resolve time)
@@ -134,10 +134,11 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
-		"env":   "",
-		"user":  map[string]any{},
-		"vars":  map[string]any{},
-		"state": map[string]any{},
+		"environment": "",
+		"user":        map[string]any{},
+		"env":         map[string]any{},
+		"vars":        map[string]any{}, // Deprecated in favor of "env"
+		"state":       map[string]any{},
 		"self": map[string]any{
 			"meta":  map[string]any{},
 			"spec":  map[string]any{},
@@ -309,11 +310,12 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 		}
 	}
 	dataMap := map[string]interface{}{
-		"env":   data.Environment,
-		"user":  data.User,
-		"vars":  vars,
-		"state": data.State,
-		"self":  self,
+		"environment": data.Environment,
+		"user":        data.User,
+		"env":         vars,
+		"vars":        vars, // Deprecated in favor of "env"
+		"state":       data.State,
+		"self":        self,
 	}
 
 	// Add extra props
