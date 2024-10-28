@@ -193,7 +193,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}, nil
 }
 
-// CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+// CancelBillingSubscription cancels the billing subscription for the organization
 func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.CancelBillingSubscriptionRequest) (*adminv1.CancelBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 

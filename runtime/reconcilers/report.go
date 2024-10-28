@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
-	"github.com/rilldata/rill/runtime/server"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -394,33 +393,27 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations, t)
+	var ownerID string
+	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
+		ownerID = id
+	}
+
+	var emailRecipients []string
+	for _, notifier := range rep.Spec.Notifiers {
+		if notifier.Connector == "email" {
+			emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+		}
+	}
+
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
-	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t)
+	internalUsersExportURL, err := createExportURL(meta.BaseURLs.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
 	if err != nil {
-		return false, fmt.Errorf("failed to build export request: %w", err)
+		return false, err
 	}
-
-	bakedQry, err := server.BakeQuery(qry)
-	if err != nil {
-		return false, fmt.Errorf("failed to bake query of type %T: %w", qry, err)
-	}
-
-	exportURL, err := url.Parse(meta.ExportURL)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse export URL %q: %w", meta.ExportURL, err)
-	}
-
-	exportURLQry := exportURL.Query()
-	exportURLQry.Set("format", rep.Spec.ExportFormat.String())
-	exportURLQry.Set("query", bakedQry)
-	if rep.Spec.ExportLimit > 0 {
-		exportURLQry.Set("limit", strconv.Itoa(int(rep.Spec.ExportLimit)))
-	}
-	exportURL.RawQuery = exportURLQry.Encode()
 
 	sent := false
 	for _, notifier := range rep.Spec.Notifiers {
@@ -428,16 +421,30 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
-				err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
+				opts := &email.ScheduledReport{
 					ToEmail:        recipient,
 					ToName:         "",
 					Title:          rep.Spec.Title,
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:       meta.OpenURL,
-					DownloadLink:   exportURL.String(),
-					EditLink:       meta.EditURL,
-				})
+				}
+				openURL := meta.BaseURLs.OpenURL
+				exportURL := internalUsersExportURL.String()
+				editURL := meta.BaseURLs.EditURL
+				if urls, ok := meta.RecipientURLs[recipient]; ok {
+					openURL = urls.OpenURL
+					editURL = urls.EditURL
+					u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+					if err != nil {
+						return false, err
+					}
+					exportURL = u.String()
+					opts.External = true
+				}
+				opts.OpenLink = openURL
+				opts.DownloadLink = exportURL
+				opts.EditLink = editURL
+				err := r.C.Runtime.Email.SendScheduledReport(opts)
 				sent = true
 				if err != nil {
 					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
@@ -458,9 +465,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					Title:          rep.Spec.Title,
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:       meta.OpenURL,
-					DownloadLink:   exportURL.String(),
-					EditLink:       meta.EditURL,
+					OpenLink:       meta.BaseURLs.OpenURL,
+					DownloadLink:   internalUsersExportURL.String(),
+					EditLink:       meta.BaseURLs.EditURL,
 				}
 				start := time.Now()
 				defer func() {
@@ -488,6 +495,23 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return false, nil
+}
+
+func createExportURL(inURL, format string, executionTime time.Time, exportLimit int) (*url.URL, error) {
+	exportURL, err := url.Parse(inURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse export URL %q: %w", inURL, err)
+	}
+
+	exportURLQry := exportURL.Query()
+	exportURLQry.Set("format", format)
+	exportURLQry.Set("execution_time", executionTime.Format(time.RFC3339))
+	if exportLimit > 0 {
+		exportURLQry.Set("limit", strconv.Itoa(exportLimit))
+	}
+	exportURL.RawQuery = exportURLQry.Encode()
+
+	return exportURL, nil
 }
 
 func formatExportFormat(f runtimev1.ExportFormat) string {

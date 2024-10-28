@@ -4,6 +4,7 @@
   import {
     isBillingUpgradePage,
     isProjectInvitePage,
+    isPublicReportPage,
     withinOrganization,
     withinProject,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -56,7 +57,9 @@
     // invite page shouldn't show the top bar because it is considered an onboard step
     isProjectInvitePage($page) ||
     // upgrade callback landing page shouldn't show any rill identifications
-    isBillingUpgradePage($page);
+    isBillingUpgradePage($page) ||
+    // public reports are shared to external users who shouldn't be shown any rill related stuff
+    isPublicReportPage($page);
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 </script>

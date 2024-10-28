@@ -26,7 +26,13 @@ import {
 } from "../features/public-urls/get-project-with-bearer-token.js";
 
 export const load = async ({ params, url, route }) => {
-  const { organization, project, token } = params;
+  const { organization, project, token: routeToken } = params;
+
+  let searchParamToken: string | undefined;
+  if (url.searchParams.has("token")) {
+    searchParamToken = url.searchParams.get("token");
+  }
+  const token = searchParamToken ?? routeToken;
 
   let organizationPermissions: V1OrganizationPermissions = {};
   if (organization && !token) {

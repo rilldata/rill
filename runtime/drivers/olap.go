@@ -135,7 +135,7 @@ func (r *Result) Close() error {
 // InformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
 type InformationSchema interface {
-	All(ctx context.Context) ([]*Table, error)
+	All(ctx context.Context, like string) ([]*Table, error)
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
 }
 

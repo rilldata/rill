@@ -165,6 +165,39 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 	}, nil
 }
 
+// AnalyzeTemplateRecursively analyzes strings nested in the provided value for template tags that reference variables.
+// Variables are added as keys to the provided map, with empty strings as values.
+// The values are empty strings instead of booleans as an optimization to enable re-using the map in upstream code.
+func AnalyzeTemplateRecursively(val any, res map[string]string) error {
+	switch val := val.(type) {
+	case string:
+		meta, err := AnalyzeTemplate(val)
+		if err != nil {
+			return err
+		}
+		for _, k := range meta.Variables {
+			res[k] = ""
+		}
+	case map[string]any:
+		for _, v := range val {
+			err := AnalyzeTemplateRecursively(v, res)
+			if err != nil {
+				return err
+			}
+		}
+	case []any:
+		for _, v := range val {
+			err := AnalyzeTemplateRecursively(v, res)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		// Nothing to do
+	}
+	return nil
+}
+
 // ResolveTemplate resolves a template to a string using the given data.
 func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 	// Base func map
