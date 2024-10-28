@@ -4,7 +4,7 @@ import type { LeaderboardItemData } from "./leaderboard-utils";
 
 const MIN_COL_WIDTH = 56;
 const DEFAULT_COL_WIDTH = 60;
-const MAX_COL_WIDTH = 132;
+const MAX_COL_WIDTH = 164;
 
 export type ColumnWidths = {
   dimension: number;
