@@ -48,7 +48,6 @@
     errorText = "";
 
     authenticateUser(email, password);
-    dispatch("updateLastUsedConnection");
   }
 
   function displayError(err: any) {

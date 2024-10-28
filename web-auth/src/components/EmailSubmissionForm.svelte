@@ -27,7 +27,9 @@
     }
 
     errorText = "";
+
     dispatch("submit", { email });
+    dispatch("updateLastUsedConnection");
   }
 
   $: disabled = !(email.length > 0 && validateEmail(email));

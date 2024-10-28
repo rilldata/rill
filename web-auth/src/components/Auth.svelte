@@ -183,6 +183,9 @@
       <EmailSubmissionForm
         disabled={isEmailDisabled}
         on:submit={processEmailSubmission}
+        on:updateLastUsedConnection={() => {
+          setLastUsedConnection("email-password");
+        }}
       />
     {/if}
 
@@ -192,9 +195,6 @@
         {email}
         {connectionMapObj}
         {webAuth}
-        on:updateLastUsedConnection={() => {
-          setLastUsedConnection("sso");
-        }}
         on:back={backToBaseStep}
       />
     {/if}
@@ -208,9 +208,6 @@
         showForgetPassword={step === AuthStep.Login}
         {isDomainDisabled}
         {webAuth}
-        on:updateLastUsedConnection={() => {
-          setLastUsedConnection("email-password");
-        }}
         on:back={backToBaseStep}
       />
     {/if}

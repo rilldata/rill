@@ -41,8 +41,6 @@
       login_hint: email,
       prompt: "login",
     });
-
-    dispatch("updateLastUsedConnection");
   }
 </script>
 
