@@ -21,15 +21,16 @@ export const PaymentBillingIssueTypes: Partial<
 export function getPaymentIssues(issues: V1BillingIssue[]) {
   return issues?.filter(
     (i) =>
-      i.type in PaymentBillingIssueTypes ||
-      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_PAYMENT_FAILED,
+      i.type &&
+      (i.type in PaymentBillingIssueTypes ||
+        i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_PAYMENT_FAILED),
   );
 }
 
 export function getPaymentIssueErrorText(paymentIssues: V1BillingIssue[]) {
   const issueTexts = paymentIssues
-    .map((i) => PaymentBillingIssueTypes[i.type]?.short)
-    .filter(Boolean);
+    .map((i) => PaymentBillingIssueTypes[i.type ?? ""]?.short)
+    .filter(Boolean) as string[];
 
   return `No valid ${issueTexts.length ? issueTexts.join(" or ") : "payment method"} on file.`;
 }
@@ -54,8 +55,8 @@ export function getMessageForPaymentIssues(
   const overdue = invoiceIsOverdue(oldestInvoice);
 
   const issueTexts = issues
-    .map((i) => PaymentBillingIssueTypes[i.type]?.short)
-    .filter(Boolean);
+    .map((i) => PaymentBillingIssueTypes[i.type ?? ""]?.short)
+    .filter(Boolean) as string[];
 
   const message: BillingIssueMessage = {
     type: overdue ? "error" : "warning",
@@ -92,6 +93,9 @@ export function getMessageForPaymentIssues(
 }
 
 function findOldestInvoice(paymentFailed: V1BillingIssue) {
+  if (!paymentFailed.metadata?.paymentFailed?.invoices?.length)
+    return undefined;
+
   let oldest = paymentFailed.metadata.paymentFailed.invoices[0];
   for (
     let i = 1;
@@ -100,7 +104,8 @@ function findOldestInvoice(paymentFailed: V1BillingIssue) {
   ) {
     const invoice = paymentFailed.metadata.paymentFailed.invoices[i];
     if (
-      new Date(invoice.dueDate).getTime() > new Date(oldest.dueDate).getTime()
+      new Date(invoice.dueDate ?? "").getTime() >
+      new Date(oldest.dueDate ?? "").getTime()
     ) {
       oldest = invoice;
     }
@@ -110,13 +115,13 @@ function findOldestInvoice(paymentFailed: V1BillingIssue) {
 }
 
 function invoiceIsDue(invoice: V1BillingIssueMetadataPaymentFailedMeta) {
-  const dueDate = new Date(invoice.dueDate);
+  const dueDate = new Date(invoice.dueDate ?? "");
   const dueDateTime = dueDate.getTime();
   return Number.isNaN(dueDateTime) || dueDateTime < Date.now();
 }
 
 function invoiceIsOverdue(invoice: V1BillingIssueMetadataPaymentFailedMeta) {
-  const gracePeriod = new Date(invoice.gracePeriodEndDate);
+  const gracePeriod = new Date(invoice.gracePeriodEndDate ?? "");
   const gracePeriodTime = gracePeriod.getTime();
   return Number.isNaN(gracePeriodTime) || gracePeriodTime < Date.now();
 }

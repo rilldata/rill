@@ -15,7 +15,7 @@ export async function fetchTeamPlan() {
     queryFn: () => adminServiceListPublicBillingPlans(),
   });
 
-  return plansResp.plans.find(isTeamPlan);
+  return plansResp.plans?.find(isTeamPlan);
 }
 
 /**
@@ -40,7 +40,7 @@ export async function fetchPaymentsPortalURL(
     staleTime: 0,
   });
 
-  return portalUrlResp.url;
+  return portalUrlResp.url ?? "";
 }
 
 export function getBillingUpgradeUrl(page: Page, organization: string) {

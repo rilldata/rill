@@ -20,8 +20,8 @@ export function getMessageForTrialPlan(
   trialIssue: V1BillingIssue,
 ): BillingIssueMessage {
   const endDateStr =
-    trialIssue.metadata.onTrial?.endDate ??
-    trialIssue.metadata.trialEnded?.gracePeriodEndDate ??
+    trialIssue.metadata?.onTrial?.endDate ??
+    trialIssue.metadata?.trialEnded?.gracePeriodEndDate ??
     "";
 
   const message: BillingIssueMessage = {
@@ -53,7 +53,7 @@ export function getMessageForTrialPlan(
     message.type = daysDiff.days < WarningPeriodInDays ? "warning" : "info";
   } else {
     const gracePeriodDate = DateTime.fromJSDate(
-      new Date(trialIssue.metadata?.trialEnded?.gracePeriodEndDate),
+      new Date(trialIssue.metadata?.trialEnded?.gracePeriodEndDate ?? ""),
     );
     const gracePeriodDiff = gracePeriodDate.isValid
       ? gracePeriodDate.diff(today)
@@ -80,7 +80,7 @@ export function getTrialMessageForDays(diff: Duration) {
 
 export function trialHasPastGracePeriod(trialEndedIssue: V1BillingIssue) {
   const gracePeriodDate = new Date(
-    trialEndedIssue.metadata?.trialEnded?.gracePeriodEndDate,
+    trialEndedIssue.metadata?.trialEnded?.gracePeriodEndDate ?? "",
   );
   const gracePeriodTime = gracePeriodDate.getTime();
   return Number.isNaN(gracePeriodTime) || gracePeriodTime < Date.now();

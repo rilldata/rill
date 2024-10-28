@@ -27,8 +27,8 @@
   $: isSourceForm = formType === "source";
   $: isConnectorForm = formType === "connector";
   $: properties = isConnectorForm
-    ? connector.configProperties ?? []
-    : connector.sourceProperties ?? [];
+    ? (connector.configProperties ?? [])
+    : (connector.sourceProperties ?? []);
 
   let rpcError: RpcStatus | null = null;
 

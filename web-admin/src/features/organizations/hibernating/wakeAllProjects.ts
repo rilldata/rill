@@ -63,10 +63,10 @@ async function redeployProject(
 ) {
   const resp = await get(projectDeployer).mutateAsync({
     organization,
-    project: project.name,
+    project: project.name ?? "",
   });
   void queryClient.refetchQueries(
-    getAdminServiceGetProjectQueryKey(organization, project.name),
+    getAdminServiceGetProjectQueryKey(organization, project.name ?? ""),
     {
       // avoid invalidating createAdminServiceGetProjectWithBearerToken
       exact: true,

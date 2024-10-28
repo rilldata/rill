@@ -38,13 +38,15 @@ export async function waitForUpdatedBillingIssues(
     queryKey: getAdminServiceListOrganizationBillingIssuesQueryKey(org),
     queryFn: () => adminServiceListOrganizationBillingIssues(org),
   });
-  const currentBillingIssues = new Set(issuesResp.issues.map((i) => i.type));
+  const currentBillingIssues = new Set(
+    issuesResp.issues?.map((i) => i.type) ?? [],
+  );
   if (expectedIssueTypes.every((t) => currentBillingIssues.has(t))) {
     // already has expected issues
     return;
   }
 
-  const currentlyHasBlockerIssues = hasBlockerIssues(issuesResp.issues);
+  const currentlyHasBlockerIssues = hasBlockerIssues(issuesResp.issues ?? []);
 
   while (tries < IssuesUpdateMaxTries) {
     await queryClient.refetchQueries(
@@ -56,14 +58,16 @@ export async function waitForUpdatedBillingIssues(
       queryFn: () => adminServiceListOrganizationBillingIssues(org),
     });
     const issuesChangedFromPreviousFetch =
+      newIssuesResp.issues &&
       // difference in sizes means there was a change
-      newIssuesResp.issues.length !== currentBillingIssues.size ||
-      // some issue had a different type
-      newIssuesResp.issues.some((i) => !currentBillingIssues.has(i.type));
+      (newIssuesResp.issues.length !== currentBillingIssues.size ||
+        // some issue had a different type
+        newIssuesResp.issues.some((i) => !currentBillingIssues.has(i.type)));
     // NOTE: if issues already changed from previous fetch we don't need to check against expectedIssueTypes
     if (issuesChangedFromPreviousFetch) {
       if (
-        currentlyHasBlockerIssues !== hasBlockerIssues(newIssuesResp.issues)
+        currentlyHasBlockerIssues !==
+        hasBlockerIssues(newIssuesResp.issues ?? [])
       ) {
         // when blocker issues are either added or removed projects hibernation status changes.
         // so re-retch projects list to get updated hibernation status.

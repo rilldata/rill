@@ -19,9 +19,9 @@ export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
   let accessTimeout = "";
   let ended = false;
 
-  if (cancelledSubIssue.metadata.subscriptionCancelled?.endDate) {
+  if (cancelledSubIssue.metadata?.subscriptionCancelled?.endDate) {
     const endDate = DateTime.fromJSDate(
-      new Date(cancelledSubIssue.metadata.subscriptionCancelled?.endDate),
+      new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
     );
     if (endDate.isValid && endDate.toMillis() > Date.now()) {
       accessTimeout = `but you still have access until ${endDate.toLocaleString(DateTime.DATE_MED)}`;
@@ -42,7 +42,7 @@ export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
       type: "upgrade",
       teamPlanDialogType: "renew",
       teamPlanEndDate:
-        cancelledSubIssue.metadata.subscriptionCancelled?.endDate,
+        cancelledSubIssue.metadata?.subscriptionCancelled?.endDate,
     },
   };
 }
@@ -51,7 +51,7 @@ export function cancelledSubscriptionHasEnded(
   cancelledSubIssue: V1BillingIssue,
 ) {
   const endDate = new Date(
-    cancelledSubIssue.metadata?.subscriptionCancelled?.endDate,
+    cancelledSubIssue.metadata?.subscriptionCancelled?.endDate ?? "",
   );
   const endTime = endDate.getTime();
   return Number.isNaN(endTime) || endTime < Date.now();

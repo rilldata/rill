@@ -1,21 +1,3 @@
-<script lang="ts" context="module">
-  /**
-   * 1. base  - When user chooses to upgrade from a trial plan.
-   * 2. size  - When user hits the size limit and wants to upgrade.
-   * 3. org   - When user hits the organization limit and wants to upgrade.
-   * 4. proj  - When user hits the project limit and wants to upgrade.
-   * 5. renew - After user cancels a subscription and wants to renew.
-   * 6. trial-expired - After a trial has expired with grace period also ended.
-   */
-  export type TeamPlanDialogTypes =
-    | "base"
-    | "size"
-    | "org"
-    | "proj"
-    | "renew"
-    | "trial-expired";
-</script>
-
 <script lang="ts">
   import { page } from "$app/stores";
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
@@ -25,6 +7,7 @@
     fetchTeamPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
   import {
     getSubscriptionResumedText,
     showWelcomeToRillDialog,

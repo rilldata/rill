@@ -1,6 +1,6 @@
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
 import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
-import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { writable } from "svelte/store";
@@ -19,7 +19,7 @@ export class BillingCTAHandler {
   public static get(organization: string) {
     let instance: BillingCTAHandler;
     if (this.instances.has(organization)) {
-      instance = this.instances.get(organization);
+      instance = this.instances.get(organization)!;
       instance.wakingProjects.set(false);
     } else {
       instance = new BillingCTAHandler(organization);
@@ -33,7 +33,9 @@ export class BillingCTAHandler {
     switch (issueMessage.cta.type) {
       case "upgrade":
         this.showStartTeamPlanDialog.set(true);
-        this.startTeamPlanType.set(issueMessage.cta.teamPlanDialogType);
+        this.startTeamPlanType.set(
+          issueMessage.cta.teamPlanDialogType ?? "base",
+        );
         this.teamPlanEndDate.set(issueMessage.cta.teamPlanEndDate ?? "");
         break;
 

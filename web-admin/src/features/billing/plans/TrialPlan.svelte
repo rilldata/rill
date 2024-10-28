@@ -6,9 +6,8 @@
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import { getTrialMessageForDays } from "@rilldata/web-admin/features/billing/issues/getMessageForTrialPlan";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
-  import StartTeamPlanDialog, {
-    type TeamPlanDialogTypes,
-  } from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
   import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
