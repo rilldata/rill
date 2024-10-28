@@ -2,7 +2,12 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewAggregation,
+    V1Operation,
+    type V1Expression,
+    type V1MetricsViewAggregationMeasure,
+  } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
     type LeaderboardItemData,
@@ -13,6 +18,15 @@
   import LoadingRows from "./LoadingRows.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
+  import {
+    createAndExpression,
+    createOrExpression,
+    matchExpressionByName,
+    sanitiseExpression,
+  } from "../stores/filter-utils";
+  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
+  import { getIndependentMeasures } from "../state-managers/selectors/measures";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
 
   const slice = 7;
   const columnWidth = 66;
@@ -72,6 +86,8 @@
     },
     metricsViewName,
     runtime,
+    dashboardStore,
+    validSpecStore,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -89,14 +105,41 @@
     $leaderboardSortedQueryOptions(dimensionName, visible),
   );
 
+  $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
+
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     $metricsViewName,
     {
       dimensions: [{ name: dimensionName }],
-      whereSql: selectedBelowTheFold
-        .map((item) => `${dimensionName} = '${item.dimensionValue}'`)
-        .join(" OR "),
+      where: sanitiseExpression(
+        createAndExpression(
+          [
+            createOrExpression(
+              selectedBelowTheFold.map((item) => {
+                return {
+                  cond: {
+                    op: V1Operation.OPERATION_EQ,
+                    exprs: [
+                      { ident: dimensionName },
+                      { val: item.dimensionValue },
+                    ],
+                  },
+                };
+              }),
+            ),
+          ].concat(
+            sanitiseExpression(
+              mergeDimensionAndMeasureFilter(
+                getFiltersForOtherDimensions(whereFilter, dimensionName),
+                dimensionThresholdFilters,
+              ),
+              undefined,
+            ) ?? [],
+          ),
+        ),
+        undefined,
+      ),
       timeRange: {
         start: timeControls.timeStart,
         end: timeControls.timeEnd,
@@ -107,19 +150,56 @@
             end: timeControls.comparisonTimeEnd,
           }
         : undefined,
-
-      measures: [
-        { name: $activeMeasureName },
-        ...(timeControls.showTimeComparison
-          ? getComparisonRequestMeasures($activeMeasureName)
-          : []),
-      ],
+      measures: getIndependentMeasures(
+        $validSpecStore.data?.metricsView ?? {},
+        additionalMeasures($activeMeasureName, dimensionThresholdFilters),
+      )
+        .map(
+          (n) =>
+            <V1MetricsViewAggregationMeasure>{
+              name: n,
+            },
+        )
+        .concat(
+          ...(timeControls.showTimeComparison
+            ? getComparisonRequestMeasures($activeMeasureName)
+            : []),
+        ),
     },
     $leaderboardSortedQueryOptions(
       dimensionName,
       visible && selectedBelowTheFold.length > 0,
     ),
   );
+
+  function getFiltersForOtherDimensions(
+    whereFilter: V1Expression,
+    dimName: string,
+  ) {
+    const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
+      matchExpressionByName(e, dimName),
+    );
+    if (exprIdx === undefined || exprIdx === -1) return whereFilter;
+
+    return createAndExpression(
+      whereFilter.cond?.exprs?.filter(
+        (e) => !matchExpressionByName(e, dimName),
+      ) ?? [],
+    );
+  }
+
+  function additionalMeasures(
+    activeMeasureName: string,
+    dimensionThresholdFilters: DimensionThresholdFilter[],
+  ) {
+    const measures = new Set<string>([activeMeasureName]);
+    dimensionThresholdFilters.forEach(({ filters }) => {
+      filters.forEach((filter) => {
+        measures.add(filter.measure);
+      });
+    });
+    return [...measures];
+  }
 
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: belowTheFoldData = $belowTheFoldDataQuery?.data?.data ?? [];
@@ -139,6 +219,7 @@
   let noAvailableValues = true;
 
   $: if (sortedData && !isFetching) {
+    console.log("OOPS", sortedData.data, belowTheFoldData);
     const leaderboardData = prepareLeaderboardItemData(
       (sortedData?.data ?? []).concat(belowTheFoldData),
       dimensionName,
