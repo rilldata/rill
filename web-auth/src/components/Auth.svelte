@@ -164,6 +164,10 @@
           <CtaButton
             variant={style === "primary" ? "primary" : "secondary"}
             on:click={() => {
+              if (import.meta.env.DEV) {
+                return;
+              }
+
               setLastUsedConnection(connection);
               webAuth.authorize({ connection });
             }}
