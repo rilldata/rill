@@ -393,7 +393,7 @@ func (c *cacheImpl) retainEntry(key string, e *entry) {
 func (c *cacheImpl) releaseEntry(key string, e *entry) {
 	e.refs--
 	if e.refs == 0 {
-		// If opening/opening, keep entry and put in LRU. Else remove entirely.
+		// If open (or opening), keep entry and put in LRU. Else remove it from the cache entirely.
 		switch e.status {
 		case entryStatusOpening, entryStatusOpen:
 			c.lru.Add(key, e)
