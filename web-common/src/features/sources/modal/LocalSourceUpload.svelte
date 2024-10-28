@@ -39,7 +39,7 @@
           $unpackEmptyProject.mutate({
             instanceId,
             data: {
-              title: EMPTY_PROJECT_TITLE,
+              displayName: EMPTY_PROJECT_TITLE,
             },
           });
         }

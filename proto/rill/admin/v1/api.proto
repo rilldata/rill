@@ -1720,8 +1720,8 @@ message IssueMagicAuthTokenRequest {
   repeated string fields = 6;
   // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
   string state = 7;
-  // Optional public url title to store with the token.
-  string title = 10;
+  // Optional display name to store with the token.
+  string display_name = 10;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -2343,7 +2343,7 @@ message MagicAuthToken {
   rill.runtime.v1.Expression filter = 10;
   repeated string fields = 11;
   string state = 12;
-  string title = 16;
+  string display_name = 16;
 }
 
 message VirtualFile {
@@ -2354,7 +2354,7 @@ message VirtualFile {
 }
 
 message ReportOptions {
-  string title = 1;
+  string display_name = 1;
   string refresh_cron = 2;
   string refresh_time_zone = 9;
   string interval_duration = 13;
@@ -2371,7 +2371,7 @@ message ReportOptions {
 }
 
 message AlertOptions {
-  string title = 1;
+  string display_name = 1;
   string interval_duration = 2;
   string resolver = 13;
   google.protobuf.Struct resolver_properties = 14;

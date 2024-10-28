@@ -59,7 +59,7 @@
     );
 
     const mutationFunction = example ? unpackExample : unpackEmpty;
-    const key = example ? "name" : "title";
+    const key = example ? "name" : "displayName";
 
     try {
       await mutationFunction({

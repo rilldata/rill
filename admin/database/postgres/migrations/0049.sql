@@ -1,15 +1,17 @@
 CREATE TABLE project_variables (
-    id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    value TEXT NOT NULL,
-    -- Encryption key ID if the value is encrypted
-    value_encryption_key_id TEXT NOT NULL DEFAULT '',
-    -- Environment it belongs to ("prod" or "dev").
-    -- If empty, then it should be used as the fallback for all environments.
-    environment TEXT NOT NULL DEFAULT '',
-    -- The user who most recently edited the variable
-    updated_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  value TEXT NOT NULL,
+  -- Encryption key ID if the value is encrypted
+  value_encryption_key_id TEXT NOT NULL DEFAULT '',
+  -- Environment it belongs to ("prod" or "dev").
+  -- If empty, then it should be used as the fallback for all environments.
+  environment TEXT NOT NULL DEFAULT '',
+  -- The user who most recently edited the variable
+  updated_by_user_id UUID REFERENCES users(id) ON DELETE
+  SET
+    NULL,
     created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
     updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
 );
@@ -25,14 +27,16 @@ WITH project_data AS (
     prod_variables_encryption_key_id
   FROM
     projects
-  WHERE prod_variables::JSON::TEXT NOT LIKE 'null'
+  WHERE
+    prod_variables :: JSON :: TEXT NOT LIKE 'null'
 )
-INSERT INTO project_variables (
-  project_id,
-  name,
-  value,
-  value_encryption_key_id
-)
+INSERT INTO
+  project_variables (
+    project_id,
+    name,
+    value,
+    value_encryption_key_id
+  )
 SELECT
   project_data.project_id,
   key AS name,

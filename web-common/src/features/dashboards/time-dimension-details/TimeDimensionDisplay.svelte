@@ -54,12 +54,12 @@
 
   $: measure = $allMeasures.find((m) => m.name === expandedMeasureName);
 
-  $: measureLabel = measure?.label ?? "";
+  $: measureLabel = measure?.displayName ?? "";
 
   let dimensionLabel = "";
   $: if (comparing === "dimension") {
     dimensionLabel =
-      $allDimensions.find((d) => d.name === dimensionName)?.label ?? "";
+      $allDimensions.find((d) => d.name === dimensionName)?.displayName ?? "";
   } else if (comparing === "time") {
     dimensionLabel = "Time";
   } else if (comparing === "none") {

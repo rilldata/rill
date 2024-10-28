@@ -44,7 +44,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 		Limit:               qry.Limit,
 		Offset:              qry.Offset,
 		TimeZone:            qry.TimeZone,
-		Label:               false,
+		UseDisplayNames:     false,
 	} //exhaustruct:enforce
 
 	// A TopN query can sort by a dimension or a measure.

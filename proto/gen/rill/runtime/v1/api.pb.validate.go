@@ -4352,7 +4352,7 @@ func (m *Example) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
@@ -4934,7 +4934,7 @@ func (m *UnpackEmptyRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Force
 

@@ -747,7 +747,7 @@ paths:
           schema:
             type: object
             properties:
-              title:
+              displayName:
                 type: string
               force:
                 type: boolean
@@ -2940,13 +2940,13 @@ definitions:
     properties:
       name:
         type: string
+      displayName:
+        type: string
+      description:
+        type: string
       column:
         type: string
       expression:
-        type: string
-      label:
-        type: string
-      description:
         type: string
       unnest:
         type: boolean
@@ -2966,6 +2966,10 @@ definitions:
     type: object
     properties:
       name:
+        type: string
+      displayName:
+        type: string
+      description:
         type: string
       expression:
         type: string
@@ -2987,10 +2991,6 @@ definitions:
         type: array
         items:
           type: string
-      label:
-        type: string
-      description:
-        type: string
       formatPreset:
         type: string
       formatD3:
@@ -3216,10 +3216,10 @@ definitions:
   v1AlertSpec:
     type: object
     properties:
+      displayName:
+        type: string
       trigger:
         type: boolean
-      title:
-        type: string
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       watermarkInherit:
@@ -3466,7 +3466,7 @@ definitions:
   v1CanvasSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       columns:
         type: integer
@@ -3819,9 +3819,9 @@ definitions:
   v1ComponentSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
-      subtitle:
+      description:
         type: string
       resolver:
         type: string
@@ -4040,7 +4040,7 @@ definitions:
     properties:
       name:
         type: string
-      title:
+      displayName:
         type: string
       description:
         type: string
@@ -4105,9 +4105,9 @@ definitions:
   v1ExploreSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
-        title: User-facing title
+        title: User-facing name
       description:
         type: string
         title: User-facing description
@@ -4997,9 +4997,9 @@ definitions:
       model:
         type: string
         description: Name of the model the metrics view is based on. Either table or model should be set.
-      title:
+      displayName:
         type: string
-        title: User-facing title
+        title: User-facing name
       description:
         type: string
         title: User-facing description
@@ -5752,10 +5752,10 @@ definitions:
   v1ReportSpec:
     type: object
     properties:
+      displayName:
+        type: string
       trigger:
         type: boolean
-      title:
-        type: string
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:

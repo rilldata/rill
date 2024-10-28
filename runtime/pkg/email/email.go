@@ -29,7 +29,7 @@ func New(sender Sender) *Client {
 type ScheduledReport struct {
 	ToEmail        string
 	ToName         string
-	Title          string
+	DisplayName    string
 	ReportTime     time.Time
 	DownloadFormat string
 	OpenLink       string
@@ -39,7 +39,7 @@ type ScheduledReport struct {
 }
 
 type scheduledReportData struct {
-	Title            string
+	DisplayName      string
 	ReportTimeString string // Will be inferred from ReportTime
 	DownloadFormat   string
 	OpenLink         template.URL
@@ -51,7 +51,7 @@ type scheduledReportData struct {
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Build template data
 	data := &scheduledReportData{
-		Title:            opts.Title,
+		DisplayName:      opts.DisplayName,
 		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
 		DownloadFormat:   opts.DownloadFormat,
 		OpenLink:         template.URL(opts.OpenLink),
@@ -61,7 +61,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	}
 
 	// Build subject
-	subject := fmt.Sprintf("%s (%s)", opts.Title, data.ReportTimeString)
+	subject := fmt.Sprintf("%s (%s)", opts.DisplayName, data.ReportTimeString)
 
 	var err error
 	// Resolve template
@@ -79,7 +79,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 	switch opts.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
 		return c.sendAlertStatus(opts, &alertStatusData{
-			Title:               opts.Title,
+			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
 			IsPass:              true,
 			IsRecover:           opts.IsRecover,
@@ -88,7 +88,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
 		return c.sendAlertFail(opts, &alertFailData{
-			Title:               opts.Title,
+			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
 			FailRow:             opts.FailRow,
 			OpenLink:            template.URL(opts.OpenLink),
@@ -96,7 +96,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 		return c.sendAlertStatus(opts, &alertStatusData{
-			Title:               opts.Title,
+			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
 			IsError:             true,
 			ErrorMessage:        opts.ExecutionError,
@@ -109,7 +109,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 }
 
 type alertFailData struct {
-	Title               string
+	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	FailRow             map[string]any
 	OpenLink            template.URL
@@ -117,7 +117,7 @@ type alertFailData struct {
 }
 
 func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {
-	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 
 	buf := new(bytes.Buffer)
 	err := c.templates.Lookup("alert_fail.html").Execute(buf, data)
@@ -130,7 +130,7 @@ func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) e
 }
 
 type alertStatusData struct {
-	Title               string
+	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	IsPass              bool
 	IsRecover           bool
@@ -141,7 +141,7 @@ type alertStatusData struct {
 }
 
 func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusData) error {
-	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 	if data.IsRecover {
 		subject = fmt.Sprintf("Recovered: %s", subject)
 	}

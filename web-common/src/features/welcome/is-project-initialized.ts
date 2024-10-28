@@ -39,7 +39,7 @@ export async function handleUninitializedProject(instanceId: string) {
   if (olapConnector !== "duckdb") {
     // Clickhouse and Druid-backed projects should be initialized immediately
     await runtimeServiceUnpackEmpty(instanceId, {
-      title: EMPTY_PROJECT_TITLE,
+      displayName: EMPTY_PROJECT_TITLE,
       force: true,
     });
 

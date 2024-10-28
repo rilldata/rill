@@ -56,7 +56,7 @@
   $: expandedMeasureLabel = $measureLabel(expandedMeasureName);
   $: measure = $getMeasureByName(expandedMeasureName);
   $: comparedDimensionLabel =
-    $comparisonDimension?.label || $comparisonDimension?.name;
+    $comparisonDimension?.displayName || $comparisonDimension?.name;
 
   $: hoveredTime = $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;

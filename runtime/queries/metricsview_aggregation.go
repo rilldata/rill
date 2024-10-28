@@ -326,7 +326,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		qry.PivotOn = q.PivotOn
 	}
 
-	qry.Label = export
+	qry.UseDisplayNames = export
 
 	return qry, nil
 }
