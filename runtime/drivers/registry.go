@@ -46,7 +46,7 @@ type Instance struct {
 	UpdatedOn time.Time `db:"updated_on"`
 	// Instance specific connectors
 	Connectors []*runtimev1.Connector `db:"connectors"`
-	// ProjectVariables contains default connectors from rill.yaml
+	// ProjectConnectors contains default connectors from rill.yaml
 	ProjectConnectors []*runtimev1.Connector `db:"project_connectors"`
 	// Variables contains user-provided variables
 	Variables map[string]string `db:"variables"`

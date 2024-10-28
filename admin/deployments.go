@@ -197,8 +197,9 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 }
 
 type UpdateDeploymentOptions struct {
-	Version         string
-	Branch          string
+	Version string
+	Branch  string
+	// Variables to be set on the deployment instance. If empty map is passed then the existing variables are not changed by Runtime.
 	Variables       map[string]string
 	Annotations     DeploymentAnnotations
 	EvictCachedRepo bool // Set to true if config returned by GetRepoMeta has changed such that the runtime should do a fresh clone instead of a pull.
@@ -339,7 +340,6 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			ProdVersion:          proj.ProdVersion,
 			ProdBranch:           proj.ProdBranch,
 			Subpath:              proj.Subpath,
-			ProdVariables:        proj.ProdVariables,
 			ProdSlots:            proj.ProdSlots,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			ProdDeploymentID:     nil,

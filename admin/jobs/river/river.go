@@ -318,7 +318,8 @@ func (c *Client) RepairOrgBilling(ctx context.Context, orgID string) (*jobs.Inse
 		OrgID: orgID,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
+			ByArgs:  true,
+			ByState: []rivertype.JobState{rivertype.JobStateAvailable, rivertype.JobStateRunning, rivertype.JobStateRetryable, rivertype.JobStateScheduled}, // to prevent concurrent run but still allow retries
 		},
 	})
 	if err != nil {

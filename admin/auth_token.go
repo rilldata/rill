@@ -177,6 +177,7 @@ type IssueMagicAuthTokenOptions struct {
 	Fields          []string
 	State           string
 	DisplayName     string
+	Internal        bool
 }
 
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
@@ -203,6 +204,7 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 		Fields:          opts.Fields,
 		State:           opts.State,
 		DisplayName:     opts.DisplayName,
+		Internal:        opts.Internal,
 	})
 	if err != nil {
 		return nil, err
