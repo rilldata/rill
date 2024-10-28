@@ -87,7 +87,7 @@ export function getMeasureFilterForDimension(
     filteredMeasures.push({
       dimensionName: name,
       name: filter.measure,
-      label: measure.label || measure.expression || filter.measure,
+      label: measure.displayName || measure.expression || filter.measure,
       filter,
     });
   });

@@ -68,7 +68,7 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 	switch s.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
 		return n.sendAlertStatus(&AlertStatusData{
-			Title:               s.Title,
+			DisplayName:         s.DisplayName,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			IsPass:              true,
 			IsRecover:           s.IsRecover,
@@ -77,7 +77,7 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
 		return n.sendAlertFail(&AlertFailData{
-			Title:               s.Title,
+			DisplayName:         s.DisplayName,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			FailRow:             s.FailRow,
 			OpenLink:            htemplate.URL(s.OpenLink),
@@ -85,7 +85,7 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 		return n.sendAlertStatus(&AlertStatusData{
-			Title:               s.Title,
+			DisplayName:         s.DisplayName,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			IsError:             true,
 			ErrorMessage:        s.ExecutionError,
@@ -98,7 +98,7 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 }
 
 func (n *notifier) sendAlertStatus(data *AlertStatusData) error {
-	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 	if data.IsRecover {
 		subject = fmt.Sprintf("Recovered: %s", subject)
 	}
@@ -121,7 +121,7 @@ func (n *notifier) sendAlertStatus(data *AlertStatusData) error {
 }
 
 func (n *notifier) sendAlertFail(data *AlertFailData) error {
-	data.Subject = fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+	data.Subject = fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 
 	buf := new(bytes.Buffer)
 	err := n.templates.Lookup("alert_fail.slack").Execute(buf, data)
@@ -211,7 +211,7 @@ func DecodeProps(propsMap map[string]any) (*NotifierProperties, error) {
 
 type AlertStatusData struct {
 	Subject             string
-	Title               string
+	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	IsPass              bool
 	IsRecover           bool
@@ -223,7 +223,7 @@ type AlertStatusData struct {
 
 type AlertFailData struct {
 	Subject             string
-	Title               string
+	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	FailRow             map[string]any
 	OpenLink            htemplate.URL

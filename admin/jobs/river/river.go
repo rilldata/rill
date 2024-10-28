@@ -343,6 +343,7 @@ func (c *Client) StartOrgTrial(ctx context.Context, orgID string) (*jobs.InsertR
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
+		MaxAttempts: 5, // override default retries as init org billing job should complete before this if org creation and project deployment were done in single flow
 	})
 	if err != nil {
 		return nil, err

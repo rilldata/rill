@@ -42,7 +42,7 @@ export function parseChartYaml(chartContent: string): V1ComponentSpec {
   }
 
   return {
-    title: chartYaml.title,
+    displayName: chartYaml.title,
     renderer: "chart",
     rendererProperties: {
       spec: chartYaml.vegaLiteSpec,

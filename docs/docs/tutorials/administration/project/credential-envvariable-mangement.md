@@ -30,7 +30,7 @@ There are various ways that you can set credentials in Rill. While each has its 
 4. Manually defining variables when running `rill start`
 
 For 1, 2, and 3, these methods will allow Rill Cloud to access the sources. However, method 3 will have your credential details in plaintext in GitHub (assuming you have synced to a GitHub Repository). Therefore we would recommend using method 1 and 2 when deploying your project to Rill Cloud. For local Development purposes, you can either pull the credentials from Rill Cloud (assuming its already been deployed) or by passing the key and value.
-```rill start --var key=value```
+```rill start --env key=value```
 
 
 
@@ -112,7 +112,7 @@ There are a few ways to use environmental variables locally.
 2. If already deployed to Rill Cloud, directly modifying the .env file or using `rill env set`.
 3. via the rill start command
 ```bash
-rill start --var <var_name>=<value>
+rill start --env <var_name>=<value>
 ```
 
 ### Pushing to Rill Cloud

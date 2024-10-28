@@ -336,7 +336,7 @@ function fromPivotProto(
     const dim = dimensionsMap.get(name);
     return {
       id: name,
-      title: dim?.label || dim?.name || "Unknown",
+      title: dim?.displayName || dim?.name || "Unknown",
       type: PivotChipType.Dimension,
     };
   };
@@ -370,7 +370,7 @@ function fromPivotProto(
     const mes = measuresMap.get(name);
     return {
       id: name,
-      title: mes?.label || mes?.name || "Unknown",
+      title: mes?.displayName || mes?.name || "Unknown",
       type: PivotChipType.Measure,
     };
   };

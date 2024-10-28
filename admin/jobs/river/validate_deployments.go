@@ -109,7 +109,7 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 				err = w.admin.UpdateDeployment(ctx, depl, &admin.UpdateDeploymentOptions{
 					Version:         depl.RuntimeVersion,
 					Branch:          depl.Branch,
-					Variables:       proj.ProdVariables,
+					Variables:       nil,
 					Annotations:     w.admin.NewDeploymentAnnotations(org, proj),
 					EvictCachedRepo: false,
 				})
@@ -128,7 +128,7 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 				err = w.admin.UpdateDeployment(ctx, depl, &admin.UpdateDeploymentOptions{
 					Version:         latestVersion,
 					Branch:          depl.Branch,
-					Variables:       proj.ProdVariables,
+					Variables:       nil,
 					Annotations:     w.admin.NewDeploymentAnnotations(org, proj),
 					EvictCachedRepo: false,
 				})

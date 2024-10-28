@@ -72,11 +72,6 @@ service AdminService {
     option (google.api.http) = {get: "/v1/superuser/projects/search"};
   }
 
-  // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
-  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
-  }
-
   // CreateProject creates a new project
   rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
     option (google.api.http) = {
@@ -98,13 +93,18 @@ service AdminService {
     };
   }
 
-  // UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+  // GetProjectVariables returns project variables.
+  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/variables"};
+  }
+  
+  // UpdateProjectVariables updates variables for a project.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization_name}/projects/{name}/variables",
+      put: "/v1/organizations/{organization}/projects/{project}/variables",
       body: "*"
     };
-  }
+  }  
 
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
   rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
@@ -777,7 +777,7 @@ service AdminService {
     };
   }
 
-  // CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+  // CancelBillingSubscription cancels the billing subscription for the organization
   rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
     option (google.api.http) = {
       delete: "/v1/organizations/{organization}/billing/subscriptions",
@@ -948,12 +948,61 @@ message SearchProjectNamesResponse {
 }
 
 message GetProjectVariablesRequest {
-  string organization_name = 1;
-  string name = 2;
+  // Organization the project belongs to.
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  // Project to get variables for.
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // Environment to get the variables for.
+  // If empty, only variables shared across all environments are returned.
+  string environment = 3;
+  // If true, return variable values for all environments.
+  // Can't be used together with the "environment" option.
+  bool for_all_environments = 4;
 }
 
 message GetProjectVariablesResponse {
-  map<string, string> variables = 1;
+  repeated ProjectVariable variables = 2;
+  // Deprecated: Populated for backwards compatibility.
+  // (Renamed from "variables" to "variables_map").
+  map<string, string> variables_map = 1;
+}
+
+message ProjectVariable {
+  // Internal ID.
+  string id = 1;
+  // Variable name (case insensitive).
+  string name = 2;
+  // Variable value.
+  string value = 3;
+  // Environment the variable is set for.
+  // If empty, the variable is shared for all environments.
+  string environment = 4;
+  // User ID that most recently updated the variable. May be empty.
+  string updated_by_user_id = 5;
+  // Timestamp when the variable was created.
+  google.protobuf.Timestamp created_on = 6;
+  // Timestamp when the variable was last updated.
+  google.protobuf.Timestamp updated_on = 7;
+}
+
+message UpdateProjectVariablesRequest {
+  // Organization the project belongs to.
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  // Project to update variables for.
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // Environment to set the variables for.
+  // If empty, the variable(s) will be used as defaults for all environments.
+  string environment = 4;
+  // New variable values.
+  // It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
+  map<string, string> variables = 3;
+  // Variables to delete.
+  repeated string unset_variables = 5;
+}
+
+message UpdateProjectVariablesResponse {
+  // Variables that were created or updated by the request.
+  repeated ProjectVariable variables = 2;
 }
 
 message SearchProjectUsersRequest {
@@ -1083,7 +1132,6 @@ message CreateProjectRequest {
   string github_url = 10;
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
   string archive_asset_id = 14;
-  map<string, string> variables = 11;
   string prod_version = 13;
 }
 
@@ -1118,16 +1166,6 @@ message UpdateProjectRequest {
 
 message UpdateProjectResponse {
   Project project = 1;
-}
-
-message UpdateProjectVariablesRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string name = 2 [(validate.rules).string.min_len = 1];
-  map<string, string> variables = 3;
-}
-
-message UpdateProjectVariablesResponse {
-  map<string, string> variables = 1;
 }
 
 message CreateAssetRequest {
@@ -1690,8 +1728,8 @@ message IssueMagicAuthTokenRequest {
   repeated string fields = 6;
   // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
   string state = 7;
-  // Optional public url title to store with the token.
-  string title = 10;
+  // Optional display name to store with the token.
+  string display_name = 10;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1877,14 +1915,20 @@ message GetReportMetaRequest {
   string project_id = 1;
   string branch = 2;
   string report = 3;
-  map<string, string> annotations = 4;
-  google.protobuf.Timestamp execution_time = 5;
+  string owner_id = 5;
+  google.protobuf.Timestamp execution_time = 6;
+  repeated string email_recipients = 7;
+  reserved 4;
 }
 
 message GetReportMetaResponse {
-  string open_url = 1;
-  string export_url = 2;
-  string edit_url = 3;
+  message URLs {
+    string open_url = 1;
+    string export_url = 2;
+    string edit_url = 3;
+  }
+  URLs base_urls = 1;
+  map<string, URLs> recipient_urls = 2;
 }
 
 message GetAlertMetaRequest {
@@ -2318,7 +2362,7 @@ message MagicAuthToken {
   rill.runtime.v1.Expression filter = 10;
   repeated string fields = 11;
   string state = 12;
-  string title = 16;
+  string display_name = 16;
 }
 
 message VirtualFile {
@@ -2329,7 +2373,7 @@ message VirtualFile {
 }
 
 message ReportOptions {
-  string title = 1;
+  string display_name = 1;
   string refresh_cron = 2;
   string refresh_time_zone = 9;
   string interval_duration = 13;
@@ -2346,7 +2390,7 @@ message ReportOptions {
 }
 
 message AlertOptions {
-  string title = 1;
+  string display_name = 1;
   string interval_duration = 2;
   string resolver = 13;
   google.protobuf.Struct resolver_properties = 14;

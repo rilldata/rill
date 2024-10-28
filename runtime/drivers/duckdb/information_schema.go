@@ -18,14 +18,21 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return &informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
+func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	conn, release, err := i.c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = release() }()
 
-	q := `
+	var likeClause string
+	var args []any
+	if like != "" {
+		likeClause = "and (t.table_name ilike ? or concat(t.table_catalog, '.', t.table_schema, '.', t.table_name) ilike ?)"
+		args = []any{like, like}
+	}
+
+	q := fmt.Sprintf(`
 		select
 			coalesce(t.table_catalog, current_database()) as "database",
 			t.table_schema as "schema",
@@ -37,11 +44,12 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
 		where database = current_database() and t.table_schema = 'main'
+		%s
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
-	`
+	`, likeClause)
 
-	rows, err := conn.QueryxContext(ctx, q)
+	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, i.c.checkErr(err)
 	}
