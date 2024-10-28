@@ -28,7 +28,7 @@ export async function fetchAllProjectsHibernating(organization: string) {
     queryFn: () => adminServiceListProjectsForOrganization(organization),
     staleTime: Infinity,
   });
-  return projectsResp.projects?.every((p) => !p.prodDeploymentId);
+  return projectsResp.projects?.every((p) => !p.prodDeploymentId) ?? false;
 }
 
 export async function fetchOrganizationPermissions(organization: string) {

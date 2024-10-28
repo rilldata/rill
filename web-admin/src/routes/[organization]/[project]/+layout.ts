@@ -8,23 +8,18 @@ export const load = async ({ params: { organization }, parent }) => {
     return;
   }
 
-  let shouldRedirectToProjectsList = false;
+  let projectHibernating = false;
 
   try {
-    // if all projects were hibernated due to a blocker issue on org then take the user to projects page
-    if (
-      hasBlockerIssues(issues) &&
-      (await fetchAllProjectsHibernating(organization))
-    ) {
-      shouldRedirectToProjectsList = true;
-    }
+    projectHibernating = await fetchAllProjectsHibernating(organization);
   } catch (e) {
     if (e.response?.status !== 403) {
-      throw error(e.response?.status, "Error fetching billing issues");
+      throw error(e.response?.status, "Error fetching project status");
     }
   }
 
-  if (shouldRedirectToProjectsList) {
+  // if all projects were hibernated due to a blocker issue on org then take the user to projects page
+  if (hasBlockerIssues(issues) && projectHibernating) {
     throw redirect(307, `/${organization}`);
   }
 };

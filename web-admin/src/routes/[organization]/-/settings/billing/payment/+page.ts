@@ -10,9 +10,7 @@ export const load: PageLoad = async ({ params: { organization }, url }) => {
       `${url.protocol}//${url.host}/${organization}`,
     );
   } catch (e) {
-    if (e.response?.status !== 403) {
-      throw error(e.response.status, "Error redirecting to payment portal");
-    }
+    throw error(e.response.status, "Error redirecting to payment portal");
   }
   throw redirect(307, redirectUrl);
 };
