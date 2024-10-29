@@ -351,6 +351,8 @@ message ExploreSpec {
   // Security for the explore dashboard.
   // These are not currently parsed from YAML, but will be derived from the parent metrics view.
   repeated SecurityRule security_rules = 12;
+  // Embeds configuration
+  ExploreEmbeds embeds = 16;
 }
 
 message ExploreState {
@@ -396,6 +398,11 @@ enum ExploreComparisonMode {
   EXPLORE_COMPARISON_MODE_NONE = 1;
   EXPLORE_COMPARISON_MODE_TIME = 2;
   EXPLORE_COMPARISON_MODE_DIMENSION = 3;
+}
+
+message ExploreEmbeds {
+  // If true, the pivot tab will be hidden when the explore is embedded.
+  bool hide_pivot = 1;
 }
 
 // FieldSelector describes logic for selecting a list of fields.

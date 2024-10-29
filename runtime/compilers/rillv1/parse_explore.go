@@ -30,6 +30,9 @@ type ExploreYAML struct {
 		ComparisonDimension string             `yaml:"comparison_dimension"`
 	} `yaml:"defaults"`
 	Security *SecurityPolicyYAML `yaml:"security"`
+	Embeds   *struct {
+		HidePivot bool `yaml:"hide_pivot"`
+	} `yaml:"embeds"`
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.
@@ -242,6 +245,14 @@ func (p *Parser) parseExplore(node *Node) error {
 		}
 	}
 
+	// Embeds
+	var embeds *runtimev1.ExploreEmbeds
+	if tmp.Embeds != nil {
+		embeds = &runtimev1.ExploreEmbeds{
+			HidePivot: tmp.Embeds.HidePivot,
+		}
+	}
+
 	// Track explore
 	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -261,6 +272,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
 	r.ExploreSpec.SecurityRules = rules
+	r.ExploreSpec.Embeds = embeds
 
 	return nil
 }
