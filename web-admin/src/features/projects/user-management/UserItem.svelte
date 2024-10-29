@@ -36,5 +36,6 @@
     {project}
     {user}
     isCurrentUser={user.userEmail === $currentUser.data?.user.email}
+    pendingAcceptance={!user.userName}
   />
 </div>
