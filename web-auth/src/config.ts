@@ -12,6 +12,7 @@ export const LOGIN_OPTIONS = [
   {
     name: "Microsoft",
     icon: Microsoft,
+    color: "primary-400",
     connection: "windowslive",
     label: "Continue with Microsoft",
     style: "secondary",

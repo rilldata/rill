@@ -2,7 +2,7 @@
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import { validateEmail } from "./utils";
   import { createEventDispatcher } from "svelte";
-  import LastUsedConnectionTooltip from "./LastUsedConnectionTooltip.svelte";
+  import { LOCAL_STORAGE_KEY } from "../constants";
 
   export let disabled = false;
 
@@ -15,6 +15,10 @@
     "h-10 px-4 py-2 border border-slate-300 rounded-sm text-base";
   const focusClasses =
     "ring-offset-2 focus:ring-2 focus:ring-primary-ry-300 focus:outline-none";
+
+  function getLastUsedConnection() {
+    return localStorage.getItem(LOCAL_STORAGE_KEY);
+  }
 
   function handleSubmit() {
     if (!email) {
@@ -33,20 +37,22 @@
   }
 
   $: disabled = !(email.length > 0 && validateEmail(email));
+  $: lastUsedConnection = getLastUsedConnection();
+  $: continueText = `Continue with email${
+    lastUsedConnection === "email-password" ? " (last used)" : ""
+  }`;
 </script>
 
 <form on:submit|preventDefault={handleSubmit}>
   <div class="mb-4 flex flex-col gap-y-4">
-    <LastUsedConnectionTooltip connection="email-password">
-      <input
-        class="{inputClasses} {focusClasses}"
-        style:width="400px"
-        type="email"
-        placeholder="Enter your email address"
-        id="email"
-        bind:value={email}
-      />
-    </LastUsedConnectionTooltip>
+    <input
+      class="{inputClasses} {focusClasses}"
+      style:width="400px"
+      type="email"
+      placeholder="Enter your email address"
+      id="email"
+      bind:value={email}
+    />
 
     {#if errorText}
       <div class="text-red-500 text-sm -mt-2">
@@ -57,7 +63,7 @@
 
   <CtaButton {disabled} variant="secondary" submitForm>
     <div class="flex justify-center font-medium">
-      <div>Continue</div>
+      <span>{continueText}</span>
     </div>
   </CtaButton>
 </form>

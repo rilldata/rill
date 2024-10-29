@@ -16,7 +16,6 @@
   import Spacer from "./Spacer.svelte";
   import { LOCAL_STORAGE_KEY } from "../constants";
   import { AuthStep, type Config } from "../types";
-  import LastUsedConnectionTooltip from "./LastUsedConnectionTooltip.svelte";
 
   export let configParams: string;
   export let disableForgotPassDomains = "";
@@ -156,31 +155,31 @@
 
   <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
     {#if step === AuthStep.Base}
-      {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
-        <LastUsedConnectionTooltip
-          showTooltip={lastUsedConnection === connection}
-          {connection}
-        >
-          <CtaButton
-            variant={style === "primary" ? "primary" : "secondary"}
-            on:click={() => {
-              if (import.meta.env.DEV) {
-                setLastUsedConnection(connection);
-                return;
-              }
-
-              webAuth.authorize({ connection });
+      {#each LOGIN_OPTIONS as { label, icon, color, style, connection } (connection)}
+        {@const ctaText = `${label}${
+          lastUsedConnection === connection ? " (last used)" : ""
+        }`}
+        <CtaButton
+          variant={style === "primary" ? "primary" : "secondary"}
+          on:click={() => {
+            if (import.meta.env.DEV) {
               setLastUsedConnection(connection);
-            }}
-          >
-            <div class="flex justify-center items-center gap-x-2 font-medium">
-              {#if icon}
-                <svelte:component this={icon} />
-              {/if}
-              <div>{label}</div>
-            </div>
-          </CtaButton>
-        </LastUsedConnectionTooltip>
+              return;
+            }
+
+            webAuth.authorize({ connection });
+            setLastUsedConnection(connection);
+          }}
+        >
+          <div class="flex justify-center items-center gap-x-2 font-medium">
+            {#if icon}
+              <svelte:component this={icon} {color} />
+            {/if}
+            <span>
+              {ctaText}
+            </span>
+          </div>
+        </CtaButton>
       {/each}
 
       <OrSeparator />
