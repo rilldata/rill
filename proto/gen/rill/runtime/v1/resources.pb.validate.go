@@ -4330,6 +4330,8 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for EmbedsHidePivot
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}

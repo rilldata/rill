@@ -2145,6 +2145,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * If true, the pivot tab will be hidden when the explore is embedded.
+   *
+   * @generated from field: bool embeds_hide_pivot = 16;
+   */
+  embedsHidePivot = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2165,6 +2172,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {

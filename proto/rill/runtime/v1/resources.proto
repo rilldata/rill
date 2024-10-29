@@ -348,6 +348,8 @@ message ExploreSpec {
   repeated string time_zones = 10;
   // Preset UI state to show by default.
   ExplorePreset default_preset = 15;
+  // If true, the pivot tab will be hidden when the explore is embedded.
+  bool embeds_hide_pivot = 16;
   // Security for the explore dashboard.
   // These are not currently parsed from YAML, but will be derived from the parent metrics view.
   repeated SecurityRule security_rules = 12;
