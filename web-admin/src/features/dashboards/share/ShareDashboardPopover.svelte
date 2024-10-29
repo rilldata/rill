@@ -16,7 +16,7 @@
   } from "@rilldata/web-common/components/tabs";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import OrganizationItem from "../../projects/user-management/OrganizationItem.svelte";
-    import UsergroupItem from "../../projects/user-management/UsergroupItem.svelte";
+  import UsergroupItem from "../../projects/user-management/UsergroupItem.svelte";
 
   export let createMagicAuthTokens: boolean;
   export let organization: string;
@@ -28,8 +28,6 @@
     createAdminServiceListProjectMemberUsergroups(organization, project);
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
-
-    $: console.log('projectMemberUserGroupsList: ', projectMemberUserGroupsList)
 
   $: showOrganizationSection = projectMemberUserGroupsList.some(
     (group) => group.groupName === "all-users",
@@ -87,18 +85,18 @@
           </div>
         {/if}
         {#if showGroupsSection}
-        <div class="mt-2">
-          <div class="text-xs text-gray-500 font-semibold uppercase">
-            Groups
+          <div class="mt-2">
+            <div class="text-xs text-gray-500 font-semibold uppercase">
+              Groups
+            </div>
+            <!-- 52 * 5 = 260px -->
+            <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
+              {#each projectMemberUserGroupsList as group}
+                <UsergroupItem {organization} {project} {group} />
+              {/each}
+            </div>
           </div>
-          <!-- 52 * 5 = 260px -->
-          <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
-            {#each projectMemberUserGroupsList as group}
-              <UsergroupItem {organization} {project} {group} />
-            {/each}
-          </div>
-        </div>
-      {/if}
+        {/if}
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
         <CreatePublicURLForm />
