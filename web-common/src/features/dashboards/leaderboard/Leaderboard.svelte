@@ -5,7 +5,6 @@
   import {
     createQueryServiceMetricsViewAggregation,
     V1Operation,
-    type V1Expression,
     type V1MetricsViewAggregationMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
@@ -21,12 +20,14 @@
   import {
     createAndExpression,
     createOrExpression,
-    matchExpressionByName,
     sanitiseExpression,
   } from "../stores/filter-utils";
+  import {
+    getFiltersForOtherDimensions,
+    additionalMeasures,
+  } from "../selectors";
   import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
   import { getIndependentMeasures } from "../state-managers/selectors/measures";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
 
   const slice = 7;
   const columnWidth = 66;
@@ -171,35 +172,6 @@
       visible && selectedBelowTheFold.length > 0,
     ),
   );
-
-  function getFiltersForOtherDimensions(
-    whereFilter: V1Expression,
-    dimName: string,
-  ) {
-    const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
-      matchExpressionByName(e, dimName),
-    );
-    if (exprIdx === undefined || exprIdx === -1) return whereFilter;
-
-    return createAndExpression(
-      whereFilter.cond?.exprs?.filter(
-        (e) => !matchExpressionByName(e, dimName),
-      ) ?? [],
-    );
-  }
-
-  function additionalMeasures(
-    activeMeasureName: string,
-    dimensionThresholdFilters: DimensionThresholdFilter[],
-  ) {
-    const measures = new Set<string>([activeMeasureName]);
-    dimensionThresholdFilters.forEach(({ filters }) => {
-      filters.forEach((filter) => {
-        measures.add(filter.measure);
-      });
-    });
-    return [...measures];
-  }
 
   $: ({ data: sortedData, isFetching } = $sortedQuery);
   $: belowTheFoldData = $belowTheFoldDataQuery?.data?.data ?? [];

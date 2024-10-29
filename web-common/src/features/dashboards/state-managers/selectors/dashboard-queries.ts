@@ -1,8 +1,10 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { additionalMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import { getIndependentMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { QueryServiceMetricsViewAggregationBody } from "@rilldata/web-common/runtime-client";
+import type {
+  QueryServiceMetricsViewAggregationBody,
+  V1Expression,
+} from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { prepareSortedQueryBody } from "../../dashboard-utils";
 import {
@@ -12,7 +14,10 @@ import {
 } from "./active-measure";
 import { sortingSelectors } from "./sorting";
 import { isTimeControlReady, timeControlsState } from "./time-range";
-import { getFiltersForOtherDimensions } from "./dimension-filters";
+import {
+  getFiltersForOtherDimensions,
+  additionalMeasures,
+} from "../../selectors";
 import { updateFilterOnSearch } from "../../dimension-table/dimension-table-utils";
 import { dimensionTableSearchString } from "./dimension-table";
 
@@ -30,7 +35,10 @@ export function dimensionTableSortedQueryBody(
   if (!dimensionName) {
     return {};
   }
-  let filters = getFiltersForOtherDimensions(dashData)(dimensionName);
+  let filters: V1Expression | undefined = getFiltersForOtherDimensions(
+    dashData.dashboard.whereFilter,
+    dimensionName,
+  );
   const searchString = dimensionTableSearchString(dashData);
   if (searchString !== undefined) {
     filters = updateFilterOnSearch(filters, searchString, dimensionName);
@@ -51,7 +59,10 @@ export function dimensionTableSortedQueryBody(
 function measuresForDimensionTable(dashData: DashboardDataSources) {
   const allMeasures = new Set([
     ...selectedMeasureNames(dashData),
-    ...additionalMeasures(dashData),
+    ...additionalMeasures(
+      dashData.dashboard.leaderboardMeasureName,
+      dashData.dashboard.dimensionThresholdFilters,
+    ),
   ]);
   return getIndependentMeasures(dashData.validMetricsView ?? {}, [
     ...allMeasures,
@@ -80,7 +91,10 @@ export function leaderboardSortedQueryBody(
       dimensionName,
       getIndependentMeasures(
         dashData.validMetricsView ?? {},
-        additionalMeasures(dashData),
+        additionalMeasures(
+          dashData.dashboard.leaderboardMeasureName,
+          dashData.dashboard.dimensionThresholdFilters,
+        ),
       ),
       timeControlsState(dashData),
       sortingSelectors.sortMeasure(dashData),
@@ -88,7 +102,10 @@ export function leaderboardSortedQueryBody(
       sortingSelectors.sortedAscending(dashData),
       mergeMeasureFilters(
         dashData.dashboard,
-        getFiltersForOtherDimensions(dashData)(dimensionName),
+        getFiltersForOtherDimensions(
+          dashData.dashboard.whereFilter,
+          dimensionName,
+        ),
       ),
       8,
     );
@@ -103,7 +120,10 @@ export function leaderboardSortedQueryOptions(
   return (dimensionName: string, enabled: boolean) => {
     const sortedQueryEnabled =
       timeControlsState(dashData).ready === true &&
-      !!getFiltersForOtherDimensions(dashData)(dimensionName);
+      !!getFiltersForOtherDimensions(
+        dashData.dashboard.whereFilter,
+        dimensionName,
+      );
     return {
       query: {
         enabled: enabled && sortedQueryEnabled,
@@ -120,7 +140,10 @@ export function leaderboardDimensionTotalQueryBody(
     where: sanitiseExpression(
       mergeMeasureFilters(
         dashData.dashboard,
-        getFiltersForOtherDimensions(dashData)(dimensionName),
+        getFiltersForOtherDimensions(
+          dashData.dashboard.whereFilter,
+          dimensionName,
+        ),
       ),
       undefined,
     ),
@@ -138,7 +161,10 @@ export function leaderboardDimensionTotalQueryOptions(
         enabled:
           isAnyMeasureSelected(dashData) &&
           isTimeControlReady(dashData) &&
-          !!getFiltersForOtherDimensions(dashData)(dimensionName),
+          !!getFiltersForOtherDimensions(
+            dashData.dashboard.whereFilter,
+            dimensionName,
+          ),
       },
     };
   };
