@@ -13,6 +13,7 @@
   export let organization: string;
   export let project: string;
   export let group: V1MemberUsergroup;
+  export let manageProjectMembers: boolean;
 
   let isHovered = false;
 
@@ -35,7 +36,9 @@
     on:blur={() => (isHovered = false)}
   >
     <UsergroupAvatar {organization} usergroup={group.groupName} />
-    <UsergroupSetRole {organization} {project} {group} />
+    {#if manageProjectMembers}
+      <UsergroupSetRole {organization} {project} {group} />
+    {/if}
   </div>
 
   <TooltipContent maxWidth="121px" slot="tooltip-content">

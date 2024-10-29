@@ -194,7 +194,7 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage && manageProjectMembers}
-      <ShareProjectPopover {organization} {project} />
+      <ShareProjectPopover {organization} {project} {manageProjectMembers} />
     {/if}
     {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
       {#if exploreSpec}
@@ -215,6 +215,7 @@
                 {createMagicAuthTokens}
                 {organization}
                 {project}
+                {manageProjectMembers}
               />
             {/if}
           </StateManagersProvider>

@@ -18,6 +18,7 @@
   import UsergroupItem from "./UsergroupItem.svelte";
   import UserItem from "./UserItem.svelte";
 
+  export let manageProjectMembers: boolean;
   export let organization: string;
   export let project: string;
 
@@ -92,6 +93,7 @@
               {organization}
               {project}
               group={showAllUsersGroup ?? null}
+              {manageProjectMembers}
             />
           </div>
         </div>
@@ -104,7 +106,12 @@
           <!-- 52 * 5 = 260px -->
           <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
             {#each projectMemberUserGroupsList as group}
-              <UsergroupItem {organization} {project} {group} />
+              <UsergroupItem
+                {organization}
+                {project}
+                {group}
+                {manageProjectMembers}
+              />
             {/each}
           </div>
         </div>

@@ -10,9 +10,10 @@
     createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
 
+  export let group: V1MemberUsergroup;
+  export let manageProjectMembers: boolean;
   export let organization: string;
   export let project: string;
-  export let group: V1MemberUsergroup;
 
   let isHovered = false;
 
@@ -43,7 +44,9 @@
         count={userGroupMemberUsersCount}
         isEveryFromText
       />
-      <UserManagementOrganizationSetRole {organization} {project} {group} />
+      {#if manageProjectMembers}
+        <UserManagementOrganizationSetRole {organization} {project} {group} />
+      {/if}
     </div>
 
     <TooltipContent maxWidth="121px" slot="tooltip-content">
