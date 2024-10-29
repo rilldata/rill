@@ -56,7 +56,7 @@ export const getDimensionDisplayName = (
 ): ((name: string) => string) => {
   return (name: string) => {
     const dim = getDimensionByName(dashData)(name);
-    return (dim?.label?.length ? dim?.label : dim?.name) ?? name;
+    return (dim?.displayName?.length ? dim?.displayName : dim?.name) ?? name;
   };
 };
 

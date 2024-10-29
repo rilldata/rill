@@ -7,7 +7,7 @@ sidebar_position: 30
 
 ## Common Customizations
 
-You will find below some common customizations and metrics-view configurations that are available for end users. 
+You will find below some common customizations and metrics view configurations that are available for end users. 
 
 :::info Metric View properties
 
@@ -39,7 +39,7 @@ Defining security policies for your data is crucial for security. For more infor
 version: 1 #defines version 
 type: metrics_view # metrics_view
 
-title: The title of your metrics_view
+title: The title of your metrics view
 display_name: The display_name
 description: A description
 model: refernce the model or table, 

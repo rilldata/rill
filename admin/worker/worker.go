@@ -84,12 +84,6 @@ func (w *Worker) Run(ctx context.Context) error {
 		})
 	}
 
-	if w.admin.Biller.Name() != "noop" {
-		group.Go(func() error {
-			// deprecate this in next version when all orgs are migrated to billing system and init org billing is moved to a background retryable job
-			return w.schedule(ctx, "run_billing_repair", w.repairOrgBilling, 10*time.Minute)
-		})
-	}
 	// NOTE: Add new scheduled jobs here
 
 	w.logger.Info("worker started")

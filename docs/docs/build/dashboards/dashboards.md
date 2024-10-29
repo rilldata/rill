@@ -5,7 +5,7 @@ sidebar_label: Create Dashboards
 sidebar_position: 00
 ---
 
-In Rill, dashboards are one of many components that access the metrics layer. Currently, it is possible to create an explore dashboard but more features are on the way!
+In Rill, dashboards are one of many components that access the metrics layer. Currently, it is only possible to create an explore dashboard but more features are on the way!
 
 ![img](/img/build/dashboard/explore-dashboard.png)
 
@@ -27,7 +27,7 @@ measures:
 :::tip
 Starting in version 0.50, metrics view has been separated from dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
 
-For migration steps, see [Migrations](/manage/migration#v049---v050).
+For migration steps, see [Migrations](/latest-changes/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::
 
 

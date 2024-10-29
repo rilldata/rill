@@ -18,7 +18,7 @@ func TestInformationSchemaAll(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background())
+	tables, err := olap.InformationSchema().All(context.Background(), "")
 	require.NoError(t, err)
 	require.Equal(t, 3, len(tables))
 
@@ -33,6 +33,26 @@ func TestInformationSchemaAll(t *testing.T) {
 	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
 
 	require.Equal(t, true, tables[2].View)
+}
+
+func TestInformationSchemaAllLike(t *testing.T) {
+	conn := prepareConn(t)
+	olap, _ := conn.AsOLAP("")
+
+	err := olap.Exec(context.Background(), &drivers.Statement{
+		Query: "CREATE VIEW model as (select 1, 2, 3)",
+	})
+	require.NoError(t, err)
+
+	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, "model", tables[0].Name)
+
+	tables, err = olap.InformationSchema().All(context.Background(), "%main.model%")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, "model", tables[0].Name)
 }
 
 func TestInformationSchemaLookup(t *testing.T) {

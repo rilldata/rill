@@ -53,9 +53,8 @@ There are different ways this can be achieved and the method also depends heavil
 type: source
 connector: s3
 path: s3://bucket/path/**/*.parquet
-env:
-  dev:
-    path: s3://bucket/path/year=2023/month=12/**/*.parquet
+dev:
+  path: s3://bucket/path/year=2023/month=12/**/*.parquet
 ```
 
 By leveraging the [environment YAML syntax](/build/models/environments.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](templating.md), the `source.yaml` could be rewritten to something like the following:

@@ -1,23 +1,22 @@
 <script lang="ts">
-  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
-  import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import { page } from "$app/stores";
+  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
     useValidExplores,
   } from "@rilldata/web-common/features/dashboards/selectors.js";
-  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
+  import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
-  import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { get } from "svelte/store";
-  import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import { parseDocument } from "yaml";
+  import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
+  import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
   export let mode: string;
 
@@ -60,12 +59,6 @@
 
   $: currentPath = [projectTitle, dashboardName?.toLowerCase()];
 
-  $: currentDashboard = explores.find(
-    (d) => d.meta?.name?.name?.toLowerCase() === dashboardName?.toLowerCase(),
-  );
-
-  $: metricsViewName = currentDashboard?.meta?.name?.name;
-
   async function submitTitleChange(editedTitle: string) {
     const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
 
@@ -80,7 +73,7 @@
     }
     const parsed = parseDocument(content);
 
-    parsed.set("title", editedTitle);
+    parsed.set("display_name", editedTitle);
 
     artifact.updateLocalContent(parsed.toString(), true);
     await artifact.saveLocalContent();
@@ -114,10 +107,8 @@
 
   <div class="ml-auto flex gap-x-2">
     {#if mode === "Preview"}
-      {#if route.id?.includes("explore") && metricsViewName}
-        <StateManagersProvider {metricsViewName} exploreName={dashboardName}>
-          <ExplorePreviewCTAs exploreName={dashboardName} />
-        </StateManagersProvider>
+      {#if route.id?.includes("explore")}
+        <ExplorePreviewCTAs exploreName={dashboardName} />
       {/if}
     {/if}
     <DeployProjectCTA {hasValidDashboard} />

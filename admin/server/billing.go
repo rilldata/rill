@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -84,6 +86,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Errorf(codes.FailedPrecondition, "plan cannot be changed on existing subscription as it was cancelled, please renew the subscription")
 	}
 
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
 	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
@@ -101,14 +105,14 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if bi != nil {
-			// check against trial orgs quota
-			if org.CreatedByUserID != nil {
+			// check against trial orgs quota, skip for superusers
+			if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
 				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
 				}
 				if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
-					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
+					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota of %d reached for user %s", u.QuotaTrialOrgs, u.Email)
 				}
 			}
 
@@ -116,6 +120,18 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
+
+			// send trial started email
+			err = s.admin.Email.SendTrialStarted(&email.TrialStarted{
+				ToEmail:      org.BillingEmail,
+				ToName:       org.Name,
+				OrgName:      org.Name,
+				TrialEndDate: sub.TrialEndDate,
+			})
+			if err != nil {
+				s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+			}
+
 			return &adminv1.UpdateBillingSubscriptionResponse{
 				Organization: organizationToDTO(updatedOrg),
 				Subscription: subscriptionToDTO(sub),
@@ -123,10 +139,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
-	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-
 	if !plan.Public && !forceAccess {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %s", plan.Name)
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)
 	}
 
 	// check for validation errors
@@ -179,7 +193,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}, nil
 }
 
-// CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+// CancelBillingSubscription cancels the billing subscription for the organization
 func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.CancelBillingSubscriptionRequest) (*adminv1.CancelBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 
@@ -191,6 +205,10 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to cancel org subscription")
+	}
+
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
 
 	endDate, err := s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
@@ -215,6 +233,16 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 
 	// clean up any trial related billing issues if present
 	err = s.admin.CleanupTrialBillingIssues(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
+		ToEmail: org.BillingEmail,
+		ToName:  org.Name,
+		OrgName: org.Name,
+		EndDate: endDate,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -260,6 +288,10 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	}
 
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
+	if !plan.Public && !forceAccess {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to a private plan %q", plan.Name)
+	}
 
 	// check for validation errors
 	err = s.planChangeValidationChecks(ctx, org, forceAccess)
@@ -348,6 +380,11 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 		return nil, status.Error(codes.FailedPrecondition, "payment customer not initialized yet for the organization")
 	}
 
+	// returnUrl is mandatory so if not passed default to home page
+	if req.ReturnUrl == "" {
+		req.ReturnUrl = s.admin.URLs.Frontend()
+	}
+
 	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -402,7 +439,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	var sub *billing.Subscription
 	if req.BillingCustomerId != nil {
 		// get active subscriptions if present
-		sub, err = s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+		sub, err = s.admin.Biller.GetActiveSubscription(ctx, *req.BillingCustomerId)
 		if err != nil {
 			if !errors.Is(err, billing.ErrNotFound) {
 				return nil, status.Error(codes.Internal, err.Error())
@@ -425,10 +462,40 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}
 
 	if req.PaymentCustomerId != nil {
+		// fetch the customer
+		pc, err := s.admin.PaymentProvider.FindCustomer(ctx, *req.PaymentCustomerId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
 		// link the payment customer to the billing customer
 		err = s.admin.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, billing.PaymentProviderStripe, *req.PaymentCustomerId)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		if !pc.HasPaymentMethod {
+			_, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingIssueTypeNoPaymentMethod,
+				Metadata:  &database.BillingIssueMetadataNoPaymentMethod{},
+				EventTime: time.Now(),
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		if !pc.HasBillableAddress {
+			_, err := s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+				OrgID:     org.ID,
+				Type:      database.BillingIssueTypeNoBillableAddress,
+				Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
+				EventTime: time.Now(),
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
 	}
 
@@ -442,6 +509,143 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		Organization: organizationToDTO(org),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
+}
+
+func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTrialRequest) (*adminv1.SudoExtendTrialResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	days := int(req.Days)
+	observability.AddRequestAttributes(ctx, attribute.Int("args.days", days))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can extend trial")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	ns, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	if ns != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "organization %s never subscribed to a plan", org.Name)
+	}
+
+	// find existing trial end date
+	currentEndDate := time.Time{}
+	onTrial, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnTrial)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+	if onTrial != nil {
+		currentEndDate = onTrial.Metadata.(*database.BillingIssueMetadataOnTrial).GracePeriodEndDate
+	}
+
+	if currentEndDate.IsZero() {
+		trialEnded, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialEnded)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+		if trialEnded != nil {
+			currentEndDate = trialEnded.Metadata.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate
+		}
+	}
+
+	if currentEndDate.IsZero() {
+		subCancelled, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+		if subCancelled != nil {
+			currentEndDate = subCancelled.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate
+		}
+	}
+
+	if currentEndDate.IsZero() || currentEndDate.Before(time.Now()) {
+		currentEndDate = time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1)
+	}
+
+	newEndDate := currentEndDate.AddDate(0, 0, days)
+
+	// start a new trial, if already on trial plan, this will not create new subscription, if not on trial plan it will error
+	_, sub, err := s.admin.StartTrial(ctx, org)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if sub.ID != "" {
+		// update on trial metadata with new end date
+		_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID: org.ID,
+			Type:  database.BillingIssueTypeOnTrial,
+			Metadata: database.BillingIssueMetadataOnTrial{
+				SubID:              sub.ID,
+				PlanID:             sub.Plan.ID,
+				EndDate:            newEndDate,
+				GracePeriodEndDate: newEndDate,
+			},
+			EventTime: time.Now(),
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// send trial extended email
+		err = s.admin.Email.SendTrialExtended(&email.TrialExtended{
+			ToEmail:      org.BillingEmail,
+			ToName:       org.Name,
+			OrgName:      org.Name,
+			TrialEndDate: newEndDate,
+		})
+		if err != nil {
+			s.logger.Named("billing").Error("failed to send trial extended email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		}
+	}
+
+	// if trial subscription was cancelled then unschedule the cancellation
+	if sub.EndDate == sub.CurrentBillingCycleEndDate {
+		// if trial subscription was cancelled then unschedule the cancellation
+		_, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	return &adminv1.SudoExtendTrialResponse{TrialEnd: timestamppb.New(newEndDate)}, nil
+}
+
+func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.SudoTriggerBillingRepairRequest) (*adminv1.SudoTriggerBillingRepairResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can trigger billing repair")
+	}
+
+	ids, err := s.admin.DB.FindOrganizationIDsWithoutBilling(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get organizations without billing id: %v", err))
+	}
+
+	for _, orgID := range ids {
+		_, err := s.admin.Jobs.RepairOrgBilling(ctx, orgID)
+		if err != nil {
+			s.logger.Named("billing").Error("failed to submit repair billing job", zap.String("org_id", orgID), zap.Error(err))
+			continue
+		}
+	}
+
+	return &adminv1.SudoTriggerBillingRepairResponse{}, nil
 }
 
 func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPublicBillingPlansRequest) (*adminv1.ListPublicBillingPlansResponse, error) {
@@ -548,10 +752,16 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// schedule job to handle billing issues
-	_, err = s.admin.Jobs.HandlePlanChangeBillingIssues(ctx, org.ID, sub.ID, sub.Plan.ID, sub.CurrentBillingCycleStartDate)
+	// delete any trial related billing issues, irrespective of the new plan.
+	err = s.admin.CleanupTrialBillingIssues(ctx, org.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to cleanup trial billing errors and warnings: %w", err)
+	}
+
+	// delete any subscription related billing issues
+	err = s.admin.CleanupSubscriptionBillingIssues(ctx, org.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to cleanup subscription cancellation errors: %w", err)
 	}
 
 	return org, nil
@@ -569,7 +779,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 	}
 
 	if !pc.HasBillableAddress {
-		validationErrs = append(validationErrs, "no billing address found, click on update information to add billing address")
+		validationErrs = append(validationErrs, "no billing address found")
 	}
 
 	be, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
@@ -579,7 +789,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 		}
 	}
 	if be != nil {
-		validationErrs = append(validationErrs, "a previous payment is due, please pay the outstanding amount")
+		validationErrs = append(validationErrs, "a previous payment is due")
 	}
 
 	if len(validationErrs) > 0 && !forceAccess {
@@ -593,11 +803,11 @@ func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 	return &adminv1.Subscription{
 		Id:                           sub.ID,
 		Plan:                         billingPlanToDTO(sub.Plan),
-		StartDate:                    timestamppb.New(sub.StartDate),
-		EndDate:                      timestamppb.New(sub.EndDate),
-		CurrentBillingCycleStartDate: timestamppb.New(sub.CurrentBillingCycleStartDate),
-		CurrentBillingCycleEndDate:   timestamppb.New(sub.CurrentBillingCycleEndDate),
-		TrialEndDate:                 timestamppb.New(sub.TrialEndDate),
+		StartDate:                    valOrNullTime(sub.StartDate),
+		EndDate:                      valOrNullTime(sub.EndDate),
+		CurrentBillingCycleStartDate: valOrNullTime(sub.CurrentBillingCycleStartDate),
+		CurrentBillingCycleEndDate:   valOrNullTime(sub.CurrentBillingCycleEndDate),
+		TrialEndDate:                 valOrNullTime(sub.TrialEndDate),
 	}
 }
 
@@ -680,7 +890,8 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_OnTrial{
 				OnTrial: &adminv1.BillingIssueMetadataOnTrial{
-					EndDate: timestamppb.New(m.(*database.BillingIssueMetadataOnTrial).EndDate),
+					EndDate:            valOrNullTime(m.(*database.BillingIssueMetadataOnTrial).EndDate),
+					GracePeriodEndDate: valOrNullTime(m.(*database.BillingIssueMetadataOnTrial).GracePeriodEndDate),
 				},
 			},
 		}
@@ -688,7 +899,8 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_TrialEnded{
 				TrialEnded: &adminv1.BillingIssueMetadataTrialEnded{
-					GracePeriodEndDate: timestamppb.New(m.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate),
+					EndDate:            valOrNullTime(m.(*database.BillingIssueMetadataTrialEnded).EndDate),
+					GracePeriodEndDate: valOrNullTime(m.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate),
 				},
 			},
 		}
@@ -709,12 +921,13 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		invoices := make([]*adminv1.BillingIssueMetadataPaymentFailedMeta, 0)
 		for k := range paymentFailed.Invoices {
 			invoices = append(invoices, &adminv1.BillingIssueMetadataPaymentFailedMeta{
-				InvoiceId:     paymentFailed.Invoices[k].ID,
-				InvoiceNumber: paymentFailed.Invoices[k].Number,
-				InvoiceUrl:    paymentFailed.Invoices[k].URL,
-				AmountDue:     paymentFailed.Invoices[k].Amount,
-				Currency:      paymentFailed.Invoices[k].Currency,
-				DueDate:       timestamppb.New(paymentFailed.Invoices[k].DueDate),
+				InvoiceId:          paymentFailed.Invoices[k].ID,
+				InvoiceNumber:      paymentFailed.Invoices[k].Number,
+				InvoiceUrl:         paymentFailed.Invoices[k].URL,
+				AmountDue:          paymentFailed.Invoices[k].Amount,
+				Currency:           paymentFailed.Invoices[k].Currency,
+				DueDate:            valOrNullTime(paymentFailed.Invoices[k].DueDate),
+				GracePeriodEndDate: valOrNullTime(paymentFailed.Invoices[k].GracePeriodEndDate),
 			})
 		}
 		return &adminv1.BillingIssueMetadata{
@@ -728,7 +941,7 @@ func billingIssueMetadataToDTO(t database.BillingIssueType, m database.BillingIs
 		return &adminv1.BillingIssueMetadata{
 			Metadata: &adminv1.BillingIssueMetadata_SubscriptionCancelled{
 				SubscriptionCancelled: &adminv1.BillingIssueMetadataSubscriptionCancelled{
-					EndDate: timestamppb.New(m.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate),
+					EndDate: valOrNullTime(m.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate),
 				},
 			},
 		}
@@ -778,6 +991,13 @@ func comparableInt64(v *int64) int64 {
 		return math.MaxInt64
 	}
 	return *v
+}
+
+func valOrNullTime(v time.Time) *timestamppb.Timestamp {
+	if v.IsZero() {
+		return nil
+	}
+	return timestamppb.New(v)
 }
 
 func biggerOfInt(ptr *int, def int) int {

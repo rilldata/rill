@@ -13,7 +13,7 @@ func TestAcquireHandle(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			`rill.yaml`: `
-title: Hello world
+display_name: Hello world
 description: This project says hello to the world
 
 connectors:

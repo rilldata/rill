@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/riverqueue/river"
@@ -112,11 +111,9 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 
 	org, sub, err := w.admin.StartTrial(ctx, org)
 	if err != nil {
-		w.logger.Error("failed to start trial for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		w.logger.Error("failed to start trial for organization", zap.String("org_id", job.Args.OrgID), zap.Error(err))
 		return err
 	}
-
-	w.logger.Info("started trial for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("trial_end_date", sub.TrialEndDate.String()))
 
 	// send trial started email
 	err = w.admin.Email.SendTrialStarted(&email.TrialStarted{
@@ -155,13 +152,18 @@ func (w *PurgeOrgWorker) Work(ctx context.Context, job *river.Job[PurgeOrgArgs])
 		return err
 	}
 
-	// cancel subscription
 	if org.BillingCustomerID != "" {
-		_, err = w.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
+		err = w.admin.Biller.DeleteCustomer(ctx, org.BillingCustomerID)
 		if err != nil {
-			w.logger.Error("failed to cancel subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+			w.logger.Error("failed to delete billing customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
 		}
-		w.logger.Warn("canceled subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+	}
+
+	if org.PaymentCustomerID != "" {
+		err = w.admin.PaymentProvider.DeleteCustomer(ctx, org.PaymentCustomerID)
+		if err != nil {
+			w.logger.Error("failed to delete payment customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+		}
 	}
 
 	// delete org, billing issues will be cascade deleted
@@ -169,6 +171,8 @@ func (w *PurgeOrgWorker) Work(ctx context.Context, job *river.Job[PurgeOrgArgs])
 	if err != nil {
 		return err
 	}
+
+	w.logger.Warn("organization purged", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	return nil
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils";
@@ -49,11 +50,16 @@
         href={isCurrentPage
           ? "#top"
           : linkMaker(currentPath, depth, current, selected, "")}
-        class="text-gray-500 hover:text-gray-600"
+        class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
-        {selected?.label}
+        <span>{selected?.label}</span>
       </a>
+      {#if selected?.pill}
+        <Chip type="dimension" label={selected.pill} readOnly compact>
+          <svelte:fragment slot="body">{selected.pill}</svelte:fragment>
+        </Chip>
+      {/if}
     {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>
@@ -85,8 +91,9 @@
                 }
               }}
             >
-              <span class="text-xs text-gray-800 flex-grow">{option.label}</span
-              >
+              <span class="text-xs text-gray-800 flex-grow">
+                {option.label}
+              </span>
             </DropdownMenu.CheckboxItem>
           {/each}
         </DropdownMenu.Content>

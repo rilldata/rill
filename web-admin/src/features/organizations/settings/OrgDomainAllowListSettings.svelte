@@ -9,7 +9,7 @@
   import {
     getUserDomain,
     userDomainIsPublic,
-  } from "@rilldata/web-admin/features/projects/user-invite/selectors";
+  } from "@rilldata/web-admin/features/projects/user-management/selectors";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import DelayedCircleOutlineSpinner from "@rilldata/web-common/components/spinner/DelayedCircleOutlineSpinner.svelte";
@@ -69,10 +69,8 @@
             $allowDomainMutation.isLoading}
         >
           <Switch
-            small
             checked={domainAllowed}
             id="allow-domain"
-            class="mt-1"
             on:click={updateAllowedDomain}
           />
         </DelayedCircleOutlineSpinner>
@@ -90,10 +88,11 @@
     <div class="mt-2 font-medium text-sm">
       <div>Domains added to allowlist by other admins</div>
       {#if $allowedDomains.data?.domains?.length}
-        <div class="flex flex-col">
+        <div class="flex flex-col ml-2 mt-1 gap-y-1">
           {#each $allowedDomains.data.domains as { domain } (domain)}
-            <div class="text-gray-500">@{domain}</div>
+            <div class="text-gray-500 font-normal">@{domain}</div>
           {/each}
+          <div class="text-gray-500 font-normal">@aditya</div>
         </div>
       {:else}
         <div class="text-gray-500">none</div>

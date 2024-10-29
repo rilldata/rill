@@ -30,10 +30,10 @@ const (
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_GetProjectByID_FullMethodName                        = "/rill.admin.v1.AdminService/GetProjectByID"
 	AdminService_SearchProjectNames_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectNames"
-	AdminService_GetProjectVariables_FullMethodName                   = "/rill.admin.v1.AdminService/GetProjectVariables"
 	AdminService_CreateProject_FullMethodName                         = "/rill.admin.v1.AdminService/CreateProject"
 	AdminService_DeleteProject_FullMethodName                         = "/rill.admin.v1.AdminService/DeleteProject"
 	AdminService_UpdateProject_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateProject"
+	AdminService_GetProjectVariables_FullMethodName                   = "/rill.admin.v1.AdminService/GetProjectVariables"
 	AdminService_UpdateProjectVariables_FullMethodName                = "/rill.admin.v1.AdminService/UpdateProjectVariables"
 	AdminService_CreateAsset_FullMethodName                           = "/rill.admin.v1.AdminService/CreateAsset"
 	AdminService_RedeployProject_FullMethodName                       = "/rill.admin.v1.AdminService/RedeployProject"
@@ -91,10 +91,12 @@ const (
 	AdminService_SudoUpdateUserQuotas_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName          = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
+	AdminService_SudoExtendTrial_FullMethodName                       = "/rill.admin.v1.AdminService/SudoExtendTrial"
 	AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName    = "/rill.admin.v1.AdminService/SudoUpdateOrganizationCustomDomain"
 	AdminService_SudoUpdateAnnotations_FullMethodName                 = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_SudoIssueRuntimeManagerToken_FullMethodName          = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
 	AdminService_SudoDeleteOrganizationBillingIssue_FullMethodName    = "/rill.admin.v1.AdminService/SudoDeleteOrganizationBillingIssue"
+	AdminService_SudoTriggerBillingRepair_FullMethodName              = "/rill.admin.v1.AdminService/SudoTriggerBillingRepair"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
 	AdminService_ListProjectWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
@@ -172,15 +174,15 @@ type AdminServiceClient interface {
 	GetProjectByID(ctx context.Context, in *GetProjectByIDRequest, opts ...grpc.CallOption) (*GetProjectByIDResponse, error)
 	// SearchProjectNames returns project names matching the pattern
 	SearchProjectNames(ctx context.Context, in *SearchProjectNamesRequest, opts ...grpc.CallOption) (*SearchProjectNamesResponse, error)
-	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
-	GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error)
 	// CreateProject creates a new project
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
 	// DeleteProject deletes an project
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
-	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+	// GetProjectVariables returns project variables.
+	GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error)
+	// UpdateProjectVariables updates variables for a project.
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error)
@@ -302,6 +304,8 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
+	// SudoExtendTrial extends the trial period for an organization
+	SudoExtendTrial(ctx context.Context, in *SudoExtendTrialRequest, opts ...grpc.CallOption) (*SudoExtendTrialResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
@@ -312,6 +316,8 @@ type AdminServiceClient interface {
 	SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
 	SudoDeleteOrganizationBillingIssue(ctx context.Context, in *SudoDeleteOrganizationBillingIssueRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingIssueResponse, error)
+	// SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+	SudoTriggerBillingRepair(ctx context.Context, in *SudoTriggerBillingRepairRequest, opts ...grpc.CallOption) (*SudoTriggerBillingRepairResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error)
 	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -388,7 +394,7 @@ type AdminServiceClient interface {
 	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
 	UpdateBillingSubscription(ctx context.Context, in *UpdateBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateBillingSubscriptionResponse, error)
-	// CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+	// CancelBillingSubscription cancels the billing subscription for the organization
 	CancelBillingSubscription(ctx context.Context, in *CancelBillingSubscriptionRequest, opts ...grpc.CallOption) (*CancelBillingSubscriptionResponse, error)
 	// RenewBillingSubscription renews the billing plan for the organization once cancelled
 	RenewBillingSubscription(ctx context.Context, in *RenewBillingSubscriptionRequest, opts ...grpc.CallOption) (*RenewBillingSubscriptionResponse, error)
@@ -522,16 +528,6 @@ func (c *adminServiceClient) SearchProjectNames(ctx context.Context, in *SearchP
 	return out, nil
 }
 
-func (c *adminServiceClient) GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetProjectVariablesResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetProjectVariables_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminServiceClient) CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateProjectResponse)
@@ -556,6 +552,16 @@ func (c *adminServiceClient) UpdateProject(ctx context.Context, in *UpdateProjec
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateProjectResponse)
 	err := c.cc.Invoke(ctx, AdminService_UpdateProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectVariablesResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetProjectVariables_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1132,6 +1138,16 @@ func (c *adminServiceClient) SudoUpdateOrganizationBillingCustomer(ctx context.C
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoExtendTrial(ctx context.Context, in *SudoExtendTrialRequest, opts ...grpc.CallOption) (*SudoExtendTrialResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoExtendTrialResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoExtendTrial_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoUpdateOrganizationCustomDomainResponse)
@@ -1166,6 +1182,16 @@ func (c *adminServiceClient) SudoDeleteOrganizationBillingIssue(ctx context.Cont
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoDeleteOrganizationBillingIssueResponse)
 	err := c.cc.Invoke(ctx, AdminService_SudoDeleteOrganizationBillingIssue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoTriggerBillingRepair(ctx context.Context, in *SudoTriggerBillingRepairRequest, opts ...grpc.CallOption) (*SudoTriggerBillingRepairResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoTriggerBillingRepairResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoTriggerBillingRepair_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1670,15 +1696,15 @@ type AdminServiceServer interface {
 	GetProjectByID(context.Context, *GetProjectByIDRequest) (*GetProjectByIDResponse, error)
 	// SearchProjectNames returns project names matching the pattern
 	SearchProjectNames(context.Context, *SearchProjectNamesRequest) (*SearchProjectNamesResponse, error)
-	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
-	GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error)
 	// CreateProject creates a new project
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
 	// DeleteProject deletes an project
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
-	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+	// GetProjectVariables returns project variables.
+	GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error)
+	// UpdateProjectVariables updates variables for a project.
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error)
@@ -1800,6 +1826,8 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
+	// SudoExtendTrial extends the trial period for an organization
+	SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
@@ -1810,6 +1838,8 @@ type AdminServiceServer interface {
 	SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
 	SudoDeleteOrganizationBillingIssue(context.Context, *SudoDeleteOrganizationBillingIssueRequest) (*SudoDeleteOrganizationBillingIssueResponse, error)
+	// SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+	SudoTriggerBillingRepair(context.Context, *SudoTriggerBillingRepairRequest) (*SudoTriggerBillingRepairResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error)
 	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -1886,7 +1916,7 @@ type AdminServiceServer interface {
 	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
 	UpdateBillingSubscription(context.Context, *UpdateBillingSubscriptionRequest) (*UpdateBillingSubscriptionResponse, error)
-	// CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+	// CancelBillingSubscription cancels the billing subscription for the organization
 	CancelBillingSubscription(context.Context, *CancelBillingSubscriptionRequest) (*CancelBillingSubscriptionResponse, error)
 	// RenewBillingSubscription renews the billing plan for the organization once cancelled
 	RenewBillingSubscription(context.Context, *RenewBillingSubscriptionRequest) (*RenewBillingSubscriptionResponse, error)
@@ -1943,9 +1973,6 @@ func (UnimplementedAdminServiceServer) GetProjectByID(context.Context, *GetProje
 func (UnimplementedAdminServiceServer) SearchProjectNames(context.Context, *SearchProjectNamesRequest) (*SearchProjectNamesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchProjectNames not implemented")
 }
-func (UnimplementedAdminServiceServer) GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProjectVariables not implemented")
-}
 func (UnimplementedAdminServiceServer) CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
 }
@@ -1954,6 +1981,9 @@ func (UnimplementedAdminServiceServer) DeleteProject(context.Context, *DeletePro
 }
 func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
+}
+func (UnimplementedAdminServiceServer) GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectVariables not implemented")
 }
 func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
@@ -2126,6 +2156,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Cont
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationBillingCustomer not implemented")
 }
+func (UnimplementedAdminServiceServer) SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoExtendTrial not implemented")
+}
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationCustomDomain not implemented")
 }
@@ -2137,6 +2170,9 @@ func (UnimplementedAdminServiceServer) SudoIssueRuntimeManagerToken(context.Cont
 }
 func (UnimplementedAdminServiceServer) SudoDeleteOrganizationBillingIssue(context.Context, *SudoDeleteOrganizationBillingIssueRequest) (*SudoDeleteOrganizationBillingIssueResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoDeleteOrganizationBillingIssue not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoTriggerBillingRepair(context.Context, *SudoTriggerBillingRepairRequest) (*SudoTriggerBillingRepairResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoTriggerBillingRepair not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProjectWhitelistedDomain not implemented")
@@ -2498,24 +2534,6 @@ func _AdminService_SearchProjectNames_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetProjectVariablesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetProjectVariables(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetProjectVariables_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetProjectVariables(ctx, req.(*GetProjectVariablesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_CreateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateProjectRequest)
 	if err := dec(in); err != nil {
@@ -2566,6 +2584,24 @@ func _AdminService_UpdateProject_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateProject(ctx, req.(*UpdateProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetProjectVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetProjectVariables_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetProjectVariables(ctx, req.(*GetProjectVariablesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3596,6 +3632,24 @@ func _AdminService_SudoUpdateOrganizationBillingCustomer_Handler(srv interface{}
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoExtendTrial_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoExtendTrialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoExtendTrial(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoExtendTrial_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoExtendTrial(ctx, req.(*SudoExtendTrialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SudoUpdateOrganizationCustomDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoUpdateOrganizationCustomDomainRequest)
 	if err := dec(in); err != nil {
@@ -3664,6 +3718,24 @@ func _AdminService_SudoDeleteOrganizationBillingIssue_Handler(srv interface{}, c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingIssue(ctx, req.(*SudoDeleteOrganizationBillingIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoTriggerBillingRepair_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoTriggerBillingRepairRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoTriggerBillingRepair(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoTriggerBillingRepair_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoTriggerBillingRepair(ctx, req.(*SudoTriggerBillingRepairRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4566,10 +4638,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SearchProjectNames_Handler,
 		},
 		{
-			MethodName: "GetProjectVariables",
-			Handler:    _AdminService_GetProjectVariables_Handler,
-		},
-		{
 			MethodName: "CreateProject",
 			Handler:    _AdminService_CreateProject_Handler,
 		},
@@ -4580,6 +4648,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateProject",
 			Handler:    _AdminService_UpdateProject_Handler,
+		},
+		{
+			MethodName: "GetProjectVariables",
+			Handler:    _AdminService_GetProjectVariables_Handler,
 		},
 		{
 			MethodName: "UpdateProjectVariables",
@@ -4810,6 +4882,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SudoUpdateOrganizationBillingCustomer_Handler,
 		},
 		{
+			MethodName: "SudoExtendTrial",
+			Handler:    _AdminService_SudoExtendTrial_Handler,
+		},
+		{
 			MethodName: "SudoUpdateOrganizationCustomDomain",
 			Handler:    _AdminService_SudoUpdateOrganizationCustomDomain_Handler,
 		},
@@ -4824,6 +4900,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoDeleteOrganizationBillingIssue",
 			Handler:    _AdminService_SudoDeleteOrganizationBillingIssue_Handler,
+		},
+		{
+			MethodName: "SudoTriggerBillingRepair",
+			Handler:    _AdminService_SudoTriggerBillingRepair_Handler,
 		},
 		{
 			MethodName: "CreateProjectWhitelistedDomain",

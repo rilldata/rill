@@ -93,6 +93,7 @@ type Config struct {
 	ScaleDownConstraint               int    `default:"0" split_words:"true"`
 	OrbAPIKey                         string `split_words:"true"`
 	OrbWebhookSecret                  string `split_words:"true"`
+	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
 }
@@ -264,7 +265,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var biller billing.Biller
 			if conf.OrbAPIKey != "" {
-				biller = billing.NewOrb(logger, conf.OrbAPIKey, conf.OrbWebhookSecret)
+				biller = billing.NewOrb(logger, conf.OrbAPIKey, conf.OrbWebhookSecret, strings.ToLower(conf.OrbIntegratedTaxProvider))
 			} else {
 				biller = billing.NewNoop()
 			}

@@ -88,7 +88,6 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &TrialGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 
 	// subscription related workers
-	river.AddWorker(workers, &HandlePlanChangeBillingIssues{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &SubscriptionCancellationCheckWorker{admin: adm, logger: billingLogger})
 
 	// org related workers
@@ -292,31 +291,6 @@ func (c *Client) PaymentSuccess(ctx context.Context, billingCustomerID, invoiceI
 	}, nil
 }
 
-func (c *Client) HandlePlanChangeBillingIssues(ctx context.Context, orgID, subID, planID string, subStartDate time.Time) (*jobs.InsertResult, error) {
-	res, err := c.riverClient.Insert(ctx, HandlePlanChangeBillingIssuesArgs{
-		OrgID:     orgID,
-		SubID:     subID,
-		PlanID:    planID,
-		StartDate: subStartDate,
-	}, &river.InsertOpts{
-		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("HandlePlanChangeBillingIssues job skipped as duplicate", zap.String("org_id", orgID), zap.String("sub_id", subID), zap.String("plan_id", planID), zap.Time("start_date", subStartDate))
-	}
-
-	return &jobs.InsertResult{
-		ID:        res.Job.ID,
-		Duplicate: res.UniqueSkippedAsDuplicate,
-	}, nil
-}
-
 func (c *Client) InitOrgBilling(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, InitOrgBillingArgs{
 		OrgID: orgID,
@@ -344,7 +318,8 @@ func (c *Client) RepairOrgBilling(ctx context.Context, orgID string) (*jobs.Inse
 		OrgID: orgID,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
-			ByArgs: true,
+			ByArgs:  true,
+			ByState: []rivertype.JobState{rivertype.JobStateAvailable, rivertype.JobStateRunning, rivertype.JobStateRetryable, rivertype.JobStateScheduled}, // to prevent concurrent run but still allow retries
 		},
 	})
 	if err != nil {
@@ -368,6 +343,7 @@ func (c *Client) StartOrgTrial(ctx context.Context, orgID string) (*jobs.InsertR
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
+		MaxAttempts: 5, // override default retries as init org billing job should complete before this if org creation and project deployment were done in single flow
 	})
 	if err != nil {
 		return nil, err

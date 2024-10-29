@@ -2845,9 +2845,31 @@ func (m *GetProjectVariablesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := GetProjectVariablesRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := GetProjectVariablesRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Environment
+
+	// no validation rules for ForAllEnvironments
 
 	if len(errors) > 0 {
 		return GetProjectVariablesRequestMultiError(errors)
@@ -2951,7 +2973,41 @@ func (m *GetProjectVariablesResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Variables
+	for idx, item := range m.GetVariables() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetProjectVariablesResponseValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetProjectVariablesResponseValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetProjectVariablesResponseValidationError{
+					field:  fmt.Sprintf("Variables[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for VariablesMap
 
 	if len(errors) > 0 {
 		return GetProjectVariablesResponseMultiError(errors)
@@ -3033,6 +3089,440 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetProjectVariablesResponseValidationError{}
+
+// Validate checks the field values on ProjectVariable with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ProjectVariable) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectVariable with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectVariableMultiError, or nil if none found.
+func (m *ProjectVariable) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectVariable) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Name
+
+	// no validation rules for Value
+
+	// no validation rules for Environment
+
+	// no validation rules for UpdatedByUserId
+
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ProjectVariableValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ProjectVariableValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ProjectVariableValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUpdatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ProjectVariableValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ProjectVariableValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ProjectVariableValidationError{
+				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ProjectVariableMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectVariableMultiError is an error wrapping multiple validation errors
+// returned by ProjectVariable.ValidateAll() if the designated constraints
+// aren't met.
+type ProjectVariableMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectVariableMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectVariableMultiError) AllErrors() []error { return m }
+
+// ProjectVariableValidationError is the validation error returned by
+// ProjectVariable.Validate if the designated constraints aren't met.
+type ProjectVariableValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectVariableValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectVariableValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectVariableValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectVariableValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectVariableValidationError) ErrorName() string { return "ProjectVariableValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ProjectVariableValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectVariable.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectVariableValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectVariableValidationError{}
+
+// Validate checks the field values on UpdateProjectVariablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateProjectVariablesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateProjectVariablesRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// UpdateProjectVariablesRequestMultiError, or nil if none found.
+func (m *UpdateProjectVariablesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateProjectVariablesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := UpdateProjectVariablesRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := UpdateProjectVariablesRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Environment
+
+	// no validation rules for Variables
+
+	if len(errors) > 0 {
+		return UpdateProjectVariablesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateProjectVariablesRequestMultiError is an error wrapping multiple
+// validation errors returned by UpdateProjectVariablesRequest.ValidateAll()
+// if the designated constraints aren't met.
+type UpdateProjectVariablesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateProjectVariablesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateProjectVariablesRequestMultiError) AllErrors() []error { return m }
+
+// UpdateProjectVariablesRequestValidationError is the validation error
+// returned by UpdateProjectVariablesRequest.Validate if the designated
+// constraints aren't met.
+type UpdateProjectVariablesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateProjectVariablesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateProjectVariablesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateProjectVariablesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateProjectVariablesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateProjectVariablesRequestValidationError) ErrorName() string {
+	return "UpdateProjectVariablesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateProjectVariablesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateProjectVariablesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateProjectVariablesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateProjectVariablesRequestValidationError{}
+
+// Validate checks the field values on UpdateProjectVariablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateProjectVariablesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateProjectVariablesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// UpdateProjectVariablesResponseMultiError, or nil if none found.
+func (m *UpdateProjectVariablesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateProjectVariablesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetVariables() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, UpdateProjectVariablesResponseValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, UpdateProjectVariablesResponseValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return UpdateProjectVariablesResponseValidationError{
+					field:  fmt.Sprintf("Variables[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return UpdateProjectVariablesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateProjectVariablesResponseMultiError is an error wrapping multiple
+// validation errors returned by UpdateProjectVariablesResponse.ValidateAll()
+// if the designated constraints aren't met.
+type UpdateProjectVariablesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateProjectVariablesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateProjectVariablesResponseMultiError) AllErrors() []error { return m }
+
+// UpdateProjectVariablesResponseValidationError is the validation error
+// returned by UpdateProjectVariablesResponse.Validate if the designated
+// constraints aren't met.
+type UpdateProjectVariablesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateProjectVariablesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateProjectVariablesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateProjectVariablesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateProjectVariablesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateProjectVariablesResponseValidationError) ErrorName() string {
+	return "UpdateProjectVariablesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateProjectVariablesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateProjectVariablesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateProjectVariablesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateProjectVariablesResponseValidationError{}
 
 // Validate checks the field values on SearchProjectUsersRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -5101,8 +5591,6 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ArchiveAssetId
 
-	// no validation rules for Variables
-
 	// no validation rules for ProdVersion
 
 	if len(errors) > 0 {
@@ -5824,238 +6312,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UpdateProjectResponseValidationError{}
-
-// Validate checks the field values on UpdateProjectVariablesRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *UpdateProjectVariablesRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on UpdateProjectVariablesRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// UpdateProjectVariablesRequestMultiError, or nil if none found.
-func (m *UpdateProjectVariablesRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *UpdateProjectVariablesRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
-		err := UpdateProjectVariablesRequestValidationError{
-			field:  "OrganizationName",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if utf8.RuneCountInString(m.GetName()) < 1 {
-		err := UpdateProjectVariablesRequestValidationError{
-			field:  "Name",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Variables
-
-	if len(errors) > 0 {
-		return UpdateProjectVariablesRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// UpdateProjectVariablesRequestMultiError is an error wrapping multiple
-// validation errors returned by UpdateProjectVariablesRequest.ValidateAll()
-// if the designated constraints aren't met.
-type UpdateProjectVariablesRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m UpdateProjectVariablesRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m UpdateProjectVariablesRequestMultiError) AllErrors() []error { return m }
-
-// UpdateProjectVariablesRequestValidationError is the validation error
-// returned by UpdateProjectVariablesRequest.Validate if the designated
-// constraints aren't met.
-type UpdateProjectVariablesRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e UpdateProjectVariablesRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e UpdateProjectVariablesRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e UpdateProjectVariablesRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e UpdateProjectVariablesRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e UpdateProjectVariablesRequestValidationError) ErrorName() string {
-	return "UpdateProjectVariablesRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e UpdateProjectVariablesRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sUpdateProjectVariablesRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = UpdateProjectVariablesRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = UpdateProjectVariablesRequestValidationError{}
-
-// Validate checks the field values on UpdateProjectVariablesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *UpdateProjectVariablesResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on UpdateProjectVariablesResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// UpdateProjectVariablesResponseMultiError, or nil if none found.
-func (m *UpdateProjectVariablesResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *UpdateProjectVariablesResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Variables
-
-	if len(errors) > 0 {
-		return UpdateProjectVariablesResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// UpdateProjectVariablesResponseMultiError is an error wrapping multiple
-// validation errors returned by UpdateProjectVariablesResponse.ValidateAll()
-// if the designated constraints aren't met.
-type UpdateProjectVariablesResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m UpdateProjectVariablesResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m UpdateProjectVariablesResponseMultiError) AllErrors() []error { return m }
-
-// UpdateProjectVariablesResponseValidationError is the validation error
-// returned by UpdateProjectVariablesResponse.Validate if the designated
-// constraints aren't met.
-type UpdateProjectVariablesResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e UpdateProjectVariablesResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e UpdateProjectVariablesResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e UpdateProjectVariablesResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e UpdateProjectVariablesResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e UpdateProjectVariablesResponseValidationError) ErrorName() string {
-	return "UpdateProjectVariablesResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e UpdateProjectVariablesResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sUpdateProjectVariablesResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = UpdateProjectVariablesResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = UpdateProjectVariablesResponseValidationError{}
 
 // Validate checks the field values on CreateAssetRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -10489,6 +10745,261 @@ var _ interface {
 	ErrorName() string
 } = SudoUpdateOrganizationBillingCustomerResponseValidationError{}
 
+// Validate checks the field values on SudoExtendTrialRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoExtendTrialRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoExtendTrialRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoExtendTrialRequestMultiError, or nil if none found.
+func (m *SudoExtendTrialRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoExtendTrialRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := SudoExtendTrialRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if val := m.GetDays(); val <= 0 || val > 30 {
+		err := SudoExtendTrialRequestValidationError{
+			field:  "Days",
+			reason: "value must be inside range (0, 30]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return SudoExtendTrialRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoExtendTrialRequestMultiError is an error wrapping multiple validation
+// errors returned by SudoExtendTrialRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoExtendTrialRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoExtendTrialRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoExtendTrialRequestMultiError) AllErrors() []error { return m }
+
+// SudoExtendTrialRequestValidationError is the validation error returned by
+// SudoExtendTrialRequest.Validate if the designated constraints aren't met.
+type SudoExtendTrialRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoExtendTrialRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoExtendTrialRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoExtendTrialRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoExtendTrialRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoExtendTrialRequestValidationError) ErrorName() string {
+	return "SudoExtendTrialRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoExtendTrialRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoExtendTrialRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoExtendTrialRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoExtendTrialRequestValidationError{}
+
+// Validate checks the field values on SudoExtendTrialResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoExtendTrialResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoExtendTrialResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoExtendTrialResponseMultiError, or nil if none found.
+func (m *SudoExtendTrialResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoExtendTrialResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetTrialEnd()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SudoExtendTrialResponseValidationError{
+					field:  "TrialEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SudoExtendTrialResponseValidationError{
+					field:  "TrialEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTrialEnd()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SudoExtendTrialResponseValidationError{
+				field:  "TrialEnd",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SudoExtendTrialResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoExtendTrialResponseMultiError is an error wrapping multiple validation
+// errors returned by SudoExtendTrialResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SudoExtendTrialResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoExtendTrialResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoExtendTrialResponseMultiError) AllErrors() []error { return m }
+
+// SudoExtendTrialResponseValidationError is the validation error returned by
+// SudoExtendTrialResponse.Validate if the designated constraints aren't met.
+type SudoExtendTrialResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoExtendTrialResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoExtendTrialResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoExtendTrialResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoExtendTrialResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoExtendTrialResponseValidationError) ErrorName() string {
+	return "SudoExtendTrialResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoExtendTrialResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoExtendTrialResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoExtendTrialResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoExtendTrialResponseValidationError{}
+
 // Validate checks the field values on
 // SudoUpdateOrganizationCustomDomainRequest with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -11667,6 +12178,214 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SudoDeleteOrganizationBillingIssueResponseValidationError{}
+
+// Validate checks the field values on SudoTriggerBillingRepairRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoTriggerBillingRepairRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoTriggerBillingRepairRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SudoTriggerBillingRepairRequestMultiError, or nil if none found.
+func (m *SudoTriggerBillingRepairRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoTriggerBillingRepairRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SudoTriggerBillingRepairRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoTriggerBillingRepairRequestMultiError is an error wrapping multiple
+// validation errors returned by SudoTriggerBillingRepairRequest.ValidateAll()
+// if the designated constraints aren't met.
+type SudoTriggerBillingRepairRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoTriggerBillingRepairRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoTriggerBillingRepairRequestMultiError) AllErrors() []error { return m }
+
+// SudoTriggerBillingRepairRequestValidationError is the validation error
+// returned by SudoTriggerBillingRepairRequest.Validate if the designated
+// constraints aren't met.
+type SudoTriggerBillingRepairRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoTriggerBillingRepairRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoTriggerBillingRepairRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoTriggerBillingRepairRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoTriggerBillingRepairRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoTriggerBillingRepairRequestValidationError) ErrorName() string {
+	return "SudoTriggerBillingRepairRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoTriggerBillingRepairRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoTriggerBillingRepairRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoTriggerBillingRepairRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoTriggerBillingRepairRequestValidationError{}
+
+// Validate checks the field values on SudoTriggerBillingRepairResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *SudoTriggerBillingRepairResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoTriggerBillingRepairResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SudoTriggerBillingRepairResponseMultiError, or nil if none found.
+func (m *SudoTriggerBillingRepairResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoTriggerBillingRepairResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SudoTriggerBillingRepairResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoTriggerBillingRepairResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// SudoTriggerBillingRepairResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SudoTriggerBillingRepairResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoTriggerBillingRepairResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoTriggerBillingRepairResponseMultiError) AllErrors() []error { return m }
+
+// SudoTriggerBillingRepairResponseValidationError is the validation error
+// returned by SudoTriggerBillingRepairResponse.Validate if the designated
+// constraints aren't met.
+type SudoTriggerBillingRepairResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoTriggerBillingRepairResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoTriggerBillingRepairResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoTriggerBillingRepairResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoTriggerBillingRepairResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoTriggerBillingRepairResponseValidationError) ErrorName() string {
+	return "SudoTriggerBillingRepairResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoTriggerBillingRepairResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoTriggerBillingRepairResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoTriggerBillingRepairResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoTriggerBillingRepairResponseValidationError{}
 
 // Validate checks the field values on ListProjectMemberUsersRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -20803,7 +21522,7 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 
 	// no validation rules for State
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	if len(errors) > 0 {
 		return IssueMagicAuthTokenRequestMultiError(errors)
@@ -25067,7 +25786,7 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	// no validation rules for Report
 
-	// no validation rules for Annotations
+	// no validation rules for OwnerId
 
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {
@@ -25200,11 +25919,80 @@ func (m *GetReportMetaResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OpenUrl
+	if all {
+		switch v := interface{}(m.GetBaseUrls()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetReportMetaResponseValidationError{
+					field:  "BaseUrls",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetReportMetaResponseValidationError{
+					field:  "BaseUrls",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBaseUrls()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetReportMetaResponseValidationError{
+				field:  "BaseUrls",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
-	// no validation rules for ExportUrl
+	{
+		sorted_keys := make([]string, len(m.GetRecipientUrls()))
+		i := 0
+		for key := range m.GetRecipientUrls() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetRecipientUrls()[key]
+			_ = val
 
-	// no validation rules for EditUrl
+			// no validation rules for RecipientUrls[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, GetReportMetaResponseValidationError{
+							field:  fmt.Sprintf("RecipientUrls[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, GetReportMetaResponseValidationError{
+							field:  fmt.Sprintf("RecipientUrls[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return GetReportMetaResponseValidationError{
+						field:  fmt.Sprintf("RecipientUrls[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
 
 	if len(errors) > 0 {
 		return GetReportMetaResponseMultiError(errors)
@@ -33760,7 +34548,7 @@ func (m *MagicAuthToken) validate(all bool) error {
 
 	// no validation rules for State
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	if len(errors) > 0 {
 		return MagicAuthTokenMultiError(errors)
@@ -33996,7 +34784,7 @@ func (m *ReportOptions) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for RefreshCron
 
@@ -34116,7 +34904,7 @@ func (m *AlertOptions) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for IntervalDuration
 
@@ -35458,6 +36246,35 @@ func (m *BillingIssueMetadataOnTrial) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetGracePeriodEndDate()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, BillingIssueMetadataOnTrialValidationError{
+					field:  "GracePeriodEndDate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, BillingIssueMetadataOnTrialValidationError{
+					field:  "GracePeriodEndDate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetGracePeriodEndDate()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return BillingIssueMetadataOnTrialValidationError{
+				field:  "GracePeriodEndDate",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return BillingIssueMetadataOnTrialMultiError(errors)
 	}
@@ -35560,6 +36377,35 @@ func (m *BillingIssueMetadataTrialEnded) validate(all bool) error {
 	}
 
 	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetEndDate()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, BillingIssueMetadataTrialEndedValidationError{
+					field:  "EndDate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, BillingIssueMetadataTrialEndedValidationError{
+					field:  "EndDate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetEndDate()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return BillingIssueMetadataTrialEndedValidationError{
+				field:  "EndDate",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if all {
 		switch v := interface{}(m.GetGracePeriodEndDate()).(type) {
@@ -36576,3 +37422,111 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListGithubUserReposResponse_RepoValidationError{}
+
+// Validate checks the field values on GetReportMetaResponse_URLs with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetReportMetaResponse_URLs) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetReportMetaResponse_URLs with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetReportMetaResponse_URLsMultiError, or nil if none found.
+func (m *GetReportMetaResponse_URLs) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetReportMetaResponse_URLs) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OpenUrl
+
+	// no validation rules for ExportUrl
+
+	// no validation rules for EditUrl
+
+	if len(errors) > 0 {
+		return GetReportMetaResponse_URLsMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetReportMetaResponse_URLsMultiError is an error wrapping multiple
+// validation errors returned by GetReportMetaResponse_URLs.ValidateAll() if
+// the designated constraints aren't met.
+type GetReportMetaResponse_URLsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetReportMetaResponse_URLsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetReportMetaResponse_URLsMultiError) AllErrors() []error { return m }
+
+// GetReportMetaResponse_URLsValidationError is the validation error returned
+// by GetReportMetaResponse_URLs.Validate if the designated constraints aren't met.
+type GetReportMetaResponse_URLsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetReportMetaResponse_URLsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetReportMetaResponse_URLsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetReportMetaResponse_URLsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetReportMetaResponse_URLsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetReportMetaResponse_URLsValidationError) ErrorName() string {
+	return "GetReportMetaResponse_URLsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetReportMetaResponse_URLsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetReportMetaResponse_URLs.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetReportMetaResponse_URLsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetReportMetaResponse_URLsValidationError{}

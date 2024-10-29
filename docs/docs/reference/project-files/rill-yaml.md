@@ -10,9 +10,13 @@ The `rill.yaml` file contains metadata about your project.
 ## Properties
 
 **`title`** — the name of your project which will be displayed in the upper left hand corner
+
 **`compiler`** — the Rill project compiler version compatible with your project files (currently defaults to: `rillv1`)
+
 **`olap_connector`** - the default OLAP engine to use in your project
+
 **`mock_users`** — a list of mock users to test against dashboard [security policies](/manage/security). For each mock user, possible attributes include:
+
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name
   - **`admin`** — whether or not the mock user is an admin
@@ -77,9 +81,9 @@ As a general rule of thumb, properties that have been specified at a more _granu
 
 Primarily useful for [templating](/deploy/templating.md), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
 
-To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `vars` key:
+To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `env` key:
 ```yaml
-vars:
+env:
   numeric_var: 10
   string_var: "string_value"
 ```
@@ -89,7 +93,7 @@ vars:
 Variables also follow an order of precedence and can be overriden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 
 ```bash
-rill start --var numeric_var=100 --var string_var="different_value"
+rill start --env numeric_var=100 --env string_var="different_value"
 ```
 
 :::

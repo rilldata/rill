@@ -311,12 +311,19 @@ func (u *URLs) ReportOpen(org, project, report string, executionTime time.Time) 
 }
 
 // ReportExport returns the URL for exporting a report in the frontend.
-func (u *URLs) ReportExport(org, project, report string) string {
-	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
+func (u *URLs) ReportExport(org, project, report, token string) string {
+	exportURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
+	if token != "" {
+		exportURL += fmt.Sprintf("?token=%s", token)
+	}
+	return exportURL
 }
 
-// ReportEdit returns the URL for editing a report in the frontend.
-func (u *URLs) ReportEdit(org, project, report string) string {
+// ReportEdit returns the URL for editing a report in the frontend or unsubscribe for non-rill recipients.
+func (u *URLs) ReportEdit(org, project, report, token string) string {
+	if token != "" {
+		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "unsubscribe"), map[string]string{"token": token})
+	}
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report)
 }
 
@@ -328,4 +335,15 @@ func (u *URLs) AlertOpen(org, project, alert string) string {
 // AlertEdit returns the URL for editing an alert in the frontend.
 func (u *URLs) AlertEdit(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert)
+}
+
+// UpgradePlan returns the landing page URL to either upgrade to plan or redirect to payment portal if there are any issues.
+func (u *URLs) UpgradePlan(org string) string {
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing"), map[string]string{"upgrade": "true"})
+}
+
+// PaymentPortal returns the landing page url that redirects user to payment portal
+// Since the payment link can expire it is generated in this landing page on demand.
+func (u *URLs) PaymentPortal(org string) string {
+	return urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing", "payment")
 }

@@ -47,7 +47,7 @@
       <DropdownMenu.Group>
         {#each dashboards as resource (resource?.meta?.name?.name)}
           {@const label =
-            resource?.explore?.state?.validSpec?.title ??
+            resource?.explore?.state?.validSpec?.displayName ??
             resource?.meta?.name?.name}
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}

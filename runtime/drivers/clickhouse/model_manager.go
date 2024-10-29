@@ -87,10 +87,6 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 		p.Typ = "VIEW"
 	}
 
-	if p.Typ == "DICTIONARY" && p.Columns == "" {
-		return fmt.Errorf("model materialized as dictionary must specify columns")
-	}
-
 	switch p.IncrementalStrategy {
 	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend:
 	default:
@@ -120,6 +116,8 @@ func (p *ModelOutputProperties) tblConfig() string {
 	// order_by
 	if p.OrderBy != "" {
 		fmt.Fprintf(&sb, " ORDER BY %s", p.OrderBy)
+	} else if p.PrimaryKey != "" {
+		fmt.Fprintf(&sb, " ORDER BY %s", p.PrimaryKey)
 	} else if engine == "MergeTree" {
 		// need ORDER BY for MergeTree
 		// it is optional for many other engines

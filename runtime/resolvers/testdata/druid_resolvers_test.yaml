@@ -8,22 +8,22 @@ project:
       timeseries: __time
       smallest_time_grain: ""
       dimensions:
-        - label: Publisher
-          name: publisher
+        - name: publisher
+          display_name: Publisher
           expression: publisher
           description: ""
-        - label: Domain
-          property: domain
+        - property: domain
+          display_name: Domain
           description: ""
       measures:
-        - label: "Number of bids"
-          name: bid's number
+        - name: bid's number
+          display_name: "Number of bids"
           expression: count(*)
-        - label: "Max bid price"
-          name: max bid price
+        - name: max bid price
+          display_name: "Max bid price"
           expression: max(bid_price)
-        - label: "min bid price"
-          name: min bid price
+        - name: min bid price
+          display_name: "min bid price"
           expression: min(bid_price)
       security:
         access: true

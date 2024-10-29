@@ -14,8 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const gracePeriodDays = 9
-
 type TrialEndingSoonArgs struct{}
 
 func (TrialEndingSoonArgs) Kind() string { return "trial_ending_soon" }
@@ -59,6 +57,7 @@ func (w *TrialEndingSoonWorker) trialEndingSoon(ctx context.Context) error {
 			ToEmail:      org.BillingEmail,
 			ToName:       org.Name,
 			OrgName:      org.Name,
+			UpgradeURL:   w.admin.URLs.UpgradePlan(org.Name),
 			TrialEndDate: m.EndDate,
 		})
 		if err != nil {
@@ -123,8 +122,6 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 
 		w.logger.Warn("trial period has ended", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
-		gracePeriodEndDate := m.EndDate.AddDate(0, 0, gracePeriodDays)
-
 		cctx, tx, err := w.admin.DB.NewTx(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to start transaction: %w", err)
@@ -136,26 +133,29 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			Metadata: &database.BillingIssueMetadataTrialEnded{
 				SubID:              m.SubID,
 				PlanID:             m.PlanID,
-				GracePeriodEndDate: gracePeriodEndDate,
+				EndDate:            m.EndDate,
+				GracePeriodEndDate: m.GracePeriodEndDate,
 			},
 			EventTime: m.EndDate,
 		})
 		if err != nil {
+			prevErr := err
 			err = tx.Rollback()
 			if err != nil {
 				return fmt.Errorf("failed to rollback transaction: %w", err)
 			}
-			return fmt.Errorf("failed to add billing error: %w", err)
+			return fmt.Errorf("failed to add billing error: %w", prevErr)
 		}
 
 		// delete the on-trial billing issue
 		err = w.admin.DB.DeleteBillingIssue(cctx, o.ID)
 		if err != nil {
+			prevErr := err
 			err = tx.Rollback()
 			if err != nil {
 				return fmt.Errorf("failed to rollback transaction: %w", err)
 			}
-			return fmt.Errorf("failed to delete billing issue: %w", err)
+			return fmt.Errorf("failed to delete billing issue: %w", prevErr)
 		}
 
 		// send email
@@ -163,14 +163,16 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			ToEmail:            org.BillingEmail,
 			ToName:             org.Name,
 			OrgName:            org.Name,
-			GracePeriodEndDate: gracePeriodEndDate,
+			UpgradeURL:         w.admin.URLs.UpgradePlan(org.Name),
+			GracePeriodEndDate: m.GracePeriodEndDate,
 		})
 		if err != nil {
+			prevErr := err
 			err = tx.Rollback()
 			if err != nil {
 				return fmt.Errorf("failed to rollback transaction: %w", err)
 			}
-			return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
+			return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, prevErr)
 		}
 
 		err = tx.Commit()
@@ -284,9 +286,10 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 
 		// send email
 		err = w.admin.Email.SendTrialGracePeriodEnded(&email.TrialGracePeriodEnded{
-			ToEmail: org.BillingEmail,
-			ToName:  org.Name,
-			OrgName: org.Name,
+			ToEmail:    org.BillingEmail,
+			ToName:     org.Name,
+			OrgName:    org.Name,
+			UpgradeURL: w.admin.URLs.UpgradePlan(org.Name),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to send trial grace period ended email for org %q: %w", org.Name, err)

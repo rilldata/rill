@@ -14,7 +14,7 @@ func TestValidateMetricsView(t *testing.T) {
 	res, err := rt.ValidateMetricsView(context.Background(), instanceID, &runtimev1.MetricsViewSpec{
 		Connector:     "duckdb",
 		Table:         "ad_bids",
-		Title:         "Ad Bids",
+		DisplayName:   "Ad Bids",
 		TimeDimension: "timestamp",
 		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
 			{Column: "publisher"},

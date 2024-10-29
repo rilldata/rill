@@ -47,8 +47,8 @@
     resolverProperties,
     input,
     output,
-    title,
-    subtitle,
+    displayName,
+    description,
   } = componentResource?.component?.spec ?? {});
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
@@ -97,13 +97,13 @@
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
-      {#if title || subtitle}
+      {#if displayName || description}
         <div class="w-full h-fit flex flex-col pb-2">
-          {#if title}
-            <h1 class="text-slate-900">{title}</h1>
+          {#if displayName}
+            <h1 class="text-slate-900">{displayName}</h1>
           {/if}
-          {#if subtitle}
-            <h2 class="text-slate-600 leading-none">{subtitle}</h2>
+          {#if description}
+            <h2 class="text-slate-600 leading-none">{description}</h2>
           {/if}
         </div>
       {/if}

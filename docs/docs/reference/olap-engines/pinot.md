@@ -54,7 +54,7 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 
 When using Rill for local development, there are two options to configure Rill to enable Pinot as an OLAP engine:
 - You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- You can pass in `connector.pinot.dsn` as a variable to `rill start` directly (e.g. `rill start --var connector.pinot.dsn=...`)
+- You can pass in `connector.pinot.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.pinot.dsn=...`)
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
