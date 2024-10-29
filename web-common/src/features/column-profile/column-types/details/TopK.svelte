@@ -17,6 +17,7 @@
     formatDataType,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
+  import type { Location } from "@rilldata/web-common/lib/place-element";
   import type { TopKEntry } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
@@ -55,7 +56,7 @@
       .join("")}${str}`;
   }
 
-  function getCopyValue(type, value) {
+  function getCopyValue(type: string, value) {
     return isNested(type) ? formatDataType(value, type) : value;
   }
 
