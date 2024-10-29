@@ -14,6 +14,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -664,6 +665,61 @@ func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPu
 
 	return &adminv1.ListPublicBillingPlansResponse{
 		Plans: dtos,
+	}, nil
+}
+
+func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.GetBillingProjectCredentialsRequest) (*adminv1.GetBillingProjectCredentialsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to get metrics for this org")
+	}
+
+	metricsProj, err := s.admin.DB.FindProject(ctx, s.admin.MetricsProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if metricsProj.ProdDeploymentID == nil {
+		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+	}
+
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.ProdDeploymentID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Generate JWT
+	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
+		AudienceURL: prodDepl.RuntimeAudience,
+		Subject:     claims.OwnerID(),
+		TTL:         runtimeAccessTokenDefaultTTL,
+		InstancePermissions: map[string][]runtimeauth.Permission{
+			prodDepl.RuntimeInstanceID: {
+				runtimeauth.ReadObjects,
+				runtimeauth.ReadMetrics,
+				runtimeauth.ReadAPI,
+			},
+		},
+		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+	}
+
+	s.admin.Used.Deployment(prodDepl.ID)
+
+	return &adminv1.GetBillingProjectCredentialsResponse{
+		RuntimeHost: prodDepl.RuntimeHost,
+		InstanceId:  prodDepl.RuntimeInstanceID,
+		AccessToken: jwt,
+		TtlSeconds:  uint32(runtimeAccessTokenDefaultTTL.Seconds()),
 	}, nil
 }
 

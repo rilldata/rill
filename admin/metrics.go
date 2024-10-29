@@ -17,12 +17,12 @@ const metricsProjectClientTTL = 30 * time.Minute
 // TODO: Encapsulate token refresh logic in the metrics client.
 func (s *Service) OpenMetricsProject(ctx context.Context) (*metrics.Client, bool, error) {
 	// Check if a metrics project is configured
-	if s.metricsProjectID == "" {
+	if s.MetricsProjectID == "" {
 		return nil, false, nil
 	}
 
 	// Find the production deployment for the metrics project
-	proj, err := s.DB.FindProject(ctx, s.metricsProjectID)
+	proj, err := s.DB.FindProject(ctx, s.MetricsProjectID)
 	if err != nil {
 		return nil, false, err
 	}
