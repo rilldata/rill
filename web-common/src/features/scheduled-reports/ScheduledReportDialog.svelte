@@ -5,7 +5,10 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceEditReport,
   } from "@rilldata/web-admin/client";
-  import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
+  import {
+    extractNotification,
+    getDashboardNameFromReport,
+  } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../components/button";
@@ -56,7 +59,17 @@
     initialValues: getInitialValues(reportSpec),
     validationSchema: yup.object({
       title: yup.string().required("Required"),
-      recipients: yup.array().of(
+      emailRecipients: yup.array().of(
+        yup.object().shape({
+          email: yup.string().email("Invalid email"),
+        }),
+      ),
+      slackChannels: yup.array().of(
+        yup.object().shape({
+          channel: yup.string(),
+        }),
+      ),
+      slackUsers: yup.array().of(
         yup.object().shape({
           email: yup.string().email("Invalid email"),
         }),
@@ -87,9 +100,15 @@
               ),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              emailRecipients: values.recipients
+              emailRecipients: values.emailRecipients
                 .map((r) => r.email)
                 .filter(Boolean),
+              slackChannels: values.enableSlackNotification
+                ? values.slackChannels.map((c) => c.channel).filter(Boolean)
+                : undefined,
+              slackUsers: values.enableSlackNotification
+                ? values.slackUsers.map((c) => c.email).filter(Boolean)
+                : undefined,
               webOpenState: reportSpec
                 ? (reportSpec.annotations as V1ReportSpecAnnotations)[
                     "web_open_state"
@@ -160,14 +179,11 @@
           ? ""
           : reportSpec.exportLimit
         : "",
-      recipients: reportSpec?.notifiers
-        ?.find((n) => n.connector === "email")
-        ?.properties?.recipients?.map((email) => ({
-          email: email,
-        })) ?? [
-        { email: $user.data?.user?.email ? $user.data.user.email : "" },
-        { email: "" },
-      ],
+      ...extractNotification(
+        reportSpec?.notifiers,
+        $user.data?.user?.email,
+        !!reportSpec,
+      ),
     };
   }
 </script>
@@ -190,7 +206,7 @@
       <Button on:click={() => (open = false)} type="secondary">Cancel</Button>
       <Button
         disabled={$isSubmitting ||
-          $form["recipients"].filter((r) => r.email).length === 0}
+          $form["emailRecipients"].filter((r) => r.email).length === 0}
         form="scheduled-report-form"
         submitForm
         type="primary"

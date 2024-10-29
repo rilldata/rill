@@ -1,6 +1,9 @@
 <script lang="ts">
   import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
+  import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
+  import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
+  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import Input from "../../components/forms/Input.svelte";
@@ -18,6 +21,7 @@
   $: exploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
   $: availableTimeZones = $exploreSpec.data?.explore?.timeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
+  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
 </script>
 
 <form
@@ -95,8 +99,48 @@
     {formState}
     hint="Recipients will receive different views based on their security policy.
         Recipients without project access can't view the report."
-    id="recipients"
+    id="emailRecipients"
     label="Recipients"
     placeholder="Enter an email address"
   />
+  {#if $hasSlackNotifier.data}
+    <FormSection
+      bind:enabled={$form["enableSlackNotification"]}
+      showSectionToggle
+      title="Slack notifications"
+      padding=""
+    >
+      <InputArray
+        accessorKey="channel"
+        addItemLabel="Add channel"
+        hint="We’ll send alerts directly to these channels."
+        {formState}
+        id="slackChannels"
+        label="Channels"
+        placeholder="# Enter a Slack channel name"
+      />
+      <InputArray
+        accessorKey="email"
+        addItemLabel="Add user"
+        hint="We’ll alert them with direct messages in Slack."
+        {formState}
+        id="slackUsers"
+        label="Users"
+        placeholder="Enter an email address"
+      />
+    </FormSection>
+  {:else}
+    <FormSection title="Slack notifications" padding="">
+      <svelte:fragment slot="description">
+        <span class="text-sm text-slate-600">
+          Slack has not been configured for this project. Read the <a
+            href="https://docs.rilldata.com/explore/alerts/slack"
+            target="_blank"
+          >
+            docs
+          </a> to learn more.
+        </span>
+      </svelte:fragment>
+    </FormSection>
+  {/if}
 </form>

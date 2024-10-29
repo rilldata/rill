@@ -7,7 +7,6 @@ import {
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  type V1AlertSpec,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
@@ -91,35 +90,3 @@ export type AlertNotificationValues = Pick<
   | "enableEmailNotification"
   | "emailRecipients"
 >;
-
-export function extractAlertNotification(
-  alertSpec: V1AlertSpec,
-): AlertNotificationValues {
-  const slackNotifier = alertSpec.notifiers?.find(
-    (n) => n.connector === "slack",
-  );
-  const slackChannels: string[] | undefined =
-    slackNotifier?.properties?.channels;
-  const slackUsers: string[] | undefined = slackNotifier?.properties?.users;
-
-  const emailNotifier = alertSpec.notifiers?.find(
-    (n) => n.connector === "email",
-  );
-  const emailRecipients: string[] | undefined =
-    emailNotifier?.properties?.recipients;
-
-  return {
-    enableSlackNotification: !!slackNotifier,
-    slackChannels: mapAndAddEmptyEntry(slackChannels, "channel"),
-    slackUsers: mapAndAddEmptyEntry(slackUsers, "email"),
-
-    enableEmailNotification: !!emailNotifier,
-    emailRecipients: mapAndAddEmptyEntry(emailRecipients, "email"),
-  };
-}
-
-function mapAndAddEmptyEntry<R>(entries: string[] | undefined, key: string): R {
-  const mappedEntries = entries?.map((e) => ({ [key]: e })) ?? [];
-  mappedEntries.push({ [key]: "" });
-  return mappedEntries as R;
-}
