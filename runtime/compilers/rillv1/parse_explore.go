@@ -28,6 +28,9 @@ type ExploreYAML struct {
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
 	} `yaml:"defaults"`
+	Embeds struct {
+		HidePivot bool `yaml:"hide_pivot"`
+	} `yaml:"embeds"`
 	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
@@ -254,6 +257,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
+	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
 
 	return nil

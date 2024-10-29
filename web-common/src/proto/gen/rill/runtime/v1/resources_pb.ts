@@ -2138,6 +2138,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
   defaultPreset?: ExplorePreset;
 
   /**
+   * If true, the pivot tab will be hidden when the explore is embedded.
+   *
+   * @generated from field: bool embeds_hide_pivot = 16;
+   */
+  embedsHidePivot = false;
+
+  /**
    * Security for the explore dashboard.
    * These are not currently parsed from YAML, but will be derived from the parent metrics view.
    *
@@ -2164,6 +2171,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
+    { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 

@@ -4296,6 +4296,8 @@ func (m *ExploreSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for EmbedsHidePivot
+
 	for idx, item := range m.GetSecurityRules() {
 		_, _ = idx, item
 

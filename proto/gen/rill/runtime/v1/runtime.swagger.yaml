@@ -4061,6 +4061,9 @@ definitions:
       defaultPreset:
         $ref: '#/definitions/v1ExplorePreset'
         description: Preset UI state to show by default.
+      embedsHidePivot:
+        type: boolean
+        description: If true, the pivot tab will be hidden when the explore is embedded.
       securityRules:
         type: array
         items:

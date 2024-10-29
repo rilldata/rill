@@ -1870,6 +1870,8 @@ If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
   defaultPreset?: V1ExplorePreset;
+  /** If true, the pivot tab will be hidden when the explore is embedded. */
+  embedsHidePivot?: boolean;
   /** Security for the explore dashboard.
 These are not currently parsed from YAML, but will be derived from the parent metrics view. */
   securityRules?: V1SecurityRule[];
