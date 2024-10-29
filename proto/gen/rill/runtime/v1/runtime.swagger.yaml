@@ -4071,12 +4071,6 @@ definitions:
         description: |-
           ISO 8601 duration string for the duration of the comparison time range.
           If not specified, it should fallback to the range of the base time range.
-  v1ExploreEmbeds:
-    type: object
-    properties:
-      hidePivot:
-        type: boolean
-        description: If true, the pivot tab will be hidden when the explore is embedded.
   v1ExplorePreset:
     type: object
     properties:
@@ -4166,9 +4160,9 @@ definitions:
         description: |-
           Security for the explore dashboard.
           These are not currently parsed from YAML, but will be derived from the parent metrics view.
-      embeds:
-        $ref: '#/definitions/v1ExploreEmbeds'
-        title: Embeds configuration
+      embedsHidePivot:
+        type: boolean
+        description: If true, the pivot tab will be hidden when the explore is embedded.
   v1ExploreState:
     type: object
     properties:

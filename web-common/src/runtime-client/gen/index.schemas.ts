@@ -827,6 +827,26 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
+}
+
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -840,6 +860,13 @@ If it resolves to false, the other fields are not set. */
   schema?: V1StructType;
   data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -870,13 +897,6 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -893,26 +913,6 @@ export interface V1RefreshTriggerState {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
@@ -1361,6 +1361,11 @@ export interface V1MetricsViewSchemaResponse {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
@@ -1474,11 +1479,6 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
@@ -1489,6 +1489,31 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeURI {
@@ -1538,31 +1563,6 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -1823,41 +1823,6 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
 } as const;
 
-export interface V1ExploreTimeRange {
-  range?: string;
-  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
-}
-
-export interface V1ExploreEmbeds {
-  /** If true, the pivot tab will be hidden when the explore is embedded. */
-  hidePivot?: boolean;
-}
-
-export interface V1ExploreSpec {
-  displayName?: string;
-  description?: string;
-  metricsView?: string;
-  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
-  dimensions?: string[];
-  dimensionsSelector?: V1FieldSelector;
-  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
-  measures?: string[];
-  measuresSelector?: V1FieldSelector;
-  theme?: string;
-  /** List of selectable time ranges with comparison time ranges.
-If the list is empty, a default list should be shown. */
-  timeRanges?: V1ExploreTimeRange[];
-  /** List of selectable time zones.
-If the list is empty, a default list should be shown.
-The values should be valid IANA location identifiers. */
-  timeZones?: string[];
-  defaultPreset?: V1ExplorePreset;
-  /** Security for the explore dashboard.
-These are not currently parsed from YAML, but will be derived from the parent metrics view. */
-  securityRules?: V1SecurityRule[];
-  embeds?: V1ExploreEmbeds;
-}
-
 export interface V1ExploreState {
   validSpec?: V1ExploreSpec;
 }
@@ -1868,6 +1833,11 @@ export interface V1ExploreComparisonTimeRange {
   /** ISO 8601 duration string for the duration of the comparison time range.
 If not specified, it should fallback to the range of the base time range. */
   range?: string;
+}
+
+export interface V1ExploreTimeRange {
+  range?: string;
+  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
 }
 
 export type V1ExploreComparisonMode =
@@ -1895,6 +1865,32 @@ If not found in `time_ranges`, it should be added to the list. */
   comparisonMode?: V1ExploreComparisonMode;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
+}
+
+export interface V1ExploreSpec {
+  displayName?: string;
+  description?: string;
+  metricsView?: string;
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
+  dimensions?: string[];
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  theme?: string;
+  /** List of selectable time ranges with comparison time ranges.
+If the list is empty, a default list should be shown. */
+  timeRanges?: V1ExploreTimeRange[];
+  /** List of selectable time zones.
+If the list is empty, a default list should be shown.
+The values should be valid IANA location identifiers. */
+  timeZones?: string[];
+  defaultPreset?: V1ExplorePreset;
+  /** Security for the explore dashboard.
+These are not currently parsed from YAML, but will be derived from the parent metrics view. */
+  securityRules?: V1SecurityRule[];
+  /** If true, the pivot tab will be hidden when the explore is embedded. */
+  embedsHidePivot?: boolean;
 }
 
 export interface V1Explore {

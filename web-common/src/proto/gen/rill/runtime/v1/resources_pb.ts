@@ -2146,11 +2146,11 @@ export class ExploreSpec extends Message<ExploreSpec> {
   securityRules: SecurityRule[] = [];
 
   /**
-   * Embeds configuration
+   * If true, the pivot tab will be hidden when the explore is embedded.
    *
-   * @generated from field: rill.runtime.v1.ExploreEmbeds embeds = 16;
+   * @generated from field: bool embeds_hide_pivot = 16;
    */
-  embeds?: ExploreEmbeds;
+  embedsHidePivot = false;
 
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
@@ -2172,7 +2172,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
-    { no: 16, name: "embeds", kind: "message", T: ExploreEmbeds },
+    { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2410,45 +2410,6 @@ export class ExplorePreset extends Message<ExplorePreset> {
 
   static equals(a: ExplorePreset | PlainMessage<ExplorePreset> | undefined, b: ExplorePreset | PlainMessage<ExplorePreset> | undefined): boolean {
     return proto3.util.equals(ExplorePreset, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.ExploreEmbeds
- */
-export class ExploreEmbeds extends Message<ExploreEmbeds> {
-  /**
-   * If true, the pivot tab will be hidden when the explore is embedded.
-   *
-   * @generated from field: bool hide_pivot = 1;
-   */
-  hidePivot = false;
-
-  constructor(data?: PartialMessage<ExploreEmbeds>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ExploreEmbeds";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreEmbeds {
-    return new ExploreEmbeds().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExploreEmbeds {
-    return new ExploreEmbeds().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExploreEmbeds {
-    return new ExploreEmbeds().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ExploreEmbeds | PlainMessage<ExploreEmbeds> | undefined, b: ExploreEmbeds | PlainMessage<ExploreEmbeds> | undefined): boolean {
-    return proto3.util.equals(ExploreEmbeds, a, b);
   }
 }
 

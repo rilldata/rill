@@ -45,7 +45,7 @@
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
 
-  $: hidePivot = isEmbedded && $explore.data?.explore?.embeds?.hidePivot;
+  $: hidePivot = isEmbedded && $explore.data?.explore?.embedsHidePivot;
 </script>
 
 <article
