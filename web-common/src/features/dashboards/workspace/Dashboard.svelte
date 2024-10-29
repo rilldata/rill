@@ -19,6 +19,7 @@
 
   export let exploreName: string;
   export let metricsViewName: string;
+  export let isEmbedded: boolean = false;
 
   const { cloudDataViewer, readOnly } = featureFlags;
 
@@ -43,6 +44,8 @@
   $: explore = useExploreValidSpec($runtime.instanceId, exploreName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
+
+  $: hidePivot = isEmbedded && $explore.data?.explore?.embeds?.hidePivot;
 </script>
 
 <article
@@ -61,7 +64,7 @@
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
-            <TabBar />
+            <TabBar {hidePivot} />
           </div>
         </section>
       {/key}
