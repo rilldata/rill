@@ -707,7 +707,7 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 				runtimeauth.ReadAPI,
 			},
 		},
-		Attributes: map[string]any{"organization_id": org.ID},
+		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
