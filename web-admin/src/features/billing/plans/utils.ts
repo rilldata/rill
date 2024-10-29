@@ -15,15 +15,15 @@ export function formatDataSizeQuota(
 }
 
 export function isTrialPlan(plan: V1BillingPlan) {
-  return plan.default && plan.trialPeriodDays;
+  return plan.name === "free_trial";
 }
 
 export function isTeamPlan(plan: V1BillingPlan) {
-  return plan.name === "Teams";
+  return plan.name === "team";
 }
 
 export function isPOCPlan(plan: V1BillingPlan) {
-  return plan.name === "Custom";
+  return plan.name === "poc";
 }
 
 export function isEnterprisePlan(plan: V1BillingPlan) {

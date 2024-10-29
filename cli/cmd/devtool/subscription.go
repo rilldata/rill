@@ -144,7 +144,7 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					biller := billing.NewOrb(logger, conf.OrbAPIKey, conf.OrbWebhookSecret, strings.ToLower(conf.OrbIntegratedTaxProvider))
 
-					_, err = biller.UnscheduleCancellation(ctx, orgResp.Organization.BillingCustomerId)
+					_, err = biller.UnscheduleCancellation(ctx, subResp.Subscription.Id)
 					if err != nil {
 						return err
 					}
