@@ -1,5 +1,5 @@
 import Google from "@rilldata/web-common/components/icons/Google.svelte";
-import Microsoft from "@rilldata/web-common/components//icons/Microsoft.svelte";
+import Microsoft from "@rilldata/web-common/components/icons/Microsoft.svelte";
 
 export const LOGIN_OPTIONS = [
   {
@@ -12,7 +12,6 @@ export const LOGIN_OPTIONS = [
   {
     name: "Microsoft",
     icon: Microsoft,
-    color: "primary-400",
     connection: "windowslive",
     label: "Continue with Microsoft",
     style: "secondary",

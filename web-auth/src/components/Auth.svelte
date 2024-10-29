@@ -173,7 +173,7 @@
         >
           <div class="flex justify-center items-center gap-x-2 font-medium">
             {#if icon}
-              <svelte:component this={icon} {color} />
+              <svelte:component this={icon} />
             {/if}
             <span>
               {ctaText}
