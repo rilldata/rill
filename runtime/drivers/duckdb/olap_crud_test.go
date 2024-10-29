@@ -311,52 +311,6 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	require.NoError(t, res.Close())
 }
 
-func Test_connection_CastEnum(t *testing.T) {
-	temp := t.TempDir()
-	os.Mkdir(temp, fs.ModePerm)
-
-	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	c := handle.(*connection)
-	require.NoError(t, c.Migrate(context.Background()))
-	c.AsOLAP("default")
-
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'bglr' AS city, 'IND' AS country", nil)
-	require.NoError(t, err)
-
-	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 2, 'mUm', 'IND'", false, true, drivers.IncrementalStrategyAppend, nil)
-	require.NoError(t, err)
-
-	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, 'Perth', 'Aus'", false, true, drivers.IncrementalStrategyAppend, nil)
-	require.NoError(t, err)
-
-	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, null, 'Aus'", false, true, drivers.IncrementalStrategyAppend, nil)
-	require.NoError(t, err)
-
-	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, 'bglr', null", false, true, drivers.IncrementalStrategyAppend, nil)
-	require.NoError(t, err)
-
-	err = c.convertToEnum(context.Background(), "test", []string{"city", "country"})
-	require.NoError(t, err)
-
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='city' AND table_name='test' AND table_catalog = 'view'"})
-	require.NoError(t, err)
-
-	var typ string
-	require.True(t, res.Next())
-	require.NoError(t, res.Scan(&typ))
-	require.Equal(t, "ENUM('bglr', 'Perth', 'mUm')", typ)
-	require.NoError(t, res.Close())
-
-	res, err = c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='country' AND table_name='test' AND table_catalog = 'view'"})
-	require.NoError(t, err)
-	require.True(t, res.Next())
-	require.NoError(t, res.Scan(&typ))
-	require.Equal(t, "ENUM('Aus', 'IND')", typ)
-	require.NoError(t, res.Close())
-}
-
 func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))

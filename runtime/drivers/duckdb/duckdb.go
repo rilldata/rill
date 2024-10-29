@@ -2,24 +2,19 @@ package duckdb
 
 import (
 	"context"
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/url"
 	"os"
-	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/XSAM/otelsql"
-	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
-	"github.com/marcboeker/go-duckdb"
 	"github.com/mitchellh/mapstructure"
+	duckdbreplicator "github.com/rilldata/duckdb-replicator"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/extensions"
 	"github.com/rilldata/rill/runtime/drivers/file"
@@ -30,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/exp/zapslog"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -151,24 +147,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 	}
 	logger.Debug("opening duckdb handle", zap.String("dsn", cfg.DSN))
 
-	// We've seen the DuckDB .wal and .tmp files grow to 100s of GBs in some cases.
-	// This prevents recovery after restarts since DuckDB hangs while trying to reprocess the files.
-	// This is a hacky solution that deletes the files (if they exist) before re-opening the DB.
-	// Generally, this should not lead to data loss since reconcile will bring the database back to the correct state.
-	if cfg.DBFilePath != "" {
-		// Always drop the .tmp directory
-		tmpPath := cfg.DBFilePath + ".tmp"
-		_ = os.RemoveAll(tmpPath)
-
-		// Drop the .wal file if it's bigger than 100MB
-		walPath := cfg.DBFilePath + ".wal"
-		if stat, err := os.Stat(walPath); err == nil {
-			if stat.Size() >= 100*int64(datasize.MB) {
-				_ = os.Remove(walPath)
-			}
-		}
-	}
-
 	if cfg.DBStoragePath != "" {
 		if err := os.MkdirAll(cfg.DBStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 			return nil, err
@@ -206,33 +184,26 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 	}, connectionsInUse))
 
 	// Open the DB
-	err = c.reopenDB()
+	err = c.reopenDB(ctx, false)
 	if err != nil {
 		if c.config.ErrorOnIncompatibleVersion || !strings.Contains(err.Error(), "created with an older, incompatible version of Rill") {
 			return nil, err
 		}
 
 		c.logger.Debug("Resetting .db file because it was created with an older, incompatible version of Rill")
-
-		tmpPath := cfg.DBFilePath + ".tmp"
-		_ = os.RemoveAll(tmpPath)
-		walPath := cfg.DBFilePath + ".wal"
-		_ = os.Remove(walPath)
-		_ = os.Remove(cfg.DBFilePath)
-
 		// reopen connection again
-		if err := c.reopenDB(); err != nil {
+		if err := c.reopenDB(ctx, true); err != nil {
 			return nil, err
 		}
 	}
 
 	// Return nice error for old macOS versions
-	conn, err := c.db.Connx(context.Background())
+	_, release, err := c.db.AcquireReadConnection(context.Background())
 	if err != nil && strings.Contains(err.Error(), "Symbol not found") {
 		fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
 		os.Exit(1)
 	} else if err == nil {
-		conn.Close()
+		_ = release()
 	} else {
 		return nil, err
 	}
@@ -242,28 +213,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 	go c.periodicallyCheckConnDurations(time.Minute)
 
 	return c, nil
-}
-
-func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
-	cfg, err := newConfig(cfgMap)
-	if err != nil {
-		return err
-	}
-	if cfg.DBStoragePath != "" {
-		return os.RemoveAll(cfg.DBStoragePath)
-	}
-	if cfg.DBFilePath != "" {
-		err = os.Remove(cfg.DBFilePath)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-		// Hacky approach to remove the wal file
-		_ = os.Remove(cfg.DBFilePath + ".wal")
-		// also temove the temp dir
-		_ = os.RemoveAll(cfg.DBFilePath + ".tmp")
-	}
-
-	return nil
 }
 
 func (d Driver) Spec() drivers.Spec {
@@ -322,7 +271,7 @@ type connection struct {
 	instanceID string
 	// do not use directly it can also be nil or closed
 	// use acquireOLAPConn/acquireMetaConn
-	db *sqlx.DB
+	db duckdbreplicator.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
@@ -510,7 +459,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.
-func (c *connection) reopenDB() error {
+func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 	// If c.db is already open, close it first
 	if c.db != nil {
 		err := c.db.Close()
@@ -556,107 +505,50 @@ func (c *connection) reopenDB() error {
 		bootQueries = append(bootQueries, c.config.InitSQL)
 	}
 
-	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
-	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
-	connector, err := duckdb.NewConnector(c.config.DSN, func(execer driver.ExecerContext) error {
-		for _, qry := range bootQueries {
-			_, err := execer.ExecContext(context.Background(), qry, nil)
-			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
-				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
-				_, err = execer.ExecContext(context.Background(), qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
-			}
+	logger := slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
+		AddSource: true,
+	}))
+
+	// Create new DB
+	var err error
+	if c.config.ExtTableStorage {
+		var backup *duckdbreplicator.BackupProvider
+		if c.config.BackupBucket != "" {
+			backup, err = duckdbreplicator.NewGCSBackupProvider(ctx, &duckdbreplicator.GCSBackupProviderOptions{
+				UseHostCredentials:         c.config.AllowHostAccess,
+				ApplicationCredentialsJSON: c.config.BackupBucketCredentialsJSON,
+				Bucket:                     c.config.BackupBucket,
+				UniqueIdentifier:           c.instanceID,
+			})
 			if err != nil {
 				return err
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		// Check for using incompatible database files
-		if strings.Contains(err.Error(), "Trying to read a database file with version number") {
-			return fmt.Errorf("database file %q was created with an older, incompatible version of Rill (please remove it and try again)", c.config.DSN)
-		}
-
-		// Check for another process currently accessing the DB
-		if strings.Contains(err.Error(), "Could not set lock on file") {
-			return fmt.Errorf("failed to open database (is Rill already running?): %w", err)
-		}
-
-		return err
+		c.db, err = duckdbreplicator.NewDB(ctx, c.instanceID, &duckdbreplicator.DBOptions{
+			LocalPath:      c.config.DBStoragePath,
+			Clean:          clean,
+			BackupProvider: backup,
+			InitQueries:    bootQueries,
+			StableSelect:   !c.config.AllowHostAccess,
+			Logger:         logger,
+		})
+	} else {
+		c.db, err = duckdbreplicator.NewSingleDB(ctx, &duckdbreplicator.SingleDBOptions{
+			DSN:         c.config.DSN,
+			Clean:       clean,
+			InitQueries: bootQueries,
+			Logger:      logger,
+		})
 	}
-
-	// Create new DB
-	sqlDB := otelsql.OpenDB(connector)
-	db := sqlx.NewDb(sqlDB, "duckdb")
-	db.SetMaxOpenConns(c.config.PoolSize)
-	c.db = db
-
-	if !c.config.ExtTableStorage {
-		return nil
-	}
-
-	conn, err := db.Connx(context.Background())
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	c.logLimits(conn)
-
-	// 2023-12-11: Hail mary for solving this issue: https://github.com/duckdblabs/rilldata/issues/6.
-	// Forces DuckDB to create catalog entries for the information schema up front (they are normally created lazily).
-	// Can be removed if the issue persists.
-	_, err = conn.ExecContext(context.Background(), `
-		select
-			coalesce(t.table_catalog, current_database()) as "database",
-			t.table_schema as "schema",
-			t.table_name as "name",
-			t.table_type as "type", 
-			array_agg(c.column_name order by c.ordinal_position) as "column_names",
-			array_agg(c.data_type order by c.ordinal_position) as "column_types",
-			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
-		from information_schema.tables t
-		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
-		group by 1, 2, 3, 4
-		order by 1, 2, 3, 4
-	`)
 	if err != nil {
 		return err
 	}
 
-	// List the directories directly in the external storage directory
-	// Load the version.txt from each sub-directory
-	// If version.txt is found, attach only the .db file matching the version.txt.
-	// If attach fails, log the error and delete the version.txt and .db file (e.g. might be DuckDB version change)
-	entries, err := os.ReadDir(c.config.DBStoragePath)
+	_, release, err := c.db.AcquireReadConnection(context.Background())
 	if err != nil {
 		return err
 	}
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		path := filepath.Join(c.config.DBStoragePath, entry.Name())
-		version, exist, err := c.tableVersion(entry.Name())
-		if err != nil {
-			c.logger.Error("error in fetching db version", zap.String("table", entry.Name()), zap.Error(err))
-			_ = os.RemoveAll(path)
-			continue
-		}
-		if !exist {
-			_ = os.RemoveAll(path)
-			continue
-		}
-
-		dbFile := filepath.Join(path, fmt.Sprintf("%s.db", version))
-		db := dbName(entry.Name(), version)
-		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db)))
-		if err != nil {
-			c.logger.Error("attach failed clearing db file", zap.String("db", dbFile), zap.Error(err))
-			_, _ = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(entry.Name())))
-			_ = os.RemoveAll(path)
-		}
-	}
+	defer release()
 	return nil
 }
 
@@ -743,6 +635,7 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 
 // acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
 // acquireConn implements the connection tracking and DB reopening logic described in the struct definition for connection.
+// TODO :: fix me ??
 func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func() error, error) {
 	c.dbCond.L.Lock()
 	for {
@@ -766,7 +659,7 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 		// When tx is true, and the database is backed by a file, we reopen the database to ensure only one DuckDB connection is open.
 		// This avoids the following issue: https://github.com/duckdb/duckdb/issues/9150
 		if c.config.DBFilePath != "" {
-			err := c.reopenDB()
+			err := c.reopenDB(ctx, false)
 			if err != nil {
 				c.txMu.Unlock()
 				return nil, nil, err
@@ -783,7 +676,7 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 		}
 	}
 
-	conn, err := c.db.Connx(ctx)
+	conn, releaseConn, err := c.db.AcquireReadConnection(ctx)
 	if err != nil {
 		releaseTx()
 		return nil, nil, err
@@ -796,7 +689,7 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 	c.connTimesMu.Unlock()
 
 	release := func() error {
-		err := conn.Close()
+		err := releaseConn()
 		c.connTimesMu.Lock()
 		delete(c.connTimes, connID)
 		c.connTimesMu.Unlock()
@@ -805,7 +698,7 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 		c.dbConnCount--
 		if c.dbConnCount == 0 && c.dbReopen {
 			c.dbReopen = false
-			err = c.reopenDB()
+			err = c.reopenDB(ctx, false)
 			if err == nil {
 				c.logger.Debug("reopened DuckDB successfully")
 			} else {
@@ -848,71 +741,8 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 	for {
 		select {
 		case <-statTicker.C:
-			estimatedDBSize := c.estimateSize(false)
+			estimatedDBSize := c.estimateSize()
 			c.activity.RecordMetric(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
-
-			// NOTE :: running CALL pragma_database_size() while duckdb is ingesting data is causing the WAL file to explode.
-			// Commenting the below code for now. Verify with next duckdb release
-
-			// // Motherduck driver doesn't provide pragma stats
-			// if c.driverName == "motherduck" {
-			// 	continue
-			// }
-
-			// var stat dbStat
-			// // Obtain a connection, query, release
-			// err := func() error {
-			// 	conn, release, err := c.acquireMetaConn(c.ctx)
-			// 	if err != nil {
-			// 		return err
-			// 	}
-			// 	defer func() { _ = release() }()
-			// 	err = conn.GetContext(c.ctx, &stat, "CALL pragma_database_size()")
-			// 	return err
-			// }()
-			// if err != nil {
-			// 	c.logger.Error("couldn't query DuckDB stats", zap.Error(err))
-			// 	continue
-			// }
-
-			// // Emit collected stats as activity events
-			// commonDims := []attribute.KeyValue{
-			// 	attribute.String("duckdb.name", stat.DatabaseName),
-			// }
-
-			// dbSize, err := humanReadableSizeToBytes(stat.DatabaseSize)
-			// if err != nil {
-			// 	c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
-			// } else {
-			// 	c.activity.RecordMetric(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
-			// }
-
-			// walSize, err := humanReadableSizeToBytes(stat.WalSize)
-			// if err != nil {
-			// 	c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
-			// } else {
-			// 	c.activity.RecordMetric(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
-			// }
-
-			// memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
-			// if err != nil {
-			// 	c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
-			// } else {
-			// 	c.activity.RecordMetric(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
-			// }
-
-			// memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
-			// if err != nil {
-			// 	c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
-			// } else {
-			// 	c.activity.RecordMetric(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
-			// }
-
-			// c.activity.RecordMetric(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
-			// c.activity.RecordMetric(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
-			// c.activity.RecordMetric(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
-			// c.activity.RecordMetric(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
-
 		case <-c.ctx.Done():
 			statTicker.Stop()
 			return
@@ -944,78 +774,4 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 			c.connTimesMu.Unlock()
 		}
 	}
-}
-
-func (c *connection) logLimits(conn *sqlx.Conn) {
-	row := conn.QueryRowContext(context.Background(), "SELECT value FROM duckdb_settings() WHERE name='max_memory'")
-	var memory string
-	_ = row.Scan(&memory)
-
-	row = conn.QueryRowContext(context.Background(), "SELECT value FROM duckdb_settings() WHERE name='threads'")
-	var threads string
-	_ = row.Scan(&threads)
-
-	c.logger.Debug("duckdb limits", zap.String("memory", memory), zap.String("threads", threads))
-}
-
-// fatalInternalError logs a critical internal error and exits the process.
-// This is used for errors that are completely unrecoverable.
-// Ideally, we should refactor to cleanup/reopen/rebuild so that we don't need this.
-func (c *connection) fatalInternalError(err error) {
-	c.logger.Fatal("duckdb: critical internal error", zap.Error(err))
-}
-
-// Regex to parse human-readable size returned by DuckDB
-// nolint
-var humanReadableSizeRegex = regexp.MustCompile(`^([\d.]+)\s*(\S+)$`)
-
-// Reversed logic of StringUtil::BytesToHumanReadableString
-// see https://github.com/cran/duckdb/blob/master/src/duckdb/src/common/string_util.cpp#L157
-// Examples: 1 bytes, 2 bytes, 1KB, 1MB, 1TB, 1PB
-// nolint
-func humanReadableSizeToBytes(sizeStr string) (float64, error) {
-	var multiplier float64
-
-	match := humanReadableSizeRegex.FindStringSubmatch(sizeStr)
-
-	if match == nil {
-		return 0, fmt.Errorf("invalid size format: '%s'", sizeStr)
-	}
-
-	sizeFloat, err := strconv.ParseFloat(match[1], 64)
-	if err != nil {
-		return 0, err
-	}
-
-	switch match[2] {
-	case "byte", "bytes":
-		multiplier = 1
-	case "KB":
-		multiplier = 1000
-	case "MB":
-		multiplier = 1000 * 1000
-	case "GB":
-		multiplier = 1000 * 1000 * 1000
-	case "TB":
-		multiplier = 1000 * 1000 * 1000 * 1000
-	case "PB":
-		multiplier = 1000 * 1000 * 1000 * 1000 * 1000
-	default:
-		return 0, fmt.Errorf("unknown size unit '%s' in '%s'", match[2], sizeStr)
-	}
-
-	return sizeFloat * multiplier, nil
-}
-
-// nolint
-type dbStat struct {
-	DatabaseName string `db:"database_name"`
-	DatabaseSize string `db:"database_size"`
-	BlockSize    int64  `db:"block_size"`
-	TotalBlocks  int64  `db:"total_blocks"`
-	UsedBlocks   int64  `db:"used_blocks"`
-	FreeBlocks   int64  `db:"free_blocks"`
-	WalSize      string `db:"wal_size"`
-	MemoryUsage  string `db:"memory_usage"`
-	MemoryLimit  string `db:"memory_limit"`
 }

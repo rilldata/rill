@@ -53,10 +53,6 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	return conn, nil
 }
 
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return nil
-}
-
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]any, logger *zap.Logger) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }

@@ -14,30 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestOpenDrop(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "tmp.db")
-	walpath := path + ".wal"
-	dsn := path
-
-	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-
-	olap, ok := handle.AsOLAP("")
-	require.True(t, ok)
-
-	err = olap.Exec(context.Background(), &drivers.Statement{Query: "CREATE TABLE foo (bar INTEGER)"})
-	require.NoError(t, err)
-
-	err = handle.Close()
-	require.NoError(t, err)
-	require.FileExists(t, path)
-
-	err = Driver{}.Drop(map[string]any{"path": dsn}, zap.NewNop())
-	require.NoError(t, err)
-	require.NoFileExists(t, path)
-	require.NoFileExists(t, walpath)
-}
-
 func TestNoFatalErr(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
@@ -206,39 +182,4 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 
 	err = handle.Close()
 	require.NoError(t, err)
-}
-
-func TestHumanReadableSizeToBytes(t *testing.T) {
-	tests := []struct {
-		input     string
-		expected  float64
-		shouldErr bool
-	}{
-		{"1 byte", 1, false},
-		{"2 bytes", 2, false},
-		{"1KB", 1000, false},
-		{"1.5KB", 1500, false},
-		{"1MB", 1000 * 1000, false},
-		{"2.5MB", 2.5 * 1000 * 1000, false},
-		{"1GB", 1000 * 1000 * 1000, false},
-		{"1.5GB", 1.5 * 1000 * 1000 * 1000, false},
-		{"1TB", 1000 * 1000 * 1000 * 1000, false},
-		{"1.5TB", 1.5 * 1000 * 1000 * 1000 * 1000, false},
-		{"1PB", 1000 * 1000 * 1000 * 1000 * 1000, false},
-		{"1.5PB", 1.5 * 1000 * 1000 * 1000 * 1000 * 1000, false},
-		{"invalid", 0, true},
-		{"123invalid", 0, true},
-		{"123 ZZ", 0, true},
-	}
-
-	for _, tt := range tests {
-		result, err := humanReadableSizeToBytes(tt.input)
-		if (err != nil) != tt.shouldErr {
-			t.Errorf("expected error: %v, got error: %v for input: %s", tt.shouldErr, err, tt.input)
-		}
-
-		if !tt.shouldErr && result != tt.expected {
-			t.Errorf("expected: %v, got: %v for input: %s", tt.expected, result, tt.input)
-		}
-	}
 }

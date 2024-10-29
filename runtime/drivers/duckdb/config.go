@@ -31,26 +31,33 @@ type config struct {
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
 	// ErrorOnIncompatibleVersion controls whether to return error or delete DBFile created with older duckdb version.
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
-	// ExtTableStorage controls if every table is stored in a different db file
+	// ExtTableStorage controls if every table is stored in a different db file.
+	// Backup is only enabled when external table storage is enabled.
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
 	// CPU cores available for the DB
 	CPU int `mapstructure:"cpu"`
 	// MemoryLimitGB is the amount of memory available for the DB
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// MaxMemoryOverride sets a hard override for the "max_memory" DuckDB setting
-	MaxMemoryGBOverride int `mapstructure:"max_memory_gb_override"`
-	// ThreadsOverride sets a hard override for the "threads" DuckDB setting. Set to -1 for unlimited threads.
-	ThreadsOverride int `mapstructure:"threads_override"`
+	// CPUWrite is CPU available for the DB when writing data
+	CPUWrite int `mapstructure:"cpu_write"`
+	// MemoryLimitGBWrite is the amount of memory available for the DB when writing data
+	MemoryLimitGBWrite int `mapstructure:"memory_limit_gb_write"`
 	// BootQueries is SQL to execute when initializing a new connection. It runs before any extensions are loaded or default settings are set.
 	BootQueries string `mapstructure:"boot_queries"`
 	// InitSQL is SQL to execute when initializing a new connection. It runs after extensions are loaded and and default settings are set.
 	InitSQL string `mapstructure:"init_sql"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
+	LogQueries bool `mapstructure:"log_queries"`
+	// BackupBucket is gcs bucket to store db backups. Should be of the form `gs://bucket-name`.
+	BackupBucket string `mapstructure:"backup_bucket"`
+	// BackupBucketCredentialsJSON is the json credentials for the backup bucket.
+	BackupBucketCredentialsJSON string `mapstructure:"backup_bucket_credentials_json"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
 	// DBStoragePath is the path where the database files are stored. It is inferred from the DSN (can't be provided by user).
-	DBStoragePath string `mapstructure:"-"`
-	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
-	LogQueries bool `mapstructure:"log_queries"`
+	DBStoragePath string            `mapstructure:"-"`
+	ReadSettings  map[string]string `mapstructure:"-"`
+	WriteSettings map[string]string `mapstructure:"-"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
@@ -83,6 +90,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		// Override DSN.Path with config.Path
 		if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
 			uri.Path = cfg.Path
+			cfg.ExtTableStorage = false
 		} else if cfg.DataDir != "" && uri.Path == "" { // if some path is set in DSN, honour that path and ignore DataDir
 			uri.Path = filepath.Join(cfg.DataDir, "main.db")
 		}
@@ -93,23 +101,20 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 
 	// Set memory limit
-	maxMemory := cfg.MemoryLimitGB
-	if cfg.MaxMemoryGBOverride != 0 {
-		maxMemory = cfg.MaxMemoryGBOverride
+	if cfg.MemoryLimitGB > 0 {
+		cfg.ReadSettings["max_memory"] = fmt.Sprintf("%dGB", cfg.MemoryLimitGB)
 	}
-	if maxMemory > 0 {
-		qry.Add("max_memory", fmt.Sprintf("%dGB", maxMemory))
+	if cfg.MemoryLimitGBWrite > 0 {
+		cfg.WriteSettings["max_memory"] = fmt.Sprintf("%dGB", cfg.MemoryLimitGB)
 	}
 
 	// Set threads limit
 	var threads int
-	if cfg.ThreadsOverride != 0 {
-		threads = cfg.ThreadsOverride
-	} else if cfg.CPU > 0 {
-		threads = cfg.CPU
+	if cfg.CPU > 0 {
+		cfg.ReadSettings["threads"] = strconv.Itoa(cfg.CPU)
 	}
-	if threads > 0 { // NOTE: threads=0 or threads=-1 means no limit
-		qry.Add("threads", strconv.Itoa(threads))
+	if cfg.CPUWrite > 0 {
+		cfg.WriteSettings["threads"] = strconv.Itoa(cfg.CPUWrite)
 	}
 
 	// Set pool size
