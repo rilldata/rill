@@ -155,7 +155,7 @@
 
   <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
     {#if step === AuthStep.Base}
-      {#each LOGIN_OPTIONS as { label, icon, color, style, connection } (connection)}
+      {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
         {@const ctaText = `${label}${
           lastUsedConnection === connection ? " (last used)" : ""
         }`}
