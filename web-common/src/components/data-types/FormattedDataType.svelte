@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   /** provides the formatting for data types */
   import {
     INTERVALS,
@@ -6,10 +6,10 @@
     TIMESTAMPS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
   import Interval from "./Interval.svelte";
-  import Number from "./Number.svelte";
-  import Timestamp from "./Timestamp.svelte";
-  import PercentageChange from "./PercentageChange.svelte";
   import MeasureChange from "./MeasureChange.svelte";
+  import Number from "./Number.svelte";
+  import PercentageChange from "./PercentageChange.svelte";
+  import Timestamp from "./Timestamp.svelte";
   import Varchar from "./Varchar.svelte";
 
   export let type = "VARCHAR";
