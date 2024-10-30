@@ -18,6 +18,9 @@
       enableSorting: false,
       cell: ({ row }) => row.original.value,
     },
+    // TODO
+    // Environment the variable is set for.
+    // If empty, the variable is shared for all environments.
     {
       accessorKey: "environment",
       header: "Environment",

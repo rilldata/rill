@@ -1,9 +1,16 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceGetProjectVariables } from "@rilldata/web-admin/client";
-  import Empty from "@rilldata/web-admin/features/projects/environment-variables/Empty.svelte";
   import EnvironmentVariablesTable from "@rilldata/web-admin/features/projects/environment-variables/EnvironmentVariablesTable.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { Plus } from "lucide-svelte";
+  import { Search } from "@rilldata/web-common/components/search";
+  import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
+  import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
+
+  let open = false;
+  let searchText = "";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -25,11 +32,27 @@
         Error loading environment variables: {$getProjectVariables.error}
       </div>
     {:else if $getProjectVariables.isSuccess}
-      {#if projectVariables.length === 0}
-        <Empty />
-      {:else}
+      <div class="flex flex-col gap-6 w-full">
+        <div class="flex flex-col">
+          <RadixLarge>Environment variables</RadixLarge>
+          <Subheading>Manage your environment variables here.</Subheading>
+        </div>
+        <div class="flex flex-row gap-x-4">
+          <Search
+            placeholder="Search"
+            bind:value={searchText}
+            large
+            autofocus={false}
+            showBorderOnFocus={false}
+          />
+          <!-- TODO: filter by environment -->
+          <Button type="primary" large on:click={() => (open = true)}>
+            <Plus size="16px" />
+            <span>Add environment variable</span>
+          </Button>
+        </div>
         <EnvironmentVariablesTable data={projectVariables} />
-      {/if}
+      </div>
     {/if}
   </div>
 </div>
