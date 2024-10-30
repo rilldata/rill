@@ -16,19 +16,19 @@
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let isValidPercentOfTotal: boolean;
-  export let isTimeComparisonActive: boolean;
-  export let tableWidth: number;
-  export let borderTop = false;
-  export let borderBottom = false;
   export let uri: string | undefined;
+  export let tableWidth: number;
   export let firstColumnWidth: number;
   export let columnWidth: number;
   export let gutterWidth: number;
+  export let borderTop = false;
+  export let borderBottom = false;
   export let isSummableMeasure: boolean;
   export let isBeingCompared: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
+  export let isValidPercentOfTotal: boolean;
+  export let isTimeComparisonActive: boolean;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import LeaderboardHeader from "./LeaderboardHeader.svelte";
+  import LeaderboardRow from "./LeaderboardRow.svelte";
+  import LoadingRows from "./LoadingRows.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type {
@@ -8,17 +11,24 @@
     V1MetricsViewSpec,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewAggregation,
+    V1Operation,
+  } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { prepareLeaderboardItemData } from "./leaderboard-utils";
-  import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import LeaderboardRow from "./LeaderboardRow.svelte";
-  import LoadingRows from "./LoadingRows.svelte";
-  import BelowTheFold from "./BelowTheFold.svelte";
+  import {
+    cleanUpComparisonValue,
+    compareLeaderboardValues,
+    prepareLeaderboardItemData,
+  } from "./leaderboard-utils";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import { SortType } from "../proto-state/derived-types";
-  import { sanitiseExpression } from "../stores/filter-utils";
+  import {
+    createAndExpression,
+    createOrExpression,
+    sanitiseExpression,
+  } from "../stores/filter-utils";
   import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
   import {
     additionalMeasures,
@@ -37,7 +47,6 @@
   const queryLimit = 250;
 
   export let parentElement: HTMLElement;
-
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -46,8 +55,8 @@
   export let whereFilter: V1Expression;
   export let activeMeasureName: string;
   export let metricsViewName: string;
-  export let sortType: SortType;
   export let metricsView: V1MetricsViewSpec;
+  export let sortType: SortType;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
   export let timeControlsReady: boolean;
@@ -132,11 +141,7 @@
     instanceId,
     metricsViewName,
     {
-      dimensions: [
-        {
-          name: dimensionName,
-        },
-      ],
+      dimensions: [{ name: dimensionName }],
       measures,
       timeRange,
       comparisonTimeRange,
@@ -177,13 +182,59 @@
 
   $: ({ aboveTheFold, belowTheFoldValues, noAvailableValues, showExpandTable } =
     prepareLeaderboardItemData(
-      sortedData?.data ?? [],
+      sortedData?.data,
       dimensionName,
       activeMeasureName,
       slice,
       selectedValues,
       leaderboardTotal,
     ));
+
+  $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricsViewName,
+    {
+      dimensions: [{ name: dimensionName }],
+      where: sanitiseExpression(
+        createAndExpression(
+          [
+            createOrExpression(
+              belowTheFoldValues.map((dimensionValue) => ({
+                cond: {
+                  op: V1Operation.OPERATION_EQ,
+                  exprs: [{ ident: dimensionName }, { val: dimensionValue }],
+                },
+              })),
+            ),
+          ].concat(where ?? []),
+        ),
+        undefined,
+      ),
+      sort,
+      timeRange,
+      comparisonTimeRange,
+      measures,
+    },
+    {
+      query: {
+        enabled: !!belowTheFoldValues.length && timeControlsReady && visible,
+      },
+    },
+  );
+
+  $: ({ data } = $belowTheFoldDataQuery);
+
+  $: belowTheFoldRows = (data?.data ?? []).map((item) =>
+    cleanUpComparisonValue(
+      item,
+      dimensionName,
+      activeMeasureName,
+      leaderboardTotal,
+      selectedValues.findIndex((value) =>
+        compareLeaderboardValues(value, item[dimensionName]),
+      ),
+    ),
+  );
 
   $: firstColumnWidth =
     !comparisonTimeRange && !isValidPercentOfTotal ? 240 : 164;
@@ -252,7 +303,7 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
-            uri={dimension?.uri}
+            {uri}
             {itemData}
             {isValidPercentOfTotal}
             isTimeComparisonActive={!!comparisonTimeRange}
@@ -265,34 +316,27 @@
         {/each}
       {/if}
 
-      {#if belowTheFoldValues.length > 0}
-        <BelowTheFold
+      {#each belowTheFoldRows as itemData, i (i)}
+        <LeaderboardRow
+          {itemData}
+          {isSummableMeasure}
           {tableWidth}
+          {dimensionName}
+          {isBeingCompared}
+          {uri}
+          {filterExcludeMode}
+          {atLeastOneActive}
+          {isValidPercentOfTotal}
+          isTimeComparisonActive={!!comparisonTimeRange}
+          {columnWidth}
           {gutterWidth}
           {firstColumnWidth}
-          {columnWidth}
-          {instanceId}
-          {metricsViewName}
-          {dimensionName}
-          {timeRange}
-          {where}
-          {filterExcludeMode}
-          {isBeingCompared}
-          {atLeastOneActive}
-          {isSummableMeasure}
-          {activeMeasureName}
-          {comparisonTimeRange}
-          {selectedValues}
-          {sort}
-          {measures}
-          {uri}
-          total={leaderboardTotal}
-          enabled={visible && timeControlsReady}
-          dimensionValues={belowTheFoldValues}
+          borderTop={i === 0}
+          borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}
           {formatter}
         />
-      {/if}
+      {/each}
     </tbody>
   </table>
 

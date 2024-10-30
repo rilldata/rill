@@ -8,7 +8,6 @@ import {
   V1MetricsViewComparisonMeasureType as ApiSortType,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
-
 import { SortType } from "../proto-state/derived-types";
 
 export type LeaderboardItemData = {
@@ -99,7 +98,7 @@ type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
 };
 
 export function prepareLeaderboardItemData(
-  values: V1MetricsViewAggregationResponseDataItem[],
+  values: V1MetricsViewAggregationResponseDataItem[] | undefined,
   dimensionName: string,
   measureName: string,
   numberAboveTheFold: number,
@@ -108,6 +107,15 @@ export function prepareLeaderboardItemData(
   // or null if the measure is not valid_percent_of_total
   total: number | null,
 ) {
+  if (values?.length === 0 || !values) {
+    return {
+      aboveTheFold: [],
+      belowTheFoldValues: [],
+      noAvailableValues: true,
+      showExpandTable: false,
+    };
+  }
+
   const aboveTheFold: LeaderboardItemData[] = [];
   const belowTheFoldValues = new Set(selectedValues);
 
