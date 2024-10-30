@@ -48,8 +48,17 @@ func newNotifier(token string, propsMap map[string]any) (*notifier, error) {
 }
 
 func (n *notifier) SendScheduledReport(s *drivers.ScheduledReport) error {
+	d := ReportStatusData{
+		DisplayName:      s.DisplayName,
+		ReportTimeString: s.ReportTime.Format(time.RFC1123),
+		DownloadFormat:   s.DownloadFormat,
+		OpenLink:         s.OpenLink,
+		DownloadLink:     s.DownloadLink,
+		EditLink:         s.EditLink,
+	}
+
 	buf := new(bytes.Buffer)
-	err := n.templates.Lookup("scheduled_report.slack").Execute(buf, s)
+	err := n.templates.Lookup("scheduled_report.slack").Execute(buf, d)
 	if err != nil {
 		return fmt.Errorf("slack template error: %w", err)
 	}
@@ -207,6 +216,15 @@ func DecodeProps(propsMap map[string]any) (*NotifierProperties, error) {
 		return nil, err
 	}
 	return props, nil
+}
+
+type ReportStatusData struct {
+	DisplayName      string
+	ReportTimeString string
+	DownloadFormat   string
+	OpenLink         string
+	DownloadLink     string
+	EditLink         string
 }
 
 type AlertStatusData struct {
