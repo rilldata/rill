@@ -134,7 +134,9 @@ export function getDashboardStateFromProto(
       dashboard.compareTimeRange,
     );
     // backwards compatibility
-    correctComparisonTimeRange(entity.selectedComparisonTimeRange);
+    entity.selectedComparisonTimeRange.name = correctComparisonTimeRange(
+      entity.selectedComparisonTimeRange.name,
+    );
   }
   if (dashboard.showTimeComparison !== undefined) {
     entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
@@ -223,7 +225,9 @@ export function base64ToProto(message: string) {
   return protoBase64.dec(message);
 }
 
-function fromExpressionProto(expression: Expression): V1Expression | undefined {
+export function fromExpressionProto(
+  expression: Expression,
+): V1Expression | undefined {
   switch (expression.expression.case) {
     case "ident":
       return {
@@ -422,29 +426,22 @@ function fromPivotProto(
   };
 }
 
-function correctComparisonTimeRange(
-  comparisonTimeRange: DashboardTimeControls,
-) {
-  switch (comparisonTimeRange.name as string) {
+export function correctComparisonTimeRange(name: string) {
+  switch (name) {
     case "CONTIGUOUS":
-      comparisonTimeRange.name = TimeComparisonOption.CONTIGUOUS;
-      break;
+      return TimeComparisonOption.CONTIGUOUS;
     case "P1D":
-      comparisonTimeRange.name = TimeComparisonOption.DAY;
-      break;
+      return TimeComparisonOption.DAY;
     case "P1W":
-      comparisonTimeRange.name = TimeComparisonOption.WEEK;
-      break;
+      return TimeComparisonOption.WEEK;
     case "P1M":
-      comparisonTimeRange.name = TimeComparisonOption.MONTH;
-      break;
+      return TimeComparisonOption.MONTH;
     case "P3M":
-      comparisonTimeRange.name = TimeComparisonOption.QUARTER;
-      break;
+      return TimeComparisonOption.QUARTER;
     case "P1Y":
-      comparisonTimeRange.name = TimeComparisonOption.YEAR;
-      break;
+      return TimeComparisonOption.YEAR;
   }
+  return name;
 }
 
 function chartTypeMap(chartType: string | undefined): TDDChart {

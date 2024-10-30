@@ -128,7 +128,7 @@ function fromTimeRangesParams(
 
   if (searchParams.has("ctr")) {
     preset.compareTimeRange = searchParams.get("ctr") as string;
-    preset.comparisonMode =
+    preset.comparisonMode ??=
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
     // TODO: parse and return errors
   }
@@ -137,7 +137,7 @@ function fromTimeRangesParams(
     // unsetting a default from url
     if (comparisonDimension === "") {
       preset.comparisonDimension = "";
-      preset.comparisonMode =
+      preset.comparisonMode ??=
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
     } else if (dimensions.has(comparisonDimension)) {
       preset.comparisonDimension = comparisonDimension;
@@ -284,10 +284,10 @@ function fromPivotUrlParams(
   if (searchParams.has("p.c")) {
     const cols = (searchParams.get("p.c") as string).split(",");
     const validCols = cols.filter(
-      (r) =>
-        dimensions.has(r) ||
-        measures.has(r) ||
-        r in FromURLParamTimeDimensionMap,
+      (c) =>
+        dimensions.has(c) ||
+        measures.has(c) ||
+        c in FromURLParamTimeDimensionMap,
     );
     preset.pivotCols = validCols;
     const missingCols = getMissingValues(cols, validCols);

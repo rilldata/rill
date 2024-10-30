@@ -17,3 +17,4 @@ export const URLStateDefaultCompareMode =
 export const URLStateDefaultSortDirection = SortDirection.DESCENDING;
 
 export const URLStateDefaultTDDChartType = TDDChart.DEFAULT;
+export const ExplorePresetDefaultChartType = "timeseries";
