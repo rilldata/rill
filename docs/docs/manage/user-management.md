@@ -146,17 +146,16 @@ There are two ways to add a user to a user group.
 2. Administrator adds them via the CLI
 
 ### Administrator adds from Rill Cloud
-From the organization page, you can manage users under the *Users* tab. Adding users from this page will add the user to the organizat
 
 import ComingSoon from '@site/src/components/ComingSoon';
 
 
-![img] Update this image
+
 
 <ComingSoon />
 
 <div class='contents_to_overlay'>
-a
+![img] Update this image
 </div>
 
 ### Administrator adds from the CLI

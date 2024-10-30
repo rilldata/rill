@@ -6,7 +6,14 @@ hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
 ---
+:::tip Rill Cloud Trial
+
+If this is the first time you have deployed a project onto Rill Cloud, you will automatically start your [Rill Cloud Trial] () upon deployment of your Rill project. Your trial will last for 30 days. Please refer [here] () for more information on the details of your trial.
+
+:::
+
 ## Deploy via the UI!
+
 
 Depending on your version, you'll notice a `Deploy to share` button in the top right corner. Let's select it!
 :::note Don't see the button?
@@ -22,6 +29,8 @@ Steps to deploy to Rill Cloud:
     - If you have already deployed, select an existing organization.
 3. Select `continue` on user invites, we will discuss this in a later section. 
 4. You will be navigated to the /status page of your deployed project.
+
+
 
 ## Welcome to Rill Cloud!
 Take note of the following features in the UI, we'll go over the them later.

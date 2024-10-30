@@ -6,6 +6,12 @@ hide_table_of_contents: false
 tags:
   - OLAP:ClickHouse
 ---
+:::tip Rill Cloud Trial
+
+If this is the first time you have deployed a project onto Rill Cloud, you will automatically start your [Rill Cloud Trial] () upon deployment of your Rill project. Your trial will last for 30 days. Please refer [here] () for more information on the details of your trial.
+
+:::
+
 ## Deploy via the UI!
 
 Select the `Deploy to share` button in the top right corner of a dashboard.
