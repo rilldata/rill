@@ -2,15 +2,19 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import type { V1ProjectVariable } from "@rilldata/web-admin/client";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
+  import KeyIcon from "@rilldata/web-common/components/icons/KeyIcon.svelte";
 
   export let data: V1ProjectVariable[];
 
   const columns: ColumnDef<V1ProjectVariable, any>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Key",
       enableSorting: false,
-      cell: ({ row }) => row.original.name,
+      cell: (info) => {
+        if (!info.getValue()) return "-";
+        return info.getValue() as string;
+      },
     },
     {
       accessorKey: "value",
@@ -51,6 +55,7 @@
 <BasicTable
   {data}
   {columns}
-  emptyText="No environment variables found"
+  emptyIcon={KeyIcon}
+  emptyText="No environment variables"
   scrollable
 />

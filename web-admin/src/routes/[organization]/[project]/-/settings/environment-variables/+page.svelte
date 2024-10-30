@@ -21,6 +21,8 @@
   );
 
   $: projectVariables = $getProjectVariables.data?.variables || [];
+
+  // TODO: wire up searchText to filter variables key
 </script>
 
 <div class="flex flex-col w-full">
@@ -35,7 +37,15 @@
       <div class="flex flex-col gap-6 w-full">
         <div class="flex flex-col">
           <RadixLarge>Environment variables</RadixLarge>
-          <Subheading>Manage your environment variables here.</Subheading>
+          <p class="text-base font-normal text-slate-700">
+            Manage your environment variables here. <a
+              href="https://docs.rilldata.com/tutorials/administration/project/credential-envvariable-mangement"
+              target="_blank"
+              class="text-primary-600 hover:text-primary-700 active:text-primary-800"
+            >
+              Learn more ->
+            </a>
+          </p>
         </div>
         <div class="flex flex-row gap-x-4">
           <Search
